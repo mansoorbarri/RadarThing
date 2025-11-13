@@ -246,8 +246,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ aircrafts, airports, onAirc
             if (coordinates.length < 2) return;
 
             const polyline = L.polyline(coordinates, {
-                color: '#42a5f5', 
-                weight: 3, 
+                color: '#ff00ff', 
+                weight: 10, 
                 opacity: 0.7,
                 dashArray: '10, 5'
             });
