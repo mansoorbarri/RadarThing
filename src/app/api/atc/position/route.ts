@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { activeAircraft } from '~/lib/aircraft-store';
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    
+  
     if (!body.callsign || typeof body.lat !== 'number' || typeof body.lon !== 'number') {
       return NextResponse.json(
         { error: 'Missing required fields' },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
@@ -16,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     const positionData = {
       id,
-      callsign: body.callsign || 'UNK',
+      callsign: body.callsign || '',
       type: body.type || '',
       lat: Number(body.lat) || 0,
       lon: Number(body.lon) || 0,
@@ -30,6 +36,8 @@ export async function POST(req: NextRequest) {
       takeoffTime: body.takeoffTime || '',
       squawk: body.squawk || '',
       flightPlan: body.flightPlan || [],
+      nextWaypoint: body.nextWaypoint || '', 
+      vspeed: body.vspeed || '',
       ts: Date.now(),
       lastSeen: Date.now(),
     };
@@ -39,13 +47,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ 
       success: true,
       timestamp: new Date().toISOString()
+    }, {
+      headers: CORS_HEADERS
     });
 
   } catch (error) {
-    console.error('[ATC-API] Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 }
@@ -61,7 +70,7 @@ export function GET(req: NextRequest) {
       if (!aircraft) {
         return NextResponse.json(
           { error: 'Aircraft not found' },
-          { status: 404 }
+          { status: 404, headers: CORS_HEADERS }
         );
       }
       
@@ -69,6 +78,8 @@ export function GET(req: NextRequest) {
       return NextResponse.json({
         aircraft: data,
         lastSeen: new Date(lastSeen).toISOString(),
+      }, {
+        headers: CORS_HEADERS
       });
     }
 
@@ -80,7 +91,7 @@ export function GET(req: NextRequest) {
       if (!found) {
         return NextResponse.json(
           { error: 'Aircraft not found' },
-          { status: 404 }
+          { status: 404, headers: CORS_HEADERS }
         );
       }
       
@@ -88,6 +99,8 @@ export function GET(req: NextRequest) {
       return NextResponse.json({
         aircraft: data,
         lastSeen: new Date(lastSeen).toISOString(),
+      }, {
+        headers: CORS_HEADERS
       });
     }
 
@@ -100,13 +113,14 @@ export function GET(req: NextRequest) {
       count: allAircraft.length,
       aircraft: allAircraft,
       timestamp: new Date().toISOString(),
+    }, {
+      headers: CORS_HEADERS
     });
 
   } catch (error) {
-    console.error('[ATC-API] Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 }
@@ -115,10 +129,6 @@ export async function OPTIONS() {
   await Promise.resolve()
   return new NextResponse(null, {
     status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
+    headers: CORS_HEADERS,
   });
 }
