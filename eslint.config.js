@@ -7,7 +7,7 @@ const compat = new FlatCompat({
 
 export default tseslint.config(
   {
-    ignores: [".next", "user.js"],
+    ignores: [".next", "geofs-radar.user.js"],
   },
   ...compat.extends("next/core-web-vitals"),
   {
