@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GeoFS ATC Radar
 // @namespace    http://tampermonkey.net/
-// @version      0.0.8
+// @version      0.0.9
 // @description  A ATC Radar for GeoFS which works like FlightRadar24.
 // @match        http://*/geofs.php*
 // @match        https://*/geofs.php*
@@ -197,7 +197,7 @@
       squawk: flightInfo.squawk,
       flightPlan: flightPlan,
       nextWaypoint: geofs.flightPlan?.trackedWaypoint?.ident || null,
-      vspeed: geofs.animation.values.verticalSpeed  || 0
+      vspeed: Math.floor(geofs.animation?.values?.verticalSpeed || 0)
     };
   }
 
