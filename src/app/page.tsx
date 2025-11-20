@@ -25,71 +25,328 @@ const DynamicMapComponent = dynamic(
 const Sidebar = React.memo(({ aircraft }: { aircraft: PositionUpdate & { altMSL?: number } }) => {
     const altMSL = aircraft.altMSL ?? aircraft.alt;
     const altAGL = aircraft.alt;
+    const isOnGround = altAGL < 100;
 
     const renderFlightPlan = useCallback(() => {
-        if (!aircraft.flightPlan) return <p>Flight plan unavailable.</p>;
+        if (!aircraft.flightPlan) return (
+            <div style={{ 
+                padding: '20px', 
+                textAlign: 'center', 
+                color: 'rgba(255,255,255,0.5)',
+                fontSize: '14px'
+            }}>
+                No flight plan available
+            </div>
+        );
 
         try {
             const waypoints = JSON.parse(aircraft.flightPlan);
             return (
-                <div style={{ maxHeight: 'calc(100% - 200px)', overflowY: 'auto', paddingRight: '10px', paddingBottom: '20px' }}>
-                    <h3 style={{ borderBottom: '1px solid #444', paddingBottom: '5px', fontSize: '16px', marginTop: '15px' }}>Route Details</h3>
+                <div style={{ 
+                    maxHeight: 'calc(100% - 280px)', 
+                    overflowY: 'auto', 
+                    padding: '0 16px 16px 16px',
+                }}>
+                    <div style={{ 
+                        fontSize: '13px', 
+                        fontWeight: '600', 
+                        color: 'rgba(255,255,255,0.9)',
+                        marginBottom: '12px',
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase'
+                    }}>
+                        Flight Plan
+                    </div>
                     {waypoints.map((wp: any, index: number) => (
-                        <div key={index} style={{ padding: '5px 0', borderBottom: index < waypoints.length - 1 ? '1px dashed #333' : 'none' }}>
-                            <strong>{wp.ident}</strong> ({wp.type})
-                            <div style={{ fontSize: '11px', opacity: 0.9 }}>
-                                Alt: {wp.alt ? wp.alt + ' ft' : 'N/A'} | Spd: {wp.spd ? wp.spd + ' kt' : 'N/A'}
+                        <div key={index} style={{ 
+                            padding: '12px 14px',
+                            marginBottom: '8px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                            transition: 'all 0.2s ease',
+                            cursor: 'pointer',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+                            e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+                            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                        }}
+                        >
+                            <div style={{ 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                alignItems: 'center',
+                                marginBottom: '4px'
+                            }}>
+                                <span style={{ 
+                                    fontWeight: '600', 
+                                    fontSize: '14px',
+                                    color: '#fff'
+                                }}>{wp.ident}</span>
+                                <span style={{ 
+                                    fontSize: '11px', 
+                                    color: 'rgba(255,255,255,0.5)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px'
+                                }}>{wp.type}</span>
+                            </div>
+                            <div style={{ 
+                                fontSize: '12px', 
+                                color: 'rgba(255,255,255,0.7)',
+                                display: 'flex',
+                                gap: '12px'
+                            }}>
+                                <span>Alt: <strong>{wp.alt ? wp.alt + ' ft' : 'N/A'}</strong></span>
+                                <span>Spd: <strong>{wp.spd ? wp.spd + ' kt' : 'N/A'}</strong></span>
                             </div>
                         </div>
                     ))}
                 </div>
             );
         } catch (e) {
-            return <p>Error loading flight plan data.</p>;
+            return (
+                <div style={{ 
+                    padding: '20px', 
+                    textAlign: 'center', 
+                    color: 'rgba(239, 68, 68, 0.8)',
+                    fontSize: '14px'
+                }}>
+                    Error loading flight plan
+                </div>
+            );
         }
     }, [aircraft.flightPlan]);
+
+    const displayAlt = isOnGround ? `${altAGL.toFixed(0)} ft AGL` : 
+                       altMSL >= 18000 ? `FL${Math.round(altMSL / 100)}` :
+                       `${altAGL.toFixed(0)} ft AGL`;
 
     return (
         <div style={{ 
             position: 'absolute', 
             top: 0, 
             right: 0, 
-            width: '350px', 
+            width: '380px', 
             height: '100%', 
-            backgroundColor: 'rgba(22, 27, 34, 0.95)', 
-            boxShadow: '-2px 0 10px rgba(0,0,0,0.5)',
+            backgroundColor: 'rgba(17, 24, 39, 0.98)',
+            backdropFilter: 'blur(12px)',
+            boxShadow: '-4px 0 24px rgba(0,0,0,0.4)',
             color: '#fff', 
             zIndex: 1000, 
             display: 'flex',
             flexDirection: 'column',
-            padding: '10px', 
+            borderLeft: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
             <div style={{ 
-                backgroundColor: 'transparent', 
-                padding: '0 0 10px 0', 
-                borderBottom: '1px solid #444'
+                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%)',
+                padding: '20px 20px 16px 20px', 
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
             }}>
-                <h2 style={{ margin: 0 }}>{aircraft.callsign || aircraft.flightNo || 'N/A'}</h2>
-                <p style={{ opacity: 0.7, margin: '5px 0 0 0', fontSize: '14px' }}>{aircraft.type || 'Unknown Type'}</p>
+                <div style={{ 
+                    fontSize: '24px', 
+                    fontWeight: '700',
+                    marginBottom: '4px',
+                    letterSpacing: '-0.5px'
+                }}>
+                    {aircraft.callsign || aircraft.flightNo || 'N/A'}
+                </div>
+                <div style={{ 
+                    fontSize: '13px',
+                    color: 'rgba(255, 255, 255, 0.6)',
+                    fontWeight: '500',
+                    letterSpacing: '0.5px'
+                }}>
+                    {aircraft.type || 'Unknown Type'}
+                </div>
             </div>
             
-            <div style={{ padding: '0 0 0 0', flexGrow: 1, overflowY: 'auto' }}>
-                
-                <div style={{ marginBottom: '15px', paddingTop: '10px' }}>
-                    <p><strong>CALLSIGN:</strong> {aircraft.flightNo || 'N/A'}</p>
-                    <p><strong>FROM:</strong> {aircraft.departure || 'N/A'} <strong>TO:</strong> {aircraft.arrival || 'N/A'}</p>
+            <div style={{ 
+                padding: '16px 16px 0 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+            }}>
+                <div style={{
+                    padding: '14px',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(59, 130, 246, 0.2)'
+                }}>
+                    <div style={{ 
+                        fontSize: '11px', 
+                        color: 'rgba(255,255,255,0.6)',
+                        marginBottom: '4px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        fontWeight: '600'
+                    }}>
+                        Flight Number
+                    </div>
+                    <div style={{ fontSize: '16px', fontWeight: '600' }}>
+                        {aircraft.flightNo || 'N/A'}
+                    </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '13px', marginBottom: '15px', padding: '10px', border: '1px solid #333', borderRadius: '5px', backgroundColor: 'rgba(33, 37, 41, 0.5)' }}>
-                    <div><strong>Altitude MSL:</strong> {altMSL?.toFixed(0) || "0"} ft</div>
-                    <div><strong>Altitude AGL:</strong> {altAGL?.toFixed(0) || "0"} ft</div>
-                    <div><strong>V-Speed:</strong> {aircraft.vspeed || "0"} ft/min</div>
-                    <div><strong>Speed:</strong> {aircraft.speed?.toFixed(0)} kt</div>
-                    <div><strong>Heading:</strong> {aircraft.heading?.toFixed(0)}°</div>
-                    <div><strong>Squawk:</strong> {aircraft.squawk || 'N/A'}</div>
-                    <div style={{ gridColumn: '1 / -1' }}><strong>Next Waypoint:</strong> {aircraft.nextWaypoint || ''}</div>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '12px'
+                }}>
+                    <div style={{
+                        padding: '14px',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(16, 185, 129, 0.2)'
+                    }}>
+                        <div style={{ 
+                            fontSize: '11px', 
+                            color: 'rgba(255,255,255,0.6)',
+                            marginBottom: '4px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontWeight: '600'
+                        }}>
+                            From
+                        </div>
+                        <div style={{ fontSize: '16px', fontWeight: '600' }}>
+                            {aircraft.departure || 'UNK'}
+                        </div>
+                    </div>
+                    <div style={{
+                        padding: '14px',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(245, 158, 11, 0.2)'
+                    }}>
+                        <div style={{ 
+                            fontSize: '11px', 
+                            color: 'rgba(255,255,255,0.6)',
+                            marginBottom: '4px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontWeight: '600'
+                        }}>
+                            To
+                        </div>
+                        <div style={{ fontSize: '16px', fontWeight: '600' }}>
+                            {aircraft.arrival || 'UNK'}
+                        </div>
+                    </div>
                 </div>
 
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr 1fr', 
+                    gap: '10px', 
+                    padding: '14px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(255, 255, 255, 0.08)'
+                }}>
+                    <div>
+                        <div style={{ 
+                            fontSize: '10px', 
+                            color: 'rgba(255,255,255,0.5)',
+                            marginBottom: '4px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontWeight: '600'
+                        }}>
+                            Altitude
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: '600' }}>
+                            {displayAlt}
+                        </div>
+                    </div>
+                    <div>
+                        <div style={{ 
+                            fontSize: '10px', 
+                            color: 'rgba(255,255,255,0.5)',
+                            marginBottom: '4px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontWeight: '600'
+                        }}>
+                            V-Speed
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: '600' }}>
+                            {aircraft.vspeed || "0"} fpm
+                        </div>
+                    </div>
+                    <div>
+                        <div style={{ 
+                            fontSize: '10px', 
+                            color: 'rgba(255,255,255,0.5)',
+                            marginBottom: '4px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontWeight: '600'
+                        }}>
+                            Speed
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: '600' }}>
+                            {aircraft.speed?.toFixed(0)} kt
+                        </div>
+                    </div>
+                    <div>
+                        <div style={{ 
+                            fontSize: '10px', 
+                            color: 'rgba(255,255,255,0.5)',
+                            marginBottom: '4px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontWeight: '600'
+                        }}>
+                            Heading
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: '600' }}>
+                            {aircraft.heading?.toFixed(0)}°
+                        </div>
+                    </div>
+                    <div>
+                        <div style={{ 
+                            fontSize: '10px', 
+                            color: 'rgba(255,255,255,0.5)',
+                            marginBottom: '4px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontWeight: '600'
+                        }}>
+                            Squawk
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: '600', fontFamily: 'monospace' }}>
+                            {aircraft.squawk || 'N/A'}
+                        </div>
+                    </div>
+                    {aircraft.nextWaypoint && (
+                        <div>
+                            <div style={{ 
+                                fontSize: '10px', 
+                                color: 'rgba(255,255,255,0.5)',
+                                marginBottom: '4px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                fontWeight: '600'
+                            }}>
+                                Next WPT
+                            </div>
+                            <div style={{ fontSize: '14px', fontWeight: '600' }}>
+                                {aircraft.nextWaypoint}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div style={{ 
+                flexGrow: 1, 
+                overflowY: 'auto',
+                marginTop: '16px'
+            }}>
                 {renderFlightPlan()}
             </div>
         </div>
@@ -219,15 +476,17 @@ export default function ATCPage() {
         right: 10,
         zIndex: 10000,
         padding: '8px 12px',
-        borderRadius: '4px',
+        borderRadius: '8px',
         fontSize: '12px',
+        fontWeight: '600',
         backgroundColor: connectionStatus === 'connected' 
           ? 'rgba(16, 185, 129, 0.9)' 
           : connectionStatus === 'connecting'
           ? 'rgba(251, 191, 36, 0.9)'
           : 'rgba(239, 68, 68, 0.9)',
         color: 'white',
-        fontWeight: 'bold',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        backdropFilter: 'blur(8px)'
       }}>
         {connectionStatus === 'connected' && '● Live'}
         {connectionStatus === 'connecting' && '◐ Connecting...'}
@@ -247,13 +506,13 @@ export default function ATCPage() {
       </div>
 
       <div style={{
-        transform: selectedAircraft ? 'translateX(0)' : 'translateX(300px)',
-        transition: 'transform 0.3s ease',
+        transform: selectedAircraft ? 'translateX(0)' : 'translateX(380px)',
+        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         position: 'absolute',
         top: 0,
         right: 0,
         zIndex: 99997,
-        width: '300px',
+        width: '380px',
         height: '100%',
       }}>
         {selectedAircraft && <Sidebar aircraft={selectedAircraft} />}
