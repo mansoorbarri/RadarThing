@@ -7,6 +7,7 @@ interface MapComponentProps {
   aircrafts: PositionUpdate[];
   airports: Airport[];
   onAircraftSelect: (aircraft: PositionUpdate | null) => void;
+  selectedWaypointIndex?: number | null;
 }
 
 interface Airport {
