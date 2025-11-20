@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GeoFS ATC Radar
 // @namespace    http://tampermonkey.net/
-// @version      0.0.9
+// @version      0.0.10
 // @description  A ATC Radar for GeoFS which works like FlightRadar24.
 // @match        http://*/geofs.php*
 // @match        https://*/geofs.php*
@@ -28,7 +28,7 @@
   let isFlightInfoSaved = false;
   let hasActiveViewers = false;
   let lastViewerCheckTime = 0;
-  const VIEWER_CHECK_INTERVAL = 10000;
+  const VIEWER_CHECK_INTERVAL = 5000;
 
   async function checkForActiveViewers() {
     try {
