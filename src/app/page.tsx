@@ -144,7 +144,7 @@ export default function ATCPage() {
       
       if (currentlyHasAircraft !== hasAircraft.current) {
         hasAircraft.current = currentlyHasAircraft;
-        fetchInterval.current = currentlyHasAircraft ? 3000 : 15000;
+        fetchInterval.current = currentlyHasAircraft ? 3000 : 5000;
         
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
