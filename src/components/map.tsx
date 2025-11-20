@@ -287,6 +287,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const headingMarkerRef = useRef<L.Marker | null>(null);
   const headingControlRef = useRef<HeadingModeControl | null>(null);
   const currentSelectedAircraftRef = useRef<string | null>(null);
+  const hasZoomedToFlightPlan = useRef<boolean>(false);
 
   useEffect(() => {
     if (headingControlRef.current) {
@@ -325,6 +326,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         ) {
           flightPlanLayerGroup.clearLayers();
           currentSelectedAircraftRef.current = null;
+          hasZoomedToFlightPlan.current = false;
           onAircraftSelect(null);
         }
       });
@@ -345,7 +347,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       });
     }
 
-    const drawFlightPlan = (aircraft: PositionUpdate) => {
+    const drawFlightPlan = (aircraft: PositionUpdate, shouldZoom: boolean = false) => {
       if (!mapInstance || !aircraft.flightPlan || !flightPlanLayerGroup) return;
 
       try {
@@ -379,7 +381,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             const waypointMarker = L.marker([wp.lat, wp.lon], {
               icon: icon,
               title: wp.ident,
-              zIndexOffset: 1000,
+              zIndexOffset: 100,
             })
               .bindPopup(popupContent)
               .addTo(flightPlanLayerGroup!);
@@ -419,8 +421,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
           flightPlanLayerGroup.addLayer(remainingPolyline);
         }
 
-        const fullPolyline = L.polyline(coordinates, { opacity: 0 });
-        mapInstance.fitBounds(fullPolyline.getBounds(), { padding: [50, 50] });
+        if (shouldZoom) {
+          const fullPolyline = L.polyline(coordinates, { opacity: 0 });
+          mapInstance.fitBounds(fullPolyline.getBounds(), { padding: [50, 50] });
+          hasZoomedToFlightPlan.current = true;
+        }
       } catch (error) {
         console.error('Error drawing flight plan:', error);
       }
@@ -435,11 +440,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
         const marker = L.marker([aircraft.lat, aircraft.lon], {
           title: aircraft.callsign,
           icon: icon,
+          zIndexOffset: 1000,
         }).addTo(aircraftMarkersLayer!);
 
         marker.on('click', (e) => {
           L.DomEvent.stopPropagation(e);
-          drawFlightPlan(aircraft);
+          hasZoomedToFlightPlan.current = false;
+          drawFlightPlan(aircraft, true);
           onAircraftSelect(aircraft);
         });
       });
@@ -450,7 +457,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         ac => (ac.id || ac.callsign) === currentSelectedAircraftRef.current
       );
       if (selectedAircraft) {
-        drawFlightPlan(selectedAircraft);
+        drawFlightPlan(selectedAircraft, false);
       }
     }
 
