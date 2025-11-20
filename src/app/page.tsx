@@ -27,99 +27,99 @@ const Sidebar = React.memo(({ aircraft }: { aircraft: PositionUpdate & { altMSL?
     const altAGL = aircraft.alt;
     const isOnGround = altAGL < 100;
 
-    const renderFlightPlan = useCallback(() => {
-        if (!aircraft.flightPlan) return (
-            <div style={{ 
-                padding: '20px', 
-                textAlign: 'center', 
-                color: 'rgba(255,255,255,0.5)',
-                fontSize: '14px'
-            }}>
-                No flight plan available
-            </div>
-        );
+  const renderFlightPlan = useCallback(() => {
+      if (!aircraft.flightPlan) return (
+          <div style={{ 
+              padding: '20px', 
+              textAlign: 'center', 
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: '14px'
+          }}>
+              No flight plan available
+          </div>
+      );
 
-        try {
-            const waypoints = JSON.parse(aircraft.flightPlan);
-            return (
-                <div style={{ 
-                    maxHeight: 'calc(100% - 280px)', 
-                    overflowY: 'auto', 
-                    padding: '0 16px 16px 16px',
-                }}>
-                    <div style={{ 
-                        fontSize: '13px', 
-                        fontWeight: '600', 
-                        color: 'rgba(255,255,255,0.9)',
-                        marginBottom: '12px',
-                        letterSpacing: '0.5px',
-                        textTransform: 'uppercase'
-                    }}>
-                        Flight Plan
-                    </div>
-                    {waypoints.map((wp: any, index: number) => (
-                        <div key={index} style={{ 
-                            padding: '12px 14px',
-                            marginBottom: '8px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                            borderRadius: '8px',
-                            border: '1px solid rgba(255, 255, 255, 0.08)',
-                            transition: 'all 0.2s ease',
-                            cursor: 'pointer',
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
-                            e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
-                            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                        }}
-                        >
-                            <div style={{ 
-                                display: 'flex', 
-                                justifyContent: 'space-between', 
-                                alignItems: 'center',
-                                marginBottom: '4px'
-                            }}>
-                                <span style={{ 
-                                    fontWeight: '600', 
-                                    fontSize: '14px',
-                                    color: '#fff'
-                                }}>{wp.ident}</span>
-                                <span style={{ 
-                                    fontSize: '11px', 
-                                    color: 'rgba(255,255,255,0.5)',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px'
-                                }}>{wp.type}</span>
-                            </div>
-                            <div style={{ 
-                                fontSize: '12px', 
-                                color: 'rgba(255,255,255,0.7)',
-                                display: 'flex',
-                                gap: '12px'
-                            }}>
-                                <span>Alt: <strong>{wp.alt ? wp.alt + ' ft' : 'N/A'}</strong></span>
-                                <span>Spd: <strong>{wp.spd ? wp.spd + ' kt' : 'N/A'}</strong></span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            );
-        } catch (e) {
-            return (
-                <div style={{ 
-                    padding: '20px', 
-                    textAlign: 'center', 
-                    color: 'rgba(239, 68, 68, 0.8)',
-                    fontSize: '14px'
-                }}>
-                    Error loading flight plan
-                </div>
-            );
-        }
-    }, [aircraft.flightPlan]);
+      try {
+          const waypoints = JSON.parse(aircraft.flightPlan);
+          return (
+              <div style={{ 
+                  height: '100%',
+                  overflowY: 'auto', 
+                  padding: '0 16px 16px 16px',
+              }}>
+                  <div style={{ 
+                      fontSize: '13px', 
+                      fontWeight: '600', 
+                      color: 'rgba(255,255,255,0.9)',
+                      marginBottom: '12px',
+                      letterSpacing: '0.5px',
+                      textTransform: 'uppercase'
+                  }}>
+                      Flight Plan
+                  </div>
+                  {waypoints.map((wp: any, index: number) => (
+                      <div key={index} style={{ 
+                          padding: '12px 14px',
+                          marginBottom: '8px',
+                          backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          transition: 'all 0.2s ease',
+                          cursor: 'pointer',
+                      }}
+                      onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+                          e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                      }}
+                      >
+                          <div style={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between', 
+                              alignItems: 'center',
+                              marginBottom: '4px'
+                          }}>
+                              <span style={{ 
+                                  fontWeight: '600', 
+                                  fontSize: '14px',
+                                  color: '#fff'
+                              }}>{wp.ident}</span>
+                              <span style={{ 
+                                  fontSize: '11px', 
+                                  color: 'rgba(255,255,255,0.5)',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px'
+                              }}>{wp.type}</span>
+                          </div>
+                          <div style={{ 
+                              fontSize: '12px', 
+                              color: 'rgba(255,255,255,0.7)',
+                              display: 'flex',
+                              gap: '12px'
+                          }}>
+                              <span>Alt: <strong>{wp.alt ? wp.alt + ' ft' : 'N/A'}</strong></span>
+                              <span>Spd: <strong>{wp.spd ? wp.spd + ' kt' : 'N/A'}</strong></span>
+                          </div>
+                      </div>
+                  ))}
+              </div>
+          );
+      } catch (e) {
+          return (
+              <div style={{ 
+                  padding: '20px', 
+                  textAlign: 'center', 
+                  color: 'rgba(239, 68, 68, 0.8)',
+                  fontSize: '14px'
+              }}>
+                  Error loading flight plan
+              </div>
+          );
+      }
+  }, [aircraft.flightPlan]);
 
     const displayAlt = isOnGround ? `${altAGL.toFixed(0)} ft AGL` : 
                        altMSL >= 18000 ? `FL${Math.round(altMSL / 100)}` :
