@@ -296,41 +296,53 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [isHeadingMode]);
 
   useEffect(() => {
-    if (!mapInstance) {
-      mapInstance = L.map('map-container', {
-        zoomAnimation: true,
-      }).setView([20, 0], 2);
+  if (!mapInstance) {
+    const worldBounds = L.latLngBounds(
+      L.latLng(-85, -180),
+      L.latLng(85, 180)
+    );
 
-      L.tileLayer('https://mt0.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-        attribution: 'Esri, Garmin, FAO, USGS, NPS',
-        maxZoom: 18,
-        transparent: true,
-        pane: 'overlayPane',
-      }).addTo(mapInstance);
+    mapInstance = L.map('map-container', {
+      zoomAnimation: true,
+      minZoom: 3,
+      maxZoom: 18,
+      maxBounds: worldBounds,
+      maxBoundsViscosity: 1.0,
+    }).setView([20, 0], 3);
 
-      flightPlanLayerGroup = L.layerGroup().addTo(mapInstance);
-      aircraftMarkersLayer = L.layerGroup().addTo(mapInstance);
-      airportMarkersLayer = L.layerGroup().addTo(mapInstance);
+    L.tileLayer('https://mt0.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+      attribution: 'Esri, Garmin, FAO, USGS, NPS',
+      maxZoom: 18,
+      minZoom: 3,
+      transparent: true,
+      pane: 'overlayPane',
+      noWrap: true,
+      bounds: worldBounds,
+    }).addTo(mapInstance);
 
-      const headingControl = new HeadingModeControl({}, setIsHeadingMode);
-      mapInstance.addControl(headingControl);
-      headingControlRef.current = headingControl;
+    flightPlanLayerGroup = L.layerGroup().addTo(mapInstance);
+    aircraftMarkersLayer = L.layerGroup().addTo(mapInstance);
+    airportMarkersLayer = L.layerGroup().addTo(mapInstance);
 
-      mapInstance.on('click', (e) => {
-        const target = e.originalEvent.target as HTMLElement;
-        if (
-          !target.closest('.leaflet-marker-icon') &&
-          !target.closest('.leaflet-popup-pane') &&
-          !target.closest('.leaflet-control') &&
-          flightPlanLayerGroup
-        ) {
-          flightPlanLayerGroup.clearLayers();
-          currentSelectedAircraftRef.current = null;
-          hasZoomedToFlightPlan.current = false;
-          onAircraftSelect(null);
-        }
-      });
-    }
+    const headingControl = new HeadingModeControl({}, setIsHeadingMode);
+    mapInstance.addControl(headingControl);
+    headingControlRef.current = headingControl;
+
+    mapInstance.on('click', (e) => {
+      const target = e.originalEvent.target as HTMLElement;
+      if (
+        !target.closest('.leaflet-marker-icon') &&
+        !target.closest('.leaflet-popup-pane') &&
+        !target.closest('.leaflet-control') &&
+        flightPlanLayerGroup
+      ) {
+        flightPlanLayerGroup.clearLayers();
+        currentSelectedAircraftRef.current = null;
+        hasZoomedToFlightPlan.current = false;
+        onAircraftSelect(null);
+      }
+    });
+  }
 
     if (airportMarkersLayer) {
       airportMarkersLayer.clearLayers();
