@@ -1138,38 +1138,49 @@ const MapComponent: React.FC<MapComponentProps> = ({
     };
   }, [isHeadingMode, isRadarMode]);
 
-  return (
-    <>
-      <style jsx>{`
-        .heading-tooltip {
-          background-color: rgba(0, 0, 0, 0.7) !important;
-          color: white !important;
-          border: none !important;
-          border-radius: 4px !important;
-          padding: 8px !important;
-          font-size: 12px !important;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-          pointer-events: none !important;
-        }
-        .heading-tooltip::before {
-          display: none !important;
-        }
-        .radar-popup .leaflet-popup-content-wrapper {
-          background-color: rgba(0, 0, 0, 0.8) !important;
-          color: #00ff00 !important;
-          border: 1px solid #00ff00 !important;
-          box-shadow: 0 0 8px rgba(0, 255, 0, 0.5) !important;
-        }
-        .radar-popup .leaflet-popup-tip {
-          background-color: rgba(0, 0, 0, 0.8) !important;
-          border-top: 1px solid #00ff00 !important;
-          border-left: 1px solid transparent !important;
-          border-right: 1px solid transparent !important;
-        }
-      `}</style>
-      <div id="map-container" style={{ height: '100%', width: '100%' }} />
-    </>
-  );
+return (
+  <>
+    <style jsx global>{`
+      .heading-tooltip {
+        background-color: rgba(0, 0, 0, 0.7) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 4px !important;
+        padding: 8px !important;
+        font-size: 12px !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+        pointer-events: none !important;
+      }
+      .heading-tooltip::before {
+        display: none !important;
+      }
+      
+      /* Airport popup styles */
+      .leaflet-popup-content-wrapper {
+        background-color: rgba(0, 0, 0, 0.9) !important;
+        color: #00ffff !important;
+        border-radius: 8px !important;
+      }
+      .leaflet-popup-tip {
+        background-color: rgba(0, 0, 0, 0.9) !important;
+      }
+      
+      .radar-popup .leaflet-popup-content-wrapper {
+        background-color: rgba(0, 0, 0, 0.8) !important;
+        color: #00ff00 !important;
+        border: 1px solid #00ff00 !important;
+        box-shadow: 0 0 8px rgba(0, 255, 0, 0.5) !important;
+      }
+      .radar-popup .leaflet-popup-tip {
+        background-color: rgba(0, 0, 0, 0.8) !important;
+        border-top: 1px solid #00ff00 !important;
+        border-left: 1px solid transparent !important;
+        border-right: 1px solid transparent !important;
+      }
+    `}</style>
+    <div id="map-container" style={{ height: '100%', width: '100%' }} />
+  </>
+);
 };
 
 export default MapComponent;

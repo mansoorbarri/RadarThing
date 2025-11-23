@@ -906,8 +906,8 @@ export default function ATCPage() {
             style={{
               textAlign: 'center',
               paddingTop: '50px',
-              background: '#333',
-              color: '#fff',
+              // background: '#333',
+              color: '#333',
             }}
           >
             Loading initial data...
