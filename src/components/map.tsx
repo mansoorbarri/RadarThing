@@ -811,7 +811,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
         }
       );
 
-      const openAIPUrl = `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${process.env.OPENAIP_API_KEY}`;
+      const openAIPUrl = `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${process.env.NEXT_PUBLIC_OPENAIP_API_KEY}`;
+      console.log(openAIPUrl);
+      console.log(process.env.OPENAIP_API_KEY);
       openAIPLayer = L.tileLayer(openAIPUrl, {
         attribution: '&copy; <a href="https://www.openaip.net/">OpenAIP</a>',
         maxZoom: 19,
