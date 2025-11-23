@@ -1,0 +1,14 @@
+[
+  {
+    "name": "London Heathrow Airport",
+    "lat": 51.470025,
+    "lon": -0.454295,
+    "icao": "EGLL",
+    "frequencies": [
+      { "type": "ATIS", "frequency": "122.950" },
+      { "type": "Ground", "frequency": "121.705" },
+      { "type": "Tower", "frequency": "118.700" },
+      { "type": "Approach", "frequency": "129.575" }
+    ]
+  }
+]

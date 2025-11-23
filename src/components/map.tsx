@@ -8,6 +8,7 @@ interface Airport {
   lat: number;
   lon: number;
   icao: string;
+  frequencies?: Array<{ type: string; frequency: string }>;
 }
 
 interface MapComponentProps {
@@ -854,7 +855,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       airportMarkersLayer.clearLayers();
 
       airports.forEach((airport) => {
-        const popupContent = `
+        let popupContent = `
           <div style="color: ${isRadarMode ? '#00ffff' : '#333'}; background-color: ${
           isRadarMode ? 'rgba(0,0,0,0.8)' : 'white'
         }; border: ${isRadarMode ? '1px solid #00ffff' : 'none'}; padding: 4px;">
@@ -863,6 +864,32 @@ const MapComponent: React.FC<MapComponentProps> = ({
             };">Airport:</strong> ${airport.name}<br>(${airport.icao})
           </div>
         `;
+        
+        if (airport.frequencies && airport.frequencies.length > 0) {
+          popupContent += `
+            <div style="margin-top: 8px;">
+              <strong style="color: ${
+                isRadarMode ? '#99ff99' : '#333'
+              };">Frequencies:</strong><br>
+              <ul style="list-style-type: none; padding: 0; margin: 0;">
+          `;
+          airport.frequencies.forEach((freq) => {
+            popupContent += `
+                <li style="font-size: 12px; margin-bottom: 2px;">
+                  <span style="color: ${
+                    isRadarMode ? '#00ffff' : '#666'
+                  };">${freq.type}:</span>
+                  <span style="font-weight: bold; color: ${
+                    isRadarMode ? '#fff' : '#333'
+                  };">${freq.frequency} MHz</span>
+                </li>
+            `;
+          });
+          popupContent += `
+              </ul>
+            </div>
+          `;
+        }
 
         const icon = isRadarMode ? RadarAirportIcon : AirportIcon;
 

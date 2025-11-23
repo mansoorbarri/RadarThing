@@ -9,7 +9,7 @@ interface UseViewerTrackerOptions {
 export function useViewerTracker(options: UseViewerTrackerOptions = {}) {
   const {
     enabled = true,
-    heartbeatInterval = 15000,
+    heartbeatInterval = 5000,
     apiEndpoint = '/api/atc/viewers',
   } = options;
 
