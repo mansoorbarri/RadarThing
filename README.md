@@ -19,9 +19,7 @@ A Flightradar24-type radar display for the GeoFS. This is a fork of the original
 - View the radar: https://geofs-radar.vercel.app/
 
 ## Usage
-- Once you install the mod, you will see a popup on the right side of your screen, looks something like this: 
-
-![image of the popup on GeoFS](/.github/images/popup.png)
+- Once you install the mod, you will see a popup on the right side of your screen 
 - Enter the ICAO of departure/arrival aiports, Callsign and Squawk, and click "Save".
 - You can close the popup by pressing "W" on your keyboard. 
 
