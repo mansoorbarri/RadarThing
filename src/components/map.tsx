@@ -309,7 +309,7 @@ const getRadarAircraftDivIcon = (
       ${displayAlt} ${aircraft.heading.toFixed(0)}°
     </div>
     <div>
-      ${aircraft.speed.toFixed(0)}kt
+      ${aircraft.speed.toFixed(0)}kt ${aircraft.squawk || ''}
     </div>
   `;
 
