@@ -21,20 +21,16 @@ interface MapComponentProps {
   ) => void;
 }
 
-// Global instances for Leaflet objects
 let mapInstance: L.Map | null = null;
 let flightPlanLayerGroup: L.LayerGroup | null = null;
 let aircraftMarkersLayer: L.LayerGroup | null = null;
 let airportMarkersLayer: L.LayerGroup | null = null;
 let historyLayerGroup: L.LayerGroup | null = null;
 
-// Tile layers
 let satelliteHybridLayer: L.TileLayer | null = null;
 let radarBaseLayer: L.TileLayer | null = null;
 
 const aircraftHistoryRef = { current: new Map<string, L.LatLngTuple[]>() };
-
-// --- Icon Definitions (Adjusted for Radar Mode) ---
 
 const WaypointIcon = L.divIcon({
   html: `
@@ -75,13 +71,12 @@ const ActiveWaypointIcon = L.divIcon({
   iconAnchor: [11, 11],
 });
 
-// Radar Mode Waypoint Icons
 const RadarWaypointIcon = L.divIcon({
   html: `
     <div style="
       width: 6px;
       height: 6px;
-      background-color: #00ffff; /* Cyan */
+      background-color: #00ffff;
       border: 1px solid #00ffff;
       border-radius: 50%;
       box-shadow: 0 0 4px rgba(0, 255, 255, 0.6);
@@ -97,7 +92,7 @@ const RadarActiveWaypointIcon = L.divIcon({
     <div style="
       width: 10px;
       height: 10px;
-      background-color: #00ff00; /* Green */
+      background-color: #00ff00;
       border: 2px solid #fff;
       border-radius: 50%;
       box-shadow: 0 0 8px rgba(0, 255, 0, 0.8);
@@ -122,40 +117,13 @@ const getAircraftDivIcon = (
   const planeSize = 30;
   const tagHeight = 45;
   const tagWidth = 150;
-  const tagHorizontalSpacing = 10;
+  const tagOffsetFromPlane = 15;
 
-  const iconWidth = planeSize + tagHorizontalSpacing + tagWidth;
-  const iconHeight = Math.max(planeSize, tagHeight);
+  const totalWidth = planeSize + tagOffsetFromPlane + tagWidth;
+  const totalHeight = Math.max(planeSize, tagHeight);
 
   const anchorX = planeSize / 2;
-  const anchorY = iconHeight / 2;
-
-  const containerStyle = `
-    position: absolute;
-    top: ${(iconHeight - planeSize) / 2}px;
-    left: 0;
-    width: ${planeSize}px;
-    height: ${planeSize}px;
-  `;
-
-  const tagStyle = `
-    position: absolute;
-    top: ${planeSize / 2 - tagHeight / 2}px;
-    left: ${planeSize + tagHorizontalSpacing}px;
-
-    width: ${tagWidth}px;
-    padding: 4px 6px;
-    background-color: rgba(0, 0, 0, 0.4);
-    color: #fff;
-    border-radius: 4px;
-    white-space: normal;
-    text-align: center;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.6);
-    line-height: 1.3;
-    z-index: 1000;
-    pointer-events: none;
-    transform: none;
-  `;
+  const anchorY = totalHeight / 2;
 
   const altMSL = aircraft.altMSL ?? aircraft.alt;
   const altAGL = aircraft.alt;
@@ -186,22 +154,45 @@ const getAircraftDivIcon = (
 
   return L.divIcon({
     html: `
-      <div style="${containerStyle}" class="aircraft-marker-container">
+      <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px;">
         <img src="${iconUrl}"
-             style="width:${planeSize}px; height:${planeSize}px; transform:rotate(${
-      aircraft.heading || 0
-    }deg); display: block;"
+             style="
+               position: absolute;
+               top: ${(totalHeight - planeSize) / 2}px;
+               left: 0;
+               width:${planeSize}px;
+               height:${planeSize}px;
+               transform:rotate(${aircraft.heading || 0}deg);
+               transform-origin: 50% 50%;
+               display: block;
+               z-index: 2;
+             "
              alt="${aircraft.callsign}"
         />
-        <div class="aircraft-tag" style="${tagStyle}">
+        <div class="aircraft-tag" style="
+          position: absolute;
+          top: ${(totalHeight - tagHeight) / 2}px;
+          left: ${planeSize + tagOffsetFromPlane}px;
+          width: ${tagWidth}px;
+          padding: 4px 6px;
+          background-color: rgba(0, 0, 0, 0.4);
+          color: #fff;
+          border-radius: 4px;
+          white-space: normal;
+          text-align: center;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.6);
+          line-height: 1.3;
+          z-index: 1000;
+          pointer-events: none;
+        ">
           ${detailContent}
         </div>
       </div>
     `,
     className: 'leaflet-aircraft-icon',
-    iconSize: [iconWidth, iconHeight],
+    iconSize: [totalWidth, totalHeight],
     iconAnchor: [anchorX, anchorY],
-    popupAnchor: [0, -15],
+    popupAnchor: [0, -planeSize / 2],
   });
 };
 
@@ -209,64 +200,16 @@ const getRadarAircraftDivIcon = (
   aircraft: PositionUpdate & { altMSL?: number }
 ) => {
   const dotSize = 8;
+  const headingLineLength = 15;
   const labelHeight = 35;
   const labelWidth = 100;
-  const labelSpacing = 5;
+  const labelOffsetFromDot = 10;
 
-  const iconWidth = dotSize + labelSpacing + labelWidth;
-  const iconHeight = Math.max(dotSize, labelHeight);
+  const totalWidth = dotSize / 2 + headingLineLength + labelOffsetFromDot + labelWidth;
+  const totalHeight = Math.max(dotSize, labelHeight);
 
   const anchorX = dotSize / 2;
-  const anchorY = dotSize / 2;
-
-  const dotStyle = `
-    position: absolute;
-    top: ${(iconHeight - dotSize) / 2}px;
-    left: 0;
-    width: ${dotSize}px;
-    height: ${dotSize}px;
-    background-color: #00ff00; /* Green */
-    border-radius: 50%;
-    box-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
-    transform: rotate(${aircraft.heading || 0}deg);
-    transform-origin: 50% 50%;
-  `;
-
-  // A simple line indicating heading
-  const headingLineStyle = `
-    position: absolute;
-    top: ${(iconHeight - dotSize) / 2 + dotSize / 2 - 1}px;
-    left: ${dotSize / 2}px;
-    width: 15px; /* Length of the heading line */
-    height: 2px;
-    background-color: #00ff00;
-    transform-origin: left center;
-    transform: rotate(${aircraft.heading || 0}deg) translateX(-${
-    dotSize / 2
-  }px);
-    z-index: 1;
-  `;
-
-  const labelStyle = `
-    position: absolute;
-    top: ${(iconHeight - labelHeight) / 2}px;
-    left: ${dotSize + labelSpacing}px;
-
-    width: ${labelWidth}px;
-    padding: 2px 4px;
-    background-color: rgba(0, 0, 0, 0.6);
-    color: #00ff00; /* Green text */
-    border: 1px solid #00ff00;
-    border-radius: 2px;
-    white-space: nowrap;
-    text-align: left;
-    font-family: 'monospace', 'Courier New', monospace;
-    font-size: 10px;
-    line-height: 1.2;
-    box-shadow: 0 0 3px rgba(0,255,0,0.5);
-    z-index: 1000;
-    pointer-events: none;
-  `;
+  const anchorY = totalHeight / 2;
 
   const altMSL = aircraft.altMSL ?? aircraft.alt;
   const altAGL = aircraft.alt;
@@ -288,16 +231,61 @@ const getRadarAircraftDivIcon = (
 
   return L.divIcon({
     html: `
-      <div style="position: relative; width: ${iconWidth}px; height: ${iconHeight}px;">
-        <div style="${dotStyle}"></div>
-        <div style="${headingLineStyle}"></div>
-        <div style="${labelStyle}">
+      <div style="
+        position: relative;
+        width: ${totalWidth}px;
+        height: ${totalHeight}px;
+        transform: translate(-${anchorX}px, -${anchorY}px);
+      ">
+        <div style="
+          position: absolute;
+          top: ${(totalHeight - dotSize) / 2}px;
+          left: 0;
+          width: ${dotSize}px;
+          height: ${dotSize}px;
+          background-color: #00ff00;
+          border-radius: 50%;
+          box-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
+          z-index: 2;
+        "></div>
+
+        <div style="
+          position: absolute;
+          top: ${totalHeight / 2 - 1}px;
+          left: ${dotSize / 2}px;
+          width: ${headingLineLength}px;
+          height: 2px;
+          background-color: #00ff00;
+          transform-origin: 0% 50%;
+          transform: rotate(${aircraft.heading || 0}deg);
+          z-index: 1;
+        "></div>
+
+        <div class="aircraft-label" style="
+          position: absolute;
+          top: ${(totalHeight - labelHeight) / 2}px;
+          left: ${dotSize / 2 + headingLineLength + labelOffsetFromDot}px;
+          width: ${labelWidth}px;
+          padding: 2px 4px;
+          background-color: rgba(0, 0, 0, 0.6);
+          color: #00ff00;
+          border: 1px solid #00ff00;
+          border-radius: 2px;
+          white-space: nowrap;
+          text-align: left;
+          font-family: 'monospace', 'Courier New', monospace;
+          font-size: 10px;
+          line-height: 1.2;
+          box-shadow: 0 0 3px rgba(0,255,0,0.5);
+          z-index: 1000;
+          pointer-events: none;
+        ">
           ${detailContent}
         </div>
       </div>
     `,
     className: 'leaflet-radar-aircraft-icon',
-    iconSize: [iconWidth, iconHeight],
+    iconSize: [totalWidth, totalHeight],
     iconAnchor: [anchorX, anchorY],
     popupAnchor: [0, -dotSize / 2],
   });
@@ -316,7 +304,7 @@ const RadarAirportIcon = L.divIcon({
     <div style="
       width: 10px;
       height: 10px;
-      background-color: #00ffff; /* Cyan */
+      background-color: #00ffff;
       border: 1px solid #00ffff;
       border-radius: 50%;
       box-shadow: 0 0 5px rgba(0, 255, 255, 0.7);
@@ -327,8 +315,6 @@ const RadarAirportIcon = L.divIcon({
   iconAnchor: [6, 6],
   popupAnchor: [0, -6],
 });
-
-// --- Utility Functions ---
 
 const calculateDistance = (
   lat1: number,
@@ -399,7 +385,6 @@ const findActiveWaypointIndex = (
     return -1;
   }
 
-  // Logic to advance to the next waypoint if close enough and heading towards it
   if (minDistanceKm < 50 && closestWaypointIndex < waypoints.length - 1) {
     const nextWp = waypoints[closestWaypointIndex + 1];
     if (nextWp.lat && nextWp.lon) {
@@ -421,8 +406,6 @@ const findActiveWaypointIndex = (
 
   return closestWaypointIndex;
 };
-
-// --- Custom Leaflet Controls ---
 
 class HeadingModeControl extends L.Control {
   public options = {
@@ -524,7 +507,7 @@ class RadarModeControl extends L.Control {
       font-weight: bold;
     `;
     container.title = 'Toggle Radar Mode';
-    container.innerHTML = '&#x1F4DF;'; // Radar emoji or similar
+    container.innerHTML = '&#x1F4DF;';
 
     L.DomEvent.on(container, 'click', L.DomEvent.stopPropagation);
     L.DomEvent.on(container, 'click', L.DomEvent.preventDefault);
@@ -542,7 +525,7 @@ class RadarModeControl extends L.Control {
   updateState(enabled: boolean) {
     if (this._container) {
       if (enabled) {
-        this._container.style.backgroundColor = '#0066cc'; // Darker blue for active radar
+        this._container.style.backgroundColor = '#0066cc';
         this._container.style.color = 'white';
       } else {
         this._container.style.backgroundColor = 'white';
@@ -552,8 +535,6 @@ class RadarModeControl extends L.Control {
   }
 }
 
-// --- React Component ---
-
 const MapComponent: React.FC<MapComponentProps> = ({
   aircrafts,
   airports,
@@ -562,14 +543,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
   setDrawFlightPlanOnMap,
 }) => {
   const [isHeadingMode, setIsHeadingMode] = useState<boolean>(false);
-  const [isRadarMode, setIsRadarMode] = useState<boolean>(false); // New state for radar mode
+  const [isRadarMode, setIsRadarMode] = useState<boolean>(false);
 
   const headingStartPointRef = useRef<L.LatLng | null>(null);
   const headingLineRef = useRef<L.Polyline | null>(null);
   const headingTooltipRef = useRef<L.Tooltip | null>(null);
   const headingMarkerRef = useRef<L.Marker | null>(null);
   const headingControlRef = useRef<HeadingModeControl | null>(null);
-  const radarControlRef = useRef<RadarModeControl | null>(null); // Ref for radar control
+  const radarControlRef = useRef<RadarModeControl | null>(null);
   const currentSelectedAircraftRef = useRef<string | null>(null);
   const hasZoomedToFlightPlan = useRef<boolean>(false);
   const selectedAirportMarkerRef = useRef<L.Marker | null>(null);
@@ -597,7 +578,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         if (history.length >= 2) {
           const historyPolyline = L.polyline(history, {
-            color: isRadarMode ? '#00ff00' : '#00ff00', // Green for radar history
+            color: isRadarMode ? '#00ff00' : '#00ff00',
             weight: isRadarMode ? 2 : 4,
             opacity: isRadarMode ? 0.7 : 0.8,
             smoothFactor: 1,
@@ -669,7 +650,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
             if (coordinates.length >= 2) {
               const plannedPolyline = L.polyline(coordinates, {
-                color: isRadarMode ? '#00ffff' : '#ff00ff', // Cyan for radar flight plan
+                color: isRadarMode ? '#00ffff' : '#ff00ff',
                 weight: isRadarMode ? 2 : 3,
                 opacity: isRadarMode ? 0.7 : 0.6,
                 dashArray: isRadarMode ? '8, 8' : '10, 5',
@@ -728,7 +709,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         maxBoundsViscosity: 1.0,
       }).setView([20, 0], 3);
 
-      // Initialize tile layers
       satelliteHybridLayer = L.tileLayer(
         'https://mt0.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',
         {
@@ -742,7 +722,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         }
       );
 
-      // A simple dark tile layer for radar mode
       radarBaseLayer = L.tileLayer(
         'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
         {
@@ -756,7 +735,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         }
       );
 
-      satelliteHybridLayer.addTo(mapInstance); // Default to satellite/hybrid
+      satelliteHybridLayer.addTo(mapInstance);
 
       flightPlanLayerGroup = L.layerGroup().addTo(mapInstance);
       aircraftMarkersLayer = L.layerGroup().addTo(mapInstance);
@@ -767,7 +746,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       mapInstance.addControl(headingControl);
       headingControlRef.current = headingControl;
 
-      const radarControl = new RadarModeControl({}, setIsRadarMode); // Add radar control
+      const radarControl = new RadarModeControl({}, setIsRadarMode);
       mapInstance.addControl(radarControl);
       radarControlRef.current = radarControl;
 
@@ -791,7 +770,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       });
     }
 
-    // Update tile layer based on radar mode
     if (satelliteHybridLayer && radarBaseLayer) {
       if (isRadarMode) {
         if (mapInstance.hasLayer(satelliteHybridLayer)) {
@@ -907,7 +885,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     onAircraftSelect,
     drawFlightPlan,
     setDrawFlightPlanOnMap,
-    isRadarMode, // Re-run effect when radar mode changes
+    isRadarMode,
   ]);
 
   useEffect(() => {
@@ -1102,7 +1080,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       map.dragging.enable();
       map.getContainer().style.cursor = '';
     };
-  }, [isHeadingMode, isRadarMode]); // Re-run effect when radar mode changes
+  }, [isHeadingMode, isRadarMode]);
 
   return (
     <>
@@ -1128,7 +1106,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         }
         .radar-popup .leaflet-popup-tip {
           background-color: rgba(0, 0, 0, 0.8) !important;
-          border-top: 1px solid #00ff00 !important; /* Adjust tip color if needed */
+          border-top: 1px solid #00ff00 !important;
           border-left: 1px solid transparent !important;
           border-right: 1px solid transparent !important;
         }
