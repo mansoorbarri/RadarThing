@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GeoFS ATC Radar
 // @namespace    http://tampermonkey.net/
-// @version      0.0.10
+// @version      1.0.0
 // @description  A ATC Radar for GeoFS which works like FlightRadar24.
 // @match        http://*/geofs.php*
 // @match        https://*/geofs.php*
@@ -27,32 +27,32 @@
   let isConnected = false;
   let isFlightInfoSaved = false;
   let hasActiveViewers = false;
-  let lastViewerCheckTime = 0;
-  const VIEWER_CHECK_INTERVAL = 5000;
+  // let lastViewerCheckTime = 0;
+  // const VIEWER_CHECK_INTERVAL = 5000;
 
-  async function checkForActiveViewers() {
-    try {
-      const response = await fetch('https://geofs-radar.vercel.app/api/atc/viewers', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
+  // async function checkForActiveViewers() {
+  //   try {
+  //     const response = await fetch('https://geofs-radar.vercel.app/api/atc/viewers', {
+  //       method: 'GET',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       }
+  //     });
 
-      if (!response.ok) {
-        console.warn('[ATC-Reporter] Viewer check API error:', response.status);
-        return false;
-      }
+  //     if (!response.ok) {
+  //       console.warn('[ATC-Reporter] Viewer check API error:', response.status);
+  //       return false;
+  //     }
 
-      const data = await response.json();
-      hasActiveViewers = data.activeViewers > 0 || data.hasViewers === true;
+  //     const data = await response.json();
+  //     hasActiveViewers = data.activeViewers > 0 || data.hasViewers === true;
       
-      return hasActiveViewers;
-    } catch (error) {
-      console.warn('[ATC-Reporter] Viewer check error:', error);
-      return false;
-    }
-  }
+  //     return hasActiveViewers;
+  //   } catch (error) {
+  //     console.warn('[ATC-Reporter] Viewer check error:', error);
+  //     return false;
+  //   }
+  // }
 
   async function sendToAPI(payload) {
     try {
@@ -96,21 +96,6 @@
   function validateSquawk(squawk) {
     const rgx = /^[0-7]{4}$/;
     return squawk.length == 0 || rgx.test(squawk);
-  }
-
-  function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371e3;
-    const φ1 = lat1 * Math.PI/180;
-    const φ2 = lat2 * Math.PI/180;
-    const Δφ = (lat2-lat1) * Math.PI/180;
-    const Δλ = (lon2-lon1) * Math.PI/180;
-
-    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-    return R * c;
   }
 
   function calculateAGL() {
@@ -225,17 +210,20 @@
       return;
     }
 
-    const now = Date.now();
-    if (now - lastViewerCheckTime > VIEWER_CHECK_INTERVAL) {
-      await checkForActiveViewers();
-      lastViewerCheckTime = now;
-      updateStatus();
-    }
+    // const now = Date.now();
+    // if (now - lastViewerCheckTime > VIEWER_CHECK_INTERVAL) {
+    //   await checkForActiveViewers();
+    //   lastViewerCheckTime = now;
+    //   updateStatus();
+    // }
 
-    if (!hasActiveViewers) {
-      log('No active radar viewers, skipping data transmission');
-      return;
-    }
+    // Always consider as if there are active viewers
+    hasActiveViewers = true; 
+    updateStatus();
+    // if (!hasActiveViewers) {
+    //   log('No active radar viewers, skipping data transmission');
+    //   return;
+    // }
 
     const snap = readSnapshot();
     if (!snap) return;
@@ -398,13 +386,9 @@
     if (!statusEl) return;
 
     if (isFlightInfoSaved && isFlightInfoComplete()) {
-      if (hasActiveViewers) {
-        statusEl.innerHTML = 'Connected! ATC viewers online';
-        statusEl.style.color = '#27ae60';
-      } else {
-        statusEl.innerHTML = 'Connected! No ATC viewers';
-        statusEl.style.color = '#f39c12';
-      }
+      // Since we always transmit now, assume viewers are active or it's not relevant.
+      statusEl.innerHTML = 'Connected! Data transmission active';
+      statusEl.style.color = '#27ae60';
     } else if (isFlightInfoComplete()) {
       statusEl.innerHTML = 'Click Save to get connected';
       statusEl.style.color = '#f39c12';
