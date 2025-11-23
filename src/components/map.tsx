@@ -204,7 +204,7 @@ const getRadarAircraftDivIcon = (
   const labelHeight = 35;
   const labelWidth = 100;
   // Offset label from the right edge of the dot
-  const labelOffsetFromDot = 10;
+  const labelOffsetFromDot = 15;
 
   // Calculate total width based on dot, the longest possible extension for the line (or simply the dot's space)
   // and the label. The line's rotation means it could extend in any direction,
