@@ -11,6 +11,8 @@ A Flightradar24-type radar display for the GeoFS. This is a fork of the original
 - I added a "Heading Mode" that allows users to calculate heading from point A to point B. Making it easy for controllers to calculate headings. 
 - Airports ~~are~~ can be highlighted with a marker.
 - added search so you can directly search with the flights' or geofs' callsign
+- Radar Mode - which has combined look and feel of VATSIM radar and actual radar screens.
+- [GeoFS-Chart](https://github.com/mansoorbarri/geofs-charts) works on the radar screen 
 
 ## Installation 
 - Install the mod: https://mansoorbarri.com/radar
