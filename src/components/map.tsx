@@ -21,14 +21,20 @@ interface MapComponentProps {
   ) => void;
 }
 
+// Global instances for Leaflet objects
 let mapInstance: L.Map | null = null;
 let flightPlanLayerGroup: L.LayerGroup | null = null;
 let aircraftMarkersLayer: L.LayerGroup | null = null;
 let airportMarkersLayer: L.LayerGroup | null = null;
-let isInitialLoad = true;
+let historyLayerGroup: L.LayerGroup | null = null;
+
+// Tile layers
+let satelliteHybridLayer: L.TileLayer | null = null;
+let radarBaseLayer: L.TileLayer | null = null;
 
 const aircraftHistoryRef = { current: new Map<string, L.LatLngTuple[]>() };
-let historyLayerGroup: L.LayerGroup | null = null;
+
+// --- Icon Definitions (Adjusted for Radar Mode) ---
 
 const WaypointIcon = L.divIcon({
   html: `
@@ -69,7 +75,49 @@ const ActiveWaypointIcon = L.divIcon({
   iconAnchor: [11, 11],
 });
 
-const getAircraftDivIcon = (aircraft: PositionUpdate & { altMSL?: number }) => {
+// Radar Mode Waypoint Icons
+const RadarWaypointIcon = L.divIcon({
+  html: `
+    <div style="
+      width: 6px;
+      height: 6px;
+      background-color: #00ffff; /* Cyan */
+      border: 1px solid #00ffff;
+      border-radius: 50%;
+      box-shadow: 0 0 4px rgba(0, 255, 255, 0.6);
+    "></div>
+  `,
+  className: 'leaflet-radar-waypoint-icon',
+  iconSize: [8, 8],
+  iconAnchor: [4, 4],
+});
+
+const RadarActiveWaypointIcon = L.divIcon({
+  html: `
+    <div style="
+      width: 10px;
+      height: 10px;
+      background-color: #00ff00; /* Green */
+      border: 2px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(0, 255, 0, 0.8);
+      animation: pulse-radar-waypoint 1.5s ease-in-out infinite;
+    "></div>
+    <style>
+      @keyframes pulse-radar-waypoint {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.5); opacity: 0.7; }
+      }
+    </style>
+  `,
+  className: 'leaflet-radar-active-waypoint-icon',
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+});
+
+const getAircraftDivIcon = (
+  aircraft: PositionUpdate & { altMSL?: number }
+) => {
   const iconUrl = 'https://i.ibb.co/6cNhyMMj/1.png';
   const planeSize = 30;
   const tagHeight = 45;
@@ -157,6 +205,104 @@ const getAircraftDivIcon = (aircraft: PositionUpdate & { altMSL?: number }) => {
   });
 };
 
+const getRadarAircraftDivIcon = (
+  aircraft: PositionUpdate & { altMSL?: number }
+) => {
+  const dotSize = 8;
+  const labelHeight = 35;
+  const labelWidth = 100;
+  const labelSpacing = 5;
+
+  const iconWidth = dotSize + labelSpacing + labelWidth;
+  const iconHeight = Math.max(dotSize, labelHeight);
+
+  const anchorX = dotSize / 2;
+  const anchorY = dotSize / 2;
+
+  const dotStyle = `
+    position: absolute;
+    top: ${(iconHeight - dotSize) / 2}px;
+    left: 0;
+    width: ${dotSize}px;
+    height: ${dotSize}px;
+    background-color: #00ff00; /* Green */
+    border-radius: 50%;
+    box-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
+    transform: rotate(${aircraft.heading || 0}deg);
+    transform-origin: 50% 50%;
+  `;
+
+  // A simple line indicating heading
+  const headingLineStyle = `
+    position: absolute;
+    top: ${(iconHeight - dotSize) / 2 + dotSize / 2 - 1}px;
+    left: ${dotSize / 2}px;
+    width: 15px; /* Length of the heading line */
+    height: 2px;
+    background-color: #00ff00;
+    transform-origin: left center;
+    transform: rotate(${aircraft.heading || 0}deg) translateX(-${
+    dotSize / 2
+  }px);
+    z-index: 1;
+  `;
+
+  const labelStyle = `
+    position: absolute;
+    top: ${(iconHeight - labelHeight) / 2}px;
+    left: ${dotSize + labelSpacing}px;
+
+    width: ${labelWidth}px;
+    padding: 2px 4px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #00ff00; /* Green text */
+    border: 1px solid #00ff00;
+    border-radius: 2px;
+    white-space: nowrap;
+    text-align: left;
+    font-family: 'monospace', 'Courier New', monospace;
+    font-size: 10px;
+    line-height: 1.2;
+    box-shadow: 0 0 3px rgba(0,255,0,0.5);
+    z-index: 1000;
+    pointer-events: none;
+  `;
+
+  const altMSL = aircraft.altMSL ?? aircraft.alt;
+  const altAGL = aircraft.alt;
+  const isOnGround = altAGL < 100;
+  const displayAlt = isOnGround
+    ? `${altAGL.toFixed(0)}AGL`
+    : altMSL >= 18000
+      ? `FL${Math.round(altMSL / 100)}`
+      : `${altAGL.toFixed(0)}AGL`;
+
+  const detailContent = `
+    <div style="font-weight: bold;">
+      ${aircraft.callsign || aircraft.flightNo || 'N/A'}
+    </div>
+    <div>
+      ${displayAlt} ${aircraft.speed.toFixed(0)}kt
+    </div>
+  `;
+
+  return L.divIcon({
+    html: `
+      <div style="position: relative; width: ${iconWidth}px; height: ${iconHeight}px;">
+        <div style="${dotStyle}"></div>
+        <div style="${headingLineStyle}"></div>
+        <div style="${labelStyle}">
+          ${detailContent}
+        </div>
+      </div>
+    `,
+    className: 'leaflet-radar-aircraft-icon',
+    iconSize: [iconWidth, iconHeight],
+    iconAnchor: [anchorX, anchorY],
+    popupAnchor: [0, -dotSize / 2],
+  });
+};
+
 const AirportIcon = L.icon({
   iconUrl:
     'https://i0.wp.com/microshare.io/wp-content/uploads/2024/04/airport2-icon.png?resize=510%2C510&ssl=1',
@@ -164,6 +310,25 @@ const AirportIcon = L.icon({
   iconAnchor: [16, 16],
   popupAnchor: [0, -16],
 });
+
+const RadarAirportIcon = L.divIcon({
+  html: `
+    <div style="
+      width: 10px;
+      height: 10px;
+      background-color: #00ffff; /* Cyan */
+      border: 1px solid #00ffff;
+      border-radius: 50%;
+      box-shadow: 0 0 5px rgba(0, 255, 255, 0.7);
+    "></div>
+  `,
+  className: 'leaflet-radar-airport-icon',
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
+  popupAnchor: [0, -6],
+});
+
+// --- Utility Functions ---
 
 const calculateDistance = (
   lat1: number,
@@ -234,6 +399,7 @@ const findActiveWaypointIndex = (
     return -1;
   }
 
+  // Logic to advance to the next waypoint if close enough and heading towards it
   if (minDistanceKm < 50 && closestWaypointIndex < waypoints.length - 1) {
     const nextWp = waypoints[closestWaypointIndex + 1];
     if (nextWp.lat && nextWp.lon) {
@@ -255,6 +421,8 @@ const findActiveWaypointIndex = (
 
   return closestWaypointIndex;
 };
+
+// --- Custom Leaflet Controls ---
 
 class HeadingModeControl extends L.Control {
   public options = {
@@ -320,6 +488,72 @@ class HeadingModeControl extends L.Control {
   }
 }
 
+class RadarModeControl extends L.Control {
+  public options = {
+    position: 'topleft' as L.ControlPosition,
+  };
+  public _container: HTMLDivElement | null = null;
+  private _toggleRadarMode: React.Dispatch<React.SetStateAction<boolean>>;
+  private _boundClickHandler: (event: Event) => void;
+
+  constructor(
+    options: L.ControlOptions,
+    toggleRadarMode: React.Dispatch<React.SetStateAction<boolean>>
+  ) {
+    super(options);
+    this._toggleRadarMode = toggleRadarMode;
+    this._boundClickHandler = (event: Event) => {
+      this._toggleRadarMode((prev) => !prev);
+    };
+  }
+
+  onAdd(map: L.Map): HTMLDivElement {
+    const container = L.DomUtil.create('div');
+    container.style.cssText = `
+      width: 30px;
+      height: 30px;
+      line-height: 30px;
+      text-align: center;
+      cursor: pointer;
+      background-color: white;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-radius: 4px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+      transition: all 0.2s ease;
+      font-size: 16px;
+      font-weight: bold;
+    `;
+    container.title = 'Toggle Radar Mode';
+    container.innerHTML = '&#x1F4DF;'; // Radar emoji or similar
+
+    L.DomEvent.on(container, 'click', L.DomEvent.stopPropagation);
+    L.DomEvent.on(container, 'click', L.DomEvent.preventDefault);
+    L.DomEvent.on(container, 'click', this._boundClickHandler);
+    this._container = container;
+    return container;
+  }
+
+  onRemove(map: L.Map) {
+    if (this._container) {
+      L.DomEvent.off(this._container, 'click', this._boundClickHandler);
+    }
+  }
+
+  updateState(enabled: boolean) {
+    if (this._container) {
+      if (enabled) {
+        this._container.style.backgroundColor = '#0066cc'; // Darker blue for active radar
+        this._container.style.color = 'white';
+      } else {
+        this._container.style.backgroundColor = 'white';
+        this._container.style.color = 'black';
+      }
+    }
+  }
+}
+
+// --- React Component ---
+
 const MapComponent: React.FC<MapComponentProps> = ({
   aircrafts,
   airports,
@@ -328,11 +562,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
   setDrawFlightPlanOnMap,
 }) => {
   const [isHeadingMode, setIsHeadingMode] = useState<boolean>(false);
+  const [isRadarMode, setIsRadarMode] = useState<boolean>(false); // New state for radar mode
+
   const headingStartPointRef = useRef<L.LatLng | null>(null);
   const headingLineRef = useRef<L.Polyline | null>(null);
   const headingTooltipRef = useRef<L.Tooltip | null>(null);
   const headingMarkerRef = useRef<L.Marker | null>(null);
   const headingControlRef = useRef<HeadingModeControl | null>(null);
+  const radarControlRef = useRef<RadarModeControl | null>(null); // Ref for radar control
   const currentSelectedAircraftRef = useRef<string | null>(null);
   const hasZoomedToFlightPlan = useRef<boolean>(false);
   const selectedAirportMarkerRef = useRef<L.Marker | null>(null);
@@ -341,7 +578,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
     if (headingControlRef.current) {
       headingControlRef.current.updateState(isHeadingMode);
     }
-  }, [isHeadingMode]);
+    if (radarControlRef.current) {
+      radarControlRef.current.updateState(isRadarMode);
+    }
+  }, [isHeadingMode, isRadarMode]);
 
   const drawFlightPlan = useCallback(
     (aircraft: PositionUpdate, shouldZoom = false) => {
@@ -357,10 +597,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         if (history.length >= 2) {
           const historyPolyline = L.polyline(history, {
-            color: '#00ff00',
-            weight: 4,
-            opacity: 0.8,
+            color: isRadarMode ? '#00ff00' : '#00ff00', // Green for radar history
+            weight: isRadarMode ? 2 : 4,
+            opacity: isRadarMode ? 0.7 : 0.8,
             smoothFactor: 1,
+            dashArray: isRadarMode ? '5, 5' : '',
           });
           historyLayerGroup.addLayer(historyPolyline);
         }
@@ -380,9 +621,17 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 coordinates.push([wp.lat, wp.lon]);
 
                 const popupContent = `
-                  <div style="font-family: system-ui; padding: 4px;">
-                    <strong style="color: #f542e3; font-size: 14px;">${wp.ident}</strong>
-                    <div style="font-size: 11px; color: #666; margin-top: 2px;">${wp.type}</div>
+                  <div style="font-family: system-ui; padding: 4px; color: ${
+                    isRadarMode ? '#00ff00' : '#333'
+                  }; background-color: ${
+                  isRadarMode ? 'rgba(0,0,0,0.8)' : 'white'
+                }; border: ${isRadarMode ? '1px solid #00ff00' : 'none'};">
+                    <strong style="color: ${
+                      isRadarMode ? '#00ffff' : '#f542e3'
+                    }; font-size: 14px;">${wp.ident}</strong>
+                    <div style="font-size: 11px; color: ${
+                      isRadarMode ? '#99ff99' : '#666'
+                    }; margin-top: 2px;">${wp.type}</div>
                     <div style="margin-top: 6px; font-size: 12px;">
                       <div>Alt: <strong>${
                         wp.alt ? wp.alt + ' ft' : 'N/A'
@@ -394,8 +643,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
                   </div>
                 `;
 
-                const icon =
-                  index === activeWaypointIndex
+                const icon = isRadarMode
+                  ? index === activeWaypointIndex
+                    ? RadarActiveWaypointIcon
+                    : RadarWaypointIcon
+                  : index === activeWaypointIndex
                     ? ActiveWaypointIcon
                     : WaypointIcon;
 
@@ -404,7 +656,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
                   title: wp.ident,
                   zIndexOffset: 100,
                 })
-                  .bindPopup(popupContent)
+                  .bindPopup(popupContent, {
+                    className: isRadarMode ? 'radar-popup' : '',
+                  })
                   .addTo(flightPlanLayerGroup!);
 
                 waypointMarker.on('click', (e) => {
@@ -415,10 +669,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
             if (coordinates.length >= 2) {
               const plannedPolyline = L.polyline(coordinates, {
-                color: '#ff00ff',
-                weight: 3,
-                opacity: 0.6,
-                dashArray: '10, 5',
+                color: isRadarMode ? '#00ffff' : '#ff00ff', // Cyan for radar flight plan
+                weight: isRadarMode ? 2 : 3,
+                opacity: isRadarMode ? 0.7 : 0.6,
+                dashArray: isRadarMode ? '8, 8' : '10, 5',
               });
               flightPlanLayerGroup.addLayer(plannedPolyline);
             }
@@ -456,7 +710,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         console.error('Error drawing flight plan:', error);
       }
     },
-    [onAircraftSelect]
+    [isRadarMode, onAircraftSelect]
   );
 
   useEffect(() => {
@@ -474,15 +728,35 @@ const MapComponent: React.FC<MapComponentProps> = ({
         maxBoundsViscosity: 1.0,
       }).setView([20, 0], 3);
 
-      L.tileLayer('https://mt0.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-        attribution: 'Esri, Garmin, FAO, USGS, NPS',
-        maxZoom: 18,
-        minZoom: 3,
-        transparent: true,
-        pane: 'overlayPane',
-        noWrap: true,
-        bounds: worldBounds,
-      }).addTo(mapInstance);
+      // Initialize tile layers
+      satelliteHybridLayer = L.tileLayer(
+        'https://mt0.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',
+        {
+          attribution: 'Esri, Garmin, FAO, USGS, NPS',
+          maxZoom: 18,
+          minZoom: 3,
+          transparent: true,
+          pane: 'overlayPane',
+          noWrap: true,
+          bounds: worldBounds,
+        }
+      );
+
+      // A simple dark tile layer for radar mode
+      radarBaseLayer = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
+        {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: 'abcd',
+          maxZoom: 19,
+          minZoom: 3,
+          noWrap: true,
+          bounds: worldBounds,
+        }
+      );
+
+      satelliteHybridLayer.addTo(mapInstance); // Default to satellite/hybrid
 
       flightPlanLayerGroup = L.layerGroup().addTo(mapInstance);
       aircraftMarkersLayer = L.layerGroup().addTo(mapInstance);
@@ -492,6 +766,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
       const headingControl = new HeadingModeControl({}, setIsHeadingMode);
       mapInstance.addControl(headingControl);
       headingControlRef.current = headingControl;
+
+      const radarControl = new RadarModeControl({}, setIsRadarMode); // Add radar control
+      mapInstance.addControl(radarControl);
+      radarControlRef.current = radarControl;
 
       setDrawFlightPlanOnMap(drawFlightPlan);
 
@@ -511,6 +789,25 @@ const MapComponent: React.FC<MapComponentProps> = ({
           onAircraftSelect(null);
         }
       });
+    }
+
+    // Update tile layer based on radar mode
+    if (satelliteHybridLayer && radarBaseLayer) {
+      if (isRadarMode) {
+        if (mapInstance.hasLayer(satelliteHybridLayer)) {
+          mapInstance.removeLayer(satelliteHybridLayer);
+        }
+        if (!mapInstance.hasLayer(radarBaseLayer)) {
+          mapInstance.addLayer(radarBaseLayer);
+        }
+      } else {
+        if (mapInstance.hasLayer(radarBaseLayer)) {
+          mapInstance.removeLayer(radarBaseLayer);
+        }
+        if (!mapInstance.hasLayer(satelliteHybridLayer)) {
+          mapInstance.addLayer(satelliteHybridLayer);
+        }
+      }
     }
 
     aircrafts.forEach((aircraft) => {
@@ -550,14 +847,26 @@ const MapComponent: React.FC<MapComponentProps> = ({
       airportMarkersLayer.clearLayers();
 
       airports.forEach((airport) => {
-        const popupContent = `**Airport:** ${airport.name}<br>(${airport.icao})`;
+        const popupContent = `
+          <div style="color: ${isRadarMode ? '#00ffff' : '#333'}; background-color: ${
+          isRadarMode ? 'rgba(0,0,0,0.8)' : 'white'
+        }; border: ${isRadarMode ? '1px solid #00ffff' : 'none'}; padding: 4px;">
+            <strong style="color: ${
+              isRadarMode ? '#00ffff' : '#333'
+            };">Airport:</strong> ${airport.name}<br>(${airport.icao})
+          </div>
+        `;
+
+        const icon = isRadarMode ? RadarAirportIcon : AirportIcon;
 
         L.marker([airport.lat, airport.lon], {
           title: airport.name,
-          icon: AirportIcon,
+          icon: icon,
         })
           .addTo(airportMarkersLayer!)
-          .bindPopup(popupContent);
+          .bindPopup(popupContent, {
+            className: isRadarMode ? 'radar-popup' : '',
+          });
       });
     }
 
@@ -565,7 +874,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
       aircraftMarkersLayer.clearLayers();
 
       aircrafts.forEach((aircraft) => {
-        const icon = getAircraftDivIcon(aircraft);
+        const icon = isRadarMode
+          ? getRadarAircraftDivIcon(aircraft)
+          : getAircraftDivIcon(aircraft);
 
         const marker = L.marker([aircraft.lat, aircraft.lon], {
           title: aircraft.callsign,
@@ -590,14 +901,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
         drawFlightPlan(selectedAircraft, false);
       }
     }
-
-    isInitialLoad = false;
   }, [
     aircrafts,
     airports,
     onAircraftSelect,
     drawFlightPlan,
     setDrawFlightPlanOnMap,
+    isRadarMode, // Re-run effect when radar mode changes
   ]);
 
   useEffect(() => {
@@ -616,13 +926,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
             className: 'selected-airport-marker',
             html: `
               <div style="
-                background-color: #3b82f6;
-                color: white;
+                background-color: ${isRadarMode ? '#00ffff' : '#3b82f6'};
+                color: ${isRadarMode ? 'black' : 'white'};
                 padding: 5px 10px;
                 border-radius: 5px;
                 font-weight: bold;
                 white-space: nowrap;
-                border: 2px solid white;
+                border: 2px solid ${isRadarMode ? '#00ffff' : 'white'};
                 box-shadow: 0 2px 5px rgba(0,0,0,0.4);
                 transform: translate(-50%, -100%);
               ">
@@ -633,7 +943,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 height: 0;
                 border-left: 8px solid transparent;
                 border-right: 8px solid transparent;
-                border-top: 8px solid #3b82f6;
+                border-top: 8px solid ${isRadarMode ? '#00ffff' : '#3b82f6'};
                 position: absolute;
                 bottom: 0px;
                 left: 50%;
@@ -648,7 +958,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
       )
         .addTo(mapInstance)
         .bindPopup(
-          `<strong>${selectedAirport.name}</strong><br>${selectedAirport.icao}`
+          `<strong>${selectedAirport.name}</strong><br>${selectedAirport.icao}`,
+          { className: isRadarMode ? 'radar-popup' : '' }
         )
         .openPopup();
     } else {
@@ -657,7 +968,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         selectedAirportMarkerRef.current = null;
       }
     }
-  }, [selectedAirport]);
+  }, [selectedAirport, isRadarMode]);
 
   useEffect(() => {
     if (!mapInstance) return;
@@ -674,7 +985,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
       headingMarkerRef.current = L.marker(e.latlng, {
         icon: L.divIcon({
           className: '',
-          html: '<div style="background-color: #2563eb; width: 10px; height: 10px; border-radius: 50%;"></div>',
+          html: `<div style="background-color: ${
+            isRadarMode ? '#00ff00' : '#2563eb'
+          }; width: 10px; height: 10px; border-radius: 50%;"></div>`,
           iconSize: [10, 10],
           iconAnchor: [5, 5],
         }),
@@ -693,7 +1006,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         headingLineRef.current.setLatLngs([start, end]);
       } else {
         headingLineRef.current = L.polyline([start, end], {
-          color: 'blue',
+          color: isRadarMode ? '#00ff00' : 'blue',
           weight: 3,
           dashArray: '5, 5',
         }).addTo(map);
@@ -789,7 +1102,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       map.dragging.enable();
       map.getContainer().style.cursor = '';
     };
-  }, [isHeadingMode]);
+  }, [isHeadingMode, isRadarMode]); // Re-run effect when radar mode changes
 
   return (
     <>
@@ -806,6 +1119,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
         }
         .heading-tooltip::before {
           display: none !important;
+        }
+        .radar-popup .leaflet-popup-content-wrapper {
+          background-color: rgba(0, 0, 0, 0.8) !important;
+          color: #00ff00 !important;
+          border: 1px solid #00ff00 !important;
+          box-shadow: 0 0 8px rgba(0, 255, 0, 0.5) !important;
+        }
+        .radar-popup .leaflet-popup-tip {
+          background-color: rgba(0, 0, 0, 0.8) !important;
+          border-top: 1px solid #00ff00 !important; /* Adjust tip color if needed */
+          border-left: 1px solid transparent !important;
+          border-right: 1px solid transparent !important;
         }
       `}</style>
       <div id="map-container" style={{ height: '100%', width: '100%' }} />
