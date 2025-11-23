@@ -1,11 +1,12 @@
 // ==UserScript==
-// @name         GeoFS Radar Linker
+// @name         GeoFS ATC Radar
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Links to the main GeoFS Radar script on GitHub. Do not modify this file directly.
-// @author       Your Name
-// @match        https://*.geo-fs.com/*
-// @require      https://raw.githubusercontent.com/mansoorbarri/geofs-radar/refs/heads/main/.user.js
+// @version      1.0.0
+// @description  A ATC Radar for GeoFS which works like FlightRadar24.
+// @match        http://*/geofs.php*
+// @match        https://*/geofs.php*
+// @updateURL    https://github.com/mansoorbarri/geofs-radar/raw/refs/heads/main/geofs-radar.user.js
+// @downloadURL  https://github.com/mansoorbarri/geofs-radar/raw/refs/heads/main/geofs-radar.user.js
 // @grant        none
 // ==/UserScript==
 
