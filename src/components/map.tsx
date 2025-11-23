@@ -203,12 +203,30 @@ const getRadarAircraftDivIcon = (
   const headingLineLength = 15;
   const labelHeight = 35;
   const labelWidth = 100;
+  // Offset label from the right edge of the dot
   const labelOffsetFromDot = 10;
 
-  const totalWidth = dotSize + headingLineLength + labelOffsetFromDot + labelWidth;
-  const totalHeight = Math.max(dotSize, labelHeight);
+  // Calculate total width based on dot, the longest possible extension for the line (or simply the dot's space)
+  // and the label. The line's rotation means it could extend in any direction,
+  // but for iconSize we need a bounding box. Let's assume the label is placed
+  // to the right of the dot, and the line rotates from the dot.
+  // The icon's 'width' needs to accommodate the dot, any max line extension, and the label.
+  // For a simple dot + line + label, a static totalWidth might be easier, but remember
+  // the line's rotation means it might extend left or right from the dot's center.
+  // However, Leaflet's `iconSize` acts as the overall bounding box for the entire HTML.
+  // The `totalWidth` needs to be large enough to contain the dot + line + label
+  // when the line is at its most "right-pointing" for positioning the label.
+  // For the actual `iconSize`, it would be more accurate to calculate the bounding
+  // box of the dot and the rotated line, but for this setup, the label drives the width.
 
-  const anchorX = dotSize / 2; // Anchor the icon at the center of the dot
+  const totalEffectiveWidthForPositioning = dotSize + labelOffsetFromDot + labelWidth;
+  const totalWidth = Math.max(
+    totalEffectiveWidthForPositioning,
+    dotSize + headingLineLength // Ensure space for the line
+  );
+  const totalHeight = Math.max(dotSize, labelHeight, headingLineLength); // Also ensure height for line if it points up/down
+
+  const anchorX = dotSize / 2; // Anchor at the center of the dot
   const anchorY = totalHeight / 2;
 
   const altMSL = aircraft.altMSL ?? aircraft.alt;
@@ -241,6 +259,7 @@ const getRadarAircraftDivIcon = (
       ">
         <div style="
           position: absolute;
+          /* Center the dot vertically within totalHeight */
           top: ${(totalHeight - dotSize) / 2}px;
           left: 0;
           width: ${dotSize}px;
@@ -254,22 +273,23 @@ const getRadarAircraftDivIcon = (
         <div style="
           position: absolute;
           /* Position the line so its origin (left-middle) is at the center of the dot */
-          top: ${totalHeight / 2 - 1}px;
-          left: ${dotSize / 2}px;
+          top: ${totalHeight / 2 - 1}px; /* Adjusted for line height 2px */
+          left: ${dotSize / 2}px; /* Starts at the horizontal center of the dot */
           width: ${headingLineLength}px;
           height: 2px;
           background-color: #00ff00;
           transform-origin: 0% 50%; /* Rotate around its left-middle point */
           /* Convert aviation heading (0=N, 90=E) to CSS rotation (0=R, 90=D) */
-          transform: rotate(${90 - (aircraft.heading || 0)}deg);
+          transform: rotate(${(aircraft.heading || 0) - 90}deg);
           z-index: 1;
         "></div>
 
         <div class="aircraft-label" style="
           position: absolute;
+          /* Center label vertically relative to total height */
           top: ${(totalHeight - labelHeight) / 2}px;
-          /* Adjust label left to accommodate the transformed heading line */
-          left: ${dotSize + headingLineLength + labelOffsetFromDot}px;
+          /* Position label relative to the right of the dot */
+          left: ${dotSize + labelOffsetFromDot}px;
           width: ${labelWidth}px;
           padding: 2px 4px;
           background-color: rgba(0, 0, 0, 0.6);
@@ -290,8 +310,12 @@ const getRadarAircraftDivIcon = (
       </div>
     `,
     className: 'leaflet-radar-aircraft-icon',
-    iconSize: [totalWidth, totalHeight],
-    iconAnchor: [anchorX, anchorY], // Anchor at the center of the dot
+    // The iconSize should encompass all elements at their maximum extent.
+    // If the label is always to the right, and the dot is at 0,0,
+    // then the width is (dot + line in its longest horizontal state + label).
+    // The height is the tallest element.
+    iconSize: [dotSize + headingLineLength + labelOffsetFromDot + labelWidth, totalHeight],
+    iconAnchor: [anchorX, anchorY],
     popupAnchor: [0, -dotSize / 2],
   });
 };
