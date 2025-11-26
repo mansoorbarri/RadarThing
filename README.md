@@ -14,9 +14,6 @@ A Flightradar24-type radar display for the GeoFS. This is a fork of the original
 - Radar Mode - which has combined look and feel of VATSIM radar and actual radar screens.
 - [GeoFS-Chart](https://github.com/mansoorbarri/geofs-charts) works on the radar screen 
 
-### TODO 
-- [ ] show ETA on the sidebar 
-
 ## Installation 
 - Install the mod: https://xyzmani.com/radar
 - View the radar: https://radar.xyzmani.com/
