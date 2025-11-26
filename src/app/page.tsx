@@ -73,7 +73,7 @@ const Sidebar = React.memo(
       () =>
         getFlightPhase(
           altAGL,
-          aircraft.vspeed,
+          Number(aircraft.vspeed),
           aircraft.flightPlan
         ),
       [altAGL, aircraft.vspeed, aircraft.flightPlan]
