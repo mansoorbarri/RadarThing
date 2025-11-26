@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GeoFS ATC Radar
 // @namespace    http://tampermonkey.net/
-// @version      1.0.2
+// @version      1.0.4
 // @description  An ATC Radar for GeoFS which works like FlightRadar24.
 // @match        http://*/geofs.php*
 // @match        https://*/geofs.php*
@@ -16,9 +16,14 @@
   const API_URL = 'https://geofs-radar.vercel.app/api/atc/position';
   const SEND_INTERVAL_MS = 5000;
 
-  function log(...args) {
-    console.log('[ATC-Reporter]', ...args);
-  }
+  const UI_CONTAINER_ID = 'geofs-atc-radar-flightInfoUI';
+  const DEP_INPUT_ID = 'atc-depInput';
+  const ARR_INPUT_ID = 'atc-arrInput';
+  const FLT_INPUT_ID = 'atc-fltInput';
+  const SQK_INPUT_ID = 'atc-sqkInput';
+  const SAVE_BTN_ID = 'atc-saveBtn';
+  const CLEAR_BTN_ID = 'atc-clearBtn';
+  const STATUS_INDICATOR_ID = 'atc-statusIndicator';
 
   let flightInfo = { departure: '', arrival: '', flightNo: '', squawk: '' };
   let flightUI;
@@ -26,33 +31,11 @@
   let takeoffTimeUTC = '';
   let isConnected = false;
   let isFlightInfoSaved = false;
-  let hasActiveViewers = false;
-  // let lastViewerCheckTime = 0;
-  // const VIEWER_CHECK_INTERVAL = 5000;
+  let hasActiveViewers = true;
 
-  // async function checkForActiveViewers() {
-  //   try {
-  //     const response = await fetch('https://geofs-radar.vercel.app/api/atc/viewers', {
-  //       method: 'GET',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       }
-  //     });
-
-  //     if (!response.ok) {
-  //       console.warn('[ATC-Reporter] Viewer check API error:', response.status);
-  //       return false;
-  //     }
-
-  //     const data = await response.json();
-  //     hasActiveViewers = data.activeViewers > 0 || data.hasViewers === true;
-      
-  //     return hasActiveViewers;
-  //   } catch (error) {
-  //     console.warn('[ATC-Reporter] Viewer check error:', error);
-  //     return false;
-  //   }
-  // }
+  function log(...args) {
+    console.log('[ATC-Reporter]', ...args);
+  }
 
   async function sendToAPI(payload) {
     try {
@@ -88,14 +71,14 @@
   function getAircraftName() {
     return geofs?.aircraft?.instance?.aircraftRecord?.name || 'Unknown';
   }
-  
+
   function getPlayerCallsign() {
     return geofs?.userRecord?.callsign || 'Unknown';
   }
 
   function validateSquawk(squawk) {
     const rgx = /^[0-7]{4}$/;
-    return squawk.length == 0 || rgx.test(squawk);
+    return squawk.length === 0 || rgx.test(squawk);
   }
 
   function calculateAGL() {
@@ -155,7 +138,6 @@
   function buildPayload(snap) {
     checkTakeoff();
     let flightPlan = [];
-    let nextWpIdent = '';
 
     try {
       if (geofs.flightPlan && typeof geofs.flightPlan.export === "function") {
@@ -187,8 +169,8 @@
   }
 
   function isFlightInfoComplete() {
-    return flightInfo.departure.trim() !== '' && 
-           flightInfo.arrival.trim() !== '' && 
+    return flightInfo.departure.trim() !== '' &&
+           flightInfo.arrival.trim() !== '' &&
            flightInfo.flightNo.trim() !== '';
   }
 
@@ -196,12 +178,12 @@
     flightInfo = { departure: '', arrival: '', flightNo: '', squawk: '' };
     isFlightInfoSaved = false;
     takeoffTimeUTC = '';
-    
-    document.getElementById('depInput').value = '';
-    document.getElementById('arrInput').value = '';
-    document.getElementById('fltInput').value = '';
-    document.getElementById('sqkInput').value = '';
-    
+
+    document.getElementById(DEP_INPUT_ID).value = '';
+    document.getElementById(ARR_INPUT_ID).value = '';
+    document.getElementById(FLT_INPUT_ID).value = '';
+    document.getElementById(SQK_INPUT_ID).value = '';
+
     updateStatus();
   }
 
@@ -210,20 +192,8 @@
       return;
     }
 
-    // const now = Date.now();
-    // if (now - lastViewerCheckTime > VIEWER_CHECK_INTERVAL) {
-    //   await checkForActiveViewers();
-    //   lastViewerCheckTime = now;
-    //   updateStatus();
-    // }
-
-    // Always consider as if there are active viewers
-    hasActiveViewers = true; 
+    hasActiveViewers = true;
     updateStatus();
-    // if (!hasActiveViewers) {
-    //   log('No active radar viewers, skipping data transmission');
-    //   return;
-    // }
 
     const snap = readSnapshot();
     if (!snap) return;
@@ -257,11 +227,11 @@
 
   function injectFlightUI() {
     flightUI = document.createElement('div');
-    flightUI.id = 'flightInfoUI';
+    flightUI.id = UI_CONTAINER_ID;
     flightUI.style.cssText = `
       position: fixed;
       top: 50px;
-      right: 10px;
+      left: 10px;
       background: linear-gradient(145deg, #2c3e50, #34495e);
       padding: 20px;
       border-radius: 12px;
@@ -282,37 +252,37 @@
       <div style="display: grid; gap: 10px;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <label style="width: 40px; font-weight: 500; color: #bdc3c7;">Dep:</label>
-          <input id="depInput" placeholder="ICAO" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: rgba(255,255,255,0.1); color: white; font-size: 12px; outline: none; transition: background 0.3s;" maxlength="4">
+          <input id="${DEP_INPUT_ID}" placeholder="ICAO" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: rgba(255,255,255,0.1); color: white; font-size: 12px; outline: none; transition: background 0.3s;" maxlength="4">
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
           <label style="width: 40px; font-weight: 500; color: #bdc3c7;">Arr:</label>
-          <input id="arrInput" placeholder="ICAO" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: rgba(255,255,255,0.1); color: white; font-size: 12px; outline: none; transition: background 0.3s;" maxlength="4">
+          <input id="${ARR_INPUT_ID}" placeholder="ICAO" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: rgba(255,255,255,0.1); color: white; font-size: 12px; outline: none; transition: background 0.3s;" maxlength="4">
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
           <label style="width: 40px; font-weight: 500; color: #bdc3c7;">Flt#:</label>
-          <input id="fltInput" placeholder="ABC123" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: rgba(255,255,255,0.1); color: white; font-size: 12px; outline: none; transition: background 0.3s;" maxlength="8">
+          <input id="${FLT_INPUT_ID}" placeholder="ABC123" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: rgba(255,255,255,0.1); color: white; font-size: 12px; outline: none; transition: background 0.3s;" maxlength="8">
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
           <label style="width: 40px; font-weight: 500; color: #bdc3c7;">SQK:</label>
-          <input id="sqkInput" placeholder="7000" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: rgba(255,255,255,0.1); color: white; font-size: 12px; outline: none; transition: background 0.3s;" maxlength="4">
+          <input id="${SQK_INPUT_ID}" placeholder="7000" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: rgba(255,255,255,0.1); color: white; font-size: 12px; outline: none; transition: background 0.3s;" maxlength="4">
         </div>
       </div>
       <div style="display: flex; gap: 8px; margin-top: 15px;">
-        <button id="saveBtn" style="flex: 1; padding: 10px; background: linear-gradient(145deg, #27ae60, #2ecc71); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; transition: all 0.3s; box-shadow: 0 2px 8px rgba(46,204,113,0.3);">
+        <button id="${SAVE_BTN_ID}" style="flex: 1; padding: 10px; background: linear-gradient(145deg, #27ae60, #2ecc71); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; transition: all 0.3s; box-shadow: 0 2px 8px rgba(46,204,113,0.3);">
           Save
         </button>
-        <button id="clearBtn" style="padding: 10px 12px; background: linear-gradient(145deg, #e74c3c, #c0392b); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; transition: all 0.3s; box-shadow: 0 2px 8px rgba(231,76,60,0.3);">
+        <button id="${CLEAR_BTN_ID}" style="padding: 10px 12px; background: linear-gradient(145deg, #e74c3c, #c0392b); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; transition: all 0.3s; box-shadow: 0 2px 8px rgba(231,76,60,0.3);">
           Clear
         </button>
       </div>
-      <div id="statusIndicator" style="margin-top: 10px; text-align: center; font-size: 11px; color: #e74c3c; font-weight: 500;">
+      <div id="${STATUS_INDICATOR_ID}" style="margin-top: 10px; text-align: center; font-size: 11px; color: #e74c3c; font-weight: 500;">
         Flight info required
       </div>
     `;
 
     document.body.appendChild(flightUI);
 
-    ['depInput','arrInput','fltInput','sqkInput'].forEach(id => {
+    [DEP_INPUT_ID, ARR_INPUT_ID, FLT_INPUT_ID, SQK_INPUT_ID].forEach(id => {
       const el = document.getElementById(id);
       el.addEventListener('input', () => {
         el.value = el.value.toUpperCase();
@@ -326,7 +296,7 @@
       });
     });
 
-    const saveBtn = document.getElementById('saveBtn');
+    const saveBtn = document.getElementById(SAVE_BTN_ID);
     saveBtn.addEventListener('mouseenter', () => {
       saveBtn.style.background = 'linear-gradient(145deg, #2ecc71, #27ae60)';
       saveBtn.style.transform = 'translateY(-2px)';
@@ -336,7 +306,7 @@
       saveBtn.style.transform = 'translateY(0)';
     });
 
-    const clearBtn = document.getElementById('clearBtn');
+    const clearBtn = document.getElementById(CLEAR_BTN_ID);
     clearBtn.addEventListener('mouseenter', () => {
       clearBtn.style.background = 'linear-gradient(145deg, #c0392b, #a93226)';
       clearBtn.style.transform = 'translateY(-2px)';
@@ -347,10 +317,10 @@
     });
 
     saveBtn.onclick = () => {
-      const dep = document.getElementById('depInput').value.trim();
-      const arr = document.getElementById('arrInput').value.trim();
-      const flt = document.getElementById('fltInput').value.trim();
-      const sqk = document.getElementById('sqkInput').value.trim();
+      const dep = document.getElementById(DEP_INPUT_ID).value.trim();
+      const arr = document.getElementById(ARR_INPUT_ID).value.trim();
+      const flt = document.getElementById(FLT_INPUT_ID).value.trim();
+      const sqk = document.getElementById(SQK_INPUT_ID).value.trim();
 
       if (!dep || !arr || !flt) {
         showToast('Please fill in Departure, Arrival, and Flight Number', true);
@@ -358,7 +328,7 @@
       }
 
       if (sqk && !validateSquawk(sqk)) {
-        document.getElementById('sqkInput').value = flightInfo.squawk;
+        document.getElementById(SQK_INPUT_ID).value = flightInfo.squawk;
         showToast('Invalid transponder code (use 0-7 digits only)', true);
         return;
       }
@@ -368,7 +338,7 @@
       flightInfo.flightNo = flt;
       flightInfo.squawk = sqk;
       isFlightInfoSaved = true;
-      
+
       updateStatus();
       showToast('Flight info saved! Data transmission started.');
     };
@@ -382,11 +352,10 @@
   }
 
   function updateStatus() {
-    const statusEl = document.getElementById('statusIndicator');
+    const statusEl = document.getElementById(STATUS_INDICATOR_ID);
     if (!statusEl) return;
 
     if (isFlightInfoSaved && isFlightInfoComplete()) {
-      // Since we always transmit now, assume viewers are active or it's not relevant.
       statusEl.innerHTML = 'Connected! Data transmission active';
       statusEl.style.color = '#27ae60';
     } else if (isFlightInfoComplete()) {
@@ -401,7 +370,7 @@
   injectFlightUI();
 
   document.addEventListener('keydown', (e) => {
-    if (e.key.toLowerCase() === 'w') {
+    if (e.key.toLowerCase() === 'w' && e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") {
       if (flightUI.style.display === 'none') {
         flightUI.style.display = 'block';
         showToast('Flight Info UI Shown');
@@ -412,7 +381,7 @@
     }
   });
 
-  document.querySelectorAll("input").forEach(el => {
+  document.querySelectorAll(`#${UI_CONTAINER_ID} input`).forEach(el => {
     el.setAttribute("autocomplete", "off");
   });
 
