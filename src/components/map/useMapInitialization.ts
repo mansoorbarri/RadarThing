@@ -122,14 +122,15 @@ export const useMapInitialization = ({
       }
     };
   }, [
-    mapContainerId,
-    setIsHeadingMode,
-    setIsRadarMode,
-    setIsOpenAIPEnabled,
-    onMapClick,
-    setHeadingControlRef,
-    setRadarControlRef,
-    setOpenAIPControlRef,
+    // ADDING ALL THESE DEPENDENCIES MAKES THE MAP RE-RENDER IN A LOOP
+    // mapContainerId,
+    // setIsHeadingMode,
+    // setIsRadarMode,
+    // setIsOpenAIPEnabled,
+    // onMapClick,
+    // setHeadingControlRef,
+    // setRadarControlRef,
+    // setOpenAIPControlRef,
   ]);
 
   return {
