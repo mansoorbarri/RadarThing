@@ -3,7 +3,6 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { type PositionUpdate } from "~/lib/aircraft-store";
-
 import { useMobileDetection } from "~/hooks/useMobileDetection";
 import { useAircraftStream } from "~/hooks/useAircraftStream";
 import { useAirportData } from "~/hooks/useAirportData";
@@ -11,6 +10,7 @@ import { useAircraftSearch } from "~/hooks/useAircraftSearch";
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
 import { SearchBar } from "~/components/atc/searchbar";
 import { Sidebar } from "~/components/atc/sidebar";
+import Loading from "~/components/loading";
 
 interface Airport {
   name: string;
@@ -22,18 +22,13 @@ interface Airport {
 
 const DynamicMapComponent = dynamic(() => import("~/components/map"), {
   ssr: false,
-  loading: () => (
-    <div style={{ textAlign: "center", paddingTop: "50px", color: "#ccc" }}>
-      Loading Map...
-    </div>
-  ),
+  loading: () => <Loading />,
 });
 
 export default function ATCPage() {
   const isMobile = useMobileDetection();
   const { aircrafts, isLoading, connectionStatus } = useAircraftStream();
   const { airports } = useAirportData();
-
   const [selectedAircraft, setSelectedAircraft] =
     useState<PositionUpdate | null>(null);
   const [selectedAirport, setSelectedAirport] = useState<Airport | undefined>(
@@ -42,23 +37,19 @@ export default function ATCPage() {
   const [selectedWaypointIndex, setSelectedWaypointIndex] = useState<
     number | null
   >(null);
-
   const { searchTerm, setSearchTerm, searchResults } = useAircraftSearch(
     aircrafts,
     airports,
   );
-
   const drawFlightPlanOnMapRef = useRef<
     ((aircraft: PositionUpdate, shouldZoom?: boolean) => void) | null
   >(null);
-
   const setDrawFlightPlanOnMap = useCallback(
     (func: (aircraft: PositionUpdate, shouldZoom?: boolean) => void) => {
       drawFlightPlanOnMapRef.current = func;
     },
     [],
   );
-
   const handleAircraftSelect = useCallback(
     (aircraft: PositionUpdate | null) => {
       setSelectedAircraft(aircraft);
@@ -67,11 +58,9 @@ export default function ATCPage() {
     },
     [],
   );
-
   const handleWaypointClick = useCallback((_waypoint: any, index: number) => {
     setSelectedWaypointIndex(index);
   }, []);
-
   const handleSearchBarAircraftSelect = useCallback(
     (aircraft: PositionUpdate) => {
       setSelectedAircraft(aircraft);
@@ -81,7 +70,6 @@ export default function ATCPage() {
     },
     [setSearchTerm],
   );
-
   const handleSearchBarAirportSelect = useCallback(
     (airport: Airport) => {
       setSelectedAirport(airport);
@@ -91,7 +79,6 @@ export default function ATCPage() {
     },
     [setSearchTerm],
   );
-
   useEffect(() => {
     if (selectedAircraft && aircrafts.length > 0) {
       const updatedAircraft = aircrafts.find(
@@ -99,7 +86,6 @@ export default function ATCPage() {
           (ac.id && ac.id === selectedAircraft.id) ||
           (ac.callsign && ac.callsign === selectedAircraft.callsign),
       );
-
       if (updatedAircraft) {
         setSelectedAircraft(updatedAircraft);
       } else {
@@ -108,14 +94,13 @@ export default function ATCPage() {
       }
     }
   }, [aircrafts, selectedAircraft]);
-
   const selectedAirportFromSearch = searchResults.find(
     (r) =>
       !("callsign" in r) &&
       searchTerm &&
       r.icao.toLowerCase() === searchTerm.toLowerCase(),
   ) as Airport | undefined;
-
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
   return (
     <div
       style={{
@@ -126,25 +111,26 @@ export default function ATCPage() {
         backgroundColor: "#111827",
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          top: 10,
-          left: isMobile ? "50%" : 50,
-          transform: isMobile ? "translateX(-50%)" : "none",
-          zIndex: 10000,
-        }}
-      >
-        <SearchBar
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          searchResults={searchResults}
-          isMobile={isMobile}
-          onSelectAircraft={handleSearchBarAircraftSelect}
-          onSelectAirport={handleSearchBarAirportSelect}
-        />
-      </div>
-
+      {isMapLoaded && (
+        <div
+          style={{
+            position: "absolute",
+            top: 10,
+            left: isMobile ? "50%" : 50,
+            transform: isMobile ? "translateX(-50%)" : "none",
+            zIndex: 10000,
+          }}
+        >
+          <SearchBar
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            searchResults={searchResults}
+            isMobile={isMobile}
+            onSelectAircraft={handleSearchBarAircraftSelect}
+            onSelectAirport={handleSearchBarAirportSelect}
+          />
+        </div>
+      )}
       <div
         style={{
           position: "absolute",
@@ -158,21 +144,11 @@ export default function ATCPage() {
           isMobile={isMobile}
         />
       </div>
-
       <div
         style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}
       >
         {isLoading && aircrafts.length === 0 ? (
-          <div
-            style={{
-              textAlign: "center",
-              paddingTop: "50px",
-              color: "#9ca3af",
-              fontSize: "16px",
-            }}
-          >
-            Loading initial data...
-          </div>
+          <Loading />
         ) : (
           <DynamicMapComponent
             aircrafts={aircrafts}
@@ -181,10 +157,10 @@ export default function ATCPage() {
             selectedWaypointIndex={selectedWaypointIndex}
             selectedAirport={selectedAirport || selectedAirportFromSearch}
             setDrawFlightPlanOnMap={setDrawFlightPlanOnMap}
+            onMapReady={() => setIsMapLoaded(true)}
           />
         )}
       </div>
-
       {selectedAircraft && (
         <div
           style={{
