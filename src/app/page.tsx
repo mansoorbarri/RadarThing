@@ -912,7 +912,7 @@ export default function ATCPage() {
                     <div style={{ fontWeight: 'bold' }}>
                       {result.callsign || result.flightNo || 'N/A'}
                     </div>
-                    <div
+<div
                       style={{
                         fontSize: '11px',
                         color: 'rgba(255,255,255,0.6)',
@@ -920,6 +920,11 @@ export default function ATCPage() {
                     >
                       {result.type} ({result.departure} to{' '}
                       {result.arrival || 'UNK'})
+                      {result.squawk && (
+                        <span style={{ marginLeft: '8px', opacity: 0.8 }}>
+                          SQK: {result.squawk}
+                        </span>
+                      )}
                     </div>
                   </>
                 ) : (
