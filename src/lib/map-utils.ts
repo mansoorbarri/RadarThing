@@ -1,18 +1,18 @@
 // lib/map-utils.ts
 
-import { type PositionUpdate } from '~/lib/aircraft-store';
+import { type PositionUpdate } from "~/lib/aircraft-store";
 
 export const calculateDistance = (
   lat1: number,
   lon1: number,
   lat2: number,
   lon2: number,
-  unit: 'km' | 'miles' = 'km',
+  unit: "km" | "miles" = "km",
 ): number => {
   const R_km = 6371;
   const R_miles = 3958.8;
 
-  const R = unit === 'miles' ? R_miles : R_km;
+  const R = unit === "miles" ? R_miles : R_km;
 
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;

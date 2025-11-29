@@ -1,6 +1,6 @@
 // hooks/useAircraftSearch.ts
-import { useState, useEffect, useCallback } from 'react';
-import { type PositionUpdate } from '~/lib/aircraft-store';
+import { useState, useEffect, useCallback } from "react";
+import { type PositionUpdate } from "~/lib/aircraft-store";
 
 interface Airport {
   name: string;
@@ -11,10 +11,12 @@ interface Airport {
 
 export const useAircraftSearch = (
   aircrafts: PositionUpdate[],
-  airports: Airport[]
+  airports: Airport[],
 ) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<(PositionUpdate | Airport)[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<
+    (PositionUpdate | Airport)[]
+  >([]);
 
   const performSearch = useCallback(() => {
     if (!searchTerm) {

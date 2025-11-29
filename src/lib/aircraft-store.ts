@@ -66,7 +66,7 @@ class AircraftStore {
   }
 
   private notifySubscribers() {
-    this.subscribers.forEach(callback => callback(this.store));
+    this.subscribers.forEach((callback) => callback(this.store));
   }
 
   getAll() {

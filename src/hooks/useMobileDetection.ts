@@ -1,5 +1,5 @@
 // hooks/useMobileDetection.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export const useMobileDetection = (breakpoint = 768) => {
   const [isMobile, setIsMobile] = useState(false);
@@ -10,9 +10,9 @@ export const useMobileDetection = (breakpoint = 768) => {
     };
 
     checkMobile(); // Initial check
-    window.addEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
 
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, [breakpoint]);
 
   return isMobile;

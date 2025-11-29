@@ -11,58 +11,59 @@
 // ==/UserScript==
 
 (function () {
-  'use strict';
+  "use strict";
 
-  const API_URL = 'https://radar.xyzmani.com/api/atc/position';
-  const CF_API_URL = "https://geofs-radar.mansoor-eb-ak.workers.dev/api/atc/position"
+  const API_URL = "https://radar.xyzmani.com/api/atc/position";
+  const CF_API_URL =
+    "https://geofs-radar.mansoor-eb-ak.workers.dev/api/atc/position";
   const SEND_INTERVAL_MS = 5000;
 
-  const UI_CONTAINER_ID = 'geofs-atc-radar-flightInfoUI';
-  const DEP_INPUT_ID = 'atc-depInput';
-  const ARR_INPUT_ID = 'atc-arrInput';
-  const FLT_INPUT_ID = 'atc-fltInput';
-  const SQK_INPUT_ID = 'atc-sqkInput';
-  const SAVE_BTN_ID = 'atc-saveBtn';
-  const CLEAR_BTN_ID = 'atc-clearBtn';
-  const STATUS_INDICATOR_ID = 'atc-statusIndicator';
+  const UI_CONTAINER_ID = "geofs-atc-radar-flightInfoUI";
+  const DEP_INPUT_ID = "atc-depInput";
+  const ARR_INPUT_ID = "atc-arrInput";
+  const FLT_INPUT_ID = "atc-fltInput";
+  const SQK_INPUT_ID = "atc-sqkInput";
+  const SAVE_BTN_ID = "atc-saveBtn";
+  const CLEAR_BTN_ID = "atc-clearBtn";
+  const STATUS_INDICATOR_ID = "atc-statusIndicator";
 
-  let flightInfo = { departure: '', arrival: '', flightNo: '', squawk: '' };
+  let flightInfo = { departure: "", arrival: "", flightNo: "", squawk: "" };
   let flightUI;
   let wasOnGround = true;
-  let takeoffTimeUTC = '';
+  let takeoffTimeUTC = "";
   let isConnected = false;
   let isFlightInfoSaved = false;
   let hasActiveViewers = true;
 
   function log(...args) {
-    console.log('[ATC-Reporter]', ...args);
+    console.log("[ATC-Reporter]", ...args);
   }
 
   async function sendToAPI(payload, apiUrl) {
     try {
       const response = await fetch(apiUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        console.warn('[ATC-Reporter] API error:', response.status);
+        console.warn("[ATC-Reporter] API error:", response.status);
         isConnected = false;
         return false;
       }
 
       if (!isConnected) {
-        log('API connected');
+        log("API connected");
         isConnected = true;
       }
 
       return true;
     } catch (error) {
       if (isConnected) {
-        console.warn('[ATC-Reporter] API connection error:', error);
+        console.warn("[ATC-Reporter] API connection error:", error);
         isConnected = false;
       }
       return false;
@@ -70,11 +71,11 @@
   }
 
   function getAircraftName() {
-    return geofs?.aircraft?.instance?.aircraftRecord?.name || 'Unknown';
+    return geofs?.aircraft?.instance?.aircraftRecord?.name || "Unknown";
   }
 
   function getPlayerCallsign() {
-    return geofs?.userRecord?.callsign || 'Unknown';
+    return geofs?.userRecord?.callsign || "Unknown";
   }
 
   function validateSquawk(squawk) {
@@ -89,16 +90,19 @@
       const aircraft = geofs?.aircraft?.instance;
 
       if (
-        typeof altitudeMSL === 'number' &&
-        typeof groundElevationFeet === 'number' &&
+        typeof altitudeMSL === "number" &&
+        typeof groundElevationFeet === "number" &&
         aircraft?.collisionPoints?.length >= 2 &&
-        typeof aircraft.collisionPoints[aircraft.collisionPoints.length - 2]?.worldPosition?.[2] === 'number'
+        typeof aircraft.collisionPoints[aircraft.collisionPoints.length - 2]
+          ?.worldPosition?.[2] === "number"
       ) {
-        const collisionZFeet = aircraft.collisionPoints[aircraft.collisionPoints.length - 2].worldPosition[2] * 3.2808399;
-        return Math.round((altitudeMSL - groundElevationFeet) + collisionZFeet);
+        const collisionZFeet =
+          aircraft.collisionPoints[aircraft.collisionPoints.length - 2]
+            .worldPosition[2] * 3.2808399;
+        return Math.round(altitudeMSL - groundElevationFeet + collisionZFeet);
       }
     } catch (err) {
-      console.warn('[ATC-Reporter] AGL calculation error:', err);
+      console.warn("[ATC-Reporter] AGL calculation error:", err);
     }
     return null;
   }
@@ -107,7 +111,7 @@
     const onGround = geofs?.aircraft?.instance?.groundContact ?? true;
     if (wasOnGround && !onGround) {
       takeoffTimeUTC = new Date().toISOString();
-      console.log('[ATC-Reporter] Takeoff at', takeoffTimeUTC);
+      console.log("[ATC-Reporter] Takeoff at", takeoffTimeUTC);
     }
     wasOnGround = onGround;
   }
@@ -122,16 +126,21 @@
       const lon = lla[1];
       const altMeters = lla[2];
 
-      if (typeof lat !== 'number' || typeof lon !== 'number') return null;
+      if (typeof lat !== "number" || typeof lon !== "number") return null;
 
-      const altMSL = (typeof altMeters === 'number') ? altMeters * 3.28084 : geofs?.animation?.values?.altitude ?? 0;
+      const altMSL =
+        typeof altMeters === "number"
+          ? altMeters * 3.28084
+          : (geofs?.animation?.values?.altitude ?? 0);
       const altAGL = calculateAGL();
       const heading = geofs?.animation?.values?.heading360 ?? 0;
-      const speed = geofs.animation.values.kias ? geofs.animation.values.kias.toFixed(1) : 'N/A';
+      const speed = geofs.animation.values.kias
+        ? geofs.animation.values.kias.toFixed(1)
+        : "N/A";
 
       return { lat, lon, altMSL, altAGL, heading, speed };
     } catch (e) {
-      console.warn('[ATC-Reporter] readSnapshot error:', e);
+      console.warn("[ATC-Reporter] readSnapshot error:", e);
       return null;
     }
   }
@@ -145,7 +154,7 @@
         flightPlan = geofs.flightPlan.export();
       }
     } catch (e) {
-        console.error('[ATC-Reporter] Error in buildPayload/FlightPlan:', e);
+      console.error("[ATC-Reporter] Error in buildPayload/FlightPlan:", e);
     }
 
     return {
@@ -154,7 +163,10 @@
       type: getAircraftName(),
       lat: snap.lat,
       lon: snap.lon,
-      alt: (typeof snap.altAGL === 'number') ? snap.altAGL : Math.round(snap.altMSL || 0),
+      alt:
+        typeof snap.altAGL === "number"
+          ? snap.altAGL
+          : Math.round(snap.altMSL || 0),
       altMSL: Math.round(snap.altMSL || 0),
       heading: Math.round(snap.heading || 0),
       speed: Math.round(snap.speed || 0),
@@ -165,25 +177,27 @@
       squawk: flightInfo.squawk,
       flightPlan: flightPlan,
       nextWaypoint: geofs.flightPlan?.trackedWaypoint?.ident || null,
-      vspeed: Math.floor(geofs.animation?.values?.verticalSpeed || 0)
+      vspeed: Math.floor(geofs.animation?.values?.verticalSpeed || 0),
     };
   }
 
   function isFlightInfoComplete() {
-    return flightInfo.departure.trim() !== '' &&
-           flightInfo.arrival.trim() !== '' &&
-           flightInfo.flightNo.trim() !== '';
+    return (
+      flightInfo.departure.trim() !== "" &&
+      flightInfo.arrival.trim() !== "" &&
+      flightInfo.flightNo.trim() !== ""
+    );
   }
 
   function clearAllData() {
-    flightInfo = { departure: '', arrival: '', flightNo: '', squawk: '' };
+    flightInfo = { departure: "", arrival: "", flightNo: "", squawk: "" };
     isFlightInfoSaved = false;
-    takeoffTimeUTC = '';
+    takeoffTimeUTC = "";
 
-    document.getElementById(DEP_INPUT_ID).value = '';
-    document.getElementById(ARR_INPUT_ID).value = '';
-    document.getElementById(FLT_INPUT_ID).value = '';
-    document.getElementById(SQK_INPUT_ID).value = '';
+    document.getElementById(DEP_INPUT_ID).value = "";
+    document.getElementById(ARR_INPUT_ID).value = "";
+    document.getElementById(FLT_INPUT_ID).value = "";
+    document.getElementById(SQK_INPUT_ID).value = "";
 
     updateStatus();
   }
@@ -199,36 +213,40 @@
     const snap = readSnapshot();
     if (!snap) return;
     const payload = buildPayload(snap);
-+    await sendToAPI(payload, API_URL);
-+    await sendToAPI(payload, CF_API_URL);
+    +(await sendToAPI(payload, API_URL));
+    +(await sendToAPI(payload, CF_API_URL));
   }, SEND_INTERVAL_MS);
 
   function showToast(msg, isError = false) {
-    const toast = document.createElement('div');
+    const toast = document.createElement("div");
     toast.textContent = msg;
-    toast.style.position = 'fixed';
-    toast.style.bottom = '20px';
-    toast.style.right = '20px';
-    toast.style.background = isError ? 'rgba(220,53,69,0.9)' : 'rgba(40,167,69,0.9)';
-    toast.style.color = '#fff';
-    toast.style.padding = '12px 16px';
-    toast.style.borderRadius = '8px';
-    toast.style.fontSize = '14px';
-    toast.style.fontWeight = '500';
+    toast.style.position = "fixed";
+    toast.style.bottom = "20px";
+    toast.style.right = "20px";
+    toast.style.background = isError
+      ? "rgba(220,53,69,0.9)"
+      : "rgba(40,167,69,0.9)";
+    toast.style.color = "#fff";
+    toast.style.padding = "12px 16px";
+    toast.style.borderRadius = "8px";
+    toast.style.fontSize = "14px";
+    toast.style.fontWeight = "500";
     toast.style.zIndex = 1000000;
-    toast.style.opacity = '0';
-    toast.style.transition = 'opacity 0.3s ease';
-    toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+    toast.style.opacity = "0";
+    toast.style.transition = "opacity 0.3s ease";
+    toast.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
     document.body.appendChild(toast);
-    requestAnimationFrame(() => { toast.style.opacity = '1'; });
+    requestAnimationFrame(() => {
+      toast.style.opacity = "1";
+    });
     setTimeout(() => {
-      toast.style.opacity = '0';
+      toast.style.opacity = "0";
       setTimeout(() => toast.remove(), 300);
     }, 3000);
   }
 
   function injectFlightUI() {
-    flightUI = document.createElement('div');
+    flightUI = document.createElement("div");
     flightUI.id = UI_CONTAINER_ID;
     flightUI.style.cssText = `
       position: fixed;
@@ -284,38 +302,38 @@
 
     document.body.appendChild(flightUI);
 
-    [DEP_INPUT_ID, ARR_INPUT_ID, FLT_INPUT_ID, SQK_INPUT_ID].forEach(id => {
+    [DEP_INPUT_ID, ARR_INPUT_ID, FLT_INPUT_ID, SQK_INPUT_ID].forEach((id) => {
       const el = document.getElementById(id);
-      el.addEventListener('input', () => {
+      el.addEventListener("input", () => {
         el.value = el.value.toUpperCase();
         updateStatus();
       });
-      el.addEventListener('focus', () => {
-        el.style.background = 'rgba(255,255,255,0.2)';
+      el.addEventListener("focus", () => {
+        el.style.background = "rgba(255,255,255,0.2)";
       });
-      el.addEventListener('blur', () => {
-        el.style.background = 'rgba(255,255,255,0.1)';
+      el.addEventListener("blur", () => {
+        el.style.background = "rgba(255,255,255,0.1)";
       });
     });
 
     const saveBtn = document.getElementById(SAVE_BTN_ID);
-    saveBtn.addEventListener('mouseenter', () => {
-      saveBtn.style.background = 'linear-gradient(145deg, #2ecc71, #27ae60)';
-      saveBtn.style.transform = 'translateY(-2px)';
+    saveBtn.addEventListener("mouseenter", () => {
+      saveBtn.style.background = "linear-gradient(145deg, #2ecc71, #27ae60)";
+      saveBtn.style.transform = "translateY(-2px)";
     });
-    saveBtn.addEventListener('mouseleave', () => {
-      saveBtn.style.background = 'linear-gradient(145deg, #27ae60, #2ecc71)';
-      saveBtn.style.transform = 'translateY(0)';
+    saveBtn.addEventListener("mouseleave", () => {
+      saveBtn.style.background = "linear-gradient(145deg, #27ae60, #2ecc71)";
+      saveBtn.style.transform = "translateY(0)";
     });
 
     const clearBtn = document.getElementById(CLEAR_BTN_ID);
-    clearBtn.addEventListener('mouseenter', () => {
-      clearBtn.style.background = 'linear-gradient(145deg, #c0392b, #a93226)';
-      clearBtn.style.transform = 'translateY(-2px)';
+    clearBtn.addEventListener("mouseenter", () => {
+      clearBtn.style.background = "linear-gradient(145deg, #c0392b, #a93226)";
+      clearBtn.style.transform = "translateY(-2px)";
     });
-    clearBtn.addEventListener('mouseleave', () => {
-      clearBtn.style.background = 'linear-gradient(145deg, #e74c3c, #c0392b)';
-      clearBtn.style.transform = 'translateY(0)';
+    clearBtn.addEventListener("mouseleave", () => {
+      clearBtn.style.background = "linear-gradient(145deg, #e74c3c, #c0392b)";
+      clearBtn.style.transform = "translateY(0)";
     });
 
     saveBtn.onclick = () => {
@@ -325,13 +343,13 @@
       const sqk = document.getElementById(SQK_INPUT_ID).value.trim();
 
       if (!dep || !arr || !flt) {
-        showToast('Please fill in Departure, Arrival, and Flight Number', true);
+        showToast("Please fill in Departure, Arrival, and Flight Number", true);
         return;
       }
 
       if (sqk && !validateSquawk(sqk)) {
         document.getElementById(SQK_INPUT_ID).value = flightInfo.squawk;
-        showToast('Invalid transponder code (use 0-7 digits only)', true);
+        showToast("Invalid transponder code (use 0-7 digits only)", true);
         return;
       }
 
@@ -342,12 +360,12 @@
       isFlightInfoSaved = true;
 
       updateStatus();
-      showToast('Flight info saved! Data transmission started.');
+      showToast("Flight info saved! Data transmission started.");
     };
 
     clearBtn.onclick = () => {
       clearAllData();
-      showToast('Flight info cleared! Data transmission stopped.');
+      showToast("Flight info cleared! Data transmission stopped.");
     };
 
     updateStatus();
@@ -358,40 +376,47 @@
     if (!statusEl) return;
 
     if (isFlightInfoSaved && isFlightInfoComplete()) {
-      statusEl.innerHTML = 'Connected! Data transmission active';
-      statusEl.style.color = '#27ae60';
+      statusEl.innerHTML = "Connected! Data transmission active";
+      statusEl.style.color = "#27ae60";
     } else if (isFlightInfoComplete()) {
-      statusEl.innerHTML = 'Click Save to get connected';
-      statusEl.style.color = '#f39c12';
+      statusEl.innerHTML = "Click Save to get connected";
+      statusEl.style.color = "#f39c12";
     } else {
-      statusEl.innerHTML = 'Flight info required';
-      statusEl.style.color = '#e74c3c';
+      statusEl.innerHTML = "Flight info required";
+      statusEl.style.color = "#e74c3c";
     }
   }
 
   injectFlightUI();
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key.toLowerCase() === 'w' && e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") {
-      if (flightUI.style.display === 'none') {
-        flightUI.style.display = 'block';
-        showToast('Flight Info UI Shown');
+  document.addEventListener("keydown", (e) => {
+    if (
+      e.key.toLowerCase() === "w" &&
+      e.target.tagName !== "INPUT" &&
+      e.target.tagName !== "TEXTAREA"
+    ) {
+      if (flightUI.style.display === "none") {
+        flightUI.style.display = "block";
+        showToast("Flight Info UI Shown");
       } else {
-        flightUI.style.display = 'none';
-        showToast('Flight Info UI Hidden');
+        flightUI.style.display = "none";
+        showToast("Flight Info UI Hidden");
       }
     }
   });
 
-  document.querySelectorAll(`#${UI_CONTAINER_ID} input`).forEach(el => {
+  document.querySelectorAll(`#${UI_CONTAINER_ID} input`).forEach((el) => {
     el.setAttribute("autocomplete", "off");
   });
 
-  document.addEventListener("keydown", (e) => {
-    const target = e.target;
-    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
-      e.stopPropagation();
-    }
-  }, true);
-
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      const target = e.target;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+        e.stopPropagation();
+      }
+    },
+    true,
+  );
 })();

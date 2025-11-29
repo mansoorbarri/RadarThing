@@ -1,8 +1,8 @@
 // components/map/MapIcons.ts
-import L from 'leaflet';
-import { type PositionUpdate } from '~/lib/aircraft-store';
+import L from "leaflet";
+import { type PositionUpdate } from "~/lib/aircraft-store";
 
-const EMERGENCY_SQUAWKS = new Set(['7700', '7600', '7500']);
+const EMERGENCY_SQUAWKS = new Set(["7700", "7600", "7500"]);
 
 export const WaypointIcon = L.divIcon({
   html: `
@@ -15,7 +15,7 @@ export const WaypointIcon = L.divIcon({
       box-shadow: 0 0 8px rgba(245, 66, 227, 0.8), 0 0 4px rgba(0,0,0,0.5);
     "></div>
   `,
-  className: 'leaflet-waypoint-icon',
+  className: "leaflet-waypoint-icon",
   iconSize: [16, 16],
   iconAnchor: [8, 8],
 });
@@ -38,7 +38,7 @@ export const ActiveWaypointIcon = L.divIcon({
       }
     </style>
   `,
-  className: 'leaflet-active-waypoint-icon',
+  className: "leaflet-active-waypoint-icon",
   iconSize: [22, 22],
   iconAnchor: [11, 11],
 });
@@ -54,7 +54,7 @@ export const RadarWaypointIcon = L.divIcon({
       box-shadow: 0 0 4px rgba(0, 255, 255, 0.6);
     "></div>
   `,
-  className: 'leaflet-radar-waypoint-icon',
+  className: "leaflet-radar-waypoint-icon",
   iconSize: [8, 8],
   iconAnchor: [4, 4],
 });
@@ -77,7 +77,7 @@ export const RadarActiveWaypointIcon = L.divIcon({
       }
     </style>
   `,
-  className: 'leaflet-radar-active-waypoint-icon',
+  className: "leaflet-radar-active-waypoint-icon",
   iconSize: [14, 14],
   iconAnchor: [7, 7],
 });
@@ -86,7 +86,7 @@ export const getAircraftDivIcon = (
   aircraft: PositionUpdate & { altMSL?: number },
   selectedAircraftId: string | null,
 ) => {
-  const iconUrl = 'https://i.ibb.co/6cNhyMMj/1.png';
+  const iconUrl = "https://i.ibb.co/6cNhyMMj/1.png";
   const planeSize = 30;
   const tagHeight = 45;
   const tagWidth = 150;
@@ -110,7 +110,9 @@ export const getAircraftDivIcon = (
   const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
 
   const isCurrentAircraftSelected =
-    selectedAircraftId && (aircraft.id === selectedAircraftId || aircraft.callsign === selectedAircraftId);
+    selectedAircraftId &&
+    (aircraft.id === selectedAircraftId ||
+      aircraft.callsign === selectedAircraftId);
 
   const planeStyle = `
     position: absolute;
@@ -131,7 +133,7 @@ export const getAircraftDivIcon = (
         box-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000;
         border-radius: 50%;
       `
-        : ''
+        : ""
     }
   `;
 
@@ -141,7 +143,7 @@ export const getAircraftDivIcon = (
     left: ${planeSize + tagOffsetFromPlane}px;
     width: ${tagWidth}px;
     padding: 4px 6px;
-    background-color: ${isEmergency ? 'rgba(255, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.4)'};
+    background-color: ${isEmergency ? "rgba(255, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.4)"};
     color: #fff;
     border-radius: 4px;
     white-space: normal;
@@ -150,26 +152,26 @@ export const getAircraftDivIcon = (
     line-height: 1.3;
     z-index: 1000;
     pointer-events: none;
-    ${isEmergency ? 'border: 1px solid white;' : ''}
-    ${selectedAircraftId && !isCurrentAircraftSelected ? 'visibility: hidden;' : ''}
+    ${isEmergency ? "border: 1px solid white;" : ""}
+    ${selectedAircraftId && !isCurrentAircraftSelected ? "visibility: hidden;" : ""}
   `;
 
   const detailContent = `
     <div style="font-size: 12px; font-weight: bold; color: #fff;">
-      ${isEmergency ? '&#x26A0; EMERGENCY &#x26A0;<br/>' : ''}
-      ${aircraft.callsign || aircraft.flightNo || 'N/A'} (${
-    aircraft.flightNo || 'N/A'
-  })
+      ${isEmergency ? "&#x26A0; EMERGENCY &#x26A0;<br/>" : ""}
+      ${aircraft.callsign || aircraft.flightNo || "N/A"} (${
+        aircraft.flightNo || "N/A"
+      })
     </div>
     <div style="font-size: 10px; opacity: 0.9;">
       ${displayAlt} | HDG ${aircraft.heading.toFixed(0)}° | ${aircraft.speed.toFixed(
-    0
-  )}kt
+        0,
+      )}kt
     </div>
     <div style="font-size: 10px; opacity: 0.8;">
-      SQK: ${aircraft.squawk || 'N/A'} | ${aircraft.departure || 'UNK'} → ${
-    aircraft.arrival || 'UNK'
-  }
+      SQK: ${aircraft.squawk || "N/A"} | ${aircraft.departure || "UNK"} → ${
+        aircraft.arrival || "UNK"
+      }
     </div>
   `;
 
@@ -185,7 +187,7 @@ export const getAircraftDivIcon = (
         </div>
       </div>
     `,
-    className: 'leaflet-aircraft-icon',
+    className: "leaflet-aircraft-icon",
     iconSize: [totalWidth, totalHeight],
     iconAnchor: [anchorX, anchorY],
     popupAnchor: [0, -planeSize / 2],
@@ -202,7 +204,8 @@ export const getRadarAircraftDivIcon = (
   const labelWidth = 90;
   const labelOffsetFromDot = 20;
 
-  const totalEffectiveWidthForPositioning = dotSize + labelOffsetFromDot + labelWidth;
+  const totalEffectiveWidthForPositioning =
+    dotSize + labelOffsetFromDot + labelWidth;
   const totalWidth = Math.max(
     totalEffectiveWidthForPositioning,
     dotSize + headingLineLength,
@@ -224,13 +227,17 @@ export const getRadarAircraftDivIcon = (
   const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
 
   const isCurrentAircraftSelected =
-    selectedAircraftId && (aircraft.id === selectedAircraftId || aircraft.callsign === selectedAircraftId);
+    selectedAircraftId &&
+    (aircraft.id === selectedAircraftId ||
+      aircraft.callsign === selectedAircraftId);
 
-  const dotColor = isEmergency ? '#ff0000' : '#00ff00';
-  const lineColor = isEmergency ? '#ff0000' : '#00ff00';
-  const labelBorderColor = isEmergency ? '#ff0000' : '#00ff00';
-  const labelTextColor = isEmergency ? '#ff0000' : '#00ff00';
-  const labelShadowColor = isEmergency ? 'rgba(255, 0, 0, 0.7)' : 'rgba(0, 255, 0, 0.5)';
+  const dotColor = isEmergency ? "#ff0000" : "#00ff00";
+  const lineColor = isEmergency ? "#ff0000" : "#00ff00";
+  const labelBorderColor = isEmergency ? "#ff0000" : "#00ff00";
+  const labelTextColor = isEmergency ? "#ff0000" : "#00ff00";
+  const labelShadowColor = isEmergency
+    ? "rgba(255, 0, 0, 0.7)"
+    : "rgba(0, 255, 0, 0.5)";
 
   const dotStyle = `
     position: absolute;
@@ -242,7 +249,7 @@ export const getRadarAircraftDivIcon = (
     border-radius: 50%;
     box-shadow: 0 0 5px ${labelShadowColor};
     z-index: 2;
-    ${isEmergency ? 'animation: radar-emergency-pulse 1s infinite alternate;' : ''}
+    ${isEmergency ? "animation: radar-emergency-pulse 1s infinite alternate;" : ""}
   `;
 
   const headingLineStyle = `
@@ -275,19 +282,19 @@ export const getRadarAircraftDivIcon = (
     box-shadow: 0 0 3px ${labelShadowColor};
     z-index: 1000;
     pointer-events: none;
-    ${isEmergency ? 'font-weight: bold;' : ''}
-    ${selectedAircraftId && !isCurrentAircraftSelected ? 'visibility: hidden;' : ''}
+    ${isEmergency ? "font-weight: bold;" : ""}
+    ${selectedAircraftId && !isCurrentAircraftSelected ? "visibility: hidden;" : ""}
   `;
 
   const detailContent = `
     <div style="font-weight: bold;">
-      ${isEmergency ? 'EMRGNCY ' : ''}${aircraft.flightNo || aircraft.callsign || 'N/A'}
+      ${isEmergency ? "EMRGNCY " : ""}${aircraft.flightNo || aircraft.callsign || "N/A"}
     </div>
     <div>
       ${displayAlt} ${aircraft.heading.toFixed(0)}°
     </div>
     <div>
-      ${aircraft.speed.toFixed(0)}kt ${aircraft.squawk || ''}
+      ${aircraft.speed.toFixed(0)}kt ${aircraft.squawk || ""}
     </div>
   `;
 
@@ -305,8 +312,11 @@ export const getRadarAircraftDivIcon = (
         </div>
       </div>
     `,
-    className: 'leaflet-radar-aircraft-icon',
-    iconSize: [dotSize + headingLineLength + labelOffsetFromDot + labelWidth, totalHeight],
+    className: "leaflet-radar-aircraft-icon",
+    iconSize: [
+      dotSize + headingLineLength + labelOffsetFromDot + labelWidth,
+      totalHeight,
+    ],
     iconAnchor: [anchorX, anchorY],
     popupAnchor: [0, -dotSize / 2],
   });
@@ -314,7 +324,7 @@ export const getRadarAircraftDivIcon = (
 
 export const AirportIcon = L.icon({
   iconUrl:
-    'https://i0.wp.com/microshare.io/wp-content/uploads/2024/04/airport2-icon.png?resize=510%2C510&ssl=1',
+    "https://i0.wp.com/microshare.io/wp-content/uploads/2024/04/airport2-icon.png?resize=510%2C510&ssl=1",
   iconSize: [30, 30],
   iconAnchor: [16, 16],
   popupAnchor: [0, -16],
@@ -331,7 +341,7 @@ export const RadarAirportIcon = L.divIcon({
       box-shadow: 0 0 5px rgba(0, 255, 255, 0.7);
     "></div>
   `,
-  className: 'leaflet-radar-airport-icon',
+  className: "leaflet-radar-airport-icon",
   iconSize: [12, 12],
   iconAnchor: [6, 6],
   popupAnchor: [0, -6],

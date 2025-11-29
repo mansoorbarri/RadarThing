@@ -1,6 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react';
-import L from 'leaflet';
-import { calculateDistance, calculateBearing } from '~/lib/map-utils';
+import { useEffect, useRef, useCallback } from "react";
+import L from "leaflet";
+import { calculateDistance, calculateBearing } from "~/lib/map-utils";
 
 interface UseHeadingModeInteractionProps {
   mapInstance: React.MutableRefObject<L.Map | null>;
@@ -47,11 +47,11 @@ export const useHeadingModeInteraction = ({
     if (!map.dragging.enabled()) {
       map.dragging.enable();
     }
-    map.getContainer().style.cursor = '';
+    map.getContainer().style.cursor = "";
 
-    map.off('mousemove');
-    map.off('mousedown');
-    document.removeEventListener('mouseup', handleGlobalMouseUp);
+    map.off("mousemove");
+    map.off("mousedown");
+    document.removeEventListener("mouseup", handleGlobalMouseUp);
   }, [mapInstance, handleGlobalMouseUp]);
 
   useEffect(() => {
@@ -72,9 +72,9 @@ export const useHeadingModeInteraction = ({
       }
       headingMarkerRef.current = L.marker(e.latlng, {
         icon: L.divIcon({
-          className: '',
+          className: "",
           html: `<div style="background-color: ${
-            isRadarMode ? '#00ff00' : '#2563eb'
+            isRadarMode ? "#00ff00" : "#2563eb"
           }; width: 10px; height: 10px; border-radius: 50%;"></div>`,
           iconSize: [10, 10],
           iconAnchor: [5, 5],
@@ -82,8 +82,8 @@ export const useHeadingModeInteraction = ({
       }).addTo(map);
 
       map.dragging.disable();
-      map.on('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleGlobalMouseUp);
+      map.on("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleGlobalMouseUp);
     };
 
     const handleMouseMove = (e: L.LeafletMouseEvent) => {
@@ -96,9 +96,9 @@ export const useHeadingModeInteraction = ({
         headingLineRef.current.setLatLngs([start, end]);
       } else {
         headingLineRef.current = L.polyline([start, end], {
-          color: isRadarMode ? '#00ff00' : 'blue',
+          color: isRadarMode ? "#00ff00" : "blue",
           weight: 3,
-          dashArray: '5, 5',
+          dashArray: "5, 5",
         }).addTo(map);
       }
 
@@ -107,14 +107,14 @@ export const useHeadingModeInteraction = ({
         start.lng,
         end.lat,
         end.lng,
-        'km',
+        "km",
       );
       const distanceMiles = calculateDistance(
         start.lat,
         start.lng,
         end.lat,
         end.lng,
-        'miles',
+        "miles",
       );
       const heading = calculateBearing(start.lat, start.lng, end.lat, end.lng);
 
@@ -132,8 +132,8 @@ export const useHeadingModeInteraction = ({
       } else {
         headingTooltipRef.current = L.tooltip({
           permanent: true,
-          direction: 'auto',
-          className: 'heading-tooltip',
+          direction: "auto",
+          className: "heading-tooltip",
         })
           .setLatLng(end)
           .setContent(tooltipContent)
@@ -142,19 +142,25 @@ export const useHeadingModeInteraction = ({
     };
 
     if (isHeadingMode) {
-      map.on('mousedown', handleMouseDown);
-      map.getContainer().style.cursor = 'crosshair';
+      map.on("mousedown", handleMouseDown);
+      map.getContainer().style.cursor = "crosshair";
     } else {
       cleanupHeadingMode();
-      map.off('mousedown', handleMouseDown);
-      map.getContainer().style.cursor = '';
+      map.off("mousedown", handleMouseDown);
+      map.getContainer().style.cursor = "";
     }
 
     return () => {
       cleanupHeadingMode();
-      map.off('mousedown', handleMouseDown);
-      map.off('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      map.off("mousedown", handleMouseDown);
+      map.off("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleGlobalMouseUp);
     };
-  }, [isHeadingMode, isRadarMode, mapInstance, cleanupHeadingMode, handleGlobalMouseUp]);
+  }, [
+    isHeadingMode,
+    isRadarMode,
+    mapInstance,
+    cleanupHeadingMode,
+    handleGlobalMouseUp,
+  ]);
 };

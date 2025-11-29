@@ -1,10 +1,15 @@
 // components/map/useMapLayersAndMarkers.ts
-import { useEffect } from 'react';
-import L from 'leaflet';
-import { type PositionUpdate } from '~/lib/aircraft-store';
-import { type Airport } from '~/components/map'; // Adjusted path
-import { getAircraftDivIcon, getRadarAircraftDivIcon, AirportIcon, RadarAirportIcon } from './MapIcons';
-import { aircraftHistoryRef } from './useFlightPlanDrawing';
+import { useEffect } from "react";
+import L from "leaflet";
+import { type PositionUpdate } from "~/lib/aircraft-store";
+import { type Airport } from "~/components/map"; // Adjusted path
+import {
+  getAircraftDivIcon,
+  getRadarAircraftDivIcon,
+  AirportIcon,
+  RadarAirportIcon,
+} from "./MapIcons";
+import { aircraftHistoryRef } from "./useFlightPlanDrawing";
 
 interface UseMapLayersAndMarkersProps {
   mapInstance: React.MutableRefObject<L.Map | null>;
@@ -41,7 +46,12 @@ export const useMapLayersAndMarkers = ({
 }: UseMapLayersAndMarkersProps) => {
   // Effect for managing base layers (Radar/Satellite)
   useEffect(() => {
-    if (!mapInstance.current || !satelliteHybridLayer.current || !radarBaseLayer.current) return;
+    if (
+      !mapInstance.current ||
+      !satelliteHybridLayer.current ||
+      !radarBaseLayer.current
+    )
+      return;
 
     if (isRadarMode) {
       if (mapInstance.current.hasLayer(satelliteHybridLayer.current)) {
@@ -92,7 +102,8 @@ export const useMapLayersAndMarkers = ({
 
         if (
           lastPosition &&
-          (lastPosition[0] !== currentPosition[0] || lastPosition[1] !== currentPosition[1])
+          (lastPosition[0] !== currentPosition[0] ||
+            lastPosition[1] !== currentPosition[1])
         ) {
           history.push(currentPosition);
           if (history.length > 500) {
@@ -102,7 +113,9 @@ export const useMapLayersAndMarkers = ({
       }
     });
 
-    const currentAircraftIds = new Set(aircrafts.map((ac) => ac.id || ac.callsign));
+    const currentAircraftIds = new Set(
+      aircrafts.map((ac) => ac.id || ac.callsign),
+    );
     for (const [id] of aircraftHistoryRef.current) {
       if (!currentAircraftIds.has(id)) {
         aircraftHistoryRef.current.delete(id);
@@ -121,7 +134,7 @@ export const useMapLayersAndMarkers = ({
         zIndexOffset: 1000,
       }).addTo(aircraftMarkersLayer.current!);
 
-      marker.on('click', (e) => {
+      marker.on("click", (e) => {
         L.DomEvent.stopPropagation(e);
         drawFlightPlan(aircraft, true);
         onAircraftSelect(aircraft);
@@ -153,11 +166,11 @@ export const useMapLayersAndMarkers = ({
     airportMarkersLayer.current.clearLayers();
     airports.forEach((airport) => {
       let popupContent = `
-        <div style="color: ${isRadarMode ? '#00ffff' : '#333'}; background-color: ${
-        isRadarMode ? 'rgba(0,0,0,0.8)' : 'white'
-      }; border: ${isRadarMode ? '1px solid #00ffff' : 'none'}; padding: 4px;">
+        <div style="color: ${isRadarMode ? "#00ffff" : "#333"}; background-color: ${
+          isRadarMode ? "rgba(0,0,0,0.8)" : "white"
+        }; border: ${isRadarMode ? "1px solid #00ffff" : "none"}; padding: 4px;">
           <strong style="color: ${
-            isRadarMode ? '#00ffff' : '#333'
+            isRadarMode ? "#00ffff" : "#333"
           };">Airport:</strong> ${airport.name}<br>(${airport.icao})
         </div>
       `;
@@ -166,7 +179,7 @@ export const useMapLayersAndMarkers = ({
         popupContent += `
           <div style="margin-top: 8px;">
             <strong style="color: ${
-              isRadarMode ? '#99ff99' : '#333'
+              isRadarMode ? "#99ff99" : "#333"
             };">Frequencies:</strong><br>
             <ul style="list-style-type: none; padding: 0; margin: 0;">
         `;
@@ -174,10 +187,10 @@ export const useMapLayersAndMarkers = ({
           popupContent += `
               <li style="font-size: 12px; margin-bottom: 2px;">
                 <span style="color: ${
-                  isRadarMode ? '#00ffff' : '#666'
+                  isRadarMode ? "#00ffff" : "#666"
                 };">${freq.type}:</span>
                 <span style="font-weight: bold; color: ${
-                  isRadarMode ? '#fff' : '#333'
+                  isRadarMode ? "#fff" : "#333"
                 };">${freq.frequency} MHz</span>
               </li>
           `;
@@ -196,7 +209,7 @@ export const useMapLayersAndMarkers = ({
       })
         .addTo(airportMarkersLayer.current!)
         .bindPopup(popupContent, {
-          className: isRadarMode ? 'radar-popup' : '',
+          className: isRadarMode ? "radar-popup" : "",
         });
     });
   }, [airports, isRadarMode, airportMarkersLayer]);

@@ -1,18 +1,18 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { type PositionUpdate } from '~/lib/aircraft-store';
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { type PositionUpdate } from "~/lib/aircraft-store";
 
-import { useMapInitialization } from './useMapInitialization';
-import { useFlightPlanDrawing } from './useFlightPlanDrawing';
-import { useMapLayersAndMarkers } from './useMapLayersAndMarkers';
-import { useSelectedAirportHandling } from './useSelectedAirportHandling';
-import { useHeadingModeInteraction } from './useHeadingModeInteraction';
+import { useMapInitialization } from "./useMapInitialization";
+import { useFlightPlanDrawing } from "./useFlightPlanDrawing";
+import { useMapLayersAndMarkers } from "./useMapLayersAndMarkers";
+import { useSelectedAirportHandling } from "./useSelectedAirportHandling";
+import { useHeadingModeInteraction } from "./useHeadingModeInteraction";
 import {
   HeadingModeControl,
   RadarModeControl,
   OpenAIPControl,
-} from './MapControls';
+} from "./MapControls";
 
 export interface Airport {
   name: string;
@@ -52,16 +52,16 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const openAIPControlRef = useRef<OpenAIPControl | null>(null);
 
   const mapRefs = useMapInitialization({
-    mapContainerId: 'map-container',
+    mapContainerId: "map-container",
     setIsHeadingMode,
     setIsRadarMode,
     setIsOpenAIPEnabled,
     onMapClick: (e: L.LeafletMouseEvent) => {
       const target = e.originalEvent.target as HTMLElement;
       if (
-        !target.closest('.leaflet-marker-icon') &&
-        !target.closest('.leaflet-popup-pane') &&
-        !target.closest('.leaflet-control') &&
+        !target.closest(".leaflet-marker-icon") &&
+        !target.closest(".leaflet-popup-pane") &&
+        !target.closest(".leaflet-control") &&
         mapRefs.flightPlanLayerGroup.current &&
         mapRefs.historyLayerGroup.current
       ) {
@@ -87,9 +87,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
     (e: L.LeafletMouseEvent) => {
       const target = e.originalEvent.target as HTMLElement;
       if (
-        !target.closest('.leaflet-marker-icon') &&
-        !target.closest('.leaflet-popup-pane') &&
-        !target.closest('.leaflet-control') &&
+        !target.closest(".leaflet-marker-icon") &&
+        !target.closest(".leaflet-popup-pane") &&
+        !target.closest(".leaflet-control") &&
         mapRefs.flightPlanLayerGroup.current &&
         mapRefs.historyLayerGroup.current
       ) {
@@ -100,21 +100,25 @@ const MapComponent: React.FC<MapComponentProps> = ({
         onAircraftSelect(null);
       }
     },
-    [onAircraftSelect, mapRefs, currentSelectedAircraftRef, setSelectedAircraftId]
+    [
+      onAircraftSelect,
+      mapRefs,
+      currentSelectedAircraftRef,
+      setSelectedAircraftId,
+    ],
   );
 
   useEffect(() => {
     if (mapRefs.mapInstance.current) {
-      mapRefs.mapInstance.current.off('click');
-      mapRefs.mapInstance.current.on('click', stableOnMapClick);
+      mapRefs.mapInstance.current.off("click");
+      mapRefs.mapInstance.current.on("click", stableOnMapClick);
     }
     return () => {
       if (mapRefs.mapInstance.current) {
-        mapRefs.mapInstance.current.off('click', stableOnMapClick);
+        mapRefs.mapInstance.current.off("click", stableOnMapClick);
       }
     };
   }, [mapRefs.mapInstance, stableOnMapClick]);
-
 
   useMapLayersAndMarkers({
     mapInstance: mapRefs.mapInstance,
@@ -202,10 +206,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         @keyframes emergency-plane-pulse {
           0% {
-            box-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000;
+            box-shadow:
+              0 0 10px #ff0000,
+              0 0 20px #ff0000;
           }
           100% {
-            box-shadow: 0 0 15px #ff0000, 0 0 25px #ff0000, 0 0 30px #ff0000;
+            box-shadow:
+              0 0 15px #ff0000,
+              0 0 25px #ff0000,
+              0 0 30px #ff0000;
           }
         }
 
@@ -260,7 +269,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           border-right: 1px solid transparent !important;
         }
       `}</style>
-      <div id="map-container" style={{ height: '100%', width: '100%' }} />
+      <div id="map-container" style={{ height: "100%", width: "100%" }} />
     </>
   );
 };

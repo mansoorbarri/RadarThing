@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
-import L from 'leaflet';
+import { useEffect, useRef } from "react";
+import L from "leaflet";
 import {
   HeadingModeControl,
   RadarModeControl,
   OpenAIPControl,
-} from './MapControls';
+} from "./MapControls";
 
 interface UseMapInitializationProps {
   mapContainerId: string;
@@ -51,10 +51,7 @@ export const useMapInitialization = ({
   useEffect(() => {
     if (mapInstance.current) return;
 
-    const worldBounds = L.latLngBounds(
-      L.latLng(-85, -360),
-      L.latLng(85, 360),
-    );
+    const worldBounds = L.latLngBounds(L.latLng(-85, -360), L.latLng(85, 360));
 
     const map = L.map(mapContainerId, {
       zoomAnimation: true,
@@ -66,9 +63,9 @@ export const useMapInitialization = ({
     mapInstance.current = map;
 
     satelliteHybridLayer.current = L.tileLayer(
-      'https://mt0.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',
+      "https://mt0.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
       {
-        attribution: 'Esri, Garmin, FAO, USGS, NPS',
+        attribution: "Esri, Garmin, FAO, USGS, NPS",
         maxZoom: 18,
         minZoom: 3,
         transparent: true,
@@ -77,11 +74,11 @@ export const useMapInitialization = ({
     );
 
     radarBaseLayer.current = L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
+      "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",
       {
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
+        subdomains: "abcd",
         maxZoom: 18,
         minZoom: 3,
         bounds: worldBounds,
@@ -116,7 +113,7 @@ export const useMapInitialization = ({
     map.addControl(openAIPControl);
     setOpenAIPControlRef.current = openAIPControl;
 
-    map.on('click', onMapClick);
+    map.on("click", onMapClick);
 
     return () => {
       if (mapInstance.current) {

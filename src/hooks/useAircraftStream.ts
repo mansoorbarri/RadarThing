@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { type PositionUpdate } from '~/lib/aircraft-store';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { type PositionUpdate } from "~/lib/aircraft-store";
 
 export const useAircraftStream = () => {
   const [aircrafts, setAircrafts] = useState<PositionUpdate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<
-    'connecting' | 'connected' | 'disconnected'
-  >('connecting');
+    "connecting" | "connected" | "disconnected"
+  >("connecting");
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -18,18 +18,18 @@ export const useAircraftStream = () => {
       eventSourceRef.current.close();
     }
 
-    setConnectionStatus('connecting');
+    setConnectionStatus("connecting");
 
     const eventSourceUrl =
-      process.env.NODE_ENV === 'development'
-        ? 'https://radar.xyzmani.com/api/atc/stream'
-        : '/api/atc/stream';
+      process.env.NODE_ENV === "development"
+        ? "https://radar.xyzmani.com/api/atc/stream"
+        : "/api/atc/stream";
 
     const eventSource = new EventSource(eventSourceUrl);
     eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
-      setConnectionStatus('connected');
+      setConnectionStatus("connected");
       setError(null);
       reconnectAttempts.current = 0;
     };
@@ -47,17 +47,16 @@ export const useAircraftStream = () => {
         setAircrafts(processedAircraft);
         setIsLoading(false);
         setError(null);
-      } catch (e) {
-      }
+      } catch (e) {}
     };
 
     eventSource.onerror = () => {
-      setConnectionStatus('disconnected');
+      setConnectionStatus("disconnected");
       eventSource.close();
 
       const backoffTime = Math.min(
         1000 * Math.pow(2, reconnectAttempts.current),
-        30000
+        30000,
       );
       reconnectAttempts.current++;
 

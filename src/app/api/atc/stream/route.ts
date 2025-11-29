@@ -1,13 +1,13 @@
-import { NextRequest } from 'next/server';
-import { activeAircraft } from '~/lib/aircraft-store';
+import { NextRequest } from "next/server";
+import { activeAircraft } from "~/lib/aircraft-store";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
 };
 
 export function GET(req: NextRequest) {
@@ -15,12 +15,12 @@ export function GET(req: NextRequest) {
 
   const stream = new ReadableStream({
     start(controller) {
-      const initialData = activeAircraft.getAll().map(
-        ({ lastSeen, ...data }) => ({
+      const initialData = activeAircraft
+        .getAll()
+        .map(({ lastSeen, ...data }) => ({
           ...data,
           lastSeen: new Date(lastSeen).toISOString(),
-        })
-      );
+        }));
 
       const initialMessage = {
         count: initialData.length,
@@ -29,7 +29,7 @@ export function GET(req: NextRequest) {
       };
 
       controller.enqueue(
-        encoder.encode(`data: ${JSON.stringify(initialMessage)}\n\n`)
+        encoder.encode(`data: ${JSON.stringify(initialMessage)}\n\n`),
       );
 
       const unsubscribe = activeAircraft.subscribe((aircraftMap) => {
@@ -37,7 +37,7 @@ export function GET(req: NextRequest) {
           ({ lastSeen, ...data }) => ({
             ...data,
             lastSeen: new Date(lastSeen).toISOString(),
-          })
+          }),
         );
 
         const message = {
@@ -48,10 +48,10 @@ export function GET(req: NextRequest) {
 
         try {
           controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(message)}\n\n`)
+            encoder.encode(`data: ${JSON.stringify(message)}\n\n`),
           );
         } catch (error) {
-          console.error('Error sending SSE update:', error);
+          console.error("Error sending SSE update:", error);
           unsubscribe();
           controller.close();
         }
@@ -59,14 +59,14 @@ export function GET(req: NextRequest) {
 
       const heartbeatInterval = setInterval(() => {
         try {
-          controller.enqueue(encoder.encode(': heartbeat\n\n'));
+          controller.enqueue(encoder.encode(": heartbeat\n\n"));
         } catch (error) {
           clearInterval(heartbeatInterval);
           unsubscribe();
         }
       }, 3500);
 
-      req.signal.addEventListener('abort', () => {
+      req.signal.addEventListener("abort", () => {
         clearInterval(heartbeatInterval);
         unsubscribe();
         controller.close();
@@ -76,10 +76,10 @@ export function GET(req: NextRequest) {
 
   return new Response(stream, {
     headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no',
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
       ...CORS_HEADERS,
     },
   });

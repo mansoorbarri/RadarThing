@@ -1,5 +1,5 @@
 // hooks/useAirportData.ts
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
 interface Airport {
   name: string;
@@ -12,12 +12,12 @@ interface Airport {
 export const useAirportData = () => {
   const [airports, setAirports] = useState<Airport[]>([]);
   const [airportFetchError, setAirportFetchError] = useState<string | null>(
-    null
+    null,
   );
 
   const fetchAirports = useCallback(async () => {
     try {
-      const response = await fetch('/airports.json');
+      const response = await fetch("/airports.json");
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -26,8 +26,8 @@ export const useAirportData = () => {
       setAirports(airportArray);
       setAirportFetchError(null);
     } catch (e) {
-      console.warn('Could not load airports.json:', e);
-      setAirportFetchError('Failed to load airport data.');
+      console.warn("Could not load airports.json:", e);
+      setAirportFetchError("Failed to load airport data.");
     }
   }, []);
 

@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import dynamic from 'next/dynamic';
-import { type PositionUpdate } from '~/lib/aircraft-store';
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
+import { type PositionUpdate } from "~/lib/aircraft-store";
 
-import { useMobileDetection } from '~/hooks/useMobileDetection';
-import { useAircraftStream } from '~/hooks/useAircraftStream';
-import { useAirportData } from '~/hooks/useAirportData';
-import { useAircraftSearch } from '~/hooks/useAircraftSearch';
-import { ConnectionStatusIndicator } from '~/components/atc/connectionStatusIndicator';
-import { SearchBar } from '~/components/atc/searchbar';
-import { Sidebar } from '~/components/atc/sidebar';
+import { useMobileDetection } from "~/hooks/useMobileDetection";
+import { useAircraftStream } from "~/hooks/useAircraftStream";
+import { useAirportData } from "~/hooks/useAirportData";
+import { useAircraftSearch } from "~/hooks/useAircraftSearch";
+import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
+import { SearchBar } from "~/components/atc/searchbar";
+import { Sidebar } from "~/components/atc/sidebar";
 
 interface Airport {
   name: string;
@@ -20,10 +20,10 @@ interface Airport {
   frequencies?: { type: string; frequency: string }[];
 }
 
-const DynamicMapComponent = dynamic(() => import('~/components/map'), {
+const DynamicMapComponent = dynamic(() => import("~/components/map"), {
   ssr: false,
   loading: () => (
-    <div style={{ textAlign: 'center', paddingTop: '50px', color: '#ccc' }}>
+    <div style={{ textAlign: "center", paddingTop: "50px", color: "#ccc" }}>
       Loading Map...
     </div>
   ),
@@ -34,15 +34,18 @@ export default function ATCPage() {
   const { aircrafts, isLoading, connectionStatus } = useAircraftStream();
   const { airports } = useAirportData();
 
-  const [selectedAircraft, setSelectedAircraft] = useState<PositionUpdate | null>(null);
+  const [selectedAircraft, setSelectedAircraft] =
+    useState<PositionUpdate | null>(null);
   const [selectedAirport, setSelectedAirport] = useState<Airport | undefined>(
-    undefined
+    undefined,
   );
-  const [selectedWaypointIndex, setSelectedWaypointIndex] = useState<number | null>(null);
+  const [selectedWaypointIndex, setSelectedWaypointIndex] = useState<
+    number | null
+  >(null);
 
   const { searchTerm, setSearchTerm, searchResults } = useAircraftSearch(
     aircrafts,
-    airports
+    airports,
   );
 
   const drawFlightPlanOnMapRef = useRef<
@@ -53,7 +56,7 @@ export default function ATCPage() {
     (func: (aircraft: PositionUpdate, shouldZoom?: boolean) => void) => {
       drawFlightPlanOnMapRef.current = func;
     },
-    []
+    [],
   );
 
   const handleAircraftSelect = useCallback(
@@ -62,7 +65,7 @@ export default function ATCPage() {
       setSelectedWaypointIndex(null);
       setSelectedAirport(undefined);
     },
-    []
+    [],
   );
 
   const handleWaypointClick = useCallback((_waypoint: any, index: number) => {
@@ -74,9 +77,9 @@ export default function ATCPage() {
       setSelectedAircraft(aircraft);
       drawFlightPlanOnMapRef.current?.(aircraft, true);
       setSelectedAirport(undefined);
-      setSearchTerm('');
+      setSearchTerm("");
     },
-    [setSearchTerm]
+    [setSearchTerm],
   );
 
   const handleSearchBarAirportSelect = useCallback(
@@ -84,9 +87,9 @@ export default function ATCPage() {
       setSelectedAirport(airport);
       setSelectedAircraft(null);
       setSelectedWaypointIndex(null);
-      setSearchTerm('');
+      setSearchTerm("");
     },
-    [setSearchTerm]
+    [setSearchTerm],
   );
 
   useEffect(() => {
@@ -94,7 +97,7 @@ export default function ATCPage() {
       const updatedAircraft = aircrafts.find(
         (ac) =>
           (ac.id && ac.id === selectedAircraft.id) ||
-          (ac.callsign && ac.callsign === selectedAircraft.callsign)
+          (ac.callsign && ac.callsign === selectedAircraft.callsign),
       );
 
       if (updatedAircraft) {
@@ -108,27 +111,27 @@ export default function ATCPage() {
 
   const selectedAirportFromSearch = searchResults.find(
     (r) =>
-      !('callsign' in r) &&
+      !("callsign" in r) &&
       searchTerm &&
-      r.icao.toLowerCase() === searchTerm.toLowerCase()
+      r.icao.toLowerCase() === searchTerm.toLowerCase(),
   ) as Airport | undefined;
 
   return (
     <div
       style={{
-        position: 'relative',
-        width: '100vw',
-        height: '100vh',
-        overflow: 'hidden',
-        backgroundColor: '#111827',
+        position: "relative",
+        width: "100vw",
+        height: "100vh",
+        overflow: "hidden",
+        backgroundColor: "#111827",
       }}
     >
       <div
         style={{
-          position: 'absolute',
+          position: "absolute",
           top: 10,
-          left: isMobile ? '50%' : 50,
-          transform: isMobile ? 'translateX(-50%)' : 'none',
+          left: isMobile ? "50%" : 50,
+          transform: isMobile ? "translateX(-50%)" : "none",
           zIndex: 10000,
         }}
       >
@@ -144,25 +147,28 @@ export default function ATCPage() {
 
       <div
         style={{
-          position: 'absolute',
+          position: "absolute",
           top: 10,
           right: 10,
           zIndex: 10000,
         }}
       >
-        <ConnectionStatusIndicator status={connectionStatus} isMobile={isMobile} />
+        <ConnectionStatusIndicator
+          status={connectionStatus}
+          isMobile={isMobile}
+        />
       </div>
 
       <div
-        style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }}
+        style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}
       >
         {isLoading && aircrafts.length === 0 ? (
           <div
             style={{
-              textAlign: 'center',
-              paddingTop: '50px',
-              color: '#9ca3af',
-              fontSize: '16px',
+              textAlign: "center",
+              paddingTop: "50px",
+              color: "#9ca3af",
+              fontSize: "16px",
             }}
           >
             Loading initial data...
@@ -184,21 +190,21 @@ export default function ATCPage() {
           style={{
             transform:
               !isMobile && selectedAircraft
-                ? 'translateX(0)'
+                ? "translateX(0)"
                 : !isMobile
-                  ? 'translateX(380px)'
-                  : 'none',
+                  ? "translateX(380px)"
+                  : "none",
             transition: isMobile
-              ? 'none'
-              : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            position: isMobile ? 'fixed' : 'absolute',
-            top: isMobile ? 'auto' : 0,
-            bottom: isMobile ? 0 : 'auto',
-            right: isMobile ? 'auto' : 0,
-            left: isMobile ? 0 : 'auto',
+              ? "none"
+              : "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+            position: isMobile ? "fixed" : "absolute",
+            top: isMobile ? "auto" : 0,
+            bottom: isMobile ? 0 : "auto",
+            right: isMobile ? "auto" : 0,
+            left: isMobile ? 0 : "auto",
             zIndex: 99997,
-            width: isMobile ? '100%' : '380px',
-            height: isMobile ? 'auto' : '100%',
+            width: isMobile ? "100%" : "380px",
+            height: isMobile ? "auto" : "100%",
           }}
         >
           <Sidebar
