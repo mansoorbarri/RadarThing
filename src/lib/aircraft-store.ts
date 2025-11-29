@@ -78,7 +78,7 @@ class AircraftStore {
 
     this.cleanupInterval = setInterval(() => {
       const now = Date.now();
-      const timeout = 30000;
+      const timeout = 10000;
       let removed = false;
 
       for (const [id, data] of this.store.entries()) {
