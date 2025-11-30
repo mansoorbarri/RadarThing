@@ -1,44 +1,22 @@
 "use client";
 
-import React, {
-  useEffect,
-  useState,
-  useCallback,
-  useRef,
-  useMemo,
-} from "react";
-import { type PositionUpdate } from "~/lib/aircraft-store";
+import React, { useMemo, useState, useRef, useCallback } from "react";
 import {
   TbPlaneInflight,
   TbPlaneDeparture,
   TbPlane,
   TbPlaneArrival,
 } from "react-icons/tb";
+import { type PositionUpdate } from "~/lib/aircraft-store";
 
-interface Airport {
-  name: string;
-  lat: number;
-  lon: number;
-  icao: string;
-}
-
-const getFlightPhase = (
-  altAGL: number,
-  vspeed: number,
-  flightPlan: string | undefined,
-) => {
+const getFlightPhase = (altAGL: number, vspeed: number, flightPlan?: string) => {
   const isOnGround = altAGL < 100;
   const isClimbing = vspeed > 200;
   const isDescending = vspeed < -200;
 
   if (isOnGround) return "onGround";
   if (isClimbing) return "climbing";
-  if (isDescending) {
-    if (flightPlan && altAGL < 5000) {
-      return "landing";
-    }
-    return "descending";
-  }
+  if (isDescending) return flightPlan && altAGL < 5000 ? "landing" : "descending";
   if (altAGL > 5000) return "cruising";
   return "unknown";
 };
@@ -53,32 +31,27 @@ export const Sidebar = React.memo(
     onWaypointClick?: (waypoint: any, index: number) => void;
     isMobile: boolean;
   }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
     const [dragStart, setDragStart] = useState<number | null>(null);
     const [dragOffset, setDragOffset] = useState(0);
-    const [isExpanded, setIsExpanded] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
     const altMSL = aircraft.altMSL ?? aircraft.alt;
     const altAGL = aircraft.alt;
-    const isOnGround = altAGL < 100;
 
     const currentFlightPhase = useMemo(
-      () =>
-        getFlightPhase(altAGL, Number(aircraft.vspeed), aircraft.flightPlan),
+      () => getFlightPhase(altAGL, Number(aircraft.vspeed), aircraft.flightPlan),
       [altAGL, aircraft.vspeed, aircraft.flightPlan],
     );
 
-    const getPhaseIconComponent = (phase: string) => {
-      const iconProps = { size: 24, strokeWidth: 1.5, color: "#fff" };
+    const getPhaseIcon = (phase: string) => {
+      const iconProps = { size: 20, strokeWidth: 1.4, color: "#fff" };
       switch (phase) {
-        case "onGround":
-          return <TbPlane {...iconProps} />;
         case "climbing":
           return <TbPlaneDeparture {...iconProps} />;
         case "cruising":
           return <TbPlaneInflight {...iconProps} />;
         case "descending":
-          return <TbPlaneArrival {...iconProps} />;
         case "landing":
           return <TbPlaneArrival {...iconProps} />;
         default:
@@ -86,44 +59,33 @@ export const Sidebar = React.memo(
       }
     };
 
-    const getPhaseText = (phase: string) => {
-      switch (phase) {
-        case "onGround":
-          return "Ground";
-        case "climbing":
-          return "Climbing";
-        case "cruising":
-          return "Cruising";
-        case "descending":
-          return "Descending";
-        case "landing":
-          return "Landing";
-        default:
-          return "In Flight";
-      }
+    const phaseTextMap: Record<string, string> = {
+      onGround: "Ground",
+      climbing: "Climb",
+      cruising: "Cruise",
+      descending: "Descend",
+      landing: "Land",
+      unknown: "Flight",
     };
 
+    const displayAltMSL =
+      altMSL >= 18000
+        ? `FL${Math.round(altMSL / 100)}`
+        : `${altMSL.toFixed(0)} ft`;
+
+    // Touch handlers
     const handleTouchStart = (e: React.TouchEvent) => {
       if (!isMobile || !e.touches[0]) return;
       setDragStart(e.touches[0].clientY);
     };
-
     const handleTouchMove = (e: React.TouchEvent) => {
       if (!isMobile || dragStart === null || !e.touches[0]) return;
-      const currentY = e.touches[0].clientY;
-      const diff = currentY - dragStart;
-      setDragOffset(diff);
+      setDragOffset(e.touches[0].clientY - dragStart);
     };
-
     const handleTouchEnd = () => {
       if (!isMobile || dragStart === null) return;
-
-      if (dragOffset > 100) {
-        setIsExpanded(false);
-      } else if (dragOffset < -100) {
-        setIsExpanded(true);
-      }
-
+      if (dragOffset > 80) setIsExpanded(false);
+      else if (dragOffset < -80) setIsExpanded(true);
       setDragStart(null);
       setDragOffset(0);
     };
@@ -131,475 +93,153 @@ export const Sidebar = React.memo(
     const renderFlightPlan = useCallback(() => {
       if (!aircraft.flightPlan)
         return (
-          <div
-            style={{
-              padding: "20px",
-              textAlign: "center",
-              color: "rgba(255,255,255,0.5)",
-              fontSize: "14px",
-            }}
-          >
+          <div className="p-4 text-center text-sm text-white/60">
             No flight plan available
           </div>
         );
-
       try {
         const waypoints = JSON.parse(aircraft.flightPlan);
         return (
-          <div
-            style={{
-              height: "100%",
-              overflowY: "auto",
-              padding: "0 16px 16px 16px",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "13px",
-                fontWeight: "600",
-                color: "rgba(255,255,255,0.9)",
-                marginBottom: "12px",
-                letterSpacing: "0.5px",
-                textTransform: "uppercase",
-              }}
-            >
+          <div className="h-full overflow-y-auto px-3 pb-3">
+            <div className="text-xs font-semibold text-white/90 mb-2 uppercase tracking-wide">
               Flight Plan
             </div>
-            {waypoints.map((wp: any, index: number) => (
+            {waypoints.map((wp: any, i: number) => (
               <div
-                key={index}
-                style={{
-                  padding: "12px 14px",
-                  marginBottom: "8px",
-                  backgroundColor: "rgba(255, 255, 255, 0.03)",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(255, 255, 255, 0.08)",
-                  transition: "all 0.2s ease",
-                  cursor: "pointer",
-                }}
-                onClick={() => onWaypointClick?.(wp, index)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor =
-                    "rgba(255, 255, 255, 0.06)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor =
-                    "rgba(255, 255, 255, 0.03)";
-                  e.currentTarget.style.borderColor =
-                    "rgba(255, 255, 255, 0.08)";
-                }}
+                key={i}
+                className="p-2.5 mb-2 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 transition cursor-pointer"
+                onClick={() => onWaypointClick?.(wp, i)}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "4px",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontWeight: "600",
-                      fontSize: "14px",
-                      color: "#fff",
-                    }}
-                  >
+                <div className="flex justify-between mb-1">
+                  <span className="text-sm font-semibold text-white">
                     {wp.ident}
                   </span>
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color: "rgba(255,255,255,0.5)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
+                  <span className="text-[10px] text-white/60 uppercase">
                     {wp.type}
                   </span>
                 </div>
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: "rgba(255,255,255,0.7)",
-                    display: "flex",
-                    gap: "12px",
-                  }}
-                >
+                <div className="text-xs text-white/70 flex gap-3">
                   <span>
-                    Alt: <strong>{wp.alt ? wp.alt + " ft" : "N/A"}</strong>
+                    Alt: <strong>{wp.alt ? `${wp.alt} ft` : "N/A"}</strong>
                   </span>
                   <span>
-                    Spd: <strong>{wp.spd ? wp.spd + " kt" : "N/A"}</strong>
+                    Spd: <strong>{wp.spd ? `${wp.spd} kt` : "N/A"}</strong>
                   </span>
                 </div>
               </div>
             ))}
           </div>
         );
-      } catch (e) {
+      } catch {
         return (
-          <div
-            style={{
-              padding: "20px",
-              textAlign: "center",
-              color: "rgba(239, 68, 68, 0.8)",
-              fontSize: "14px",
-            }}
-          >
+          <div className="p-4 text-center text-sm text-red-400/80">
             Error loading flight plan
           </div>
         );
       }
     }, [aircraft.flightPlan, onWaypointClick]);
 
-    const displayAltMSL =
-      altMSL >= 18000
-        ? `FL${Math.round(altMSL / 100)}`
-        : `${altMSL.toFixed(0)} ft`;
-
-    const sidebarStyle: React.CSSProperties = isMobile
-      ? {
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: isExpanded ? "90vh" : "200px",
-          transform: `translateY(${dragOffset}px)`,
-          backgroundColor: "rgba(17, 24, 39, 0.98)",
-          backdropFilter: "blur(12px)",
-          boxShadow: "0 -4px 24px rgba(0,0,0,0.4)",
-          color: "#fff",
-          zIndex: 1000,
-          display: "flex",
-          flexDirection: "column",
-          borderTop: "1px solid rgba(255, 255, 255, 0.1)",
-          borderRadius: "16px 16px 0 0",
-          transition: dragStart !== null ? "none" : "height 0.3s ease",
-          touchAction: "none",
-        }
-      : {
-          position: "absolute",
-          top: 0,
-          right: 0,
-          width: "380px",
-          height: "100%",
-          backgroundColor: "rgba(17, 24, 39, 0.98)",
-          backdropFilter: "blur(12px)",
-          boxShadow: "-4px 0 24px rgba(0,0,0,0.4)",
-          color: "#fff",
-          zIndex: 1000,
-          display: "flex",
-          flexDirection: "column",
-          borderLeft: "1px solid rgba(255, 255, 255, 0.1)",
-        };
+    const baseStyle =
+      "backdrop-blur-lg text-white flex flex-col z-50 transition-all overflow-hidden";
 
     return (
-      <div ref={containerRef} style={sidebarStyle}>
+      <div
+        ref={containerRef}
+        style={{
+          transform: `translateY(${dragOffset}px)`,
+          height: isMobile ? (isExpanded ? "88vh" : "180px") : undefined,
+        }}
+        className={
+          isMobile
+            ? `${baseStyle} fixed bottom-0 left-0 right-0 bg-gray-900/95 border-t border-white/10 rounded-t-xl shadow-2xl`
+            : `${baseStyle} absolute top-0 right-0 w-[340px] h-full bg-gray-900/95 border-l border-white/10 shadow-xl`
+        }
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* --- Drag Handle (Mobile) --- */}
         {isMobile && (
-          <div
-            style={{
-              padding: "12px 0 8px 0",
-              display: "flex",
-              justifyContent: "center",
-              cursor: "grab",
-            }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            <div
-              style={{
-                width: "40px",
-                height: "4px",
-                backgroundColor: "rgba(255, 255, 255, 0.3)",
-                borderRadius: "2px",
-              }}
-            />
+          <div className="flex justify-center py-2 cursor-grab">
+            <div className="w-10 h-1 bg-white/30 rounded-full" />
           </div>
         )}
 
-        <div
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%)",
-            padding: isMobile ? "12px 20px" : "20px 20px 16px 20px",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-          }}
-        >
-          <div
-            style={{
-              fontSize: isMobile ? "20px" : "24px",
-              fontWeight: "700",
-              marginBottom: "4px",
-              letterSpacing: "-0.5px",
-            }}
-          >
+        {/* --- Header --- */}
+        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-b border-white/10 px-4 py-2.5">
+          <div className="font-bold text-lg leading-tight">
             {aircraft.callsign || aircraft.flightNo || "N/A"}
           </div>
-          <div
-            style={{
-              fontSize: "13px",
-              color: "rgba(255, 255, 255, 0.6)",
-              fontWeight: "500",
-              letterSpacing: "0.5px",
-            }}
-          >
+          <div className="text-xs text-white/60 font-medium">
             {aircraft.type || "Unknown Type"}
           </div>
         </div>
 
+        {/* --- Flight Info Section --- */}
         <div
-          style={{
-            padding: "16px 16px 0 16px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-            overflowY: isMobile && !isExpanded ? "hidden" : "auto",
-          }}
+          className={`flex flex-col gap-2 p-3 ${
+            isMobile && !isExpanded ? "overflow-hidden" : "overflow-y-auto"
+          }`}
         >
-          <div
-            style={{
-              padding: "14px",
-              backgroundColor: "rgba(59, 130, 246, 0.1)",
-              borderRadius: "10px",
-              border: "1px solid rgba(59, 130, 246, 0.2)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                color: "rgba(255,255,255,0.6)",
-                marginBottom: "4px",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                fontWeight: "600",
-              }}
-            >
+          {/* Callsign Block */}
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2.5">
+            <div className="text-[10px] uppercase text-white/60 font-semibold mb-1">
               Callsign
             </div>
-            <div style={{ fontSize: "16px", fontWeight: "600" }}>
+            <div className="text-sm font-semibold">
               {aircraft.flightNo || "N/A"}
             </div>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "10px",
-            }}
-          >
-            <div
-              style={{
-                flex: 1,
-                padding: "14px",
-                backgroundColor: "rgba(16, 185, 129, 0.1)",
-                borderRadius: "10px",
-                border: "1px solid rgba(16, 185, 129, 0.2)",
-                textAlign: "center",
-              }}
-            >
-              <div style={{ fontSize: "16px", fontWeight: "600" }}>
+          {/* Route / Phase */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex-1 text-center bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2.5">
+              <div className="text-sm font-semibold">
                 {aircraft.departure || "UNK"}
               </div>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "0 5px",
-                flexShrink: 0,
-                width: "60px",
-                color: "#fff",
-              }}
-            >
-              {getPhaseIconComponent(currentFlightPhase)}
-              <span
-                style={{
-                  fontSize: "9px",
-                  color: "rgba(255,255,255,0.5)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  marginTop: "4px",
-                  textAlign: "center",
-                }}
-              >
-                {getPhaseText(currentFlightPhase)}
-              </span>
+            <div className="flex flex-col items-center justify-center w-12 text-center text-white">
+              {getPhaseIcon(currentFlightPhase)}
+              <div className="text-[9px] uppercase text-white/50 mt-1">
+                {phaseTextMap[currentFlightPhase]}
+              </div>
             </div>
 
-            <div
-              style={{
-                flex: 1,
-                padding: "14px",
-                backgroundColor: "rgba(245, 158, 11, 0.1)",
-                borderRadius: "10px",
-                border: "1px solid rgba(245, 158, 11, 0.2)",
-                textAlign: "center",
-              }}
-            >
-              <div style={{ fontSize: "16px", fontWeight: "600" }}>
+            <div className="flex-1 text-center bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5">
+              <div className="text-sm font-semibold">
                 {aircraft.arrival || "UNK"}
               </div>
             </div>
           </div>
 
+          {/* MSL / AGL / Speed / Heading */}
           {(isExpanded || !isMobile) && (
-            <>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "10px",
-                  padding: "14px",
-                  backgroundColor: "rgba(255, 255, 255, 0.03)",
-                  borderRadius: "10px",
-                  border: "1px solid rgba(255, 255, 255, 0.08)",
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      color: "rgba(255,255,255,0.5)",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    Altitude MSL
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: "600" }}>
-                    {displayAltMSL}
-                  </div>
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      color: "rgba(255,255,255,0.5)",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    Altitude AGL
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: "600" }}>
-                    {altAGL.toFixed(0)} ft
-                  </div>
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      color: "rgba(255,255,255,0.5)",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    V-Speed
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: "600" }}>
-                    {aircraft.vspeed || "0"} fpm
-                  </div>
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      color: "rgba(255,255,255,0.5)",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    Speed
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: "600" }}>
-                    {aircraft.speed?.toFixed(0)} kt
-                  </div>
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      color: "rgba(255,255,255,0.5)",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    Heading
-                  </div>
-                  <div style={{ fontSize: "14px", fontWeight: "600" }}>
-                    {aircraft.heading?.toFixed(0)}°
-                  </div>
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      color: "rgba(255,255,255,0.5)",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    Squawk
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      fontFamily: "monospace",
-                    }}
-                  >
-                    {aircraft.squawk || "N/A"}
-                  </div>
-                </div>
-                {aircraft.nextWaypoint && (
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "10px",
-                        color: "rgba(255,255,255,0.5)",
-                        marginBottom: "4px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px",
-                        fontWeight: "600",
-                      }}
-                    >
-                      Next WPT
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: "600" }}>
-                      {aircraft.nextWaypoint}
-                    </div>
-                  </div>
-                )}
-              </div>
+            <div className="grid grid-cols-2 gap-2 bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm">
+              <Detail label="Alt MSL" value={displayAltMSL} />
+              <Detail label="Alt AGL" value={`${altAGL.toFixed(0)} ft`} />
+              <Detail
+                label="V-Speed"
+                value={`${aircraft.vspeed || 0} fpm`}
+              />
+              <Detail
+                label="Speed"
+                value={`${aircraft.speed?.toFixed(0)} kt`}
+              />
+              <Detail
+                label="Heading"
+                value={`${aircraft.heading?.toFixed(0)}°`}
+              />
+              <Detail label="Squawk" value={aircraft.squawk || "N/A"} />
+              {aircraft.nextWaypoint && (
+                <Detail label="Next WPT" value={aircraft.nextWaypoint} />
+              )}
+            </div>
+          )}
 
-              <div
-                style={{
-                  flexGrow: 1,
-                  overflowY: "auto",
-                  marginTop: "16px",
-                }}
-              >
-                {renderFlightPlan()}
-              </div>
-            </>
+          {/* --- Flight Plan --- */}
+          {(isExpanded || !isMobile) && (
+            <div className="flex-1 mt-2">{renderFlightPlan()}</div>
           )}
         </div>
       </div>
@@ -608,3 +248,13 @@ export const Sidebar = React.memo(
 );
 
 Sidebar.displayName = "Sidebar";
+
+// Helper subcomponent
+const Detail = ({ label, value }: { label: string; value: string }) => (
+  <div>
+    <div className="text-[10px] uppercase text-white/50 font-semibold mb-0.5">
+      {label}
+    </div>
+    <div className="font-semibold text-sm truncate">{value}</div>
+  </div>
+);
