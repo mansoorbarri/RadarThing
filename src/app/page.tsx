@@ -20,19 +20,13 @@ import Loading from "~/components/loading";
 import { useUtcTime } from "~/hooks/useUtcTime";
 import { useTimer } from "~/hooks/useTimer";
 import {
-  ENABLE_EASTER_EGGS,
   maybeAddSecretAircraft,
   maybeSpawnUFO,
   maybeAddTopGunAircraft,
   detectSupersonicAircraft,
-  injectRainbowRadar,
-  useKonamiCode,
-  showNewYearMessage,
-  handleClockDoubleClick,
-  enableNightOps,
   rotateMapOnSecretCallsign,
-  enableKeyboardEasterEggs,
 } from "~/lib/easter-eggs";
+import { useEasterEggs } from "~/hooks/useEasterEggs";
 
 interface Airport {
   name: string;
@@ -69,12 +63,16 @@ export default function ATCPage() {
   const drawFlightPlanOnMapRef = useRef<
     ((aircraft: PositionUpdate, shouldZoom?: boolean) => void) | null
   >(null);
+
+  useEasterEggs();
+
   const setDrawFlightPlanOnMap = useCallback(
     (func: (aircraft: PositionUpdate, shouldZoom?: boolean) => void) => {
       drawFlightPlanOnMapRef.current = func;
     },
     [],
   );
+
   const handleAircraftSelect = useCallback(
     (aircraft: PositionUpdate | null) => {
       setSelectedAircraft(aircraft);
@@ -83,9 +81,11 @@ export default function ATCPage() {
     },
     [],
   );
+
   const handleWaypointClick = useCallback((_waypoint: any, index: number) => {
     setSelectedWaypointIndex(index);
   }, []);
+
   const handleSearchBarAircraftSelect = useCallback(
     (aircraft: PositionUpdate) => {
       setSelectedAircraft(aircraft);
@@ -95,6 +95,7 @@ export default function ATCPage() {
     },
     [setSearchTerm],
   );
+
   const handleSearchBarAirportSelect = useCallback(
     (airport: Airport) => {
       setSelectedAirport(airport);
@@ -104,6 +105,7 @@ export default function ATCPage() {
     },
     [setSearchTerm],
   );
+
   useEffect(() => {
     if (selectedAircraft && aircrafts.length > 0) {
       const updatedAircraft = aircrafts.find(
@@ -119,22 +121,16 @@ export default function ATCPage() {
       }
     }
   }, [aircrafts, selectedAircraft]);
+
   const selectedAirportFromSearch = searchResults.find(
     (r) =>
       !("callsign" in r) &&
       searchTerm &&
       r.icao.toLowerCase() === searchTerm.toLowerCase(),
   ) as Airport | undefined;
+
   const [isMapLoaded, setIsMapLoaded] = useState(false);
-  useEffect(() => {
-    if (!ENABLE_EASTER_EGGS) return;
-    useKonamiCode(() => {
-      injectRainbowRadar();
-      enableNightOps();
-    });
-    enableKeyboardEasterEggs();
-    showNewYearMessage();
-  }, []);
+
   const augmentedAircrafts = useMemo(() => {
     let updated = [...aircrafts];
     updated = maybeAddSecretAircraft(updated);
@@ -144,6 +140,7 @@ export default function ATCPage() {
     rotateMapOnSecretCallsign(updated);
     return updated;
   }, [aircrafts]);
+
   return (
     <div
       style={{
@@ -217,7 +214,6 @@ export default function ATCPage() {
           fontSize: "15px",
         }}
         onClick={() => setShowTimerPopup((p) => !p)}
-        onDoubleClick={handleClockDoubleClick}
       >
         {time} UTC
       </div>

@@ -1,7 +1,13 @@
+// ~/lib/easterEggs.ts
 import type { PositionUpdate } from "~/lib/aircraft-store";
 
-export const ENABLE_EASTER_EGGS = false;
+const now = new Date();
+const month = now.getMonth(); // 0 = January, 11 = December
+const date = now.getDate();
 
+export const ENABLE_EASTER_EGGS =
+  (month === 11 && date >= 25) || (month === 0 && date <= 2);
+  
 export const EASTER_EGG_FLAGS = {
   secretAircraft: true,
   ufoSpawn: true,
@@ -17,26 +23,29 @@ export const EASTER_EGG_FLAGS = {
 };
 
 function mockAircraft(overrides: Partial<PositionUpdate>): PositionUpdate {
+  const now = Date.now();
   return {
     id: "mock-" + Math.random().toString(36).slice(2, 9),
     callsign: "UNKNOWN",
+    type: "A",
     lat: 0,
     lon: 0,
     alt: 0,
     altMSL: 0,
-    altAGL: 0,
     heading: 0,
     speed: 0,
-    vspeed: 0,
-    squawk: "",
-    type: "A",
     flightNo: "",
-    reg: "",
-    dep: "",
-    dest: "",
-    model: "",
+    departure: "",
+    arrival: "",
+    takeoffTime: "",
+    squawk: "",
+    flightPlan: "",
+    vspeed: "0",
+    nextWaypoint: "",
+    ts: now,
+    lastSeen: now,
     ...overrides,
-  } as PositionUpdate;
+  };
 }
 
 export function maybeAddSecretAircraft(aircrafts: PositionUpdate[]) {
@@ -111,13 +120,13 @@ export function enableKeyboardEasterEggs() {
     if (e.shiftKey && e.key.toLowerCase() === "t") {
       if (EASTER_EGG_FLAGS.topGunSpawn) {
         alert("🔥 Maverick inbound — map spin engaged!");
-        const mapElm = document.querySelector(
-          ".leaflet-container",
-        ) as HTMLElement | null;
-        if (mapElm) {
+        const mapElm = document.querySelector(".leaflet-container");
+        if (mapElm instanceof HTMLElement) {
           mapElm.style.transition = "transform 5s ease-in-out";
           mapElm.style.transform = "rotate(360deg)";
-          setTimeout(() => (mapElm.style.transform = ""), 6000);
+          setTimeout(() => {
+            mapElm.style.transform = "";
+          }, 6000);
         }
       }
     }
@@ -146,7 +155,9 @@ export function useKonamiCode(callback: () => void) {
         callback();
         index = 0;
       }
-    } else index = 0;
+    } else {
+      index = 0;
+    }
   };
   document.addEventListener("keydown", handler);
 }
@@ -206,13 +217,13 @@ export function enableNightOps() {
 export function rotateMapOnSecretCallsign(aircrafts: PositionUpdate[]) {
   if (!ENABLE_EASTER_EGGS || !EASTER_EGG_FLAGS.rotateMapEasterEgg) return;
   if (aircrafts.some((a) => a.callsign?.toLowerCase() === "topgun")) {
-    const mapElm = document.querySelector(
-      ".leaflet-container",
-    ) as HTMLElement | null;
-    if (mapElm) {
+    const mapElm = document.querySelector(".leaflet-container");
+    if (mapElm instanceof HTMLElement) {
       mapElm.style.transition = "transform 5s ease-in-out";
       mapElm.style.transform = "rotate(360deg)";
-      setTimeout(() => (mapElm.style.transform = ""), 6000);
+      setTimeout(() => {
+        mapElm.style.transform = "";
+      }, 6000);
     }
   }
 }
