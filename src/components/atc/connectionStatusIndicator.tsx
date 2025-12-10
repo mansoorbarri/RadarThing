@@ -1,49 +1,35 @@
-// components/atc/ConnectionStatusIndicator.tsx
 import React from "react";
+import clsx from "clsx";
 
 interface ConnectionStatusIndicatorProps {
   status: "connecting" | "connected" | "disconnected";
-  isMobile: boolean; // Assuming the parent needs to know this for positioning
+  isMobile: boolean;
 }
 
 export const ConnectionStatusIndicator: React.FC<
   ConnectionStatusIndicatorProps
 > = ({ status }) => {
-  let backgroundColor;
-  let text;
+  const baseStyle =
+    "flex items-center rounded-md border font-mono text-[12px] font-semibold px-3 py-1.5 transition-all duration-200 shadow-[0_0_6px_rgba(0,255,255,0.25)]";
 
-  switch (status) {
-    case "connected":
-      backgroundColor = "rgba(16, 185, 129, 0.9)";
-      text = "● Live";
-      break;
-    case "connecting":
-      backgroundColor = "rgba(251, 191, 36, 0.9)";
-      text = "◐ Connecting...";
-      break;
-    case "disconnected":
-      backgroundColor = "rgba(239, 68, 68, 0.9)";
-      text = "○ Disconnected";
-      break;
-    default:
-      backgroundColor = "rgba(128, 128, 128, 0.9)";
-      text = "Unknown";
-  }
+  const stateClasses = {
+    connected:
+      "border-cyan-400/30 bg-black/70 text-cyan-400 shadow-[0_0_8px_rgba(0,255,255,0.4)] animate-radarPulse",
+    connecting:
+      "border-yellow-400/30 bg-black/70 text-yellow-400 shadow-[0_0_8px_rgba(255,255,0,0.4)]",
+    disconnected:
+      "border-red-500/30 bg-black/70 text-red-400 shadow-[0_0_8px_rgba(255,0,0,0.4)]",
+  };
+
+  const textMap: Record<typeof status, string> = {
+    connected: "● Live",
+    connecting: "◐ Connecting...",
+    disconnected: "○ Disconnected",
+  };
 
   return (
-    <div
-      style={{
-        padding: "8px 12px",
-        borderRadius: "8px",
-        fontSize: "12px",
-        fontWeight: "600",
-        backgroundColor: backgroundColor,
-        color: "white",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-        backdropFilter: "blur(8px)",
-      }}
-    >
-      {text}
+    <div className={clsx(baseStyle, stateClasses[status])}>
+      <span>{textMap[status]}</span>
     </div>
   );
 };

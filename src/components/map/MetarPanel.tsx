@@ -14,102 +14,29 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
   onCloseMetar,
 }) => {
   return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: "20px",
-        left: "20px",
-        zIndex: 1000,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-        gap: "10px",
-        fontFamily: "monospace",
-      }}
-    >
+    <div className="absolute bottom-5 left-5 z-[1000] flex flex-col items-start gap-2.5 font-mono">
       {metarText && (
-        <div
-          style={{
-            position: "relative",
-            background:
-              "linear-gradient(145deg, rgba(0,0,0,0.85), rgba(0,20,20,0.9))",
-            border: "1px solid rgba(0,255,255,0.3)",
-            borderRadius: "8px",
-            padding: "12px 14px",
-            color: "#00ffff",
-            boxShadow: "0 0 10px rgba(0,255,255,0.2)",
-            maxWidth: "300px",
-            wordWrap: "break-word",
-          }}
-        >
+        <div className="relative max-w-[300px] rounded-lg border border-cyan-300/30 bg-gradient-to-br from-black/85 to-cyan-950/90 p-3 text-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.2)] break-words">
           <button
             onClick={onCloseMetar}
-            style={{
-              position: "absolute",
-              top: "4px",
-              right: "6px",
-              border: "none",
-              background: "transparent",
-              color: "#00ffff",
-              fontSize: "16px",
-              cursor: "pointer",
-              transition: "color 0.2s",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.color = "rgb(255,80,80)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.color = "rgb(0,255,255)")
-            }
             title="Close METAR"
+            className="absolute right-1.5 top-1 text-cyan-400 transition-colors hover:text-red-400 text-lg"
           >
             ×
           </button>
-          <strong>METAR:</strong>
-          <div style={{ marginTop: "6px", fontSize: "13px", lineHeight: "1.4" }}>
-            {metarText}
-          </div>
+          <strong className="text-cyan-300">METAR:</strong>
+          <div className="mt-1.5 text-[13px] leading-[1.4]">{metarText}</div>
         </div>
       )}
 
-      <div
-        style={{
-          background: "rgba(0,0,0,0.8)",
-          border: "1px solid rgba(0,255,255,0.3)",
-          borderRadius: "6px",
-          padding: "8px 12px",
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          gap: "8px",
-          boxShadow: "0 0 6px rgba(0,255,255,0.15)",
-        }}
-      >
-        <span style={{ color: "#00ffff", fontWeight: 500 }}>METAR</span>
+      <div className="flex flex-row items-center gap-2 rounded-md border border-cyan-300/30 bg-black/80 p-2 shadow-[0_0_6px_rgba(0,255,255,0.15)]">
+        <span className="text-cyan-400 font-medium">METAR</span>
         <input
           type="text"
           value={icaoInput}
           onChange={(e) => onChange(e.target.value.toUpperCase())}
           placeholder="ICAO (e.g. KJFK)"
-          style={{
-            flex: 1,
-            background: "transparent",
-            border: "1px solid rgba(0,255,255,0.4)",
-            color: "#00ffff",
-            padding: "5px 8px",
-            borderRadius: "4px",
-            outline: "none",
-            fontSize: "13px",
-            transition: "border 0.2s, background 0.2s",
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.border = "1px solid #00ffff";
-            e.currentTarget.style.background = "rgba(0,255,255,0.1)";
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.border = "1px solid rgba(0,255,255,0.4)";
-            e.currentTarget.style.background = "transparent";
-          }}
+          className="flex-1 rounded border border-cyan-300/40 bg-transparent px-2 py-[5px] text-[13px] text-cyan-400 outline-none transition-all focus:border-cyan-400 focus:bg-cyan-400/10"
         />
       </div>
     </div>

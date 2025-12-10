@@ -142,24 +142,12 @@ export default function ATCPage() {
   }, [aircrafts]);
 
   return (
-    <div
-      style={{
-        position: "relative",
-        width: "100vw",
-        height: "100vh",
-        overflow: "hidden",
-        backgroundColor: "#111827",
-      }}
-    >
+    <div className="relative h-[100vh] w-[100vw] overflow-hidden bg-[#010b10]">
       {isMapLoaded && (
         <div
-          style={{
-            position: "absolute",
-            top: 10,
-            left: isMobile ? "50%" : 50,
-            transform: isMobile ? "translateX(-50%)" : "none",
-            zIndex: 10000,
-          }}
+          className={`absolute top-2 z-[10000] ${
+            isMobile ? "left-1/2 -translate-x-1/2" : "left-10"
+          }`}
         >
           <SearchBar
             searchTerm={searchTerm}
@@ -171,22 +159,14 @@ export default function ATCPage() {
           />
         </div>
       )}
-      <div
-        style={{
-          position: "absolute",
-          top: 10,
-          right: 10,
-          zIndex: 10000,
-        }}
-      >
+      <div className="absolute top-2 right-2 z-[10000]">
         <ConnectionStatusIndicator
           status={connectionStatus}
           isMobile={isMobile}
         />
       </div>
-      <div
-        style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}
-      >
+
+      <div className="absolute inset-0">
         {isLoading && aircrafts.length === 0 ? (
           <Loading />
         ) : (
@@ -201,113 +181,61 @@ export default function ATCPage() {
           />
         )}
       </div>
+
+      {/* UTC CLOCK + TIMER */}
       <div
-        style={{
-          position: "absolute",
-          bottom: 25,
-          right: 10,
-          zIndex: 10001,
-          color: "#fff",
-          fontFamily: "monospace",
-          cursor: "pointer",
-          userSelect: "none",
-          fontSize: "15px",
-        }}
         onClick={() => setShowTimerPopup((p) => !p)}
+        className="absolute bottom-6 right-3 z-[10001] cursor-pointer select-none font-mono text-[15px] text-cyan-400 transition-all duration-300 hover:text-cyan-300 drop-shadow-[0_0_6px_rgba(0,255,255,0.45)]"
+        title="Toggle Timer"
       >
         {time} UTC
       </div>
+
       {showTimerPopup && (
         <div
-          style={{
-            position: "absolute",
-            bottom: 50,
-            right: 10,
-            backgroundColor: "#1f2937",
-            color: "#fff",
-            padding: "10px",
-            borderRadius: "6px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-            fontFamily: "monospace",
-            width: "160px",
-            textAlign: "center",
-            zIndex: 10002,
-          }}
+          className="absolute bottom-16 right-3 z-[10002] w-[170px] text-center font-mono
+          rounded-md border border-cyan-400/30 bg-black/80 p-3 text-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.25)]
+          backdrop-blur-sm transition-all duration-200 hover:shadow-[0_0_15px_rgba(0,255,255,0.45)]"
         >
-          <div style={{ marginBottom: "6px" }}>{formattedTime}</div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "4px",
-            }}
-          >
+          <div className="mb-2 text-[14px] drop-shadow-[0_0_4px_rgba(0,255,255,0.4)]">
+            {formattedTime}
+          </div>
+          <div className="flex justify-center gap-2">
             {isRunning ? (
               <button
                 onClick={stop}
-                style={{
-                  background: "#ef4444",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  padding: "2px 6px",
-                  cursor: "pointer",
-                }}
+                className="rounded-md border border-red-400/40 bg-red-500/20 px-2 py-[2px] text-[12px] text-red-400 
+                transition-all duration-150 hover:border-red-400 hover:bg-red-400/30 hover:text-red-300"
               >
                 Stop
               </button>
             ) : (
               <button
                 onClick={start}
-                style={{
-                  background: "#22c55e",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  padding: "2px 6px",
-                  cursor: "pointer",
-                }}
+                className="rounded-md border border-green-400/40 bg-green-500/20 px-2 py-[2px] text-[12px] text-green-400 
+                transition-all duration-150 hover:border-green-400 hover:bg-green-400/30 hover:text-green-300"
               >
                 Start
               </button>
             )}
             <button
               onClick={reset}
-              style={{
-                background: "#3b82f6",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                padding: "2px 6px",
-                cursor: "pointer",
-              }}
+              className="rounded-md border border-blue-400/40 bg-blue-500/20 px-2 py-[2px] text-[12px] text-blue-400 
+              transition-all duration-150 hover:border-blue-400 hover:bg-blue-400/30 hover:text-blue-300"
             >
               Reset
             </button>
           </div>
         </div>
       )}
+
       {selectedAircraft && (
         <div
-          style={{
-            transform:
-              !isMobile && selectedAircraft
-                ? "translateX(0)"
-                : !isMobile
-                  ? "translateX(380px)"
-                  : "none",
-            transition: isMobile
-              ? "none"
-              : "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            position: isMobile ? "fixed" : "absolute",
-            top: isMobile ? "auto" : 0,
-            bottom: isMobile ? 0 : "auto",
-            right: isMobile ? "auto" : 0,
-            left: isMobile ? 0 : "auto",
-            zIndex: 99997,
-            width: isMobile ? "100%" : "380px",
-            height: isMobile ? "auto" : "100%",
-          }}
+          className={`z-[99997] transition-transform duration-300 ease-in-out ${
+            isMobile
+              ? "fixed bottom-0 left-0 w-full"
+              : "absolute right-0 top-0 h-full w-[380px]"
+          }`}
         >
           <Sidebar
             aircraft={selectedAircraft}
