@@ -34,8 +34,8 @@ A Flightradar24-type radar display for the GeoFS. This is a fork of the original
 **Note:** you will not be on the radar page until you save the settings. If you don't want to be on the radar page, clear the fields and click "Save".
 
 ### Assets
-- Place airline logos at [public/logos](public/logos) named by code (e.g., AA.png, DL.png).
-- Place plane pictures at [public/plane-images](public/plane-images) named by type or registration.
+- **Airline Logos**: Place at [public/logos](public/logos) named by code, e.g., `AA.png`, `DL.png`, `QTR.png`. Shown in aircraft tags when available.
+- **Plane Images**: Place at [public/plane-images](public/plane-images) using naming scheme `<AIRLINE>-<TYPE>.png`, e.g., `QTR-A380.png`, `AA-B777.png`. Falls back to just `<TYPE>.png` (e.g., `A380.png`), then displays "No picture available" if not found. Images shown in sidebar when aircraft is selected.
 
 ## Technicals 
 This project uses [Leaflet](https://leafletjs.com/) and [OpenLayers](https://openlayers.org/) to render the map.
