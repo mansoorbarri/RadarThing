@@ -268,7 +268,7 @@ export const Sidebar = React.memo(
           {/* --- Recent Flights (<=3h) --- */}
           {(isExpanded || !isMobile) && (
             <div className="mt-2 p-2 rounded-lg border border-white/10 bg-white/5">
-              <div className="text-xs font-semibold text-white/80 mb-2">Recent Flights (<=3h)</div>
+              <div className="text-xs font-semibold text-white/80 mb-2">Recent Flights (&lt;=3h)</div>
               <div className="max-h-[160px] overflow-y-auto space-y-1">
                 {recentFlights.slice(0, 50).map((f, i) => (
                   <div

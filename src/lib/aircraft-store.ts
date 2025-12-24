@@ -128,7 +128,7 @@ class AircraftStore {
     arr.push(data);
     // prune older than 3 hours
     const cutoff = Date.now() - THREE_HOURS_MS;
-    while (arr.length && (arr[0].ts ?? arr[0].lastSeen) < cutoff) {
+    while (arr.length > 0 && ((arr[0]!.ts ?? arr[0]!.lastSeen) < cutoff)) {
       arr.shift();
     }
   }

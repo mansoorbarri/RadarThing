@@ -191,8 +191,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
       dayNightControlRef.current.updateState(isDayNightOverlayEnabled);
     if (hazardsControlRef.current)
       hazardsControlRef.current.updateState(isHazardsOverlayEnabled);
-  }, [isHeadingMode, isRadarMode, isOSMMode, isOpenAIPEnabled, isWeatherOverlayEnabled]);
-    , isDayNightOverlayEnabled, isHazardsOverlayEnabled]);
+  }, [
+    isHeadingMode,
+    isRadarMode,
+    isOSMMode,
+    isOpenAIPEnabled,
+    isWeatherOverlayEnabled,
+    isDayNightOverlayEnabled,
+    isHazardsOverlayEnabled,
+  ]);
 
   useEffect(() => {
     setDrawFlightPlanOnMap(drawFlightPlan);

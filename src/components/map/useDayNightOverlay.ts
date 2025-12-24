@@ -47,10 +47,10 @@ function buildNightPolygon(date: Date): L.LatLngExpression[] {
   // Build polygon from terminator to south pole and back to start
   const southPole = -89.5;
   const poly: L.LatLngExpression[] = [];
-  for (let i = 0; i < points.length; i++) poly.push(points[i]);
+  for (let i = 0; i < points.length; i++) poly.push(points[i]!);
   poly.push([southPole, 180]);
   poly.push([southPole, -180]);
-  poly.push(points[0]);
+  poly.push(points[0]!);
   return poly;
 }
 
