@@ -20,10 +20,7 @@ export const useAircraftStream = () => {
 
     setConnectionStatus("connecting");
 
-    const url =
-      process.env.NODE_ENV === "development"
-        ? "https://radar.xyzmani.com/api/atc/stream"
-        : "/api/atc/stream";
+    const url = "https://radar-sse-production.up.railway.app/api/stream"
 
     const es = new EventSource(url);
     eventSourceRef.current = es;
