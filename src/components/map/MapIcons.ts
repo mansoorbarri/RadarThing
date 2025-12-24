@@ -204,16 +204,9 @@ export const getAircraftDivIcon = (
   return L.divIcon({
     html: `
       <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px;">
-        <div style="${planeStyle}">
-          <div style="
-            width: 0; height: 0;
-            border-top: ${planeSize / 2}px solid transparent;
-            border-bottom: ${planeSize / 2}px solid transparent;
-            border-left: ${planeSize}px solid ${baseColor};
-            filter: drop-shadow(0 0 6px rgba(0,0,0,0.6));
-            ${isEmergency ? "animation: emergency-plane-pulse 1s infinite alternate;" : ""}
-          "></div>
-        </div>
+        <img src="/plane-images/default-yellow.png" alt="plane"
+             style="${planeStyle}"
+             onerror="this.style.display='none'" />
         <div class="aircraft-tag" style="${tagStyle}">
           ${detailContent}
         </div>
