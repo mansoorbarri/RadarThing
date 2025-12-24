@@ -14,6 +14,14 @@ A Flightradar24-type radar display for the GeoFS. This is a fork of the original
 - Radar Mode - which has combined look and feel of VATSIM radar and actual radar screens.
 - [GeoFS-Chart](https://github.com/mansoorbarri/geofs-charts) works on the radar screen 
 
+**New in this build:**
+- Size-based aircraft icons (GA/Regional/Narrow/Wide/Helicopter) with clean, minimal tags
+- Day/Night terminator overlay and hazards (precipitation + thunder/radar)
+- Recent flights list (last 3 hours) and enhanced search (airline code, DEP-ARR, size:)
+- Incidents page listing emergency squawks (7700/7600/7500) with live badge
+- Userscript overlay to set Airline + Flight details, stored in localStorage
+- Asset folders for airline logos and plane images under `public/`
+
 ## Installation 
 - Install the mod: https://xyzmani.com/radar
 - View the radar: https://radar.xyzmani.com/
@@ -23,7 +31,11 @@ A Flightradar24-type radar display for the GeoFS. This is a fork of the original
 - Enter the ICAO of departure/arrival aiports, Callsign and Squawk, and click "Save".
 - You can close the popup by pressing "W" on your keyboard. 
 
-**Note:** you will not be on the radar page until you save the settings. and vise-versa, if you don't want to be on the radar page, just clear the fields and click "Save". 
+**Note:** you will not be on the radar page until you save the settings. If you don't want to be on the radar page, clear the fields and click "Save".
+
+### Assets
+- Place airline logos at [public/logos](public/logos) named by code (e.g., AA.png, DL.png).
+- Place plane pictures at [public/plane-images](public/plane-images) named by type or registration.
 
 ## Technicals 
 This project uses [Leaflet](https://leafletjs.com/) and [OpenLayers](https://openlayers.org/) to render the map.
