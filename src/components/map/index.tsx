@@ -13,11 +13,14 @@ import {
   OSMControl,
   OpenAIPControl,
   WeatherOverlayControl,
+  DayNightControl,
+  HazardsOverlayControl,
 } from "~/components/map/MapControls";
 import { MapGlobalStyles } from "~/styles/MapGlobalStyles";
 import { useMetarOverlay } from "~/hooks/useMetarOverlay";
 import { useWeatherOverlayLayer } from "~/hooks/useWeatherOverlayLayer";
 import { MetarPanel } from "./MetarPanel";
+import { useDayNightOverlay } from "./useDayNightOverlay";
 
 export interface Airport {
   name: string;
@@ -52,6 +55,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [isOSMMode, setIsOSMMode] = useState(false);
   const [isOpenAIPEnabled, setIsOpenAIPEnabled] = useState(false);
   const [isWeatherOverlayEnabled, setIsWeatherOverlayEnabled] = useState(false);
+  const [isDayNightOverlayEnabled, setIsDayNightOverlayEnabled] = useState(false);
+  const [isHazardsOverlayEnabled, setIsHazardsOverlayEnabled] = useState(false);
   const [selectedAircraftId, setSelectedAircraftId] = useState<string | null>(
     null,
   );
@@ -63,6 +68,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const osmControlRef = useRef<OSMControl | null>(null);
   const openAIPControlRef = useRef<OpenAIPControl | null>(null);
   const weatherControlRef = useRef<WeatherOverlayControl | null>(null);
+  const dayNightControlRef = useRef<DayNightControl | null>(null);
+  const hazardsControlRef = useRef<HazardsOverlayControl | null>(null);
 
   const onAircraftSelectRef = useRef(onAircraftSelect);
   useEffect(() => {
@@ -76,6 +83,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setIsOSMMode,
     setIsOpenAIPEnabled,
     setIsWeatherOverlayEnabled,
+    setIsDayNightOverlayEnabled,
+    setIsHazardsOverlayEnabled,
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     onMapClick: useCallback((e: L.LeafletMouseEvent) => {}, []),
     setHeadingControlRef: headingControlRef,
@@ -83,6 +92,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setOSMControlRef: osmControlRef,
     setOpenAIPControlRef: openAIPControlRef,
     setWeatherControlRef: weatherControlRef,
+    setDayNightControlRef: dayNightControlRef,
+    setHazardsControlRef: hazardsControlRef,
   });
 
   const { drawFlightPlan, currentSelectedAircraftRef } = useFlightPlanDrawing({
@@ -160,7 +171,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
   useWeatherOverlayLayer({
     mapInstance: mapRefs.mapInstance,
     isWeatherOverlayEnabled,
+    isHazardsEnabled: isHazardsOverlayEnabled,
   });
+
+  useDayNightOverlay(mapRefs.mapInstance, isDayNightOverlayEnabled);
 
   useEffect(() => {
     if (headingControlRef.current)
@@ -173,7 +187,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
       openAIPControlRef.current.updateState(isOpenAIPEnabled);
     if (weatherControlRef.current)
       weatherControlRef.current.updateState(isWeatherOverlayEnabled);
+    if (dayNightControlRef.current)
+      dayNightControlRef.current.updateState(isDayNightOverlayEnabled);
+    if (hazardsControlRef.current)
+      hazardsControlRef.current.updateState(isHazardsOverlayEnabled);
   }, [isHeadingMode, isRadarMode, isOSMMode, isOpenAIPEnabled, isWeatherOverlayEnabled]);
+    , isDayNightOverlayEnabled, isHazardsOverlayEnabled]);
 
   useEffect(() => {
     setDrawFlightPlanOnMap(drawFlightPlan);
