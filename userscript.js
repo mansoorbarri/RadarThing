@@ -2,42 +2,40 @@
   "use strict";
 
   const API_URL = "https://radar-sse-production.up.railway.app/api/atc/position";
-  const WS_URL = "wss://geofs-flightradar.duckdns.org/ws";
   const SEND_INTERVAL_MS = 5000;
 
   let info = { active: false, dep: "", arr: "", flt: "", sqk: "" };
   let wasOnGround = true;
   let takeoffTimeUTC = "";
-  let socket = null;
-  let wsReady = false;
-
-  // function connectWS() {
-  //   socket = new WebSocket(WS_URL);
-  //   socket.onopen = () => {
-  //     wsReady = true;
-  //     socket.send(JSON.stringify({ type: "hello", role: "player" }));
-  //     broadcastStatus();
-  //   };
-  //   socket.onclose = () => { wsReady = false; broadcastStatus(); setTimeout(connectWS, 5000); };
-  // }
 
   function broadcastStatus() {
     let status = { text: "Flight info required", color: "#e74c3c" };
     if (info.active) {
-      status = wsReady ? { text: "Connected & Transmitting", color: "#27ae60" } : { text: "WS Reconnecting...", color: "#f39c12" };
+      status = { text: "Transmitting to API", color: "#27ae60" };
     }
-    window.dispatchEvent(new CustomEvent("atc-status-update", { detail: status }));
+    window.dispatchEvent(
+      new CustomEvent("atc-status-update", { detail: status })
+    );
   }
 
-  window.addEventListener("atc-data-sync", (e) => { info = e.detail; broadcastStatus(); });
+  window.addEventListener("atc-data-sync", (e) => {
+    info = e.detail;
+    broadcastStatus();
+  });
 
   function calculateAGL() {
     try {
       const altitudeMSL = geofs?.animation?.values?.altitude;
       const groundElevationFeet = geofs?.animation?.values?.groundElevationFeet;
       const aircraft = geofs?.aircraft?.instance;
-      if (typeof altitudeMSL === "number" && typeof groundElevationFeet === "number" && aircraft?.collisionPoints?.length >= 2) {
-        const collisionZFeet = aircraft.collisionPoints[aircraft.collisionPoints.length - 2].worldPosition[2] * 3.2808399;
+      if (
+        typeof altitudeMSL === "number" &&
+        typeof groundElevationFeet === "number" &&
+        aircraft?.collisionPoints?.length >= 2
+      ) {
+        const collisionZFeet =
+          aircraft.collisionPoints[aircraft.collisionPoints.length - 2]
+            .worldPosition[2] * 3.2808399;
         return Math.round(altitudeMSL - groundElevationFeet + collisionZFeet);
       }
     } catch (err) {}
@@ -74,12 +72,13 @@
       flightPlan: geofs.flightPlan?.export ? geofs.flightPlan.export() : [],
       nextWaypoint: geofs.flightPlan?.trackedWaypoint?.ident || null,
       vspeed: Math.floor(geofs.animation?.values?.verticalSpeed || 0),
-      userId: geofs.userRecord.userId || null
+      userId: geofs.userRecord.userId || null,
     };
 
-    fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }).catch(() => {});
-    // if (wsReady) socket.send(JSON.stringify({ type: "position_update", payload: payload }));
+    fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).catch(() => {});
   }, SEND_INTERVAL_MS);
-
-  connectWS();
 })();
