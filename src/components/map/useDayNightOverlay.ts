@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import type { MutableRefObject } from "react";
 import L from "leaflet";
 
 // Approximate solar declination and terminator line to shade night area
@@ -54,7 +55,7 @@ function buildNightPolygon(date: Date): L.LatLngExpression[] {
 }
 
 export function useDayNightOverlay(
-  mapRef: React.MutableRefObject<L.Map | null>,
+  mapRef: MutableRefObject<L.Map | null>,
   enabled: boolean,
 ) {
   const layerRef = useRef<L.Polygon | null>(null);
