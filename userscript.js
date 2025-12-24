@@ -11,15 +11,15 @@
   let socket = null;
   let wsReady = false;
 
-  function connectWS() {
-    socket = new WebSocket(WS_URL);
-    socket.onopen = () => {
-      wsReady = true;
-      socket.send(JSON.stringify({ type: "hello", role: "player" }));
-      broadcastStatus();
-    };
-    socket.onclose = () => { wsReady = false; broadcastStatus(); setTimeout(connectWS, 5000); };
-  }
+  // function connectWS() {
+  //   socket = new WebSocket(WS_URL);
+  //   socket.onopen = () => {
+  //     wsReady = true;
+  //     socket.send(JSON.stringify({ type: "hello", role: "player" }));
+  //     broadcastStatus();
+  //   };
+  //   socket.onclose = () => { wsReady = false; broadcastStatus(); setTimeout(connectWS, 5000); };
+  // }
 
   function broadcastStatus() {
     let status = { text: "Flight info required", color: "#e74c3c" };
@@ -78,7 +78,7 @@
     };
 
     fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }).catch(() => {});
-    if (wsReady) socket.send(JSON.stringify({ type: "position_update", payload: payload }));
+    // if (wsReady) socket.send(JSON.stringify({ type: "position_update", payload: payload }));
   }, SEND_INTERVAL_MS);
 
   connectWS();
