@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GeoFS ATC Radar
 // @namespace    http://tampermonkey.net/
-// @version      1.2.3
+// @version      1.2.4
 // @description  Always loads the latest GeoFS ATC Radar script from GitHub
 // @Author       Mansoor Barri
 // @match        http://*/geofs.php*

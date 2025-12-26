@@ -53,10 +53,11 @@
     const lla = inst.llaLocation || [];
     const altMSL = lla[2] ? lla[2] * 3.28084 : geofs.animation.values.altitude;
     const altAGL = calculateAGL();
+    gId = geofs.userRecord?.googleId || geofs.userRecord?.googleId || null;
 
     const payload = {
-      id:geofs.userRecord.googleId || geofs.userRecord.callsign,
-      googleId: geofs.userRecord.googleId || null,
+      id: gId || geofs.userRecord.callsign,
+      googleId: gId,
       callsign: geofs.userRecord.callsign,
       type: inst.aircraftRecord.name || "Unknown",
       lat: lla[0],
