@@ -18,6 +18,7 @@ import { Sidebar } from "~/components/atc/sidebar";
 import Loading from "~/components/loading";
 import { useUtcTime } from "~/hooks/useUtcTime";
 import { useTimer } from "~/hooks/useTimer";
+import { UserAuth } from "~/components/atc/userAuth";
 
 interface Airport {
   name: string;
@@ -138,11 +139,12 @@ export default function ATCPage() {
           />
         </div>
       )}
-      <div className="absolute top-2 right-2 z-[10000]">
+      <div className="absolute top-2 right-2 z-[10000] flex items-end gap-2">
         <ConnectionStatusIndicator
           status={connectionStatus}
           isMobile={isMobile}
-        />
+      />
+        <UserAuth />
       </div>
 
       <div className="absolute inset-0">

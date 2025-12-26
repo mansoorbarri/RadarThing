@@ -3,6 +3,8 @@ import "leaflet/dist/leaflet.css";
 
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 
 export const metadata: Metadata = {
   title: "ATC Radar",
@@ -19,8 +21,25 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
+    <ClerkProvider
+          appearance={{
+        baseTheme: dark,
+        variables: {
+          colorPrimary: "#22d3ee", // text-cyan-400
+          colorBackground: "#010b10", // Your app background
+          colorText: "#22d3ee",
+          colorInputBackground: "#000000",
+          colorInputText: "#ffffff",
+        },
+        elements: {
+          card: "border border-cyan-400/30 shadow-[0_0_15px_rgba(0,255,255,0.1)]",
+          navbar: "hidden", // Removes the clerk branding if desired
+        },
+      }}
+    >
     <html lang="en" className={`${geist.variable}`}>
       <body>{children}</body>
     </html>
+    </ClerkProvider>
   );
 }
