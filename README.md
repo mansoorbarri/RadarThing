@@ -32,3 +32,8 @@ The original project uses the same technology but was written in Javascript and 
 
 ## Issues
 If you find any issues, please report them on the [Issues](https://github.com/anar-anar/geofs-radar/issues) page.
+
+### ToDo
+- [x] setup auth 
+- [ ] setup db 
+- [ ] setup auth roles 
