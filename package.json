@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.36.5",
     "@t3-oss/env-nextjs": "^0.12.0",
     "@types/leaflet": "^1.9.21",
     "clsx": "^2.1.1",
@@ -46,5 +47,5 @@
   "ct3aMetadata": {
     "initVersion": "7.40.0"
   },
-  "packageManager": "pnpm@10.21.0"
+  "packageManager": "pnpm@10.26.2"
 }

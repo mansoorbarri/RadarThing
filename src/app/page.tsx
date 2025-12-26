@@ -5,7 +5,6 @@ import React, {
   useCallback,
   useRef,
   useEffect,
-  useMemo,
 } from "react";
 import dynamic from "next/dynamic";
 import { type PositionUpdate } from "~/lib/aircraft-store";
@@ -19,14 +18,6 @@ import { Sidebar } from "~/components/atc/sidebar";
 import Loading from "~/components/loading";
 import { useUtcTime } from "~/hooks/useUtcTime";
 import { useTimer } from "~/hooks/useTimer";
-import {
-  maybeAddSecretAircraft,
-  maybeSpawnUFO,
-  maybeAddTopGunAircraft,
-  detectSupersonicAircraft,
-  rotateMapOnSecretCallsign,
-} from "~/lib/easter-eggs";
-import { useEasterEggs } from "~/hooks/useEasterEggs";
 
 interface Airport {
   name: string;
@@ -63,8 +54,6 @@ export default function ATCPage() {
   const drawFlightPlanOnMapRef = useRef<
     ((aircraft: PositionUpdate, shouldZoom?: boolean) => void) | null
   >(null);
-
-  useEasterEggs();
 
   const setDrawFlightPlanOnMap = useCallback(
     (func: (aircraft: PositionUpdate, shouldZoom?: boolean) => void) => {
@@ -131,16 +120,6 @@ export default function ATCPage() {
 
   const [isMapLoaded, setIsMapLoaded] = useState(false);
 
-  const augmentedAircrafts = useMemo(() => {
-    let updated = [...aircrafts];
-    updated = maybeAddSecretAircraft(updated);
-    updated = maybeSpawnUFO(updated);
-    updated = maybeAddTopGunAircraft(updated);
-    detectSupersonicAircraft(updated);
-    rotateMapOnSecretCallsign(updated);
-    return updated;
-  }, [aircrafts]);
-
   return (
     <div className="relative h-[100vh] w-[100vw] overflow-hidden bg-[#010b10]">
       {isMapLoaded && (
@@ -171,7 +150,7 @@ export default function ATCPage() {
           <Loading />
         ) : (
           <DynamicMapComponent
-            aircrafts={augmentedAircrafts}
+            aircrafts={aircrafts}
             airports={airports}
             onAircraftSelect={handleAircraftSelect}
             selectedWaypointIndex={selectedWaypointIndex}
