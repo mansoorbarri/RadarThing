@@ -14,18 +14,14 @@ import {
   TbPlaneArrival,
   TbHistory,
   TbInfoCircle,
-  TbUserCircle,
+  TbPointFilled,
 } from "react-icons/tb";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { getFlightHistory } from "~/app/actions/get-flight-history";
 import { getUserProfile } from "~/app/actions/get-user-profile";
 import Image from "next/image";
 
-const getFlightPhase = (
-  altAGL: number,
-  vspeed: number,
-  flightPlan?: string,
-) => {
+const getFlightPhase = (altAGL: number, vspeed: number, flightPlan?: string) => {
   const isOnGround = altAGL < 100;
   const isClimbing = vspeed > 200;
   const isDescending = vspeed < -200;
@@ -68,13 +64,10 @@ export const Sidebar = React.memo(
 
     const altMSL = aircraft.altMSL ?? aircraft.alt;
     const altAGL = aircraft.alt;
-
-    // Use DB role if available, fallback to aircraft object
     const currentRole = dbProfile?.role || aircraft.role;
     const isPremium = currentRole === "PREMIUM";
-
-    // Priority: DB Logo -> SSE Logo -> Placeholder
     const displayLogo = dbProfile?.airlineLogo || (aircraft as any).airlineLogo;
+    console.log(displayLogo)
 
     const currentFlightPhase = useMemo(
       () =>
@@ -82,7 +75,6 @@ export const Sidebar = React.memo(
       [altAGL, aircraft.vspeed, aircraft.flightPlan],
     );
 
-    // Fetch Profile (Logo/Role)
     useEffect(() => {
       if (aircraft.googleId) {
         getUserProfile(aircraft.googleId)
@@ -93,7 +85,6 @@ export const Sidebar = React.memo(
       }
     }, [aircraft.googleId]);
 
-    // Fetch History
     useEffect(() => {
       if (tab === "history" && aircraft.googleId && isPremium) {
         setLoadingHistory(true);
@@ -105,17 +96,17 @@ export const Sidebar = React.memo(
     }, [tab, aircraft.googleId, isPremium]);
 
     const getPhaseIcon = (phase: string) => {
-      const iconProps = { size: 20, strokeWidth: 1.4, color: "#fff" };
+      const iconProps = { size: 24, strokeWidth: 1.5 };
       switch (phase) {
         case "climbing":
-          return <TbPlaneDeparture {...iconProps} />;
+          return <TbPlaneDeparture {...iconProps} className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]" />;
         case "cruising":
-          return <TbPlaneInflight {...iconProps} />;
+          return <TbPlaneInflight {...iconProps} className="text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]" />;
         case "descending":
         case "landing":
-          return <TbPlaneArrival {...iconProps} />;
+          return <TbPlaneArrival {...iconProps} className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" />;
         default:
-          return <TbPlane {...iconProps} />;
+          return <TbPlane {...iconProps} className="text-slate-300" />;
       }
     };
 
@@ -131,7 +122,7 @@ export const Sidebar = React.memo(
     const displayAltMSL =
       altMSL >= 18000
         ? `FL${Math.round(altMSL / 100)}`
-        : `${altMSL.toFixed(0)} ft`;
+        : `${Math.round(altMSL).toLocaleString()}`;
 
     const handleTouchStart = (e: React.TouchEvent) => {
       if (isMobile && e.touches[0]) setDragStart(e.touches[0].clientY);
@@ -152,223 +143,197 @@ export const Sidebar = React.memo(
     const renderFlightPlan = useCallback(() => {
       if (!aircraft.flightPlan)
         return (
-          <div className="p-4 text-center text-sm font-medium text-white/60 italic">
-            No flight plan available
+          <div className="flex flex-col items-center justify-center p-8 opacity-40">
+            <TbPointFilled className="animate-pulse text-cyan-500 mb-2" />
+            <div className="font-mono text-[10px] tracking-widest uppercase text-white/70">No Route Data</div>
           </div>
         );
       try {
         const waypoints = JSON.parse(aircraft.flightPlan);
         return (
-          <div className="mt-2 h-full overflow-y-auto px-3 pb-3">
-            <div className="mb-2 text-xs font-semibold tracking-wide text-white/90 uppercase">
-              Flight Plan
-            </div>
+          <div className="mt-6 space-y-2.5">
+             <div className="flex items-center gap-2 px-1">
+                <div className="h-[1px] flex-1 bg-white/20" />
+                <span className="font-mono text-[9px] font-black tracking-[0.3em] text-white/50 uppercase">Enroute Path</span>
+                <div className="h-[1px] flex-1 bg-white/20" />
+             </div>
             {waypoints.map((wp: any, i: number) => (
               <div
                 key={i}
-                className="mb-2 cursor-pointer rounded-md border border-white/10 bg-white/5 p-2.5 transition hover:bg-white/10"
+                className="group flex items-center gap-4 rounded-xl border border-white/10 bg-black/40 p-3.5 transition hover:bg-black/60 hover:border-cyan-500/40"
                 onClick={() => onWaypointClick?.(wp, i)}
               >
-                <div className="mb-1 flex justify-between">
-                  <span className="text-sm font-semibold text-white">
-                    {wp.ident}
-                  </span>
-                  <span className="text-[10px] text-white/60 uppercase">
-                    {wp.type}
-                  </span>
+                <div className="font-mono text-xs font-black text-cyan-400 group-hover:scale-110 transition-transform">
+                  {String(i + 1).padStart(2, '0')}
                 </div>
-                <div className="flex gap-3 text-xs text-white/70">
-                  <span>
-                    Alt: <strong>{wp.alt ? `${wp.alt} ft` : "N/A"}</strong>
-                  </span>
-                  <span>
-                    Spd: <strong>{wp.spd ? `${wp.spd} kt` : "N/A"}</strong>
-                  </span>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-sm font-bold text-white tracking-wider">{wp.ident}</span>
+                    <span className="font-mono text-[9px] text-white/40 font-bold uppercase">{wp.type}</span>
+                  </div>
+                  <div className="flex gap-4 font-mono text-[10px] text-white/60">
+                    <span>ALT: <span className="text-cyan-100/90">{wp.alt ? `${wp.alt}` : "---"}</span></span>
+                    <span>SPD: <span className="text-cyan-100/90">{wp.spd ? `${wp.spd}` : "---"}</span></span>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         );
       } catch {
-        return (
-          <div className="p-4 text-center text-sm text-red-400/80">
-            Error loading flight plan
-          </div>
-        );
+        return <div className="p-4 font-mono text-[10px] text-red-400">PATH_DATA_ERROR</div>;
       }
     }, [aircraft.flightPlan, onWaypointClick]);
-
-    const baseStyle =
-      "backdrop-blur-lg text-white flex flex-col z-50 transition-all overflow-hidden";
 
     return (
       <div
         ref={containerRef}
         style={{
           transform: `translateY(${dragOffset}px)`,
-          height: isMobile ? (isExpanded ? "88vh" : "180px") : undefined,
+          height: isMobile ? (isExpanded ? "88vh" : "240px") : "100%",
         }}
-        className={
-          isMobile
-            ? `${baseStyle} fixed right-0 bottom-0 left-0 rounded-t-xl border-t border-white/10 bg-gray-900/95 shadow-2xl`
-            : `${baseStyle} absolute top-0 right-0 h-full w-[340px] border-l border-white/10 bg-gray-900/95 shadow-xl`
-        }
+        className={`
+          flex flex-col overflow-hidden text-white transition-all duration-500 ease-in-out
+          ${isMobile 
+            ? "fixed inset-x-0 bottom-0 rounded-t-[2.5rem] border-t border-white/20 bg-[#050f14] shadow-[0_-20px_50px_rgba(0,0,0,0.8)]" 
+            : "h-full w-full bg-[#050f14]/90 backdrop-blur-3xl border-l border-white/10 shadow-2xl"}
+        `}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {isMobile && (
-          <div className="flex cursor-grab justify-center py-2">
-            <div className="h-1 w-10 rounded-full bg-white/30" />
-          </div>
-        )}
-
-        <div className="flex items-center gap-3 border-b border-white/10 bg-gradient-to-r from-blue-500/10 to-purple-500/10 px-4 py-3">
-          <div className="relative">
-            {displayLogo ? (
-              <Image
-                src={displayLogo}
-                alt="Airline Logo"
-                width={48}
-                height={48}
-                className="rounded border border-white/10 bg-black/40 object-contain"
-                unoptimized
-              />
-            ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded border border-dashed border-white/20 bg-white/5 text-white/20">
-                <TbPlane size={24} />
-              </div>
-            )}
-            {isPremium && (
-              <div className="absolute -top-1.5 -right-1.5 rounded bg-yellow-500 px-1 text-[8px] font-black text-black shadow-sm">
-                PRO
-              </div>
-            )}
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-lg leading-tight font-bold">
-              {aircraft.callsign || aircraft.flightNo || "N/A"}
+        <div className="relative p-6 pb-4">
+          <div className="flex items-start justify-between mb-5">
+            <div className="flex-1 min-w-0 pr-4">
+               <div className="flex items-center gap-2 mb-1.5">
+                 <div className="h-1.5 w-1.5 rounded-full bg-cyan-500 animate-pulse shadow-[0_0_8px_#22d3ee]" />
+                 <span className="font-mono text-[10px] font-black tracking-[0.2em] text-cyan-400 uppercase">
+                   Active Radar Lock
+                 </span>
+               </div>
+               <h1 className="truncate font-mono text-4xl font-black tracking-tighter text-white leading-none mb-1">
+                {aircraft.callsign || aircraft.flightNo || "N/A"}
+               </h1>
+               <p className="truncate font-mono text-[11px] font-bold text-white/50 uppercase tracking-[0.15em]">
+                {aircraft.type || "Unknown Class"}
+               </p>
             </div>
-            <div className="truncate text-xs font-medium tracking-tighter text-white/60 uppercase">
-              {aircraft.type || "Unknown Type"}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex border-b border-white/10 bg-black/20">
-          <button
-            onClick={() => setTab("info")}
-            className={`flex flex-1 items-center justify-center gap-2 py-3 text-[11px] font-bold tracking-wider transition ${tab === "info" ? "border-b-2 border-blue-500 text-white" : "text-white/40"}`}
-          >
-            <TbInfoCircle size={16} /> LIVE INFO
-          </button>
-          <button
-            onClick={() => setTab("history")}
-            className={`flex flex-1 items-center justify-center gap-2 py-3 text-[11px] font-bold tracking-wider transition ${tab === "history" ? "border-b-2 border-blue-500 text-white" : "text-white/40"}`}
-          >
-            <TbHistory size={16} /> HISTORY
-          </button>
-        </div>
-
-        <div className="custom-scrollbar flex-1 overflow-y-auto">
-          {tab === "info" ? (
-            <div className="flex flex-col gap-2 p-3">
-              <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-2.5">
-                <div className="mb-1 text-[10px] font-semibold text-white/60 uppercase">
-                  Callsign
-                </div>
-                <div className="text-sm font-semibold">
-                  {aircraft.flightNo || "N/A"}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex-1 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-center">
-                  <div className="text-sm font-semibold">
-                    {aircraft.departure || "UNK"}
-                  </div>
-                </div>
-                <div className="flex w-12 flex-col items-center justify-center text-center text-white">
-                  {getPhaseIcon(currentFlightPhase)}
-                  <div className="mt-1 text-[9px] text-white/50 uppercase">
-                    {phaseTextMap[currentFlightPhase]}
-                  </div>
-                </div>
-                <div className="flex-1 rounded-lg border border-amber-500/20 bg-amber-500/10 p-2.5 text-center">
-                  <div className="text-sm font-semibold">
-                    {aircraft.arrival || "UNK"}
-                  </div>
-                </div>
-              </div>
-
-              {(isExpanded || !isMobile) && (
-                <div className="grid grid-cols-2 gap-2 rounded-lg border border-white/10 bg-white/5 p-2.5 text-sm">
-                  <Detail label="Alt MSL" value={displayAltMSL} />
-                  <Detail label="Alt AGL" value={`${altAGL.toFixed(0)} ft`} />
-                  <Detail
-                    label="V-Speed"
-                    value={`${aircraft.vspeed || 0} fpm`}
-                  />
-                  <Detail
-                    label="Speed"
-                    value={`${aircraft.speed?.toFixed(0)} kt`}
-                  />
-                  <Detail
-                    label="Heading"
-                    value={`${aircraft.heading?.toFixed(0)}°`}
-                  />
-                  <Detail label="Squawk" value={aircraft.squawk || "N/A"} />
+            
+            <div className="relative">
+              <div className="absolute -inset-1.5 rounded-2xl bg-cyan-500/20 blur-md" />
+              {displayLogo ? (
+                <Image
+                  src={displayLogo}
+                  alt="Logo"
+                  width={64}
+                  height={64}
+                  className="relative rounded-2xl border border-white/20 bg-black/80 object-contain p-2.5 shadow-xl"
+                  unoptimized
+                />
+              ) : (
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white/20">
+                  <TbPlane size={32} />
                 </div>
               )}
+              {isPremium && (
+                <div className="absolute -bottom-2 -right-1 rounded bg-cyan-500 px-2 py-0.5 font-mono text-[9px] font-black text-black shadow-lg">
+                  PREMIUM
+                </div>
+              )}
+            </div>
+          </div>
 
+          <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-white/10 bg-black/40 p-1.5 shadow-inner">
+             <div className="flex flex-col items-center p-3.5 rounded-xl hover:bg-white/5 transition-colors">
+                <span className="font-mono text-[9px] font-black uppercase text-white/40 mb-1.5">Altitude</span>
+                <span className="font-mono text-base font-black text-white tracking-tight">{displayAltMSL}</span>
+                <span className="font-mono text-[8px] font-black text-white/30 uppercase tracking-widest mt-0.5">FT MSL</span>
+             </div>
+             <div className="flex flex-col items-center p-3.5 rounded-xl bg-white/10 border border-white/10 shadow-lg scale-105 z-10">
+                {getPhaseIcon(currentFlightPhase)}
+                <span className="font-mono text-[11px] font-black text-white mt-1.5 uppercase tracking-wide">{phaseTextMap[currentFlightPhase]}</span>
+             </div>
+             <div className="flex flex-col items-center p-3.5 rounded-xl hover:bg-white/5 transition-colors">
+                <span className="font-mono text-[9px] font-black uppercase text-white/40 mb-1.5">Speed</span>
+                <span className="font-mono text-base font-black text-white tracking-tight">{Math.round(aircraft.speed || 0)}</span>
+                <span className="font-mono text-[8px] font-black text-white/30 uppercase tracking-widest mt-0.5">KNOTS GS</span>
+             </div>
+          </div>
+        </div>
+
+        <nav className="flex px-6 mb-5">
+          <div className="flex w-full rounded-2xl bg-black/60 p-1.5 border border-white/10 shadow-xl">
+            <button
+              onClick={() => setTab("info")}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${tab === "info" ? "bg-white/10 text-white shadow-lg border border-white/10" : "text-white/40 hover:text-white/70"}`}
+            >
+              <TbInfoCircle size={14} /> LIVE DATA
+            </button>
+            <button
+              onClick={() => setTab("history")}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${tab === "history" ? "bg-white/10 text-white shadow-lg border border-white/10" : "text-white/40 hover:text-white/70"}`}
+            >
+              <TbHistory size={14} /> LOGBOOK
+            </button>
+          </div>
+        </nav>
+
+        <div className="custom-scrollbar flex-1 overflow-y-auto px-6 pb-12">
+          {tab === "info" ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-3.5">
+                 <StatBox label="Departure" value={aircraft.departure || "---"} sub="ORIG" />
+                 <StatBox label="Arrival" value={aircraft.arrival || "---"} sub="DEST" />
+                 <StatBox label="V-Speed" value={`${aircraft.vspeed || 0}`} sub="FPM" />
+                 <StatBox label="Heading" value={`${Math.round(aircraft.heading || 0)}°`} sub="MAG" />
+                 <StatBox label="Squawk" value={aircraft.squawk || "---"} sub="XPDR" />
+                 <StatBox label="Alt AGL" value={`${Math.round(altAGL)}`} sub="FEET" />
+              </div>
+              
               {(isExpanded || !isMobile) && renderFlightPlan()}
             </div>
           ) : (
-            <div className="space-y-2 p-3">
+            <div className="space-y-3">
               {isPremium ? (
                 <>
                   {loadingHistory ? (
-                    <div className="animate-pulse py-10 text-center text-xs font-bold text-white/50 uppercase">
-                      Fetching logs...
+                    <div className="flex flex-col items-center justify-center py-24 opacity-60">
+                      <div className="h-6 w-6 rounded-full border-2 border-cyan-400/20 border-t-cyan-400 animate-spin mb-4" />
+                      <span className="font-mono text-[11px] font-black tracking-[0.2em] uppercase text-cyan-400">Loading Logs</span>
                     </div>
                   ) : history.length === 0 ? (
-                    <div className="py-10 text-center text-xs text-white/30 italic">
-                      No past flights found for this pilot.
-                    </div>
+                    <div className="py-24 text-center font-mono text-[10px] text-white/40 tracking-widest uppercase">No Historic Records</div>
                   ) : (
                     history.map((f) => (
                       <div
                         key={f.id}
                         onClick={() => {
                           setSelectedFlightId(f.id);
-                          if (f.routeData)
-                            onHistoryClick?.(f.routeData as [number, number][]);
+                          if (f.routeData) onHistoryClick?.(f.routeData as [number, number][]);
                         }}
-                        className={`cursor-pointer rounded-lg border bg-white/5 p-3 transition ${selectedFlightId === f.id ? "border-blue-500 bg-blue-500/10" : "border-white/10 hover:bg-white/10"}`}
+                        className={`group cursor-pointer rounded-2xl border p-4.5 transition-all duration-300 ${selectedFlightId === f.id ? "bg-cyan-500/20 border-cyan-500" : "bg-black/40 border-white/10 hover:border-white/30 hover:bg-black/60 shadow-lg"}`}
                       >
-                        <div className="mb-1 flex items-center justify-between">
-                          <span className="text-sm font-bold text-white">
-                            {f.depICAO || "???"} → {f.arrICAO || "???"}
+                        <div className="flex items-center justify-between mb-2.5">
+                          <span className="font-mono text-base font-black tracking-widest text-white group-hover:text-cyan-400 transition-colors">
+                            {f.depICAO || "???"} <span className="text-white/20 mx-1">→</span> {f.arrICAO || "???"}
                           </span>
-                          <span className="text-[10px] text-white/40">
+                          <span className="font-mono text-[10px] font-bold text-white/40">
                             {new Date(f.startTime).toLocaleDateString()}
                           </span>
                         </div>
-                        <div className="text-[10px] font-medium text-white/50 uppercase italic">
-                          {f.aircraftType || "Unknown"}
+                        <div className="font-mono text-[10px] font-black text-white/60 uppercase tracking-widest flex items-center gap-2">
+                          <TbPlane size={14} className="text-cyan-400/60" /> {f.aircraftType || "Gen. Aviation"}
                         </div>
                       </div>
                     ))
                   )}
                 </>
               ) : (
-                <div className="mt-4 rounded border border-amber-500/20 bg-amber-500/10 p-4 text-center text-[11px] leading-relaxed text-amber-200/80">
-                  <div className="mb-1 font-bold tracking-tight text-amber-400 uppercase">
-                    Premium Feature
-                  </div>
-                  Automatic flight logging and history tracking is restricted to
-                  Premium pilots.
+                <div className="mt-6 overflow-hidden rounded-[2rem] border border-amber-500/30 bg-amber-500/10 p-8 text-center shadow-2xl">
+                  <div className="font-mono text-[11px] font-black tracking-[0.2em] text-amber-400 uppercase mb-3">Premium Required</div>
+                  <p className="font-mono text-[10px] text-amber-100/60 leading-relaxed uppercase tracking-wider">
+                    Historic logbook tracking is restricted to authenticated Premium Radar operators.
+                  </p>
                 </div>
               )}
             </div>
@@ -381,11 +346,12 @@ export const Sidebar = React.memo(
 
 Sidebar.displayName = "Sidebar";
 
-const Detail = ({ label, value }: { label: string; value: string }) => (
-  <div>
-    <div className="mb-0.5 text-[10px] font-semibold text-white/50 uppercase">
-      {label}
+const StatBox = ({ label, value, sub }: { label: string; value: string; sub: string }) => (
+  <div className="group rounded-2xl border border-white/10 bg-black/40 p-4 transition-all hover:bg-black/60 hover:border-white/20 shadow-lg">
+    <div className="font-mono text-[9px] font-black tracking-[0.2em] text-white/40 uppercase mb-2 group-hover:text-cyan-400 transition-colors">{label}</div>
+    <div className="flex items-baseline gap-1.5">
+      <div className="truncate font-mono text-lg font-black text-white tracking-tight">{value}</div>
+      <span className="font-mono text-[9px] text-white/20 uppercase font-black tracking-tighter">{sub}</span>
     </div>
-    <div className="truncate text-sm font-semibold">{value}</div>
   </div>
 );
