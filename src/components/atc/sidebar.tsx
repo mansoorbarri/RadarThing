@@ -165,8 +165,8 @@ export const Sidebar = React.memo(
               <Image
                 src={displayLogo}
                 alt="Airline Logo"
-                width={12}
-                height={12}
+                width={48}
+                height={48}
                 className="rounded bg-black/40 object-contain border border-white/10"
               />
             ) : (
