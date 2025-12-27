@@ -45,6 +45,7 @@ export default function ATCPage() {
   const [selectedWaypointIndex, setSelectedWaypointIndex] = useState<
     number | null
   >(null);
+  const [historyPath, setHistoryPath] = useState<[number, number][] | null>(null);
   const { searchTerm, setSearchTerm, searchResults } = useAircraftSearch(
     aircrafts,
     airports,
@@ -68,6 +69,7 @@ export default function ATCPage() {
       setSelectedAircraft(aircraft);
       setSelectedWaypointIndex(null);
       setSelectedAirport(undefined);
+      setHistoryPath(null);
     },
     [],
   );
@@ -82,6 +84,7 @@ export default function ATCPage() {
       drawFlightPlanOnMapRef.current?.(aircraft, true);
       setSelectedAirport(undefined);
       setSearchTerm("");
+      setHistoryPath(null);
     },
     [setSearchTerm],
   );
@@ -92,6 +95,7 @@ export default function ATCPage() {
       setSelectedAircraft(null);
       setSelectedWaypointIndex(null);
       setSearchTerm("");
+      setHistoryPath(null);
     },
     [setSearchTerm],
   );
@@ -159,11 +163,11 @@ export default function ATCPage() {
             selectedAirport={selectedAirport || selectedAirportFromSearch}
             setDrawFlightPlanOnMap={setDrawFlightPlanOnMap}
             onMapReady={() => setIsMapLoaded(true)}
+            historyPath={historyPath}
           />
         )}
       </div>
 
-      {/* UTC CLOCK + TIMER */}
       <div
         onClick={() => setShowTimerPopup((p) => !p)}
         className="absolute bottom-6 right-3 z-[10001] cursor-pointer select-none font-mono text-[15px] text-cyan-400 transition-all duration-300 hover:text-cyan-300 drop-shadow-[0_0_6px_rgba(0,255,255,0.45)]"
@@ -221,6 +225,7 @@ export default function ATCPage() {
           <Sidebar
             aircraft={selectedAircraft}
             onWaypointClick={handleWaypointClick}
+            onHistoryClick={(path) => setHistoryPath(path)}
             isMobile={isMobile}
           />
         </div>

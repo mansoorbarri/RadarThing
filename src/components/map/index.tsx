@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -37,6 +39,7 @@ interface MapComponentProps {
     func: (aircraft: PositionUpdate, shouldZoom?: boolean) => void,
   ) => void;
   onMapReady?: () => void;
+  historyPath?: [number, number][] | null;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -46,6 +49,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   selectedAirport,
   setDrawFlightPlanOnMap,
   onMapReady,
+  historyPath,
 }) => {
   const [isHeadingMode, setIsHeadingMode] = useState(false);
   const [isRadarMode, setIsRadarMode] = useState(false);
@@ -76,7 +80,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setIsOSMMode,
     setIsOpenAIPEnabled,
     setIsWeatherOverlayEnabled,
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     onMapClick: useCallback((e: L.LeafletMouseEvent) => {}, []),
     setHeadingControlRef: headingControlRef,
     setRadarControlRef: radarControlRef,
@@ -111,7 +114,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         onAircraftSelectRef.current(null);
       }
     },
-    [setSelectedAircraftId, currentSelectedAircraftRef],
+    [setSelectedAircraftId, currentSelectedAircraftRef, mapRefs.flightPlanLayerGroup, mapRefs.historyLayerGroup],
   );
 
   useEffect(() => {
@@ -125,6 +128,32 @@ const MapComponent: React.FC<MapComponentProps> = ({
       }
     };
   }, [mapRefs.mapInstance, stableOnMapClick]);
+
+  useEffect(() => {
+    const map = mapRefs.mapInstance.current;
+    const layerGroup = mapRefs.historyLayerGroup.current;
+    if (!map || !layerGroup) return;
+
+    layerGroup.clearLayers();
+
+    if (historyPath && historyPath.length > 1) {
+      L.polyline(historyPath, {
+        color: "#3b82f6",
+        weight: 4,
+        opacity: 0.8,
+        dashArray: "10, 10",
+        lineJoin: "round",
+      }).addTo(layerGroup);
+    }
+  }, [historyPath, aircrafts, mapRefs.mapInstance, mapRefs.historyLayerGroup]);
+
+  useEffect(() => {
+    const map = mapRefs.mapInstance.current;
+    if (map && historyPath && historyPath.length > 1) {
+        const tempPoly = L.polyline(historyPath);
+        map.fitBounds(tempPoly.getBounds(), { padding: [50, 50] });
+    }
+  }, [historyPath, mapRefs.mapInstance]);
 
   useMapLayersAndMarkers({
     mapInstance: mapRefs.mapInstance,
@@ -179,7 +208,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setDrawFlightPlanOnMap(drawFlightPlan);
   }, [drawFlightPlan, setDrawFlightPlanOnMap]);
 
-  // Notify parent that map is ready
   useEffect(() => {
     if (mapRefs.mapInstance.current && onMapReady) {
       onMapReady();
