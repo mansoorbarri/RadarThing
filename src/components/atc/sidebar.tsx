@@ -36,6 +36,7 @@ export const Sidebar = React.memo(
         altMSL?: number; 
         googleId?: string; 
         role?: string;
+        airlineLogo?: string | null;
     };
     onWaypointClick?: (waypoint: any, index: number) => void;
     onHistoryClick?: (path: [number, number][]) => void;
@@ -139,9 +140,34 @@ export const Sidebar = React.memo(
           </div>
         )}
 
-        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-b border-white/10 px-4 py-2.5">
-          <div className="font-bold text-lg leading-tight">{aircraft.callsign || aircraft.flightNo || "N/A"}</div>
-          <div className="text-xs text-white/60 font-medium">{aircraft.type || "Unknown Type"}</div>
+        {/* --- Header with Logo --- */}
+        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-b border-white/10 px-4 py-3 flex items-center gap-3">
+          {aircraft.airlineLogo ? (
+            <img 
+              src={aircraft.airlineLogo} 
+              alt="Airline" 
+              className="w-12 h-12 rounded bg-black/40 object-contain border border-white/10 shadow-inner"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded bg-white/5 border border-dashed border-white/20 flex items-center justify-center text-white/20">
+               <TbPlane size={24} />
+            </div>
+          )}
+          
+          <div className="flex-1 min-w-0">
+            <div className="font-bold text-lg leading-tight truncate">
+              {aircraft.callsign || aircraft.flightNo || "N/A"}
+            </div>
+            <div className="text-xs text-white/60 font-medium truncate">
+              {aircraft.type || "Unknown Type"}
+            </div>
+          </div>
+          
+          {isPremium && (
+            <div className="bg-yellow-500/20 border border-yellow-500/40 text-yellow-500 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tighter self-start">
+              PRO
+            </div>
+          )}
         </div>
 
         <div className="flex border-b border-white/10 bg-black/20">
@@ -222,8 +248,8 @@ export const Sidebar = React.memo(
                 </>
               ) : (
                 <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded text-[11px] text-amber-200/80 text-center leading-relaxed">
-                  <div className="font-bold mb-1">PREMIUM FEATURE</div>
-                  Automatic flight history recording is restricted to Premium pilots.
+                  <div className="font-bold mb-1 uppercase tracking-tight">Premium Member Feature</div>
+                  Automatic flight logging and history tracking is restricted to Premium pilots.
                 </div>
               )}
             </div>
