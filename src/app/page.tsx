@@ -46,6 +46,7 @@ export default function ATCPage() {
     number | null
   >(null);
   const [historyPath, setHistoryPath] = useState<[number, number][] | null>(null);
+  const [isViewingHistory, setIsViewingHistory] = useState(false);
   const { searchTerm, setSearchTerm, searchResults } = useAircraftSearch(
     aircrafts,
     airports,
@@ -66,10 +67,11 @@ export default function ATCPage() {
 
   const handleAircraftSelect = useCallback(
     (aircraft: PositionUpdate | null) => {
+      setIsViewingHistory(false);
+      setHistoryPath(null);
       setSelectedAircraft(aircraft);
       setSelectedWaypointIndex(null);
       setSelectedAirport(undefined);
-      setHistoryPath(null);
     },
     [],
   );
@@ -80,41 +82,41 @@ export default function ATCPage() {
 
   const handleSearchBarAircraftSelect = useCallback(
     (aircraft: PositionUpdate) => {
+      setIsViewingHistory(false);
+      setHistoryPath(null);
       setSelectedAircraft(aircraft);
       drawFlightPlanOnMapRef.current?.(aircraft, true);
       setSelectedAirport(undefined);
       setSearchTerm("");
-      setHistoryPath(null);
     },
     [setSearchTerm],
   );
 
   const handleSearchBarAirportSelect = useCallback(
     (airport: Airport) => {
+      setIsViewingHistory(false);
+      setHistoryPath(null);
       setSelectedAirport(airport);
       setSelectedAircraft(null);
       setSelectedWaypointIndex(null);
       setSearchTerm("");
-      setHistoryPath(null);
     },
     [setSearchTerm],
   );
 
   useEffect(() => {
-    if (selectedAircraft && aircrafts.length > 0) {
-      const updatedAircraft = aircrafts.find(
-        (ac) =>
-          (ac.id && ac.id === selectedAircraft.id) ||
-          (ac.callsign && ac.callsign === selectedAircraft.callsign),
-      );
-      if (updatedAircraft) {
-        setSelectedAircraft(updatedAircraft);
-      } else {
-        setSelectedAircraft(null);
-        setSelectedWaypointIndex(null);
-      }
+    if (!selectedAircraft || isViewingHistory) return;
+
+    const updatedAircraft = aircrafts.find(
+      (ac) =>
+        (ac.id && ac.id === selectedAircraft.id) ||
+        (ac.callsign && ac.callsign === selectedAircraft.callsign),
+    );
+
+    if (updatedAircraft) {
+      setSelectedAircraft(updatedAircraft);
     }
-  }, [aircrafts, selectedAircraft]);
+  }, [aircrafts, isViewingHistory, selectedAircraft]);
 
   const selectedAirportFromSearch = searchResults.find(
     (r) =>
@@ -143,11 +145,12 @@ export default function ATCPage() {
           />
         </div>
       )}
+
       <div className="absolute top-2 right-2 z-[10000] flex items-end gap-2">
         <ConnectionStatusIndicator
           status={connectionStatus}
           isMobile={isMobile}
-      />
+        />
         <UserAuth />
       </div>
 
@@ -189,24 +192,21 @@ export default function ATCPage() {
             {isRunning ? (
               <button
                 onClick={stop}
-                className="rounded-md border border-red-400/40 bg-red-500/20 px-2 py-[2px] text-[12px] text-red-400 
-                transition-all duration-150 hover:border-red-400 hover:bg-red-400/30 hover:text-red-300"
+                className="rounded-md border border-red-400/40 bg-red-500/20 px-2 py-[2px] text-[12px] text-red-400 transition-all duration-150 hover:border-red-400 hover:bg-red-400/30 hover:text-red-300"
               >
                 Stop
               </button>
             ) : (
               <button
                 onClick={start}
-                className="rounded-md border border-green-400/40 bg-green-500/20 px-2 py-[2px] text-[12px] text-green-400 
-                transition-all duration-150 hover:border-green-400 hover:bg-green-400/30 hover:text-green-300"
+                className="rounded-md border border-green-400/40 bg-green-500/20 px-2 py-[2px] text-[12px] text-green-400 transition-all duration-150 hover:border-green-400 hover:bg-green-400/30 hover:text-green-300"
               >
                 Start
               </button>
             )}
             <button
               onClick={reset}
-              className="rounded-md border border-blue-400/40 bg-blue-500/20 px-2 py-[2px] text-[12px] text-blue-400 
-              transition-all duration-150 hover:border-blue-400 hover:bg-blue-400/30 hover:text-blue-300"
+              className="rounded-md border border-blue-400/40 bg-blue-500/20 px-2 py-[2px] text-[12px] text-blue-400 transition-all duration-150 hover:border-blue-400 hover:bg-blue-400/30 hover:text-blue-300"
             >
               Reset
             </button>
@@ -225,7 +225,10 @@ export default function ATCPage() {
           <Sidebar
             aircraft={selectedAircraft}
             onWaypointClick={handleWaypointClick}
-            onHistoryClick={(path) => setHistoryPath(path)}
+            onHistoryClick={(path) => {
+              setHistoryPath(path);
+              setIsViewingHistory(true);
+            }}
             isMobile={isMobile}
           />
         </div>
