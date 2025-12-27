@@ -49,9 +49,7 @@ export const Sidebar = ({
   onHistoryClick,
   isMobile,
 }: {
-  aircraft: PositionUpdate & {
-    altMSL?: number;
-  };
+  aircraft: PositionUpdate & { altMSL?: number };
   onWaypointClick?: (waypoint: any, index: number) => void;
   onHistoryClick?: (path: [number, number][]) => void;
   isMobile: boolean;
@@ -205,6 +203,113 @@ export const Sidebar = ({
             )}
           </div>
         </div>
+
+        <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-white/10 bg-black/40 p-1.5 shadow-inner">
+          <div className="flex flex-col items-center p-3.5 rounded-xl">
+            <span className="font-mono text-[9px] font-black uppercase text-slate-400 mb-1.5">
+              Altitude
+            </span>
+            <span id="side-alt" className="font-mono text-base font-black text-white tracking-tight leading-none">
+              ---
+            </span>
+            <span className="font-mono text-[8px] font-black text-cyan-400/80 uppercase tracking-widest mt-0.5">
+              FT MSL
+            </span>
+          </div>
+          <div className="flex flex-col items-center p-3.5 rounded-xl bg-white/10 border border-white/10 shadow-lg scale-105 z-10">
+            <TbPlaneInflight size={20} className="text-cyan-400" />
+            <span className="font-mono text-[10px] font-black text-white mt-1.5 uppercase tracking-wide">
+              {currentFlightPhase}
+            </span>
+          </div>
+          <div className="flex flex-col items-center p-3.5 rounded-xl">
+            <span className="font-mono text-[9px] font-black uppercase text-slate-400 mb-1.5">
+              Speed
+            </span>
+            <span id="side-spd" className="font-mono text-base font-black text-white tracking-tight leading-none">
+              ---
+            </span>
+            <span className="font-mono text-[8px] font-black text-cyan-400/80 uppercase tracking-widest mt-0.5">
+              KNOTS GS
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <nav className="flex px-6 mb-5">
+        <div className="flex w-full rounded-2xl bg-black/60 p-1.5 border border-white/10 shadow-xl">
+          <button
+            onClick={() => setTab("info")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
+              tab === "info"
+                ? "bg-white text-black shadow-lg"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <TbInfoCircle size={14} /> LIVE DATA
+          </button>
+          <button
+            onClick={() => setTab("history")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
+              tab === "history"
+                ? "bg-white text-black shadow-lg"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <TbHistory size={14} /> LOGBOOK
+          </button>
+        </div>
+      </nav>
+
+      <div className="custom-scrollbar flex-1 overflow-y-auto px-6 pb-12">
+        {tab === "info" ? (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-3.5">
+              <StatBox label="Departure" value={aircraft.departure || "---"} sub="ORIG" />
+              <StatBox label="Arrival" value={aircraft.arrival || "---"} sub="DEST" />
+              <StatBox label="V-Speed" id="side-vs" value="---" sub="FPM" />
+              <StatBox label="Heading" id="side-hdg" value="---" sub="MAG" />
+              <StatBox label="Squawk" id="side-sqk" value="---" sub="XPDR" />
+              <StatBox label="Alt AGL" id="side-agl" value="---" sub="FEET" />
+            </div>
+            {renderFlightPlan()}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {loadingHistory ? (
+              <div className="flex flex-col items-center justify-center py-20 opacity-60">
+                <div className="h-6 w-6 rounded-full border-2 border-cyan-400 animate-spin mb-4" />
+                <span className="font-mono text-[11px] font-black tracking-widest">
+                  LOADING
+                </span>
+              </div>
+            ) : history.length === 0 ? (
+              <div className="py-20 text-center font-mono text-[10px] text-white/40 tracking-widest uppercase">
+                No Records
+              </div>
+            ) : (
+              history.map((f) => (
+                <div
+                  key={f.id}
+                  onClick={() =>
+                    f.routeData &&
+                    onHistoryClick?.(f.routeData as [number, number][])
+                  }
+                  className="group relative overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4 transition-all hover:border-cyan-500/40 cursor-pointer shadow-lg"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-mono text-sm font-black text-white group-hover:text-cyan-400">
+                      {f.depICAO} → {f.arrICAO}
+                    </span>
+                    <span className="font-mono text-[10px] font-bold text-white/30">
+                      {new Date(f.startTime).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
