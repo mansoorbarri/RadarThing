@@ -66,8 +66,9 @@ export const Sidebar = React.memo(
     const altAGL = aircraft.alt;
     const currentRole = dbProfile?.role || aircraft.role;
     const isPremium = currentRole === "PREMIUM";
-    const displayLogo = dbProfile?.airlineLogo || (aircraft as any).airlineLogo;
-    console.log(displayLogo)
+
+    /* ONLY use the logo from the aircraft stream. Do not fall back to DB profile */
+    const displayLogo = (aircraft as any).airlineLogo;
 
     const currentFlightPhase = useMemo(
       () =>
