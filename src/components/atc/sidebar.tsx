@@ -8,9 +8,11 @@ import {
   TbPlaneArrival,
   TbHistory,
   TbInfoCircle,
+  TbUserCircle,
 } from "react-icons/tb";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { getFlightHistory } from "~/app/actions/get-flight-history";
+import { getUserProfile } from "~/app/actions/get-user-profile";
 
 const getFlightPhase = (altAGL: number, vspeed: number, flightPlan?: string) => {
   const isOnGround = altAGL < 100;
@@ -36,7 +38,6 @@ export const Sidebar = React.memo(
         altMSL?: number; 
         googleId?: string; 
         role?: string;
-        airlineLogo?: string | null;
     };
     onWaypointClick?: (waypoint: any, index: number) => void;
     onHistoryClick?: (path: [number, number][]) => void;
@@ -44,6 +45,7 @@ export const Sidebar = React.memo(
   }) => {
     const [tab, setTab] = useState<"info" | "history">("info");
     const [history, setHistory] = useState<any[]>([]);
+    const [dbProfile, setDbProfile] = useState<any>(null);
     const [loadingHistory, setLoadingHistory] = useState(false);
     const [selectedFlightId, setSelectedFlightId] = useState<string | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -53,13 +55,29 @@ export const Sidebar = React.memo(
 
     const altMSL = aircraft.altMSL ?? aircraft.alt;
     const altAGL = aircraft.alt;
-    const isPremium = aircraft.role === "PREMIUM";
+    
+    // Use DB role if available, fallback to aircraft object
+    const currentRole = dbProfile?.role || aircraft.role;
+    const isPremium = currentRole === "PREMIUM";
+    
+    // Priority: DB Logo -> SSE Logo -> Placeholder
+    const displayLogo = dbProfile?.airlineLogo || (aircraft as any).airlineLogo;
 
     const currentFlightPhase = useMemo(
       () => getFlightPhase(altAGL, Number(aircraft.vspeed), aircraft.flightPlan),
       [altAGL, aircraft.vspeed, aircraft.flightPlan],
     );
 
+    // Fetch Profile (Logo/Role)
+    useEffect(() => {
+      if (aircraft.googleId) {
+        getUserProfile(aircraft.googleId).then(setDbProfile).catch(console.error);
+      } else {
+        setDbProfile(null);
+      }
+    }, [aircraft.googleId]);
+
+    // Fetch History
     useEffect(() => {
       if (tab === "history" && aircraft.googleId && isPremium) {
         setLoadingHistory(true);
@@ -140,34 +158,34 @@ export const Sidebar = React.memo(
           </div>
         )}
 
-        {/* --- Header with Logo --- */}
         <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-b border-white/10 px-4 py-3 flex items-center gap-3">
-          {aircraft.airlineLogo ? (
-            <img 
-              src={aircraft.airlineLogo} 
-              alt="Airline" 
-              className="w-12 h-12 rounded bg-black/40 object-contain border border-white/10 shadow-inner"
-            />
-          ) : (
-            <div className="w-12 h-12 rounded bg-white/5 border border-dashed border-white/20 flex items-center justify-center text-white/20">
-               <TbPlane size={24} />
-            </div>
-          )}
+          <div className="relative">
+            {displayLogo ? (
+              <img 
+                src={displayLogo} 
+                alt="Airline Logo" 
+                className="w-12 h-12 rounded bg-black/40 object-contain border border-white/10"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded bg-white/5 border border-dashed border-white/20 flex items-center justify-center text-white/20">
+                 <TbPlane size={24} />
+              </div>
+            )}
+            {isPremium && (
+              <div className="absolute -top-1.5 -right-1.5 bg-yellow-500 text-black text-[8px] font-black px-1 rounded shadow-sm">
+                PRO
+              </div>
+            )}
+          </div>
           
           <div className="flex-1 min-w-0">
             <div className="font-bold text-lg leading-tight truncate">
               {aircraft.callsign || aircraft.flightNo || "N/A"}
             </div>
-            <div className="text-xs text-white/60 font-medium truncate">
+            <div className="text-xs text-white/60 font-medium truncate uppercase tracking-tighter">
               {aircraft.type || "Unknown Type"}
             </div>
           </div>
-          
-          {isPremium && (
-            <div className="bg-yellow-500/20 border border-yellow-500/40 text-yellow-500 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tighter self-start">
-              PRO
-            </div>
-          )}
         </div>
 
         <div className="flex border-b border-white/10 bg-black/20">
@@ -224,7 +242,7 @@ export const Sidebar = React.memo(
               {isPremium ? (
                 <>
                   {loadingHistory ? (
-                    <div className="text-center py-10 text-white/50 animate-pulse text-xs">Fetching logs...</div>
+                    <div className="text-center py-10 text-white/50 animate-pulse text-xs uppercase font-bold">Fetching logs...</div>
                   ) : history.length === 0 ? (
                     <div className="text-center py-10 text-white/30 text-xs italic">No past flights found for this pilot.</div>
                   ) : (
@@ -248,7 +266,7 @@ export const Sidebar = React.memo(
                 </>
               ) : (
                 <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded text-[11px] text-amber-200/80 text-center leading-relaxed">
-                  <div className="font-bold mb-1 uppercase tracking-tight">Premium Member Feature</div>
+                  <div className="font-bold mb-1 uppercase tracking-tight text-amber-400">Premium Feature</div>
                   Automatic flight logging and history tracking is restricted to Premium pilots.
                 </div>
               )}
