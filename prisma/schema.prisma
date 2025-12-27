@@ -20,7 +20,7 @@ model User {
   googleId      String?  @unique
   email         String   @unique
   username      String?
-  role          Role     @default(FREE)
+  role          Role     @default(PREMIUM)
   
   // Premium Customization
   radarKey      String   @unique @default(cuid()) // For the Tampermonkey script

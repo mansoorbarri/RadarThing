@@ -6,6 +6,7 @@ import {
   OpenAIPControl,
   WeatherOverlayControl,
   OSMControl,
+  RadarSettingsControl,
 } from "~/components/map/MapControls";
 
 interface UseMapInitializationProps {
@@ -15,12 +16,14 @@ interface UseMapInitializationProps {
   setIsOSMMode?: React.Dispatch<React.SetStateAction<boolean>>;
   setIsOpenAIPEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   setIsWeatherOverlayEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   onMapClick: (e: L.LeafletMouseEvent) => void;
   setHeadingControlRef: React.MutableRefObject<HeadingModeControl | null>;
   setRadarControlRef: React.MutableRefObject<RadarModeControl | null>;
   setOSMControlRef?: React.MutableRefObject<OSMControl | null>;
   setOpenAIPControlRef: React.MutableRefObject<OpenAIPControl | null>;
   setWeatherControlRef: React.MutableRefObject<WeatherOverlayControl | null>;
+  setSettingsControlRef: React.MutableRefObject<RadarSettingsControl | null>;
 }
 
 interface MapRefs {
@@ -43,12 +46,14 @@ export const useMapInitialization = ({
   setIsOSMMode,
   setIsOpenAIPEnabled,
   setIsWeatherOverlayEnabled,
+  setIsSettingsOpen,
   onMapClick,
   setHeadingControlRef,
   setRadarControlRef,
   setOSMControlRef,
   setOpenAIPControlRef,
   setWeatherControlRef,
+  setSettingsControlRef,
 }: UseMapInitializationProps): MapRefs => {
   const mapInstance = useRef<L.Map | null>(null);
   const flightPlanLayerGroup = useRef<L.LayerGroup | null>(null);
@@ -84,7 +89,6 @@ export const useMapInitialization = ({
       })
       .addTo(map);
 
-    // OpenStreetMap layer
     osmLayer.current = L.tileLayer(
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       {
@@ -128,7 +132,6 @@ export const useMapInitialization = ({
       bounds: worldBounds,
     });
 
-    // Set OSM as the default base layer
     osmLayer.current.addTo(map);
 
     flightPlanLayerGroup.current = L.layerGroup().addTo(map);
@@ -160,6 +163,10 @@ export const useMapInitialization = ({
     );
     map.addControl(weatherControl);
     setWeatherControlRef.current = weatherControl;
+
+    const settingsControl = new RadarSettingsControl({}, setIsSettingsOpen);
+    map.addControl(settingsControl);
+    setSettingsControlRef.current = settingsControl;
 
     map.on("click", onMapClick);
 

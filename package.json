@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "prisma generate && next build",
+    "build": "next build",
     "check": "next lint && tsc --noEmit",
     "db:generate": "prisma migrate dev",
     "db:migrate": "prisma migrate deploy",
@@ -25,6 +25,7 @@
     "@prisma/client": "^6.5.0",
     "@t3-oss/env-nextjs": "^0.12.0",
     "@types/leaflet": "^1.9.21",
+    "@uploadthing/react": "^7.3.3",
     "clsx": "^2.1.1",
     "leaflet": "^1.9.4",
     "leaflet-marker-rotation": "^0.4.0",
@@ -34,6 +35,7 @@
     "react-dom": "^19.2.1",
     "react-icons": "^5.5.0",
     "svix": "^1.82.0",
+    "uploadthing": "^7.7.4",
     "zod": "^3.25.76"
   },
   "devDependencies": {

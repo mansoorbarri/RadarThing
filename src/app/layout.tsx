@@ -6,6 +6,10 @@ import { Geist } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 
+import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
+import { extractRouterConfig } from "uploadthing/server";
+import { ourFileRouter } from "~/app/api/uploadthing/core";
+
 export const metadata: Metadata = {
   title: "ATC Radar",
   description: "ATC Radar for GeoFS",
@@ -38,7 +42,10 @@ export default function RootLayout({
       }}
     >
     <html lang="en" className={`${geist.variable}`}>
-      <body>{children}</body>
+      <body>
+      <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
+        {children}
+      </body>
     </html>
     </ClerkProvider>
   );

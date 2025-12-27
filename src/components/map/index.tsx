@@ -15,11 +15,13 @@ import {
   OSMControl,
   OpenAIPControl,
   WeatherOverlayControl,
+  RadarSettingsControl,
 } from "~/components/map/MapControls";
 import { MapGlobalStyles } from "~/styles/MapGlobalStyles";
 import { useMetarOverlay } from "~/hooks/useMetarOverlay";
 import { useWeatherOverlayLayer } from "~/hooks/useWeatherOverlayLayer";
 import { MetarPanel } from "./MetarPanel";
+import { RadarSettings } from "~/components/atc/radarSettings";
 
 export interface Airport {
   name: string;
@@ -56,6 +58,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [isOSMMode, setIsOSMMode] = useState(false);
   const [isOpenAIPEnabled, setIsOpenAIPEnabled] = useState(false);
   const [isWeatherOverlayEnabled, setIsWeatherOverlayEnabled] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedAircraftId, setSelectedAircraftId] = useState<string | null>(
     null,
   );
@@ -67,6 +70,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const osmControlRef = useRef<OSMControl | null>(null);
   const openAIPControlRef = useRef<OpenAIPControl | null>(null);
   const weatherControlRef = useRef<WeatherOverlayControl | null>(null);
+  const settingsControlRef = useRef<RadarSettingsControl | null>(null);
 
   const onAircraftSelectRef = useRef(onAircraftSelect);
   useEffect(() => {
@@ -80,12 +84,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setIsOSMMode,
     setIsOpenAIPEnabled,
     setIsWeatherOverlayEnabled,
-    onMapClick: useCallback((e: L.LeafletMouseEvent) => {}, []),
+    setIsSettingsOpen,
+    onMapClick: useCallback(() => { /* noop */ }, []),
     setHeadingControlRef: headingControlRef,
     setRadarControlRef: radarControlRef,
     setOSMControlRef: osmControlRef,
     setOpenAIPControlRef: openAIPControlRef,
     setWeatherControlRef: weatherControlRef,
+    setSettingsControlRef: settingsControlRef,
   });
 
   const { drawFlightPlan, currentSelectedAircraftRef } = useFlightPlanDrawing({
@@ -112,6 +118,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         currentSelectedAircraftRef.current = null;
         setSelectedAircraftId(null);
         onAircraftSelectRef.current(null);
+        setIsSettingsOpen(false);
       }
     },
     [setSelectedAircraftId, currentSelectedAircraftRef, mapRefs.flightPlanLayerGroup, mapRefs.historyLayerGroup],
@@ -202,7 +209,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
       openAIPControlRef.current.updateState(isOpenAIPEnabled);
     if (weatherControlRef.current)
       weatherControlRef.current.updateState(isWeatherOverlayEnabled);
-  }, [isHeadingMode, isRadarMode, isOSMMode, isOpenAIPEnabled, isWeatherOverlayEnabled]);
+    if (settingsControlRef.current)
+      settingsControlRef.current.updateState(isSettingsOpen);
+  }, [isHeadingMode, isRadarMode, isOSMMode, isOpenAIPEnabled, isWeatherOverlayEnabled, isSettingsOpen]);
 
   useEffect(() => {
     setDrawFlightPlanOnMap(drawFlightPlan);
@@ -223,6 +232,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
     <>
       <MapGlobalStyles />
       <div id="map-container" style={{ height: "100%", width: "100%" }} />
+
+      {isSettingsOpen && (
+        <div className="absolute top-12 left-12 z-[10001] w-[320px]">
+          <RadarSettings />
+        </div>
+      )}
 
       <MetarPanel
         icaoInput={icaoInput}

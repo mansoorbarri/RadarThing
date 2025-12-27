@@ -32,6 +32,41 @@ function setActiveStyle(container: HTMLDivElement, active: boolean) {
   }
 }
 
+export class RadarSettingsControl extends L.Control {
+  public options = { position: "topleft" as L.ControlPosition };
+  public _container: HTMLDivElement | null = null;
+  private _toggleSettings: React.Dispatch<React.SetStateAction<boolean>>;
+  private _boundClick: () => void;
+
+  constructor(
+    options: L.ControlOptions,
+    toggleSettings: React.Dispatch<React.SetStateAction<boolean>>,
+  ) {
+    super(options);
+    this._toggleSettings = toggleSettings;
+    this._boundClick = () => this._toggleSettings((prev) => !prev);
+  }
+
+  onAdd(): HTMLDivElement {
+    const container = L.DomUtil.create("div");
+    applyMetarStyleButton(container, "Radar Settings", "&#9881;"); // ⚙️
+    L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
+    L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
+    L.DomEvent.on(container, "click", this._boundClick);
+    this._container = container;
+    return container;
+  }
+
+  onRemove() {
+    if (this._container)
+      L.DomEvent.off(this._container, "click", this._boundClick);
+  }
+
+  updateState(enabled: boolean) {
+    if (this._container) setActiveStyle(this._container, enabled);
+  }
+}
+
 export class HeadingModeControl extends L.Control {
   public options = { position: "topleft" as L.ControlPosition };
   public _container: HTMLDivElement | null = null;
