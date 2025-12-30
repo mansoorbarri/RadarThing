@@ -133,7 +133,7 @@ export const getAircraftDivIcon = (
       ${isEmergency ? "text-red-400" : "text-cyan-200"}
     ">
       <div class="flex items-center justify-between font-semibold text-[12px]">
-        <span>${aircraft.callsign || aircraft.flightNo || "N/A"}</span>
+        <span>${aircraft.flightNo || aircraft.callsign || "N/A"}</span>
         ${
           isEmergency
             ? `<span class="text-red-500 animate-pulse">EMRG</span>`
