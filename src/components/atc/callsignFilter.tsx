@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
+import Image from "next/image";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 
 interface CallsignFilterProps {
@@ -67,63 +68,84 @@ export function CallsignFilter({
           </div>
         ) : (
           <ul className="divide-y divide-white/5">
-            {callsignPrefixes.map(({ prefix, count }) => {
-              const isSelected = selectedCallsigns.has(prefix);
-              const logoUrl = getAirlineLogoFromFlightNumber(prefix);
-
-              return (
-                <li key={prefix}>
-                  <button
-                    onClick={() => onToggleCallsign(prefix)}
-                    className={`flex w-full items-center gap-5 px-6 py-4 transition-all duration-150 ${
-                      isSelected
-                        ? "bg-cyan-500/15 text-cyan-300"
-                        : "text-slate-200 hover:bg-white/5"
-                    }`}
-                  >
-                    {/* Logo */}
-                    <div className="flex h-10 w-10 items-center justify-center">
-                      {logoUrl ? (
-                        <img
-                          src={logoUrl}
-                          alt={prefix}
-                          className="h-10 w-10 rounded bg-black/40 object-contain"
-                          onError={(e) => {
-                            (
-                              e.currentTarget as HTMLImageElement
-                            ).style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded bg-white/5 font-mono text-sm text-slate-400">
-                          {prefix}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Airline info */}
-                    <div className="flex flex-col items-start">
-                      <span className="font-mono text-lg leading-tight">
-                        {prefix}
-                      </span>
-                      <span className="text-sm text-slate-500">
-                        {count} flight{count > 1 ? "s" : ""}
-                      </span>
-                    </div>
-
-                    {/* Selected indicator */}
-                    {isSelected && (
-                      <div className="ml-auto rounded-full bg-cyan-400/20 px-3 py-1 text-xs font-bold text-cyan-300 uppercase">
-                        Active
-                      </div>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
+            {callsignPrefixes.map(({ prefix, count }) => (
+              <AirlineRow
+                key={prefix}
+                prefix={prefix}
+                count={count}
+                isSelected={selectedCallsigns.has(prefix)}
+                onToggle={onToggleCallsign}
+              />
+            ))}
           </ul>
         )}
       </div>
     </div>
+  );
+}
+
+/* ------------------------------------------
+ * Airline row (isolated for hook safety)
+ * ------------------------------------------ */
+
+function AirlineRow({
+  prefix,
+  count,
+  isSelected,
+  onToggle,
+}: {
+  prefix: string;
+  count: number;
+  isSelected: boolean;
+  onToggle: (prefix: string) => void;
+}) {
+  const [logoError, setLogoError] = useState(false);
+  const logoUrl = getAirlineLogoFromFlightNumber(prefix);
+
+  return (
+    <li>
+      <button
+        onClick={() => onToggle(prefix)}
+        className={`flex w-full items-center gap-5 px-6 py-4 transition-all duration-150 ${
+          isSelected
+            ? "bg-cyan-500/15 text-cyan-300"
+            : "text-slate-200 hover:bg-white/5"
+        }`}
+      >
+        {/* Logo */}
+        <div className="flex h-10 w-10 items-center justify-center">
+          {logoUrl && !logoError ? (
+            <Image
+              src={logoUrl}
+              alt={prefix}
+              width={40}
+              height={40}
+              className="rounded bg-black/40 object-contain select-none"
+              unoptimized
+              onError={() => setLogoError(true)}
+            />
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded bg-white/5 font-mono text-sm text-slate-400">
+              {prefix}
+            </div>
+          )}
+        </div>
+
+        {/* Airline info */}
+        <div className="flex flex-col items-start">
+          <span className="font-mono text-lg leading-tight">{prefix}</span>
+          <span className="text-sm text-slate-500">
+            {count} flight{count > 1 ? "s" : ""}
+          </span>
+        </div>
+
+        {/* Selected indicator */}
+        {isSelected && (
+          <div className="ml-auto rounded-full bg-cyan-400/20 px-3 py-1 text-xs font-bold text-cyan-300 uppercase">
+            Active
+          </div>
+        )}
+      </button>
+    </li>
   );
 }

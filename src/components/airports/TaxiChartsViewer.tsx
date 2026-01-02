@@ -1,6 +1,7 @@
 import { type AirportChart } from "~/types/airportCharts";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 
 interface Props {
   chart: AirportChart;
@@ -52,10 +53,13 @@ export function TaxiChartViewer({ chart, onClose }: Props) {
                   wrapperClass="!w-full !h-full"
                   contentClass="flex h-full w-full items-center justify-center"
                 >
-                  <img
+                  <Image
                     src={chart.taxi_chart_url}
                     alt={`Taxi chart for ${chart.name}`}
-                    className="max-h-full max-w-full object-contain select-none"
+                    fill
+                    sizes="100vw"
+                    className="object-contain select-none"
+                    unoptimized
                     onLoad={() => {
                       resetTransform();
                     }}

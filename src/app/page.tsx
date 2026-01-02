@@ -95,7 +95,11 @@ export default function ATCPage() {
   const handleToggleCallsign = useCallback((prefix: string) => {
     setSelectedCallsigns((prev) => {
       const next = new Set(prev);
-      next.has(prefix) ? next.delete(prefix) : next.add(prefix);
+      if (next.has(prefix)) {
+        next.delete(prefix);
+      } else {
+        next.add(prefix);
+      }
       return next;
     });
   }, []);
