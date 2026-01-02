@@ -299,7 +299,7 @@ export default function ATCPage() {
         </aside>
       )}
 
-      {showTaxiChart && chart && (
+      {showTaxiChart && (
         <TaxiChartViewer
           chart={chart}
           onClose={() => setShowTaxiChart(false)}
