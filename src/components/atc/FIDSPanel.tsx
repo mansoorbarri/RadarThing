@@ -18,11 +18,7 @@ export function FIDSPanel({ aircrafts, onTrack }: Props) {
 
       <div className="flex-1 overflow-y-auto">
         {aircrafts.map((ac) => (
-          <FIDSRow
-            key={ac.id ?? ac.callsign}
-            aircraft={ac}
-            onTrack={onTrack}
-          />
+          <FIDSRow key={ac.id ?? ac.callsign} aircraft={ac} onTrack={onTrack} />
         ))}
       </div>
     </div>
@@ -46,13 +42,11 @@ function FIDSRow({
         {aircraft.departure || "UNK"} → {aircraft.arrival || "UNK"}
       </div>
 
-      <div className="text-slate-500">
-        {aircraft.callsign || "—"}
-      </div>
+      <div className="text-slate-500">{aircraft.callsign || "—"}</div>
 
       <button
         onClick={() => onTrack(aircraft)}
-        className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[10px] uppercase tracking-wide text-cyan-300 hover:bg-cyan-500/20"
+        className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[10px] tracking-wide text-cyan-300 uppercase hover:bg-cyan-500/20"
       >
         Track
       </button>

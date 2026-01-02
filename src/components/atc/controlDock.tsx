@@ -16,10 +16,7 @@ interface ControlDockProps {
   side?: "left" | "right";
 }
 
-export function ControlDock({
-  items,
-  side = "left",
-}: ControlDockProps) {
+export function ControlDock({ items, side = "left" }: ControlDockProps) {
   const [open, setOpen] = useState(false);
 
   const isRight = side === "right";
@@ -37,8 +34,8 @@ export function ControlDock({
             isRight ? "right-0 items-end" : "left-0 items-start"
           } flex flex-col gap-2 transition-all duration-200 ease-out ${
             open
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-2 pointer-events-none"
+              ? "translate-y-0 opacity-100"
+              : "pointer-events-none translate-y-2 opacity-0"
           }`}
         >
           {items.map((item) => (
@@ -62,7 +59,7 @@ export function ControlDock({
           onClick={() => setOpen(!open)}
           className={`flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-black/80 backdrop-blur-md transition-all duration-150 ${
             open
-              ? "text-cyan-300 bg-black/90"
+              ? "bg-black/90 text-cyan-300"
               : "text-slate-400 hover:bg-black/90 hover:text-cyan-300"
           }`}
         >

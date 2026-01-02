@@ -1,8 +1,5 @@
 import { type AirportChart } from "~/types/airportCharts";
-import {
-  TransformWrapper,
-  TransformComponent,
-} from "react-zoom-pan-pinch";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { useEffect, useRef } from "react";
 
 interface Props {
@@ -18,12 +15,8 @@ export function TaxiChartViewer({ chart, onClose }: Props) {
       <div className="absolute inset-4 flex flex-col rounded-xl bg-slate-950 shadow-2xl">
         <header className="flex items-center justify-between border-b border-white/10 px-4 py-3">
           <div>
-            <h2 className="text-sm font-semibold text-white">
-              {chart.name}
-            </h2>
-            <p className="text-[10px] text-slate-400 uppercase">
-              Taxi Diagram
-            </p>
+            <h2 className="text-sm font-semibold text-white">{chart.name}</h2>
+            <p className="text-[10px] text-slate-400 uppercase">Taxi Diagram</p>
           </div>
 
           <div className="flex gap-2">
@@ -45,10 +38,7 @@ export function TaxiChartViewer({ chart, onClose }: Props) {
           </div>
         </header>
 
-        <div
-          ref={containerRef}
-          className="relative flex-1 overflow-hidden"
-        >
+        <div ref={containerRef} className="relative flex-1 overflow-hidden">
           <TransformWrapper
             minScale={0.5}
             maxScale={6}

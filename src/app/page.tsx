@@ -51,16 +51,16 @@ export default function ATCPage() {
     useState<PositionUpdate | null>(null);
   const [selectedAirport, setSelectedAirport] = useState<any>(undefined);
 
-  const [historyPath, setHistoryPath] =
-    useState<[number, number][] | null>(null);
+  const [historyPath, setHistoryPath] = useState<[number, number][] | null>(
+    null,
+  );
   const [isViewingHistory, setIsViewingHistory] = useState(false);
 
   const [selectedCallsigns, setSelectedCallsigns] = useState<Set<string>>(
     new Set(),
   );
 
-  const [activeRightPanel, setActiveRightPanel] =
-    useState<RightPanel>(null);
+  const [activeRightPanel, setActiveRightPanel] = useState<RightPanel>(null);
 
   const [showTaxiChart, setShowTaxiChart] = useState(false);
   const { chart } = useAirportChart(selectedAirport?.icao);
@@ -68,8 +68,10 @@ export default function ATCPage() {
   const [showTimerPopup, setShowTimerPopup] = useState(false);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
 
-  const { searchTerm, setSearchTerm, searchResults } =
-    useAircraftSearch(aircrafts, airports);
+  const { searchTerm, setSearchTerm, searchResults } = useAircraftSearch(
+    aircrafts,
+    airports,
+  );
 
   const time = useUtcTime();
   const { formattedTime, isRunning, start, stop, reset } = useTimer();
@@ -85,9 +87,7 @@ export default function ATCPage() {
 
     return aircrafts.filter((aircraft) => {
       if (!aircraft.flightNo) return false;
-      const match = prefixRegex.exec(
-        aircraft.flightNo.trim().toUpperCase(),
-      );
+      const match = prefixRegex.exec(aircraft.flightNo.trim().toUpperCase());
       return match && selectedCallsigns.has(match[0]);
     });
   }, [aircrafts, selectedCallsigns]);
@@ -128,7 +128,7 @@ export default function ATCPage() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-black">
-      <header className="absolute top-0 left-0 right-0 z-[10010] flex h-20 items-start justify-between px-6 pt-5">
+      <header className="absolute top-0 right-0 left-0 z-[10010] flex h-20 items-start justify-between px-6 pt-5">
         <div className="flex items-center gap-6">
           {/* <Image src="/favicon.ico" alt="RadarThing" width={32} height={32} /> */}
 
@@ -162,7 +162,7 @@ export default function ATCPage() {
               {time} <span className="text-[10px] text-slate-500">UTC</span>
             </span>
             {isRunning && (
-              <span className="block text-[9px] tracking-widest text-emerald-400 uppercase animate-pulse">
+              <span className="block animate-pulse text-[9px] tracking-widest text-emerald-400 uppercase">
                 Timer Active
               </span>
             )}
@@ -219,31 +219,29 @@ export default function ATCPage() {
         </aside>
       )}
 
-<ControlDock
-  side="right"
-  items={[
-    {
-      id: "fids",
-      label: "Flights",
-      icon: FlightsIcon,
-      active: activeRightPanel === "fids",
-      onClick: () =>
-        setActiveRightPanel(
-          activeRightPanel === "fids" ? null : "fids",
-        ),
-    },
-    {
-      id: "filter",
-      label: "Filter",
-      icon: FilterIcon,
-      active: activeRightPanel === "filter",
-      onClick: () =>
-        setActiveRightPanel(
-          activeRightPanel === "filter" ? null : "filter",
-        ),
-    },
-  ]}
-/>
+      <ControlDock
+        side="right"
+        items={[
+          {
+            id: "fids",
+            label: "Flights",
+            icon: FlightsIcon,
+            active: activeRightPanel === "fids",
+            onClick: () =>
+              setActiveRightPanel(activeRightPanel === "fids" ? null : "fids"),
+          },
+          {
+            id: "filter",
+            label: "Filter",
+            icon: FilterIcon,
+            active: activeRightPanel === "filter",
+            onClick: () =>
+              setActiveRightPanel(
+                activeRightPanel === "filter" ? null : "filter",
+              ),
+          },
+        ]}
+      />
 
       {selectedAirport && (
         <div className="fixed bottom-6 left-1/2 z-[10012] -translate-x-1/2">

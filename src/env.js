@@ -12,7 +12,7 @@ export const env = createEnv({
     DATABASE_URL: z.string().url(),
     UPLOADTHING_SECRET: z.string(),
     UPLOADTHING_TOKEN: z.string(),
-    CLERK_WEBHOOK_SECRET: z.string()
+    CLERK_WEBHOOK_SECRET: z.string(),
   },
 
   /**

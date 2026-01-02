@@ -10,9 +10,7 @@ interface CallsignFilterProps {
   onClearFilters: () => void;
 }
 
-const getAirlineLogoFromFlightNumber = (
-  flightNo?: string,
-): string | null => {
+const getAirlineLogoFromFlightNumber = (flightNo?: string): string | null => {
   if (!flightNo) return null;
   const match = /^[A-Z]{2,3}/.exec(flightNo.trim().toUpperCase());
   if (!match) return null;
@@ -32,9 +30,7 @@ export function CallsignFilter({
 
     aircrafts.forEach((aircraft) => {
       if (!aircraft.flightNo) return;
-      const match = prefixRegex.exec(
-        aircraft.flightNo.trim().toUpperCase(),
-      );
+      const match = prefixRegex.exec(aircraft.flightNo.trim().toUpperCase());
       const prefix = match?.[0];
       if (prefix && prefix.length >= 2) {
         prefixMap.set(prefix, (prefixMap.get(prefix) || 0) + 1);
@@ -47,9 +43,8 @@ export function CallsignFilter({
   }, [aircrafts]);
 
   return (
-<div className="pointer-events-auto flex h-full flex-col border-l border-white/10 bg-black/85 backdrop-blur-xl
-  animate-in fade-in slide-in-from-right-2 duration-200 ease-out">
-    {/* Header */}
+    <div className="animate-in fade-in slide-in-from-right-2 pointer-events-auto flex h-full flex-col border-l border-white/10 bg-black/85 backdrop-blur-xl duration-200 ease-out">
+      {/* Header */}
       <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
         <span className="text-sm font-semibold tracking-widest text-cyan-400 uppercase">
           Airline Filter
@@ -83,7 +78,7 @@ export function CallsignFilter({
                     className={`flex w-full items-center gap-5 px-6 py-4 transition-all duration-150 ${
                       isSelected
                         ? "bg-cyan-500/15 text-cyan-300"
-                        : "hover:bg-white/5 text-slate-200"
+                        : "text-slate-200 hover:bg-white/5"
                     }`}
                   >
                     {/* Logo */}
@@ -94,8 +89,9 @@ export function CallsignFilter({
                           alt={prefix}
                           className="h-10 w-10 rounded bg-black/40 object-contain"
                           onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).style.display =
-                              "none";
+                            (
+                              e.currentTarget as HTMLImageElement
+                            ).style.display = "none";
                           }}
                         />
                       ) : (
@@ -117,7 +113,7 @@ export function CallsignFilter({
 
                     {/* Selected indicator */}
                     {isSelected && (
-                      <div className="ml-auto rounded-full bg-cyan-400/20 px-3 py-1 text-xs font-bold uppercase text-cyan-300">
+                      <div className="ml-auto rounded-full bg-cyan-400/20 px-3 py-1 text-xs font-bold text-cyan-300 uppercase">
                         Active
                       </div>
                     )}

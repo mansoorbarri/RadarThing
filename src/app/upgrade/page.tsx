@@ -8,7 +8,7 @@ export default function UpgradePage() {
   const router = useRouter();
 
   return (
-    <div className="relative min-h-screen w-screen bg-black text-white overflow-hidden">
+    <div className="relative min-h-screen w-screen overflow-hidden bg-black text-white">
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black via-black/80 to-black" />
 
       <header className="relative z-10 flex items-center justify-between px-8 py-6">
@@ -103,10 +103,8 @@ function FeatureCard({
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-md">
-      <h3 className="font-mono text-sm tracking-wide text-cyan-300">
-        {title}
-      </h3>
-      <p className="mt-2 text-xs text-slate-400 leading-relaxed">
+      <h3 className="font-mono text-sm tracking-wide text-cyan-300">{title}</h3>
+      <p className="mt-2 text-xs leading-relaxed text-slate-400">
         {description}
       </p>
     </div>

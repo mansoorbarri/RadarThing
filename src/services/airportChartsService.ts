@@ -1,4 +1,7 @@
-import { type AirportChart, type AirportChartIndex } from "~/types/airportCharts";
+import {
+  type AirportChart,
+  type AirportChartIndex,
+} from "~/types/airportCharts";
 
 const CHARTS_URL =
   "https://raw.githubusercontent.com/mansoorbarri/geofs-charts/main/charts.json";
