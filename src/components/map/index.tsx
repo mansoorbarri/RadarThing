@@ -128,6 +128,24 @@ const MapComponent: React.FC<MapComponentProps> = ({
     onAircraftSelectRef.current(null);
     setIsSettingsOpen(false);
   }, []);
+  
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        handleMapClick({
+          originalEvent: {
+            target: document.createElement("div"),
+          },
+        } as unknown as L.LeafletMouseEvent);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [handleMapClick]);
 
   const mapRefs = useMapInitialization({
     mapContainerId: "map-container",

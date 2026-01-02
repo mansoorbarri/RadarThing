@@ -127,7 +127,7 @@ export const useMapInitialization = ({
       bounds: worldBounds,
     });
 
-    osmLayer.current.addTo(map);
+    satelliteHybridLayer.current.addTo(map);
 
     flightPlanLayerGroup.current = L.layerGroup().addTo(map);
     aircraftMarkersLayer.current = L.layerGroup().addTo(map);
