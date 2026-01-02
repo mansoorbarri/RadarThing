@@ -130,7 +130,7 @@ export default function ATCPage() {
     <div className="relative h-screen w-screen overflow-hidden bg-black">
       <header className="absolute top-0 left-0 right-0 z-[10010] flex h-20 items-start justify-between px-6 pt-5">
         <div className="flex items-center gap-6">
-          <Image src="/favicon.ico" alt="RadarThing" width={32} height={32} />
+          {/* <Image src="/favicon.ico" alt="RadarThing" width={32} height={32} /> */}
 
           {isMapLoaded && (
             <div className="pointer-events-auto h-11 w-80 lg:w-96">
