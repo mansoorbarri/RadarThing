@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAirportChart } from "~/services/airportChartsService";
-import { getUserProfile } from "~/app/actions/get-user-profile";
-import { hasPRO } from "~/lib/capabilities";
+import { isPro } from "~/app/actions/is-pro";
 
 export async function GET(_request: NextRequest, context: any) {
   const { icao } = await context.params;
 
-  const profile = await getUserProfile();
+  const isProUser = await isPro();
 
-  if (!hasPRO(profile?.role)) {
+  if (!isProUser) {
     return NextResponse.json({ error: "PRO required" }, { status: 403 });
   }
 

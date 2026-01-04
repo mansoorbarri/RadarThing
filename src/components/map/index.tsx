@@ -5,7 +5,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
-import { useUserCapabilities } from "~/hooks/useUserCapabilities";
+import { isPro } from "~/app/actions/is-pro";
 
 import { useMapInitialization } from "./useMapInitialization";
 import { useFlightPlanDrawing } from "./useFlightPlanDrawing";
@@ -57,9 +57,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onMapReady,
   historyPath,
 }) => {
-  const { canViewTaxiCharts } = useUserCapabilities();
-  const canUseRadarMode = canViewTaxiCharts;
-  const canUseAdvancedWeather = canViewTaxiCharts;
+  const [isProUser, setIsProUser] = useState(false);
+  const [proLoading, setProLoading] = useState(true);
+
+  const canUseRadarMode = isProUser;
+  const canUseAdvancedWeather = isProUser;
 
   const [isHeadingMode, setIsHeadingMode] = useState(false);
   const [isRadarMode, setIsRadarMode] = useState(false);
@@ -89,6 +91,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
   useEffect(() => {
     onAircraftSelectRef.current = onAircraftSelect;
   }, [onAircraftSelect]);
+
+  useEffect(() => {
+    isPro()
+      .then(setIsProUser)
+      .finally(() => setProLoading(false));
+  }, []);
 
   const toggleRadarMode = useCallback(() => {
     if (!canUseRadarMode) return;
@@ -128,7 +136,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     onAircraftSelectRef.current(null);
     setIsSettingsOpen(false);
   }, []);
-  
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -259,7 +267,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         <div className="animate-in fade-in zoom-in-95 absolute top-[180px] left-[70px] z-[10020] w-[320px] duration-200">
           <div className="rounded-xl border border-white/10 bg-[#0a1219]/95 p-5 shadow-2xl backdrop-blur-xl">
             <RadarSettings
-              isPRO={canViewTaxiCharts}
+              isPRO={isProUser}
               showPrecipitation={showPrecipitation}
               setShowPrecipitation={setShowPrecipitation}
               showAirmets={showAirmets}

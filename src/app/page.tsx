@@ -19,7 +19,7 @@ import { useAircraftSearch } from "~/hooks/useAircraftSearch";
 import { useUtcTime } from "~/hooks/useUtcTime";
 import { useTimer } from "~/hooks/useTimer";
 import { useAirportChart } from "~/hooks/useAirportCharts";
-import { useUserCapabilities } from "~/hooks/useUserCapabilities";
+import { isPro } from "~/app/actions/is-pro";
 
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
 import { SearchBar } from "~/components/atc/searchbar";
@@ -45,7 +45,9 @@ export default function ATCPage() {
 
   const { aircrafts, isLoading, connectionStatus } = useAircraftStream();
   const { airports } = useAirportData();
-  const { canViewTaxiCharts } = useUserCapabilities();
+
+  const [isProUser, setIsProUser] = useState(false);
+  const [proLoading, setProLoading] = useState(true);
 
   const [selectedAircraft, setSelectedAircraft] =
     useState<PositionUpdate | null>(null);
@@ -79,6 +81,12 @@ export default function ATCPage() {
   const drawFlightPlanOnMapRef = useRef<
     ((ac: PositionUpdate, zoom?: boolean) => void) | null
   >(null);
+
+  useEffect(() => {
+    isPro()
+      .then(setIsProUser)
+      .finally(() => setProLoading(false));
+  }, []);
 
   const filteredAircrafts = useMemo(() => {
     if (selectedCallsigns.size === 0) return aircrafts;
@@ -223,36 +231,36 @@ export default function ATCPage() {
         </aside>
       )}
 
-<ControlDock
-  side="right"
-  items={[
-    {
-      id: "fids",
-      label: "Flights",
-      icon: FlightsIcon,
-      active: activeRightPanel === "fids",
-      onClick: () =>
-        setActiveRightPanel(activeRightPanel === "fids" ? null : "fids"),
-    },
-    {
-      id: "filter",
-      label: "Filter",
-      icon: FilterIcon,
-      active: activeRightPanel === "filter",
-      onClick: () =>
-        setActiveRightPanel(
-          activeRightPanel === "filter" ? null : "filter",
-        ),
-    },
-    {
-      id: "upgrade",
-      label: canViewTaxiCharts ? "PRO" : "Upgrade",
-      icon: UpgradeIcon,
-      active: false,
-      onClick: () => router.push("/pricing"),
-    },
-  ]}
-/>
+      <ControlDock
+        side="right"
+        items={[
+          {
+            id: "fids",
+            label: "Flights",
+            icon: FlightsIcon,
+            active: activeRightPanel === "fids",
+            onClick: () =>
+              setActiveRightPanel(activeRightPanel === "fids" ? null : "fids"),
+          },
+          {
+            id: "filter",
+            label: "Filter",
+            icon: FilterIcon,
+            active: activeRightPanel === "filter",
+            onClick: () =>
+              setActiveRightPanel(
+                activeRightPanel === "filter" ? null : "filter",
+              ),
+          },
+          {
+            id: "upgrade",
+            label: isProUser ? "PRO" : "Upgrade",
+            icon: UpgradeIcon,
+            active: false,
+            onClick: () => router.push("/pricing"),
+          },
+        ]}
+      />
 
       {selectedAirport && (
         <div className="fixed bottom-6 left-1/2 z-[10012] -translate-x-1/2">
@@ -266,7 +274,7 @@ export default function ATCPage() {
               </div>
             </div>
 
-            {canViewTaxiCharts ? (
+            {isProUser ? (
               <button
                 onClick={() => setShowTaxiChart(true)}
                 className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-[10px] text-cyan-300"
