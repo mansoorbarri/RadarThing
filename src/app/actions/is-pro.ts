@@ -5,14 +5,12 @@ import { db } from "~/server/db";
 
 export async function isPro() {
   const { userId } = await auth();
-  if (!userId) return null;
+  if (!userId) return false;
 
   const user = await db.user.findUnique({
     where: { clerkId: userId },
     select: { role: true },
   });
-
-  // console.log("user", user)
 
   return user?.role === "PRO";
 }
