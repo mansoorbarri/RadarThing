@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useUser, SignInButton } from "@clerk/nextjs";
 import { createCheckoutSession } from "~/app/actions/create-checkout";
 import { createPortalSession } from "~/app/actions/create-portal";
 import { useState, useEffect } from "react";
@@ -8,18 +9,24 @@ import { isPro } from "~/app/actions/is-pro";
 import { Check, Zap } from "lucide-react";
 import Loading from "~/components/loading";
 import Image from "next/image";
+import { UserAuth } from "~/components/atc/userAuth";
 
 export default function PricingPage() {
   const router = useRouter();
+  const { isSignedIn, isLoaded } = useUser();
   const [loading, setLoading] = useState(false);
   const [isProUser, setIsProUser] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
 
   useEffect(() => {
-    isPro()
-      .then(setIsProUser)
-      .finally(() => setCheckingStatus(false));
-  }, []);
+    if (isLoaded && isSignedIn) {
+      isPro()
+        .then(setIsProUser)
+        .finally(() => setCheckingStatus(false));
+    } else if (isLoaded) {
+      setCheckingStatus(false);
+    }
+  }, [isLoaded, isSignedIn]);
 
   async function handleUpgrade() {
     try {
@@ -63,8 +70,59 @@ export default function PricingPage() {
     },
   ];
 
-  if (checkingStatus) {
+  if (!isLoaded || checkingStatus) {
     return <Loading />;
+  }
+
+  // Show sign-in prompt if not signed in
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
+            <button
+              onClick={() => router.push("/")}
+              className="font-mono text-xl text-cyan-400"
+            >
+              <Image
+                src="/logo-white.svg"
+                alt="RadarThing"
+                width={100}
+                height={30}
+              />
+            </button>
+            <button
+              onClick={() => router.push("/")}
+              className="text-sm text-slate-400 transition-colors hover:text-white"
+            >
+              Back to Map
+            </button>
+          </div>
+        </header>
+
+        <main className="mx-auto max-w-2xl px-6 py-20 text-center">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
+            <Zap className="h-4 w-4 text-cyan-400" />
+            <span className="font-mono text-sm text-cyan-400">
+              SIGN IN REQUIRED
+            </span>
+          </div>
+
+          <h1 className="mb-4 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-5xl font-bold text-transparent">
+            Sign In to Continue
+          </h1>
+          <p className="mb-12 text-xl text-slate-400">
+            Create an account or sign in to access premium features
+          </p>
+
+          <SignInButton mode="modal">
+            <button className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-8 py-4 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40">
+              Sign In / Sign Up
+            </button>
+          </SignInButton>
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -83,12 +141,15 @@ export default function PricingPage() {
               height={30}
             />
           </button>
-          <button
-            onClick={() => router.push("/")}
-            className="text-sm text-slate-400 transition-colors hover:text-white"
-          >
-            Back to Map
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.push("/")}
+              className="text-sm text-slate-400 transition-colors hover:text-white"
+            >
+              Back to Map
+            </button>
+            <UserAuth />
+          </div>
         </div>
       </header>
 

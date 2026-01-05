@@ -24,6 +24,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <ClerkProvider
+      afterSignOutUrl={"/"}
       appearance={{
         baseTheme: dark,
         variables: {
