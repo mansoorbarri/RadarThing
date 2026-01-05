@@ -44,7 +44,7 @@ export function TaxiChartViewer({ chart, onClose }: Props) {
         </header>
 
         {/* Content */}
-        <div ref={containerRef} className="relative flex-1 overflow-hidden">
+        <div ref={containerRef} className="relative flex-1 overflow-hidden bg-white">
           {!chart ? (
             /* ✅ No chart available state */
             <div className="flex h-full w-full flex-col items-center justify-center text-center">
