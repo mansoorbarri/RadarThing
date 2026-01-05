@@ -51,10 +51,10 @@ export function TaxiChartViewer({ chart, onClose }: Props) {
           {!chart ? (
             /* ✅ No chart available state */
             <div className="flex h-full w-full flex-col items-center justify-center text-center">
-              <div className="mb-2 text-sm font-medium text-white">
+              <div className="mb-2 text-sm font-medium text-black">
                 No taxi chart available
               </div>
-              <div className="max-w-sm text-xs text-white">
+              <div className="max-w-sm text-xs text-black">
                 This airport does not currently have a taxi chart in RadarThing.
               </div>
             </div>
