@@ -25,6 +25,9 @@ export async function createCheckoutSession() {
     ],
     mode: "subscription",
     allow_promotion_codes: true,
+    subscription_data: {
+      trial_period_days: 7,
+    },
     success_url: `${baseUrl}?success=true`,
     cancel_url: `${baseUrl}/pricing`,
     metadata: {
