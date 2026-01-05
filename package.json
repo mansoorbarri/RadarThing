@@ -7,6 +7,7 @@
     "build": "prisma generate && next build",
     "check": "next lint && tsc --noEmit",
     "cf": " npx cloudflared tunnel --url http://localhost:3000",
+    "stripe": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
@@ -24,6 +25,7 @@
     "@clerk/nextjs": "^6.36.5",
     "@clerk/themes": "^2.4.46",
     "@prisma/client": "^6.5.0",
+    "@stripe/stripe-js": "^8.6.0",
     "@t3-oss/env-nextjs": "^0.12.0",
     "@types/leaflet": "^1.9.21",
     "@uploadthing/react": "^7.3.3",
@@ -38,6 +40,7 @@
     "react-icons": "^5.5.0",
     "react-zoom-pan-pinch": "^3.7.0",
     "sonner": "^2.0.7",
+    "stripe": "^20.1.0",
     "svix": "^1.82.0",
     "uploadthing": "^7.7.4",
     "zod": "^3.25.76"

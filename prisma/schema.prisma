@@ -8,17 +8,19 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  clerkId     String   @unique
-  email       String   @unique
-  role        Role     @default(FREE)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  isDeleted   Boolean  @default(false)
-  deletedAt   DateTime?
-  googleId    String?  @unique
-  flights     Flight[]
-  ownedServer Server?  @relation("ServerOwner")
+  id                   String    @id @default(cuid())
+  clerkId              String    @unique
+  email                String    @unique
+  role                 Role      @default(FREE)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  isDeleted            Boolean   @default(false)
+  deletedAt            DateTime?
+  googleId             String?   @unique
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  flights              Flight[]
+  ownedServer          Server?   @relation("ServerOwner")
 }
 
 model Flight {
