@@ -8,7 +8,7 @@ export async function GET(_request: NextRequest, context: any) {
   const isProUser = await isPro();
 
   if (!isProUser) {
-    return NextResponse.json({ error: "PRO required" }, { status: 403 });
+    return NextResponse.json({ error: "PrO required" }, { status: 403 });
   }
 
   try {

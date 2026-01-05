@@ -5,6 +5,7 @@ import {
 
 const CHARTS_URL =
   "https://raw.githubusercontent.com/mansoorbarri/geofs-charts/main/charts.json";
+const OPENNAV_URL = "https://opennav.com/diagrams";
 
 let cache: AirportChartIndex | null = null;
 let lastFetch = 0;
@@ -28,9 +29,35 @@ export async function loadAirportCharts(): Promise<AirportChartIndex> {
   return data;
 }
 
+async function checkOpenNav(icao: string): Promise<string | null> {
+  try {
+    const url = `${OPENNAV_URL}/${icao.toUpperCase()}.svg`;
+    const res = await fetch(url, { method: "HEAD" });
+    
+    if (res.ok) {
+      return url;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getAirportChart(
   icao: string,
 ): Promise<AirportChart | null> {
+  const upperIcao = icao.toUpperCase();
+  
+  // First, check OpenNav
+  const openNavUrl = await checkOpenNav(upperIcao);
+  if (openNavUrl) {
+    return {
+      name: upperIcao,
+      taxi_chart_url: openNavUrl,
+    };
+  }
+
+  // Fall back to JSON file
   const charts = await loadAirportCharts();
-  return charts[icao.toUpperCase()] ?? null;
+  return charts[upperIcao] ?? null;
 }
