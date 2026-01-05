@@ -166,53 +166,53 @@ export default function ATCPage() {
         </div>
 
         <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2">
-<button
-  onClick={() => setShowTimerPopup(!showTimerPopup)}
-  className="rounded-full border border-white/10 bg-black/40 px-4 py-1.5 backdrop-blur-md"
->
-  <span className="font-mono text-xl text-cyan-400">
-    {time} <span className="text-[10px] text-slate-500">UTC</span>
-  </span>
-  {showTimerPopup && (
-    <span className="block font-mono text-sm text-emerald-400">
-      {formattedTime}
-    </span>
-  )}
-  {isRunning && (
-    <span className="block animate-pulse text-[9px] tracking-widest text-emerald-400 uppercase">
-      Timer Active
-    </span>
-  )}
-</button>
+          <button
+            onClick={() => setShowTimerPopup(!showTimerPopup)}
+            className="rounded-full border border-white/10 bg-black/40 px-4 py-1.5 backdrop-blur-md"
+          >
+            <span className="font-mono text-xl text-cyan-400">
+              {time} <span className="text-[10px] text-slate-500">UTC</span>
+            </span>
+            {showTimerPopup && (
+              <span className="block font-mono text-sm text-emerald-400">
+                {formattedTime}
+              </span>
+            )}
+            {isRunning && (
+              <span className="block animate-pulse text-[9px] tracking-widest text-emerald-400 uppercase">
+                Timer Active
+              </span>
+            )}
+          </button>
 
-{showTimerPopup && (
-  <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2">
-    <div className="rounded-xl border border-white/10 bg-black/90 p-3 backdrop-blur-xl">
-      <div className="flex gap-2">
-        <button
-          onClick={start}
-          disabled={isRunning}
-          className="rounded-lg bg-emerald-500/20 px-3 py-1 text-xs text-emerald-400 disabled:opacity-50"
-        >
-          Start
-        </button>
-        <button
-          onClick={stop}
-          disabled={!isRunning}
-          className="rounded-lg bg-red-500/20 px-3 py-1 text-xs text-red-400 disabled:opacity-50"
-        >
-          Stop
-        </button>
-        <button
-          onClick={reset}
-          className="rounded-lg bg-slate-500/20 px-3 py-1 text-xs text-slate-400"
-        >
-          Reset
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+          {showTimerPopup && (
+            <div className="absolute top-full left-1/2 mt-2 -translate-x-1/2">
+              <div className="rounded-xl border border-white/10 bg-black/90 p-3 backdrop-blur-xl">
+                <div className="flex gap-2">
+                  <button
+                    onClick={start}
+                    disabled={isRunning}
+                    className="rounded-lg bg-emerald-500/20 px-3 py-1 text-xs text-emerald-400 disabled:opacity-50"
+                  >
+                    Start
+                  </button>
+                  <button
+                    onClick={stop}
+                    disabled={!isRunning}
+                    className="rounded-lg bg-red-500/20 px-3 py-1 text-xs text-red-400 disabled:opacity-50"
+                  >
+                    Stop
+                  </button>
+                  <button
+                    onClick={reset}
+                    className="rounded-lg bg-slate-500/20 px-3 py-1 text-xs text-slate-400"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="pointer-events-auto flex items-center gap-4">

@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   if (type === "user.created") {
     const email =
       data.email_addresses?.find(
-        (e: any) => e.id === data.primary_email_address_id
+        (e: any) => e.id === data.primary_email_address_id,
       )?.email_address ?? null;
 
     if (!email) {
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
 
     const googleId =
       data.external_accounts?.find(
-        (acc: any) => acc.provider === "oauth_google"
+        (acc: any) => acc.provider === "oauth_google",
       )?.provider_user_id ?? null;
 
     const existing = await db.user.findFirst({
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
     if (existing && !existing.isDeleted) {
       const email =
         data.email_addresses?.find(
-          (e: any) => e.id === data.primary_email_address_id
+          (e: any) => e.id === data.primary_email_address_id,
         )?.email_address ?? existing.email;
 
       await db.user.update({
@@ -109,36 +109,34 @@ export async function POST(req: Request) {
     });
   }
 
-if (type === "subscription.created" || type === "subscription.updated") {
-  const userId = data.payer?.user_id ?? null;
-  const email = data.payer?.email ?? null;
+  if (type === "subscription.created" || type === "subscription.updated") {
+    const userId = data.payer?.user_id ?? null;
+    const email = data.payer?.email ?? null;
 
-  const hasActiveItem =
-    Array.isArray(data.items) &&
-    data.items.some(
-      (item: any) =>
-        item.status === "active" &&
-        item.plan?.slug === "pro"
-    );
+    const hasActiveItem =
+      Array.isArray(data.items) &&
+      data.items.some(
+        (item: any) => item.status === "active" && item.plan?.slug === "pro",
+      );
 
-  if (!userId && !email) {
-    return NextResponse.json({ ok: true });
+    if (!userId && !email) {
+      return NextResponse.json({ ok: true });
+    }
+
+    const result = await db.user.updateMany({
+      where: {
+        isDeleted: false,
+        OR: [
+          ...(userId ? [{ clerkId: userId }] : []),
+          ...(email ? [{ email }] : []),
+        ],
+      },
+      data: {
+        role: hasActiveItem ? Role.PRO : Role.FREE,
+      },
+    });
+
+    console.log("ROLE UPDATE COUNT:", result.count);
   }
-
-  const result = await db.user.updateMany({
-    where: {
-      isDeleted: false,
-      OR: [
-        ...(userId ? [{ clerkId: userId }] : []),
-        ...(email ? [{ email }] : []),
-      ],
-    },
-    data: {
-      role: hasActiveItem ? Role.PRO : Role.FREE,
-    },
-  });
-
-  console.log("ROLE UPDATE COUNT:", result.count);
-}
   return NextResponse.json({ ok: true });
 }

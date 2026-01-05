@@ -29,10 +29,10 @@ export default function PricingPage() {
             Upgrade your Radar
           </h1>
 
-          <p className="mt-4 mx-auto max-w-xl text-sm text-slate-400">
+          <p className="mx-auto mt-4 max-w-xl text-sm text-slate-400">
             RadarThing PRO unlocks real‑world airport taxi charts, advanced
-            ATC‑focused tools, and upcoming professional features — all
-            directly inside the radar.
+            ATC‑focused tools, and upcoming professional features — all directly
+            inside the radar.
           </p>
         </div>
 
