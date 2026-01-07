@@ -6,8 +6,8 @@
 // @Author       xyzmani
 // @match        http://*/geofs.php*
 // @match        https://*/geofs.php*
-// @require      https://raw.githubusercontent.com/mansoorbarri/radarthing/data-exchange/userscript.js?nocache=1
-// @require      https://raw.githubusercontent.com/mansoorbarri/radarthing/data-exchange/seabus.js?nocache=1
+// @require      https://raw.githubusercontent.com/mansoorbarri/radarthing/main/userscript.js?nocache=1
+// @require      https://raw.githubusercontent.com/mansoorbarri/radarthing/main/seabus.js?nocache=1
 // @grant        none
 // ==/UserScript==
 
