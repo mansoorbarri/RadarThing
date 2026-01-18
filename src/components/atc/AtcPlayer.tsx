@@ -24,7 +24,7 @@ export function AtcPlayer({ icao, onClose }: AtcPlayerProps) {
         </div>
         <button
           onClick={onClose}
-          className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+          className="cursor-pointer rounded-lg p-1 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
         >
           <X className="h-4 w-4" />
         </button>
@@ -40,7 +40,7 @@ export function AtcPlayer({ icao, onClose }: AtcPlayerProps) {
       {/* Actions */}
       <button
         onClick={openLiveATC}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500/20 py-3 text-sm font-medium text-cyan-400 transition-colors hover:bg-cyan-500/30"
+        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-500/20 py-3 text-sm font-medium text-cyan-400 transition-colors hover:bg-cyan-500/30"
       >
         <ExternalLink className="h-4 w-4" />
         Open LiveATC for {icao}

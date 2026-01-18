@@ -173,20 +173,20 @@ export default function AircraftImagesPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <button
             onClick={() => router.push("/")}
-            className="font-mono text-xl text-cyan-400"
+            className="cursor-pointer font-mono text-xl text-cyan-400"
           >
             <Image src="/logo-white.svg" alt="RadarThing" width={100} height={30} />
           </button>
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push("/")}
-              className="text-sm text-slate-400 transition-colors hover:text-white"
+              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
             >
               Back to Map
             </button>
             {isSignedIn ? <UserAuth /> : (
               <SignInButton mode="modal">
-                <button className="rounded-lg bg-cyan-500/20 px-4 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-cyan-500/30">
+                <button className="cursor-pointer rounded-lg bg-cyan-500/20 px-4 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-cyan-500/30">
                   Sign In
                 </button>
               </SignInButton>
@@ -210,14 +210,14 @@ export default function AircraftImagesPage() {
           {isSignedIn ? (
             <button
               onClick={() => setShowUploadModal(true)}
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
+              className="flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
             >
               <Upload className="h-5 w-5" />
               Upload Image
             </button>
           ) : (
             <SignInButton mode="modal">
-              <button className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40">
+              <button className="flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40">
                 <Upload className="h-5 w-5" />
                 Sign in to Upload
               </button>
@@ -269,7 +269,7 @@ export default function AircraftImagesPage() {
                   setAirlineFilter("");
                   setAircraftFilter("");
                 }}
-                className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-slate-400 transition-all hover:border-red-500/30 hover:text-red-400"
+                className="cursor-pointer rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-slate-400 transition-all hover:border-red-500/30 hover:text-red-400"
               >
                 Clear
               </button>
@@ -351,7 +351,7 @@ export default function AircraftImagesPage() {
                 setSuccess(false);
                 setFormData({ airlineIata: "", airlineIcao: "", aircraftType: "", imageUrl: "", imageKey: "", photographer: "" });
               }}
-              className="absolute top-4 right-4 text-slate-400 transition-colors hover:text-white"
+              className="absolute top-4 right-4 cursor-pointer text-slate-400 transition-colors hover:text-white"
             >
               ✕
             </button>
@@ -465,7 +465,7 @@ export default function AircraftImagesPage() {
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, imageUrl: "", imageKey: "" })}
-                        className="absolute top-2 right-2 rounded-lg bg-red-500/80 px-3 py-1 text-sm text-white hover:bg-red-500"
+                        className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 px-3 py-1 text-sm text-white hover:bg-red-500"
                       >
                         Remove
                       </button>
@@ -493,7 +493,7 @@ export default function AircraftImagesPage() {
                 <button
                   type="submit"
                   disabled={submitting || !formData.imageUrl}
-                  className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40 disabled:opacity-50"
+                  className="w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40 disabled:opacity-50"
                 >
                   {submitting ? "Submitting..." : "Submit for Review"}
                 </button>

@@ -26,7 +26,7 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
           <button
             onClick={onCloseAtis}
             title="Close ATIS"
-            className="absolute top-1 right-1.5 text-lg text-cyan-400 transition-colors hover:text-red-400"
+            className="absolute top-1 right-1.5 cursor-pointer text-lg text-cyan-400 transition-colors hover:text-red-400"
           >
             ×
           </button>
@@ -44,7 +44,7 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
           <button
             onClick={onCloseMetar}
             title="Close METAR"
-            className="absolute top-1 right-1.5 text-lg text-cyan-400 transition-colors hover:text-red-400"
+            className="absolute top-1 right-1.5 cursor-pointer text-lg text-cyan-400 transition-colors hover:text-red-400"
           >
             ×
           </button>

@@ -224,7 +224,7 @@ export function ImageUploader({ onUploadComplete, onError, airlineIata, airlineI
             <button
               type="button"
               onClick={handleRemove}
-              className="absolute top-2 right-2 rounded-lg bg-red-500/80 p-1.5 text-white transition-colors hover:bg-red-500"
+              className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 p-1.5 text-white transition-colors hover:bg-red-500"
             >
               <X className="h-4 w-4" />
             </button>
@@ -251,7 +251,7 @@ export function ImageUploader({ onUploadComplete, onError, airlineIata, airlineI
           <button
             type="button"
             onClick={handleUpload}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-500 px-4 py-3 font-semibold text-white transition-colors hover:bg-cyan-600"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-cyan-500 px-4 py-3 font-semibold text-white transition-colors hover:bg-cyan-600"
           >
             <Upload className="h-5 w-5" />
             Upload Image

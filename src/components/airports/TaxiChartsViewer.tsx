@@ -29,14 +29,14 @@ export function TaxiChartViewer({ chart, onClose }: Props) {
               <a
                 href={chart.info_url}
                 target="_blank"
-                className="rounded-md border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/10"
+                className="cursor-pointer rounded-md border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/10"
               >
                 Info
               </a>
             )}
             <button
               onClick={onClose}
-              className="rounded-md border border-red-500/30 px-3 py-1 text-xs text-red-400 hover:bg-red-500/10"
+              className="cursor-pointer rounded-md border border-red-500/30 px-3 py-1 text-xs text-red-400 hover:bg-red-500/10"
             >
               Close
             </button>

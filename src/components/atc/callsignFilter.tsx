@@ -57,7 +57,7 @@ export function CallsignFilter({
               analytics.airlineFilterCleared();
               onClearFilters();
             }}
-            className="text-sm tracking-wide text-cyan-400 hover:text-cyan-300"
+            className="cursor-pointer text-sm tracking-wide text-cyan-400 hover:text-cyan-300"
           >
             Clear
           </button>
@@ -113,7 +113,7 @@ function AirlineRow({
           analytics.airlineFilterToggled(prefix, !isSelected);
           onToggle(prefix);
         }}
-        className={`flex w-full items-center gap-5 px-6 py-4 transition-all duration-150 ${
+        className={`flex w-full cursor-pointer items-center gap-5 px-6 py-4 transition-all duration-150 ${
           isSelected
             ? "bg-cyan-500/15 text-cyan-300"
             : "text-slate-200 hover:bg-white/5"
