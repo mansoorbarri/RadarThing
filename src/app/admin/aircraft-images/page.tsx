@@ -12,7 +12,7 @@ import {
   deleteAircraftImage,
   type AircraftImage,
 } from "~/app/actions/aircraft-images";
-import { Trash2, Check, X, Plane, Clock, CheckCircle, Search, Filter, ChevronDown } from "lucide-react";
+import { Trash2, Check, X, Plane, Clock, CheckCircle, Search } from "lucide-react";
 import Loading from "~/components/loading";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -47,15 +47,22 @@ export default function AdminAircraftImagesPage() {
 
   // Get unique airlines based on search and aircraft filter (dynamic)
   const uniqueAirlines = useMemo(() => {
-    const airlines = new Set<string>();
+    const airlinesMap = new Map<string, { iata: string; icao: string }>();
     allImages.forEach((img) => {
-      const airline = img.airlineIata || img.airlineIcao;
-      if (!airline) return;
+      const key = img.airlineIata || img.airlineIcao;
+      if (!key) return;
       if (!matchesSearch(img, searchQuery)) return;
       if (aircraftFilter && img.aircraftType !== aircraftFilter) return;
-      airlines.add(airline);
+      if (!airlinesMap.has(key)) {
+        airlinesMap.set(key, {
+          iata: img.airlineIata || "",
+          icao: img.airlineIcao || "",
+        });
+      }
     });
-    return Array.from(airlines).sort();
+    return Array.from(airlinesMap.values()).sort((a, b) =>
+      (a.icao || a.iata).localeCompare(b.icao || b.iata)
+    );
   }, [allImages, searchQuery, aircraftFilter]);
 
   // Get unique aircraft types based on search and airline filter (dynamic)
@@ -72,7 +79,7 @@ export default function AdminAircraftImagesPage() {
 
   // Clear filters if selected value is no longer available
   useEffect(() => {
-    if (airlineFilter && !uniqueAirlines.includes(airlineFilter)) {
+    if (airlineFilter && !uniqueAirlines.some((a) => a.iata === airlineFilter || a.icao === airlineFilter)) {
       setAirlineFilter("");
     }
   }, [uniqueAirlines, airlineFilter]);
@@ -259,65 +266,47 @@ export default function AdminAircraftImagesPage() {
         </div>
 
         {/* Search and Filters */}
-        <div className="mb-6 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by airline, aircraft type, or photographer..."
-              className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-10 pr-4 text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50 focus:bg-white/10"
+              placeholder="Search by airline, aircraft type, photographer..."
+              className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50"
             />
           </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 text-slate-400">
-              <Filter className="h-4 w-4" />
-              <span className="text-sm">Filters:</span>
-            </div>
-
-            {/* Airline Filter */}
-            <div className="relative">
-              <select
-                value={airlineFilter}
-                onChange={(e) => setAirlineFilter(e.target.value)}
-                className="appearance-none rounded-lg border border-white/10 bg-white/5 py-2 pl-3 pr-8 text-sm text-white outline-none transition-colors focus:border-cyan-500/50 focus:bg-white/10"
-              >
-                <option value="" className="bg-slate-900">All Airlines</option>
-                {uniqueAirlines.map((airline) => (
-                  <option key={airline} value={airline} className="bg-slate-900">
-                    {airline}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-            </div>
-
-            {/* Aircraft Type Filter */}
-            <div className="relative">
-              <select
-                value={aircraftFilter}
-                onChange={(e) => setAircraftFilter(e.target.value)}
-                className="appearance-none rounded-lg border border-white/10 bg-white/5 py-2 pl-3 pr-8 text-sm text-white outline-none transition-colors focus:border-cyan-500/50 focus:bg-white/10"
-              >
-                <option value="" className="bg-slate-900">All Aircraft</option>
-                {uniqueAircraftTypes.map((type) => (
-                  <option key={type} value={type} className="bg-slate-900">
-                    {type}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-            </div>
-
-            {/* Clear Filters Button */}
+          <div className="flex gap-3">
+            <select
+              value={airlineFilter}
+              onChange={(e) => setAirlineFilter(e.target.value)}
+              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none transition-all focus:border-cyan-500/50"
+            >
+              <option value="">All Airlines</option>
+              {uniqueAirlines.map((airline) => (
+                <option key={airline.iata || airline.icao} value={airline.iata || airline.icao}>
+                  {airline.icao && airline.iata ? `${airline.icao} | ${airline.iata}` : airline.icao || airline.iata}
+                </option>
+              ))}
+            </select>
+            <select
+              value={aircraftFilter}
+              onChange={(e) => setAircraftFilter(e.target.value)}
+              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none transition-all focus:border-cyan-500/50"
+            >
+              <option value="">All Aircraft</option>
+              {uniqueAircraftTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="flex items-center gap-1 rounded-lg bg-white/5 px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+                className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-slate-400 transition-all hover:border-red-500/30 hover:text-red-400"
               >
-                <X className="h-3 w-3" />
                 Clear
               </button>
             )}

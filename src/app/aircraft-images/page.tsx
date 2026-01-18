@@ -59,16 +59,21 @@ export default function AircraftImagesPage() {
 
   // Get unique airlines based on search and aircraft filter
   const uniqueAirlines = useMemo(() => {
-    const airlines = new Set<string>();
+    const airlinesMap = new Map<string, { iata: string; icao: string }>();
     images.forEach((img) => {
       if (!img.airlineIata) return;
       // Apply search filter
       if (!matchesSearch(img, searchQuery)) return;
       // Apply aircraft filter (but not airline filter)
       if (aircraftFilter && img.aircraftType !== aircraftFilter) return;
-      airlines.add(img.airlineIata);
+      if (!airlinesMap.has(img.airlineIata)) {
+        airlinesMap.set(img.airlineIata, {
+          iata: img.airlineIata,
+          icao: img.airlineIcao || "",
+        });
+      }
     });
-    return Array.from(airlines).sort();
+    return Array.from(airlinesMap.values()).sort((a, b) => a.iata.localeCompare(b.iata));
   }, [images, searchQuery, aircraftFilter]);
 
   // Get unique aircraft types based on search and airline filter
@@ -87,7 +92,7 @@ export default function AircraftImagesPage() {
 
   // Clear filters if selected value is no longer available
   useEffect(() => {
-    if (airlineFilter && !uniqueAirlines.includes(airlineFilter)) {
+    if (airlineFilter && !uniqueAirlines.some((a) => a.iata === airlineFilter)) {
       setAirlineFilter("");
     }
   }, [uniqueAirlines, airlineFilter]);
@@ -240,8 +245,8 @@ export default function AircraftImagesPage() {
             >
               <option value="">All Airlines</option>
               {uniqueAirlines.map((airline) => (
-                <option key={airline} value={airline}>
-                  {airline}
+                <option key={airline.iata} value={airline.iata}>
+                  {airline.icao ? `${airline.icao} | ${airline.iata}` : airline.iata}
                 </option>
               ))}
             </select>
