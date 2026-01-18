@@ -2,13 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useUser, SignInButton } from "@clerk/nextjs";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   getApprovedAircraftImages,
   createAircraftImage,
   type AircraftImage,
 } from "~/app/actions/aircraft-images";
-import { Upload, Plane, Check, Clock } from "lucide-react";
+import { Upload, Plane, Check, Clock, Search } from "lucide-react";
 import Loading from "~/components/loading";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -20,6 +20,9 @@ export default function AircraftImagesPage() {
   const [loading, setLoading] = useState(true);
   const [images, setImages] = useState<AircraftImage[]>([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [airlineFilter, setAirlineFilter] = useState("");
+  const [aircraftFilter, setAircraftFilter] = useState("");
   const [formData, setFormData] = useState({
     airlineIata: "",
     airlineIcao: "",
@@ -41,6 +44,48 @@ export default function AircraftImagesPage() {
     setImages(data);
     setLoading(false);
   }
+
+  // Get unique airlines and aircraft types for filters
+  const uniqueAirlines = useMemo(() => {
+    const airlines = new Set<string>();
+    images.forEach((img) => {
+      if (img.airlineIata) airlines.add(img.airlineIata);
+    });
+    return Array.from(airlines).sort();
+  }, [images]);
+
+  const uniqueAircraftTypes = useMemo(() => {
+    const types = new Set<string>();
+    images.forEach((img) => {
+      if (img.aircraftType) types.add(img.aircraftType);
+    });
+    return Array.from(types).sort();
+  }, [images]);
+
+  // Filter images based on search and filters
+  const filteredImages = useMemo(() => {
+    return images.filter((image) => {
+      // Airline filter
+      if (airlineFilter && image.airlineIata !== airlineFilter) {
+        return false;
+      }
+      // Aircraft type filter
+      if (aircraftFilter && image.aircraftType !== aircraftFilter) {
+        return false;
+      }
+      // Search query
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch =
+          image.airlineIata?.toLowerCase().includes(query) ||
+          image.airlineIcao?.toLowerCase().includes(query) ||
+          image.aircraftType?.toLowerCase().includes(query) ||
+          image.photographer?.toLowerCase().includes(query);
+        if (!matchesSearch) return false;
+      }
+      return true;
+    });
+  }, [images, searchQuery, airlineFilter, aircraftFilter]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -139,7 +184,72 @@ export default function AircraftImagesPage() {
           )}
         </div>
 
-        {images.length === 0 ? (
+        {/* Search and Filters */}
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by airline, aircraft type, photographer..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50"
+            />
+          </div>
+          <div className="flex gap-3">
+            <select
+              value={airlineFilter}
+              onChange={(e) => setAirlineFilter(e.target.value)}
+              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none transition-all focus:border-cyan-500/50"
+            >
+              <option value="">All Airlines</option>
+              {uniqueAirlines.map((airline) => (
+                <option key={airline} value={airline}>
+                  {airline}
+                </option>
+              ))}
+            </select>
+            <select
+              value={aircraftFilter}
+              onChange={(e) => setAircraftFilter(e.target.value)}
+              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none transition-all focus:border-cyan-500/50"
+            >
+              <option value="">All Aircraft</option>
+              {uniqueAircraftTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+            {(searchQuery || airlineFilter || aircraftFilter) && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setAirlineFilter("");
+                  setAircraftFilter("");
+                }}
+                className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-slate-400 transition-all hover:border-red-500/30 hover:text-red-400"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Results count */}
+        {(searchQuery || airlineFilter || aircraftFilter) && (
+          <p className="mb-4 text-sm text-slate-400">
+            Showing {filteredImages.length} of {images.length} images
+          </p>
+        )}
+
+        {filteredImages.length === 0 && images.length > 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
+            <Search className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+            <h3 className="mb-2 text-xl font-semibold text-white">No Results Found</h3>
+            <p className="text-slate-400">Try adjusting your search or filters</p>
+          </div>
+        ) : images.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
             <Plane className="mx-auto mb-4 h-12 w-12 text-slate-600" />
             <h3 className="mb-2 text-xl font-semibold text-white">No Images Yet</h3>
@@ -147,7 +257,7 @@ export default function AircraftImagesPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {images.map((image) => (
+            {filteredImages.map((image) => (
               <div
                 key={image.id}
                 className="group overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl transition-all hover:border-cyan-500/30"
