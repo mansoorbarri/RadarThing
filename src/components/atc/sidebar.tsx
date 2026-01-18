@@ -203,63 +203,70 @@ export const Sidebar = ({
         </div>
       )}
 
-      {/* Aircraft Photo - only show when we have a photo */}
-      {aircraftPhoto && (
-        <div className="relative mx-4 mt-4 mb-2 aspect-video overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-xl">
-          {/* Loading skeleton while image loads */}
-          {!imageLoaded && (
-            <div className="absolute inset-0 z-10 animate-pulse bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-          )}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={aircraftPhoto.imageUrl}
-            alt="Aircraft"
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-            onLoad={() => setImageLoaded(true)}
-          />
-          {aircraftPhoto.photographer && imageLoaded && (
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2">
-              <span className="font-mono text-[9px] text-white/60">
-                Photo: {aircraftPhoto.photographer}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className={`relative ${isMobile ? 'p-4 pb-2' : 'p-6 pb-4'}`}>
-        <div className={`${isMobile ? 'mb-3' : 'mb-5'} flex items-start justify-between`}>
-          <div className="min-w-0 flex-1 pr-4">
-            <div className="mb-1.5 flex items-center gap-2">
-              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
-              <span className="font-mono text-[10px] font-black tracking-[0.2em] text-cyan-400 uppercase">
-                Active Radar Lock
-              </span>
-            </div>
-            <h1 className="mb-1 truncate font-mono text-4xl leading-none font-black tracking-tighter text-white uppercase">
-              {aircraft.flightNo || aircraft.callsign || "N/A"}
-            </h1>
-            <p className="truncate font-mono text-[11px] font-black tracking-[0.15em] text-slate-400 uppercase">
-              {aircraft.type || "Unknown Class"}
-            </p>
-          </div>
-          <div className="relative">
-            {airlineLogo ? (
-              <Image
-                src={airlineLogo}
-                alt="Airline Logo"
-                width={64}
-                height={64}
-                className="rounded-2xl border border-white/20 bg-black object-contain p-2 shadow-xl"
-                unoptimized
-              />
-            ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white/20">
-                <PlaneIcon size={32} />
-              </div>
+      {/* Header with optional aircraft photo background */}
+      <div className={`relative ${aircraftPhoto ? 'min-h-[200px]' : ''}`}>
+        {/* Aircraft Photo Background */}
+        {aircraftPhoto && (
+          <>
+            {/* Loading skeleton while image loads */}
+            {!imageLoaded && (
+              <div className="absolute inset-0 z-0 animate-pulse bg-white/5" />
             )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={aircraftPhoto.imageUrl}
+              alt="Aircraft"
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              onLoad={() => setImageLoaded(true)}
+            />
+            {/* Dark gradient overlay for text readability */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#050f14] via-[#050f14]/80 to-black/40" />
+          </>
+        )}
+
+        {/* Flight Info Overlay */}
+        <div className={`relative z-10 ${isMobile ? 'p-4 pb-2' : 'p-6 pb-4'} ${aircraftPhoto ? 'pt-32' : ''}`}>
+          <div className={`${isMobile ? 'mb-3' : 'mb-5'} flex items-end justify-between`}>
+            <div className="min-w-0 flex-1 pr-4">
+              <div className="mb-1.5 flex items-center gap-2">
+                <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
+                <span className="font-mono text-[10px] font-black tracking-[0.2em] text-cyan-400 uppercase">
+                  {aircraftPhoto ? 'Tracking' : 'Active Radar Lock'}
+                </span>
+              </div>
+              <h1 className="mb-1 truncate font-mono text-4xl leading-none font-black tracking-tighter text-white uppercase drop-shadow-lg">
+                {aircraft.flightNo || aircraft.callsign || "N/A"}
+              </h1>
+              <p className="truncate font-mono text-[11px] font-black tracking-[0.15em] text-slate-300 uppercase">
+                {aircraft.type || "Unknown Class"}
+              </p>
+              {aircraftPhoto?.photographer && imageLoaded && (
+                <p className="mt-2 font-mono text-[9px] text-white/40">
+                  Photo: {aircraftPhoto.photographer}
+                </p>
+              )}
+            </div>
+            <div className="relative shrink-0">
+              {airlineLogo ? (
+                <Image
+                  src={airlineLogo}
+                  alt="Airline Logo"
+                  width={64}
+                  height={64}
+                  className="rounded-2xl border border-white/20 bg-black/80 object-contain p-2 shadow-xl backdrop-blur-sm"
+                  unoptimized
+                />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-black/50 text-white/20 backdrop-blur-sm">
+                  <PlaneIcon size={32} />
+                </div>
+              )}
+            </div>
           </div>
         </div>
+      </div>
+
+      <div className={`relative ${isMobile ? 'px-4 pb-2' : 'px-6 pb-4'}`}>
 
         <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-white/10 bg-black/40 p-1.5 shadow-inner">
           <div className="flex flex-col items-center rounded-xl p-3.5">
