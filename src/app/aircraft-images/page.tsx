@@ -45,22 +45,58 @@ export default function AircraftImagesPage() {
     setLoading(false);
   }
 
-  // Get unique airlines and aircraft types for filters
+  // Helper to check if image matches search query
+  const matchesSearch = (image: AircraftImage, query: string) => {
+    if (!query.trim()) return true;
+    const q = query.toLowerCase();
+    return (
+      image.airlineIata?.toLowerCase().includes(q) ||
+      image.airlineIcao?.toLowerCase().includes(q) ||
+      image.aircraftType?.toLowerCase().includes(q) ||
+      image.photographer?.toLowerCase().includes(q)
+    );
+  };
+
+  // Get unique airlines based on search and aircraft filter
   const uniqueAirlines = useMemo(() => {
     const airlines = new Set<string>();
     images.forEach((img) => {
-      if (img.airlineIata) airlines.add(img.airlineIata);
+      if (!img.airlineIata) return;
+      // Apply search filter
+      if (!matchesSearch(img, searchQuery)) return;
+      // Apply aircraft filter (but not airline filter)
+      if (aircraftFilter && img.aircraftType !== aircraftFilter) return;
+      airlines.add(img.airlineIata);
     });
     return Array.from(airlines).sort();
-  }, [images]);
+  }, [images, searchQuery, aircraftFilter]);
 
+  // Get unique aircraft types based on search and airline filter
   const uniqueAircraftTypes = useMemo(() => {
     const types = new Set<string>();
     images.forEach((img) => {
-      if (img.aircraftType) types.add(img.aircraftType);
+      if (!img.aircraftType) return;
+      // Apply search filter
+      if (!matchesSearch(img, searchQuery)) return;
+      // Apply airline filter (but not aircraft filter)
+      if (airlineFilter && img.airlineIata !== airlineFilter) return;
+      types.add(img.aircraftType);
     });
     return Array.from(types).sort();
-  }, [images]);
+  }, [images, searchQuery, airlineFilter]);
+
+  // Clear filters if selected value is no longer available
+  useEffect(() => {
+    if (airlineFilter && !uniqueAirlines.includes(airlineFilter)) {
+      setAirlineFilter("");
+    }
+  }, [uniqueAirlines, airlineFilter]);
+
+  useEffect(() => {
+    if (aircraftFilter && !uniqueAircraftTypes.includes(aircraftFilter)) {
+      setAircraftFilter("");
+    }
+  }, [uniqueAircraftTypes, aircraftFilter]);
 
   // Filter images based on search and filters
   const filteredImages = useMemo(() => {
