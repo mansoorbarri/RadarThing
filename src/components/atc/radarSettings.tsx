@@ -81,7 +81,7 @@ export const RadarSettings = ({
 
         <button
           onClick={() => router.push("/aircraft-images")}
-          className="flex w-full items-center gap-2 rounded-md bg-white/5 px-3 py-2 text-left text-sm text-white transition-colors hover:bg-white/10"
+          className="flex w-full cursor-pointer items-center gap-2 rounded-md bg-white/5 px-3 py-2 text-left text-sm text-white transition-colors hover:bg-white/10"
         >
           <Plane className="h-4 w-4 text-cyan-400" />
           <span>Upload Images</span>
@@ -90,7 +90,7 @@ export const RadarSettings = ({
         {isADMIN && (
           <button
             onClick={() => router.push("/admin/aircraft-images")}
-            className="flex w-full items-center gap-2 rounded-md bg-cyan-500/10 px-3 py-2 text-left text-sm text-cyan-400 transition-colors hover:bg-cyan-500/20"
+            className="flex w-full cursor-pointer items-center gap-2 rounded-md bg-cyan-500/10 px-3 py-2 text-left text-sm text-cyan-400 transition-colors hover:bg-cyan-500/20"
           >
             <Shield className="h-4 w-4" />
             <span>Approve Images</span>

@@ -257,7 +257,7 @@ export default function ATCPage() {
                 setShowMobileSearch(true);
                 analytics.mobileSearchOpened();
               }}
-              className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-black/60 backdrop-blur-md"
+              className="pointer-events-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-black/60 backdrop-blur-md"
             >
               <svg className="h-4 w-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -271,7 +271,7 @@ export default function ATCPage() {
           <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2">
             <button
               onClick={() => setShowTimerPopup(!showTimerPopup)}
-              className="rounded-full border border-white/10 bg-black/40 px-4 py-1.5 backdrop-blur-md"
+              className="cursor-pointer rounded-full border border-white/10 bg-black/40 px-4 py-1.5 backdrop-blur-md"
             >
               <span className="font-mono text-xl text-cyan-400">
                 {time} <span className="text-[10px] text-slate-500">UTC</span>
@@ -298,7 +298,7 @@ export default function ATCPage() {
                         analytics.timerStarted();
                       }}
                       disabled={isRunning}
-                      className="rounded-lg bg-emerald-500/20 px-3 py-1 text-xs text-emerald-400 disabled:opacity-50"
+                      className="cursor-pointer rounded-lg bg-emerald-500/20 px-3 py-1 text-xs text-emerald-400 disabled:opacity-50"
                     >
                       Start
                     </button>
@@ -308,7 +308,7 @@ export default function ATCPage() {
                         analytics.timerStopped();
                       }}
                       disabled={!isRunning}
-                      className="rounded-lg bg-red-500/20 px-3 py-1 text-xs text-red-400 disabled:opacity-50"
+                      className="cursor-pointer rounded-lg bg-red-500/20 px-3 py-1 text-xs text-red-400 disabled:opacity-50"
                     >
                       Stop
                     </button>
@@ -317,7 +317,7 @@ export default function ATCPage() {
                         reset();
                         analytics.timerReset();
                       }}
-                      className="rounded-lg bg-slate-500/20 px-3 py-1 text-xs text-slate-400"
+                      className="cursor-pointer rounded-lg bg-slate-500/20 px-3 py-1 text-xs text-slate-400"
                     >
                       Reset
                     </button>
@@ -527,7 +527,7 @@ export default function ATCPage() {
                   setShowTaxiChart(true);
                   analytics.taxiChartOpened(selectedAirport?.icao || "unknown");
                 }}
-                className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-[10px] text-cyan-300"
+                className="cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-[10px] text-cyan-300"
               >
                 Taxi Chart
               </button>
@@ -540,7 +540,7 @@ export default function ATCPage() {
 
             <button
               onClick={() => setShowAtcPlayer(!showAtcPlayer)}
-              className={`rounded-lg border px-3 py-1.5 text-[10px] transition-colors ${
+              className={`cursor-pointer rounded-lg border px-3 py-1.5 text-[10px] transition-colors ${
                 showAtcPlayer
                   ? "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
                   : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
@@ -554,7 +554,7 @@ export default function ATCPage() {
                 setSelectedAirport(undefined);
                 setShowAtcPlayer(false);
               }}
-              className={`rounded-lg border border-white/10 bg-white/5 text-white/60 ${isMobile ? 'px-2 py-1 text-[9px]' : 'px-3 py-1.5 text-[10px]'}`}
+              className={`cursor-pointer rounded-lg border border-white/10 bg-white/5 text-white/60 ${isMobile ? 'px-2 py-1 text-[9px]' : 'px-3 py-1.5 text-[10px]'}`}
             >
               {isMobile ? '×' : 'Unselect'}
             </button>

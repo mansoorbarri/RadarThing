@@ -89,7 +89,7 @@ export default function PricingPage() {
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
             <button
               onClick={() => router.push("/")}
-              className="font-mono text-xl text-cyan-400"
+              className="cursor-pointer font-mono text-xl text-cyan-400"
             >
               <Image
                 src="/logo-white.svg"
@@ -100,7 +100,7 @@ export default function PricingPage() {
             </button>
             <button
               onClick={() => router.push("/")}
-              className="text-sm text-slate-400 transition-colors hover:text-white"
+              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
             >
               Back to Map
             </button>
@@ -123,7 +123,7 @@ export default function PricingPage() {
           </p>
 
           <SignInButton mode="modal">
-            <button className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-8 py-4 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40">
+            <button className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-8 py-4 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40">
               Sign In / Sign Up
             </button>
           </SignInButton>
@@ -139,7 +139,7 @@ export default function PricingPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <button
             onClick={() => router.push("/")}
-            className="font-mono text-xl text-cyan-400"
+            className="cursor-pointer font-mono text-xl text-cyan-400"
           >
             <Image
               src="/logo-white.svg"
@@ -151,7 +151,7 @@ export default function PricingPage() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push("/")}
-              className="text-sm text-slate-400 transition-colors hover:text-white"
+              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
             >
               Back to Map
             </button>
@@ -205,7 +205,7 @@ export default function PricingPage() {
             <button
               onClick={handleManageSubscription}
               disabled={loading}
-              className="rounded-xl border border-white/10 bg-white/5 px-8 py-3 text-white backdrop-blur-xl transition-all hover:bg-white/10 disabled:opacity-50"
+              className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-8 py-3 text-white backdrop-blur-xl transition-all hover:bg-white/10 disabled:opacity-50"
             >
               {loading ? "Loading..." : "Manage Subscription"}
             </button>
@@ -243,7 +243,7 @@ export default function PricingPage() {
                 <button
                   onClick={handleUpgrade}
                   disabled={loading}
-                  className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-8 py-4 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40 disabled:opacity-50"
+                  className="w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-8 py-4 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40 disabled:opacity-50"
                 >
                   {loading ? "Loading..." : "Upgrade Now"}
                 </button>

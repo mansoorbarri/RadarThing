@@ -307,7 +307,7 @@ export const Sidebar = ({
               setTab("info");
               analytics.sidebarTabChanged("info");
             }}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
+            className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
               tab === "info"
                 ? "bg-white text-black shadow-lg"
                 : "text-slate-400 hover:text-white"
@@ -320,7 +320,7 @@ export const Sidebar = ({
               setTab("history");
               analytics.sidebarTabChanged("history");
             }}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
+            className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
               tab === "history"
                 ? "bg-white text-black shadow-lg"
                 : "text-slate-400 hover:text-white"

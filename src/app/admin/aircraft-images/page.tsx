@@ -190,13 +190,13 @@ export default function AdminAircraftImagesPage() {
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
             <button
               onClick={() => router.push("/")}
-              className="font-mono text-xl text-cyan-400"
+              className="cursor-pointer font-mono text-xl text-cyan-400"
             >
               <Image src="/logo-white.svg" alt="RadarThing" width={100} height={30} />
             </button>
             <button
               onClick={() => router.push("/")}
-              className="text-sm text-slate-400 transition-colors hover:text-white"
+              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
             >
               Back to Map
             </button>
@@ -216,7 +216,7 @@ export default function AdminAircraftImagesPage() {
 
           <button
             onClick={() => router.push("/")}
-            className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-8 py-4 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
+            className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-8 py-4 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
           >
             Back to Map
           </button>
@@ -231,20 +231,20 @@ export default function AdminAircraftImagesPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <button
             onClick={() => router.push("/")}
-            className="font-mono text-xl text-cyan-400"
+            className="cursor-pointer font-mono text-xl text-cyan-400"
           >
             <Image src="/logo-white.svg" alt="RadarThing" width={100} height={30} />
           </button>
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push("/aircraft-images")}
-              className="text-sm text-slate-400 transition-colors hover:text-white"
+              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
             >
               Public Gallery
             </button>
             <button
               onClick={() => router.push("/")}
-              className="text-sm text-slate-400 transition-colors hover:text-white"
+              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
             >
               Back to Map
             </button>
@@ -305,7 +305,7 @@ export default function AdminAircraftImagesPage() {
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-slate-400 transition-all hover:border-red-500/30 hover:text-red-400"
+                className="cursor-pointer rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-slate-400 transition-all hover:border-red-500/30 hover:text-red-400"
               >
                 Clear
               </button>
@@ -317,7 +317,7 @@ export default function AdminAircraftImagesPage() {
         <div className="mb-6 flex gap-2">
           <button
             onClick={() => setActiveTab("pending")}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2 font-mono text-sm transition-all ${
+            className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-mono text-sm transition-all ${
               activeTab === "pending"
                 ? "bg-yellow-500/20 text-yellow-400"
                 : "bg-white/5 text-slate-400 hover:bg-white/10"
@@ -328,7 +328,7 @@ export default function AdminAircraftImagesPage() {
           </button>
           <button
             onClick={() => setActiveTab("approved")}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2 font-mono text-sm transition-all ${
+            className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-mono text-sm transition-all ${
               activeTab === "approved"
                 ? "bg-emerald-500/20 text-emerald-400"
                 : "bg-white/5 text-slate-400 hover:bg-white/10"
@@ -398,7 +398,7 @@ export default function AdminAircraftImagesPage() {
                         <button
                           onClick={() => handleApprove(image.id)}
                           disabled={actionLoading === image.id}
-                          className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-500/20 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
+                          className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-lg bg-emerald-500/20 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
                         >
                           <Check className="h-4 w-4" />
                           Approve
@@ -406,7 +406,7 @@ export default function AdminAircraftImagesPage() {
                         <button
                           onClick={() => handleReject(image.id)}
                           disabled={actionLoading === image.id}
-                          className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-red-500/20 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+                          className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-lg bg-red-500/20 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
                         >
                           <X className="h-4 w-4" />
                           Reject
@@ -450,7 +450,7 @@ export default function AdminAircraftImagesPage() {
                       <button
                         onClick={() => handleDelete(image.id)}
                         disabled={actionLoading === image.id}
-                        className="absolute top-2 right-2 rounded-lg bg-red-500/80 p-2 opacity-0 transition-all hover:bg-red-500 group-hover:opacity-100 disabled:opacity-50"
+                        className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 p-2 opacity-0 transition-all hover:bg-red-500 group-hover:opacity-100 disabled:opacity-50"
                       >
                         <Trash2 className="h-4 w-4 text-white" />
                       </button>

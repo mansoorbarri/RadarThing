@@ -50,7 +50,7 @@ function FIDSRow({
           analytics.aircraftTracked(aircraft.callsign || aircraft.flightNo || "unknown");
           onTrack(aircraft);
         }}
-        className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[10px] tracking-wide text-cyan-300 uppercase hover:bg-cyan-500/20"
+        className="cursor-pointer rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[10px] tracking-wide text-cyan-300 uppercase hover:bg-cyan-500/20"
       >
         Track
       </button>
