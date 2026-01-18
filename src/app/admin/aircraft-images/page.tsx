@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { isAdmin } from "~/app/actions/is-pro";
 import {
   getPendingAircraftImages,
@@ -30,10 +30,58 @@ export default function AdminAircraftImagesPage() {
   const [airlineFilter, setAirlineFilter] = useState<string>("");
   const [aircraftFilter, setAircraftFilter] = useState<string>("");
 
-  // Get unique airlines and aircraft types from all images
+  // Helper to check if image matches search query
+  const matchesSearch = (image: AircraftImage, query: string) => {
+    if (!query.trim()) return true;
+    const q = query.toLowerCase();
+    return (
+      image.airlineIata?.toLowerCase().includes(q) ||
+      image.airlineIcao?.toLowerCase().includes(q) ||
+      image.aircraftType?.toLowerCase().includes(q) ||
+      image.photographer?.toLowerCase().includes(q)
+    );
+  };
+
+  // Get all images for filter options
   const allImages = [...pendingImages, ...approvedImages];
-  const uniqueAirlines = [...new Set(allImages.map((img) => img.airlineIata || img.airlineIcao).filter(Boolean))].sort();
-  const uniqueAircraftTypes = [...new Set(allImages.map((img) => img.aircraftType))].sort();
+
+  // Get unique airlines based on search and aircraft filter (dynamic)
+  const uniqueAirlines = useMemo(() => {
+    const airlines = new Set<string>();
+    allImages.forEach((img) => {
+      const airline = img.airlineIata || img.airlineIcao;
+      if (!airline) return;
+      if (!matchesSearch(img, searchQuery)) return;
+      if (aircraftFilter && img.aircraftType !== aircraftFilter) return;
+      airlines.add(airline);
+    });
+    return Array.from(airlines).sort();
+  }, [allImages, searchQuery, aircraftFilter]);
+
+  // Get unique aircraft types based on search and airline filter (dynamic)
+  const uniqueAircraftTypes = useMemo(() => {
+    const types = new Set<string>();
+    allImages.forEach((img) => {
+      if (!img.aircraftType) return;
+      if (!matchesSearch(img, searchQuery)) return;
+      if (airlineFilter && img.airlineIata !== airlineFilter && img.airlineIcao !== airlineFilter) return;
+      types.add(img.aircraftType);
+    });
+    return Array.from(types).sort();
+  }, [allImages, searchQuery, airlineFilter]);
+
+  // Clear filters if selected value is no longer available
+  useEffect(() => {
+    if (airlineFilter && !uniqueAirlines.includes(airlineFilter)) {
+      setAirlineFilter("");
+    }
+  }, [uniqueAirlines, airlineFilter]);
+
+  useEffect(() => {
+    if (aircraftFilter && !uniqueAircraftTypes.includes(aircraftFilter)) {
+      setAircraftFilter("");
+    }
+  }, [uniqueAircraftTypes, aircraftFilter]);
 
   const hasActiveFilters = searchQuery || airlineFilter || aircraftFilter;
 
@@ -48,15 +96,7 @@ export default function AdminAircraftImagesPage() {
         return false;
       }
       // Apply search query
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesSearch =
-          image.airlineIata?.toLowerCase().includes(query) ||
-          image.airlineIcao?.toLowerCase().includes(query) ||
-          image.aircraftType.toLowerCase().includes(query) ||
-          image.photographer?.toLowerCase().includes(query);
-        if (!matchesSearch) return false;
-      }
+      if (!matchesSearch(image, searchQuery)) return false;
       return true;
     });
   };
