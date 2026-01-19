@@ -72,6 +72,36 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     }
   }, [aircraftId, squawkInput, setSquawk]);
 
+  const handleSetAll = useCallback(() => {
+    const speed = parseInt(speedInput, 10);
+    const altitude = parseInt(altitudeInput, 10);
+    const heading = parseInt(headingInput, 10);
+    const vs = parseInt(vsInput, 10);
+
+    if (!isNaN(speed) && speed >= 0) {
+      setSpeed(aircraftId, speed);
+    }
+    if (!isNaN(altitude) && altitude >= 0) {
+      setAltitude(aircraftId, altitude);
+    }
+    if (!isNaN(heading) && heading >= 0 && heading <= 360) {
+      if (aircraft.navMode) {
+        disableNav(aircraftId);
+        setTimeout(() => setHeading(aircraftId, heading), 100);
+      } else {
+        setHeading(aircraftId, heading);
+      }
+    }
+    if (!isNaN(vs)) {
+      setVS(aircraftId, vs);
+    }
+    if (/^[0-7]{4}$/.test(squawkInput)) {
+      setSquawk(aircraftId, squawkInput);
+    }
+  }, [aircraftId, speedInput, altitudeInput, headingInput, vsInput, squawkInput, aircraft.navMode, setSpeed, setAltitude, setHeading, setVS, setSquawk, disableNav]);
+
+  const hasAnyInput = speedInput || altitudeInput || headingInput || vsInput || squawkInput;
+
   return (
     <div className="mt-6 space-y-4">
       <div className="flex items-center gap-2 px-1">
@@ -163,6 +193,14 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
           placeholder="0000"
         />
       </div>
+
+      <button
+        onClick={handleSetAll}
+        disabled={isLoading || !hasAnyInput}
+        className="w-full rounded-xl bg-cyan-600 py-3 font-mono text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Set All
+      </button>
 
       <p className="px-1 font-mono text-[9px] text-white/30">
         Commands sent to GeoFS. Ensure autopilot is engaged.
