@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { type PositionUpdate, activeAircraft } from "~/lib/aircraft-store";
+import { env } from "~/env";
 
 export const useAircraftStream = () => {
   const [aircrafts, setAircrafts] = useState<PositionUpdate[]>(activeAircraft.getAll());
@@ -20,7 +21,7 @@ export const useAircraftStream = () => {
 
     setConnectionStatus("connecting");
 
-    const url = "https://sse.radarthing.com/api/stream";
+    const url = `${env.NEXT_PUBLIC_SSE_URL}/api/stream`;
 
     const es = new EventSource(url);
     eventSourceRef.current = es;

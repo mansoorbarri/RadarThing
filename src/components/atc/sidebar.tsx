@@ -40,6 +40,8 @@ import { getFlightHistory } from "~/app/actions/get-flight-history";
 import Image from "next/image";
 import { analytics } from "~/lib/posthog";
 import { useAircraftPhoto } from "~/hooks/useAircraftPhoto";
+import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
+import { AircraftControlPanel } from "./AircraftControlPanel";
 
 const getFlightPhase = (
   altAGL: number,
@@ -186,6 +188,10 @@ export const Sidebar = ({
     aircraft.type
   );
 
+  // Check if this is the user's own aircraft
+  const { googleId: userGoogleId, isLoaded: userLoaded } = useCurrentUserProfile();
+  const isOwnAircraft = userLoaded && userGoogleId && aircraft.googleId === userGoogleId;
+
   // Reset image loaded state when photo changes
   useEffect(() => {
     setImageLoaded(false);
@@ -300,97 +306,112 @@ export const Sidebar = ({
         </div>
       </div>
 
-      <nav className="mb-5 flex px-6">
-        <div className="flex w-full rounded-2xl border border-white/10 bg-black/60 p-1.5 shadow-xl">
-          <button
-            onClick={() => {
-              setTab("info");
-              analytics.sidebarTabChanged("info");
-            }}
-            className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
-              tab === "info"
-                ? "bg-white text-black shadow-lg"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <InfoCircleIcon size={14} /> LIVE DATA
-          </button>
-          <button
-            onClick={() => {
-              setTab("history");
-              analytics.sidebarTabChanged("history");
-            }}
-            className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
-              tab === "history"
-                ? "bg-white text-black shadow-lg"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <HistoryIcon size={14} /> LOGBOOK
-          </button>
-        </div>
-      </nav>
-
-      <div className="custom-scrollbar flex-1 overflow-y-auto px-6 pb-12">
-        {tab === "info" ? (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-3.5">
-              <StatBox
-                label="Departure"
-                value={aircraft.departure || "---"}
-                sub="ORIG"
-              />
-              <StatBox
-                label="Arrival"
-                value={aircraft.arrival || "---"}
-                sub="DEST"
-              />
-              <StatBox label="V-Speed" value={displayValues.vspeed} sub="FPM" />
-              <StatBox label="Heading" value={displayValues.heading} sub="MAG" />
-              <StatBox label="Squawk" value={displayValues.squawk} sub="XPDR" />
-              <StatBox label="Alt AGL" value={displayValues.altAGL} sub="FEET" />
+      {/* Mobile: Show only control panel if own aircraft */}
+      {isMobile ? (
+        <div className="flex-1 overflow-y-auto px-4 pb-6">
+          {isOwnAircraft && <AircraftControlPanel aircraft={aircraft} />}
+          {!isOwnAircraft && (
+            <div className="py-8 text-center font-mono text-[10px] tracking-widest text-white/40 uppercase">
+              {aircraft.departure || "---"} → {aircraft.arrival || "---"}
             </div>
-            {renderFlightPlan()}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {loadingHistory ? (
-              <div className="flex flex-col items-center justify-center py-20 opacity-60">
-                <div className="mb-4 h-6 w-6 animate-spin rounded-full border-2 border-cyan-400" />
-                <span className="font-mono text-[11px] font-black tracking-widest">
-                  LOADING
-                </span>
-              </div>
-            ) : history.length === 0 ? (
-              <div className="py-20 text-center font-mono text-[10px] tracking-widest text-white/40 uppercase">
-                No Records
+          )}
+        </div>
+      ) : (
+        <>
+          <nav className="mb-5 flex px-6">
+            <div className="flex w-full rounded-2xl border border-white/10 bg-black/60 p-1.5 shadow-xl">
+              <button
+                onClick={() => {
+                  setTab("info");
+                  analytics.sidebarTabChanged("info");
+                }}
+                className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
+                  tab === "info"
+                    ? "bg-white text-black shadow-lg"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <InfoCircleIcon size={14} /> LIVE DATA
+              </button>
+              <button
+                onClick={() => {
+                  setTab("history");
+                  analytics.sidebarTabChanged("history");
+                }}
+                className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
+                  tab === "history"
+                    ? "bg-white text-black shadow-lg"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <HistoryIcon size={14} /> LOGBOOK
+              </button>
+            </div>
+          </nav>
+
+          <div className="custom-scrollbar flex-1 overflow-y-auto px-6 pb-12">
+            {tab === "info" ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-3.5">
+                  <StatBox
+                    label="Departure"
+                    value={aircraft.departure || "---"}
+                    sub="ORIG"
+                  />
+                  <StatBox
+                    label="Arrival"
+                    value={aircraft.arrival || "---"}
+                    sub="DEST"
+                  />
+                  <StatBox label="V-Speed" value={displayValues.vspeed} sub="FPM" />
+                  <StatBox label="Heading" value={displayValues.heading} sub="MAG" />
+                  <StatBox label="Squawk" value={displayValues.squawk} sub="XPDR" />
+                  <StatBox label="Alt AGL" value={displayValues.altAGL} sub="FEET" />
+                </div>
+                {isOwnAircraft && <AircraftControlPanel aircraft={aircraft} />}
+                {renderFlightPlan()}
               </div>
             ) : (
-              history.map((f) => (
-                <div
-                  key={f.id}
-                  onClick={() => {
-                    if (f.routeData) {
-                      analytics.historyFlightClicked();
-                      onHistoryClick?.(f.routeData as [number, number][]);
-                    }
-                  }}
-                  className="group relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg transition-all hover:border-cyan-500/40"
-                >
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <span className="font-mono text-sm font-black text-white group-hover:text-cyan-400">
-                      {f.depICAO} → {f.arrICAO}
-                    </span>
-                    <span className="font-mono text-[10px] font-bold text-white/30">
-                      {new Date(f.startTime).toLocaleDateString()}
+              <div className="space-y-3">
+                {loadingHistory ? (
+                  <div className="flex flex-col items-center justify-center py-20 opacity-60">
+                    <div className="mb-4 h-6 w-6 animate-spin rounded-full border-2 border-cyan-400" />
+                    <span className="font-mono text-[11px] font-black tracking-widest">
+                      LOADING
                     </span>
                   </div>
-                </div>
-              ))
+                ) : history.length === 0 ? (
+                  <div className="py-20 text-center font-mono text-[10px] tracking-widest text-white/40 uppercase">
+                    No Records
+                  </div>
+                ) : (
+                  history.map((f) => (
+                    <div
+                      key={f.id}
+                      onClick={() => {
+                        if (f.routeData) {
+                          analytics.historyFlightClicked();
+                          onHistoryClick?.(f.routeData as [number, number][]);
+                        }
+                      }}
+                      className="group relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg transition-all hover:border-cyan-500/40"
+                    >
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <span className="font-mono text-sm font-black text-white group-hover:text-cyan-400">
+                          {f.depICAO} → {f.arrICAO}
+                        </span>
+                        <span className="font-mono text-[10px] font-bold text-white/30">
+                          {new Date(f.startTime).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 };

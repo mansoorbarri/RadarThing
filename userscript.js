@@ -1,13 +1,128 @@
+// @ts-nocheck
 (function () {
   "use strict";
 
-  const API_URL =
-    "https://sse.radarthing.com/api/atc/position";
+  // ========== CONFIGURATION ==========
+  // Set to true for local testing, false for production
+  const USE_LOCAL_SERVER = false;
+  const LOCAL_SERVER_URL = "http://localhost:3001";
+  const PROD_SERVER_URL = "https://sse.radarthing.com";
+  // ====================================
+
+  const BASE_URL = USE_LOCAL_SERVER ? LOCAL_SERVER_URL : PROD_SERVER_URL;
+  const API_URL = `${BASE_URL}/api/atc/position`;
+  const COMMANDS_URL = `${BASE_URL}/api/commands`;
   const SEND_INTERVAL_MS = 5000;
+  const COMMAND_POLL_INTERVAL_MS = 2000;
 
   let info = { active: false, dep: "", arr: "", flt: "", sqk: "" };
   let wasOnGround = true;
   let takeoffTimeUTC = "";
+
+  // Command execution handlers
+  function executeCommand(cmd) {
+    if (!geofs?.autopilot || !geofs?.aircraft?.instance) {
+      console.warn("[RadarThing] Cannot execute command - GeoFS not ready");
+      return;
+    }
+
+    console.log("[RadarThing] Executing command:", cmd.type, cmd.value);
+
+    try {
+      switch (cmd.type) {
+        case "setSpeed":
+          if (typeof geofs.autopilot.setSpeed === "function") {
+            geofs.autopilot.setSpeed(Number(cmd.value));
+          }
+          break;
+
+        case "setAltitude":
+          if (typeof geofs.autopilot.setAltitude === "function") {
+            geofs.autopilot.setAltitude(Number(cmd.value));
+          }
+          break;
+
+        case "setHeading":
+          if (typeof geofs.autopilot.setCourse === "function") {
+            geofs.autopilot.setCourse(Number(cmd.value));
+          }
+          break;
+
+        case "setVS":
+          if (typeof geofs.autopilot.setVS === "function") {
+            geofs.autopilot.setVS(Number(cmd.value));
+          }
+          break;
+
+        case "setSquawk":
+          // Update the squawk in flight info
+          if (info) {
+            info.sqk = String(cmd.value);
+            window.dispatchEvent(
+              new CustomEvent("atc-data-sync", { detail: info })
+            );
+          }
+          break;
+
+        case "disableNav":
+          // Disable NAV mode to allow manual heading control
+          if (geofs.autopilot && geofs.autopilot.modes) {
+            geofs.autopilot.modes.heading = true;
+            geofs.autopilot.modes.nav = false;
+          }
+          break;
+
+        case "toggleAutopilot":
+          if (cmd.value && typeof geofs.autopilot.turnOn === "function") {
+            geofs.autopilot.turnOn();
+          } else if (!cmd.value && typeof geofs.autopilot.turnOff === "function") {
+            geofs.autopilot.turnOff();
+          }
+          break;
+
+        default:
+          console.warn("[RadarThing] Unknown command type:", cmd.type);
+      }
+
+      // Notify UI of command execution
+      window.dispatchEvent(
+        new CustomEvent("radarthing-command-executed", {
+          detail: { type: cmd.type, value: cmd.value, success: true },
+        })
+      );
+    } catch (err) {
+      console.error("[RadarThing] Command execution error:", err);
+      window.dispatchEvent(
+        new CustomEvent("radarthing-command-executed", {
+          detail: { type: cmd.type, value: cmd.value, success: false, error: err.message },
+        })
+      );
+    }
+  }
+
+  // Poll for commands from RadarThing server
+  async function pollCommands() {
+    if (!info.active || !geofs?.userRecord) return;
+
+    const id = geofs.userRecord.googleid || geofs.userRecord.callsign;
+    if (!id) return;
+
+    try {
+      const res = await fetch(`${COMMANDS_URL}/${encodeURIComponent(id)}`);
+      if (!res.ok) return;
+
+      const data = await res.json();
+      if (data.commands && data.commands.length > 0) {
+        console.log(`[RadarThing] Received ${data.commands.length} commands`);
+        data.commands.forEach(executeCommand);
+      }
+    } catch (err) {
+      // Silent fail - server might be unavailable
+    }
+  }
+
+  // Start command polling
+  setInterval(pollCommands, COMMAND_POLL_INTERVAL_MS);
 
   function broadcastStatus() {
     let status = { text: "Flight info required", color: "#e74c3c" };
