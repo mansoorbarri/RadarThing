@@ -366,49 +366,60 @@ export default function ATCPage() {
             />
 
             {/* Results */}
-            {searchTerm && searchResults.length > 0 && (
+            {searchTerm && (searchResults.aircrafts.length > 0 || searchResults.airports.length > 0) && (
               <div className="mt-3 max-h-[50vh] overflow-y-auto rounded-xl border border-white/10 bg-black/40">
-                {searchResults.map((result, index) => (
-                  <div
-                    key={
-                      "callsign" in result
-                        ? result.callsign || result.flightNo || `ac-${index}`
-                        : `ap-${result.icao}`
-                    }
-                    onClick={() => {
-                      if ("callsign" in result) {
-                        setSelectedAircraft(result);
-                        drawFlightPlanOnMapRef.current?.(result, true);
-                      } else {
-                        setSelectedAirport(result);
-                      }
-                      setSearchTerm("");
-                      setShowMobileSearch(false);
-                    }}
-                    className="border-b border-white/5 px-4 py-3 active:bg-white/10 last:border-b-0"
-                  >
-                    {"callsign" in result ? (
-                      <>
+                {searchResults.aircrafts.length > 0 && (
+                  <>
+                    <div className="bg-cyan-950/30 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-cyan-400 border-b border-white/10">
+                      Aircrafts
+                    </div>
+                    {searchResults.aircrafts.map((aircraft, index) => (
+                      <div
+                        key={aircraft.callsign || aircraft.flightNo || `ac-${index}`}
+                        onClick={() => {
+                          setSelectedAircraft(aircraft);
+                          drawFlightPlanOnMapRef.current?.(aircraft, true);
+                          setSearchTerm("");
+                          setShowMobileSearch(false);
+                        }}
+                        className="border-b border-white/5 px-4 py-3 active:bg-white/10 last:border-b-0"
+                      >
                         <div className="font-medium text-white">
-                          {result.callsign || result.flightNo || "N/A"}
+                          {aircraft.callsign || aircraft.flightNo || "N/A"}
                         </div>
                         <div className="mt-0.5 text-[12px] text-white/50">
-                          {result.type} • {result.departure} → {result.arrival || "UNK"}
+                          {aircraft.type} • {aircraft.departure} → {aircraft.arrival || "UNK"}
                         </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="font-medium text-white">{result.icao}</div>
-                        <div className="mt-0.5 text-[12px] text-white/50">{result.name}</div>
-                      </>
-                    )}
-                  </div>
-                ))}
+                      </div>
+                    ))}
+                  </>
+                )}
+                {searchResults.airports.length > 0 && (
+                  <>
+                    <div className="bg-cyan-950/30 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-cyan-400 border-b border-white/10">
+                      Airports
+                    </div>
+                    {searchResults.airports.map((airport) => (
+                      <div
+                        key={`ap-${airport.icao}`}
+                        onClick={() => {
+                          setSelectedAirport(airport);
+                          setSearchTerm("");
+                          setShowMobileSearch(false);
+                        }}
+                        className="border-b border-white/5 px-4 py-3 active:bg-white/10 last:border-b-0"
+                      >
+                        <div className="font-medium text-white">{airport.icao}</div>
+                        <div className="mt-0.5 text-[12px] text-white/50">{airport.name}</div>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
             )}
 
             {/* Empty state */}
-            {searchTerm && searchResults.length === 0 && (
+            {searchTerm && searchResults.aircrafts.length === 0 && searchResults.airports.length === 0 && (
               <div className="mt-6 text-center text-sm text-white/30">No results found</div>
             )}
           </div>

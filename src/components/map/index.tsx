@@ -152,7 +152,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
         } as unknown as L.LeafletMouseEvent);
       }
       if (e.key === "u" || e.key === "U") {
-        setShowTags((prev) => !prev);
+        const activeElement = document.activeElement;
+        const isInputFocused = activeElement instanceof HTMLInputElement ||
+          activeElement instanceof HTMLTextAreaElement ||
+          activeElement?.getAttribute("contenteditable") === "true";
+        if (!isInputFocused) {
+          setShowTags((prev) => !prev);
+        }
       }
     };
 

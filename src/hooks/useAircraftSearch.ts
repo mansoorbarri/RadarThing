@@ -9,15 +9,21 @@ interface Airport {
   icao: string;
 }
 
+export interface SearchResults {
+  aircrafts: PositionUpdate[];
+  airports: Airport[];
+}
+
 export const useAircraftSearch = (
   aircrafts: PositionUpdate[],
   airports: Airport[],
   onSearchStart?: () => void,
 ) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState<
-    (PositionUpdate | Airport)[]
-  >([]);
+  const [searchResults, setSearchResults] = useState<SearchResults>({
+    aircrafts: [],
+    airports: [],
+  });
 
   // Trigger airport fetch when user starts searching
   useEffect(() => {
@@ -28,12 +34,13 @@ export const useAircraftSearch = (
 
   const performSearch = useCallback(() => {
     if (!searchTerm) {
-      setSearchResults([]);
+      setSearchResults({ aircrafts: [], airports: [] });
       return;
     }
 
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    const results: (PositionUpdate | Airport)[] = [];
+    const matchedAircrafts: PositionUpdate[] = [];
+    const matchedAirports: Airport[] = [];
 
     aircrafts.forEach((ac) => {
       if (
@@ -43,7 +50,7 @@ export const useAircraftSearch = (
         ac.arrival?.toLowerCase().includes(lowerCaseSearchTerm) ||
         ac.squawk?.toLowerCase().includes(lowerCaseSearchTerm)
       ) {
-        results.push(ac);
+        matchedAircrafts.push(ac);
       }
     });
 
@@ -52,11 +59,21 @@ export const useAircraftSearch = (
         airport.icao.toLowerCase().includes(lowerCaseSearchTerm) ||
         airport.name.toLowerCase().includes(lowerCaseSearchTerm)
       ) {
-        results.push(airport);
+        matchedAirports.push(airport);
       }
     });
 
-    setSearchResults(results);
+    // Sort aircrafts alphabetically by callsign/flightNo
+    matchedAircrafts.sort((a, b) => {
+      const aName = (a.callsign || a.flightNo || "").toLowerCase();
+      const bName = (b.callsign || b.flightNo || "").toLowerCase();
+      return aName.localeCompare(bName);
+    });
+
+    // Sort airports alphabetically by ICAO code
+    matchedAirports.sort((a, b) => a.icao.localeCompare(b.icao));
+
+    setSearchResults({ aircrafts: matchedAircrafts, airports: matchedAirports });
   }, [searchTerm, aircrafts, airports]);
 
   useEffect(() => {
