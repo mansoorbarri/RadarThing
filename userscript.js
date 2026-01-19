@@ -100,7 +100,7 @@
 
   // Poll for commands from RadarThing server
   async function pollCommands() {
-    if (!info.active || !geofs?.userRecord) return;
+    if (!geofs?.userRecord) return;
 
     const id = geofs.userRecord.googleid || geofs.userRecord.callsign;
     if (!id) return;
@@ -187,7 +187,7 @@
       flightPlan: geofs.flightPlan?.export ? geofs.flightPlan.export() : [],
       nextWaypoint: geofs.flightPlan?.trackedWaypoint?.ident || null,
       vspeed: Math.floor(geofs.animation?.values?.verticalSpeed || 0),
-      // userId: geofs.userRecord.userId || null,
+      navMode: geofs.autopilot?.modes?.nav || false,
     };
 
     fetch(API_URL, {

@@ -17,6 +17,7 @@ export interface PositionUpdate {
   flightPlan: string;
   vspeed: string;
   nextWaypoint: string;
+  navMode?: boolean;
   ts: number;
   lastSeen: number;
   flightPath?: [number, number][];

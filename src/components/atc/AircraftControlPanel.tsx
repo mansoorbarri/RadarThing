@@ -38,9 +38,15 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   const handleSetHeading = useCallback(() => {
     const value = parseInt(headingInput, 10);
     if (!isNaN(value) && value >= 0 && value <= 360) {
-      setShowNavWarning(true);
+      // Only show warning if aircraft is in NAV mode
+      if (aircraft.navMode) {
+        setShowNavWarning(true);
+      } else {
+        // Not in NAV mode, set heading directly
+        setHeading(aircraftId, value);
+      }
     }
-  }, [headingInput]);
+  }, [headingInput, aircraft.navMode, aircraftId, setHeading]);
 
   const handleConfirmHeading = useCallback(() => {
     const value = parseInt(headingInput, 10);
