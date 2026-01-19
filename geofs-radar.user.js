@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RadarThing
 // @namespace    http://tampermonkey.net/
-// @version      1.2.12
+// @version      1.2.13
 // @description  Always loads the latest GeoFS ATC Radar script from GitHub
 // @Author       xyzmani
 // @match        http://*/geofs.php*
@@ -277,6 +277,13 @@
     if (statusEl) {
       statusEl.innerHTML = e.detail.text;
       statusEl.style.color = e.detail.color;
+    }
+  });
+
+  window.addEventListener("atc-squawk-update", (e) => {
+    const sqkEl = document.getElementById(SQK_INPUT_ID);
+    if (sqkEl && e.detail.squawk) {
+      sqkEl.value = e.detail.squawk;
     }
   });
 
