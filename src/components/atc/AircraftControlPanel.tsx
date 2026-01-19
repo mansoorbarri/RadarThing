@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { useAircraftCommands } from "~/hooks/useAircraftCommands";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 
@@ -18,28 +18,6 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   const [vsInput, setVsInput] = useState("");
   const [squawkInput, setSquawkInput] = useState("");
   const [showNavWarning, setShowNavWarning] = useState(false);
-
-  // Sync inputs with current aircraft values
-  useEffect(() => {
-    setSpeedInput(aircraft.speed !== undefined ? String(Math.round(aircraft.speed)) : "");
-  }, [aircraft.speed]);
-
-  useEffect(() => {
-    const alt = aircraft.altMSL ?? aircraft.alt;
-    setAltitudeInput(alt !== undefined ? String(Math.round(alt)) : "");
-  }, [aircraft.altMSL, aircraft.alt]);
-
-  useEffect(() => {
-    setHeadingInput(aircraft.heading !== undefined ? String(Math.round(aircraft.heading)) : "");
-  }, [aircraft.heading]);
-
-  useEffect(() => {
-    setVsInput(aircraft.vspeed !== undefined ? String(Math.round(Number(aircraft.vspeed))) : "");
-  }, [aircraft.vspeed]);
-
-  useEffect(() => {
-    setSquawkInput(aircraft.squawk ?? "");
-  }, [aircraft.squawk]);
 
   const aircraftId = aircraft.id;
 
