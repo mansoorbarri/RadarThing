@@ -169,6 +169,14 @@ export async function createAircraftImage(data: {
     );
 
     if (existingApproved) {
+      // Delete the uploaded image from UploadThing to prevent duplicates
+      if (data.imageKey) {
+        try {
+          await utapi.deleteFiles(data.imageKey);
+        } catch (e) {
+          console.error("Failed to delete duplicate image from UploadThing:", e);
+        }
+      }
       return {
         success: false,
         error:
@@ -188,6 +196,14 @@ export async function createAircraftImage(data: {
     );
 
     if (existingPending) {
+      // Delete the uploaded image from UploadThing to prevent duplicates
+      if (data.imageKey) {
+        try {
+          await utapi.deleteFiles(data.imageKey);
+        } catch (e) {
+          console.error("Failed to delete duplicate image from UploadThing:", e);
+        }
+      }
       return {
         success: false,
         error: "You already have a pending image for this combination",
