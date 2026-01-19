@@ -49,8 +49,8 @@
           break;
 
         case "setVS":
-          if (typeof geofs.autopilot.setVS === "function") {
-            geofs.autopilot.setVS(Number(cmd.value));
+          if (typeof geofs.autopilot.setVerticalSpeed === "function") {
+            geofs.autopilot.setVerticalSpeed(Number(cmd.value));
           }
           break;
 
