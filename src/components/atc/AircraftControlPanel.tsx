@@ -63,12 +63,6 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   const handleSetSquawk = useCallback(() => {
     if (/^[0-7]{4}$/.test(squawkInput)) {
       setSquawk(aircraftId, squawkInput);
-      // Update the squawk field in the GeoFS userscript UI
-      window.dispatchEvent(
-        new CustomEvent("atc-squawk-update", {
-          detail: { squawk: squawkInput },
-        })
-      );
     }
   }, [aircraftId, squawkInput, setSquawk]);
 

@@ -53,6 +53,12 @@
             window.dispatchEvent(
               new CustomEvent("atc-data-sync", { detail: info })
             );
+            // Also update the squawk input field in the UI
+            window.dispatchEvent(
+              new CustomEvent("atc-squawk-update", {
+                detail: { squawk: String(cmd.value) },
+              })
+            );
           }
           break;
 
