@@ -10,13 +10,22 @@ import {
   RadarAirportIcon,
 } from "./MapIcons";
 
+// Track active animations to cancel them when new position arrives
+const activeAnimations = new Map<L.Marker, number>();
+
 // Smoothly animate marker to new position
 function slideTo(
   marker: L.Marker,
   destLat: number,
   destLng: number,
-  duration = 1000
+  duration = 3000
 ) {
+  // Cancel any existing animation for this marker
+  const existingAnimation = activeAnimations.get(marker);
+  if (existingAnimation) {
+    cancelAnimationFrame(existingAnimation);
+  }
+
   const start = performance.now();
   const startLat = marker.getLatLng().lat;
   const startLng = marker.getLatLng().lng;
@@ -27,20 +36,22 @@ function slideTo(
     const elapsed = currentTime - start;
     const progress = Math.min(elapsed / duration, 1);
 
-    // Ease-out cubic for smooth deceleration
-    const eased = 1 - Math.pow(1 - progress, 3);
-
-    const newLat = startLat + deltaLat * eased;
-    const newLng = startLng + deltaLng * eased;
+    // Linear interpolation for constant speed movement
+    const newLat = startLat + deltaLat * progress;
+    const newLng = startLng + deltaLng * progress;
 
     marker.setLatLng([newLat, newLng]);
 
     if (progress < 1) {
-      requestAnimationFrame(animate);
+      const frameId = requestAnimationFrame(animate);
+      activeAnimations.set(marker, frameId);
+    } else {
+      activeAnimations.delete(marker);
     }
   }
 
-  requestAnimationFrame(animate);
+  const frameId = requestAnimationFrame(animate);
+  activeAnimations.set(marker, frameId);
 }
 
 interface UseMapLayersAndMarkersProps {
@@ -143,9 +154,16 @@ export const useMapLayersAndMarkers = ({
     }
   }, [mapInstance, isOpenAIPEnabled, openAIPLayer]);
 
+  // Clear markers when layer reference changes
+  useEffect(() => {
+    return () => {
+      markersRef.current.clear();
+    };
+  }, [aircraftMarkersLayer]);
+
   // Effect for managing aircraft markers with smooth animation
   useEffect(() => {
-    if (!aircraftMarkersLayer.current) return;
+    if (!aircraftMarkersLayer.current || !mapReady) return;
 
     const currentAircraftIds = new Set(aircrafts.map((ac) => ac.callsign || ac.id));
     const existingMarkers = markersRef.current;
@@ -178,7 +196,7 @@ export const useMapLayersAndMarkers = ({
           Math.abs(currentLatLng.lat - newLat) > 0.0001 ||
           Math.abs(currentLatLng.lng - newLng) > 0.0001
         ) {
-          slideTo(existingMarker, newLat, newLng, 2000); // 2 second animation
+          slideTo(existingMarker, newLat, newLng, 3000); // Match 3s update interval for continuous motion
         }
 
         // Update the icon (for heading rotation, selection state, etc.)
