@@ -1,7 +1,6 @@
 import { useCallback, useState } from "react";
-import { env } from "~/env";
 
-const COMMAND_API_URL = `${env.NEXT_PUBLIC_SSE_URL}/api/command`;
+const COMMAND_API_URL = "https://sse.radarthing.com/api/command";
 
 export type CommandType =
   | "setSpeed"

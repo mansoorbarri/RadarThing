@@ -1,5 +1,5 @@
 // components/map/useMapLayersAndMarkers.ts
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import L from "leaflet";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type Airport } from "~/components/map"; // Adjusted path
@@ -9,6 +9,39 @@ import {
   AirportIcon,
   RadarAirportIcon,
 } from "./MapIcons";
+
+// Smoothly animate marker to new position
+function slideTo(
+  marker: L.Marker,
+  destLat: number,
+  destLng: number,
+  duration = 1000
+) {
+  const start = performance.now();
+  const startLat = marker.getLatLng().lat;
+  const startLng = marker.getLatLng().lng;
+  const deltaLat = destLat - startLat;
+  const deltaLng = destLng - startLng;
+
+  function animate(currentTime: number) {
+    const elapsed = currentTime - start;
+    const progress = Math.min(elapsed / duration, 1);
+
+    // Ease-out cubic for smooth deceleration
+    const eased = 1 - Math.pow(1 - progress, 3);
+
+    const newLat = startLat + deltaLat * eased;
+    const newLng = startLng + deltaLng * eased;
+
+    marker.setLatLng([newLat, newLng]);
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
 
 interface UseMapLayersAndMarkersProps {
   mapInstance: React.MutableRefObject<L.Map | null>;
@@ -51,6 +84,8 @@ export const useMapLayersAndMarkers = ({
   showTags,
   mapReady,
 }: UseMapLayersAndMarkersProps) => {
+  // Track existing markers by aircraft ID for smooth updates
+  const markersRef = useRef<Map<string, L.Marker>>(new Map());
 
   // Effect for managing base layers (OSM/Satellite/Radar)
   useEffect(() => {
@@ -108,27 +143,62 @@ export const useMapLayersAndMarkers = ({
     }
   }, [mapInstance, isOpenAIPEnabled, openAIPLayer]);
 
-  // Effect for managing aircraft markers
+  // Effect for managing aircraft markers with smooth animation
   useEffect(() => {
     if (!aircraftMarkersLayer.current) return;
 
-    aircraftMarkersLayer.current.clearLayers();
+    const currentAircraftIds = new Set(aircrafts.map((ac) => ac.callsign || ac.id));
+    const existingMarkers = markersRef.current;
+
+    // Remove markers for aircraft that are no longer present
+    existingMarkers.forEach((marker, id) => {
+      if (!currentAircraftIds.has(id)) {
+        aircraftMarkersLayer.current!.removeLayer(marker);
+        existingMarkers.delete(id);
+      }
+    });
+
+    // Update or create markers for each aircraft
     aircrafts.forEach((aircraft) => {
+      const id = aircraft.callsign || aircraft.id;
       const icon = isRadarMode
         ? getRadarAircraftDivIcon(aircraft, selectedAircraftId, showTags)
         : getAircraftDivIcon(aircraft, selectedAircraftId, showTags);
 
-      const marker = L.marker([aircraft.lat, aircraft.lon], {
-        title: aircraft.callsign,
-        icon: icon,
-        zIndexOffset: 1000,
-      }).addTo(aircraftMarkersLayer.current!);
+      const existingMarker = existingMarkers.get(id);
 
-      marker.on("click", (e) => {
-        L.DomEvent.stopPropagation(e);
-        drawFlightPlan(aircraft, true);
-        onAircraftSelect(aircraft);
-      });
+      if (existingMarker) {
+        // Update existing marker - animate to new position
+        const currentLatLng = existingMarker.getLatLng();
+        const newLat = aircraft.lat;
+        const newLng = aircraft.lon;
+
+        // Only animate if position actually changed
+        if (
+          Math.abs(currentLatLng.lat - newLat) > 0.0001 ||
+          Math.abs(currentLatLng.lng - newLng) > 0.0001
+        ) {
+          slideTo(existingMarker, newLat, newLng, 2000); // 2 second animation
+        }
+
+        // Update the icon (for heading rotation, selection state, etc.)
+        existingMarker.setIcon(icon);
+      } else {
+        // Create new marker
+        const marker = L.marker([aircraft.lat, aircraft.lon], {
+          title: aircraft.callsign,
+          icon: icon,
+          zIndexOffset: 1000,
+        }).addTo(aircraftMarkersLayer.current!);
+
+        marker.on("click", (e) => {
+          L.DomEvent.stopPropagation(e);
+          drawFlightPlan(aircraft, true);
+          onAircraftSelect(aircraft);
+        });
+
+        existingMarkers.set(id, marker);
+      }
     });
 
     if (currentSelectedAircraftRef.current) {

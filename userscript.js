@@ -2,16 +2,8 @@
 (function () {
   "use strict";
 
-  // ========== CONFIGURATION ==========
-  // Set to true for local testing, false for production
-  const USE_LOCAL_SERVER = false;
-  const LOCAL_SERVER_URL = "http://localhost:3001";
-  const PROD_SERVER_URL = "https://sse.radarthing.com";
-  // ====================================
-
-  const BASE_URL = USE_LOCAL_SERVER ? LOCAL_SERVER_URL : PROD_SERVER_URL;
-  const API_URL = `${BASE_URL}/api/atc/position`;
-  const COMMANDS_URL = `${BASE_URL}/api/commands`;
+  const API_URL = "https://sse.radarthing.com/api/atc/position";
+  const COMMANDS_URL = "https://sse.radarthing.com/api/commands";
   const SEND_INTERVAL_MS = 5000;
   const COMMAND_POLL_INTERVAL_MS = 2000;
 
