@@ -1,7 +1,10 @@
 import posthog from "posthog-js";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 export const initPostHog = () => {
   if (typeof window === "undefined") return;
+  if (!isProduction) return;
 
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   const host = process.env.NEXT_PUBLIC_POSTHOG_HOST;
@@ -21,6 +24,7 @@ export const initPostHog = () => {
 
 export const track = (event: string, properties?: Record<string, unknown>) => {
   if (typeof window === "undefined") return;
+  if (!isProduction) return;
   posthog.capture(event, properties);
 };
 
@@ -93,6 +97,51 @@ export const analytics = {
 
   // Mobile
   mobileSearchOpened: () => track("mobile_search_opened"),
+
+  // User session events
+  userSignedIn: () => track("user_signed_in"),
+  userSignedOut: () => track("user_signed_out"),
+
+  // Feature engagement
+  fidsOpened: () => track("fids_opened"),
+  flightHistoryViewed: () => track("flight_history_viewed"),
+  flightCreated: (properties: { callsign: string; aircraftType: string }) =>
+    track("flight_created", properties),
+  flightEnded: (properties: { callsign: string; duration?: number }) =>
+    track("flight_ended", properties),
+
+  // Airport interactions
+  airportSelected: (icao: string) => track("airport_selected", { icao }),
+  metarViewed: (icao: string) => track("metar_viewed", { icao }),
+
+  // Error tracking
+  errorOccurred: (properties: { error: string; context?: string; component?: string }) =>
+    track("error_occurred", properties),
+  apiError: (properties: { endpoint: string; status?: number; error: string }) =>
+    track("api_error", properties),
+
+  // Performance tracking
+  mapLoaded: (loadTimeMs: number) => track("map_loaded", { load_time_ms: loadTimeMs }),
+  aircraftDataReceived: (count: number) =>
+    track("aircraft_data_received", { aircraft_count: count }),
+
+  // Pro features attempted by free users
+  proFeatureAttempted: (feature: string) =>
+    track("pro_feature_attempted", { feature }),
+};
+
+// Set user properties
+export const setUserProperties = (properties: Record<string, unknown>) => {
+  if (typeof window === "undefined") return;
+  if (!isProduction) return;
+  posthog.setPersonProperties(properties);
+};
+
+// Register super properties (included with all events)
+export const registerSuperProperties = (properties: Record<string, unknown>) => {
+  if (typeof window === "undefined") return;
+  if (!isProduction) return;
+  posthog.register(properties);
 };
 
 export { posthog };
