@@ -328,12 +328,12 @@ export default function ATCPage() {
           </div>
         )}
 
-        <div className={`pointer-events-auto flex items-center ${isMobile ? 'gap-2' : 'gap-4'}`}>
+        <div className={`pointer-events-auto flex items-center ${isMobile ? 'flex-col gap-1.5' : 'gap-4'}`}>
           <ConnectionStatusIndicator
             status={connectionStatus}
             isMobile={isMobile}
           />
-          {!isMobile && <UserAuth />}
+          <UserAuth />
         </div>
       </header>
 

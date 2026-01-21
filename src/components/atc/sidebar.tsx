@@ -306,15 +306,16 @@ export const Sidebar = ({
         </div>
       </div>
 
-      {/* Mobile: Show only control panel if own aircraft */}
+      {/* Mobile: Show control panel and flight plan with scrolling */}
       {isMobile ? (
         <div className="flex-1 overflow-y-auto px-4 pb-6">
           {isOwnAircraft && <AircraftControlPanel aircraft={aircraft} />}
           {!isOwnAircraft && (
-            <div className="py-8 text-center font-mono text-[10px] tracking-widest text-white/40 uppercase">
+            <div className="py-4 text-center font-mono text-[10px] tracking-widest text-white/40 uppercase">
               {aircraft.departure || "---"} → {aircraft.arrival || "---"}
             </div>
           )}
+          {renderFlightPlan()}
         </div>
       ) : (
         <>
