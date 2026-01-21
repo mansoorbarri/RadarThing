@@ -156,8 +156,9 @@ export const useMapLayersAndMarkers = ({
 
   // Clear markers when layer reference changes
   useEffect(() => {
+    const markers = markersRef.current;
     return () => {
-      markersRef.current.clear();
+      markers.clear();
     };
   }, [aircraftMarkersLayer]);
 

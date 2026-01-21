@@ -43,7 +43,10 @@ export default function AdminAircraftImagesPage() {
   };
 
   // Get all images for filter options
-  const allImages = [...pendingImages, ...approvedImages];
+  const allImages = useMemo(
+    () => [...pendingImages, ...approvedImages],
+    [pendingImages, approvedImages]
+  );
 
   // Get unique airlines based on search and aircraft filter (dynamic)
   const uniqueAirlines = useMemo(() => {
