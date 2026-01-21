@@ -180,17 +180,18 @@ export const useMapInitialization = ({
   const radarControlInstanceRef = useRef<L.Control | null>(null);
 
   useEffect(() => {
-    if (!mapInstance.current || isMobile) return;
+    if (!mapInstance.current) return;
 
     const map = mapInstance.current;
 
-    // Remove existing radar control if any
+    // Remove existing radar control if any (always do cleanup)
     if (radarControlInstanceRef.current) {
       map.removeControl(radarControlInstanceRef.current);
       radarControlInstanceRef.current = null;
+      setRadarControlRef.current = null;
     }
 
-    // Add the appropriate radar control
+    // Add the appropriate radar control (on both mobile and desktop)
     if (canUseRadarMode) {
       const radarControl = new RadarModeControl({}, setIsRadarMode);
       map.addControl(radarControl);
@@ -200,9 +201,8 @@ export const useMapInitialization = ({
       const lockedRadarControl = new LockedRadarModeControl({});
       map.addControl(lockedRadarControl);
       radarControlInstanceRef.current = lockedRadarControl;
-      setRadarControlRef.current = null;
     }
-  }, [canUseRadarMode, isMobile, setIsRadarMode, setRadarControlRef]);
+  }, [canUseRadarMode, setIsRadarMode, setRadarControlRef]);
 
   return {
     mapInstance,
