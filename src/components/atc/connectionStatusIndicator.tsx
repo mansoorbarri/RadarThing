@@ -8,9 +8,10 @@ interface ConnectionStatusIndicatorProps {
 
 export const ConnectionStatusIndicator: React.FC<
   ConnectionStatusIndicatorProps
-> = ({ status }) => {
-  const baseStyle =
-    "flex items-center rounded-md border font-mono text-[12px] font-semibold px-3 py-1.5 transition-all duration-200 shadow-[0_0_6px_rgba(0,255,255,0.25)]";
+> = ({ status, isMobile }) => {
+  const baseStyle = isMobile
+    ? "flex items-center rounded-md border font-mono text-[10px] font-semibold px-2 py-1 transition-all duration-200 shadow-[0_0_6px_rgba(0,255,255,0.25)]"
+    : "flex items-center rounded-md border font-mono text-[12px] font-semibold px-3 py-1.5 transition-all duration-200 shadow-[0_0_6px_rgba(0,255,255,0.25)]";
 
   const stateClasses = {
     connected:

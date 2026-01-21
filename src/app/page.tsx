@@ -219,7 +219,7 @@ export default function ATCPage() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-black">
-      <header className={`absolute top-0 right-0 left-0 z-[10010] flex items-center justify-between ${isMobile ? 'h-12 px-3 pt-2' : 'h-20 px-6 pt-5'}`}>
+      <header className={`absolute top-0 right-0 left-0 z-[10010] flex items-center justify-between ${isMobile ? 'h-14 px-3 pt-1' : 'h-20 px-6 pt-5'}`}>
         <div className="flex items-center gap-2">
           {!isMobile && (
             <Image
@@ -328,7 +328,7 @@ export default function ATCPage() {
           </div>
         )}
 
-        <div className={`pointer-events-auto flex items-center ${isMobile ? 'flex-col gap-1.5' : 'gap-4'}`}>
+        <div className={`pointer-events-auto flex items-center ${isMobile ? 'gap-2' : 'gap-4'}`}>
           <ConnectionStatusIndicator
             status={connectionStatus}
             isMobile={isMobile}

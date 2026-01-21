@@ -200,17 +200,19 @@ export const Sidebar = ({
   return (
     <div
       ref={containerRef}
-      className="flex h-full flex-col overflow-hidden text-white bg-[#050f14]/90"
+      className="flex h-full flex-col text-white bg-[#050f14]/90"
     >
       {/* Mobile drag handle */}
       {isMobile && (
-        <div className="flex items-center justify-center px-4 pt-3 pb-1">
+        <div className="shrink-0 flex items-center justify-center px-4 pt-3 pb-1">
           <div className="h-1 w-12 rounded-full bg-white/30" />
         </div>
       )}
 
+      {/* Scrollable content wrapper for mobile */}
+      <div className={`${isMobile ? 'flex-1 overflow-y-auto' : 'flex flex-col flex-1 overflow-hidden'}`}>
       {/* Header with optional aircraft photo background */}
-      <div className={`relative ${aircraftPhoto ? 'min-h-[200px]' : ''}`}>
+      <div className={`relative ${isMobile ? '' : ''} ${aircraftPhoto ? (isMobile ? 'min-h-[140px]' : 'min-h-[200px]') : ''}`}>
         {/* Aircraft Photo Background */}
         {aircraftPhoto && (
           <>
@@ -306,9 +308,9 @@ export const Sidebar = ({
         </div>
       </div>
 
-      {/* Mobile: Show control panel and flight plan with scrolling */}
+      {/* Mobile: Show control panel and flight plan */}
       {isMobile ? (
-        <div className="flex-1 overflow-y-auto px-4 pb-6">
+        <div className="px-4 pb-6">
           {isOwnAircraft && <AircraftControlPanel aircraft={aircraft} />}
           {!isOwnAircraft && (
             <div className="py-4 text-center font-mono text-[10px] tracking-widest text-white/40 uppercase">
@@ -413,6 +415,7 @@ export const Sidebar = ({
           </div>
         </>
       )}
+      </div>
     </div>
   );
 };
