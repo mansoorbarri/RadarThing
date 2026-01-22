@@ -83,6 +83,7 @@ export const Sidebar = ({
   const [tab, setTab] = useState<"info" | "history">("info");
   const [history, setHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [canAccessHistory, setCanAccessHistory] = useState<boolean | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -125,8 +126,14 @@ export const Sidebar = ({
     if (tab === "history" && aircraft.googleId) {
       setLoadingHistory(true);
       getFlightHistory(aircraft.googleId)
-        .then(setHistory)
-        .catch(() => setHistory([]))
+        .then((result) => {
+          setHistory(result.flights);
+          setCanAccessHistory(result.canAccess);
+        })
+        .catch(() => {
+          setHistory([]);
+          setCanAccessHistory(false);
+        })
         .finally(() => setLoadingHistory(false));
     }
   }, [tab, aircraft.googleId]);
@@ -382,6 +389,24 @@ export const Sidebar = ({
                     <span className="font-mono text-[11px] font-black tracking-widest">
                       LOADING
                     </span>
+                  </div>
+                ) : canAccessHistory === false ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/10">
+                      <HistoryIcon size={28} className="text-amber-400" />
+                    </div>
+                    <span className="mb-2 font-mono text-sm font-black tracking-wide text-white">
+                      PRO Feature
+                    </span>
+                    <p className="mb-4 max-w-[240px] text-center font-mono text-[10px] leading-relaxed text-white/50">
+                      Flight history is available for Pro and Admin users only.
+                    </p>
+                    <a
+                      href="/pricing"
+                      className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 font-mono text-[10px] font-black tracking-wide text-black transition-all hover:shadow-lg hover:shadow-amber-500/20"
+                    >
+                      UPGRADE TO PRO
+                    </a>
                   </div>
                 ) : history.length === 0 ? (
                   <div className="py-20 text-center font-mono text-[10px] tracking-widest text-white/40 uppercase">
