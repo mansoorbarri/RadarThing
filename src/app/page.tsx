@@ -33,7 +33,7 @@ import { TaxiChartViewer } from "~/components/airports/TaxiChartsViewer";
 import { AtcPlayer } from "~/components/atc/AtcPlayer";
 import Loading from "~/components/loading";
 import { ProBadge } from "~/components/ui/pro-badge";
-import { UpgradeIcon, FlightsIcon, FilterIcon, DiscordIcon } from "~/utils/dockIcons";
+import { UpgradeIcon, FlightsIcon, FilterIcon, DiscordIcon, DashboardIcon } from "~/utils/dockIcons";
 
 const DynamicMapComponent = dynamic(() => import("~/components/map"), {
   ssr: false,
@@ -508,6 +508,15 @@ export default function ATCPage() {
                 router.push("/pricing");
               },
             }] : []),
+            {
+              id: "dashboard",
+              label: "Dashboard",
+              icon: DashboardIcon,
+              active: false,
+              onClick: () => {
+                router.push("/dashboard");
+              },
+            },
             {
               id: "discord",
               label: "Help",
