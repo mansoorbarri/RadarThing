@@ -451,6 +451,7 @@ export default function ATCPage() {
             aircrafts={aircrafts}
             onTrack={(ac) => {
               setSelectedAircraft(ac);
+              setActiveRightPanel(null);
               drawFlightPlanOnMapRef.current?.(ac, true);
             }}
           />
@@ -481,6 +482,7 @@ export default function ATCPage() {
               onClick: () => {
                 const newState = activeRightPanel !== "fids";
                 setActiveRightPanel(newState ? "fids" : null);
+                if (newState) setSelectedAircraft(null);
                 analytics.panelFlightsToggled(newState);
               },
             },
@@ -492,6 +494,7 @@ export default function ATCPage() {
               onClick: () => {
                 const newState = activeRightPanel !== "filter";
                 setActiveRightPanel(newState ? "filter" : null);
+                if (newState) setSelectedAircraft(null);
                 analytics.panelFilterToggled(newState);
               },
             },
