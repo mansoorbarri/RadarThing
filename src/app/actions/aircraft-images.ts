@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { UTApi } from "uploadthing/server";
 import { convex, api } from "~/server/convex";
@@ -220,6 +220,25 @@ export async function createAircraftImage(data: {
       uploadedBy: userId,
     });
 
+    // Auto-approve if uploaded by admin
+    const isAdmin = await isAdminUser();
+    if (isAdmin && image) {
+      await convex.mutation(api.aircraftImages.approve, {
+        id: image.id as Id<"aircraftImages">,
+        approvedBy: userId,
+      });
+      // Refetch the approved image
+      const approvedImage = await convex.query(api.aircraftImages.getById, {
+        id: image.id as Id<"aircraftImages">,
+      });
+      revalidatePath("/aircraft-images");
+      revalidatePath("/admin/aircraft-images");
+      return {
+        success: true,
+        image: approvedImage ? toAircraftImage(approvedImage) : undefined,
+      };
+    }
+
     revalidatePath("/aircraft-images");
     revalidatePath("/admin/aircraft-images");
     return {
@@ -374,4 +393,32 @@ export async function deleteAircraftImage(
     console.error("Error deleting aircraft image:", error);
     return { success: false, error: "Failed to delete image" };
   }
+}
+
+// Get user info by Clerk IDs (ADMIN only)
+export async function getUserInfoByIds(
+  userIds: string[]
+): Promise<Record<string, { email: string; name: string | null }>> {
+  const admin = await isAdminUser();
+  if (!admin) return {};
+
+  const result: Record<string, { email: string; name: string | null }> = {};
+  const client = await clerkClient();
+
+  // Fetch users in batches to avoid rate limits
+  const uniqueIds = [...new Set(userIds)];
+
+  for (const userId of uniqueIds) {
+    try {
+      const user = await client.users.getUser(userId);
+      result[userId] = {
+        email: user.emailAddresses[0]?.emailAddress ?? "Unknown",
+        name: user.firstName ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}` : null,
+      };
+    } catch {
+      result[userId] = { email: "Unknown", name: null };
+    }
+  }
+
+  return result;
 }

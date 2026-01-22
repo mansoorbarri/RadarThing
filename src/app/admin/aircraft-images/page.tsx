@@ -10,6 +10,7 @@ import {
   approveAircraftImage,
   rejectAircraftImage,
   deleteAircraftImage,
+  getUserInfoByIds,
   type AircraftImage,
 } from "~/app/actions/aircraft-images";
 import { Trash2, Check, X, Plane, Clock, CheckCircle, Search } from "lucide-react";
@@ -24,6 +25,7 @@ export default function AdminAircraftImagesPage() {
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [pendingImages, setPendingImages] = useState<AircraftImage[]>([]);
   const [approvedImages, setApprovedImages] = useState<AircraftImage[]>([]);
+  const [userInfo, setUserInfo] = useState<Record<string, { email: string; name: string | null }>>({});
   const [activeTab, setActiveTab] = useState<"pending" | "approved">("pending");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -144,6 +146,14 @@ export default function AdminAircraftImagesPage() {
     ]);
     setPendingImages(pending);
     setApprovedImages(approved);
+
+    // Fetch user info for all uploaders
+    const allUserIds = [...pending, ...approved].map((img) => img.uploadedBy);
+    if (allUserIds.length > 0) {
+      const info = await getUserInfoByIds(allUserIds);
+      setUserInfo(info);
+    }
+
     setLoading(false);
   }
 
@@ -390,12 +400,18 @@ export default function AdminAircraftImagesPage() {
                         </span>
                       </div>
                       {image.photographer && (
-                        <p className="mb-3 text-xs text-slate-500">
+                        <p className="mb-2 text-xs text-slate-500">
                           Photo by {image.photographer}
                         </p>
                       )}
-                      <p className="mb-3 text-xs text-slate-500">
-                        Uploaded {new Date(image.createdAt).toLocaleDateString()}
+                      <p className="mb-1 text-xs text-slate-500">
+                        Uploaded by{" "}
+                        <span className="text-cyan-400">
+                          {userInfo[image.uploadedBy]?.email ?? image.uploadedBy}
+                        </span>
+                      </p>
+                      <p className="mb-3 text-xs text-slate-600">
+                        {new Date(image.createdAt).toLocaleDateString()}
                       </p>
                       <div className="flex gap-2">
                         <button
@@ -480,6 +496,12 @@ export default function AdminAircraftImagesPage() {
                           Photo by {image.photographer}
                         </p>
                       )}
+                      <p className="mt-1 text-xs text-slate-500">
+                        Uploaded by{" "}
+                        <span className="text-cyan-400">
+                          {userInfo[image.uploadedBy]?.email ?? image.uploadedBy}
+                        </span>
+                      </p>
                       {image.approvedAt && (
                         <p className="mt-1 text-xs text-slate-600">
                           Approved {new Date(image.approvedAt).toLocaleDateString()}
