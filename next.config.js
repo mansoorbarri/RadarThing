@@ -18,6 +18,10 @@ const config = {
         hostname: "82ohxjlwgh.ufs.sh",
         pathname: "/f/*",
       },
+      {
+        protocol: "https",
+        hostname: "img.clerk.com",
+      },
     ],
   },
 };
