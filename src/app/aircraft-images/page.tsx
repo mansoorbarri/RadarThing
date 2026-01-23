@@ -3,6 +3,21 @@
 import { useRouter } from "next/navigation";
 import { useUser, SignInButton } from "@clerk/nextjs";
 import { useState, useEffect, useMemo } from "react";
+
+// Cookie helpers
+function getCookie(name: string): string {
+  if (typeof document === "undefined") return "";
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return decodeURIComponent(parts.pop()?.split(";").shift() || "");
+  return "";
+}
+
+function setCookie(name: string, value: string, days = 365) {
+  if (typeof document === "undefined") return;
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+}
 import {
   getApprovedAircraftImages,
   createAircraftImage,
@@ -31,6 +46,14 @@ export default function AircraftImagesPage() {
     imageKey: "",
     discordUsername: "",
   });
+
+  // Load Discord username from cookie on mount
+  useEffect(() => {
+    const savedUsername = getCookie("radarthing_discord");
+    if (savedUsername) {
+      setFormData((prev) => ({ ...prev, discordUsername: savedUsername }));
+    }
+  }, []);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -151,10 +174,22 @@ export default function AircraftImagesPage() {
     });
 
     if (result.success) {
+      // Save Discord username to cookie for next time
+      if (formData.discordUsername) {
+        setCookie("radarthing_discord", formData.discordUsername);
+      }
       setSuccess(true);
       setTimeout(() => {
         setShowUploadModal(false);
-        setFormData({ airlineIata: "", airlineIcao: "", aircraftType: "", imageUrl: "", imageKey: "", discordUsername: "" });
+        // Keep Discord username when resetting form
+        setFormData((prev) => ({
+          airlineIata: "",
+          airlineIcao: "",
+          aircraftType: "",
+          imageUrl: "",
+          imageKey: "",
+          discordUsername: prev.discordUsername
+        }));
         setSuccess(false);
       }, 2000);
     } else {
@@ -349,7 +384,15 @@ export default function AircraftImagesPage() {
                 setShowUploadModal(false);
                 setError(null);
                 setSuccess(false);
-                setFormData({ airlineIata: "", airlineIcao: "", aircraftType: "", imageUrl: "", imageKey: "", discordUsername: "" });
+                // Keep Discord username when closing modal
+                setFormData((prev) => ({
+                  airlineIata: "",
+                  airlineIcao: "",
+                  aircraftType: "",
+                  imageUrl: "",
+                  imageKey: "",
+                  discordUsername: prev.discordUsername
+                }));
               }}
               className="absolute top-4 right-4 cursor-pointer text-slate-400 transition-colors hover:text-white"
             >
