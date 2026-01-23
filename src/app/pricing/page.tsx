@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { useUser, SignInButton } from "@clerk/nextjs";
 import { createCheckoutSession } from "~/app/actions/create-checkout";
 import { createPortalSession } from "~/app/actions/create-portal";
-import { useState, useEffect } from "react";
-import { isPro } from "~/app/actions/is-pro";
+import { useState } from "react";
+import { useProStatus } from "~/hooks/useProStatus";
 import { Check, Zap } from "lucide-react";
 import Loading from "~/components/loading";
 import Image from "next/image";
@@ -15,18 +15,9 @@ export default function PricingPage() {
   const router = useRouter();
   const { isSignedIn, isLoaded } = useUser();
   const [loading, setLoading] = useState(false);
-  const [isProUser, setIsProUser] = useState(false);
-  const [checkingStatus, setCheckingStatus] = useState(true);
 
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      isPro()
-        .then(setIsProUser)
-        .finally(() => setCheckingStatus(false));
-    } else if (isLoaded) {
-      setCheckingStatus(false);
-    }
-  }, [isLoaded, isSignedIn]);
+  // Real-time PRO status check
+  const { isProUser, isLoading: checkingStatus } = useProStatus();
 
   async function handleUpgrade() {
     try {

@@ -7,6 +7,8 @@ import React, {
   useCallback,
   useEffect,
 } from "react";
+
+import { useUser } from "@clerk/nextjs";
 // Inline SVG icons to avoid bundling entire react-icons library (~7.8MB)
 const PlaneInflightIcon = ({ size = 24, className = "" }: { size?: number; className?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -35,8 +37,10 @@ const InfoCircleIcon = ({ size = 24, className = "" }: { size?: number; classNam
     <path d="M11 12h1v4h1" />
   </svg>
 );
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { type PositionUpdate } from "~/lib/aircraft-store";
-import { getFlightHistory } from "~/app/actions/get-flight-history";
+import { useProStatus } from "~/hooks/useProStatus";
 import Image from "next/image";
 import { useAircraftPhoto } from "~/hooks/useAircraftPhoto";
 import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
@@ -80,11 +84,26 @@ export const Sidebar = ({
   onClose?: () => void;
 }) => {
   const [tab, setTab] = useState<"info" | "history">("info");
-  const [history, setHistory] = useState<any[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
-  const [canAccessHistory, setCanAccessHistory] = useState<boolean | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Real-time flight history query
+  const { isProUser } = useProStatus();
+  const googleId = aircraft.googleId;
+  const shouldFetchHistory = tab === "history" && googleId && isProUser;
+  const historyQuery = useQuery(
+    api.flights.getHistoryByGoogleId,
+    shouldFetchHistory && googleId ? { googleId } : "skip"
+  );
+  const history = useMemo(() => {
+    if (!historyQuery) return [];
+    return historyQuery.map((flight) => ({
+      ...flight,
+      startTime: new Date(flight.startTime),
+    }));
+  }, [historyQuery]);
+  const loadingHistory = shouldFetchHistory && historyQuery === undefined;
+  const canAccessHistory = isProUser;
 
   // Calculate display values using useMemo instead of DOM manipulation
   const displayValues = useMemo(() => {
@@ -121,21 +140,6 @@ export const Sidebar = ({
     [aircraft.alt, aircraft.vspeed, aircraft.flightPlan],
   );
 
-  useEffect(() => {
-    if (tab === "history" && aircraft.googleId) {
-      setLoadingHistory(true);
-      getFlightHistory(aircraft.googleId)
-        .then((result) => {
-          setHistory(result.flights);
-          setCanAccessHistory(result.canAccess);
-        })
-        .catch(() => {
-          setHistory([]);
-          setCanAccessHistory(false);
-        })
-        .finally(() => setLoadingHistory(false));
-    }
-  }, [tab, aircraft.googleId]);
 
   const renderFlightPlan = useCallback(() => {
     if (!aircraft.flightPlan) return null;

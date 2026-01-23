@@ -2,8 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useUser, SignInButton } from "@clerk/nextjs";
-import { useState, useEffect } from "react";
-import { getUserStats, type UserStats } from "~/app/actions/get-user-stats";
+import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { useProStatus } from "~/hooks/useProStatus";
 import { setSentryUser } from "~/lib/sentry";
 import {
   Plane,
@@ -48,27 +50,30 @@ function formatDuration(start: number, end?: number): string {
 export default function DashboardPage() {
   const router = useRouter();
   const { isSignedIn, isLoaded, user } = useUser();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<UserStats | null>(null);
-  const [isPro, setIsPro] = useState(false);
-  const [supportId, setSupportId] = useState<string | null>(null);
+  const clerkId = user?.id;
   const [copied, setCopied] = useState(false);
 
+  // Real-time queries
+  const { isProUser: isPro, isLoading: proLoading } = useProStatus();
+  const statsQuery = useQuery(
+    api.flights.getStatsByClerkId,
+    clerkId ? { clerkId } : "skip"
+  );
+  const dbUser = useQuery(
+    api.users.getByClerkId,
+    clerkId ? { clerkId } : "skip"
+  );
+
+  const stats = useMemo(() => statsQuery ?? null, [statsQuery]);
+  const supportId = useMemo(() => dbUser?._id ?? null, [dbUser]);
+  const loading = !isLoaded || proLoading || (clerkId && statsQuery === undefined);
+
+  // Set Sentry user context when supportId changes
   useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      getUserStats()
-        .then((result) => {
-          setStats(result.stats);
-          setIsPro(result.isPro);
-          setSupportId(result.supportId);
-          // Set Sentry user context for error tracking
-          setSentryUser(result.supportId);
-        })
-        .finally(() => setLoading(false));
-    } else if (isLoaded) {
-      setLoading(false);
+    if (supportId) {
+      setSentryUser(supportId);
     }
-  }, [isLoaded, isSignedIn]);
+  }, [supportId]);
 
   const copySupportId = () => {
     if (supportId) {
@@ -78,7 +83,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (!isLoaded || loading) {
+  if (loading) {
     return <Loading />;
   }
 

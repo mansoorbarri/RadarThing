@@ -3,17 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 import { isAdmin } from "~/app/actions/is-pro";
 import {
-  getPendingAircraftImages,
-  getApprovedAircraftImages,
   approveAircraftImage,
   rejectAircraftImage,
   deleteAircraftImage,
   bulkApproveAircraftImages,
   bulkRejectAircraftImages,
   getUserInfoByIds,
-  type AircraftImage,
 } from "~/app/actions/aircraft-images";
 import { Trash2, Check, X, Plane, Clock, CheckCircle, Search, CheckSquare, Square } from "lucide-react";
 import Loading from "~/components/loading";
@@ -23,10 +22,16 @@ import { UserAuth } from "~/components/atc/userAuth";
 export default function AdminAircraftImagesPage() {
   const router = useRouter();
   const { isSignedIn, isLoaded } = useUser();
-  const [loading, setLoading] = useState(true);
   const [isAdminUser, setIsAdminUser] = useState(false);
-  const [pendingImages, setPendingImages] = useState<AircraftImage[]>([]);
-  const [approvedImages, setApprovedImages] = useState<AircraftImage[]>([]);
+  const [adminCheckDone, setAdminCheckDone] = useState(false);
+
+  // Real-time queries - auto-update when data changes in Convex
+  const pendingQuery = useQuery(api.aircraftImages.getPending);
+  const approvedQuery = useQuery(api.aircraftImages.getApproved);
+  const pendingImages = useMemo(() => pendingQuery ?? [], [pendingQuery]);
+  const approvedImages = useMemo(() => approvedQuery ?? [], [approvedQuery]);
+  const loading = !adminCheckDone || pendingQuery === undefined || approvedQuery === undefined;
+
   const [userInfo, setUserInfo] = useState<Record<string, { email: string; name: string | null }>>({});
   const [activeTab, setActiveTab] = useState<"pending" | "approved">("pending");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -40,7 +45,7 @@ export default function AdminAircraftImagesPage() {
   const [rejectTargetIds, setRejectTargetIds] = useState<string[]>([]);
 
   // Helper to check if image matches search query
-  const matchesSearch = (image: AircraftImage, query: string) => {
+  const matchesSearch = (image: (typeof pendingImages)[number], query: string) => {
     if (!query.trim()) return true;
     const q = query.toLowerCase();
     return (
@@ -104,7 +109,7 @@ export default function AdminAircraftImagesPage() {
 
   const hasActiveFilters = searchQuery || airlineFilter || aircraftFilter;
 
-  const filterImages = (images: AircraftImage[]) => {
+  const filterImages = (images: typeof pendingImages) => {
     return images
       .filter((image) => {
         // Apply airline filter
@@ -136,40 +141,29 @@ export default function AdminAircraftImagesPage() {
   const filteredPendingImages = filterImages(pendingImages);
   const filteredApprovedImages = filterImages(approvedImages);
 
+  // Check admin status
   useEffect(() => {
     if (isLoaded && isSignedIn) {
       isAdmin()
         .then((admin) => {
           setIsAdminUser(admin);
-          if (admin) {
-            loadImages();
-          } else {
-            setLoading(false);
-          }
+          setAdminCheckDone(true);
         })
-        .catch(() => setLoading(false));
+        .catch(() => setAdminCheckDone(true));
     } else if (isLoaded) {
-      setLoading(false);
+      setAdminCheckDone(true);
     }
   }, [isLoaded, isSignedIn]);
 
-  async function loadImages() {
-    const [pending, approved] = await Promise.all([
-      getPendingAircraftImages(),
-      getApprovedAircraftImages(),
-    ]);
-    setPendingImages(pending);
-    setApprovedImages(approved);
-
-    // Fetch user info for all uploaders
-    const allUserIds = [...pending, ...approved].map((img) => img.uploadedBy);
+  // Fetch user info when images change
+  useEffect(() => {
+    const allUserIds = [...pendingImages, ...approvedImages].map((img) => img.uploadedBy);
     if (allUserIds.length > 0) {
-      const info = await getUserInfoByIds(allUserIds);
-      setUserInfo(info);
+      getUserInfoByIds(allUserIds)
+        .then(setUserInfo)
+        .catch((e) => console.error("Failed to fetch user info:", e));
     }
-
-    setLoading(false);
-  }
+  }, [pendingImages, approvedImages]);
 
   async function handleApprove(id: string) {
     setActionLoading(id);
@@ -180,7 +174,7 @@ export default function AdminAircraftImagesPage() {
         next.delete(id);
         return next;
       });
-      loadImages();
+      // No need to reload - Convex queries auto-update
     } else {
       alert(result.error || "Failed to approve image");
     }
@@ -211,7 +205,7 @@ export default function AdminAircraftImagesPage() {
           next.delete(targetId);
           return next;
         });
-        loadImages();
+        // No need to reload - Convex queries auto-update
       } else {
         alert(result.error || "Failed to reject image");
       }
@@ -221,7 +215,7 @@ export default function AdminAircraftImagesPage() {
       const result = await bulkRejectAircraftImages(rejectTargetIds, rejectReason);
       if (result.rejected > 0) {
         setSelectedImages(new Set());
-        loadImages();
+        // No need to reload - Convex queries auto-update
       }
       if (result.failed > 0) {
         alert(`Rejected ${result.rejected} images, ${result.failed} failed`);
@@ -237,11 +231,10 @@ export default function AdminAircraftImagesPage() {
     if (!confirm("Are you sure you want to delete this approved image?")) return;
     setActionLoading(id);
     const result = await deleteAircraftImage(id);
-    if (result.success) {
-      loadImages();
-    } else {
+    if (!result.success) {
       alert(result.error || "Failed to delete image");
     }
+    // No need to reload - Convex queries auto-update
     setActionLoading(null);
   }
 
@@ -274,7 +267,7 @@ export default function AdminAircraftImagesPage() {
     const result = await bulkApproveAircraftImages(ids);
     if (result.approved > 0) {
       setSelectedImages(new Set());
-      loadImages();
+      // No need to reload - Convex queries auto-update
     }
     if (result.failed > 0) {
       alert(`Approved ${result.approved} images, ${result.failed} failed`);

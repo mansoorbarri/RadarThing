@@ -8,6 +8,7 @@ import { dark } from "@clerk/themes";
 import { Suspense } from "react";
 
 import { Toaster } from "sonner";
+import { ConvexProvider } from "~/components/providers/ConvexProvider";
 
 export const metadata: Metadata = {
   title: "RadarThing",
@@ -43,10 +44,12 @@ export default function RootLayout({
     >
       <html lang="en" className={`${geist.variable}`}>
         <body>
-          <Suspense fallback={null}>
-            <Toaster theme="dark" position="top-center" richColors />
-            {children}
-          </Suspense>
+          <ConvexProvider>
+            <Suspense fallback={null}>
+              <Toaster theme="dark" position="top-center" richColors />
+              {children}
+            </Suspense>
+          </ConvexProvider>
         </body>
       </html>
     </ClerkProvider>

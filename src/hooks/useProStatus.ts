@@ -1,41 +1,42 @@
 // hooks/useProStatus.ts
-import { useState, useEffect } from "react";
-import { isPro, isAdmin, getSupportId } from "~/app/actions/is-pro";
+import { useQuery } from "convex/react";
+import { useUser } from "@clerk/nextjs";
+import { useEffect, useState } from "react";
+import { api } from "../../convex/_generated/api";
 import { setSentryUser } from "~/lib/sentry";
-
-// Clear any stale cache from previous version
-if (typeof window !== "undefined") {
-  try {
-    sessionStorage.removeItem("radarthing_pro_status");
-    sessionStorage.removeItem("radarthing_admin_status");
-    sessionStorage.removeItem("radarthing_status_timestamp");
-  } catch {
-    // Ignore
-  }
-}
+import { isAdmin } from "~/app/actions/is-pro";
 
 export const useProStatus = () => {
-  const [isProUser, setIsProUser] = useState(false);
+  const { user, isLoaded } = useUser();
+  const clerkId = user?.id;
+
+  // Real-time query - auto-updates when data changes in Convex
+  const dbUser = useQuery(
+    api.users.getByClerkId,
+    clerkId ? { clerkId } : "skip"
+  );
+
+  // Admin check via server action (not real-time, but rarely changes)
   const [isAdminUser, setIsAdminUser] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
   useEffect(() => {
-    Promise.all([isPro(), isAdmin(), getSupportId()])
-      .then(([proResult, adminResult, supportId]) => {
-        setIsProUser(proResult);
-        setIsAdminUser(adminResult);
-        // Set Sentry user context for error tracking
-        setSentryUser(supportId);
-      })
-      .catch((error) => {
-        console.error("Failed to fetch pro/admin status:", error);
-        setIsProUser(false);
-        setIsAdminUser(false);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, []);
+    if (clerkId) {
+      isAdmin().then(setIsAdminUser).catch(() => setIsAdminUser(false));
+    }
+  }, [clerkId]);
 
-  return { isProUser, isAdminUser, isLoading };
+  const isLoading = !isLoaded || (clerkId && dbUser === undefined);
+  const isProUser = dbUser?.role === "PRO";
+
+  // Set Sentry user context when user data changes
+  useEffect(() => {
+    if (dbUser) {
+      setSentryUser(dbUser._id);
+    }
+  }, [dbUser]);
+
+  return {
+    isProUser: isProUser || isAdminUser, // Admins also have PRO access
+    isAdminUser,
+    isLoading: Boolean(isLoading),
+  };
 };

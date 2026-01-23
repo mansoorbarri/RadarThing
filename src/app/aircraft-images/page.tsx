@@ -3,6 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useUser, SignInButton } from "@clerk/nextjs";
 import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { createAircraftImage } from "~/app/actions/aircraft-images";
 
 // Cookie helpers
 function getCookie(name: string): string {
@@ -18,11 +21,6 @@ function setCookie(name: string, value: string, days = 365) {
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
   document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
 }
-import {
-  getApprovedAircraftImages,
-  createAircraftImage,
-  type AircraftImage,
-} from "~/app/actions/aircraft-images";
 import { Upload, Plane, Check, Clock, Search } from "lucide-react";
 import Loading from "~/components/loading";
 import Image from "next/image";
@@ -32,8 +30,12 @@ import { ImageUploader } from "~/components/ui/image-uploader";
 export default function AircraftImagesPage() {
   const router = useRouter();
   const { isSignedIn, isLoaded } = useUser();
-  const [loading, setLoading] = useState(true);
-  const [images, setImages] = useState<AircraftImage[]>([]);
+
+  // Real-time query - auto-updates when data changes in Convex
+  const imagesQuery = useQuery(api.aircraftImages.getApproved);
+  const images = useMemo(() => imagesQuery ?? [], [imagesQuery]);
+  const loading = imagesQuery === undefined;
+
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [airlineFilter, setAirlineFilter] = useState("");
@@ -58,18 +60,8 @@ export default function AircraftImagesPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    loadImages();
-  }, []);
-
-  async function loadImages() {
-    const data = await getApprovedAircraftImages();
-    setImages(data);
-    setLoading(false);
-  }
-
   // Helper to check if image matches search query
-  const matchesSearch = (image: AircraftImage, query: string) => {
+  const matchesSearch = (image: (typeof images)[number], query: string) => {
     if (!query.trim()) return true;
     const q = query.toLowerCase();
     return (
