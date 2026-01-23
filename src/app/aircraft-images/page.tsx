@@ -416,7 +416,7 @@ export default function AircraftImagesPage() {
 
                   <div>
                     <label className="mb-2 block font-mono text-xs text-slate-400">
-                      AIRCRAFT TYPE *
+                      AIRCRAFT *
                     </label>
                     <input
                       type="text"
@@ -424,18 +424,16 @@ export default function AircraftImagesPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, aircraftType: e.target.value.toUpperCase() })
                       }
-                      placeholder="e.g., B777"
+                      placeholder="B777"
                       maxLength={10}
                       required
+                      title="Use base model only (e.g., B777, A350) — not variants"
                       className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50"
                     />
-                    <p className="mt-1 text-xs text-slate-500">
-                      Use base model only (e.g., B777, A350) — not variants like B777-300ER
-                    </p>
                   </div>
                 </div>
                 <p className="text-xs text-slate-500">
-                  IATA is 2 letters (e.g., EK), ICAO is 3 letters (e.g., UAE)
+                  Aircraft should be base model only, not the varient. Like: B777. Not: B77W.
                 </p>
 
                 <div>
@@ -448,7 +446,7 @@ export default function AircraftImagesPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, discordUsername: e.target.value })
                     }
-                    placeholder="e.g., username#1234"
+                    placeholder="e.g., xyzmani"
                     className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50"
                   />
                 </div>
