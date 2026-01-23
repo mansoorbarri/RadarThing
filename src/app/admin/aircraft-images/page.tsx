@@ -10,10 +10,12 @@ import {
   approveAircraftImage,
   rejectAircraftImage,
   deleteAircraftImage,
+  bulkApproveAircraftImages,
+  bulkRejectAircraftImages,
   getUserInfoByIds,
   type AircraftImage,
 } from "~/app/actions/aircraft-images";
-import { Trash2, Check, X, Plane, Clock, CheckCircle, Search } from "lucide-react";
+import { Trash2, Check, X, Plane, Clock, CheckCircle, Search, CheckSquare, Square } from "lucide-react";
 import Loading from "~/components/loading";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -28,9 +30,14 @@ export default function AdminAircraftImagesPage() {
   const [userInfo, setUserInfo] = useState<Record<string, { email: string; name: string | null }>>({});
   const [activeTab, setActiveTab] = useState<"pending" | "approved">("pending");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [airlineFilter, setAirlineFilter] = useState<string>("");
   const [aircraftFilter, setAircraftFilter] = useState<string>("");
+  const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectTargetIds, setRejectTargetIds] = useState<string[]>([]);
 
   // Helper to check if image matches search query
   const matchesSearch = (image: AircraftImage, query: string) => {
@@ -161,6 +168,11 @@ export default function AdminAircraftImagesPage() {
     setActionLoading(id);
     const result = await approveAircraftImage(id);
     if (result.success) {
+      setSelectedImages((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       loadImages();
     } else {
       alert(result.error || "Failed to approve image");
@@ -168,16 +180,50 @@ export default function AdminAircraftImagesPage() {
     setActionLoading(null);
   }
 
-  async function handleReject(id: string) {
-    if (!confirm("Are you sure you want to reject this image? It will be deleted.")) return;
-    setActionLoading(id);
-    const result = await rejectAircraftImage(id);
-    if (result.success) {
-      loadImages();
-    } else {
-      alert(result.error || "Failed to reject image");
+  function openRejectModal(ids: string[]) {
+    setRejectTargetIds(ids);
+    setRejectReason("");
+    setRejectModalOpen(true);
+  }
+
+  async function handleRejectConfirm() {
+    if (!rejectReason.trim()) {
+      alert("Please provide a reason for rejection");
+      return;
     }
-    setActionLoading(null);
+
+    setRejectModalOpen(false);
+
+    if (rejectTargetIds.length === 1 && rejectTargetIds[0]) {
+      const targetId = rejectTargetIds[0];
+      setActionLoading(targetId);
+      const result = await rejectAircraftImage(targetId, rejectReason);
+      if (result.success) {
+        setSelectedImages((prev) => {
+          const next = new Set(prev);
+          next.delete(targetId);
+          return next;
+        });
+        loadImages();
+      } else {
+        alert(result.error || "Failed to reject image");
+      }
+      setActionLoading(null);
+    } else if (rejectTargetIds.length > 1) {
+      setBulkLoading(true);
+      const result = await bulkRejectAircraftImages(rejectTargetIds, rejectReason);
+      if (result.rejected > 0) {
+        setSelectedImages(new Set());
+        loadImages();
+      }
+      if (result.failed > 0) {
+        alert(`Rejected ${result.rejected} images, ${result.failed} failed`);
+      }
+      setBulkLoading(false);
+    }
+
+    setRejectTargetIds([]);
+    setRejectReason("");
   }
 
   async function handleDelete(id: string) {
@@ -190,6 +236,49 @@ export default function AdminAircraftImagesPage() {
       alert(result.error || "Failed to delete image");
     }
     setActionLoading(null);
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedImages((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function selectAllVisible() {
+    const visibleIds = filteredPendingImages.map((img) => img.id);
+    setSelectedImages(new Set(visibleIds));
+  }
+
+  function clearSelection() {
+    setSelectedImages(new Set());
+  }
+
+  async function handleBulkApprove() {
+    const ids = Array.from(selectedImages);
+    if (ids.length === 0) return;
+
+    setBulkLoading(true);
+    const result = await bulkApproveAircraftImages(ids);
+    if (result.approved > 0) {
+      setSelectedImages(new Set());
+      loadImages();
+    }
+    if (result.failed > 0) {
+      alert(`Approved ${result.approved} images, ${result.failed} failed`);
+    }
+    setBulkLoading(false);
+  }
+
+  function handleBulkReject() {
+    const ids = Array.from(selectedImages);
+    if (ids.length === 0) return;
+    openRejectModal(ids);
   }
 
   if (!isLoaded || loading) {
@@ -240,6 +329,43 @@ export default function AdminAircraftImagesPage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      {/* Rejection Reason Modal */}
+      {rejectModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-900 p-6">
+            <h3 className="mb-4 text-lg font-semibold text-white">
+              Reject {rejectTargetIds.length} image{rejectTargetIds.length > 1 ? "s" : ""}
+            </h3>
+            <p className="mb-4 text-sm text-slate-400">
+              Please provide a reason for rejection. This will be sent to the uploader.
+            </p>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="e.g., Image quality too low, wrong aircraft type, etc."
+              className="mb-4 w-full rounded-lg border border-white/10 bg-black/40 p-3 text-sm text-white placeholder-slate-500 outline-none focus:border-red-500/50"
+              rows={3}
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setRejectModalOpen(false)}
+                className="flex-1 cursor-pointer rounded-lg border border-white/10 py-2 text-sm text-slate-400 transition-colors hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRejectConfirm}
+                disabled={!rejectReason.trim()}
+                className="flex-1 cursor-pointer rounded-lg bg-red-500/20 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <button
@@ -326,8 +452,40 @@ export default function AdminAircraftImagesPage() {
           </div>
         </div>
 
+        {/* Bulk Action Bar */}
+        {selectedImages.size > 0 && activeTab === "pending" && (
+          <div className="mb-4 flex items-center gap-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
+            <span className="font-mono text-sm text-cyan-400">
+              {selectedImages.size} selected
+            </span>
+            <div className="flex-1" />
+            <button
+              onClick={clearSelection}
+              className="cursor-pointer rounded-lg px-3 py-1.5 text-sm text-slate-400 transition-colors hover:bg-white/10"
+            >
+              Clear
+            </button>
+            <button
+              onClick={handleBulkApprove}
+              disabled={bulkLoading}
+              className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-500/20 px-4 py-1.5 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
+            >
+              <Check className="h-4 w-4" />
+              Approve All
+            </button>
+            <button
+              onClick={handleBulkReject}
+              disabled={bulkLoading}
+              className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+            >
+              <X className="h-4 w-4" />
+              Reject All
+            </button>
+          </div>
+        )}
+
         {/* Tabs */}
-        <div className="mb-6 flex gap-2">
+        <div className="mb-6 flex items-center gap-2">
           <button
             onClick={() => setActiveTab("pending")}
             className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-mono text-sm transition-all ${
@@ -350,6 +508,25 @@ export default function AdminAircraftImagesPage() {
             <CheckCircle className="h-4 w-4" />
             Approved ({filteredApprovedImages.length}{hasActiveFilters && filteredApprovedImages.length !== approvedImages.length ? `/${approvedImages.length}` : ""})
           </button>
+
+          {activeTab === "pending" && filteredPendingImages.length > 0 && (
+            <button
+              onClick={selectedImages.size === filteredPendingImages.length ? clearSelection : selectAllVisible}
+              className="ml-auto flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-white/10"
+            >
+              {selectedImages.size === filteredPendingImages.length ? (
+                <>
+                  <CheckSquare className="h-4 w-4" />
+                  Deselect All
+                </>
+              ) : (
+                <>
+                  <Square className="h-4 w-4" />
+                  Select All
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Pending Images */}
@@ -370,7 +547,11 @@ export default function AdminAircraftImagesPage() {
                 {filteredPendingImages.map((image) => (
                   <div
                     key={image.id}
-                    className="group overflow-hidden rounded-2xl border border-yellow-500/30 bg-black/40 backdrop-blur-xl"
+                    className={`group overflow-hidden rounded-2xl border bg-black/40 backdrop-blur-xl transition-all ${
+                      selectedImages.has(image.id)
+                        ? "border-cyan-500"
+                        : "border-yellow-500/30"
+                    }`}
                   >
                     <div className="relative aspect-video">
                       <Image
@@ -382,6 +563,20 @@ export default function AdminAircraftImagesPage() {
                       <div className="absolute top-2 left-2 rounded-md bg-yellow-500/80 px-2 py-1 text-xs font-bold text-black">
                         PENDING
                       </div>
+                      <button
+                        onClick={() => toggleSelect(image.id)}
+                        className={`absolute top-2 right-2 cursor-pointer rounded-lg p-1.5 transition-all ${
+                          selectedImages.has(image.id)
+                            ? "bg-cyan-500 text-white"
+                            : "bg-black/60 text-white opacity-0 group-hover:opacity-100"
+                        }`}
+                      >
+                        {selectedImages.has(image.id) ? (
+                          <CheckSquare className="h-5 w-5" />
+                        ) : (
+                          <Square className="h-5 w-5" />
+                        )}
+                      </button>
                     </div>
                     <div className="p-4">
                       <div className="mb-3 flex items-center gap-2 flex-wrap">
@@ -423,7 +618,7 @@ export default function AdminAircraftImagesPage() {
                           Approve
                         </button>
                         <button
-                          onClick={() => handleReject(image.id)}
+                          onClick={() => openRejectModal([image.id])}
                           disabled={actionLoading === image.id}
                           className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-lg bg-red-500/20 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
                         >
