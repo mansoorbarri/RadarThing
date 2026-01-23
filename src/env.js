@@ -32,7 +32,7 @@ export const env = createEnv({
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string(),
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string(),
     // Sentry (optional - only needed in production)
-    NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
+    NEXT_PUBLIC_SENTRY_DSN: z.string()
   },
 
   /**
