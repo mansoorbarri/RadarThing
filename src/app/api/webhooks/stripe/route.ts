@@ -5,6 +5,56 @@ import { convex, api } from "~/server/convex";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
+// Events that can affect subscription state
+const SUBSCRIPTION_EVENTS: Stripe.Event.Type[] = [
+  "checkout.session.completed",
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+  "customer.subscription.paused",
+  "customer.subscription.resumed",
+  "invoice.paid",
+  "invoice.payment_failed",
+  "invoice.payment_succeeded",
+];
+
+/**
+ * Syncs subscription data from Stripe to Convex
+ */
+async function syncStripeSubscription(stripeCustomerId: string) {
+  const subscriptions = await stripe.subscriptions.list({
+    customer: stripeCustomerId,
+    limit: 1,
+    status: "all",
+  });
+
+  const subscription = subscriptions.data[0];
+
+  if (!subscription) {
+    await convex.mutation(api.users.updateByStripeCustomerId, {
+      stripeCustomerId,
+      role: "FREE",
+    });
+    return { status: "none" };
+  }
+
+  // User should have PRO access if:
+  // - Subscription is active or trialing
+  // - Even if canceled, they keep access until period ends
+  const shouldBePro =
+    subscription.status === "active" || subscription.status === "trialing";
+
+  await convex.mutation(api.users.updateByStripeCustomerId, {
+    stripeCustomerId,
+    role: shouldBePro ? "PRO" : "FREE",
+  });
+
+  return {
+    status: subscription.status,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
+  };
+}
+
 export async function POST(req: Request) {
   const body = await req.text();
   const signature = (await headers()).get("stripe-signature");
@@ -26,77 +76,56 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
+  // Skip events we don't care about
+  if (!SUBSCRIPTION_EVENTS.includes(event.type)) {
+    return NextResponse.json({ received: true, skipped: true });
+  }
+
   try {
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object;
+    console.log(`[Stripe Webhook] Processing ${event.type}`);
 
-        console.log("=== Checkout Session Completed ===");
-        console.log("Customer ID:", session.customer);
-        console.log("Subscription ID:", session.subscription);
-        console.log("Metadata:", JSON.stringify(session.metadata, null, 2));
-        console.log("================================");
+    // Handle checkout.session.completed specially to store customer ID
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const clerkId = session.metadata?.clerkId;
+      const customerId = session.customer as string;
+      const subscriptionId = session.subscription as string;
 
-        if (!session.metadata?.userId) {
-          console.warn("⚠️  No userId in session metadata - skipping update");
-          return NextResponse.json({ received: true, skipped: true });
-        }
-
-        console.log("Updating user:", session.metadata.userId);
-
+      if (clerkId && customerId) {
+        // Store Stripe IDs on user
         await convex.mutation(api.users.updateByClerkId, {
-          clerkId: session.metadata.userId,
-          role: "PRO",
-          stripeCustomerId: session.customer as string,
-          stripeSubscriptionId: session.subscription as string,
+          clerkId,
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscriptionId,
         });
 
-        console.log("✅ User upgraded to PRO successfully");
-        break;
+        // Sync subscription state
+        await syncStripeSubscription(customerId);
+        console.log(`[Stripe Webhook] User ${clerkId} checkout completed`);
       }
 
-      case "customer.subscription.updated": {
-        const subscription = event.data.object;
-
-        console.log("=== Subscription Updated ===");
-        console.log("Status:", subscription.status);
-        console.log("Cancel at period end:", subscription.cancel_at_period_end);
-
-        const shouldBeProUser =
-          subscription.status === "active" &&
-          !subscription.cancel_at_period_end;
-
-        await convex.mutation(api.users.updateByStripeCustomerId, {
-          stripeCustomerId: subscription.customer as string,
-          role: shouldBeProUser ? "PRO" : "FREE",
-        });
-
-        console.log(`✅ User role set to: ${shouldBeProUser ? "PRO" : "FREE"}`);
-        break;
-      }
-
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object;
-
-        console.log("=== Subscription Deleted ===");
-        console.log("Customer:", subscription.customer);
-
-        await convex.mutation(api.users.updateByStripeCustomerId, {
-          stripeCustomerId: subscription.customer as string,
-          role: "FREE",
-        });
-
-        console.log("User downgraded to FREE");
-        break;
-      }
+      return NextResponse.json({ received: true });
     }
+
+    // For all other events, get customerId and sync
+    const eventData = event.data.object as { customer?: string };
+    const customerId = eventData.customer;
+
+    if (typeof customerId !== "string") {
+      console.warn(`[Stripe Webhook] No customer ID in ${event.type} event`);
+      return NextResponse.json({ received: true });
+    }
+
+    const result = await syncStripeSubscription(customerId);
+    console.log(
+      `[Stripe Webhook] ${event.type} - Customer ${customerId} synced:`,
+      result
+    );
 
     return NextResponse.json({ received: true });
   } catch (err) {
-    console.error("Webhook handler error:", err);
-    return NextResponse.json(
-      { error: "Webhook handler failed" },
-      { status: 500 }
-    );
+    console.error("[Stripe Webhook] Error processing event:", err);
+    // Still return 200 to prevent Stripe from retrying
+    return NextResponse.json({ received: true, error: "Processing failed" });
   }
 }

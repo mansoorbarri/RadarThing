@@ -2,10 +2,9 @@
 
 import { auth, currentUser } from "@clerk/nextjs/server";
 import Stripe from "stripe";
+import { convex, api } from "~/server/convex";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  //   apiVersion: "2024-12-18.acacia",
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function createCheckoutSession() {
   const { userId } = await auth();
@@ -14,9 +13,32 @@ export async function createCheckoutSession() {
   if (!userId || !user) throw new Error("Unauthorized");
 
   const baseUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+  const email = user.emailAddresses[0]?.emailAddress;
 
+  // Get existing user from Convex
+  const dbUser = await convex.query(api.users.getByClerkId, { clerkId: userId });
+  let stripeCustomerId = dbUser?.stripeCustomerId;
+
+  // Create Stripe customer if user doesn't have one
+  if (!stripeCustomerId) {
+    const customer = await stripe.customers.create({
+      email,
+      metadata: {
+        clerkId: userId,
+      },
+    });
+    stripeCustomerId = customer.id;
+
+    // Store the customer ID in Convex (use updateByClerkId to handle all cases)
+    await convex.mutation(api.users.updateByClerkId, {
+      clerkId: userId,
+      stripeCustomerId: customer.id,
+    });
+  }
+
+  // Always create checkout with customer ID (not customer_email)
   const session = await stripe.checkout.sessions.create({
-    customer_email: user.emailAddresses[0]?.emailAddress,
+    customer: stripeCustomerId,
     line_items: [
       {
         price: process.env.STRIPE_PRICE_ID!,
@@ -28,10 +50,10 @@ export async function createCheckoutSession() {
     subscription_data: {
       trial_period_days: 7,
     },
-    success_url: `${baseUrl}?success=true`,
+    success_url: `${baseUrl}/checkout/success`,
     cancel_url: `${baseUrl}/pricing`,
     metadata: {
-      userId: userId,
+      clerkId: userId,
     },
   });
 
