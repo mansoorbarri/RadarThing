@@ -14,8 +14,8 @@ export const env = createEnv({
     STRIPE_WEBHOOK_SECRET: z.string(),
     STRIPE_PRICE_ID: z.string(),
     UPLOADTHING_TOKEN: z.string(),
-    ADMIN_GOOGLE_ID: z.string().optional(),
-    RESEND_API_KEY: z.string().optional(),
+    ADMIN_GOOGLE_ID: z.string(),
+    RESEND_API_KEY: z.string()
   },
 
   /**

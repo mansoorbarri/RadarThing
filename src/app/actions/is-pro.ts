@@ -22,6 +22,11 @@ export async function isAdmin() {
   if (!userId) return false;
 
   const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
+
+  console.log("[isAdmin] user.googleId:", user?.googleId);
+  console.log("[isAdmin] env.ADMIN_GOOGLE_ID:", env.ADMIN_GOOGLE_ID);
+  console.log("[isAdmin] match:", user?.googleId === env.ADMIN_GOOGLE_ID);
+
   if (!user?.googleId || !env.ADMIN_GOOGLE_ID) return false;
 
   return user.googleId === env.ADMIN_GOOGLE_ID;
