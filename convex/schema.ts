@@ -24,10 +24,9 @@ export default defineSchema({
     depICAO: v.optional(v.string()),
     arrICAO: v.optional(v.string()),
     squawk: v.optional(v.string()),
-    duration: v.optional(v.number()),
-    landingRate: v.optional(v.float64()),
-    maxAltitude: v.optional(v.number()),
-    maxSpeed: v.optional(v.number()),
+    duration: v.optional(v.number()), // milliseconds
+    maxAltitude: v.optional(v.number()), // feet
+    maxSpeed: v.optional(v.number()), // knots
     routeData: v.optional(v.any()), // JSON data - array of coordinates
     startTime: v.number(), // timestamp
     endTime: v.optional(v.number()), // timestamp
