@@ -4,6 +4,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { UTApi } from "uploadthing/server";
 import { convex, api } from "~/server/convex";
+import { env } from "~/env";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 const utapi = new UTApi();
@@ -61,6 +62,12 @@ async function isProUser(): Promise<boolean> {
   const { userId } = await auth();
   if (!userId) return false;
 
+  // Admin users also have PRO access
+  const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
+  if (user?.googleId && env.ADMIN_GOOGLE_ID && user.googleId === env.ADMIN_GOOGLE_ID) {
+    return true;
+  }
+
   return await convex.query(api.users.isPro, { clerkId: userId });
 }
 
@@ -68,7 +75,10 @@ async function isAdminUser(): Promise<boolean> {
   const { userId } = await auth();
   if (!userId) return false;
 
-  return await convex.query(api.users.isAdmin, { clerkId: userId });
+  const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
+  if (!user?.googleId || !env.ADMIN_GOOGLE_ID) return false;
+
+  return user.googleId === env.ADMIN_GOOGLE_ID;
 }
 
 async function getCurrentUserId(): Promise<string | null> {
