@@ -82,9 +82,16 @@ export async function POST(req: Request) {
           (e: any) => e.id === data.primary_email_address_id
         )?.email_address ?? existing.email;
 
+      // Extract googleId from linked accounts (important for users who link Google later)
+      const googleId =
+        data.external_accounts?.find(
+          (acc: any) => acc.provider === "oauth_google"
+        )?.provider_user_id ?? undefined;
+
       await convex.mutation(api.users.updateByClerkId, {
         clerkId: data.id,
         email,
+        googleId,
       });
     }
   }

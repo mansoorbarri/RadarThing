@@ -200,6 +200,7 @@ export const Sidebar = ({
 
   // Check if this is the user's own aircraft
   const { googleId: userGoogleId, isLoaded: userLoaded } = useCurrentUserProfile();
+  console.log('Debug ownership:', { userLoaded, userGoogleId, aircraftGoogleId: aircraft.googleId });
   const isOwnAircraft = userLoaded && userGoogleId && aircraft.googleId === userGoogleId;
 
   // Reset image loaded state when photo changes
