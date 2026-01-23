@@ -43,7 +43,7 @@ export function ControlDock({ items, side = "left" }: ControlDockProps) {
             <button
               key={item.id}
               onClick={item.onClick}
-              className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-2 text-xs backdrop-blur-md transition-all duration-150 ${
+              className={`flex w-[140px] cursor-pointer items-center gap-3 rounded-xl border px-4 py-2 text-xs backdrop-blur-md transition-all duration-150 ${
                 item.active
                   ? "border-cyan-500/40 bg-cyan-500/20 text-cyan-300"
                   : "border-white/10 bg-black/70 text-slate-400 hover:bg-black/80 hover:text-slate-200"
