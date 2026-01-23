@@ -424,11 +424,14 @@ export default function AircraftImagesPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, aircraftType: e.target.value.toUpperCase() })
                       }
-                      placeholder="e.g., A350"
+                      placeholder="e.g., B777"
                       maxLength={10}
                       required
                       className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50"
                     />
+                    <p className="mt-1 text-xs text-slate-500">
+                      Use base model only (e.g., B777, A350) — not variants like B777-300ER
+                    </p>
                   </div>
                 </div>
                 <p className="text-xs text-slate-500">
