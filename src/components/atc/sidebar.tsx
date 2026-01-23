@@ -255,11 +255,6 @@ export const Sidebar = ({
               <p className="truncate font-mono text-[11px] font-black tracking-[0.15em] text-slate-300 uppercase">
                 {aircraft.type || "Unknown Class"}
               </p>
-              {aircraftPhoto?.discordUsername && imageLoaded && (
-                <p className="mt-2 font-mono text-[9px] text-white/40">
-                  Discord: {aircraftPhoto.discordUsername}
-                </p>
-              )}
             </div>
             <div className="relative shrink-0">
               {airlineLogo ? (
