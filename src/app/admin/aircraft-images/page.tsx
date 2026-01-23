@@ -105,19 +105,26 @@ export default function AdminAircraftImagesPage() {
   const hasActiveFilters = searchQuery || airlineFilter || aircraftFilter;
 
   const filterImages = (images: AircraftImage[]) => {
-    return images.filter((image) => {
-      // Apply airline filter
-      if (airlineFilter && image.airlineIata !== airlineFilter && image.airlineIcao !== airlineFilter) {
-        return false;
-      }
-      // Apply aircraft type filter
-      if (aircraftFilter && image.aircraftType !== aircraftFilter) {
-        return false;
-      }
-      // Apply search query
-      if (!matchesSearch(image, searchQuery)) return false;
-      return true;
-    });
+    return images
+      .filter((image) => {
+        // Apply airline filter
+        if (airlineFilter && image.airlineIata !== airlineFilter && image.airlineIcao !== airlineFilter) {
+          return false;
+        }
+        // Apply aircraft type filter
+        if (aircraftFilter && image.aircraftType !== aircraftFilter) {
+          return false;
+        }
+        // Apply search query
+        if (!matchesSearch(image, searchQuery)) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        // Sort by airline IATA, then by aircraft type
+        const airlineCompare = (a.airlineIata || "").localeCompare(b.airlineIata || "");
+        if (airlineCompare !== 0) return airlineCompare;
+        return (a.aircraftType || "").localeCompare(b.aircraftType || "");
+      });
   };
 
   const clearFilters = () => {

@@ -128,27 +128,34 @@ export default function AircraftImagesPage() {
 
   // Filter images based on search and filters
   const filteredImages = useMemo(() => {
-    return images.filter((image) => {
-      // Airline filter
-      if (airlineFilter && image.airlineIata !== airlineFilter) {
-        return false;
-      }
-      // Aircraft type filter
-      if (aircraftFilter && image.aircraftType !== aircraftFilter) {
-        return false;
-      }
-      // Search query
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesSearch =
-          image.airlineIata?.toLowerCase().includes(query) ||
-          image.airlineIcao?.toLowerCase().includes(query) ||
-          image.aircraftType?.toLowerCase().includes(query) ||
-          image.discordUsername?.toLowerCase().includes(query);
-        if (!matchesSearch) return false;
-      }
-      return true;
-    });
+    return images
+      .filter((image) => {
+        // Airline filter
+        if (airlineFilter && image.airlineIata !== airlineFilter) {
+          return false;
+        }
+        // Aircraft type filter
+        if (aircraftFilter && image.aircraftType !== aircraftFilter) {
+          return false;
+        }
+        // Search query
+        if (searchQuery.trim()) {
+          const query = searchQuery.toLowerCase();
+          const matchesSearch =
+            image.airlineIata?.toLowerCase().includes(query) ||
+            image.airlineIcao?.toLowerCase().includes(query) ||
+            image.aircraftType?.toLowerCase().includes(query) ||
+            image.discordUsername?.toLowerCase().includes(query);
+          if (!matchesSearch) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        // Sort by airline IATA, then by aircraft type
+        const airlineCompare = (a.airlineIata || "").localeCompare(b.airlineIata || "");
+        if (airlineCompare !== 0) return airlineCompare;
+        return (a.aircraftType || "").localeCompare(b.aircraftType || "");
+      });
   }, [images, searchQuery, airlineFilter, aircraftFilter]);
 
   async function handleSubmit(e: React.FormEvent) {
