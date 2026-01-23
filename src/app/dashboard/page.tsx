@@ -13,6 +13,8 @@ import {
   TrendingUp,
   Calendar,
   Navigation,
+  Copy,
+  Check,
 } from "lucide-react";
 import Loading from "~/components/loading";
 import Image from "next/image";
@@ -48,6 +50,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [isPro, setIsPro] = useState(false);
+  const [supportId, setSupportId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
@@ -55,12 +59,21 @@ export default function DashboardPage() {
         .then((result) => {
           setStats(result.stats);
           setIsPro(result.isPro);
+          setSupportId(result.supportId);
         })
         .finally(() => setLoading(false));
     } else if (isLoaded) {
       setLoading(false);
     }
   }, [isLoaded, isSignedIn]);
+
+  const copySupportId = () => {
+    if (supportId) {
+      navigator.clipboard.writeText(supportId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   if (!isLoaded || loading) {
     return <Loading />;
@@ -119,6 +132,20 @@ export default function DashboardPage() {
                   <span className="text-slate-500">Free Tier</span>
                 )}
               </p>
+              {supportId && (
+                <button
+                  onClick={copySupportId}
+                  className="mt-1 flex items-center gap-1.5 text-slate-600 font-mono text-xs hover:text-slate-400 transition-colors cursor-pointer"
+                  title="Click to copy - share this with support when reporting issues"
+                >
+                  <span>ID: {supportId.slice(0, 8)}...</span>
+                  {copied ? (
+                    <Check className="h-3 w-3 text-emerald-400" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

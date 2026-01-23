@@ -26,16 +26,21 @@ export interface UserStats {
 export async function getUserStats(): Promise<{
   stats: UserStats | null;
   isPro: boolean;
+  supportId: string | null;
 }> {
   const { userId } = await auth();
   if (!userId) {
-    return { stats: null, isPro: false };
+    return { stats: null, isPro: false, supportId: null };
   }
 
-  const [stats, isPro] = await Promise.all([
+  const [stats, isPro, user] = await Promise.all([
     convex.query(api.flights.getStatsByClerkId, { clerkId: userId }),
     convex.query(api.users.isPro, { clerkId: userId }),
+    convex.query(api.users.getByClerkId, { clerkId: userId }),
   ]);
 
-  return { stats, isPro };
+  // Support ID: prefer googleId (used in SSE server logs), fallback to convex ID
+  const supportId = user?.googleId ?? user?._id ?? null;
+
+  return { stats, isPro, supportId };
 }
