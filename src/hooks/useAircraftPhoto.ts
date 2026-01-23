@@ -72,7 +72,7 @@ function normalizeAircraftType(type: string | undefined): string | null {
 
 export interface AircraftPhotoData {
   imageUrl: string;
-  photographer: string | null;
+  discordUsername: string | null;
 }
 
 export const useAircraftPhoto = (
@@ -108,7 +108,7 @@ export const useAircraftPhoto = (
         if (image) {
           const photoData = {
             imageUrl: image.imageUrl,
-            photographer: image.photographer,
+            discordUsername: image.discordUsername,
           };
           setCachedImage(cacheKey, photoData);
           setPhoto(photoData);

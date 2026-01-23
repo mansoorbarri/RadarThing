@@ -41,7 +41,7 @@ export default defineSchema({
     aircraftType: v.string(),
     imageUrl: v.string(),
     imageKey: v.optional(v.string()), // UploadThing file key for deletion
-    photographer: v.optional(v.string()),
+    discordUsername: v.optional(v.string()),
     isApproved: v.boolean(),
     uploadedBy: v.string(), // Clerk user ID
     approvedBy: v.optional(v.string()), // Clerk user ID

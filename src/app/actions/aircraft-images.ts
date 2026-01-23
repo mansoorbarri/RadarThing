@@ -69,7 +69,7 @@ export interface AircraftImage {
   aircraftType: string;
   imageUrl: string;
   imageKey: string | null;
-  photographer: string | null;
+  discordUsername: string | null;
   isApproved: boolean;
   uploadedBy: string;
   approvedBy: string | null;
@@ -86,7 +86,7 @@ function toAircraftImage(img: {
   aircraftType: string;
   imageUrl: string;
   imageKey: string | null;
-  photographer: string | null;
+  discordUsername: string | null;
   isApproved: boolean;
   uploadedBy: string;
   approvedBy: string | null;
@@ -101,7 +101,7 @@ function toAircraftImage(img: {
     aircraftType: img.aircraftType,
     imageUrl: img.imageUrl,
     imageKey: img.imageKey,
-    photographer: img.photographer,
+    discordUsername: img.discordUsername,
     isApproved: img.isApproved,
     uploadedBy: img.uploadedBy,
     approvedBy: img.approvedBy,
@@ -205,7 +205,7 @@ export async function createAircraftImage(data: {
   aircraftType: string;
   imageUrl: string;
   imageKey?: string;
-  photographer?: string;
+  discordUsername?: string;
 }): Promise<{ success: boolean; error?: string; image?: AircraftImage }> {
   const userId = await getCurrentUserId();
   if (!userId) {
@@ -279,7 +279,7 @@ export async function createAircraftImage(data: {
       aircraftType: data.aircraftType,
       imageUrl: data.imageUrl,
       imageKey: data.imageKey,
-      photographer: data.photographer,
+      discordUsername: data.discordUsername,
       uploadedBy: userId,
     });
 

@@ -29,7 +29,7 @@ export default function AircraftImagesPage() {
     aircraftType: "",
     imageUrl: "",
     imageKey: "",
-    photographer: "",
+    discordUsername: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +53,7 @@ export default function AircraftImagesPage() {
       image.airlineIata?.toLowerCase().includes(q) ||
       image.airlineIcao?.toLowerCase().includes(q) ||
       image.aircraftType?.toLowerCase().includes(q) ||
-      image.photographer?.toLowerCase().includes(q)
+      image.discordUsername?.toLowerCase().includes(q)
     );
   };
 
@@ -121,7 +121,7 @@ export default function AircraftImagesPage() {
           image.airlineIata?.toLowerCase().includes(query) ||
           image.airlineIcao?.toLowerCase().includes(query) ||
           image.aircraftType?.toLowerCase().includes(query) ||
-          image.photographer?.toLowerCase().includes(query);
+          image.discordUsername?.toLowerCase().includes(query);
         if (!matchesSearch) return false;
       }
       return true;
@@ -147,14 +147,14 @@ export default function AircraftImagesPage() {
       aircraftType: formData.aircraftType,
       imageUrl: formData.imageUrl,
       imageKey: formData.imageKey || undefined,
-      photographer: formData.photographer || undefined,
+      discordUsername: formData.discordUsername || undefined,
     });
 
     if (result.success) {
       setSuccess(true);
       setTimeout(() => {
         setShowUploadModal(false);
-        setFormData({ airlineIata: "", airlineIcao: "", aircraftType: "", imageUrl: "", imageKey: "", photographer: "" });
+        setFormData({ airlineIata: "", airlineIcao: "", aircraftType: "", imageUrl: "", imageKey: "", discordUsername: "" });
         setSuccess(false);
       }, 2000);
     } else {
@@ -231,7 +231,7 @@ export default function AircraftImagesPage() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by airline, aircraft type, photographer..."
+              placeholder="Search by airline, aircraft type, discord username..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50"
@@ -328,9 +328,9 @@ export default function AircraftImagesPage() {
                     </span>
                     <Check className="ml-auto h-4 w-4 text-emerald-400" />
                   </div>
-                  {image.photographer && (
+                  {image.discordUsername && (
                     <p className="mt-2 text-xs text-slate-500">
-                      Photo by {image.photographer}
+                      Discord: {image.discordUsername}
                     </p>
                   )}
                 </div>
@@ -349,7 +349,7 @@ export default function AircraftImagesPage() {
                 setShowUploadModal(false);
                 setError(null);
                 setSuccess(false);
-                setFormData({ airlineIata: "", airlineIcao: "", aircraftType: "", imageUrl: "", imageKey: "", photographer: "" });
+                setFormData({ airlineIata: "", airlineIcao: "", aircraftType: "", imageUrl: "", imageKey: "", discordUsername: "" });
               }}
               className="absolute top-4 right-4 cursor-pointer text-slate-400 transition-colors hover:text-white"
             >
@@ -440,15 +440,15 @@ export default function AircraftImagesPage() {
 
                 <div>
                   <label className="mb-2 block font-mono text-xs text-slate-400">
-                    PHOTOGRAPHER (OPTIONAL)
+                    DISCORD USERNAME (OPTIONAL)
                   </label>
                   <input
                     type="text"
-                    value={formData.photographer}
+                    value={formData.discordUsername}
                     onChange={(e) =>
-                      setFormData({ ...formData, photographer: e.target.value })
+                      setFormData({ ...formData, discordUsername: e.target.value })
                     }
-                    placeholder="Photo credit"
+                    placeholder="e.g., username#1234"
                     className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50"
                   />
                 </div>
