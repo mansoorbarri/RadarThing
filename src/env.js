@@ -15,6 +15,7 @@ export const env = createEnv({
     STRIPE_PRICE_ID: z.string(),
     UPLOADTHING_TOKEN: z.string(),
     ADMIN_GOOGLE_ID: z.string().optional(),
+    RESEND_API_KEY: z.string().optional(),
   },
 
   /**
@@ -55,6 +56,7 @@ export const env = createEnv({
     STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID,
     UPLOADTHING_TOKEN: process.env.UPLOADTHING_TOKEN,
     ADMIN_GOOGLE_ID: process.env.ADMIN_GOOGLE_ID,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

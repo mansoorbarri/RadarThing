@@ -3,11 +3,56 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { UTApi } from "uploadthing/server";
+import { Resend } from "resend";
 import { convex, api } from "~/server/convex";
 import { env } from "~/env";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 const utapi = new UTApi();
+const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
+
+async function sendImageNotificationEmail(
+  uploadedBy: string,
+  status: "approved" | "rejected",
+  imageDetails: { airlineIata: string; airlineIcao: string; aircraftType: string }
+) {
+  if (!resend) return;
+
+  try {
+    const client = await clerkClient();
+    const user = await client.users.getUser(uploadedBy);
+    const email = user.emailAddresses[0]?.emailAddress;
+    if (!email) return;
+
+    const subject = status === "approved"
+      ? "Your aircraft image has been approved!"
+      : "Your aircraft image was not approved";
+
+    const statusText = status === "approved" ? "approved" : "rejected";
+    const statusColor = status === "approved" ? "#10b981" : "#ef4444";
+
+    await resend.emails.send({
+      from: "RadarThing <noreply@radarthing.com>",
+      to: email,
+      subject,
+      html: `
+        <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: ${statusColor};">Image ${statusText}</h2>
+          <p>Your aircraft image submission has been <strong>${statusText}</strong>.</p>
+          <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+            <p style="margin: 4px 0;"><strong>Airline:</strong> ${imageDetails.airlineIata} / ${imageDetails.airlineIcao}</p>
+            <p style="margin: 4px 0;"><strong>Aircraft:</strong> ${imageDetails.aircraftType}</p>
+          </div>
+          ${status === "approved"
+            ? "<p>Thank you for contributing to RadarThing!</p>"
+            : "<p>Feel free to submit another image that better meets our guidelines.</p>"}
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Failed to send notification email:", error);
+  }
+}
 
 export interface AircraftImage {
   id: string;
@@ -316,6 +361,13 @@ export async function approveAircraftImage(
       approvedBy: userId,
     });
 
+    // Send approval notification email
+    await sendImageNotificationEmail(imageToApprove.uploadedBy, "approved", {
+      airlineIata: imageToApprove.airlineIata,
+      airlineIcao: imageToApprove.airlineIcao,
+      aircraftType: imageToApprove.aircraftType,
+    });
+
     revalidatePath("/aircraft-images");
     revalidatePath("/admin/aircraft-images");
     return { success: true };
@@ -351,6 +403,13 @@ export async function rejectAircraftImage(
         console.error("Failed to delete image from UploadThing:", e);
       }
     }
+
+    // Send rejection notification email before deleting
+    await sendImageNotificationEmail(image.uploadedBy, "rejected", {
+      airlineIata: image.airlineIata,
+      airlineIcao: image.airlineIcao,
+      aircraftType: image.aircraftType,
+    });
 
     await convex.mutation(api.aircraftImages.remove, {
       id: id as Id<"aircraftImages">,
