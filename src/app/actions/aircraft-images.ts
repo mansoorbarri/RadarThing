@@ -11,6 +11,28 @@ import type { Id } from "../../../convex/_generated/dataModel";
 const utapi = new UTApi();
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 
+// Notify SSE server to delete Discord notification when image is uploaded
+async function notifyImageUploaded(airlineIata: string, airlineIcao: string, aircraftType: string) {
+  try {
+    // Try both IATA and ICAO codes since flight numbers use either
+    await Promise.all([
+      fetch("https://sse.radarthing.com/api/image-uploaded", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ airlineCode: airlineIata, aircraftType }),
+      }),
+      fetch("https://sse.radarthing.com/api/image-uploaded", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ airlineCode: airlineIcao, aircraftType }),
+      }),
+    ]);
+  } catch (error) {
+    // Non-critical, don't fail the approval
+    console.error("Failed to notify SSE server:", error);
+  }
+}
+
 async function sendImageNotificationEmail(
   uploadedBy: string,
   status: "approved" | "rejected",
@@ -290,6 +312,8 @@ export async function createAircraftImage(data: {
         id: image.id as Id<"aircraftImages">,
         approvedBy: userId,
       });
+      // Notify SSE server to delete Discord "missing image" notification
+      await notifyImageUploaded(data.airlineIata, data.airlineIcao, data.aircraftType);
       // Refetch the approved image
       const approvedImage = await convex.query(api.aircraftImages.getById, {
         id: image.id as Id<"aircraftImages">,
@@ -368,6 +392,9 @@ export async function approveAircraftImage(
       id: id as Id<"aircraftImages">,
       approvedBy: userId,
     });
+
+    // Notify SSE server to delete Discord "missing image" notification
+    await notifyImageUploaded(imageToApprove.airlineIata, imageToApprove.airlineIcao, imageToApprove.aircraftType);
 
     // Send approval notification email
     await sendImageNotificationEmail(imageToApprove.uploadedBy, "approved", {
