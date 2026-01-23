@@ -22,6 +22,7 @@
     "@clerk/nextjs": "^6.36.5",
     "@clerk/themes": "^2.4.46",
     "@radix-ui/react-switch": "^1.2.6",
+    "@sentry/nextjs": "^10.36.0",
     "@stripe/stripe-js": "^8.6.0",
     "@t3-oss/env-nextjs": "^0.12.0",
     "@types/express": "types/express",

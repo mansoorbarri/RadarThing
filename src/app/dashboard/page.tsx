@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useUser, SignInButton } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 import { getUserStats, type UserStats } from "~/app/actions/get-user-stats";
+import { setSentryUser } from "~/lib/sentry";
 import {
   Plane,
   Clock,
@@ -60,6 +61,8 @@ export default function DashboardPage() {
           setStats(result.stats);
           setIsPro(result.isPro);
           setSupportId(result.supportId);
+          // Set Sentry user context for error tracking
+          setSentryUser(result.supportId);
         })
         .finally(() => setLoading(false));
     } else if (isLoaded) {

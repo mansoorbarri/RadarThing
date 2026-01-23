@@ -1,6 +1,7 @@
 // hooks/useProStatus.ts
 import { useState, useEffect } from "react";
-import { isPro, isAdmin } from "~/app/actions/is-pro";
+import { isPro, isAdmin, getSupportId } from "~/app/actions/is-pro";
+import { setSentryUser } from "~/lib/sentry";
 
 // Clear any stale cache from previous version
 if (typeof window !== "undefined") {
@@ -19,10 +20,12 @@ export const useProStatus = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([isPro(), isAdmin()])
-      .then(([proResult, adminResult]) => {
+    Promise.all([isPro(), isAdmin(), getSupportId()])
+      .then(([proResult, adminResult, supportId]) => {
         setIsProUser(proResult);
         setIsAdminUser(adminResult);
+        // Set Sentry user context for error tracking
+        setSentryUser(supportId);
       })
       .catch((error) => {
         console.error("Failed to fetch pro/admin status:", error);

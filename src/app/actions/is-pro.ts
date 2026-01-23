@@ -26,3 +26,11 @@ export async function isAdmin() {
 
   return user.googleId === env.ADMIN_GOOGLE_ID;
 }
+
+export async function getSupportId(): Promise<string | null> {
+  const { userId } = await auth();
+  if (!userId) return null;
+
+  const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
+  return user?.googleId ?? user?._id ?? null;
+}
