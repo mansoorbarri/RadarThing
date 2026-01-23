@@ -1,6 +1,5 @@
 import L from "leaflet";
 import React from "react";
-import { analytics } from "~/lib/posthog";
 
 function applyMetarStyleButton(
   container: HTMLDivElement,
@@ -47,7 +46,6 @@ export class RadarSettingsControl extends L.Control {
     this._toggleSettings = toggleSettings;
     this._boundClick = () => {
       this._toggleSettings((prev) => !prev);
-      analytics.mapSettingsToggled(!this._currentState);
     };
   }
 
@@ -86,7 +84,6 @@ export class HeadingModeControl extends L.Control {
     this._setHeadingMode = setHeadingMode;
     this._boundClick = () => {
       this._setHeadingMode(true);
-      analytics.mapHeadingModeToggled(true);
     };
   }
 
@@ -126,7 +123,6 @@ export class RadarModeControl extends L.Control {
     this._toggleRadarMode = toggleRadarMode;
     this._boundClick = () => {
       this._toggleRadarMode((prev) => !prev);
-      analytics.mapRadarModeToggled(!this._currentState);
     };
   }
 
@@ -159,7 +155,6 @@ export class LockedRadarModeControl extends L.Control {
   constructor(options: L.ControlOptions) {
     super(options);
     this._boundClick = () => {
-      analytics.upgradeButtonClicked("radar_mode_control");
       window.location.href = "/pricing";
     };
   }
@@ -201,7 +196,6 @@ export class OSMControl extends L.Control {
     this._toggleOSM = toggleOSM;
     this._boundClick = () => {
       this._toggleOSM((prev) => !prev);
-      analytics.mapOsmToggled(!this._currentState);
     };
   }
 
@@ -241,7 +235,6 @@ export class OpenAIPControl extends L.Control {
     this._toggleAIP = toggleAIP;
     this._boundClick = () => {
       this._toggleAIP((prev) => !prev);
-      analytics.mapOpenAipToggled(!this._currentState);
     };
   }
 

@@ -2,7 +2,6 @@ import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { convex, api } from "~/server/convex";
-import { serverAnalytics } from "~/lib/posthog-server";
 
 const CLERK_WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET!;
 
@@ -69,12 +68,6 @@ export async function POST(req: Request) {
         email,
         googleId: googleId ?? undefined,
       });
-
-      // Track new user signup
-      serverAnalytics.userSignedUp(data.id, {
-        email,
-        authMethod: googleId ? "google" : "email",
-      });
     }
   }
 
@@ -100,9 +93,6 @@ export async function POST(req: Request) {
     await convex.mutation(api.users.softDelete, {
       clerkId: data.id,
     });
-
-    // Track user deletion
-    serverAnalytics.userDeleted(data.id);
   }
 
   if (type === "subscription.created" || type === "subscription.updated") {
@@ -148,9 +138,6 @@ export async function POST(req: Request) {
       }
     }
   }
-
-  // Flush PostHog events before responding
-  await serverAnalytics.flush();
 
   return NextResponse.json({ ok: true });
 }

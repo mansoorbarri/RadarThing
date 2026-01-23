@@ -2,7 +2,6 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { convex, api } from "~/server/convex";
-import { serverAnalytics } from "~/lib/posthog-server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -52,12 +51,6 @@ export async function POST(req: Request) {
           stripeSubscriptionId: session.subscription as string,
         });
 
-        // Track subscription created in PostHog
-        serverAnalytics.subscriptionCreated(session.metadata.userId, {
-          customerId: session.customer as string,
-          subscriptionId: session.subscription as string,
-        });
-
         console.log("✅ User upgraded to PRO successfully");
         break;
       }
@@ -78,12 +71,6 @@ export async function POST(req: Request) {
           role: shouldBeProUser ? "PRO" : "FREE",
         });
 
-        // Track subscription update in PostHog
-        serverAnalytics.subscriptionUpdated(subscription.customer as string, {
-          status: subscription.status,
-          isPro: shouldBeProUser,
-        });
-
         console.log(`✅ User role set to: ${shouldBeProUser ? "PRO" : "FREE"}`);
         break;
       }
@@ -99,16 +86,10 @@ export async function POST(req: Request) {
           role: "FREE",
         });
 
-        // Track subscription cancellation in PostHog
-        serverAnalytics.subscriptionCancelled("unknown", subscription.customer as string);
-
         console.log("User downgraded to FREE");
         break;
       }
     }
-
-    // Flush PostHog events before responding
-    await serverAnalytics.flush();
 
     return NextResponse.json({ received: true });
   } catch (err) {

@@ -8,7 +8,6 @@ import { dark } from "@clerk/themes";
 import { Suspense } from "react";
 
 import { Toaster } from "sonner";
-import { PostHogProvider } from "~/components/providers/PostHogProvider";
 
 export const metadata: Metadata = {
   title: "RadarThing",
@@ -45,10 +44,8 @@ export default function RootLayout({
       <html lang="en" className={`${geist.variable}`}>
         <body>
           <Suspense fallback={null}>
-            <PostHogProvider>
-              <Toaster theme="dark" position="top-center" richColors />
-              {children}
-            </PostHogProvider>
+            <Toaster theme="dark" position="top-center" richColors />
+            {children}
           </Suspense>
         </body>
       </html>

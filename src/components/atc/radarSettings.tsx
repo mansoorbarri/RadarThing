@@ -3,7 +3,6 @@
 import React from "react";
 import { Switch } from "~/components/ui/switch";
 import { ProBadge } from "~/components/ui/pro-badge";
-import { analytics } from "~/lib/posthog";
 import { useRouter } from "next/navigation";
 import { Plane, Shield } from "lucide-react";
 
@@ -47,29 +46,20 @@ export const RadarSettings = ({
         <SettingsToggle
           label="Precipitation"
           checked={showPrecipitation}
-          onChange={(v) => {
-            setShowPrecipitation(v);
-            analytics.weatherPrecipitationToggled(v);
-          }}
+          onChange={setShowPrecipitation}
         />
 
         <SettingsToggle
           label="AIRMETs"
           checked={showAirmets}
-          onChange={(v) => {
-            setShowAirmets(v);
-            analytics.weatherAirmetsToggled(v);
-          }}
+          onChange={setShowAirmets}
           disabled={!isPRO}
         />
 
         <SettingsToggle
           label="SIGMETs"
           checked={showSigmets}
-          onChange={(v) => {
-            setShowSigmets(v);
-            analytics.weatherSigmetsToggled(v);
-          }}
+          onChange={setShowSigmets}
           disabled={!isPRO}
         />
       </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { analytics } from "~/lib/posthog";
 
 interface ProBadgeProps {
   className?: string;
@@ -20,7 +19,6 @@ export function ProBadge({ className = "", size = "sm" }: ProBadgeProps) {
     <button
       onClick={(e) => {
         e.stopPropagation();
-        analytics.upgradeButtonClicked("pro_badge");
         router.push("/pricing");
       }}
       className={`cursor-pointer rounded bg-yellow-500/20 font-mono font-bold tracking-wider text-yellow-400 transition-all hover:bg-yellow-500/30 hover:scale-105 ${sizeClasses[size]} ${className}`}

@@ -3,7 +3,6 @@
 import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import { type PositionUpdate } from "~/lib/aircraft-store";
-import { analytics } from "~/lib/posthog";
 
 interface CallsignFilterProps {
   aircrafts: PositionUpdate[];
@@ -53,10 +52,7 @@ export function CallsignFilter({
         </span>
         {selectedCallsigns.size > 0 && (
           <button
-            onClick={() => {
-              analytics.airlineFilterCleared();
-              onClearFilters();
-            }}
+            onClick={onClearFilters}
             className="cursor-pointer text-sm tracking-wide text-cyan-400 hover:text-cyan-300"
           >
             Clear
@@ -109,10 +105,7 @@ function AirlineRow({
   return (
     <li>
       <button
-        onClick={() => {
-          analytics.airlineFilterToggled(prefix, !isSelected);
-          onToggle(prefix);
-        }}
+        onClick={() => onToggle(prefix)}
         className={`flex w-full cursor-pointer items-center gap-5 px-6 py-4 transition-all duration-150 ${
           isSelected
             ? "bg-cyan-500/15 text-cyan-300"

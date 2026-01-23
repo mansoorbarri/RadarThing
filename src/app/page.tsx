@@ -12,7 +12,6 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
-import { analytics } from "~/lib/posthog";
 import { useMobileDetection } from "~/hooks/useMobileDetection";
 import { useAircraftStream } from "~/hooks/useAircraftStream";
 import { useAirportData } from "~/hooks/useAirportData";
@@ -253,10 +252,7 @@ export default function ATCPage() {
           {/* Mobile search button */}
           {isMapLoaded && isMobile && !showMobileSearch && (
             <button
-              onClick={() => {
-                setShowMobileSearch(true);
-                analytics.mobileSearchOpened();
-              }}
+              onClick={() => setShowMobileSearch(true)}
               className="pointer-events-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-black/60 backdrop-blur-md"
             >
               <svg className="h-4 w-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -293,30 +289,21 @@ export default function ATCPage() {
                 <div className="rounded-xl border border-white/10 bg-black/90 p-3 backdrop-blur-xl">
                   <div className="flex gap-2">
                     <button
-                      onClick={() => {
-                        start();
-                        analytics.timerStarted();
-                      }}
+                      onClick={start}
                       disabled={isRunning}
                       className="cursor-pointer rounded-lg bg-emerald-500/20 px-3 py-1 text-xs text-emerald-400 disabled:opacity-50"
                     >
                       Start
                     </button>
                     <button
-                      onClick={() => {
-                        stop();
-                        analytics.timerStopped();
-                      }}
+                      onClick={stop}
                       disabled={!isRunning}
                       className="cursor-pointer rounded-lg bg-red-500/20 px-3 py-1 text-xs text-red-400 disabled:opacity-50"
                     >
                       Stop
                     </button>
                     <button
-                      onClick={() => {
-                        reset();
-                        analytics.timerReset();
-                      }}
+                      onClick={reset}
                       className="cursor-pointer rounded-lg bg-slate-500/20 px-3 py-1 text-xs text-slate-400"
                     >
                       Reset
@@ -483,7 +470,6 @@ export default function ATCPage() {
                 const newState = activeRightPanel !== "fids";
                 setActiveRightPanel(newState ? "fids" : null);
                 if (newState) setSelectedAircraft(null);
-                analytics.panelFlightsToggled(newState);
               },
             },
             {
@@ -495,7 +481,6 @@ export default function ATCPage() {
                 const newState = activeRightPanel !== "filter";
                 setActiveRightPanel(newState ? "filter" : null);
                 if (newState) setSelectedAircraft(null);
-                analytics.panelFilterToggled(newState);
               },
             },
             ...(!isProUser ? [{
@@ -503,10 +488,7 @@ export default function ATCPage() {
               label: "Upgrade",
               icon: UpgradeIcon,
               active: false,
-              onClick: () => {
-                analytics.upgradeButtonClicked("control_dock");
-                router.push("/pricing");
-              },
+              onClick: () => router.push("/pricing"),
             }] : []),
             {
               id: "dashboard",
@@ -555,10 +537,7 @@ export default function ATCPage() {
 
             {!isMobile && (isProUser ? (
               <button
-                onClick={() => {
-                  setShowTaxiChart(true);
-                  analytics.taxiChartOpened(selectedAirport?.icao || "unknown");
-                }}
+                onClick={() => setShowTaxiChart(true)}
                 className="cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-[10px] text-cyan-300"
               >
                 Taxi Chart

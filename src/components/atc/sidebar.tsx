@@ -38,7 +38,6 @@ const InfoCircleIcon = ({ size = 24, className = "" }: { size?: number; classNam
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { getFlightHistory } from "~/app/actions/get-flight-history";
 import Image from "next/image";
-import { analytics } from "~/lib/posthog";
 import { useAircraftPhoto } from "~/hooks/useAircraftPhoto";
 import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
 import { AircraftControlPanel } from "./AircraftControlPanel";
@@ -326,10 +325,7 @@ export const Sidebar = ({
           <nav className="mb-5 flex px-6">
             <div className="flex w-full rounded-2xl border border-white/10 bg-black/60 p-1.5 shadow-xl">
               <button
-                onClick={() => {
-                  setTab("info");
-                  analytics.sidebarTabChanged("info");
-                }}
+                onClick={() => setTab("info")}
                 className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
                   tab === "info"
                     ? "bg-white text-black shadow-lg"
@@ -339,10 +335,7 @@ export const Sidebar = ({
                 <InfoCircleIcon size={14} /> LIVE DATA
               </button>
               <button
-                onClick={() => {
-                  setTab("history");
-                  analytics.sidebarTabChanged("history");
-                }}
+                onClick={() => setTab("history")}
                 className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
                   tab === "history"
                     ? "bg-white text-black shadow-lg"
@@ -413,7 +406,6 @@ export const Sidebar = ({
                       key={f.id}
                       onClick={() => {
                         if (f.routeData) {
-                          analytics.historyFlightClicked();
                           onHistoryClick?.(f.routeData as [number, number][]);
                         }
                       }}

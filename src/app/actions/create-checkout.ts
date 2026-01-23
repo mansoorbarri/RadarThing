@@ -2,7 +2,6 @@
 
 import { auth, currentUser } from "@clerk/nextjs/server";
 import Stripe from "stripe";
-import { serverAnalytics } from "~/lib/posthog-server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   //   apiVersion: "2024-12-18.acacia",
@@ -15,12 +14,6 @@ export async function createCheckoutSession() {
   if (!userId || !user) throw new Error("Unauthorized");
 
   const baseUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
-
-  // Track checkout initiation
-  serverAnalytics.checkoutInitiated(userId, {
-    email: user.emailAddresses[0]?.emailAddress,
-  });
-  await serverAnalytics.flush();
 
   const session = await stripe.checkout.sessions.create({
     customer_email: user.emailAddresses[0]?.emailAddress,
