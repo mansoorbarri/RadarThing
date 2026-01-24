@@ -10,6 +10,7 @@
 
 import type * as aircraftImages from "../aircraftImages.js";
 import type * as flights from "../flights.js";
+import type * as missingImageNotifications from "../missingImageNotifications.js";
 import type * as users from "../users.js";
 
 import type {
@@ -21,6 +22,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   aircraftImages: typeof aircraftImages;
   flights: typeof flights;
+  missingImageNotifications: typeof missingImageNotifications;
   users: typeof users;
 }>;
 
