@@ -1,27 +1,25 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useState, useEffect } from "react";
-import { getUserGoogleId } from "~/app/actions/get-user-profile";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export function useCurrentUserProfile() {
   const { user, isLoaded: clerkLoaded } = useUser();
-  const [googleId, setGoogleId] = useState<string | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const clerkId = user?.id;
 
-  useEffect(() => {
-    if (clerkLoaded && user) {
-      getUserGoogleId()
-        .then(setGoogleId)
-        .finally(() => setIsLoaded(true));
-    } else if (clerkLoaded && !user) {
-      setIsLoaded(true);
-    }
-  }, [clerkLoaded, user]);
+  // Real-time query - auto-updates when user data changes in Convex
+  const dbUser = useQuery(
+    api.users.getByClerkId,
+    clerkId ? { clerkId } : "skip"
+  );
+
+  // Loading state: Clerk not loaded OR (user exists but Convex query still pending)
+  const isLoaded = clerkLoaded && (clerkId ? dbUser !== undefined : true);
 
   return {
     isLoaded,
     clerkUser: user ?? null,
-    googleId,
+    googleId: dbUser?.googleId ?? null,
   };
 }
