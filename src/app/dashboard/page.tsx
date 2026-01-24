@@ -6,7 +6,6 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useProStatus } from "~/hooks/useProStatus";
-import { setSentryUser } from "~/lib/sentry";
 import {
   Plane,
   Clock,
@@ -67,13 +66,6 @@ export default function DashboardPage() {
   const stats = useMemo(() => statsQuery ?? null, [statsQuery]);
   const supportId = useMemo(() => dbUser?._id ?? null, [dbUser]);
   const loading = !isLoaded || proLoading || (clerkId && statsQuery === undefined);
-
-  // Set Sentry user context when supportId changes
-  useEffect(() => {
-    if (supportId) {
-      setSentryUser(supportId);
-    }
-  }, [supportId]);
 
   const copySupportId = () => {
     if (supportId) {

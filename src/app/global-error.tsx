@@ -1,8 +1,5 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
-import { useEffect } from "react";
-
 export default function GlobalError({
   error,
   reset,
@@ -10,10 +7,6 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
-
   return (
     <html>
       <body>
@@ -22,7 +15,7 @@ export default function GlobalError({
             Something went wrong
           </h2>
           <p className="mb-6 text-slate-400">
-            An unexpected error occurred. The issue has been reported.
+            An unexpected error occurred.
           </p>
           <button
             onClick={reset}

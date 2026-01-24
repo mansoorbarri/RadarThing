@@ -3,7 +3,6 @@ import { useQuery } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { api } from "../../convex/_generated/api";
-import { setSentryUser } from "~/lib/sentry";
 import { isAdmin } from "~/app/actions/is-pro";
 
 export const useProStatus = () => {
@@ -26,13 +25,6 @@ export const useProStatus = () => {
 
   const isLoading = !isLoaded || (clerkId && dbUser === undefined);
   const isProUser = dbUser?.role === "PRO";
-
-  // Set Sentry user context when user data changes
-  useEffect(() => {
-    if (dbUser) {
-      setSentryUser(dbUser._id);
-    }
-  }, [dbUser]);
 
   return {
     isProUser: isProUser || isAdminUser, // Admins also have PRO access
