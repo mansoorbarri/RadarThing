@@ -61,4 +61,12 @@ export default defineSchema({
       "aircraftType",
       "isApproved",
     ]),
+
+  // Track Discord notifications for missing aircraft images
+  missingImageNotifications: defineTable({
+    airlineCode: v.string(), // IATA or ICAO code
+    aircraftType: v.string(), // Normalized type (e.g., "B777", "A320")
+    discordMessageId: v.optional(v.string()), // For deleting the message later
+  })
+    .index("by_airline_aircraft", ["airlineCode", "aircraftType"]),
 });
