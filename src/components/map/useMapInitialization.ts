@@ -74,13 +74,15 @@ export const useMapInitialization = ({
   useEffect(() => {
     if (mapInstance.current) return;
 
-    const worldBounds = L.latLngBounds(L.latLng(-85, -360), L.latLng(85, 360));
+    // Extended bounds for easier mobile navigation
+    const worldBounds = L.latLngBounds(L.latLng(-85, -540), L.latLng(85, 540));
 
     const map = L.map(mapContainerId, {
       zoomAnimation: true,
-      minZoom: 3,
+      minZoom: isMobile ? 2 : 3,
       maxZoom: 18,
       maxBounds: worldBounds,
+      maxBoundsViscosity: isMobile ? 0.5 : 1.0, // Allow some "bounce" on mobile for smoother panning
       attributionControl: false,
       zoomControl: !isMobile,
     }).setView([20, 0], 3);
