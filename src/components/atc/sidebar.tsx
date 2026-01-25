@@ -45,6 +45,7 @@ import Image from "next/image";
 import { useAircraftPhoto } from "~/hooks/useAircraftPhoto";
 import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
 import { AircraftControlPanel } from "./AircraftControlPanel";
+import Link from "next/link";
 
 const getFlightPhase = (
   altAGL: number,
@@ -200,8 +201,13 @@ export const Sidebar = ({
 
   // Check if this is the user's own aircraft
   const { googleId: userGoogleId, isLoaded: userLoaded } = useCurrentUserProfile();
-  console.log('Debug ownership:', { userLoaded, userGoogleId, aircraftGoogleId: aircraft.googleId });
   const isOwnAircraft = userLoaded && userGoogleId && aircraft.googleId === userGoogleId;
+
+  // Query the pilot's user record for the stats link
+  const pilotUser = useQuery(
+    api.users.getByGoogleId,
+    aircraft.googleId ? { googleId: aircraft.googleId } : "skip"
+  );
 
   // Reset image loaded state when photo changes
   useEffect(() => {
@@ -259,6 +265,14 @@ export const Sidebar = ({
               <p className="truncate font-mono text-[11px] font-black tracking-[0.15em] text-slate-300 uppercase">
                 {aircraft.type || "Unknown Class"}
               </p>
+              {pilotUser && aircraft.callsign && (
+                <Link
+                  href={`/pilot/${pilotUser._id}`}
+                  className="mt-1 inline-flex items-center gap-1 font-mono text-[10px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+                >
+                  <span className="text-white/40">Pilot:</span> {aircraft.callsign}
+                </Link>
+              )}
             </div>
             <div className="relative shrink-0">
               {airlineLogo ? (

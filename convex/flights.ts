@@ -208,3 +208,50 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 function toRad(deg: number): number {
   return deg * (Math.PI / 180);
 }
+
+// Get user stats by Convex user ID (for public pilot profile)
+export const getStatsById = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) return null;
+
+    const flights = await ctx.db
+      .query("flights")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+
+    // Calculate stats
+    const totalFlights = flights.length;
+    let totalDistance = 0;
+    const aircraftCounts: Record<string, number> = {};
+
+    for (const flight of flights) {
+      // Distance from route data
+      if (flight.routeData && Array.isArray(flight.routeData)) {
+        for (let i = 1; i < flight.routeData.length; i++) {
+          const [lat1, lon1] = flight.routeData[i - 1];
+          const [lat2, lon2] = flight.routeData[i];
+          totalDistance += haversineDistance(lat1, lon1, lat2, lon2);
+        }
+      }
+
+      // Aircraft counts
+      if (flight.aircraftType) {
+        aircraftCounts[flight.aircraftType] = (aircraftCounts[flight.aircraftType] || 0) + 1;
+      }
+    }
+
+    // Get top aircraft (limited public view)
+    const topAircraft = Object.entries(aircraftCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([name, count]) => ({ name, count }));
+
+    return {
+      totalFlights,
+      totalDistanceNm: Math.round(totalDistance),
+      topAircraft,
+    };
+  },
+});
