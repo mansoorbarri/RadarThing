@@ -223,10 +223,18 @@ export const getStatsById = query({
 
     // Calculate stats
     const totalFlights = flights.length;
+    let totalFlightTime = 0;
     let totalDistance = 0;
     const aircraftCounts: Record<string, number> = {};
+    const routeCounts: Record<string, number> = {};
+    const airportVisits: Record<string, number> = {};
 
     for (const flight of flights) {
+      // Flight time
+      if (flight.endTime && flight.startTime) {
+        totalFlightTime += flight.endTime - flight.startTime;
+      }
+
       // Distance from route data
       if (flight.routeData && Array.isArray(flight.routeData)) {
         for (let i = 1; i < flight.routeData.length; i++) {
@@ -240,18 +248,57 @@ export const getStatsById = query({
       if (flight.aircraftType) {
         aircraftCounts[flight.aircraftType] = (aircraftCounts[flight.aircraftType] || 0) + 1;
       }
+
+      // Route counts
+      if (flight.depICAO && flight.arrICAO) {
+        const route = `${flight.depICAO}-${flight.arrICAO}`;
+        routeCounts[route] = (routeCounts[route] || 0) + 1;
+        airportVisits[flight.depICAO] = (airportVisits[flight.depICAO] || 0) + 1;
+        airportVisits[flight.arrICAO] = (airportVisits[flight.arrICAO] || 0) + 1;
+      }
     }
 
-    // Get top aircraft (limited public view)
+    // Get top items
     const topAircraft = Object.entries(aircraftCounts)
       .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
+      .slice(0, 5)
       .map(([name, count]) => ({ name, count }));
 
+    const topRoutes = Object.entries(routeCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([route, count]) => ({ route, count }));
+
+    const topAirports = Object.entries(airportVisits)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([code, count]) => ({ code, count }));
+
+    // Recent flights (last 10)
+    const recentFlights = flights
+      .sort((a, b) => b.startTime - a.startTime)
+      .slice(0, 10)
+      .map((f) => ({
+        id: f._id,
+        callsign: f.callsign,
+        aircraftType: f.aircraftType,
+        depICAO: f.depICAO,
+        arrICAO: f.arrICAO,
+        startTime: f.startTime,
+        endTime: f.endTime,
+        routeData: f.routeData,
+      }));
+
     return {
+      userRole: user.role,
       totalFlights,
+      totalFlightTimeMs: totalFlightTime,
       totalDistanceNm: Math.round(totalDistance),
+      uniqueAirports: Object.keys(airportVisits).length,
       topAircraft,
+      topRoutes,
+      topAirports,
+      recentFlights,
     };
   },
 });
