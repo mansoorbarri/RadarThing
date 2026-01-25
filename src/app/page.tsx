@@ -523,6 +523,7 @@ export default function ATCPage() {
         <ControlDock
           side="right"
           items={[
+            // Core features (closest to toggle button)
             {
               id: "fids",
               label: "Flights",
@@ -545,13 +546,7 @@ export default function ATCPage() {
                 if (newState) setSelectedAircrafts([]);
               },
             },
-            ...(!isProUser ? [{
-              id: "upgrade",
-              label: "Upgrade",
-              icon: UpgradeIcon,
-              active: false,
-              onClick: () => router.push("/pricing"),
-            }] : []),
+            // User account
             {
               id: "dashboard",
               label: "Dashboard",
@@ -561,6 +556,14 @@ export default function ATCPage() {
                 router.push("/dashboard");
               },
             },
+            ...(!isProUser ? [{
+              id: "upgrade",
+              label: "Upgrade",
+              icon: UpgradeIcon,
+              active: false,
+              onClick: () => router.push("/pricing"),
+            }] : []),
+            // External links (furthest from toggle)
             {
               id: "install",
               label: "Install",
