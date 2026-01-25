@@ -99,8 +99,37 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const toggleRadarMode = useCallback(() => {
     if (!canUseRadarMode) return;
-    setIsRadarMode((prev) => !prev);
+    setIsRadarMode((prev) => {
+      if (!prev) {
+        // Enabling radar mode - disable other overlays
+        setIsOSMMode(false);
+        setIsOpenAIPEnabled(false);
+      }
+      return !prev;
+    });
   }, [canUseRadarMode]);
+
+  const toggleOSMMode = useCallback(() => {
+    setIsOSMMode((prev) => {
+      if (!prev) {
+        // Enabling OSM mode - disable other overlays
+        setIsRadarMode(false);
+        setIsOpenAIPEnabled(false);
+      }
+      return !prev;
+    });
+  }, []);
+
+  const toggleOpenAIPMode = useCallback(() => {
+    setIsOpenAIPEnabled((prev) => {
+      if (!prev) {
+        // Enabling OpenAIP - disable other overlays
+        setIsRadarMode(false);
+        setIsOSMMode(false);
+      }
+      return !prev;
+    });
+  }, []);
 
   useEffect(() => {
     if (!canUseRadarMode && isRadarMode) {
@@ -173,8 +202,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     mapContainerId: "map-container",
     setIsHeadingMode,
     setIsRadarMode: toggleRadarMode,
-    setIsOSMMode,
-    setIsOpenAIPEnabled,
+    setIsOSMMode: toggleOSMMode,
+    setIsOpenAIPEnabled: toggleOpenAIPMode,
     setIsSettingsOpen,
     canUseRadarMode,
     onMapClick: handleMapClick,

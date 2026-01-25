@@ -111,18 +111,18 @@ export class HeadingModeControl extends L.Control {
 export class RadarModeControl extends L.Control {
   public options = { position: "topleft" as L.ControlPosition };
   public _container: HTMLDivElement | null = null;
-  private _toggleRadarMode: React.Dispatch<React.SetStateAction<boolean>>;
+  private _toggleRadarMode: () => void;
   private _boundClick: () => void;
   private _currentState = false;
 
   constructor(
     options: L.ControlOptions,
-    toggleRadarMode: React.Dispatch<React.SetStateAction<boolean>>,
+    toggleRadarMode: () => void,
   ) {
     super(options);
     this._toggleRadarMode = toggleRadarMode;
     this._boundClick = () => {
-      this._toggleRadarMode((prev) => !prev);
+      this._toggleRadarMode();
     };
   }
 
@@ -184,18 +184,18 @@ export class LockedRadarModeControl extends L.Control {
 export class OSMControl extends L.Control {
   public options = { position: "topleft" as L.ControlPosition };
   public _container: HTMLDivElement | null = null;
-  private _toggleOSM: React.Dispatch<React.SetStateAction<boolean>>;
+  private _toggleOSM: () => void;
   private _boundClick: () => void;
   private _currentState = false;
 
   constructor(
     options: L.ControlOptions,
-    toggleOSM: React.Dispatch<React.SetStateAction<boolean>>,
+    toggleOSM: () => void,
   ) {
     super(options);
     this._toggleOSM = toggleOSM;
     this._boundClick = () => {
-      this._toggleOSM((prev) => !prev);
+      this._toggleOSM();
     };
   }
 
@@ -223,18 +223,18 @@ export class OSMControl extends L.Control {
 export class OpenAIPControl extends L.Control {
   public options = { position: "topleft" as L.ControlPosition };
   public _container: HTMLDivElement | null = null;
-  private _toggleAIP: React.Dispatch<React.SetStateAction<boolean>>;
+  private _toggleAIP: () => void;
   private _boundClick: () => void;
   private _currentState = false;
 
   constructor(
     options: L.ControlOptions,
-    toggleAIP: React.Dispatch<React.SetStateAction<boolean>>,
+    toggleAIP: () => void,
   ) {
     super(options);
     this._toggleAIP = toggleAIP;
     this._boundClick = () => {
-      this._toggleAIP((prev) => !prev);
+      this._toggleAIP();
     };
   }
 

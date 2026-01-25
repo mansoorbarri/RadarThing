@@ -13,8 +13,8 @@ interface UseMapInitializationProps {
   mapContainerId: string;
   setIsHeadingMode: React.Dispatch<React.SetStateAction<boolean>>;
   setIsRadarMode: () => void;
-  setIsOSMMode?: React.Dispatch<React.SetStateAction<boolean>>;
-  setIsOpenAIPEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsOSMMode?: () => void;
+  setIsOpenAIPEnabled: () => void;
   setIsSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   canUseRadarMode: boolean;
   onMapClick: (e: L.LeafletMouseEvent) => void;
