@@ -165,8 +165,8 @@ export const getStatsByClerkId = query({
       .slice(0, 5)
       .map(([code, count]) => ({ code, count }));
 
-    // Recent flights (last 10)
-    const recentFlights = flights
+    // Recent flights (last 10) - sorted most recent first
+    const recentFlights = [...flights]
       .sort((a, b) => b.startTime - a.startTime)
       .slice(0, 10)
       .map((f) => ({
