@@ -101,9 +101,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     if (!canUseRadarMode) return;
     setIsRadarMode((prev) => {
       if (!prev) {
-        // Enabling radar mode - disable other overlays
+        // Enabling radar mode - disable OSM (base layers are mutually exclusive)
         setIsOSMMode(false);
-        setIsOpenAIPEnabled(false);
       }
       return !prev;
     });
@@ -112,23 +111,16 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const toggleOSMMode = useCallback(() => {
     setIsOSMMode((prev) => {
       if (!prev) {
-        // Enabling OSM mode - disable other overlays
+        // Enabling OSM mode - disable radar (base layers are mutually exclusive)
         setIsRadarMode(false);
-        setIsOpenAIPEnabled(false);
       }
       return !prev;
     });
   }, []);
 
   const toggleOpenAIPMode = useCallback(() => {
-    setIsOpenAIPEnabled((prev) => {
-      if (!prev) {
-        // Enabling OpenAIP - disable other overlays
-        setIsRadarMode(false);
-        setIsOSMMode(false);
-      }
-      return !prev;
-    });
+    // OpenAIP is an overlay that can be shown on top of any base layer
+    setIsOpenAIPEnabled((prev) => !prev);
   }, []);
 
   useEffect(() => {

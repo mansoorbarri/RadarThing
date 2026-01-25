@@ -141,27 +141,13 @@ export const useMapInitialization = ({
     // Signal that map and layers are ready
     setMapReady(true);
 
-    // Only add Leaflet controls on desktop (radar control handled in separate effect)
+    // Only add heading control on desktop
+    // Note: Radar, OSM, OpenAIP, and Settings controls are added in a separate effect
+    // to maintain proper ordering and handle Pro status changes
     if (!isMobile) {
       const headingControl = new HeadingModeControl({}, setIsHeadingMode);
       map.addControl(headingControl);
       setHeadingControlRef.current = headingControl;
-
-      // Radar control is added in a separate effect that watches canUseRadarMode
-
-      if (setIsOSMMode && setOSMControlRef) {
-        const osmControl = new OSMControl({}, setIsOSMMode);
-        map.addControl(osmControl);
-        setOSMControlRef.current = osmControl;
-      }
-
-      const openAIPControl = new OpenAIPControl({}, setIsOpenAIPEnabled);
-      map.addControl(openAIPControl);
-      setOpenAIPControlRef.current = openAIPControl;
-
-      const settingsControl = new RadarSettingsControl({}, setIsSettingsOpen);
-      map.addControl(settingsControl);
-      setSettingsControlRef.current = settingsControl;
     }
 
     map.on("click", onMapClick);
@@ -176,22 +162,43 @@ export const useMapInitialization = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapContainerId, onMapClick]);
 
-  // Separate effect to handle radar control updates when Pro status changes
+  // Separate effect to handle radar/OSM/OpenAIP/Settings controls
+  // This ensures proper ordering: Radar -> OSM -> OpenAIP -> Settings
+  // and handles Pro status changes for radar control
   const radarControlInstanceRef = useRef<L.Control | null>(null);
+  const osmControlInstanceRef = useRef<L.Control | null>(null);
+  const openAIPControlInstanceRef = useRef<L.Control | null>(null);
+  const settingsControlInstanceRef = useRef<L.Control | null>(null);
 
   useEffect(() => {
     if (!mapInstance.current) return;
 
     const map = mapInstance.current;
 
-    // Remove existing radar control if any (always do cleanup)
+    // Remove existing controls if any (always do cleanup)
     if (radarControlInstanceRef.current) {
       map.removeControl(radarControlInstanceRef.current);
       radarControlInstanceRef.current = null;
       setRadarControlRef.current = null;
     }
+    if (osmControlInstanceRef.current) {
+      map.removeControl(osmControlInstanceRef.current);
+      osmControlInstanceRef.current = null;
+      if (setOSMControlRef) setOSMControlRef.current = null;
+    }
+    if (openAIPControlInstanceRef.current) {
+      map.removeControl(openAIPControlInstanceRef.current);
+      openAIPControlInstanceRef.current = null;
+      setOpenAIPControlRef.current = null;
+    }
+    if (settingsControlInstanceRef.current) {
+      map.removeControl(settingsControlInstanceRef.current);
+      settingsControlInstanceRef.current = null;
+      setSettingsControlRef.current = null;
+    }
 
-    // Add the appropriate radar control (on both mobile and desktop)
+    // Add controls in order: Radar -> OSM -> OpenAIP -> Settings
+    // 1. Radar control
     if (canUseRadarMode) {
       const radarControl = new RadarModeControl({}, setIsRadarMode);
       map.addControl(radarControl);
@@ -202,7 +209,27 @@ export const useMapInitialization = ({
       map.addControl(lockedRadarControl);
       radarControlInstanceRef.current = lockedRadarControl;
     }
-  }, [canUseRadarMode, setIsRadarMode, setRadarControlRef]);
+
+    // 2. OSM control
+    if (setIsOSMMode && setOSMControlRef) {
+      const osmControl = new OSMControl({}, setIsOSMMode);
+      map.addControl(osmControl);
+      osmControlInstanceRef.current = osmControl;
+      setOSMControlRef.current = osmControl;
+    }
+
+    // 3. OpenAIP control
+    const openAIPControl = new OpenAIPControl({}, setIsOpenAIPEnabled);
+    map.addControl(openAIPControl);
+    openAIPControlInstanceRef.current = openAIPControl;
+    setOpenAIPControlRef.current = openAIPControl;
+
+    // 4. Settings control (always last)
+    const settingsControl = new RadarSettingsControl({}, setIsSettingsOpen);
+    map.addControl(settingsControl);
+    settingsControlInstanceRef.current = settingsControl;
+    setSettingsControlRef.current = settingsControl;
+  }, [canUseRadarMode, setIsRadarMode, setRadarControlRef, setIsOSMMode, setOSMControlRef, setIsOpenAIPEnabled, setOpenAIPControlRef, setIsSettingsOpen, setSettingsControlRef]);
 
   return {
     mapInstance,
