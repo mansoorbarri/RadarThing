@@ -2,8 +2,6 @@
   <img src="public/logo-white.svg" alt="GeoFS Radar" width="200">
 </p>
 
-# GeoFS Radar
-
 A modern, feature-rich flight radar for the [GeoFS](https://www.geo-fs.com/) flight simulator. Track flights in real-time, view detailed flight information, and manage air traffic with professional-grade tools.
 
 This project is a complete reimagining of the original [GeoFS Radar](https://github.com/seabus0316/GeoFS-flightradar/) — rebuilt from the ground up with a focus on usability, accuracy, and a clean interface.
