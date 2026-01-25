@@ -243,17 +243,18 @@ export async function createAircraftImage(data: {
   }
 
   try {
-    // Check if an approved image already exists for this combination
-    const existingApproved = await convex.query(
-      api.aircraftImages.checkApprovedExists,
+    // Check eligibility in a single query (combines checkApprovedExists and checkPendingByUser)
+    const eligibility = await convex.query(
+      api.aircraftImages.checkUploadEligibility,
       {
         airlineIata: data.airlineIata,
         airlineIcao: data.airlineIcao,
         aircraftType: data.aircraftType,
+        uploadedBy: userId,
       }
     );
 
-    if (existingApproved) {
+    if (eligibility.approvedExists) {
       // Delete the uploaded image from UploadThing to prevent duplicates
       if (data.imageKey) {
         try {
@@ -269,18 +270,7 @@ export async function createAircraftImage(data: {
       };
     }
 
-    // Check if user already has a pending image for this combination
-    const existingPending = await convex.query(
-      api.aircraftImages.checkPendingByUser,
-      {
-        airlineIata: data.airlineIata,
-        airlineIcao: data.airlineIcao,
-        aircraftType: data.aircraftType,
-        uploadedBy: userId,
-      }
-    );
-
-    if (existingPending) {
+    if (eligibility.pendingByUserExists) {
       // Delete the uploaded image from UploadThing to prevent duplicates
       if (data.imageKey) {
         try {
@@ -532,7 +522,7 @@ export async function getUserInfoByIds(
   return result;
 }
 
-// Bulk approve images (ADMIN only)
+// Bulk approve images (ADMIN only) - uses batch mutation for efficiency
 export async function bulkApproveAircraftImages(
   ids: string[]
 ): Promise<{ success: boolean; approved: number; failed: number }> {
@@ -541,22 +531,75 @@ export async function bulkApproveAircraftImages(
     return { success: false, approved: 0, failed: ids.length };
   }
 
-  let approved = 0;
-  let failed = 0;
-
-  for (const id of ids) {
-    const result = await approveAircraftImage(id);
-    if (result.success) {
-      approved++;
-    } else {
-      failed++;
-    }
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return { success: false, approved: 0, failed: ids.length };
   }
 
-  return { success: failed === 0, approved, failed };
+  try {
+    // Get image details before approval (for notifications)
+    const images = await Promise.all(
+      ids.map(id => convex.query(api.aircraftImages.getById, { id: id as Id<"aircraftImages"> }))
+    );
+
+    // Single batch mutation for all approvals
+    const results = await convex.mutation(api.aircraftImages.bulkApprove, {
+      ids: ids as Id<"aircraftImages">[],
+      approvedBy: userId,
+    });
+
+    // Delete old images from UploadThing and send notifications
+    const deletePromises: Promise<void>[] = [];
+    const notifyPromises: Promise<void>[] = [];
+    const emailPromises: Promise<void>[] = [];
+
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      const image = images[i];
+
+      if (result?.success) {
+        // Delete old image from UploadThing if replaced
+        if (result.existingImageKey) {
+          deletePromises.push(
+            utapi.deleteFiles(result.existingImageKey).catch(e => {
+              console.error("Failed to delete old image from UploadThing:", e);
+            }) as Promise<void>
+          );
+        }
+
+        // Notify SSE server and send email
+        if (image) {
+          notifyPromises.push(
+            notifyImageUploaded(image.airlineIata, image.airlineIcao, image.aircraftType)
+          );
+          emailPromises.push(
+            sendImageNotificationEmail(image.uploadedBy, "approved", {
+              airlineIata: image.airlineIata,
+              airlineIcao: image.airlineIcao,
+              aircraftType: image.aircraftType,
+            })
+          );
+        }
+      }
+    }
+
+    // Execute all side effects in parallel
+    await Promise.all([...deletePromises, ...notifyPromises, ...emailPromises]);
+
+    const approved = results.filter(r => r?.success).length;
+    const failed = results.filter(r => !r?.success).length;
+
+    revalidatePath("/aircraft-images");
+    revalidatePath("/admin/aircraft-images");
+
+    return { success: failed === 0, approved, failed };
+  } catch (error) {
+    console.error("Error bulk approving aircraft images:", error);
+    return { success: false, approved: 0, failed: ids.length };
+  }
 }
 
-// Bulk reject images (ADMIN only)
+// Bulk reject images (ADMIN only) - uses batch mutation for efficiency
 export async function bulkRejectAircraftImages(
   ids: string[],
   reason: string
@@ -570,17 +613,52 @@ export async function bulkRejectAircraftImages(
     return { success: false, rejected: 0, failed: ids.length };
   }
 
-  let rejected = 0;
-  let failed = 0;
+  try {
+    // Single batch mutation to delete all images and get their details
+    const results = await convex.mutation(api.aircraftImages.bulkRemove, {
+      ids: ids as Id<"aircraftImages">[],
+    });
 
-  for (const id of ids) {
-    const result = await rejectAircraftImage(id, reason);
-    if (result.success) {
-      rejected++;
-    } else {
-      failed++;
+    // Delete from UploadThing and send rejection emails
+    const deletePromises: Promise<void>[] = [];
+    const emailPromises: Promise<void>[] = [];
+
+    for (const result of results) {
+      if (result.success) {
+        // Delete from UploadThing
+        if (result.imageKey) {
+          deletePromises.push(
+            utapi.deleteFiles(result.imageKey).catch(e => {
+              console.error("Failed to delete image from UploadThing:", e);
+            }) as Promise<void>
+          );
+        }
+
+        // Send rejection email
+        if (result.uploadedBy && result.airlineIata && result.airlineIcao && result.aircraftType) {
+          emailPromises.push(
+            sendImageNotificationEmail(result.uploadedBy, "rejected", {
+              airlineIata: result.airlineIata,
+              airlineIcao: result.airlineIcao,
+              aircraftType: result.aircraftType,
+            }, reason)
+          );
+        }
+      }
     }
-  }
 
-  return { success: failed === 0, rejected, failed };
+    // Execute all side effects in parallel
+    await Promise.all([...deletePromises, ...emailPromises]);
+
+    const rejected = results.filter(r => r.success).length;
+    const failed = results.filter(r => !r.success).length;
+
+    revalidatePath("/aircraft-images");
+    revalidatePath("/admin/aircraft-images");
+
+    return { success: failed === 0, rejected, failed };
+  } catch (error) {
+    console.error("Error bulk rejecting aircraft images:", error);
+    return { success: false, rejected: 0, failed: ids.length };
+  }
 }

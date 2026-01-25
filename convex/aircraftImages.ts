@@ -317,6 +317,150 @@ export const remove = mutation({
   },
 });
 
+// Bulk approve aircraft images (single mutation for multiple images)
+export const bulkApprove = mutation({
+  args: {
+    ids: v.array(v.id("aircraftImages")),
+    approvedBy: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const results: { id: string; success: boolean; existingImageKey?: string }[] = [];
+    const now = Date.now();
+
+    for (const id of args.ids) {
+      const image = await ctx.db.get(id);
+      if (!image) {
+        results.push({ id, success: false });
+        continue;
+      }
+
+      // Check for existing approved image (by IATA)
+      let existingApproved = await ctx.db
+        .query("aircraftImages")
+        .withIndex("by_iata_aircraft_approved", (q) =>
+          q
+            .eq("airlineIata", image.airlineIata)
+            .eq("aircraftType", image.aircraftType)
+            .eq("isApproved", true)
+        )
+        .first();
+
+      // If not found, check by ICAO
+      if (!existingApproved) {
+        existingApproved = await ctx.db
+          .query("aircraftImages")
+          .withIndex("by_icao_aircraft_approved", (q) =>
+            q
+              .eq("airlineIcao", image.airlineIcao)
+              .eq("aircraftType", image.aircraftType)
+              .eq("isApproved", true)
+          )
+          .first();
+      }
+
+      // Delete existing approved image if found (and not the same image)
+      let existingImageKey: string | undefined;
+      if (existingApproved && existingApproved._id !== id) {
+        existingImageKey = existingApproved.imageKey ?? undefined;
+        await ctx.db.delete(existingApproved._id);
+      }
+
+      // Approve the new image
+      await ctx.db.patch(id, {
+        isApproved: true,
+        approvedBy: args.approvedBy,
+        approvedAt: now,
+      });
+
+      results.push({ id, success: true, existingImageKey });
+    }
+
+    return results;
+  },
+});
+
+// Bulk delete aircraft images (single mutation for multiple images)
+export const bulkRemove = mutation({
+  args: {
+    ids: v.array(v.id("aircraftImages")),
+  },
+  handler: async (ctx, args) => {
+    const results: { id: string; success: boolean; imageKey?: string; uploadedBy?: string; airlineIata?: string; airlineIcao?: string; aircraftType?: string }[] = [];
+
+    for (const id of args.ids) {
+      const image = await ctx.db.get(id);
+      if (!image) {
+        results.push({ id, success: false });
+        continue;
+      }
+
+      await ctx.db.delete(id);
+      results.push({
+        id,
+        success: true,
+        imageKey: image.imageKey ?? undefined,
+        uploadedBy: image.uploadedBy,
+        airlineIata: image.airlineIata,
+        airlineIcao: image.airlineIcao,
+        aircraftType: image.aircraftType,
+      });
+    }
+
+    return results;
+  },
+});
+
+// Check upload eligibility in one query (combines checkApprovedExists and checkPendingByUser)
+export const checkUploadEligibility = query({
+  args: {
+    airlineIata: v.string(),
+    airlineIcao: v.string(),
+    aircraftType: v.string(),
+    uploadedBy: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const aircraftType = args.aircraftType.toUpperCase();
+    const iata = args.airlineIata.toUpperCase();
+    const icao = args.airlineIcao.toUpperCase();
+
+    // Check for approved images (by IATA)
+    let approvedExists = await ctx.db
+      .query("aircraftImages")
+      .withIndex("by_iata_aircraft_approved", (q) =>
+        q.eq("airlineIata", iata).eq("aircraftType", aircraftType).eq("isApproved", true)
+      )
+      .first();
+
+    // Check by ICAO if not found
+    if (!approvedExists) {
+      approvedExists = await ctx.db
+        .query("aircraftImages")
+        .withIndex("by_icao_aircraft_approved", (q) =>
+          q.eq("airlineIcao", icao).eq("aircraftType", aircraftType).eq("isApproved", true)
+        )
+        .first();
+    }
+
+    // Check for pending image by this user
+    const pendingByUser = await ctx.db
+      .query("aircraftImages")
+      .withIndex("by_uploadedBy", (q) => q.eq("uploadedBy", args.uploadedBy))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("aircraftType"), aircraftType),
+          q.eq(q.field("isApproved"), false),
+          q.or(q.eq(q.field("airlineIata"), iata), q.eq(q.field("airlineIcao"), icao))
+        )
+      )
+      .first();
+
+    return {
+      approvedExists: approvedExists !== null,
+      pendingByUserExists: pendingByUser !== null,
+    };
+  },
+});
+
 // Find existing approved image for airline + aircraft (to delete when approving new one)
 export const findExistingApproved = query({
   args: {
