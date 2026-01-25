@@ -74,15 +74,15 @@ export const useMapInitialization = ({
   useEffect(() => {
     if (mapInstance.current) return;
 
-    // Extended bounds for easier mobile navigation
-    const worldBounds = L.latLngBounds(L.latLng(-85, -540), L.latLng(85, 540));
-
     const map = L.map(mapContainerId, {
       zoomAnimation: true,
-      minZoom: isMobile ? 2 : 3,
+      minZoom: isMobile ? 0 : 2,
       maxZoom: 18,
-      maxBounds: worldBounds,
-      maxBoundsViscosity: isMobile ? 0.5 : 1.0, // Allow some "bounce" on mobile for smoother panning
+      // No maxBounds on mobile for unlimited panning, desktop has soft bounds
+      ...(isMobile ? {} : {
+        maxBounds: L.latLngBounds(L.latLng(-85, -540), L.latLng(85, 540)),
+        maxBoundsViscosity: 1.0,
+      }),
       attributionControl: false,
       zoomControl: !isMobile,
     }).setView([20, 0], 3);
@@ -100,8 +100,7 @@ export const useMapInitialization = ({
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       {
         maxZoom: 19,
-        minZoom: 3,
-        bounds: worldBounds,
+        minZoom: 0,
         className: "osm-tiles",
       },
     );
@@ -110,8 +109,7 @@ export const useMapInitialization = ({
       "https://mt0.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
       {
         maxZoom: 18,
-        minZoom: 3,
-        bounds: worldBounds,
+        minZoom: 0,
       },
     );
 
@@ -120,17 +118,14 @@ export const useMapInitialization = ({
       {
         subdomains: "abcd",
         maxZoom: 18,
-        minZoom: 3,
-        bounds: worldBounds,
+        minZoom: 0,
       },
     );
 
     const openAIPUrl = `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${process.env.NEXT_PUBLIC_OPENAIP_API_KEY}`;
     openAIPLayer.current = L.tileLayer(openAIPUrl, {
       maxZoom: 19,
-      minZoom: 3,
-      noWrap: true,
-      bounds: worldBounds,
+      minZoom: 0,
     });
 
     satelliteHybridLayer.current.addTo(map);

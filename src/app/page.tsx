@@ -32,6 +32,7 @@ import { FIDSPanel } from "~/components/atc/FIDSPanel";
 import { TaxiChartViewer } from "~/components/airports/TaxiChartsViewer";
 import { AtcPlayer } from "~/components/atc/AtcPlayer";
 import { ProBadge } from "~/components/ui/pro-badge";
+import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
 import { UpgradeIcon, FlightsIcon, FilterIcon, DiscordIcon, DashboardIcon, InstallIcon } from "~/utils/dockIcons";
 
 const DynamicMapComponent = dynamic(() => import("~/components/map"), {
@@ -646,40 +647,69 @@ export default function ATCPage() {
       )}
 
       {selectedAircrafts.length > 0 && (
-        <aside className={`fixed z-[10014] border-white/10 bg-black/90 backdrop-blur-xl ${
-          isMobile
-            ? 'inset-x-0 bottom-0 h-[50vh] rounded-t-3xl border-t'
-            : 'inset-y-0 right-0 w-[400px] border-l'
-        }`}>
-          {selectedAircrafts.length === 1 ? (
-            <Sidebar
-              aircraft={selectedAircrafts[0]!}
-              onWaypointClick={undefined}
-              onHistoryClick={(path) => {
-                setHistoryPath(path);
-                setIsViewingHistory(true);
-              }}
-              isMobile={isMobile}
-              onClose={() => setSelectedAircrafts([])}
-            />
-          ) : (
-            <MultiAircraftSidebar
-              aircrafts={selectedAircrafts}
-              onRemoveAircraft={(aircraft) => {
-                const aircraftId = aircraft.callsign || aircraft.id;
-                const newSelection = selectedAircrafts.filter(
-                  (ac) => (ac.callsign || ac.id) !== aircraftId
-                );
-                setSelectedAircrafts(newSelection);
-                if (newSelection.length > 0) {
-                  drawMultipleFlightPlansOnMapRef.current?.(newSelection, false);
-                }
-              }}
-              onClose={() => setSelectedAircrafts([])}
-              isMobile={isMobile}
-            />
-          )}
-        </aside>
+        isMobile ? (
+          <MobileSwipeSheet onClose={() => setSelectedAircrafts([])}>
+            {selectedAircrafts.length === 1 ? (
+              <Sidebar
+                aircraft={selectedAircrafts[0]!}
+                onWaypointClick={undefined}
+                onHistoryClick={(path) => {
+                  setHistoryPath(path);
+                  setIsViewingHistory(true);
+                }}
+                isMobile={isMobile}
+                onClose={() => setSelectedAircrafts([])}
+              />
+            ) : (
+              <MultiAircraftSidebar
+                aircrafts={selectedAircrafts}
+                onRemoveAircraft={(aircraft) => {
+                  const aircraftId = aircraft.callsign || aircraft.id;
+                  const newSelection = selectedAircrafts.filter(
+                    (ac) => (ac.callsign || ac.id) !== aircraftId
+                  );
+                  setSelectedAircrafts(newSelection);
+                  if (newSelection.length > 0) {
+                    drawMultipleFlightPlansOnMapRef.current?.(newSelection, false);
+                  }
+                }}
+                onClose={() => setSelectedAircrafts([])}
+                isMobile={isMobile}
+              />
+            )}
+          </MobileSwipeSheet>
+        ) : (
+          <aside className="fixed inset-y-0 right-0 z-[10014] w-[400px] border-l border-white/10 bg-black/90 backdrop-blur-xl">
+            {selectedAircrafts.length === 1 ? (
+              <Sidebar
+                aircraft={selectedAircrafts[0]!}
+                onWaypointClick={undefined}
+                onHistoryClick={(path) => {
+                  setHistoryPath(path);
+                  setIsViewingHistory(true);
+                }}
+                isMobile={isMobile}
+                onClose={() => setSelectedAircrafts([])}
+              />
+            ) : (
+              <MultiAircraftSidebar
+                aircrafts={selectedAircrafts}
+                onRemoveAircraft={(aircraft) => {
+                  const aircraftId = aircraft.callsign || aircraft.id;
+                  const newSelection = selectedAircrafts.filter(
+                    (ac) => (ac.callsign || ac.id) !== aircraftId
+                  );
+                  setSelectedAircrafts(newSelection);
+                  if (newSelection.length > 0) {
+                    drawMultipleFlightPlansOnMapRef.current?.(newSelection, false);
+                  }
+                }}
+                onClose={() => setSelectedAircrafts([])}
+                isMobile={isMobile}
+              />
+            )}
+          </aside>
+        )
       )}
 
       {showTaxiChart && (

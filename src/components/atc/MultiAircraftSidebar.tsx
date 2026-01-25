@@ -201,13 +201,6 @@ export const MultiAircraftSidebar = ({
 }) => {
   return (
     <div className="flex h-full flex-col text-white bg-[#050f14]/90">
-      {/* Mobile drag handle */}
-      {isMobile && (
-        <div className="shrink-0 flex items-center justify-center px-4 pt-3 pb-1">
-          <div className="h-1 w-12 rounded-full bg-white/30" />
-        </div>
-      )}
-
       {/* Header */}
       <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10">
         <div className="flex items-center gap-2">
