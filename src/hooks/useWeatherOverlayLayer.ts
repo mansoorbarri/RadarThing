@@ -68,11 +68,42 @@ export const useWeatherOverlayLayer = ({
 
     const bindPopup = (feature: any, layer: L.Layer) => {
       const p = feature.properties || {};
+
+      // Format altitude - API uses altitudeLow1/altitudeHi1 or altitudeLow/altitudeHi
+      const altLow = p.altitudeLow1 ?? p.altitudeLow ?? p.base;
+      const altHi = p.altitudeHi1 ?? p.altitudeHi ?? p.top;
+      let altStr = "N/A";
+      if (altLow != null && altHi != null) {
+        altStr = `FL${Math.round(altLow / 100)} - FL${Math.round(altHi / 100)}`;
+      } else if (altLow != null) {
+        altStr = `FL${Math.round(altLow / 100)}+`;
+      } else if (altHi != null) {
+        altStr = `Up to FL${Math.round(altHi / 100)}`;
+      }
+
+      // Format validity times - API uses validTimeFrom/validTimeTo
+      const validFrom = p.validTimeFrom ?? p.issueTime;
+      const validTo = p.validTimeTo ?? p.expireTime;
+      const formatTime = (iso: string | null | undefined) => {
+        if (!iso) return "?";
+        try {
+          return new Date(iso).toLocaleString("en-US", {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZoneName: "short",
+          });
+        } catch {
+          return iso;
+        }
+      };
+
       layer.bindPopup(`
-        <strong>${p.hazard || "Advisory"}</strong><br/>
-        ${p.raw_text || ""}<br/><br/>
-        <strong>Alt:</strong> ${p.altitude || "N/A"}<br/>
-        <strong>Valid:</strong> ${p.valid_from || "?"} → ${p.valid_to || "?"}
+        <strong>${p.hazard || p.airSigmetType || "Advisory"}</strong><br/>
+        ${p.rawAirSigmet || p.rawText || ""}<br/><br/>
+        <strong>Alt:</strong> ${altStr}<br/>
+        <strong>Valid:</strong> ${formatTime(validFrom)} → ${formatTime(validTo)}
       `);
     };
 
