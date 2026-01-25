@@ -14,9 +14,9 @@ import {
   Route,
   Calendar,
 } from "lucide-react";
-import Loading from "~/components/loading";
 import Image from "next/image";
 import { useProStatus } from "~/hooks/useProStatus";
+import { Suspense } from "react";
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -43,6 +43,14 @@ function formatDuration(start: number, end?: number): string {
 }
 
 export default function PilotPage() {
+  return (
+    <Suspense fallback={<PilotPageSkeleton callsign={null} />}>
+      <PilotPageContent />
+    </Suspense>
+  );
+}
+
+function PilotPageContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -55,7 +63,7 @@ export default function PilotPage() {
   const { isProUser, isLoading: proLoading } = useProStatus();
 
   if (stats === undefined || proLoading) {
-    return <Loading />;
+    return <PilotPageSkeleton callsign={callsignFromUrl} />;
   }
 
   if (stats === null) {
@@ -383,6 +391,90 @@ function EmptyState() {
       <p className="text-slate-400">
         This pilot hasn&apos;t recorded any flights yet.
       </p>
+    </div>
+  );
+}
+
+function PilotPageSkeleton({ callsign }: { callsign: string | null }) {
+  return (
+    <div className="min-h-screen bg-black text-white">
+      {/* Header */}
+      <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+          <div className="h-[30px] w-[100px] animate-pulse rounded bg-white/10" />
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-pulse rounded bg-white/10" />
+            <div className="h-4 w-20 animate-pulse rounded bg-white/10" />
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-6 py-12">
+        {/* Profile Header */}
+        <div className="mb-10">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-cyan-500/50 bg-cyan-500/10">
+              <Plane className="h-6 w-6 text-cyan-400" />
+            </div>
+            <div>
+              {callsign ? (
+                <h1 className="text-3xl font-bold text-white">{callsign}</h1>
+              ) : (
+                <div className="h-9 w-48 animate-pulse rounded bg-white/10" />
+              )}
+              <div className="mt-1 h-4 w-24 animate-pulse rounded bg-white/10" />
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Grid Skeleton */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-2xl border border-white/10 bg-black/40 p-5 backdrop-blur-xl">
+              <div className="mb-3 h-9 w-9 animate-pulse rounded-lg bg-white/10" />
+              <div className="mb-2 h-3 w-20 animate-pulse rounded bg-white/10" />
+              <div className="h-8 w-24 animate-pulse rounded bg-white/10" />
+            </div>
+          ))}
+        </div>
+
+        {/* Three Column Grid Skeleton */}
+        <div className="grid gap-6 lg:grid-cols-3 mb-8">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
+              <div className="mb-4 h-4 w-28 animate-pulse rounded bg-white/10" />
+              <div className="space-y-3">
+                {[...Array(5)].map((_, j) => (
+                  <div key={j} className="flex items-center justify-between">
+                    <div className="h-4 w-24 animate-pulse rounded bg-white/10" />
+                    <div className="h-4 w-16 animate-pulse rounded bg-white/10" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Recent Flights Skeleton */}
+        <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
+          <div className="flex items-center justify-between mb-6">
+            <div className="h-4 w-32 animate-pulse rounded bg-white/10" />
+            <div className="h-3 w-24 animate-pulse rounded bg-white/10" />
+          </div>
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4">
+                <div className="h-10 w-10 animate-pulse rounded-lg bg-white/10" />
+                <div className="flex-1">
+                  <div className="mb-2 h-4 w-40 animate-pulse rounded bg-white/10" />
+                  <div className="h-3 w-32 animate-pulse rounded bg-white/10" />
+                </div>
+                <div className="h-3 w-16 animate-pulse rounded bg-white/10" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

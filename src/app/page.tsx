@@ -30,13 +30,12 @@ import { ControlDock } from "~/components/atc/controlDock";
 import { FIDSPanel } from "~/components/atc/FIDSPanel";
 import { TaxiChartViewer } from "~/components/airports/TaxiChartsViewer";
 import { AtcPlayer } from "~/components/atc/AtcPlayer";
-import Loading from "~/components/loading";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { UpgradeIcon, FlightsIcon, FilterIcon, DiscordIcon, DashboardIcon, InstallIcon } from "~/utils/dockIcons";
 
 const DynamicMapComponent = dynamic(() => import("~/components/map"), {
   ssr: false,
-  loading: () => <Loading />,
+  loading: () => <MapSkeleton />,
 });
 
 type RightPanel = "fids" | "filter" | null;
@@ -417,7 +416,7 @@ export default function ATCPage() {
 
       <main className="absolute inset-0">
         {isLoading ? (
-          <Loading />
+          <MapSkeleton />
         ) : (
           <DynamicMapComponent
             aircrafts={filteredAircrafts}
@@ -607,6 +606,47 @@ export default function ATCPage() {
           onClose={() => setShowTaxiChart(false)}
         />
       )}
+    </div>
+  );
+}
+
+function MapSkeleton() {
+  // Scattered aircraft positions (percentage-based)
+  const dots = [
+    { x: 15, y: 25 }, { x: 22, y: 35 }, { x: 18, y: 48 },
+    { x: 30, y: 20 }, { x: 35, y: 42 }, { x: 28, y: 58 },
+    { x: 45, y: 28 }, { x: 52, y: 38 }, { x: 48, y: 52 },
+    { x: 58, y: 22 }, { x: 65, y: 45 }, { x: 62, y: 60 },
+    { x: 72, y: 30 }, { x: 78, y: 48 }, { x: 75, y: 65 },
+    { x: 85, y: 35 }, { x: 88, y: 55 }, { x: 82, y: 42 },
+    { x: 40, y: 68 }, { x: 55, y: 72 }, { x: 25, y: 70 },
+  ];
+
+  return (
+    <div className="relative h-full w-full bg-[#0a1219] overflow-hidden">
+      {/* World map background */}
+      <img
+        src="/world-outline.svg"
+        alt=""
+        className="absolute w-full h-full object-cover opacity-[0.06]"
+        style={{
+          filter: 'invert(65%) sepia(70%) saturate(400%) hue-rotate(140deg) brightness(95%)'
+        }}
+      />
+
+      {/* Scattered glowing dots */}
+      {dots.map((dot, i) => (
+        <div
+          key={i}
+          className="absolute h-1 w-1 rounded-full bg-cyan-400 animate-pulse"
+          style={{
+            left: `${dot.x}%`,
+            top: `${dot.y}%`,
+            opacity: 0.4 + (i % 3) * 0.2,
+            animationDelay: `${(i * 150) % 2000}ms`,
+          }}
+        />
+      ))}
     </div>
   );
 }
