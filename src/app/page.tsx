@@ -625,6 +625,7 @@ function MapSkeleton() {
   return (
     <div className="relative h-full w-full bg-[#0a1219] overflow-hidden">
       {/* World map background */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/world-outline.svg"
         alt=""

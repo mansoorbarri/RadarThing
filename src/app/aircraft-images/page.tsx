@@ -89,6 +89,7 @@ export default function AircraftImagesPage() {
       }
     });
     return Array.from(airlinesMap.values()).sort((a, b) => a.iata.localeCompare(b.iata));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [images, searchQuery, aircraftFilter]);
 
   // Get unique aircraft types based on search and airline filter
@@ -103,6 +104,7 @@ export default function AircraftImagesPage() {
       types.add(img.aircraftType);
     });
     return Array.from(types).sort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [images, searchQuery, airlineFilter]);
 
   // Clear filters if selected value is no longer available

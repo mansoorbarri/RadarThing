@@ -26,7 +26,7 @@ export const useProStatus = () => {
       // User loaded but no googleId
       setIsAdminUser(false);
     }
-  }, [dbUser?.googleId]);
+  }, [dbUser]);
 
   const isLoading = !isLoaded || (clerkId && dbUser === undefined);
   const isProUser = dbUser?.role === "PRO";

@@ -45,6 +45,8 @@ export async function getProAndAdminStatus(): Promise<{ isPro: boolean; isAdmin:
 // Lightweight admin check that takes a googleId - avoids duplicate DB query
 // when the client already has the user data from useQuery
 export async function checkIsAdminByGoogleId(googleId: string | null | undefined): Promise<boolean> {
+  // Server actions must be async, so we use a minimal async operation
+  await Promise.resolve();
   if (!googleId || !env.ADMIN_GOOGLE_ID) return false;
   return googleId === env.ADMIN_GOOGLE_ID;
 }
