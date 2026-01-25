@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Loading from "~/components/loading";
 import Image from "next/image";
+import { useProStatus } from "~/hooks/useProStatus";
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -47,8 +48,9 @@ export default function PilotPage() {
   const userId = params.id as Id<"users">;
 
   const stats = useQuery(api.flights.getStatsById, { userId });
+  const { isProUser, isLoading: proLoading } = useProStatus();
 
-  if (stats === undefined) {
+  if (stats === undefined || proLoading) {
     return <Loading />;
   }
 
@@ -78,7 +80,7 @@ export default function PilotPage() {
     );
   }
 
-  const isPro = stats.userRole === "PRO";
+  const isPro = isProUser;
 
   return (
     <div className="min-h-screen bg-black text-white">
