@@ -157,7 +157,7 @@ export const getAircraftDivIcon = (
     html: `
       <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px; pointer-events: auto; cursor: pointer;">
         <img src="${iconUrl}" style="${planeStyle} pointer-events: none;" />
-        <div style="${tagStyle} pointer-events: auto;">
+        <div style="${tagStyle} pointer-events: none;">
           ${detailContent}
         </div>
       </div>
@@ -264,7 +264,7 @@ export const getRadarAircraftDivIcon = (
       <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px; pointer-events: auto; cursor: pointer;">
         <div style="${dotStyle} pointer-events: none;"></div>
         <div style="${headingLineStyle} pointer-events: none;"></div>
-        <div style="${labelStyle} pointer-events: auto;">
+        <div style="${labelStyle} pointer-events: none;">
           ${detailContent}
         </div>
       </div>

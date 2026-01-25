@@ -253,20 +253,15 @@ export const useMapLayersAndMarkers = ({
       }
     });
 
-    if (currentSelectedAircraftRef.current) {
-      const selectedAircraft = aircrafts.find(
-        (ac) => (ac.callsign || ac.id) === currentSelectedAircraftRef.current,
-      );
-      if (selectedAircraft) {
-        drawFlightPlan(selectedAircraft, false);
-      }
-    }
+    // Note: Flight path redrawing for selected aircraft is handled by the parent
+    // component (page.tsx) which properly redraws all selected aircraft paths
+    // when aircraft data updates. Redrawing here would cause flickering in
+    // multi-select mode since it would only redraw one aircraft's path.
   }, [
     aircrafts,
     isRadarMode,
     selectedAircraftIds,
     aircraftMarkersLayer,
-    currentSelectedAircraftRef,
     drawFlightPlan,
     onAircraftSelect,
     showTags,

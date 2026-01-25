@@ -140,7 +140,7 @@ export const useFlightPlanDrawing = ({
 
               if (coordinates.length >= 2) {
                 const plannedPolyline = L.polyline(coordinates, {
-                  color: isRadarMode ? "#00ffff" : color,
+                  color: color,
                   weight: isRadarMode ? 2 : 3,
                   opacity: isRadarMode ? 0.7 : 0.6,
                   dashArray: isRadarMode ? "8, 8" : "10, 5",
