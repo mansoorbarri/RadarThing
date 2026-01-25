@@ -274,23 +274,23 @@ export const getStatsById = query({
       .slice(0, 5)
       .map(([code, count]) => ({ code, count }));
 
-    // Recent flights (last 10)
-    const recentFlights = flights
-      .sort((a, b) => b.startTime - a.startTime)
-      .slice(0, 10)
-      .map((f) => ({
-        id: f._id,
-        callsign: f.callsign,
-        aircraftType: f.aircraftType,
-        depICAO: f.depICAO,
-        arrICAO: f.arrICAO,
-        startTime: f.startTime,
-        endTime: f.endTime,
-        routeData: f.routeData,
-      }));
+    // Sort flights by start time (most recent first)
+    const sortedFlights = [...flights].sort((a, b) => b.startTime - a.startTime);
 
     // Get pilot's callsign from most recent flight
-    const pilotCallsign = recentFlights.length > 0 ? recentFlights[0].callsign : null;
+    const pilotCallsign = sortedFlights.length > 0 ? sortedFlights[0].callsign : null;
+
+    // Recent flights (last 10)
+    const recentFlights = sortedFlights.slice(0, 10).map((f) => ({
+      id: f._id,
+      callsign: f.callsign,
+      aircraftType: f.aircraftType,
+      depICAO: f.depICAO,
+      arrICAO: f.arrICAO,
+      startTime: f.startTime,
+      endTime: f.endTime,
+      routeData: f.routeData,
+    }));
 
     return {
       userRole: user.role,
