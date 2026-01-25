@@ -278,7 +278,8 @@ export const getStatsById = query({
     const sortedFlights = [...flights].sort((a, b) => b.startTime - a.startTime);
 
     // Get pilot's callsign from most recent flight
-    const pilotCallsign = sortedFlights.length > 0 ? sortedFlights[0].callsign : null;
+    const mostRecentFlight = sortedFlights[0];
+    const pilotCallsign = mostRecentFlight?.callsign ?? null;
 
     // Recent flights (last 10)
     const recentFlights = sortedFlights.slice(0, 10).map((f) => ({

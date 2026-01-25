@@ -267,7 +267,7 @@ export const Sidebar = ({
               </p>
               {pilotUser && aircraft.callsign && (
                 <Link
-                  href={`/pilot/${pilotUser._id}`}
+                  href={`/pilot/${pilotUser._id}?callsign=${encodeURIComponent(aircraft.callsign)}`}
                   className="mt-1 inline-flex items-center gap-1 font-mono text-[10px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
                 >
                   <span className="text-white/40">Pilot:</span> {aircraft.callsign}

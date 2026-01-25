@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
@@ -45,7 +45,11 @@ function formatDuration(start: number, end?: number): string {
 export default function PilotPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const userId = params.id as Id<"users">;
+
+  // Get callsign from URL query param (from SSE), fall back to DB
+  const callsignFromUrl = searchParams.get("callsign");
 
   const stats = useQuery(api.flights.getStatsById, { userId });
   const { isProUser, isLoading: proLoading } = useProStatus();
@@ -95,7 +99,7 @@ export default function PilotPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">
-                {stats.pilotCallsign || "Unknown Pilot"}
+                {callsignFromUrl || stats.pilotCallsign || "Unknown Pilot"}
               </h1>
               <p className="text-slate-400 font-mono text-sm">
                 {stats.userRole === "PRO" ? (
