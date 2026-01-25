@@ -76,7 +76,7 @@ export const useMapInitialization = ({
 
     const map = L.map(mapContainerId, {
       zoomAnimation: true,
-      minZoom: isMobile ? 0 : 2,
+      minZoom: isMobile ? 0 : 3,
       maxZoom: 18,
       // No maxBounds on mobile for unlimited panning, desktop has soft bounds
       ...(isMobile ? {} : {
