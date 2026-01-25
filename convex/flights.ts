@@ -289,8 +289,12 @@ export const getStatsById = query({
         routeData: f.routeData,
       }));
 
+    // Get pilot's callsign from most recent flight
+    const pilotCallsign = recentFlights.length > 0 ? recentFlights[0].callsign : null;
+
     return {
       userRole: user.role,
+      pilotCallsign,
       totalFlights,
       totalFlightTimeMs: totalFlightTime,
       totalDistanceNm: Math.round(totalDistance),

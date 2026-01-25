@@ -94,9 +94,11 @@ export default function PilotPage() {
               <Plane className="h-6 w-6 text-cyan-400" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">Pilot Stats</h1>
+              <h1 className="text-3xl font-bold text-white">
+                {stats.pilotCallsign || "Unknown Pilot"}
+              </h1>
               <p className="text-slate-400 font-mono text-sm">
-                {isPro ? (
+                {stats.userRole === "PRO" ? (
                   <span className="text-emerald-400">PRO Member</span>
                 ) : (
                   <span className="text-slate-500">Free Tier</span>
