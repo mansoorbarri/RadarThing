@@ -117,7 +117,7 @@ export const getAircraftDivIcon = (
     top: ${(totalHeight - tagHeight) / 2}px;
     left: ${planeSize + tagOffsetFromPlane}px;
     width: ${tagWidth}px;
-    pointer-events: none;
+    cursor: pointer;
     z-index: 1000;
     ${!showTags || (selectedAircraftId && !isCurrentAircraftSelected) ? "display: none;" : ""}
   `;
@@ -230,7 +230,7 @@ export const getRadarAircraftDivIcon = (
     top: ${(totalHeight - labelHeight) / 2}px;
     left: ${dotSize + labelOffsetFromDot}px;
     width: ${labelWidth}px;
-    pointer-events: none;
+    cursor: pointer;
     z-index: 1000;
     ${!showTags || (selectedAircraftId && !isCurrentAircraftSelected) ? "display: none;" : ""}
   `;
