@@ -226,6 +226,8 @@ export default function ATCPage() {
               alt="RadarThing"
               width={100}
               height={30}
+              className="cursor-pointer"
+              onClick={() => router.push("/")}
             />
           )}
 
