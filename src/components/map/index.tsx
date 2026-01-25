@@ -40,10 +40,14 @@ export interface Airport {
 interface MapComponentProps {
   aircrafts: PositionUpdate[];
   airports: Airport[];
-  onAircraftSelect: (aircraft: PositionUpdate | null) => void;
+  onAircraftSelect: (aircraft: PositionUpdate | null, ctrlKey?: boolean) => void;
+  selectedAircraftIds?: string[];
   selectedAirport?: Airport;
   setDrawFlightPlanOnMap: (
     func: (aircraft: PositionUpdate, shouldZoom?: boolean) => void,
+  ) => void;
+  setDrawMultipleFlightPlansOnMap?: (
+    func: (aircrafts: PositionUpdate[], shouldZoom?: boolean) => void,
   ) => void;
   onMapReady?: () => void;
   historyPath?: [number, number][] | null;
@@ -53,8 +57,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
   aircrafts,
   airports,
   onAircraftSelect,
+  selectedAircraftIds = [],
   selectedAirport,
   setDrawFlightPlanOnMap,
+  setDrawMultipleFlightPlansOnMap,
   onMapReady,
   historyPath,
 }) => {
@@ -75,9 +81,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [showTags, setShowTags] = useState(true);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [selectedAircraftId, setSelectedAircraftId] = useState<string | null>(
-    null,
-  );
+  // Local selection state for internal use (cleared when clicking map background)
+  const [localSelectedIds, setLocalSelectedIds] = useState<string[]>([]);
 
   const [icaoInput, setIcaoInput] = useState("");
   const [showMetar, setShowMetar] = useState(true);
@@ -153,7 +158,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       clearHistoryPolylineRef.current?.();
 
       currentSelectedAircraftRef.current = null;
-      setSelectedAircraftId(null);
+      setLocalSelectedIds([]);
 
       onAircraftSelectRef.current(null);
       setIsSettingsOpen(false);
@@ -207,13 +212,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
     isMobile,
   });
 
-  const { drawFlightPlan, currentSelectedAircraftRef, clearHistoryPolyline } = useFlightPlanDrawing({
+  const { drawFlightPlan, drawMultipleFlightPlans, currentSelectedAircraftRef, clearHistoryPolyline } = useFlightPlanDrawing({
     mapInstance: mapRefs.mapInstance,
     flightPlanLayerGroup: mapRefs.flightPlanLayerGroup,
     historyLayerGroup: mapRefs.historyLayerGroup,
     isRadarMode,
-    onAircraftSelect: onAircraftSelectRef.current,
-    setSelectedAircraftId,
   });
 
   // Update the ref so handleMapClick can clear the polyline
@@ -232,10 +235,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
     isOSMMode,
     isRadarMode,
     isOpenAIPEnabled,
-    selectedAircraftId,
+    selectedAircraftIds,
     currentSelectedAircraftRef,
     drawFlightPlan,
-    onAircraftSelect: onAircraftSelectRef.current,
+    onAircraftSelect,
     showTags,
     mapReady: mapRefs.mapReady,
   });
@@ -282,6 +285,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
   useEffect(() => {
     setDrawFlightPlanOnMap(drawFlightPlan);
   }, [drawFlightPlan, setDrawFlightPlanOnMap]);
+
+  useEffect(() => {
+    if (setDrawMultipleFlightPlansOnMap) {
+      setDrawMultipleFlightPlansOnMap(drawMultipleFlightPlans);
+    }
+  }, [drawMultipleFlightPlans, setDrawMultipleFlightPlansOnMap]);
 
   useEffect(() => {
     if (mapRefs.mapInstance.current && onMapReady) {

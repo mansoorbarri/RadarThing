@@ -1,5 +1,5 @@
 // components/map/useMapLayersAndMarkers.ts
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import L from "leaflet";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type Airport } from "~/components/map"; // Adjusted path
@@ -67,10 +67,10 @@ interface UseMapLayersAndMarkersProps {
   isOSMMode: boolean;
   isRadarMode: boolean;
   isOpenAIPEnabled: boolean;
-  selectedAircraftId: string | null;
+  selectedAircraftIds: string[];
   currentSelectedAircraftRef: React.MutableRefObject<string | null>;
   drawFlightPlan: (aircraft: PositionUpdate, shouldZoom?: boolean) => void;
-  onAircraftSelect: (aircraft: PositionUpdate | null) => void;
+  onAircraftSelect: (aircraft: PositionUpdate | null, ctrlKey?: boolean) => void;
   showTags: boolean;
   mapReady: boolean;
 }
@@ -88,7 +88,7 @@ export const useMapLayersAndMarkers = ({
   isOSMMode,
   isRadarMode,
   isOpenAIPEnabled,
-  selectedAircraftId,
+  selectedAircraftIds,
   currentSelectedAircraftRef,
   drawFlightPlan,
   onAircraftSelect,
@@ -97,6 +97,23 @@ export const useMapLayersAndMarkers = ({
 }: UseMapLayersAndMarkersProps) => {
   // Track existing markers by aircraft ID for smooth updates
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
+
+  // Use refs for callbacks to avoid stale closures in event handlers
+  const onAircraftSelectRef = useRef(onAircraftSelect);
+  const drawFlightPlanRef = useRef(drawFlightPlan);
+  const aircraftsRef = useRef(aircrafts);
+
+  useEffect(() => {
+    onAircraftSelectRef.current = onAircraftSelect;
+  }, [onAircraftSelect]);
+
+  useEffect(() => {
+    drawFlightPlanRef.current = drawFlightPlan;
+  }, [drawFlightPlan]);
+
+  useEffect(() => {
+    aircraftsRef.current = aircrafts;
+  }, [aircrafts]);
 
   // Effect for managing base layers (OSM/Satellite/Radar)
   useEffect(() => {
@@ -177,12 +194,19 @@ export const useMapLayersAndMarkers = ({
       }
     });
 
+    // Convert selectedAircraftIds to a Set for O(1) lookup
+    const selectedIdsSet = new Set(selectedAircraftIds);
+
     // Update or create markers for each aircraft
     aircrafts.forEach((aircraft) => {
       const id = aircraft.callsign || aircraft.id;
+      // Pass the first selected ID for backwards compatibility with icon rendering
+      // The icon will be highlighted if this aircraft's ID is in the set
+      const isSelected = selectedIdsSet.has(id);
+      const selectedIdForIcon = isSelected ? id : null;
       const icon = isRadarMode
-        ? getRadarAircraftDivIcon(aircraft, selectedAircraftId, showTags)
-        : getAircraftDivIcon(aircraft, selectedAircraftId, showTags);
+        ? getRadarAircraftDivIcon(aircraft, selectedIdForIcon, showTags)
+        : getAircraftDivIcon(aircraft, selectedIdForIcon, showTags);
 
       const existingMarker = existingMarkers.get(id);
 
@@ -210,10 +234,19 @@ export const useMapLayersAndMarkers = ({
           zIndexOffset: 1000,
         }).addTo(aircraftMarkersLayer.current!);
 
+        // Store the aircraft ID for lookup in click handler
+        const aircraftId = id;
         marker.on("click", (e) => {
           L.DomEvent.stopPropagation(e);
-          drawFlightPlan(aircraft, true);
-          onAircraftSelect(aircraft);
+          const ctrlKey = e.originalEvent?.ctrlKey || e.originalEvent?.metaKey || false;
+          // Get the latest aircraft data from the ref
+          const currentAircraft = aircraftsRef.current.find(
+            (ac) => (ac.callsign || ac.id) === aircraftId
+          );
+          if (currentAircraft) {
+            drawFlightPlanRef.current(currentAircraft, true);
+            onAircraftSelectRef.current(currentAircraft, ctrlKey);
+          }
         });
 
         existingMarkers.set(id, marker);
@@ -231,7 +264,7 @@ export const useMapLayersAndMarkers = ({
   }, [
     aircrafts,
     isRadarMode,
-    selectedAircraftId,
+    selectedAircraftIds,
     aircraftMarkersLayer,
     currentSelectedAircraftRef,
     drawFlightPlan,

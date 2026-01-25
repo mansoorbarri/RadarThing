@@ -155,9 +155,9 @@ export const getAircraftDivIcon = (
 
   return L.divIcon({
     html: `
-      <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px;">
-        <img src="${iconUrl}" style="${planeStyle}" />
-        <div style="${tagStyle}">
+      <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px; pointer-events: auto; cursor: pointer;">
+        <img src="${iconUrl}" style="${planeStyle} pointer-events: none;" />
+        <div style="${tagStyle} pointer-events: auto;">
           ${detailContent}
         </div>
       </div>
@@ -261,10 +261,10 @@ export const getRadarAircraftDivIcon = (
 
   return L.divIcon({
     html: `
-      <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px;">
-        <div style="${dotStyle}"></div>
-        <div style="${headingLineStyle}"></div>
-        <div style="${labelStyle}">
+      <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px; pointer-events: auto; cursor: pointer;">
+        <div style="${dotStyle} pointer-events: none;"></div>
+        <div style="${headingLineStyle} pointer-events: none;"></div>
+        <div style="${labelStyle} pointer-events: auto;">
           ${detailContent}
         </div>
       </div>

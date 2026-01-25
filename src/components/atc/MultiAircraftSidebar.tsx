@@ -1,0 +1,247 @@
+"use client";
+
+import React, { useMemo } from "react";
+import Image from "next/image";
+import { type PositionUpdate } from "~/lib/aircraft-store";
+
+// Flight path colors matching useFlightPlanDrawing.ts
+const FLIGHT_PATH_COLORS = [
+  "#00ff00", // green
+  "#ff6b6b", // red
+  "#4dabf7", // blue
+  "#ffd43b", // yellow
+  "#da77f2", // purple
+  "#69db7c", // light green
+  "#ff922b", // orange
+  "#22b8cf", // cyan
+];
+
+const PlaneIcon = ({
+  size = 24,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M16 10h4a2 2 0 0 1 0 4h-4l-4 7h-3l2 -7h-4l-2 2h-3l2 -4l-2 -4h3l2 2h4l-2 -7h3z" />
+  </svg>
+);
+
+const CloseIcon = ({
+  size = 24,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M18 6L6 18M6 6l12 12" />
+  </svg>
+);
+
+const getFlightPhase = (
+  altAGL: number,
+  vspeed: number,
+  flightPlan?: string
+) => {
+  if (altAGL < 100) return "GND";
+  if (vspeed > 200) return "CLB";
+  if (vspeed < -200) return flightPlan && altAGL < 5000 ? "LND" : "DES";
+  if (altAGL > 5000) return "CRZ";
+  return "---";
+};
+
+const extractAirlineFromFlightNumber = (flightNo?: string): string | null => {
+  const match = flightNo?.match(/^([A-Z]{2,3})/);
+  return match?.[1]?.toLowerCase() ?? null;
+};
+
+const getAirlineLogoFromFlightNumber = (flightNo?: string): string | null => {
+  const code = extractAirlineFromFlightNumber(flightNo);
+  if (!code) return null;
+  return `https://content.airhex.com/content/logos/airlines_${code}_200_200_s.png?theme=dark`;
+};
+
+interface AircraftCardProps {
+  aircraft: PositionUpdate & { altMSL?: number };
+  colorIndex: number;
+  onRemove: () => void;
+}
+
+const AircraftCard = ({ aircraft, colorIndex, onRemove }: AircraftCardProps) => {
+  const color = FLIGHT_PATH_COLORS[colorIndex % FLIGHT_PATH_COLORS.length]!;
+  const airlineLogo = getAirlineLogoFromFlightNumber(aircraft.flightNo);
+
+  const displayValues = useMemo(() => {
+    const altMSL = Number(aircraft.altMSL ?? aircraft.alt ?? 0);
+    const mslVal =
+      altMSL >= 18000
+        ? `FL${Math.round(altMSL / 100)}`
+        : `${Math.round(altMSL).toLocaleString()}`;
+
+    return {
+      altitude: mslVal,
+      speed: String(Math.round(Number(aircraft.speed ?? 0))),
+      heading: `${Math.round(Number(aircraft.heading ?? 0))}°`,
+      phase: getFlightPhase(
+        Number(aircraft.alt ?? 0),
+        Number(aircraft.vspeed ?? 0),
+        aircraft.flightPlan
+      ),
+    };
+  }, [aircraft.alt, aircraft.altMSL, aircraft.speed, aircraft.heading, aircraft.vspeed, aircraft.flightPlan]);
+
+  return (
+    <div className="relative rounded-xl border border-white/10 bg-black/60 p-3 backdrop-blur-sm">
+      {/* Color indicator strip */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+        style={{ backgroundColor: color }}
+      />
+
+      {/* Remove button */}
+      <button
+        onClick={onRemove}
+        className="absolute right-2 top-2 p-1 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+      >
+        <CloseIcon size={14} className="text-white/40 hover:text-white/80" />
+      </button>
+
+      <div className="flex items-start gap-3 pl-2">
+        {/* Airline logo or plane icon */}
+        <div className="shrink-0">
+          {airlineLogo ? (
+            <Image
+              src={airlineLogo}
+              alt="Airline"
+              width={36}
+              height={36}
+              className="rounded-lg border border-white/10 bg-black/50 object-contain p-1"
+              unoptimized
+            />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-black/50 text-white/30">
+              <PlaneIcon size={18} />
+            </div>
+          )}
+        </div>
+
+        {/* Flight info */}
+        <div className="flex-1 min-w-0 pr-4">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm font-bold text-white truncate">
+              {aircraft.flightNo || aircraft.callsign || "N/A"}
+            </span>
+            <span
+              className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold"
+              style={{ backgroundColor: `${color}30`, color }}
+            >
+              {displayValues.phase}
+            </span>
+          </div>
+          <div className="font-mono text-[10px] text-white/50 truncate">
+            {aircraft.type || "Unknown"}
+          </div>
+          <div className="mt-1 font-mono text-[10px] text-white/40">
+            {aircraft.departure || "---"} → {aircraft.arrival || "---"}
+          </div>
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div className="mt-2 pl-2 flex gap-4 font-mono text-[10px]">
+        <div>
+          <span className="text-white/40">ALT </span>
+          <span className="text-white/80">{displayValues.altitude}</span>
+        </div>
+        <div>
+          <span className="text-white/40">SPD </span>
+          <span className="text-white/80">{displayValues.speed}kt</span>
+        </div>
+        <div>
+          <span className="text-white/40">HDG </span>
+          <span className="text-white/80">{displayValues.heading}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const MultiAircraftSidebar = ({
+  aircrafts,
+  onRemoveAircraft,
+  onClose,
+  isMobile,
+}: {
+  aircrafts: PositionUpdate[];
+  onRemoveAircraft: (aircraft: PositionUpdate) => void;
+  onClose: () => void;
+  isMobile: boolean;
+}) => {
+  return (
+    <div className="flex h-full flex-col text-white bg-[#050f14]/90">
+      {/* Mobile drag handle */}
+      {isMobile && (
+        <div className="shrink-0 flex items-center justify-center px-4 pt-3 pb-1">
+          <div className="h-1 w-12 rounded-full bg-white/30" />
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <div className="flex items-center gap-2">
+          <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
+          <span className="font-mono text-[11px] font-bold tracking-wider text-cyan-400 uppercase">
+            {aircrafts.length} Aircraft Selected
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+        >
+          <CloseIcon size={16} className="text-white/60" />
+        </button>
+      </div>
+
+      {/* Aircraft cards */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+        {aircrafts.map((aircraft, index) => (
+          <AircraftCard
+            key={aircraft.callsign || aircraft.id}
+            aircraft={aircraft}
+            colorIndex={index}
+            onRemove={() => onRemoveAircraft(aircraft)}
+          />
+        ))}
+      </div>
+
+      {/* Footer hint */}
+      <div className="shrink-0 px-4 py-2 border-t border-white/10">
+        <p className="font-mono text-[9px] text-white/30 text-center">
+          CTRL+Click to add/remove aircraft
+        </p>
+      </div>
+    </div>
+  );
+};

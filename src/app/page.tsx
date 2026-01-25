@@ -24,6 +24,7 @@ import { useProStatus } from "~/hooks/useProStatus";
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
 import { SearchBar } from "~/components/atc/searchbar";
 import { Sidebar } from "~/components/atc/sidebar";
+import { MultiAircraftSidebar } from "~/components/atc/MultiAircraftSidebar";
 import { CallsignFilter } from "~/components/atc/callsignFilter";
 import { UserAuth } from "~/components/atc/userAuth";
 import { ControlDock } from "~/components/atc/controlDock";
@@ -50,8 +51,9 @@ export default function ATCPage() {
 
   const { isProUser, isLoading: proLoading } = useProStatus();
 
-  const [selectedAircraft, setSelectedAircraft] =
-    useState<PositionUpdate | null>(null);
+  const [selectedAircrafts, setSelectedAircrafts] = useState<PositionUpdate[]>(
+    [],
+  );
   const [selectedAirport, setSelectedAirport] = useState<any>(undefined);
 
   const [historyPath, setHistoryPath] = useState<[number, number][] | null>(
@@ -107,6 +109,9 @@ export default function ATCPage() {
   const drawFlightPlanOnMapRef = useRef<
     ((ac: PositionUpdate, zoom?: boolean) => void) | null
   >(null);
+  const drawMultipleFlightPlansOnMapRef = useRef<
+    ((aircrafts: PositionUpdate[], zoom?: boolean) => void) | null
+  >(null);
 
 
   useEffect(() => {
@@ -161,17 +166,34 @@ export default function ATCPage() {
     setSelectedCallsigns(new Set());
   }, []);
 
+  // Keep selected aircrafts in sync with updated positions and redraw paths
   useEffect(() => {
-    if (!selectedAircraft || isViewingHistory) return;
+    if (selectedAircrafts.length === 0 || isViewingHistory) return;
 
-    const updated = aircrafts.find(
-      (ac) =>
-        (ac.id && ac.id === selectedAircraft.id) ||
-        (ac.callsign && ac.callsign === selectedAircraft.callsign),
+    // Update selected aircraft data with latest positions
+    const updatedSelection = selectedAircrafts.map((selectedAc) => {
+      const updated = aircrafts.find(
+        (ac) =>
+          (ac.id && ac.id === selectedAc.id) ||
+          (ac.callsign && ac.callsign === selectedAc.callsign),
+      );
+      return updated || selectedAc;
+    });
+
+    // Check if any aircraft actually changed
+    const hasChanges = updatedSelection.some(
+      (ac, i) => ac !== selectedAircrafts[i],
     );
 
-    if (updated) setSelectedAircraft(updated);
-  }, [aircrafts, isViewingHistory, selectedAircraft]);
+    if (hasChanges) {
+      setSelectedAircrafts(updatedSelection);
+    }
+
+    // Redraw all flight paths
+    if (drawMultipleFlightPlansOnMapRef.current) {
+      drawMultipleFlightPlansOnMapRef.current(updatedSelection, false);
+    }
+  }, [aircrafts, isViewingHistory, selectedAircrafts]);
 
   // Auto-select aircraft from URL param if it's a full flight number
   useEffect(() => {
@@ -184,7 +206,7 @@ export default function ATCPage() {
     );
 
     if (matchedAircraft) {
-      setSelectedAircraft(matchedAircraft);
+      setSelectedAircrafts([matchedAircraft]);
       drawFlightPlanOnMapRef.current?.(matchedAircraft, true);
       setAutoSelectedFromUrl(true);
     }
@@ -196,7 +218,7 @@ export default function ATCPage() {
       if (e.key === "Escape" && (fullFlightFilter || selectedCallsigns.size > 0)) {
         setFullFlightFilter(null);
         setSelectedCallsigns(new Set());
-        setSelectedAircraft(null);
+        setSelectedAircrafts([]);
         setAutoSelectedFromUrl(false);
       }
     };
@@ -205,10 +227,43 @@ export default function ATCPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [fullFlightFilter, selectedCallsigns]);
 
-  function handleAircraftSelect(aircraft: PositionUpdate | null) {
+  function handleAircraftSelect(
+    aircraft: PositionUpdate | null,
+    ctrlKey = false,
+  ) {
     setIsViewingHistory(false);
     setHistoryPath(null);
-    setSelectedAircraft(aircraft);
+
+    if (aircraft === null) {
+      // Clear selection
+      setSelectedAircrafts([]);
+    } else if (ctrlKey) {
+      // CTRL+click: toggle selection
+      setSelectedAircrafts((prev) => {
+        const aircraftId = aircraft.callsign || aircraft.id;
+        const existingIndex = prev.findIndex(
+          (ac) => (ac.callsign || ac.id) === aircraftId,
+        );
+        if (existingIndex >= 0) {
+          // Remove from selection - draw remaining paths
+          const newSelection = prev.filter((_, i) => i !== existingIndex);
+          if (newSelection.length > 0) {
+            drawMultipleFlightPlansOnMapRef.current?.(newSelection, false);
+          }
+          return newSelection;
+        } else {
+          // Add to selection - draw all paths
+          const newSelection = [...prev, aircraft];
+          drawMultipleFlightPlansOnMapRef.current?.(newSelection, false);
+          return newSelection;
+        }
+      });
+    } else {
+      // Normal click: replace selection
+      setSelectedAircrafts([aircraft]);
+      drawMultipleFlightPlansOnMapRef.current?.([aircraft], true);
+    }
+
     setActiveRightPanel(null);
     if (aircraft) {
       setSelectedAirport(undefined);
@@ -238,7 +293,7 @@ export default function ATCPage() {
                 searchResults={searchResults}
                 isMobile={isMobile}
                 onSelectAircraft={(ac) => {
-                  setSelectedAircraft(ac);
+                  setSelectedAircrafts([ac]);
                   drawFlightPlanOnMapRef.current?.(ac, true);
                   setSearchTerm("");
                 }}
@@ -365,7 +420,7 @@ export default function ATCPage() {
                       <div
                         key={aircraft.callsign || aircraft.flightNo || `ac-${index}`}
                         onClick={() => {
-                          setSelectedAircraft(aircraft);
+                          setSelectedAircrafts([aircraft]);
                           drawFlightPlanOnMapRef.current?.(aircraft, true);
                           setSearchTerm("");
                           setShowMobileSearch(false);
@@ -422,9 +477,15 @@ export default function ATCPage() {
             aircrafts={filteredAircrafts}
             airports={airports}
             selectedAirport={selectedAirport}
+            selectedAircraftIds={selectedAircrafts.map(
+              (ac) => ac.callsign || ac.id,
+            )}
             onAircraftSelect={handleAircraftSelect}
             setDrawFlightPlanOnMap={(fn) => {
               drawFlightPlanOnMapRef.current = fn;
+            }}
+            setDrawMultipleFlightPlansOnMap={(fn) => {
+              drawMultipleFlightPlansOnMapRef.current = fn;
             }}
             onMapReady={() => setIsMapLoaded(true)}
             historyPath={historyPath}
@@ -438,7 +499,7 @@ export default function ATCPage() {
           <FIDSPanel
             aircrafts={aircrafts}
             onTrack={(ac) => {
-              setSelectedAircraft(ac);
+              setSelectedAircrafts([ac]);
               setActiveRightPanel(null);
               drawFlightPlanOnMapRef.current?.(ac, true);
             }}
@@ -470,7 +531,7 @@ export default function ATCPage() {
               onClick: () => {
                 const newState = activeRightPanel !== "fids";
                 setActiveRightPanel(newState ? "fids" : null);
-                if (newState) setSelectedAircraft(null);
+                if (newState) setSelectedAircrafts([]);
               },
             },
             {
@@ -481,7 +542,7 @@ export default function ATCPage() {
               onClick: () => {
                 const newState = activeRightPanel !== "filter";
                 setActiveRightPanel(newState ? "filter" : null);
-                if (newState) setSelectedAircraft(null);
+                if (newState) setSelectedAircrafts([]);
               },
             },
             ...(!isProUser ? [{
@@ -581,22 +642,40 @@ export default function ATCPage() {
         />
       )}
 
-      {selectedAircraft && (
+      {selectedAircrafts.length > 0 && (
         <aside className={`fixed z-[10014] border-white/10 bg-black/90 backdrop-blur-xl ${
           isMobile
             ? 'inset-x-0 bottom-0 h-[50vh] rounded-t-3xl border-t'
             : 'inset-y-0 right-0 w-[400px] border-l'
         }`}>
-          <Sidebar
-            aircraft={selectedAircraft}
-            onWaypointClick={undefined}
-            onHistoryClick={(path) => {
-              setHistoryPath(path);
-              setIsViewingHistory(true);
-            }}
-            isMobile={isMobile}
-            onClose={() => setSelectedAircraft(null)}
-          />
+          {selectedAircrafts.length === 1 ? (
+            <Sidebar
+              aircraft={selectedAircrafts[0]!}
+              onWaypointClick={undefined}
+              onHistoryClick={(path) => {
+                setHistoryPath(path);
+                setIsViewingHistory(true);
+              }}
+              isMobile={isMobile}
+              onClose={() => setSelectedAircrafts([])}
+            />
+          ) : (
+            <MultiAircraftSidebar
+              aircrafts={selectedAircrafts}
+              onRemoveAircraft={(aircraft) => {
+                const aircraftId = aircraft.callsign || aircraft.id;
+                const newSelection = selectedAircrafts.filter(
+                  (ac) => (ac.callsign || ac.id) !== aircraftId
+                );
+                setSelectedAircrafts(newSelection);
+                if (newSelection.length > 0) {
+                  drawMultipleFlightPlansOnMapRef.current?.(newSelection, false);
+                }
+              }}
+              onClose={() => setSelectedAircrafts([])}
+              isMobile={isMobile}
+            />
+          )}
         </aside>
       )}
 
