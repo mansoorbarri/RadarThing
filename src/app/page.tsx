@@ -738,6 +738,17 @@ function MapSkeleton() {
 
   return (
     <div className="relative h-full w-full bg-[#0a1219] overflow-hidden">
+      {/* Centered logo */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <Image
+          src="/logo-white.svg"
+          alt="RadarThing"
+          width={120}
+          height={36}
+          className="opacity-30"
+        />
+      </div>
+
       {/* World map background */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
