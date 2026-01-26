@@ -8,6 +8,7 @@ export type CommandType =
   | "setHeading"
   | "setVS"
   | "setSquawk"
+  | "setFlaps"
   | "disableNav"
   | "toggleAutopilot";
 
@@ -98,6 +99,15 @@ export function useAircraftCommands() {
     [sendCommand]
   );
 
+  const setFlaps = useCallback(
+    (targetId: string, flaps: number) =>
+      sendCommand({
+        targetId,
+        command: { type: "setFlaps", value: flaps },
+      }),
+    [sendCommand]
+  );
+
   const disableNav = useCallback(
     (targetId: string) =>
       sendCommand({
@@ -123,6 +133,7 @@ export function useAircraftCommands() {
     setHeading,
     setVS,
     setSquawk,
+    setFlaps,
     disableNav,
     toggleAutopilot,
     isLoading,

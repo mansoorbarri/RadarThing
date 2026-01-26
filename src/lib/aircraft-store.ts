@@ -18,6 +18,8 @@ export interface PositionUpdate {
   vspeed: string;
   nextWaypoint: string;
   navMode?: boolean;
+  flapsPosition?: number;
+  flapsMaxPosition?: number;
   ts: number;
   lastSeen: number;
   flightPath?: [number, number][];

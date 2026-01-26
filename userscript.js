@@ -62,6 +62,23 @@
           }
           break;
 
+        case "setFlaps":
+          // Set flaps by notch number (value is the notch, e.g., 2 out of 3 steps)
+          if (controls?.flaps) {
+            const maxPos = controls.flaps.maxPosition || 6;
+            const flapsSteps = geofs.animation?.values?.flapsSteps || maxPos;
+            const notch = Math.round(Number(cmd.value));
+            if (notch < 0 || notch > flapsSteps) {
+              console.warn(`[RadarThing] setFlaps - invalid notch ${notch}, must be 0-${flapsSteps}`);
+              break;
+            }
+            // Convert notch to actual position: notch/steps * maxPosition
+            const flapPos = Math.round((notch / flapsSteps) * maxPos);
+            controls.flaps.target = flapPos;
+            controls.flaps.position = flapPos;
+          }
+          break;
+
         case "disableNav":
           // Disable NAV mode to allow manual heading control
           if (geofs.autopilot && geofs.autopilot.modes) {
@@ -188,6 +205,8 @@
       nextWaypoint: geofs.flightPlan?.trackedWaypoint?.ident || null,
       vspeed: Math.floor(geofs.animation?.values?.verticalSpeed || 0),
       navMode: geofs.autopilot?.modes?.nav || false,
+      flapsPosition: controls?.flaps?.position || 0,
+      flapsMaxPosition: geofs.animation?.values?.flapsSteps || controls?.flaps?.maxPosition || 0,
     };
 
     fetch(API_URL, {

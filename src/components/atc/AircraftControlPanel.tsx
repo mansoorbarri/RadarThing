@@ -9,7 +9,7 @@ interface AircraftControlPanelProps {
 }
 
 export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
-  const { setSpeed, setAltitude, setHeading, setVS, setSquawk, disableNav, isLoading } =
+  const { setSpeed, setAltitude, setHeading, setVS, setSquawk, setFlaps, disableNav, isLoading } =
     useAircraftCommands();
 
   const [speedInput, setSpeedInput] = useState("");
@@ -17,9 +17,12 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   const [headingInput, setHeadingInput] = useState("");
   const [vsInput, setVsInput] = useState("");
   const [squawkInput, setSquawkInput] = useState("");
+  const [flapsInput, setFlapsInput] = useState("");
+  const [flapsError, setFlapsError] = useState("");
   const [showNavWarning, setShowNavWarning] = useState(false);
 
   const aircraftId = aircraft.id;
+  const flapsMaxPosition = aircraft.flapsMaxPosition ?? 0;
 
   const handleSetSpeed = useCallback(() => {
     const value = parseInt(speedInput, 10);
@@ -72,11 +75,26 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     }
   }, [aircraftId, squawkInput, setSquawk]);
 
+  const handleSetFlaps = useCallback(() => {
+    const value = parseInt(flapsInput, 10);
+    if (isNaN(value) || value < 0) {
+      setFlapsError("Invalid value");
+      return;
+    }
+    if (flapsMaxPosition > 0 && value > flapsMaxPosition) {
+      setFlapsError(`Max is ${flapsMaxPosition}`);
+      return;
+    }
+    setFlapsError("");
+    setFlaps(aircraftId, value);
+  }, [aircraftId, flapsInput, flapsMaxPosition, setFlaps]);
+
   const handleSetAll = useCallback(() => {
     const speed = parseInt(speedInput, 10);
     const altitude = parseInt(altitudeInput, 10);
     const heading = parseInt(headingInput, 10);
     const vs = parseInt(vsInput, 10);
+    const flaps = parseInt(flapsInput, 10);
 
     if (!isNaN(speed) && speed >= 0) {
       setSpeed(aircraftId, speed);
@@ -98,9 +116,12 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     if (/^[0-7]{4}$/.test(squawkInput)) {
       setSquawk(aircraftId, squawkInput);
     }
-  }, [aircraftId, speedInput, altitudeInput, headingInput, vsInput, squawkInput, aircraft.navMode, setSpeed, setAltitude, setHeading, setVS, setSquawk, disableNav]);
+    if (!isNaN(flaps) && flaps >= 0 && (flapsMaxPosition === 0 || flaps <= flapsMaxPosition)) {
+      setFlaps(aircraftId, flaps);
+    }
+  }, [aircraftId, speedInput, altitudeInput, headingInput, vsInput, squawkInput, flapsInput, flapsMaxPosition, aircraft.navMode, setSpeed, setAltitude, setHeading, setVS, setSquawk, setFlaps, disableNav]);
 
-  const hasAnyInput = speedInput || altitudeInput || headingInput || vsInput || squawkInput;
+  const hasAnyInput = speedInput || altitudeInput || headingInput || vsInput || squawkInput || flapsInput;
 
   return (
     <div className="mt-6 space-y-4">
@@ -182,6 +203,26 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
           step={100}
         />
 
+        <div className="space-y-1">
+          <ControlRow
+            label="FLPS"
+            unit={flapsMaxPosition > 0 ? `/${flapsMaxPosition}` : ""}
+            value={flapsInput}
+            onChange={(v) => {
+              setFlapsInput(v);
+              setFlapsError("");
+            }}
+            onSet={handleSetFlaps}
+            disabled={isLoading}
+            min={0}
+            max={flapsMaxPosition || 10}
+            step={1}
+          />
+          {flapsError && (
+            <p className="px-1 font-mono text-[9px] text-red-400">{flapsError}</p>
+          )}
+        </div>
+
         <ControlRow
           label="SQK"
           unit=""
@@ -220,6 +261,7 @@ interface ControlRowProps {
   max?: number;
   step?: number;
   isText?: boolean;
+  isPercentage?: boolean;
   placeholder?: string;
 }
 
@@ -234,24 +276,49 @@ function ControlRow({
   max = 99999,
   step = 1,
   isText = false,
+  isPercentage = false,
   placeholder,
 }: ControlRowProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") onSet();
   };
 
+  // For percentage, display is 0-100 but stored value is 0-1
+  const displayValue = isPercentage ? String(Math.round(parseFloat(value || "0") * 100)) : value;
+
+  const handlePercentageChange = (displayVal: string) => {
+    const num = parseInt(displayVal, 10);
+    if (!isNaN(num)) {
+      onChange(String(num / 100));
+    } else {
+      onChange("");
+    }
+  };
+
   const increment = () => {
     if (isText) return;
-    const num = parseInt(value, 10) || 0;
-    const newVal = Math.min(num + step, max);
-    onChange(String(newVal));
+    if (isPercentage) {
+      const num = parseFloat(value) || 0;
+      const newVal = Math.min(num + step / 100, 1);
+      onChange(String(newVal));
+    } else {
+      const num = parseInt(value, 10) || 0;
+      const newVal = Math.min(num + step, max);
+      onChange(String(newVal));
+    }
   };
 
   const decrement = () => {
     if (isText) return;
-    const num = parseInt(value, 10) || 0;
-    const newVal = Math.max(num - step, min);
-    onChange(String(newVal));
+    if (isPercentage) {
+      const num = parseFloat(value) || 0;
+      const newVal = Math.max(num - step / 100, 0);
+      onChange(String(newVal));
+    } else {
+      const num = parseInt(value, 10) || 0;
+      const newVal = Math.max(num - step, min);
+      onChange(String(newVal));
+    }
   };
 
   return (
@@ -271,8 +338,8 @@ function ControlRow({
 
       <input
         type={isText ? "text" : "number"}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        value={isPercentage ? displayValue : value}
+        onChange={(e) => isPercentage ? handlePercentageChange(e.target.value) : onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className="w-20 flex-1 rounded-lg border border-white/20 bg-black/60 px-2 py-1.5 text-center font-mono text-base font-bold text-white outline-none transition-colors focus:border-cyan-500/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
