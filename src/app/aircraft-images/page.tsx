@@ -482,7 +482,7 @@ export default function AircraftImagesPage() {
 
                 <div>
                   <label className="mb-2 block font-mono text-xs text-slate-400">
-                    DISCORD USERNAME (OPTIONAL)
+                    YOUR DISCORD USERNAME (OPTIONAL)
                   </label>
                   <input
                     type="text"
