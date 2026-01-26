@@ -97,6 +97,7 @@ export default function ATCPage() {
   const [showTimerPopup, setShowTimerPopup] = useState(false);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [isDarkLayerMode, setIsDarkLayerMode] = useState(false);
 
   const { searchTerm, setSearchTerm, searchResults } = useAircraftSearch(
     aircrafts,
@@ -277,7 +278,7 @@ export default function ATCPage() {
         <div className="flex items-center gap-2">
           {!isMobile && (
             <Image
-              src="/logo-black.svg"
+              src={isDarkLayerMode ? "/logo-white.svg" : "/logo-black.svg"}
               alt="RadarThing"
               width={100}
               height={30}
@@ -490,6 +491,7 @@ export default function ATCPage() {
             }}
             onMapReady={() => setIsMapLoaded(true)}
             historyPath={historyPath}
+            onLayerModeChange={setIsDarkLayerMode}
           />
         )}
       </main>

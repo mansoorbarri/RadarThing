@@ -51,6 +51,7 @@ interface MapComponentProps {
   ) => void;
   onMapReady?: () => void;
   historyPath?: [number, number][] | null;
+  onLayerModeChange?: (isDarkLayer: boolean) => void;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -63,6 +64,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   setDrawMultipleFlightPlansOnMap,
   onMapReady,
   historyPath,
+  onLayerModeChange,
 }) => {
   const isMobile = useMobileDetection();
   const { isProUser, isAdminUser, isLoading: proLoading } = useProStatus();
@@ -281,6 +283,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
     isSettingsOpen,
     canUseRadarMode,
   ]);
+
+  useEffect(() => {
+    onLayerModeChange?.(isRadarMode || isOSMMode);
+  }, [isRadarMode, isOSMMode, onLayerModeChange]);
 
   useEffect(() => {
     setDrawFlightPlanOnMap(drawFlightPlan);
