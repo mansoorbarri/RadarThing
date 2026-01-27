@@ -61,17 +61,37 @@ export const useFlightPlanDrawing = ({
       aircrafts.forEach((aircraft, index) => {
         const color = FLIGHT_PATH_COLORS[index % FLIGHT_PATH_COLORS.length]!;
 
-        // Draw history/flight path
+        // Draw history/flight path in two parts:
+        // 1. Main path (all except last point) - solid, where aircraft has been
+        // 2. Trailing segment (last two points) - faded, current trajectory
         const history = aircraft.flightPath || [];
+
         if (history.length >= 2) {
-          const historyPolyline = L.polyline(history, {
-            color: color,
-            weight: isRadarMode ? 2 : 4,
-            opacity: isRadarMode ? 0.7 : 0.8,
-            smoothFactor: 1,
-            dashArray: isRadarMode ? "5, 5" : "",
-          });
-          historyLayerGroup.current!.addLayer(historyPolyline);
+          // Draw the main historical path (excluding last point)
+          const mainPath = history.slice(0, -1);
+          if (mainPath.length >= 2) {
+            const historyPolyline = L.polyline(mainPath, {
+              color: color,
+              weight: isRadarMode ? 2 : 4,
+              opacity: isRadarMode ? 0.7 : 0.8,
+              smoothFactor: 1,
+              dashArray: isRadarMode ? "5, 5" : "",
+            });
+            historyLayerGroup.current!.addLayer(historyPolyline);
+          }
+
+          // Draw faded trailing segment (connects to aircraft's current position)
+          const trailingSegment = history.slice(-2);
+          if (trailingSegment.length === 2) {
+            const trailingPolyline = L.polyline(trailingSegment, {
+              color: color,
+              weight: isRadarMode ? 1 : 2,
+              opacity: isRadarMode ? 0.3 : 0.4,
+              smoothFactor: 1,
+              dashArray: "4, 4",
+            });
+            historyLayerGroup.current!.addLayer(trailingPolyline);
+          }
         }
 
         // Draw flight plan waypoints
