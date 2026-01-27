@@ -4,6 +4,7 @@
 // @version      1.3.0
 // @description  Always loads the latest GeoFS ATC Radar script from GitHub
 // @Author       xyzmani
+// @icon         https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/public/favicon.ico
 // @match        http://*/geofs.php*
 // @match        https://*/geofs.php*
 // @require      https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/userscript.js
