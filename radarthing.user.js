@@ -6,9 +6,9 @@
 // @Author       xyzmani
 // @match        http://*/geofs.php*
 // @match        https://*/geofs.php*
-// @require      https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/userscript.js?v=1.2.15
-// @require      https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/seabus.js?v=1.2.15
-// @require      https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/jth.js?v=1.2.15
+// @require      https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/userscript.js
+// @require      https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/seabus.js
+// @require      https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/jth.js
 // @grant        none
 // ==/UserScript==
 
