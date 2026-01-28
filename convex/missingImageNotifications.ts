@@ -100,6 +100,33 @@ export const create = mutation({
   },
 });
 
+// Update note
+export const updateNote = mutation({
+  args: {
+    airlineCode: v.string(),
+    aircraftType: v.string(),
+    note: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const notification = await ctx.db
+      .query("missingImageNotifications")
+      .withIndex("by_airline_aircraft", (q) =>
+        q
+          .eq("airlineCode", args.airlineCode.toUpperCase())
+          .eq("aircraftType", args.aircraftType.toUpperCase())
+      )
+      .first();
+
+    if (notification) {
+      await ctx.db.patch(notification._id, {
+        note: args.note || undefined,
+      });
+      return true;
+    }
+    return false;
+  },
+});
+
 // Update discord message ID after sending
 export const updateMessageId = mutation({
   args: {

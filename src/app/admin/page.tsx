@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { isAdmin } from "~/app/actions/is-pro";
 import {
@@ -14,7 +14,7 @@ import {
   bulkRejectAircraftImages,
   getUserInfoByIds,
 } from "~/app/actions/aircraft-images";
-import { Trash2, Check, X, Plane, Clock, CheckCircle, Search, CheckSquare, Square, Bell, ImageIcon } from "lucide-react";
+import { Trash2, Check, X, Plane, Clock, CheckCircle, Search, CheckSquare, Square, Bell, ImageIcon, Pencil } from "lucide-react";
 import Loading from "~/components/loading";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -52,9 +52,12 @@ export default function AdminPage() {
   // Missing Notifications state
   const notificationsQuery = useQuery(api.missingImageNotifications.getAll);
   const notifications = useMemo(() => notificationsQuery ?? [], [notificationsQuery]);
+  const updateNoteMutation = useMutation(api.missingImageNotifications.updateNote);
   const [notifSearchQuery, setNotifSearchQuery] = useState("");
   const [notifAirlineFilter, setNotifAirlineFilter] = useState<string>("");
   const [notifAircraftFilter, setNotifAircraftFilter] = useState<string>("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteValue, setEditingNoteValue] = useState("");
 
   const loading = !adminCheckDone || pendingQuery === undefined || approvedQuery === undefined || notificationsQuery === undefined;
 
@@ -292,6 +295,26 @@ export default function AdminPage() {
     setNotifSearchQuery("");
     setNotifAirlineFilter("");
     setNotifAircraftFilter("");
+  };
+
+  const startEditingNote = (notification: (typeof notifications)[number]) => {
+    setEditingNoteId(notification.id);
+    setEditingNoteValue(notification.note || "");
+  };
+
+  const cancelEditingNote = () => {
+    setEditingNoteId(null);
+    setEditingNoteValue("");
+  };
+
+  const saveNote = async (notification: (typeof notifications)[number]) => {
+    await updateNoteMutation({
+      airlineCode: notification.airlineCode,
+      aircraftType: notification.aircraftType,
+      note: editingNoteValue,
+    });
+    setEditingNoteId(null);
+    setEditingNoteValue("");
   };
 
   // ============ Render ============
