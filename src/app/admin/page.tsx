@@ -14,7 +14,7 @@ import {
   bulkRejectAircraftImages,
   getUserInfoByIds,
 } from "~/app/actions/aircraft-images";
-import { Trash2, Check, X, Plane, Clock, CheckCircle, Search, CheckSquare, Square, Bell, ImageIcon, Pencil } from "lucide-react";
+import { Trash2, Check, X, Plane, Clock, CheckCircle, Search, CheckSquare, Square, Bell, ImageIcon } from "lucide-react";
 import Loading from "~/components/loading";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -56,8 +56,6 @@ export default function AdminPage() {
   const [notifSearchQuery, setNotifSearchQuery] = useState("");
   const [notifAirlineFilter, setNotifAirlineFilter] = useState<string>("");
   const [notifAircraftFilter, setNotifAircraftFilter] = useState<string>("");
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [editingNoteValue, setEditingNoteValue] = useState("");
 
   const loading = !adminCheckDone || pendingQuery === undefined || approvedQuery === undefined || notificationsQuery === undefined;
 
@@ -297,24 +295,8 @@ export default function AdminPage() {
     setNotifAircraftFilter("");
   };
 
-  const startEditingNote = (notification: (typeof notifications)[number]) => {
-    setEditingNoteId(notification.id);
-    setEditingNoteValue(notification.note || "");
-  };
-
-  const cancelEditingNote = () => {
-    setEditingNoteId(null);
-    setEditingNoteValue("");
-  };
-
-  const saveNote = async (notification: (typeof notifications)[number]) => {
-    await updateNoteMutation({
-      airlineCode: notification.airlineCode,
-      aircraftType: notification.aircraftType,
-      note: editingNoteValue,
-    });
-    setEditingNoteId(null);
-    setEditingNoteValue("");
+  const saveNote = async (airlineCode: string, aircraftType: string, note: string) => {
+    await updateNoteMutation({ airlineCode, aircraftType, note });
   };
 
   // ============ Render ============
@@ -645,7 +627,6 @@ export default function AdminPage() {
                       <th className="px-6 py-4 text-left font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Airline Code</th>
                       <th className="px-6 py-4 text-left font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Aircraft Type</th>
                       <th className="px-6 py-4 text-left font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Note</th>
-                      <th className="px-6 py-4 text-right font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -654,40 +635,10 @@ export default function AdminPage() {
                         <td className="px-6 py-4"><span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">{notification.airlineCode}</span></td>
                         <td className="px-6 py-4"><span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">{notification.aircraftType}</span></td>
                         <td className="px-6 py-4">
-                          {editingNoteId === notification.id ? (
-                            <input
-                              type="text"
-                              value={editingNoteValue}
-                              onChange={(e) => setEditingNoteValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") saveNote(notification);
-                                if (e.key === "Escape") cancelEditingNote();
-                              }}
-                              className="w-full rounded-lg border border-cyan-500/50 bg-black/40 px-3 py-1.5 text-sm text-white outline-none"
-                              placeholder="Add a note..."
-                              autoFocus
-                            />
-                          ) : notification.note ? (
-                            <span className="text-sm text-slate-300">{notification.note}</span>
-                          ) : (
-                            <span className="text-xs text-slate-600">—</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          {editingNoteId === notification.id ? (
-                            <div className="flex justify-end gap-2">
-                              <button onClick={cancelEditingNote} className="cursor-pointer rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10">
-                                <X className="h-4 w-4" />
-                              </button>
-                              <button onClick={() => saveNote(notification)} className="cursor-pointer rounded-lg bg-cyan-500/20 p-1.5 text-cyan-400 transition-colors hover:bg-cyan-500/30">
-                                <Check className="h-4 w-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <button onClick={() => startEditingNote(notification)} className="cursor-pointer rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white">
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                          )}
+                          <EditableNote
+                            initialValue={notification.note || ""}
+                            onSave={(note) => saveNote(notification.airlineCode, notification.aircraftType, note)}
+                          />
                         </td>
                       </tr>
                     ))}
@@ -699,5 +650,40 @@ export default function AdminPage() {
         )}
       </main>
     </div>
+  );
+}
+
+function EditableNote({ initialValue, onSave }: { initialValue: string; onSave: (note: string) => void }) {
+  const [value, setValue] = useState(initialValue);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    if (value !== initialValue) {
+      onSave(value);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape" || e.key === "Enter") {
+      e.currentTarget.blur();
+    }
+  };
+
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onFocus={() => setIsEditing(true)}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      placeholder="Add note..."
+      className={`w-full rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none transition-all ${
+        isEditing
+          ? "border-cyan-500/50 text-white"
+          : "border-transparent text-slate-300 hover:border-white/20"
+      } ${!value && !isEditing ? "text-slate-600" : ""}`}
+    />
   );
 }
