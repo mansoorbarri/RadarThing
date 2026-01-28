@@ -645,6 +645,7 @@ export default function AdminPage() {
                       <th className="px-6 py-4 text-left font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Airline Code</th>
                       <th className="px-6 py-4 text-left font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Aircraft Type</th>
                       <th className="px-6 py-4 text-left font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Note</th>
+                      <th className="px-6 py-4 text-right font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -652,7 +653,42 @@ export default function AdminPage() {
                       <tr key={notification.id} className="transition-colors hover:bg-white/5">
                         <td className="px-6 py-4"><span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">{notification.airlineCode}</span></td>
                         <td className="px-6 py-4"><span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">{notification.aircraftType}</span></td>
-                        <td className="px-6 py-4">{notification.note ? <span className="text-sm text-slate-300">{notification.note}</span> : <span className="text-xs text-slate-600">—</span>}</td>
+                        <td className="px-6 py-4">
+                          {editingNoteId === notification.id ? (
+                            <input
+                              type="text"
+                              value={editingNoteValue}
+                              onChange={(e) => setEditingNoteValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") saveNote(notification);
+                                if (e.key === "Escape") cancelEditingNote();
+                              }}
+                              className="w-full rounded-lg border border-cyan-500/50 bg-black/40 px-3 py-1.5 text-sm text-white outline-none"
+                              placeholder="Add a note..."
+                              autoFocus
+                            />
+                          ) : notification.note ? (
+                            <span className="text-sm text-slate-300">{notification.note}</span>
+                          ) : (
+                            <span className="text-xs text-slate-600">—</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {editingNoteId === notification.id ? (
+                            <div className="flex justify-end gap-2">
+                              <button onClick={cancelEditingNote} className="cursor-pointer rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10">
+                                <X className="h-4 w-4" />
+                              </button>
+                              <button onClick={() => saveNote(notification)} className="cursor-pointer rounded-lg bg-cyan-500/20 p-1.5 text-cyan-400 transition-colors hover:bg-cyan-500/30">
+                                <Check className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button onClick={() => startEditingNote(notification)} className="cursor-pointer rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white">
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
