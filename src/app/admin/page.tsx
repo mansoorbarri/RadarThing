@@ -53,6 +53,7 @@ export default function AdminPage() {
   const notificationsQuery = useQuery(api.missingImageNotifications.getAll);
   const notifications = useMemo(() => notificationsQuery ?? [], [notificationsQuery]);
   const updateNoteMutation = useMutation(api.missingImageNotifications.updateNote);
+  const removeNotificationMutation = useMutation(api.missingImageNotifications.remove);
   const [notifSearchQuery, setNotifSearchQuery] = useState("");
   const [notifAirlineFilter, setNotifAirlineFilter] = useState<string>("");
   const [notifAircraftFilter, setNotifAircraftFilter] = useState<string>("");
@@ -297,6 +298,11 @@ export default function AdminPage() {
 
   const saveNote = async (airlineCode: string, aircraftType: string, note: string) => {
     await updateNoteMutation({ airlineCode, aircraftType, note });
+  };
+
+  const deleteNotification = async (airlineCode: string, aircraftType: string) => {
+    if (!confirm(`Delete notification for ${airlineCode} ${aircraftType}?`)) return;
+    await removeNotificationMutation({ airlineCode, aircraftType });
   };
 
   // ============ Render ============
@@ -627,11 +633,12 @@ export default function AdminPage() {
                       <th className="px-6 py-4 text-left font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Airline Code</th>
                       <th className="px-6 py-4 text-left font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Aircraft Type</th>
                       <th className="px-6 py-4 text-left font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Note</th>
+                      <th className="w-16 px-6 py-4"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {filteredNotifications.map((notification) => (
-                      <tr key={notification.id} className="transition-colors hover:bg-white/5">
+                      <tr key={notification.id} className="group transition-colors hover:bg-white/5">
                         <td className="px-6 py-4"><span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">{notification.airlineCode}</span></td>
                         <td className="px-6 py-4"><span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">{notification.aircraftType}</span></td>
                         <td className="px-6 py-4">
@@ -639,6 +646,14 @@ export default function AdminPage() {
                             initialValue={notification.note || ""}
                             onSave={(note) => saveNote(notification.airlineCode, notification.aircraftType, note)}
                           />
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => deleteNotification(notification.airlineCode, notification.aircraftType)}
+                            className="cursor-pointer rounded-lg p-1.5 text-slate-600 opacity-0 transition-all hover:bg-red-500/20 hover:text-red-400 group-hover:opacity-100"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </td>
                       </tr>
                     ))}
