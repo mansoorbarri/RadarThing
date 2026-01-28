@@ -1,6 +1,23 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// Get all missing image notifications
+export const getAll = query({
+  handler: async (ctx) => {
+    const notifications = await ctx.db
+      .query("missingImageNotifications")
+      .collect();
+
+    return notifications.map((n) => ({
+      id: n._id,
+      airlineCode: n.airlineCode,
+      aircraftType: n.aircraftType,
+      discordMessageId: n.discordMessageId ?? null,
+      createdAt: n._creationTime,
+    }));
+  },
+});
+
 // Check if a notification already exists for this airline + aircraft combo
 export const exists = query({
   args: {

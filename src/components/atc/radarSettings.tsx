@@ -79,11 +79,11 @@ export const RadarSettings = ({
 
         {isADMIN && (
           <button
-            onClick={() => router.push("/admin/aircraft-images")}
+            onClick={() => router.push("/admin")}
             className="flex w-full cursor-pointer items-center gap-2 rounded-md bg-cyan-500/10 px-3 py-2 text-left text-sm text-cyan-400 transition-colors hover:bg-cyan-500/20"
           >
             <Shield className="h-4 w-4" />
-            <span>Approve Images</span>
+            <span>Admin Panel</span>
             <span className="ml-auto text-[10px] text-cyan-500 uppercase">ADMIN</span>
           </button>
         )}
