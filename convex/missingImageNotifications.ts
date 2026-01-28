@@ -13,6 +13,7 @@ export const getAll = query({
       airlineCode: n.airlineCode,
       aircraftType: n.aircraftType,
       note: n.note ?? null,
+      createdAt: n._creationTime,
     }));
   },
 });

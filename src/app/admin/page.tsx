@@ -283,11 +283,7 @@ export default function AdminPage() {
         if (!matchesNotifSearch(n, notifSearchQuery)) return false;
         return true;
       })
-      .sort((a, b) => {
-        const airlineCompare = a.airlineCode.localeCompare(b.airlineCode);
-        if (airlineCompare !== 0) return airlineCompare;
-        return a.aircraftType.localeCompare(b.aircraftType);
-      });
+      .sort((a, b) => b.createdAt - a.createdAt);
   }, [notifications, notifAirlineFilter, notifAircraftFilter, notifSearchQuery]);
 
   const clearNotifFilters = () => {
