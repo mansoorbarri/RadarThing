@@ -283,7 +283,7 @@ export default function AdminPage() {
         if (!matchesNotifSearch(n, notifSearchQuery)) return false;
         return true;
       })
-      .sort((a, b) => b.createdAt - a.createdAt);
+      .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
   }, [notifications, notifAirlineFilter, notifAircraftFilter, notifSearchQuery]);
 
   const clearNotifFilters = () => {
