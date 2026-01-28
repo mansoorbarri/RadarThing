@@ -67,6 +67,7 @@ export default defineSchema({
     airlineCode: v.string(), // IATA or ICAO code
     aircraftType: v.string(), // Normalized type (e.g., "B777", "A320")
     discordMessageId: v.optional(v.string()), // For deleting the message later
+    note: v.optional(v.string()), // Optional note/description
   })
     .index("by_airline_aircraft", ["airlineCode", "aircraftType"]),
 });

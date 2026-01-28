@@ -12,8 +12,7 @@ export const getAll = query({
       id: n._id,
       airlineCode: n.airlineCode,
       aircraftType: n.aircraftType,
-      discordMessageId: n.discordMessageId ?? null,
-      createdAt: n._creationTime,
+      note: n.note ?? null,
     }));
   },
 });
@@ -148,5 +147,48 @@ export const remove = mutation({
     }
 
     return { deleted: false, discordMessageId: null };
+  },
+});
+
+// Cleanup: remove notifications for images that have been approved
+export const cleanupApproved = mutation({
+  handler: async (ctx) => {
+    const notifications = await ctx.db
+      .query("missingImageNotifications")
+      .collect();
+
+    let deleted = 0;
+
+    for (const notification of notifications) {
+      // Check if an approved image exists for this airline+aircraft combo
+      // Try matching by IATA
+      const byIata = await ctx.db
+        .query("aircraftImages")
+        .withIndex("by_iata_aircraft_approved", (q) =>
+          q
+            .eq("airlineIata", notification.airlineCode)
+            .eq("aircraftType", notification.aircraftType)
+            .eq("isApproved", true)
+        )
+        .first();
+
+      // Try matching by ICAO
+      const byIcao = await ctx.db
+        .query("aircraftImages")
+        .withIndex("by_icao_aircraft_approved", (q) =>
+          q
+            .eq("airlineIcao", notification.airlineCode)
+            .eq("aircraftType", notification.aircraftType)
+            .eq("isApproved", true)
+        )
+        .first();
+
+      if (byIata || byIcao) {
+        await ctx.db.delete(notification._id);
+        deleted++;
+      }
+    }
+
+    return { deleted, total: notifications.length };
   },
 });

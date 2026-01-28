@@ -306,6 +306,17 @@ export async function createAircraftImage(data: {
       });
       // Notify SSE server to delete Discord "missing image" notification
       await notifyImageUploaded(data.airlineIata, data.airlineIcao, data.aircraftType);
+      // Remove from missingImageNotifications table (try both IATA and ICAO)
+      await Promise.all([
+        convex.mutation(api.missingImageNotifications.remove, {
+          airlineCode: data.airlineIata,
+          aircraftType: data.aircraftType,
+        }),
+        convex.mutation(api.missingImageNotifications.remove, {
+          airlineCode: data.airlineIcao,
+          aircraftType: data.aircraftType,
+        }),
+      ]);
       // Refetch the approved image
       const approvedImage = await convex.query(api.aircraftImages.getById, {
         id: image.id as Id<"aircraftImages">,
@@ -387,6 +398,18 @@ export async function approveAircraftImage(
 
     // Notify SSE server to delete Discord "missing image" notification
     await notifyImageUploaded(imageToApprove.airlineIata, imageToApprove.airlineIcao, imageToApprove.aircraftType);
+
+    // Remove from missingImageNotifications table (try both IATA and ICAO)
+    await Promise.all([
+      convex.mutation(api.missingImageNotifications.remove, {
+        airlineCode: imageToApprove.airlineIata,
+        aircraftType: imageToApprove.aircraftType,
+      }),
+      convex.mutation(api.missingImageNotifications.remove, {
+        airlineCode: imageToApprove.airlineIcao,
+        aircraftType: imageToApprove.aircraftType,
+      }),
+    ]);
 
     // Send approval notification email
     await sendImageNotificationEmail(imageToApprove.uploadedBy, "approved", {
@@ -569,10 +592,23 @@ export async function bulkApproveAircraftImages(
           );
         }
 
-        // Notify SSE server and send email
+        // Notify SSE server, clean up notifications, and send email
         if (image) {
           notifyPromises.push(
             notifyImageUploaded(image.airlineIata, image.airlineIcao, image.aircraftType)
+          );
+          // Remove from missingImageNotifications table (try both IATA and ICAO)
+          notifyPromises.push(
+            convex.mutation(api.missingImageNotifications.remove, {
+              airlineCode: image.airlineIata,
+              aircraftType: image.aircraftType,
+            })
+          );
+          notifyPromises.push(
+            convex.mutation(api.missingImageNotifications.remove, {
+              airlineCode: image.airlineIcao,
+              aircraftType: image.aircraftType,
+            })
           );
           emailPromises.push(
             sendImageNotificationEmail(image.uploadedBy, "approved", {

@@ -240,7 +240,7 @@ export default function AdminPage() {
   const matchesNotifSearch = (notification: (typeof notifications)[number], query: string) => {
     if (!query.trim()) return true;
     const q = query.toLowerCase();
-    return notification.airlineCode?.toLowerCase().includes(q) || notification.aircraftType?.toLowerCase().includes(q);
+    return notification.airlineCode?.toLowerCase().includes(q) || notification.aircraftType?.toLowerCase().includes(q) || notification.note?.toLowerCase().includes(q);
   };
 
   const uniqueNotifAirlines = useMemo(() => {
@@ -576,7 +576,7 @@ export default function AdminPage() {
                   type="text"
                   value={notifSearchQuery}
                   onChange={(e) => setNotifSearchQuery(e.target.value)}
-                  placeholder="Search by airline code or aircraft type..."
+                  placeholder="Search by airline code, aircraft type, or note..."
                   className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50"
                 />
               </div>
@@ -621,8 +621,7 @@ export default function AdminPage() {
                     <tr className="border-b border-white/10 bg-white/5">
                       <th className="px-6 py-4 text-left font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Airline Code</th>
                       <th className="px-6 py-4 text-left font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Aircraft Type</th>
-                      <th className="px-6 py-4 text-left font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Discord Message</th>
-                      <th className="px-6 py-4 text-left font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Created</th>
+                      <th className="px-6 py-4 text-left font-mono text-xs font-medium uppercase tracking-wider text-slate-400">Note</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -630,8 +629,7 @@ export default function AdminPage() {
                       <tr key={notification.id} className="transition-colors hover:bg-white/5">
                         <td className="px-6 py-4"><span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">{notification.airlineCode}</span></td>
                         <td className="px-6 py-4"><span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">{notification.aircraftType}</span></td>
-                        <td className="px-6 py-4">{notification.discordMessageId ? <span className="font-mono text-xs text-slate-400">{notification.discordMessageId}</span> : <span className="text-xs text-slate-600">—</span>}</td>
-                        <td className="px-6 py-4 text-sm text-slate-400">{new Date(notification.createdAt).toLocaleString()}</td>
+                        <td className="px-6 py-4">{notification.note ? <span className="text-sm text-slate-300">{notification.note}</span> : <span className="text-xs text-slate-600">—</span>}</td>
                       </tr>
                     ))}
                   </tbody>
