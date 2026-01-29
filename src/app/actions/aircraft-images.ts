@@ -226,6 +226,73 @@ export async function getAllAircraftImages(): Promise<AircraftImage[]> {
   }
 }
 
+// Check upload eligibility before uploading to UploadThing (anyone signed in)
+// Returns validation errors if any, otherwise indicates upload can proceed
+export async function validateUploadEligibility(data: {
+  airlineIata: string;
+  airlineIcao: string;
+  aircraftType: string;
+}): Promise<{ canUpload: boolean; error?: string }> {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return { canUpload: false, error: "You must be signed in to upload images" };
+  }
+
+  // Validate both airline codes are provided
+  if (!data.airlineIata || !data.airlineIcao) {
+    return { canUpload: false, error: "Both IATA and ICAO airline codes are required" };
+  }
+
+  // Validate aircraft type
+  if (!data.aircraftType) {
+    return { canUpload: false, error: "Aircraft type is required" };
+  }
+
+  // Validate code lengths
+  const iata = data.airlineIata.trim().toUpperCase();
+  const icao = data.airlineIcao.trim().toUpperCase();
+  const aircraftType = data.aircraftType.trim().toUpperCase();
+
+  if (iata.length < 1 || iata.length > 2) {
+    return { canUpload: false, error: "IATA code must be 1-2 characters" };
+  }
+  if (icao.length !== 3) {
+    return { canUpload: false, error: "ICAO code must be exactly 3 characters" };
+  }
+
+  try {
+    // Check eligibility
+    const eligibility = await convex.query(
+      api.aircraftImages.checkUploadEligibility,
+      {
+        airlineIata: iata,
+        airlineIcao: icao,
+        aircraftType: aircraftType,
+        uploadedBy: userId,
+      }
+    );
+
+    if (eligibility.approvedExists) {
+      return {
+        canUpload: false,
+        error: "An approved image already exists for this airline + aircraft combination",
+      };
+    }
+
+    if (eligibility.pendingByUserExists) {
+      return {
+        canUpload: false,
+        error: "You already have a pending image for this combination",
+      };
+    }
+
+    return { canUpload: true };
+  } catch (error) {
+    console.error("Error validating upload eligibility:", error);
+    return { canUpload: false, error: "Failed to validate upload eligibility" };
+  }
+}
+
 // Upload/create image (anyone signed in)
 // Both airlineIata and airlineIcao are required
 export async function createAircraftImage(data: {

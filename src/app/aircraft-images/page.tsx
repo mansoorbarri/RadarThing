@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useUser, SignInButton } from "@clerk/nextjs";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { createAircraftImage } from "~/app/actions/aircraft-images";
+import { createAircraftImage, validateUploadEligibility } from "~/app/actions/aircraft-images";
+import { ImageUploader, type ImageUploaderRef } from "~/components/ui/image-uploader";
 
 // Cookie helpers
 function getCookie(name: string): string {
@@ -21,11 +22,12 @@ function setCookie(name: string, value: string, days = 365) {
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
   document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
 }
-import { Upload, Plane, Check, Search } from "lucide-react";
+import { Upload, Plane, Check, Search, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
-import { ImageUploader } from "~/components/ui/image-uploader";
+
+type SubmitStage = "idle" | "validating" | "uploading" | "submitting" | "success";
 
 export default function AircraftImagesPage() {
   const router = useRouter();
@@ -56,8 +58,11 @@ export default function AircraftImagesPage() {
       setFormData((prev) => ({ ...prev, discordUsername: savedUsername }));
     }
   }, []);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [hasSelectedFile, setHasSelectedFile] = useState(false);
+  const uploaderRef = useRef<ImageUploaderRef>(null);
+  const uploadedDataRef = useRef<{ url: string; key: string } | null>(null);
 
   // Helper to check if image matches search query
   const matchesSearch = (image: (typeof images)[number], query: string) => {
@@ -151,11 +156,19 @@ export default function AircraftImagesPage() {
       });
   }, [images, searchQuery, airlineFilter, aircraftFilter]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  // Handle upload complete callback from ImageUploader
+  const handleUploadComplete = (url: string, key: string) => {
+    uploadedDataRef.current = { url, key };
+    setFormData(prev => ({ ...prev, imageUrl: url, imageKey: key }));
+  };
+
+  async function handleUploadAndSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!formData.imageUrl) {
-      toast.error("Please upload an image first");
-      setError("Please upload an image first");
+
+    // Basic validation
+    if (!hasSelectedFile) {
+      toast.error("Please select an image first");
+      setError("Please select an image first");
       return;
     }
     if (!formData.airlineIata || !formData.airlineIcao) {
@@ -163,15 +176,52 @@ export default function AircraftImagesPage() {
       setError("Both IATA and ICAO airline codes are required");
       return;
     }
-    setSubmitting(true);
-    setError(null);
+    if (!formData.aircraftType) {
+      toast.error("Aircraft type is required");
+      setError("Aircraft type is required");
+      return;
+    }
 
+    setError(null);
+    uploadedDataRef.current = null;
+
+    // Stage 1: Validating
+    setSubmitStage("validating");
+    const validation = await validateUploadEligibility({
+      airlineIata: formData.airlineIata,
+      airlineIcao: formData.airlineIcao,
+      aircraftType: formData.aircraftType,
+    });
+
+    if (!validation.canUpload) {
+      setError(validation.error || "Validation failed");
+      toast.error(validation.error || "Validation failed");
+      setSubmitStage("idle");
+      return;
+    }
+
+    // Stage 2: Uploading
+    setSubmitStage("uploading");
+    const uploadSuccess = await uploaderRef.current?.triggerUpload();
+
+    // uploadedDataRef.current is set by the onUploadComplete callback during triggerUpload
+    if (!uploadSuccess || !uploadedDataRef.current) {
+      setError("Failed to upload image");
+      setSubmitStage("idle");
+      return;
+    }
+
+    // Extract the uploaded data (TypeScript needs this after the null check)
+    const { url: imageUrl, key: imageKey } = uploadedDataRef.current;
+
+    // Stage 3: Submitting
+    setSubmitStage("submitting");
     const result = await createAircraftImage({
       airlineIata: formData.airlineIata,
       airlineIcao: formData.airlineIcao,
       aircraftType: formData.aircraftType,
-      imageUrl: formData.imageUrl,
-      imageKey: formData.imageKey || undefined,
+      imageUrl,
+      imageKey,
       discordUsername: formData.discordUsername || undefined,
     });
 
@@ -180,23 +230,76 @@ export default function AircraftImagesPage() {
       if (formData.discordUsername) {
         setCookie("radarthing_discord", formData.discordUsername);
       }
-      toast.success("Image submitted for review");
-      setShowUploadModal(false);
-      // Keep Discord username when resetting form
-      setFormData((prev) => ({
-        airlineIata: "",
-        airlineIcao: "",
-        aircraftType: "",
-        imageUrl: "",
-        imageKey: "",
-        discordUsername: prev.discordUsername,
-      }));
+
+      // Stage 4: Success animation
+      setSubmitStage("success");
+
+      // Close modal after animation
+      setTimeout(() => {
+        toast.success("Image submitted for review!");
+        setShowUploadModal(false);
+        setSubmitStage("idle");
+        setHasSelectedFile(false);
+        uploadedDataRef.current = null;
+        uploaderRef.current?.reset();
+        // Keep Discord username when resetting form
+        setFormData((prev) => ({
+          airlineIata: "",
+          airlineIcao: "",
+          aircraftType: "",
+          imageUrl: "",
+          imageKey: "",
+          discordUsername: prev.discordUsername,
+        }));
+      }, 1500);
     } else {
       toast.error(result.error || "Failed to submit image");
       setError(result.error || "Failed to submit image");
+      setSubmitStage("idle");
     }
-    setSubmitting(false);
   }
+
+  const getButtonContent = () => {
+    switch (submitStage) {
+      case "validating":
+        return (
+          <>
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Validating...
+          </>
+        );
+      case "uploading":
+        return (
+          <>
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Uploading Image...
+          </>
+        );
+      case "submitting":
+        return (
+          <>
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Submitting...
+          </>
+        );
+      case "success":
+        return (
+          <>
+            <CheckCircle2 className="h-5 w-5" />
+            Success!
+          </>
+        );
+      default:
+        return (
+          <>
+            <Upload className="h-5 w-5" />
+            Upload & Submit
+          </>
+        );
+    }
+  };
+
+  const isProcessing = submitStage !== "idle" && submitStage !== "success";
 
   if (!isLoaded || loading) {
     return <GallerySkeleton />;
@@ -381,8 +484,13 @@ export default function AircraftImagesPage() {
           <div className="relative w-full max-w-lg rounded-2xl border border-white/10 bg-[#0a0f14] p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => {
+                if (isProcessing) return; // Don't allow closing during processing
                 setShowUploadModal(false);
                 setError(null);
+                setSubmitStage("idle");
+                setHasSelectedFile(false);
+                uploadedDataRef.current = null;
+                uploaderRef.current?.reset();
                 // Keep Discord username when closing modal
                 setFormData((prev) => ({
                   airlineIata: "",
@@ -393,7 +501,8 @@ export default function AircraftImagesPage() {
                   discordUsername: prev.discordUsername
                 }));
               }}
-              className="absolute top-4 right-4 cursor-pointer text-slate-400 transition-colors hover:text-white"
+              disabled={isProcessing}
+              className="absolute top-4 right-4 cursor-pointer text-slate-400 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               ✕
             </button>
@@ -403,7 +512,7 @@ export default function AircraftImagesPage() {
               Your image will be reviewed by our team before appearing in the gallery.
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleUploadAndSubmit} className="space-y-4">
                 {error && (
                   <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
                     {error}
@@ -424,7 +533,8 @@ export default function AircraftImagesPage() {
                       placeholder="e.g., EK"
                       maxLength={2}
                       required
-                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50"
+                      disabled={isProcessing}
+                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50 disabled:opacity-50"
                     />
                   </div>
 
@@ -441,7 +551,8 @@ export default function AircraftImagesPage() {
                       placeholder="e.g., UAE"
                       maxLength={3}
                       required
-                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50"
+                      disabled={isProcessing}
+                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50 disabled:opacity-50"
                     />
                   </div>
 
@@ -458,8 +569,9 @@ export default function AircraftImagesPage() {
                       placeholder="B777"
                       maxLength={10}
                       required
+                      disabled={isProcessing}
                       title="Use base model only (e.g., B777, A350) — not variants"
-                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50"
+                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50 disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -478,56 +590,90 @@ export default function AircraftImagesPage() {
                       setFormData({ ...formData, discordUsername: e.target.value })
                     }
                     placeholder="e.g., xyzmani"
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50"
+                    disabled={isProcessing}
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50 disabled:opacity-50"
                   />
                 </div>
 
                 <div>
                   <label className="mb-2 block font-mono text-xs text-slate-400">
-                    UPLOAD IMAGE
+                    SELECT IMAGE
                   </label>
-                  {formData.imageUrl ? (
-                    <div className="relative aspect-video">
-                      <Image
-                        src={formData.imageUrl}
-                        alt="Preview"
-                        fill
-                        className="rounded-lg border border-white/10 object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, imageUrl: "", imageKey: "" })}
-                        className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 px-3 py-1 text-sm text-white hover:bg-red-500"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <ImageUploader
-                      airlineIata={formData.airlineIata}
-                      airlineIcao={formData.airlineIcao}
-                      aircraftType={formData.aircraftType}
-                      onUploadComplete={(url, key) => {
-                        setFormData({
-                          ...formData,
-                          imageUrl: url,
-                          imageKey: key,
-                        });
-                        setError(null);
-                      }}
-                      onError={() => {
-                        // Error is handled internally by ImageUploader
-                      }}
-                    />
-                  )}
+                  <ImageUploader
+                    ref={uploaderRef}
+                    airlineIata={formData.airlineIata}
+                    airlineIcao={formData.airlineIcao}
+                    aircraftType={formData.aircraftType}
+                    externalUploadTrigger={true}
+                    onUploadComplete={handleUploadComplete}
+                    onFileSelected={setHasSelectedFile}
+                    onError={(err) => {
+                      setError(err);
+                      setSubmitStage("idle");
+                    }}
+                  />
                 </div>
+
+                {/* Success Animation Overlay - Aviation Themed */}
+                {submitStage === "success" && (
+                  <div className="relative flex flex-col items-center justify-center overflow-hidden py-6">
+                    {/* Animated plane flying across */}
+                    <div className="absolute inset-0 overflow-hidden">
+                      <div className="animate-[fly_1.5s_ease-out_forwards] absolute left-0 top-1/2 -translate-y-1/2">
+                        <Plane className="h-6 w-6 rotate-[-30deg] text-cyan-400" />
+                      </div>
+                    </div>
+
+                    {/* Contrail effect */}
+                    <div className="absolute left-0 top-1/2 h-0.5 w-full -translate-y-1/2 overflow-hidden">
+                      <div className="animate-[trail_1.5s_ease-out_forwards] h-full w-0 bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
+                    </div>
+
+                    {/* Main success icon with radar ping effect */}
+                    <div className="relative z-10">
+                      <div className="absolute inset-0 animate-[radar_1s_ease-out_forwards] rounded-full border-2 border-cyan-400/50" />
+                      <div className="absolute inset-0 animate-[radar_1s_ease-out_0.3s_forwards] rounded-full border-2 border-cyan-400/30" />
+                      <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/40">
+                        <Plane className="h-8 w-8 text-white" />
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                      <span className="font-semibold text-emerald-400">Cleared for Review!</span>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-500">Your image is now in the queue</p>
+
+                    {/* Custom keyframes via style tag */}
+                    <style jsx>{`
+                      @keyframes fly {
+                        0% { transform: translateX(-20px) translateY(-50%) rotate(-30deg); opacity: 0; }
+                        20% { opacity: 1; }
+                        100% { transform: translateX(calc(100vw + 20px)) translateY(-50%) rotate(-30deg); opacity: 0; }
+                      }
+                      @keyframes trail {
+                        0% { width: 0; opacity: 0; }
+                        20% { opacity: 1; }
+                        100% { width: 100%; opacity: 0; }
+                      }
+                      @keyframes radar {
+                        0% { transform: scale(1); opacity: 1; }
+                        100% { transform: scale(2.5); opacity: 0; }
+                      }
+                    `}</style>
+                  </div>
+                )}
 
                 <button
                   type="submit"
-                  disabled={submitting || !formData.imageUrl}
-                  className="w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40 disabled:opacity-50"
+                  disabled={isProcessing || !hasSelectedFile || submitStage === "success"}
+                  className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+                    submitStage === "success"
+                      ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/20"
+                      : "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-cyan-500/20 hover:shadow-cyan-500/40"
+                  }`}
                 >
-                  {submitting ? "Submitting..." : "Submit for Review"}
+                  {getButtonContent()}
                 </button>
               </form>
           </div>
