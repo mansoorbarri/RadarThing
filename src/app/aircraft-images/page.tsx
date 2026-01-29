@@ -23,7 +23,6 @@ function setCookie(name: string, value: string, days = 365) {
 }
 import { Upload, Plane, Check, Search } from "lucide-react";
 import { toast } from "sonner";
-import Loading from "~/components/loading";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
 import { ImageUploader } from "~/components/ui/image-uploader";
@@ -200,7 +199,7 @@ export default function AircraftImagesPage() {
   }
 
   if (!isLoaded || loading) {
-    return <Loading />;
+    return <GallerySkeleton />;
   }
 
   return (
@@ -534,6 +533,78 @@ export default function AircraftImagesPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function Skeleton({ className = "" }: { className?: string }) {
+  return <div className={`animate-pulse bg-white/10 rounded ${className}`} />;
+}
+
+function ImageCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+      <Skeleton className="aspect-video w-full rounded-none" />
+      <div className="p-4">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-6 w-12 rounded-md" />
+          <Skeleton className="h-6 w-12 rounded-md" />
+          <Skeleton className="h-6 w-16 rounded-md" />
+          <Skeleton className="ml-auto h-4 w-4 rounded-full" />
+        </div>
+        <Skeleton className="h-3 w-32 mt-2" />
+      </div>
+    </div>
+  );
+}
+
+function GallerySkeleton() {
+  return (
+    <div className="min-h-screen bg-black text-white">
+      {/* Header */}
+      <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
+          <Skeleton className="h-8 w-24" />
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-8 w-20 rounded-lg" />
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-6 py-12">
+        {/* Title */}
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
+              <Plane className="h-4 w-4 text-cyan-400" />
+              <span className="font-mono text-sm text-cyan-400">AIRCRAFT GALLERY</span>
+            </div>
+            <Skeleton className="h-9 w-48 mt-2" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <Skeleton className="h-12 w-36 rounded-xl" />
+        </div>
+
+        {/* Search and Filters Skeleton */}
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+          <Skeleton className="h-10 flex-1 rounded-lg" />
+          <div className="flex gap-3">
+            <Skeleton className="h-10 w-32 rounded-lg" />
+            <Skeleton className="h-10 w-32 rounded-lg" />
+          </div>
+        </div>
+
+        {/* Cards Grid Skeleton */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ImageCardSkeleton />
+          <ImageCardSkeleton />
+          <ImageCardSkeleton />
+          <ImageCardSkeleton />
+          <ImageCardSkeleton />
+          <ImageCardSkeleton />
+        </div>
+      </main>
     </div>
   );
 }
