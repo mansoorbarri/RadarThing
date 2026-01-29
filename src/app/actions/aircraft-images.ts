@@ -346,10 +346,151 @@ export async function createAircraftImage(data: {
   }
 }
 
-// Approve image (ADMIN only)
+// Check if approving an image would cause a conflict with existing approved image
+export async function checkApprovalConflict(
+  id: string
+): Promise<{
+  hasConflict: boolean;
+  pendingImage?: AircraftImage;
+  existingImage?: AircraftImage;
+  error?: string;
+}> {
+  const admin = await isAdminUser();
+  if (!admin) {
+    return { hasConflict: false, error: "Only ADMIN users can check conflicts" };
+  }
+
+  try {
+    // Get the pending image
+    const pendingImage = await convex.query(api.aircraftImages.getById, {
+      id: id as Id<"aircraftImages">,
+    });
+
+    if (!pendingImage) {
+      return { hasConflict: false, error: "Image not found" };
+    }
+
+    // Check if there's already an approved image for this combination
+    const existingApproved = await convex.query(
+      api.aircraftImages.findExistingApprovedFull,
+      {
+        airlineIata: pendingImage.airlineIata,
+        airlineIcao: pendingImage.airlineIcao,
+        aircraftType: pendingImage.aircraftType,
+        excludeId: id as Id<"aircraftImages">,
+      }
+    );
+
+    if (existingApproved) {
+      return {
+        hasConflict: true,
+        pendingImage: toAircraftImage(pendingImage),
+        existingImage: toAircraftImage(existingApproved),
+      };
+    }
+
+    return { hasConflict: false, pendingImage: toAircraftImage(pendingImage) };
+  } catch (error) {
+    console.error("Error checking approval conflict:", error);
+    return { hasConflict: false, error: "Failed to check for conflicts" };
+  }
+}
+
+// Resolve image conflict - admin chooses which image to keep
+export async function resolveImageConflict(
+  keepImageId: string,
+  removeImageId: string
+): Promise<{ success: boolean; error?: string }> {
+  const admin = await isAdminUser();
+  if (!admin) {
+    return { success: false, error: "Only ADMIN users can resolve conflicts" };
+  }
+
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    // Get both images
+    const keepImage = await convex.query(api.aircraftImages.getById, {
+      id: keepImageId as Id<"aircraftImages">,
+    });
+
+    const removeImage = await convex.query(api.aircraftImages.getById, {
+      id: removeImageId as Id<"aircraftImages">,
+    });
+
+    if (!keepImage || !removeImage) {
+      return { success: false, error: "One or both images not found" };
+    }
+
+    // Delete the image to remove from UploadThing
+    if (removeImage.imageKey) {
+      try {
+        await utapi.deleteFiles(removeImage.imageKey);
+      } catch (e) {
+        console.error("Failed to delete image from UploadThing:", e);
+      }
+    }
+
+    // Send rejection email to the uploader of the removed image (only if it was pending)
+    if (!removeImage.isApproved) {
+      await sendImageNotificationEmail(removeImage.uploadedBy, "rejected", {
+        airlineIata: removeImage.airlineIata,
+        airlineIcao: removeImage.airlineIcao,
+        aircraftType: removeImage.aircraftType,
+      }, "Another image was chosen for this airline + aircraft combination");
+    }
+
+    // Delete the image to remove from DB
+    await convex.mutation(api.aircraftImages.remove, {
+      id: removeImageId as Id<"aircraftImages">,
+    });
+
+    // If keeping the pending image, approve it
+    if (!keepImage.isApproved) {
+      await convex.mutation(api.aircraftImages.approve, {
+        id: keepImageId as Id<"aircraftImages">,
+        approvedBy: userId,
+      });
+
+      // Notify SSE server
+      await notifyImageUploaded(keepImage.airlineIata, keepImage.airlineIcao, keepImage.aircraftType);
+
+      // Remove from missingImageNotifications table
+      await Promise.all([
+        convex.mutation(api.missingImageNotifications.remove, {
+          airlineCode: keepImage.airlineIata,
+          aircraftType: keepImage.aircraftType,
+        }),
+        convex.mutation(api.missingImageNotifications.remove, {
+          airlineCode: keepImage.airlineIcao,
+          aircraftType: keepImage.aircraftType,
+        }),
+      ]);
+
+      // Send approval email
+      await sendImageNotificationEmail(keepImage.uploadedBy, "approved", {
+        airlineIata: keepImage.airlineIata,
+        airlineIcao: keepImage.airlineIcao,
+        aircraftType: keepImage.aircraftType,
+      });
+    }
+
+    revalidatePath("/aircraft-images");
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (error) {
+    console.error("Error resolving image conflict:", error);
+    return { success: false, error: "Failed to resolve conflict" };
+  }
+}
+
+// Approve image (ADMIN only) - returns hasConflict if there's an existing approved image
 export async function approveAircraftImage(
   id: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; hasConflict?: boolean }> {
   const admin = await isAdminUser();
   if (!admin) {
     return { success: false, error: "Only ADMIN users can approve images" };
@@ -381,21 +522,12 @@ export async function approveAircraftImage(
       }
     );
 
-    // If there's an existing approved image, delete it first
+    // If there's an existing approved image, return conflict flag
     if (existingApproved) {
-      if (existingApproved.imageKey) {
-        try {
-          await utapi.deleteFiles(existingApproved.imageKey);
-        } catch (e) {
-          console.error("Failed to delete old image from UploadThing:", e);
-        }
-      }
-      await convex.mutation(api.aircraftImages.remove, {
-        id: existingApproved.id as Id<"aircraftImages">,
-      });
+      return { success: false, hasConflict: true };
     }
 
-    // Approve the new image
+    // Approve the new image (no conflict)
     await convex.mutation(api.aircraftImages.approve, {
       id: id as Id<"aircraftImages">,
       approvedBy: userId,

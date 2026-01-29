@@ -537,3 +537,61 @@ export const findExistingApproved = query({
   },
 });
 
+// Find existing approved image with full details (for conflict resolution modal)
+export const findExistingApprovedFull = query({
+  args: {
+    airlineIata: v.string(),
+    airlineIcao: v.string(),
+    aircraftType: v.string(),
+    excludeId: v.optional(v.id("aircraftImages")),
+  },
+  handler: async (ctx, args) => {
+    const aircraftType = args.aircraftType.toUpperCase();
+    const iata = args.airlineIata.toUpperCase();
+    const icao = args.airlineIcao.toUpperCase();
+
+    // Check by IATA
+    let image = await ctx.db
+      .query("aircraftImages")
+      .withIndex("by_iata_aircraft_approved", (q) =>
+        q
+          .eq("airlineIata", iata)
+          .eq("aircraftType", aircraftType)
+          .eq("isApproved", true)
+      )
+      .first();
+
+    // If not found, check by ICAO
+    if (!image) {
+      image = await ctx.db
+        .query("aircraftImages")
+        .withIndex("by_icao_aircraft_approved", (q) =>
+          q
+            .eq("airlineIcao", icao)
+            .eq("aircraftType", aircraftType)
+            .eq("isApproved", true)
+        )
+        .first();
+    }
+
+    if (!image) return null;
+    if (args.excludeId && image._id === args.excludeId) return null;
+
+    return {
+      id: image._id,
+      airlineIata: image.airlineIata,
+      airlineIcao: image.airlineIcao,
+      aircraftType: image.aircraftType,
+      imageUrl: image.imageUrl,
+      imageKey: image.imageKey ?? null,
+      discordUsername: image.discordUsername ?? null,
+      isApproved: image.isApproved,
+      uploadedBy: image.uploadedBy,
+      approvedBy: image.approvedBy ?? null,
+      approvedAt: image.approvedAt ?? null,
+      createdAt: image._creationTime,
+      updatedAt: image._creationTime,
+    };
+  },
+});
+

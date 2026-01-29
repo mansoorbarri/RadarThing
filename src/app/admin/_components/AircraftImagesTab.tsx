@@ -11,11 +11,15 @@ import {
   bulkRejectAircraftImages,
   getUserInfoByIds,
   updateAircraftImageCodes,
+  checkApprovalConflict,
+  resolveImageConflict,
+  type AircraftImage,
 } from "~/app/actions/aircraft-images";
 import { Trash2, Check, X, Plane, Clock, CheckCircle, Search, CheckSquare, Square, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import { RejectModal } from "./RejectModal";
+import { ConflictModal } from "./ConflictModal";
 
 type ImageSubTab = "pending" | "approved";
 
@@ -158,6 +162,10 @@ export function AircraftImagesTab() {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectTargetIds, setRejectTargetIds] = useState<string[]>([]);
+  const [conflictModalOpen, setConflictModalOpen] = useState(false);
+  const [conflictPendingImage, setConflictPendingImage] = useState<AircraftImage | null>(null);
+  const [conflictExistingImage, setConflictExistingImage] = useState<AircraftImage | null>(null);
+  const [conflictLoading, setConflictLoading] = useState(false);
 
   const allImages = useMemo(() => [...pendingImages, ...approvedImages], [pendingImages, approvedImages]);
 
@@ -239,10 +247,58 @@ export function AircraftImagesTab() {
     if (result.success) {
       setSelectedImages((prev) => { const next = new Set(prev); next.delete(id); return next; });
       toast.success("Image approved");
+    } else if (result.hasConflict) {
+      // Conflict detected - fetch full details and show modal
+      const conflictCheck = await checkApprovalConflict(id);
+      if (conflictCheck.hasConflict && conflictCheck.pendingImage && conflictCheck.existingImage) {
+        setConflictPendingImage(conflictCheck.pendingImage);
+        setConflictExistingImage(conflictCheck.existingImage);
+        setConflictModalOpen(true);
+      } else {
+        toast.error(conflictCheck.error || "Failed to load conflict details");
+      }
     } else {
       toast.error(result.error || "Failed to approve image");
     }
     setActionLoading(null);
+  }
+
+  async function handleConflictKeepPending() {
+    if (!conflictPendingImage || !conflictExistingImage) return;
+    setConflictLoading(true);
+    const result = await resolveImageConflict(conflictPendingImage.id, conflictExistingImage.id);
+    if (result.success) {
+      toast.success("New image approved, existing image removed");
+      setSelectedImages((prev) => { const next = new Set(prev); next.delete(conflictPendingImage.id); return next; });
+    } else {
+      toast.error(result.error || "Failed to resolve conflict");
+    }
+    setConflictLoading(false);
+    setConflictModalOpen(false);
+    setConflictPendingImage(null);
+    setConflictExistingImage(null);
+  }
+
+  async function handleConflictKeepExisting() {
+    if (!conflictPendingImage || !conflictExistingImage) return;
+    setConflictLoading(true);
+    const result = await resolveImageConflict(conflictExistingImage.id, conflictPendingImage.id);
+    if (result.success) {
+      toast.success("Existing image kept, pending image rejected");
+      setSelectedImages((prev) => { const next = new Set(prev); next.delete(conflictPendingImage.id); return next; });
+    } else {
+      toast.error(result.error || "Failed to resolve conflict");
+    }
+    setConflictLoading(false);
+    setConflictModalOpen(false);
+    setConflictPendingImage(null);
+    setConflictExistingImage(null);
+  }
+
+  function handleConflictCancel() {
+    setConflictModalOpen(false);
+    setConflictPendingImage(null);
+    setConflictExistingImage(null);
   }
 
   function openRejectModal(ids: string[]) {
@@ -342,6 +398,17 @@ export function AircraftImagesTab() {
         onReasonChange={setRejectReason}
         onConfirm={handleRejectConfirm}
         onCancel={() => setRejectModalOpen(false)}
+      />
+
+      <ConflictModal
+        isOpen={conflictModalOpen}
+        pendingImage={conflictPendingImage}
+        existingImage={conflictExistingImage}
+        userInfo={userInfo}
+        isLoading={conflictLoading}
+        onKeepPending={handleConflictKeepPending}
+        onKeepExisting={handleConflictKeepExisting}
+        onCancel={handleConflictCancel}
       />
 
       {/* Search and Filters */}
