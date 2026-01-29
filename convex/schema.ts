@@ -5,7 +5,7 @@ export default defineSchema({
   users: defineTable({
     clerkId: v.string(),
     email: v.string(),
-    role: v.union(v.literal("FREE"), v.literal("PRO")),
+    role: v.union(v.literal("FREE"), v.literal("PRO"), v.literal("ADMIN")),
     isDeleted: v.boolean(),
     deletedAt: v.optional(v.number()), // timestamp
     googleId: v.optional(v.string()),

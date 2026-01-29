@@ -17,9 +17,12 @@ export async function isPro() {
   const user = await getUserByEmail();
   if (!user) return false;
 
-  // Admin users also have PRO access
-  const adminGoogleId = env.ADMIN_GOOGLE_ID || "101233162035372298523";
-  if (user.googleId && user.googleId === adminGoogleId) {
+  // Admins also have PRO access
+  if (user.role === "ADMIN") return true;
+
+  // Fallback: env-based super admin
+  const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
+  if (superAdminGoogleId && user.googleId === superAdminGoogleId) {
     return true;
   }
 
@@ -28,10 +31,14 @@ export async function isPro() {
 
 export async function isAdmin() {
   const user = await getUserByEmail();
-  if (!user?.googleId) return false;
+  if (!user) return false;
 
-  const adminGoogleId = env.ADMIN_GOOGLE_ID || "101233162035372298523";
-  return user.googleId === adminGoogleId;
+  // Role-based admin check
+  if (user.role === "ADMIN") return true;
+
+  // Fallback: env-based super admin (break-glass access)
+  const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
+  return Boolean(superAdminGoogleId && user.googleId === superAdminGoogleId);
 }
 
 // Combined query to get both pro and admin status with a single DB call
@@ -40,21 +47,26 @@ export async function getProAndAdminStatus(): Promise<{ isPro: boolean; isAdmin:
   const user = await getUserByEmail();
   if (!user) return { isPro: false, isAdmin: false };
 
-  const adminGoogleId = env.ADMIN_GOOGLE_ID || "101233162035372298523";
-  const isAdminUser = Boolean(user.googleId && user.googleId === adminGoogleId);
+  // Role-based admin check
+  const isRoleAdmin = user.role === "ADMIN";
+
+  // Fallback: env-based super admin
+  const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
+  const isSuperAdmin = Boolean(superAdminGoogleId && user.googleId === superAdminGoogleId);
+
+  const isAdminUser = isRoleAdmin || isSuperAdmin;
   const isProUser = user.role === "PRO" || isAdminUser;
 
   return { isPro: isProUser, isAdmin: isAdminUser };
 }
 
-// Lightweight admin check that takes a googleId - avoids duplicate DB query
-// when the client already has the user data from useQuery
-export async function checkIsAdminByGoogleId(googleId: string | null | undefined): Promise<boolean> {
-  // Server actions must be async, so we use a minimal async operation
+// Check for env-based super admin (break-glass access)
+// This is separate from role-based admin - it's for emergency access via env var
+export async function checkIsSuperAdmin(googleId: string | null | undefined): Promise<boolean> {
   await Promise.resolve();
   if (!googleId) return false;
-  const adminGoogleId = env.ADMIN_GOOGLE_ID || "101233162035372298523";
-  return googleId === adminGoogleId;
+  const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
+  return Boolean(superAdminGoogleId && googleId === superAdminGoogleId);
 }
 
 export async function getSupportId(): Promise<string | null> {

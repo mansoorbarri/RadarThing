@@ -137,14 +137,15 @@ async function isProUser(): Promise<boolean> {
   const { userId } = await auth();
   if (!userId) return false;
 
-  // Admin users also have PRO access
   const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
-  const adminGoogleId = env.ADMIN_GOOGLE_ID || "101233162035372298523";
-  if (user?.googleId && user.googleId === adminGoogleId) {
-    return true;
-  }
+  if (!user) return false;
 
-  return await convex.query(api.users.isPro, { clerkId: userId });
+  // Admin or PRO role
+  if (user.role === "ADMIN" || user.role === "PRO") return true;
+
+  // Fallback: env-based super admin
+  const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
+  return Boolean(superAdminGoogleId && user.googleId === superAdminGoogleId);
 }
 
 async function isAdminUser(): Promise<boolean> {
@@ -152,10 +153,14 @@ async function isAdminUser(): Promise<boolean> {
   if (!userId) return false;
 
   const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
-  if (!user?.googleId) return false;
+  if (!user) return false;
 
-  const adminGoogleId = env.ADMIN_GOOGLE_ID || "101233162035372298523";
-  return user.googleId === adminGoogleId;
+  // Role-based admin
+  if (user.role === "ADMIN") return true;
+
+  // Fallback: env-based super admin
+  const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
+  return Boolean(superAdminGoogleId && user.googleId === superAdminGoogleId);
 }
 
 async function getCurrentUserId(): Promise<string | null> {

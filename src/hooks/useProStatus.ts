@@ -3,7 +3,7 @@ import { useQuery } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { api } from "../../convex/_generated/api";
-import { checkIsAdminByGoogleId } from "~/app/actions/is-pro";
+import { checkIsSuperAdmin } from "~/app/actions/is-pro";
 
 export const useProStatus = () => {
   const { user, isLoaded } = useUser();
@@ -15,24 +15,25 @@ export const useProStatus = () => {
     clerkId ? { clerkId } : "skip"
   );
 
-  // Admin check via lightweight server action (uses googleId from dbUser, no extra DB query)
-  const [isAdminUser, setIsAdminUser] = useState(false);
+  // Check for env-based super admin (break-glass access)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   useEffect(() => {
     if (dbUser?.googleId) {
-      checkIsAdminByGoogleId(dbUser.googleId)
-        .then(setIsAdminUser)
-        .catch(() => setIsAdminUser(false));
+      checkIsSuperAdmin(dbUser.googleId)
+        .then(setIsSuperAdmin)
+        .catch(() => setIsSuperAdmin(false));
     } else if (dbUser !== undefined) {
-      // User loaded but no googleId
-      setIsAdminUser(false);
+      setIsSuperAdmin(false);
     }
   }, [dbUser]);
 
   const isLoading = !isLoaded || (clerkId && dbUser === undefined);
-  const isProUser = dbUser?.role === "PRO";
+  const isRoleAdmin = dbUser?.role === "ADMIN";
+  const isAdminUser = isRoleAdmin || isSuperAdmin;
+  const isProUser = dbUser?.role === "PRO" || dbUser?.role === "ADMIN";
 
   return {
-    isProUser: isProUser || isAdminUser, // Admins also have PRO access
+    isProUser: isProUser || isSuperAdmin, // Super admins also have PRO access
     isAdminUser,
     isLoading: Boolean(isLoading),
   };
