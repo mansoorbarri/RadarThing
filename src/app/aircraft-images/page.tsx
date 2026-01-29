@@ -21,7 +21,8 @@ function setCookie(name: string, value: string, days = 365) {
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
   document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
 }
-import { Upload, Plane, Check, Clock, Search } from "lucide-react";
+import { Upload, Plane, Check, Search } from "lucide-react";
+import { toast } from "sonner";
 import Loading from "~/components/loading";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -58,7 +59,6 @@ export default function AircraftImagesPage() {
   }, []);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   // Helper to check if image matches search query
   const matchesSearch = (image: (typeof images)[number], query: string) => {
@@ -155,10 +155,12 @@ export default function AircraftImagesPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!formData.imageUrl) {
+      toast.error("Please upload an image first");
       setError("Please upload an image first");
       return;
     }
     if (!formData.airlineIata || !formData.airlineIcao) {
+      toast.error("Both IATA and ICAO airline codes are required");
       setError("Both IATA and ICAO airline codes are required");
       return;
     }
@@ -179,21 +181,19 @@ export default function AircraftImagesPage() {
       if (formData.discordUsername) {
         setCookie("radarthing_discord", formData.discordUsername);
       }
-      setSuccess(true);
-      setTimeout(() => {
-        setShowUploadModal(false);
-        // Keep Discord username when resetting form
-        setFormData((prev) => ({
-          airlineIata: "",
-          airlineIcao: "",
-          aircraftType: "",
-          imageUrl: "",
-          imageKey: "",
-          discordUsername: prev.discordUsername
-        }));
-        setSuccess(false);
-      }, 2000);
+      toast.success("Image submitted for review");
+      setShowUploadModal(false);
+      // Keep Discord username when resetting form
+      setFormData((prev) => ({
+        airlineIata: "",
+        airlineIcao: "",
+        aircraftType: "",
+        imageUrl: "",
+        imageKey: "",
+        discordUsername: prev.discordUsername,
+      }));
     } else {
+      toast.error(result.error || "Failed to submit image");
       setError(result.error || "Failed to submit image");
     }
     setSubmitting(false);
@@ -384,7 +384,6 @@ export default function AircraftImagesPage() {
               onClick={() => {
                 setShowUploadModal(false);
                 setError(null);
-                setSuccess(false);
                 // Keep Discord username when closing modal
                 setFormData((prev) => ({
                   airlineIata: "",
@@ -405,18 +404,7 @@ export default function AircraftImagesPage() {
               Your image will be reviewed by our team before appearing in the gallery.
             </p>
 
-            {success ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <div className="mb-4 rounded-full bg-emerald-500/20 p-4">
-                  <Clock className="h-8 w-8 text-emerald-400" />
-                </div>
-                <h3 className="mb-2 text-lg font-semibold text-white">Submitted for Review</h3>
-                <p className="text-center text-sm text-slate-400">
-                  Your image has been submitted and is pending approval.
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
                   <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
                     {error}
@@ -543,7 +531,6 @@ export default function AircraftImagesPage() {
                   {submitting ? "Submitting..." : "Submit for Review"}
                 </button>
               </form>
-            )}
           </div>
         </div>
       )}

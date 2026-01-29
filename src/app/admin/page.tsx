@@ -15,6 +15,7 @@ import {
   getUserInfoByIds,
 } from "~/app/actions/aircraft-images";
 import { Trash2, Check, X, Plane, Clock, CheckCircle, Search, CheckSquare, Square, Bell, ImageIcon } from "lucide-react";
+import { toast } from "sonner";
 import Loading from "~/components/loading";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -165,8 +166,9 @@ export default function AdminPage() {
     const result = await approveAircraftImage(id);
     if (result.success) {
       setSelectedImages((prev) => { const next = new Set(prev); next.delete(id); return next; });
+      toast.success("Image approved");
     } else {
-      alert(result.error || "Failed to approve image");
+      toast.error(result.error || "Failed to approve image");
     }
     setActionLoading(null);
   }
@@ -178,7 +180,7 @@ export default function AdminPage() {
   }
 
   async function handleRejectConfirm() {
-    if (!rejectReason.trim()) { alert("Please provide a reason for rejection"); return; }
+    if (!rejectReason.trim()) { toast.error("Please provide a reason for rejection"); return; }
     setRejectModalOpen(false);
 
     if (rejectTargetIds.length === 1 && rejectTargetIds[0]) {
@@ -187,15 +189,24 @@ export default function AdminPage() {
       const result = await rejectAircraftImage(targetId, rejectReason);
       if (result.success) {
         setSelectedImages((prev) => { const next = new Set(prev); next.delete(targetId); return next; });
+        toast.success("Image rejected");
       } else {
-        alert(result.error || "Failed to reject image");
+        toast.error(result.error || "Failed to reject image");
       }
       setActionLoading(null);
     } else if (rejectTargetIds.length > 1) {
       setBulkLoading(true);
       const result = await bulkRejectAircraftImages(rejectTargetIds, rejectReason);
-      if (result.rejected > 0) setSelectedImages(new Set());
-      if (result.failed > 0) alert(`Rejected ${result.rejected} images, ${result.failed} failed`);
+      if (result.rejected > 0) {
+        setSelectedImages(new Set());
+        if (result.failed > 0) {
+          toast.warning(`Rejected ${result.rejected} images, ${result.failed} failed`);
+        } else {
+          toast.success(`Rejected ${result.rejected} images`);
+        }
+      } else if (result.failed > 0) {
+        toast.error(`Failed to reject ${result.failed} images`);
+      }
       setBulkLoading(false);
     }
     setRejectTargetIds([]);
@@ -206,7 +217,11 @@ export default function AdminPage() {
     if (!confirm("Are you sure you want to delete this approved image?")) return;
     setActionLoading(id);
     const result = await deleteAircraftImage(id);
-    if (!result.success) alert(result.error || "Failed to delete image");
+    if (result.success) {
+      toast.success("Image deleted");
+    } else {
+      toast.error(result.error || "Failed to delete image");
+    }
     setActionLoading(null);
   }
 
@@ -227,8 +242,16 @@ export default function AdminPage() {
     if (ids.length === 0) return;
     setBulkLoading(true);
     const result = await bulkApproveAircraftImages(ids);
-    if (result.approved > 0) setSelectedImages(new Set());
-    if (result.failed > 0) alert(`Approved ${result.approved} images, ${result.failed} failed`);
+    if (result.approved > 0) {
+      setSelectedImages(new Set());
+      if (result.failed > 0) {
+        toast.warning(`Approved ${result.approved} images, ${result.failed} failed`);
+      } else {
+        toast.success(`Approved ${result.approved} images`);
+      }
+    } else if (result.failed > 0) {
+      toast.error(`Failed to approve ${result.failed} images`);
+    }
     setBulkLoading(false);
   }
 
@@ -293,12 +316,22 @@ export default function AdminPage() {
   };
 
   const saveNote = async (airlineCode: string, aircraftType: string, note: string) => {
-    await updateNoteMutation({ airlineCode, aircraftType, note });
+    try {
+      await updateNoteMutation({ airlineCode, aircraftType, note });
+      toast.success("Note saved");
+    } catch {
+      toast.error("Failed to save note");
+    }
   };
 
   const deleteNotification = async (airlineCode: string, aircraftType: string) => {
     if (!confirm(`Delete notification for ${airlineCode} ${aircraftType}?`)) return;
-    await removeNotificationMutation({ airlineCode, aircraftType });
+    try {
+      await removeNotificationMutation({ airlineCode, aircraftType });
+      toast.success("Notification deleted");
+    } catch {
+      toast.error("Failed to delete notification");
+    }
   };
 
   // ============ Render ============
