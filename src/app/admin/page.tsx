@@ -22,6 +22,27 @@ import { UserAuth } from "~/components/atc/userAuth";
 type MainTab = "images" | "notifications";
 type ImageSubTab = "pending" | "approved";
 
+// Moved outside component to avoid dependency array issues
+interface ImageType { airlineIata: string; airlineIcao: string; aircraftType: string; discordUsername?: string | null }
+interface NotifType { airlineCode: string; aircraftType: string; note?: string | null }
+
+function matchesImageSearch(image: ImageType, query: string) {
+  if (!query.trim()) return true;
+  const q = query.toLowerCase();
+  return (
+    image.airlineIata?.toLowerCase().includes(q) ||
+    image.airlineIcao?.toLowerCase().includes(q) ||
+    image.aircraftType?.toLowerCase().includes(q) ||
+    image.discordUsername?.toLowerCase().includes(q)
+  );
+}
+
+function matchesNotifSearch(notification: NotifType, query: string) {
+  if (!query.trim()) return true;
+  const q = query.toLowerCase();
+  return notification.airlineCode?.toLowerCase().includes(q) || notification.aircraftType?.toLowerCase().includes(q) || notification.note?.toLowerCase().includes(q);
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const { isSignedIn, isLoaded } = useUser();
@@ -75,17 +96,6 @@ export default function AdminPage() {
   }, [isLoaded, isSignedIn]);
 
   // ============ Aircraft Images Logic ============
-  const matchesImageSearch = (image: (typeof pendingImages)[number], query: string) => {
-    if (!query.trim()) return true;
-    const q = query.toLowerCase();
-    return (
-      image.airlineIata?.toLowerCase().includes(q) ||
-      image.airlineIcao?.toLowerCase().includes(q) ||
-      image.aircraftType?.toLowerCase().includes(q) ||
-      image.discordUsername?.toLowerCase().includes(q)
-    );
-  };
-
   const allImages = useMemo(() => [...pendingImages, ...approvedImages], [pendingImages, approvedImages]);
 
   const uniqueImageAirlines = useMemo(() => {
@@ -261,12 +271,6 @@ export default function AdminPage() {
   }
 
   // ============ Missing Notifications Logic ============
-  const matchesNotifSearch = (notification: (typeof notifications)[number], query: string) => {
-    if (!query.trim()) return true;
-    const q = query.toLowerCase();
-    return notification.airlineCode?.toLowerCase().includes(q) || notification.aircraftType?.toLowerCase().includes(q) || notification.note?.toLowerCase().includes(q);
-  };
-
   const uniqueNotifAirlines = useMemo(() => {
     const airlines = new Set<string>();
     notifications.forEach((n) => {
@@ -636,9 +640,6 @@ export default function AdminPage() {
 
             {/* Stats */}
             <div className="mb-6 flex items-center gap-4">
-              <div className="rounded-lg border border-white/10 bg-black/40 px-4 py-2">
-                <span className="font-mono text-sm text-slate-400">Total: <span className="text-white">{notifications.length}</span></span>
-              </div>
               {hasActiveNotifFilters && filteredNotifications.length !== notifications.length && (
                 <div className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
                   <span className="font-mono text-sm text-cyan-400">Showing: {filteredNotifications.length}</span>

@@ -607,13 +607,13 @@ export async function bulkApproveAircraftImages(
             convex.mutation(api.missingImageNotifications.remove, {
               airlineCode: image.airlineIata,
               aircraftType: image.aircraftType,
-            })
+            }).then(() => undefined)
           );
           notifyPromises.push(
             convex.mutation(api.missingImageNotifications.remove, {
               airlineCode: image.airlineIcao,
               aircraftType: image.aircraftType,
-            })
+            }).then(() => undefined)
           );
           emailPromises.push(
             sendImageNotificationEmail(image.uploadedBy, "approved", {
