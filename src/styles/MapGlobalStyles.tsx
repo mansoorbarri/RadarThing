@@ -117,7 +117,21 @@ export const MapGlobalStyles = () => (
       background: transparent !important;
       border: none !important;
       box-shadow: none !important;
-      top: 55px;
+    }
+
+    /* Position all left-side controls below the header/search bar */
+    .leaflet-top.leaflet-left {
+      top: 90px !important;
+    }
+
+    /* Reduce gap between left-side controls */
+    .leaflet-top.leaflet-left .leaflet-control {
+      margin-top: 6px !important;
+      margin-bottom: 0 !important;
+    }
+
+    .leaflet-top.leaflet-left .leaflet-control:first-child {
+      margin-top: 0 !important;
     }
   `}</style>
 );

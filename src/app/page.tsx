@@ -280,8 +280,8 @@ export default function ATCPage() {
             <Image
               src={(isDarkLayerMode || isLoading) ? "/logo-white.svg" : "/logo-black.svg"}
               alt="RadarThing"
-              width={100}
-              height={30}
+              width={130}
+              height={40}
               className="cursor-pointer"
               onClick={() => router.push("/")}
             />
