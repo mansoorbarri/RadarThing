@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { RejectModal } from "./RejectModal";
 import { ConflictModal } from "./ConflictModal";
+import { ConfirmModal } from "./ConfirmModal";
 
 type ImageSubTab = "pending" | "approved";
 
@@ -166,6 +167,10 @@ export function AircraftImagesTab() {
   const [conflictPendingImage, setConflictPendingImage] = useState<AircraftImage | null>(null);
   const [conflictExistingImage, setConflictExistingImage] = useState<AircraftImage | null>(null);
   const [conflictLoading, setConflictLoading] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleteTargetInfo, setDeleteTargetInfo] = useState<{ iata: string; icao: string; aircraft: string } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const allImages = useMemo(() => [...pendingImages, ...approvedImages], [pendingImages, approvedImages]);
 
@@ -341,16 +346,31 @@ export function AircraftImagesTab() {
     setRejectReason("");
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this approved image?")) return;
-    setActionLoading(id);
-    const result = await deleteAircraftImage(id);
+  function openDeleteModal(id: string, iata: string, icao: string, aircraft: string) {
+    setDeleteTargetId(id);
+    setDeleteTargetInfo({ iata, icao, aircraft });
+    setDeleteModalOpen(true);
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deleteTargetId) return;
+    setDeleteLoading(true);
+    const result = await deleteAircraftImage(deleteTargetId);
     if (result.success) {
       toast.success("Image deleted");
     } else {
       toast.error(result.error || "Failed to delete image");
     }
-    setActionLoading(null);
+    setDeleteLoading(false);
+    setDeleteModalOpen(false);
+    setDeleteTargetId(null);
+    setDeleteTargetInfo(null);
+  }
+
+  function handleDeleteCancel() {
+    setDeleteModalOpen(false);
+    setDeleteTargetId(null);
+    setDeleteTargetInfo(null);
   }
 
   function toggleSelect(id: string) {
@@ -409,6 +429,19 @@ export function AircraftImagesTab() {
         onKeepPending={handleConflictKeepPending}
         onKeepExisting={handleConflictKeepExisting}
         onCancel={handleConflictCancel}
+      />
+
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        title="Delete Approved Image"
+        message={deleteTargetInfo
+          ? `Are you sure you want to delete the approved image for ${deleteTargetInfo.iata}/${deleteTargetInfo.icao} ${deleteTargetInfo.aircraft}? This action cannot be undone.`
+          : "Are you sure you want to delete this approved image?"}
+        confirmLabel="Delete"
+        variant="danger"
+        isLoading={deleteLoading}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
       />
 
       {/* Search and Filters */}
@@ -551,7 +584,7 @@ export function AircraftImagesTab() {
                 <div key={image.id} className="group overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl transition-all hover:border-cyan-500/30">
                   <div className="relative aspect-video">
                     <Image src={image.imageUrl} alt={`${image.airlineIata || image.airlineIcao} ${image.aircraftType}`} fill className="object-cover" />
-                    <button onClick={() => handleDelete(image.id)} disabled={actionLoading === image.id} className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 p-2 opacity-0 transition-all hover:bg-red-500 group-hover:opacity-100 disabled:opacity-50">
+                    <button onClick={() => openDeleteModal(image.id, image.airlineIata || "", image.airlineIcao || "", image.aircraftType)} className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 p-2 opacity-0 transition-all hover:bg-red-500 group-hover:opacity-100">
                       <Trash2 className="h-4 w-4 text-white" />
                     </button>
                   </div>

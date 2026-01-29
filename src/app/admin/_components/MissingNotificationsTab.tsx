@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Trash2, Search, Bell } from "lucide-react";
 import { toast } from "sonner";
+import { ConfirmModal } from "./ConfirmModal";
 
 interface NotifType {
   airlineCode: string;
@@ -62,6 +63,9 @@ export function MissingNotificationsTab() {
   const [notifSearchQuery, setNotifSearchQuery] = useState("");
   const [notifAirlineFilter, setNotifAirlineFilter] = useState<string>("");
   const [notifAircraftFilter, setNotifAircraftFilter] = useState<string>("");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ airlineCode: string; aircraftType: string } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const uniqueNotifAirlines = useMemo(() => {
     const airlines = new Set<string>();
@@ -119,18 +123,45 @@ export function MissingNotificationsTab() {
     }
   };
 
-  const deleteNotification = async (airlineCode: string, aircraftType: string) => {
-    if (!confirm(`Delete notification for ${airlineCode} ${aircraftType}?`)) return;
+  const openDeleteModal = (airlineCode: string, aircraftType: string) => {
+    setDeleteTarget({ airlineCode, aircraftType });
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
     try {
-      await removeNotificationMutation({ airlineCode, aircraftType });
+      await removeNotificationMutation(deleteTarget);
       toast.success("Notification deleted");
     } catch {
       toast.error("Failed to delete notification");
     }
+    setDeleteLoading(false);
+    setDeleteModalOpen(false);
+    setDeleteTarget(null);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setDeleteTarget(null);
   };
 
   return (
     <>
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        title="Delete Notification"
+        message={deleteTarget
+          ? `Delete notification for ${deleteTarget.airlineCode} ${deleteTarget.aircraftType}? This will remove it from the missing images list.`
+          : "Delete this notification?"}
+        confirmLabel="Delete"
+        variant="danger"
+        isLoading={deleteLoading}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
+
       {/* Search and Filters */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1">
@@ -198,7 +229,7 @@ export function MissingNotificationsTab() {
                   </td>
                   <td className="px-6 py-4">
                     <button
-                      onClick={() => deleteNotification(notification.airlineCode, notification.aircraftType)}
+                      onClick={() => openDeleteModal(notification.airlineCode, notification.aircraftType)}
                       className="cursor-pointer rounded-lg p-1.5 text-slate-600 opacity-0 transition-all hover:bg-red-500/20 hover:text-red-400 group-hover:opacity-100"
                     >
                       <Trash2 className="h-4 w-4" />
