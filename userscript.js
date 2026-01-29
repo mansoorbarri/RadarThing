@@ -35,6 +35,11 @@
           break;
 
         case "setHeading":
+          // Switch to heading mode using the proper GeoFS API
+          if (typeof geofs.autopilot.setMode === "function") {
+            geofs.autopilot.setMode("HDG");
+          }
+          // Set the course value
           if (typeof geofs.autopilot.setCourse === "function") {
             geofs.autopilot.setCourse(Number(cmd.value));
           }
@@ -80,10 +85,9 @@
           break;
 
         case "disableNav":
-          // Disable NAV mode to allow manual heading control
-          if (geofs.autopilot && geofs.autopilot.modes) {
-            geofs.autopilot.modes.heading = true;
-            geofs.autopilot.modes.nav = false;
+          // Switch to heading mode using the proper GeoFS API
+          if (typeof geofs.autopilot.setMode === "function") {
+            geofs.autopilot.setMode("HDG");
           }
           break;
 
@@ -204,7 +208,7 @@
       flightPlan: geofs.flightPlan?.export ? geofs.flightPlan.export() : [],
       nextWaypoint: geofs.flightPlan?.trackedWaypoint?.ident || null,
       vspeed: Math.floor(geofs.animation?.values?.verticalSpeed || 0),
-      navMode: geofs.autopilot?.modes?.nav || false,
+      navMode: geofs.autopilot?.mode === "NAV",
       flapsPosition: controls?.flaps?.position || 0,
       flapsMaxPosition: geofs.animation?.values?.flapsSteps || controls?.flaps?.maxPosition || 0,
     };

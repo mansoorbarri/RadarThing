@@ -8,9 +8,10 @@ interface AircraftControlPanelProps {
   aircraft: PositionUpdate & { altMSL?: number };
 }
 
+type PendingAction = "heading" | "setAll";
+
 export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
-  const { setSpeed, setAltitude, setHeading, setVS, setSquawk, setFlaps, disableNav, isLoading } =
-    useAircraftCommands();
+  const { setSpeed, setAltitude, setHeading, setVS, setSquawk, setFlaps, isLoading } = useAircraftCommands();
 
   const [speedInput, setSpeedInput] = useState("");
   const [altitudeInput, setAltitudeInput] = useState("");
@@ -20,9 +21,12 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   const [flapsInput, setFlapsInput] = useState("");
   const [flapsError, setFlapsError] = useState("");
   const [showNavWarning, setShowNavWarning] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
   const aircraftId = aircraft.id;
   const flapsMaxPosition = aircraft.flapsMaxPosition ?? 0;
+  // Check navMode - but note this may be stale (updates every 5 seconds)
+  const isInNavMode = aircraft.navMode === true;
 
   const handleSetSpeed = useCallback(() => {
     const value = parseInt(speedInput, 10);
@@ -38,29 +42,70 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     }
   }, [aircraftId, altitudeInput, setAltitude]);
 
-  const handleSetHeading = useCallback(() => {
+  // Check if heading input is valid
+  const hasValidHeading = useCallback(() => {
     const value = parseInt(headingInput, 10);
-    if (!isNaN(value) && value >= 0 && value <= 360) {
-      // Only show warning if aircraft is in NAV mode
-      if (aircraft.navMode) {
-        setShowNavWarning(true);
-      } else {
-        // Not in NAV mode, set heading directly
-        setHeading(aircraftId, value);
+    return !isNaN(value) && value >= 0 && value <= 360;
+  }, [headingInput]);
+
+  // When user clicks SET on heading - only show warning if in NAV mode
+  const handleSetHeading = useCallback(() => {
+    if (!hasValidHeading()) return;
+
+    if (isInNavMode) {
+      // In NAV mode - show warning before switching to HDG
+      setPendingAction("heading");
+      setShowNavWarning(true);
+    } else {
+      // Already in HDG mode - set heading directly
+      setHeading(aircraftId, parseInt(headingInput, 10));
+    }
+  }, [hasValidHeading, isInNavMode, aircraftId, headingInput, setHeading]);
+
+  // User confirms they want to switch from NAV to HDG mode
+  const handleConfirmHeadingChange = useCallback(() => {
+    const headingValue = parseInt(headingInput, 10);
+
+    if (pendingAction === "heading") {
+      // Just setting heading
+      if (!isNaN(headingValue) && headingValue >= 0 && headingValue <= 360) {
+        setHeading(aircraftId, headingValue);
+      }
+    } else if (pendingAction === "setAll") {
+      // Setting all values
+      const speed = parseInt(speedInput, 10);
+      const altitude = parseInt(altitudeInput, 10);
+      const vs = parseInt(vsInput, 10);
+      const flaps = parseInt(flapsInput, 10);
+
+      if (!isNaN(speed) && speed >= 0) {
+        setSpeed(aircraftId, speed);
+      }
+      if (!isNaN(altitude) && altitude >= 0) {
+        setAltitude(aircraftId, altitude);
+      }
+      if (!isNaN(headingValue) && headingValue >= 0 && headingValue <= 360) {
+        setHeading(aircraftId, headingValue);
+      }
+      if (!isNaN(vs)) {
+        setVS(aircraftId, vs);
+      }
+      if (/^[0-7]{4}$/.test(squawkInput)) {
+        setSquawk(aircraftId, squawkInput);
+      }
+      if (!isNaN(flaps) && flaps >= 0 && (flapsMaxPosition === 0 || flaps <= flapsMaxPosition)) {
+        setFlaps(aircraftId, flaps);
       }
     }
-  }, [headingInput, aircraft.navMode, aircraftId, setHeading]);
 
-  const handleConfirmHeading = useCallback(() => {
-    const value = parseInt(headingInput, 10);
-    if (!isNaN(value) && value >= 0 && value <= 360) {
-      disableNav(aircraftId);
-      setTimeout(() => {
-        setHeading(aircraftId, value);
-      }, 100);
-    }
     setShowNavWarning(false);
-  }, [aircraftId, headingInput, setHeading, disableNav]);
+    setPendingAction(null);
+  }, [pendingAction, aircraftId, headingInput, speedInput, altitudeInput, vsInput, squawkInput, flapsInput, flapsMaxPosition, setHeading, setSpeed, setAltitude, setVS, setSquawk, setFlaps]);
+
+  const handleCancelWarning = useCallback(() => {
+    setShowNavWarning(false);
+    setPendingAction(null);
+  }, []);
 
   const handleSetVS = useCallback(() => {
     const value = parseInt(vsInput, 10);
@@ -96,19 +141,24 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     const vs = parseInt(vsInput, 10);
     const flaps = parseInt(flapsInput, 10);
 
+    const hasHeadingToSet = !isNaN(heading) && heading >= 0 && heading <= 360;
+
+    // If in NAV mode and heading is being set, show warning first
+    if (isInNavMode && hasHeadingToSet) {
+      setPendingAction("setAll");
+      setShowNavWarning(true);
+      return;
+    }
+
+    // Execute all commands
     if (!isNaN(speed) && speed >= 0) {
       setSpeed(aircraftId, speed);
     }
     if (!isNaN(altitude) && altitude >= 0) {
       setAltitude(aircraftId, altitude);
     }
-    if (!isNaN(heading) && heading >= 0 && heading <= 360) {
-      if (aircraft.navMode) {
-        disableNav(aircraftId);
-        setTimeout(() => setHeading(aircraftId, heading), 100);
-      } else {
-        setHeading(aircraftId, heading);
-      }
+    if (hasHeadingToSet) {
+      setHeading(aircraftId, heading);
     }
     if (!isNaN(vs)) {
       setVS(aircraftId, vs);
@@ -119,7 +169,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     if (!isNaN(flaps) && flaps >= 0 && (flapsMaxPosition === 0 || flaps <= flapsMaxPosition)) {
       setFlaps(aircraftId, flaps);
     }
-  }, [aircraftId, speedInput, altitudeInput, headingInput, vsInput, squawkInput, flapsInput, flapsMaxPosition, aircraft.navMode, setSpeed, setAltitude, setHeading, setVS, setSquawk, setFlaps, disableNav]);
+  }, [aircraftId, speedInput, altitudeInput, headingInput, vsInput, squawkInput, flapsInput, flapsMaxPosition, isInNavMode, setSpeed, setAltitude, setHeading, setVS, setSquawk, setFlaps]);
 
   const hasAnyInput = speedInput || altitudeInput || headingInput || vsInput || squawkInput || flapsInput;
 
@@ -136,18 +186,24 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       {/* NAV Mode Warning Modal */}
       {showNavWarning && (
         <div className="rounded-xl border border-amber-500/50 bg-amber-950/50 p-3">
-          <p className="mb-3 font-mono text-xs text-amber-200">
-            This will disable NAV mode and set manual heading. Continue?
-          </p>
+          <div className="mb-3">
+            <p className="font-mono text-xs font-bold text-amber-300">
+              Aircraft is in NAV mode
+            </p>
+            <p className="mt-1 font-mono text-[10px] text-amber-200/80">
+              Setting a heading will switch the autopilot from NAV mode to HDG mode.
+              The aircraft will stop following its flight plan.
+            </p>
+          </div>
           <div className="flex gap-2">
             <button
-              onClick={handleConfirmHeading}
+              onClick={handleConfirmHeadingChange}
               className="flex-1 rounded-lg bg-amber-600 py-2 font-mono text-xs font-bold text-white transition-colors hover:bg-amber-500"
             >
-              Yes, Set HDG
+              Switch to HDG
             </button>
             <button
-              onClick={() => setShowNavWarning(false)}
+              onClick={handleCancelWarning}
               className="flex-1 rounded-lg border border-white/20 bg-black/40 py-2 font-mono text-xs font-bold text-white transition-colors hover:bg-black/60"
             >
               Cancel
