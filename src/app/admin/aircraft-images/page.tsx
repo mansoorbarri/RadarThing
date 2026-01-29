@@ -1,5 +1,0 @@
-import { redirect } from "next/navigation";
-
-export default function AircraftImagesRedirect() {
-  redirect("/admin");
-}
