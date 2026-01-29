@@ -189,31 +189,19 @@ export const checkApprovedExists = query({
     const iata = args.airlineIata.toUpperCase();
     const icao = args.airlineIcao.toUpperCase();
 
-    // Check by IATA
-    const iataImage = await ctx.db
+    // Check by IATA + ICAO + aircraft combo
+    const image = await ctx.db
       .query("aircraftImages")
-      .withIndex("by_iata_aircraft_approved", (q) =>
+      .withIndex("by_iata_icao_aircraft_approved", (q) =>
         q
           .eq("airlineIata", iata)
-          .eq("aircraftType", aircraftType)
-          .eq("isApproved", true)
-      )
-      .first();
-    if (iataImage) return true;
-
-    // Check by ICAO
-    const icaoImage = await ctx.db
-      .query("aircraftImages")
-      .withIndex("by_icao_aircraft_approved", (q) =>
-        q
           .eq("airlineIcao", icao)
           .eq("aircraftType", aircraftType)
           .eq("isApproved", true)
       )
       .first();
-    if (icaoImage) return true;
 
-    return false;
+    return image !== null;
   },
 });
 
@@ -230,18 +218,16 @@ export const checkPendingByUser = query({
     const iata = args.airlineIata.toUpperCase();
     const icao = args.airlineIcao.toUpperCase();
 
-    // Find pending images by this user for this combo (match either IATA or ICAO)
+    // Find pending images by this user for this combo (match IATA + ICAO + aircraft)
     const image = await ctx.db
       .query("aircraftImages")
       .withIndex("by_uploadedBy", (q) => q.eq("uploadedBy", args.uploadedBy))
       .filter((q) =>
         q.and(
+          q.eq(q.field("airlineIata"), iata),
+          q.eq(q.field("airlineIcao"), icao),
           q.eq(q.field("aircraftType"), aircraftType),
-          q.eq(q.field("isApproved"), false),
-          q.or(
-            q.eq(q.field("airlineIata"), iata),
-            q.eq(q.field("airlineIcao"), icao)
-          )
+          q.eq(q.field("isApproved"), false)
         )
       )
       .first();
@@ -334,29 +320,17 @@ export const bulkApprove = mutation({
         continue;
       }
 
-      // Check for existing approved image (by IATA)
-      let existingApproved = await ctx.db
+      // Check for existing approved image (by IATA + ICAO + aircraft combo)
+      const existingApproved = await ctx.db
         .query("aircraftImages")
-        .withIndex("by_iata_aircraft_approved", (q) =>
+        .withIndex("by_iata_icao_aircraft_approved", (q) =>
           q
             .eq("airlineIata", image.airlineIata)
+            .eq("airlineIcao", image.airlineIcao)
             .eq("aircraftType", image.aircraftType)
             .eq("isApproved", true)
         )
         .first();
-
-      // If not found, check by ICAO
-      if (!existingApproved) {
-        existingApproved = await ctx.db
-          .query("aircraftImages")
-          .withIndex("by_icao_aircraft_approved", (q) =>
-            q
-              .eq("airlineIcao", image.airlineIcao)
-              .eq("aircraftType", image.aircraftType)
-              .eq("isApproved", true)
-          )
-          .first();
-      }
 
       // Delete existing approved image if found (and not the same image)
       let existingImageKey: string | undefined;
@@ -423,33 +397,28 @@ export const checkUploadEligibility = query({
     const iata = args.airlineIata.toUpperCase();
     const icao = args.airlineIcao.toUpperCase();
 
-    // Check for approved images (by IATA)
-    let approvedExists = await ctx.db
+    // Check for approved images (by IATA + ICAO + aircraft combo)
+    const approvedExists = await ctx.db
       .query("aircraftImages")
-      .withIndex("by_iata_aircraft_approved", (q) =>
-        q.eq("airlineIata", iata).eq("aircraftType", aircraftType).eq("isApproved", true)
+      .withIndex("by_iata_icao_aircraft_approved", (q) =>
+        q
+          .eq("airlineIata", iata)
+          .eq("airlineIcao", icao)
+          .eq("aircraftType", aircraftType)
+          .eq("isApproved", true)
       )
       .first();
 
-    // Check by ICAO if not found
-    if (!approvedExists) {
-      approvedExists = await ctx.db
-        .query("aircraftImages")
-        .withIndex("by_icao_aircraft_approved", (q) =>
-          q.eq("airlineIcao", icao).eq("aircraftType", aircraftType).eq("isApproved", true)
-        )
-        .first();
-    }
-
-    // Check for pending image by this user
+    // Check for pending image by this user (IATA + ICAO + aircraft combo)
     const pendingByUser = await ctx.db
       .query("aircraftImages")
       .withIndex("by_uploadedBy", (q) => q.eq("uploadedBy", args.uploadedBy))
       .filter((q) =>
         q.and(
+          q.eq(q.field("airlineIata"), iata),
+          q.eq(q.field("airlineIcao"), icao),
           q.eq(q.field("aircraftType"), aircraftType),
-          q.eq(q.field("isApproved"), false),
-          q.or(q.eq(q.field("airlineIata"), iata), q.eq(q.field("airlineIcao"), icao))
+          q.eq(q.field("isApproved"), false)
         )
       )
       .first();
@@ -503,29 +472,17 @@ export const findExistingApproved = query({
     const iata = args.airlineIata.toUpperCase();
     const icao = args.airlineIcao.toUpperCase();
 
-    // Check by IATA
-    let image = await ctx.db
+    // Check by IATA + ICAO + aircraft combo
+    const image = await ctx.db
       .query("aircraftImages")
-      .withIndex("by_iata_aircraft_approved", (q) =>
+      .withIndex("by_iata_icao_aircraft_approved", (q) =>
         q
           .eq("airlineIata", iata)
+          .eq("airlineIcao", icao)
           .eq("aircraftType", aircraftType)
           .eq("isApproved", true)
       )
       .first();
-
-    // If not found, check by ICAO
-    if (!image) {
-      image = await ctx.db
-        .query("aircraftImages")
-        .withIndex("by_icao_aircraft_approved", (q) =>
-          q
-            .eq("airlineIcao", icao)
-            .eq("aircraftType", aircraftType)
-            .eq("isApproved", true)
-        )
-        .first();
-    }
 
     if (!image) return null;
     if (args.excludeId && image._id === args.excludeId) return null;
@@ -550,29 +507,17 @@ export const findExistingApprovedFull = query({
     const iata = args.airlineIata.toUpperCase();
     const icao = args.airlineIcao.toUpperCase();
 
-    // Check by IATA
-    let image = await ctx.db
+    // Check by IATA + ICAO + aircraft combo
+    const image = await ctx.db
       .query("aircraftImages")
-      .withIndex("by_iata_aircraft_approved", (q) =>
+      .withIndex("by_iata_icao_aircraft_approved", (q) =>
         q
           .eq("airlineIata", iata)
+          .eq("airlineIcao", icao)
           .eq("aircraftType", aircraftType)
           .eq("isApproved", true)
       )
       .first();
-
-    // If not found, check by ICAO
-    if (!image) {
-      image = await ctx.db
-        .query("aircraftImages")
-        .withIndex("by_icao_aircraft_approved", (q) =>
-          q
-            .eq("airlineIcao", icao)
-            .eq("aircraftType", aircraftType)
-            .eq("isApproved", true)
-        )
-        .first();
-    }
 
     if (!image) return null;
     if (args.excludeId && image._id === args.excludeId) return null;

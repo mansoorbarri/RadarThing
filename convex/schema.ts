@@ -60,6 +60,12 @@ export default defineSchema({
       "airlineIcao",
       "aircraftType",
       "isApproved",
+    ])
+    .index("by_iata_icao_aircraft_approved", [
+      "airlineIata",
+      "airlineIcao",
+      "aircraftType",
+      "isApproved",
     ]),
 
   // Track Discord notifications for missing aircraft images
