@@ -657,11 +657,11 @@ export async function updateAircraftImageCodes(
   const iata = newIata.trim().toUpperCase();
   const icao = newIcao.trim().toUpperCase();
 
-  if (!iata || iata.length < 2 || iata.length > 3) {
-    return { success: false, error: "IATA code must be 2-3 characters" };
+  if (iata.length < 1 || iata.length > 2) {
+    return { success: false, error: "IATA code must be 1-2 characters" };
   }
-  if (!icao || icao.length < 2 || icao.length > 4) {
-    return { success: false, error: "ICAO code must be 2-4 characters" };
+  if (icao.length !== 3) {
+    return { success: false, error: "ICAO code must be exactly 3 characters" };
   }
 
   try {

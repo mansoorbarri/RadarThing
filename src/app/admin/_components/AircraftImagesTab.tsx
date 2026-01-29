@@ -93,8 +93,8 @@ function EditableCodes({
           onChange={(e) => setIata(e.target.value.toUpperCase())}
           onKeyDown={handleKeyDown}
           placeholder="IATA"
-          maxLength={3}
-          className="w-16 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400"
+          maxLength={2}
+          className="w-14 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400"
           disabled={isSaving}
           autoFocus
         />
@@ -104,8 +104,8 @@ function EditableCodes({
           onChange={(e) => setIcao(e.target.value.toUpperCase())}
           onKeyDown={handleKeyDown}
           placeholder="ICAO"
-          maxLength={4}
-          className="w-16 rounded-md border border-blue-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-blue-400 outline-none focus:border-blue-400"
+          maxLength={3}
+          className="w-14 rounded-md border border-blue-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-blue-400 outline-none focus:border-blue-400"
           disabled={isSaving}
         />
         <button
