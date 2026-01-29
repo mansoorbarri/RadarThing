@@ -1,28 +1,33 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
+import { currentUser } from "@clerk/nextjs/server";
 import { convex, api } from "~/server/convex";
 import { env } from "~/env";
 
+// Helper to get user by email (consistent across Clerk dev/prod)
+async function getUserByEmail() {
+  const clerkUser = await currentUser();
+  if (!clerkUser?.emailAddresses?.[0]?.emailAddress) return null;
+
+  const email = clerkUser.emailAddresses[0].emailAddress;
+  return await convex.query(api.users.getByEmail, { email });
+}
+
 export async function isPro() {
-  const { userId } = await auth();
-  if (!userId) return false;
+  const user = await getUserByEmail();
+  if (!user) return false;
 
   // Admin users also have PRO access
-  const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
   const adminGoogleId = env.ADMIN_GOOGLE_ID || "101233162035372298523";
-  if (user?.googleId && user.googleId === adminGoogleId) {
+  if (user.googleId && user.googleId === adminGoogleId) {
     return true;
   }
 
-  return await convex.query(api.users.isPro, { clerkId: userId });
+  return user.role === "PRO";
 }
 
 export async function isAdmin() {
-  const { userId } = await auth();
-  if (!userId) return false;
-
-  const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
+  const user = await getUserByEmail();
   if (!user?.googleId) return false;
 
   const adminGoogleId = env.ADMIN_GOOGLE_ID || "101233162035372298523";
@@ -32,10 +37,7 @@ export async function isAdmin() {
 // Combined query to get both pro and admin status with a single DB call
 // This avoids the duplicate queries in useProStatus hook
 export async function getProAndAdminStatus(): Promise<{ isPro: boolean; isAdmin: boolean }> {
-  const { userId } = await auth();
-  if (!userId) return { isPro: false, isAdmin: false };
-
-  const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
+  const user = await getUserByEmail();
   if (!user) return { isPro: false, isAdmin: false };
 
   const adminGoogleId = env.ADMIN_GOOGLE_ID || "101233162035372298523";
@@ -56,9 +58,8 @@ export async function checkIsAdminByGoogleId(googleId: string | null | undefined
 }
 
 export async function getSupportId(): Promise<string | null> {
-  const { userId } = await auth();
-  if (!userId) return null;
+  const user = await getUserByEmail();
+  if (!user) return null;
 
-  const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
-  return user?.googleId ?? user?._id ?? null;
+  return user.googleId ?? user._id ?? null;
 }
