@@ -461,6 +461,35 @@ export const checkUploadEligibility = query({
   },
 });
 
+// Update airline codes for an image
+export const updateCodes = mutation({
+  args: {
+    id: v.id("aircraftImages"),
+    airlineIata: v.string(),
+    airlineIcao: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const image = await ctx.db.get(args.id);
+    if (!image) return null;
+
+    await ctx.db.patch(args.id, {
+      airlineIata: args.airlineIata.toUpperCase(),
+      airlineIcao: args.airlineIcao.toUpperCase(),
+    });
+
+    const updated = await ctx.db.get(args.id);
+    if (!updated) return null;
+
+    return {
+      id: updated._id,
+      airlineIata: updated.airlineIata,
+      airlineIcao: updated.airlineIcao,
+      aircraftType: updated.aircraftType,
+      imageKey: updated.imageKey ?? null,
+    };
+  },
+});
+
 // Find existing approved image for airline + aircraft (to delete when approving new one)
 export const findExistingApproved = query({
   args: {

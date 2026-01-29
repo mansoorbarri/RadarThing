@@ -642,6 +642,70 @@ export async function bulkApproveAircraftImages(
   }
 }
 
+// Update IATA/ICAO codes for an image (ADMIN only)
+export async function updateAircraftImageCodes(
+  id: string,
+  newIata: string,
+  newIcao: string
+): Promise<{ success: boolean; error?: string }> {
+  const admin = await isAdminUser();
+  if (!admin) {
+    return { success: false, error: "Only ADMIN users can update image codes" };
+  }
+
+  // Validate codes
+  const iata = newIata.trim().toUpperCase();
+  const icao = newIcao.trim().toUpperCase();
+
+  if (!iata || iata.length < 2 || iata.length > 3) {
+    return { success: false, error: "IATA code must be 2-3 characters" };
+  }
+  if (!icao || icao.length < 2 || icao.length > 4) {
+    return { success: false, error: "ICAO code must be 2-4 characters" };
+  }
+
+  try {
+    // Update the database
+    const result = await convex.mutation(api.aircraftImages.updateCodes, {
+      id: id as Id<"aircraftImages">,
+      airlineIata: iata,
+      airlineIcao: icao,
+    });
+
+    if (!result) {
+      return { success: false, error: "Image not found" };
+    }
+
+    // Rename the file in UploadThing if it has a key
+    // File naming format: {IATA}-{ICAO}-{aircraftType}.{extension}
+    if (result.imageKey) {
+      try {
+        // Extract the extension from the current filename
+        const keyParts = result.imageKey.split("_");
+        const filename = keyParts.length > 1 ? keyParts.slice(1).join("_") : result.imageKey;
+        const extension = filename.split(".").pop() || "jpg";
+
+        const newFileName = `${iata}-${icao}-${result.aircraftType}.${extension}`;
+
+        await utapi.renameFiles({
+          fileKey: result.imageKey,
+          newName: newFileName,
+        });
+      } catch (e) {
+        // Non-critical - file rename failed but DB is updated
+        console.error("Failed to rename file in UploadThing:", e);
+      }
+    }
+
+    revalidatePath("/aircraft-images");
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating aircraft image codes:", error);
+    return { success: false, error: "Failed to update image codes" };
+  }
+}
+
 // Bulk reject images (ADMIN only) - uses batch mutation for efficiency
 export async function bulkRejectAircraftImages(
   ids: string[],

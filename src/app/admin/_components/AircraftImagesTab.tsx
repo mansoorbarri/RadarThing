@@ -10,8 +10,9 @@ import {
   bulkApproveAircraftImages,
   bulkRejectAircraftImages,
   getUserInfoByIds,
+  updateAircraftImageCodes,
 } from "~/app/actions/aircraft-images";
-import { Trash2, Check, X, Plane, Clock, CheckCircle, Search, CheckSquare, Square } from "lucide-react";
+import { Trash2, Check, X, Plane, Clock, CheckCircle, Search, CheckSquare, Square, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import { RejectModal } from "./RejectModal";
@@ -33,6 +34,110 @@ function matchesImageSearch(image: ImageType, query: string) {
     image.airlineIcao?.toLowerCase().includes(q) ||
     image.aircraftType?.toLowerCase().includes(q) ||
     image.discordUsername?.toLowerCase().includes(q)
+  );
+}
+
+function EditableCodes({
+  imageId,
+  initialIata,
+  initialIcao,
+  onSaveSuccess,
+}: {
+  imageId: string;
+  initialIata: string;
+  initialIcao: string;
+  onSaveSuccess?: () => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [iata, setIata] = useState(initialIata);
+  const [icao, setIcao] = useState(initialIcao);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (iata === initialIata && icao === initialIcao) {
+      setIsEditing(false);
+      return;
+    }
+    setIsSaving(true);
+    const result = await updateAircraftImageCodes(imageId, iata, icao);
+    setIsSaving(false);
+    if (result.success) {
+      toast.success("Codes updated");
+      setIsEditing(false);
+      onSaveSuccess?.();
+    } else {
+      toast.error(result.error || "Failed to update codes");
+    }
+  };
+
+  const handleCancel = () => {
+    setIata(initialIata);
+    setIcao(initialIcao);
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSave();
+    } else if (e.key === "Escape") {
+      handleCancel();
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        <input
+          type="text"
+          value={iata}
+          onChange={(e) => setIata(e.target.value.toUpperCase())}
+          onKeyDown={handleKeyDown}
+          placeholder="IATA"
+          maxLength={3}
+          className="w-16 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400"
+          disabled={isSaving}
+          autoFocus
+        />
+        <input
+          type="text"
+          value={icao}
+          onChange={(e) => setIcao(e.target.value.toUpperCase())}
+          onKeyDown={handleKeyDown}
+          placeholder="ICAO"
+          maxLength={4}
+          className="w-16 rounded-md border border-blue-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-blue-400 outline-none focus:border-blue-400"
+          disabled={isSaving}
+        />
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="cursor-pointer rounded-md bg-emerald-500/20 p-1 text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
+        >
+          <Check className="h-4 w-4" />
+        </button>
+        <button
+          onClick={handleCancel}
+          disabled={isSaving}
+          className="cursor-pointer rounded-md bg-red-500/20 p-1 text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap group/codes">
+      {initialIata && <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">{initialIata}</span>}
+      {initialIcao && <span className="rounded-md bg-blue-500/20 px-2 py-1 font-mono text-sm font-bold text-blue-400">{initialIcao}</span>}
+      <button
+        onClick={() => setIsEditing(true)}
+        className="cursor-pointer rounded-md p-1 text-slate-600 opacity-0 transition-all hover:bg-white/10 hover:text-cyan-400 group-hover/codes:opacity-100"
+        title="Edit codes"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </button>
+    </div>
   );
 }
 
@@ -338,8 +443,11 @@ export function AircraftImagesTab() {
                   </div>
                   <div className="p-4">
                     <div className="mb-3 flex items-center gap-2 flex-wrap">
-                      {image.airlineIata && <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">{image.airlineIata}</span>}
-                      {image.airlineIcao && <span className="rounded-md bg-blue-500/20 px-2 py-1 font-mono text-sm font-bold text-blue-400">{image.airlineIcao}</span>}
+                      <EditableCodes
+                        imageId={image.id}
+                        initialIata={image.airlineIata || ""}
+                        initialIcao={image.airlineIcao || ""}
+                      />
                       <span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">{image.aircraftType}</span>
                     </div>
                     {image.discordUsername && <p className="mb-2 text-xs text-slate-500">Discord: {image.discordUsername}</p>}
@@ -382,8 +490,11 @@ export function AircraftImagesTab() {
                   </div>
                   <div className="p-4">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {image.airlineIata && <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">{image.airlineIata}</span>}
-                      {image.airlineIcao && <span className="rounded-md bg-blue-500/20 px-2 py-1 font-mono text-sm font-bold text-blue-400">{image.airlineIcao}</span>}
+                      <EditableCodes
+                        imageId={image.id}
+                        initialIata={image.airlineIata || ""}
+                        initialIcao={image.airlineIcao || ""}
+                      />
                       <span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">{image.aircraftType}</span>
                       <CheckCircle className="ml-auto h-4 w-4 text-emerald-400" />
                     </div>
