@@ -2,8 +2,7 @@
 (function () {
   "use strict";
 
-  const API_URL = "https://sse.radarthing.com/api/atc/position";
-  const COMMANDS_URL = "https://sse.radarthing.com/api/commands";
+  const API_BASE = "https://sse.radarthing.com";
   const SEND_INTERVAL_MS = 5000;
   const COMMAND_POLL_INTERVAL_MS = 2000;
 
@@ -127,7 +126,7 @@
     if (!id) return;
 
     try {
-      const res = await fetch(`${COMMANDS_URL}/${encodeURIComponent(id)}`);
+      const res = await fetch(`${API_BASE}/api/commands/${encodeURIComponent(id)}`);
       if (!res.ok) return;
 
       const data = await res.json();
@@ -154,9 +153,51 @@
   }
 
   window.addEventListener("atc-data-sync", (e) => {
+    const wasActive = info.active;
     info = e.detail;
     broadcastStatus();
+
+    // If flight was active and is now cleared, end the flight immediately
+    if (wasActive && !info.active) {
+      endFlight();
+    }
   });
+
+  // End flight and save to database immediately
+  async function endFlight() {
+    if (!geofs?.userRecord) return;
+
+    const id = geofs.userRecord.googleid || geofs.userRecord.callsign;
+    if (!id) return;
+
+    console.log("[RadarThing] Ending flight session...");
+
+    try {
+      const res = await fetch(`${API_BASE}/api/end-flight`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: id,
+          googleId: geofs.userRecord.googleid || null,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.finalized) {
+          console.log(`[RadarThing] Flight ended and saved: ${data.flightNo}`);
+        } else {
+          console.log("[RadarThing] No active session to end");
+        }
+      }
+    } catch (err) {
+      console.error("[RadarThing] Error ending flight:", err);
+    }
+
+    // Reset takeoff time for next flight
+    wasOnGround = true;
+    takeoffTimeUTC = "";
+  }
 
   function calculateAGL() {
     try {
@@ -213,7 +254,7 @@
       flapsMaxPosition: geofs.animation?.values?.flapsSteps || controls?.flaps?.maxPosition || 0,
     };
 
-    fetch(API_URL, {
+    fetch(`${API_BASE}/api/atc/position`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
