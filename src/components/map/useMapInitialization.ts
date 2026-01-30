@@ -96,20 +96,30 @@ export const useMapInitialization = ({
       })
       .addTo(map);
 
+    // Shared tile loading optimizations
+    const tileLoadingOptions = {
+      keepBuffer: 4,           // Buffer more tiles around viewport (default: 2)
+      updateWhenIdle: false,   // Update tiles while panning, not after
+      updateWhenZooming: false, // Don't wait for zoom animation to finish
+    };
+
     osmLayer.current = L.tileLayer(
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       {
         maxZoom: 19,
         minZoom: 0,
         className: "osm-tiles",
+        ...tileLoadingOptions,
       },
     );
 
     satelliteHybridLayer.current = L.tileLayer(
-      "https://mt0.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
+      "https://mt{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
       {
+        subdomains: "0123",    // Use mt0-mt3 for parallel loading
         maxZoom: 18,
         minZoom: 0,
+        ...tileLoadingOptions,
       },
     );
 
@@ -119,6 +129,7 @@ export const useMapInitialization = ({
         subdomains: "abcd",
         maxZoom: 18,
         minZoom: 0,
+        ...tileLoadingOptions,
       },
     );
 
@@ -126,6 +137,7 @@ export const useMapInitialization = ({
     openAIPLayer.current = L.tileLayer(openAIPUrl, {
       maxZoom: 19,
       minZoom: 0,
+      ...tileLoadingOptions,
     });
 
     satelliteHybridLayer.current.addTo(map);
