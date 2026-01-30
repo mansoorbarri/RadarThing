@@ -141,6 +141,8 @@ export const Sidebar = ({
     [aircraft.alt, aircraft.vspeed, aircraft.flightPlan],
   );
 
+  // Get the next waypoint identifier from the aircraft
+  const nextWaypointIdent = aircraft.nextWaypoint;
 
   const renderFlightPlan = useCallback(() => {
     if (!aircraft.flightPlan) return null;
@@ -155,43 +157,50 @@ export const Sidebar = ({
             </span>
             <div className="h-[1px] flex-1 bg-white/20" />
           </div>
-          {waypoints.map((wp: any, i: number) => (
-            <div
-              key={i}
-              className="group flex cursor-pointer items-center gap-4 rounded-xl border border-white/10 bg-black/40 p-3.5 transition hover:border-cyan-500/40 hover:bg-black/60"
-              onClick={() => onWaypointClick?.(wp, i)}
-            >
-              <div className="font-mono text-xs font-black text-cyan-400">
-                {String(i + 1).padStart(2, "0")}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-sm font-black tracking-wider text-white">
-                    {wp.ident}
-                  </span>
-                  <span className="font-mono text-[9px] font-bold text-white/40 uppercase">
-                    {wp.type}
-                  </span>
+          {waypoints.map((wp: any, i: number) => {
+            const isActive = wp.ident === nextWaypointIdent;
+            return (
+              <div
+                key={i}
+                className={`group flex cursor-pointer items-center gap-4 rounded-xl border p-3.5 transition ${
+                  isActive
+                    ? "border-green-500/60 bg-green-500/10 shadow-[0_0_12px_rgba(34,197,94,0.2)]"
+                    : "border-white/10 bg-black/40 hover:border-cyan-500/40 hover:bg-black/60"
+                }`}
+                onClick={() => onWaypointClick?.(wp, i)}
+              >
+                <div className={`font-mono text-xs font-black ${isActive ? "text-green-400" : "text-cyan-400"}`}>
+                  {String(i + 1).padStart(2, "0")}
                 </div>
-                <div className="flex gap-4 font-mono text-[10px] font-bold text-white/60">
-                  <span>
-                    ALT:{" "}
-                    <span className="text-cyan-100/90">{wp.alt ?? "---"}</span>
-                  </span>
-                  <span>
-                    SPD:{" "}
-                    <span className="text-cyan-100/90">{wp.spd ?? "---"}</span>
-                  </span>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className={`font-mono text-sm font-black tracking-wider ${isActive ? "text-green-300" : "text-white"}`}>
+                      {wp.ident}
+                    </span>
+                    <span className="font-mono text-[9px] font-bold text-white/40 uppercase">
+                      {wp.type}
+                    </span>
+                  </div>
+                  <div className="flex gap-4 font-mono text-[10px] font-bold text-white/60">
+                    <span>
+                      ALT:{" "}
+                      <span className={isActive ? "text-green-200/90" : "text-cyan-100/90"}>{wp.alt ?? "---"}</span>
+                    </span>
+                    <span>
+                      SPD:{" "}
+                      <span className={isActive ? "text-green-200/90" : "text-cyan-100/90"}>{wp.spd ?? "---"}</span>
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       );
     } catch {
       return null;
     }
-  }, [aircraft.flightPlan, onWaypointClick]);
+  }, [aircraft.flightPlan, onWaypointClick, nextWaypointIdent]);
 
   const airlineLogo = getAirlineLogoFromFlightNumber(aircraft.flightNo);
   const { photo: aircraftPhoto } = useAircraftPhoto(
