@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { syncAfterCheckout } from "~/app/actions/sync-stripe";
 import { Check, Loader2 } from "lucide-react";
+import { Analytics } from "~/lib/analytics";
 
 export default function CheckoutSuccessPage() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function CheckoutSuccessPage() {
       .then((result) => {
         if (result.success) {
           setStatus("success");
+          Analytics.checkoutCompleted();
           // Redirect after showing success briefly
           setTimeout(() => {
             router.push("/?upgraded=true");

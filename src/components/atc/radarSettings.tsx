@@ -5,6 +5,7 @@ import { Switch } from "~/components/ui/switch";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { useRouter } from "next/navigation";
 import { Plane, Shield } from "lucide-react";
+import { Analytics } from "~/lib/analytics";
 
 interface RadarSettingsProps {
   isPRO: boolean;
@@ -46,20 +47,37 @@ export const RadarSettings = ({
         <SettingsToggle
           label="Precipitation"
           checked={showPrecipitation}
-          onChange={setShowPrecipitation}
+          onChange={(v) => {
+            setShowPrecipitation(v);
+            Analytics.weatherLayerToggled({ layer: "precipitation", enabled: v });
+          }}
         />
 
         <SettingsToggle
           label="AIRMETs"
           checked={showAirmets}
-          onChange={setShowAirmets}
+          onChange={(v) => {
+            if (!isPRO) {
+              Analytics.proFeatureBlocked({ feature: "airmets" });
+              return;
+            }
+            setShowAirmets(v);
+            Analytics.weatherLayerToggled({ layer: "airmet", enabled: v });
+          }}
           disabled={!isPRO}
         />
 
         <SettingsToggle
           label="SIGMETs"
           checked={showSigmets}
-          onChange={setShowSigmets}
+          onChange={(v) => {
+            if (!isPRO) {
+              Analytics.proFeatureBlocked({ feature: "sigmets" });
+              return;
+            }
+            setShowSigmets(v);
+            Analytics.weatherLayerToggled({ layer: "sigmet", enabled: v });
+          }}
           disabled={!isPRO}
         />
       </div>

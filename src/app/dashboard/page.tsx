@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useUser, SignInButton } from "@clerk/nextjs";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useProStatus } from "~/hooks/useProStatus";
+import { Analytics } from "~/lib/analytics";
 import {
   Plane,
   Clock,
@@ -65,6 +66,23 @@ export default function DashboardPage() {
   const stats = useMemo(() => statsQuery ?? null, [statsQuery]);
   const supportId = useMemo(() => dbUser?._id ?? null, [dbUser]);
   const loading = !isLoaded || proLoading || (clerkId && statsQuery === undefined);
+
+  // Track page view and stats (only once per page load)
+  const hasTracked = useRef(false);
+  useEffect(() => {
+    if (!loading && isSignedIn && !hasTracked.current) {
+      hasTracked.current = true;
+      Analytics.dashboardViewed();
+      Analytics.flightHistoryViewed();
+      if (stats) {
+        Analytics.statsCalculated({
+          totalFlights: stats.totalFlights,
+          totalDistance: stats.totalDistanceNm,
+          totalTime: stats.totalFlightTimeMs,
+        });
+      }
+    }
+  }, [loading, isSignedIn, stats]);
 
   const copySupportId = () => {
     if (supportId) {

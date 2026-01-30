@@ -4,12 +4,13 @@ import { useRouter } from "next/navigation";
 import { useUser, SignInButton } from "@clerk/nextjs";
 import { createCheckoutSession } from "~/app/actions/create-checkout";
 import { createPortalSession } from "~/app/actions/create-portal";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useProStatus } from "~/hooks/useProStatus";
 import { Check, Zap } from "lucide-react";
 import Loading from "~/components/loading";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
+import { Analytics } from "~/lib/analytics";
 
 export default function PricingPage() {
   const router = useRouter();
@@ -19,7 +20,16 @@ export default function PricingPage() {
   // Real-time PRO status check
   const { isProUser, isLoading: checkingStatus } = useProStatus();
 
+  // Track page view
+  useEffect(() => {
+    if (isLoaded && !checkingStatus) {
+      Analytics.pricingPageViewed();
+    }
+  }, [isLoaded, checkingStatus]);
+
   async function handleUpgrade() {
+    Analytics.upgradeButtonClicked({ source: "pricing_page" });
+    Analytics.checkoutStarted({ source: "pricing_page" });
     try {
       setLoading(true);
       const url = await createCheckoutSession();

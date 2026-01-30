@@ -26,6 +26,7 @@ import { Upload, Plane, Check, Search, Loader2, CheckCircle2 } from "lucide-reac
 import { toast } from "sonner";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
+import { Analytics } from "~/lib/analytics";
 
 type SubmitStage = "idle" | "validating" | "uploading" | "submitting" | "success";
 
@@ -51,12 +52,13 @@ export default function AircraftImagesPage() {
     discordUsername: "",
   });
 
-  // Load Discord username from cookie on mount
+  // Load Discord username from cookie on mount and track page view
   useEffect(() => {
     const savedUsername = getCookie("radarthing_discord");
     if (savedUsername) {
       setFormData((prev) => ({ ...prev, discordUsername: savedUsername }));
     }
+    Analytics.imageGalleryViewed();
   }, []);
   const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -185,6 +187,13 @@ export default function AircraftImagesPage() {
     setError(null);
     uploadedDataRef.current = null;
 
+    // Track upload start
+    Analytics.imageUploadStarted({
+      airlineIata: formData.airlineIata,
+      airlineIcao: formData.airlineIcao,
+      aircraftType: formData.aircraftType,
+    });
+
     // Stage 1: Validating
     setSubmitStage("validating");
     const validation = await validateUploadEligibility({
@@ -226,6 +235,13 @@ export default function AircraftImagesPage() {
     });
 
     if (result.success) {
+      // Track upload completion
+      Analytics.imageUploadCompleted({
+        airlineIata: formData.airlineIata,
+        airlineIcao: formData.airlineIcao,
+        aircraftType: formData.aircraftType,
+      });
+
       // Save Discord username to cookie for next time
       if (formData.discordUsername) {
         setCookie("radarthing_discord", formData.discordUsername);
