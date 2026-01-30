@@ -7,6 +7,7 @@ import "leaflet/dist/leaflet.css";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { useMobileDetection } from "~/hooks/useMobileDetection";
 import { useProStatus } from "~/hooks/useProStatus";
+import { getBooleanCookie, setBooleanCookie } from "~/lib/cookies";
 
 import { useMapInitialization } from "./useMapInitialization";
 import { useFlightPlanDrawing } from "./useFlightPlanDrawing";
@@ -74,13 +75,25 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const canUseAdvancedWeather = isProUser;
 
   const [isHeadingMode, setIsHeadingMode] = useState(false);
-  const [isRadarMode, setIsRadarMode] = useState(false);
-  const [isOSMMode, setIsOSMMode] = useState(false);
-  const [isOpenAIPEnabled, setIsOpenAIPEnabled] = useState(false);
+  const [isRadarMode, setIsRadarMode] = useState(() =>
+    getBooleanCookie("map_radar_mode", false)
+  );
+  const [isOSMMode, setIsOSMMode] = useState(() =>
+    getBooleanCookie("map_osm_mode", false)
+  );
+  const [isOpenAIPEnabled, setIsOpenAIPEnabled] = useState(() =>
+    getBooleanCookie("map_openaip", false)
+  );
 
-  const [showPrecipitation, setShowPrecipitation] = useState(false);
-  const [showAirmets, setShowAirmets] = useState(false);
-  const [showSigmets, setShowSigmets] = useState(false);
+  const [showPrecipitation, setShowPrecipitation] = useState(() =>
+    getBooleanCookie("weather_precipitation", false)
+  );
+  const [showAirmets, setShowAirmets] = useState(() =>
+    getBooleanCookie("weather_airmets", false)
+  );
+  const [showSigmets, setShowSigmets] = useState(() =>
+    getBooleanCookie("weather_sigmets", false)
+  );
   const [showTags, setShowTags] = useState(true);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -130,17 +143,45 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, []);
 
   useEffect(() => {
-    if (!canUseRadarMode && isRadarMode) {
+    // Only reset when loading is complete and user doesn't have access
+    if (!proLoading && !canUseRadarMode && isRadarMode) {
       setIsRadarMode(false);
     }
-  }, [canUseRadarMode, isRadarMode]);
+  }, [proLoading, canUseRadarMode, isRadarMode]);
 
   useEffect(() => {
-    if (!canUseAdvancedWeather) {
+    // Only reset when loading is complete and user doesn't have access
+    if (!proLoading && !canUseAdvancedWeather) {
       setShowAirmets(false);
       setShowSigmets(false);
     }
-  }, [canUseAdvancedWeather]);
+  }, [proLoading, canUseAdvancedWeather]);
+
+  // Persist map mode settings to cookies
+  useEffect(() => {
+    setBooleanCookie("map_radar_mode", isRadarMode);
+  }, [isRadarMode]);
+
+  useEffect(() => {
+    setBooleanCookie("map_osm_mode", isOSMMode);
+  }, [isOSMMode]);
+
+  useEffect(() => {
+    setBooleanCookie("map_openaip", isOpenAIPEnabled);
+  }, [isOpenAIPEnabled]);
+
+  // Persist weather layer settings to cookies
+  useEffect(() => {
+    setBooleanCookie("weather_precipitation", showPrecipitation);
+  }, [showPrecipitation]);
+
+  useEffect(() => {
+    setBooleanCookie("weather_airmets", showAirmets);
+  }, [showAirmets]);
+
+  useEffect(() => {
+    setBooleanCookie("weather_sigmets", showSigmets);
+  }, [showSigmets]);
 
   const handleMapClick = useCallback(
     (e: L.LeafletMouseEvent) => {

@@ -105,13 +105,23 @@ export const useWeatherOverlayLayer = ({
       `);
     };
 
+    let isCancelled = false;
+
     const loadLayer = async (
       url: string,
       ref: React.MutableRefObject<L.GeoJSON | null>,
       zIndex: number,
     ) => {
       const res = await fetch(url);
+      if (isCancelled) return;
+
       const geojson = await res.json();
+      if (isCancelled) return;
+
+      // Verify map is still valid before adding layer
+      if (!mapInstance.current?.getPane("overlayPane")) {
+        return;
+      }
 
       ref.current = L.geoJSON(geojson, {
         style: (f) => styleForHazard(f?.properties?.hazard),
@@ -119,7 +129,7 @@ export const useWeatherOverlayLayer = ({
       });
 
       ref.current.setZIndex(zIndex);
-      ref.current.addTo(map);
+      ref.current.addTo(mapInstance.current);
     };
 
     if (showAirmets && !airmetLayerRef.current) {
@@ -147,8 +157,9 @@ export const useWeatherOverlayLayer = ({
     }
 
     return () => {
+      isCancelled = true;
       [airmetLayerRef, sigmetLayerRef, isigmetLayerRef].forEach((ref) => {
-        if (ref.current) {
+        if (ref.current && map) {
           map.removeLayer(ref.current);
           ref.current = null;
         }
