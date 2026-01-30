@@ -174,15 +174,23 @@ export const getRadarAircraftDivIcon = (
   selectedAircraftId: string | null,
   showTags = true,
 ) => {
-  const dotSize = 8;
-  const headingLineLength = 14;
+  const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
+
+  const isCurrentAircraftSelected =
+    selectedAircraftId &&
+    (aircraft.id === selectedAircraftId ||
+      aircraft.callsign === selectedAircraftId);
+
+  // Larger dot and heading line when selected for better visibility
+  const dotSize = isCurrentAircraftSelected ? 12 : 8;
+  const headingLineLength = isCurrentAircraftSelected ? 22 : 14;
   const labelHeight = 38;
   const labelWidth = 100;
   const labelOffsetFromDot = 16;
 
   const totalWidth =
     dotSize + headingLineLength + labelOffsetFromDot + labelWidth;
-  const totalHeight = Math.max(dotSize, labelHeight);
+  const totalHeight = Math.max(dotSize + 8, labelHeight); // Extra space for selection ring
 
   const anchorX = dotSize / 2;
   const anchorY = totalHeight / 2;
@@ -196,12 +204,9 @@ export const getRadarAircraftDivIcon = (
       ? `FL${Math.round(altMSL / 100)}`
       : `${altAGL.toFixed(0)}AGL`;
 
-  const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
-
-  const isCurrentAircraftSelected =
-    selectedAircraftId &&
-    (aircraft.id === selectedAircraftId ||
-      aircraft.callsign === selectedAircraftId);
+  // Color scheme: selected = bright green, emergency = red, normal = cyan
+  const dotColor = isEmergency ? "#ef4444" : isCurrentAircraftSelected ? "#4ade80" : "#22d3ee";
+  const glowColor = isEmergency ? "rgba(239,68,68,0.8)" : isCurrentAircraftSelected ? "rgba(74,222,128,0.9)" : "rgba(0,255,255,0.5)";
 
   const dotStyle = `
     position: absolute;
@@ -210,19 +215,34 @@ export const getRadarAircraftDivIcon = (
     width: ${dotSize}px;
     height: ${dotSize}px;
     border-radius: 9999px;
-    background-color: ${isEmergency ? "#ef4444" : "#22d3ee"};
-    box-shadow: 0 0 5px rgba(0,255,255,0.5);
+    background-color: ${dotColor};
+    box-shadow: 0 0 ${isCurrentAircraftSelected ? "12px" : "5px"} ${glowColor}${isCurrentAircraftSelected ? `, 0 0 20px ${glowColor}` : ""};
+    ${isCurrentAircraftSelected ? "animation: radar-selected-pulse 1.5s ease-in-out infinite;" : ""}
   `;
+
+  // Selection ring around selected aircraft
+  const selectionRingStyle = isCurrentAircraftSelected ? `
+    position: absolute;
+    top: ${(totalHeight - dotSize) / 2 - 6}px;
+    left: -6px;
+    width: ${dotSize + 12}px;
+    height: ${dotSize + 12}px;
+    border-radius: 9999px;
+    border: 2px solid ${isEmergency ? "#ef4444" : "#4ade80"};
+    box-shadow: 0 0 8px ${isEmergency ? "rgba(239,68,68,0.6)" : "rgba(74,222,128,0.6)"};
+    animation: radar-ring-pulse 1.5s ease-in-out infinite;
+  ` : "";
 
   const headingLineStyle = `
     position: absolute;
-    top: ${totalHeight / 2 - 1}px;
+    top: ${totalHeight / 2 - (isCurrentAircraftSelected ? 1.5 : 1)}px;
     left: ${dotSize / 2}px;
     width: ${headingLineLength}px;
-    height: 2px;
-    background-color: ${isEmergency ? "#ef4444" : "#22d3ee"};
+    height: ${isCurrentAircraftSelected ? 3 : 2}px;
+    background-color: ${dotColor};
     transform-origin: 0% 50%;
     transform: rotate(${(aircraft.heading || 0) - 90}deg);
+    ${isCurrentAircraftSelected ? `box-shadow: 0 0 6px ${glowColor};` : ""}
   `;
 
   const labelStyle = `
@@ -262,6 +282,7 @@ export const getRadarAircraftDivIcon = (
   return L.divIcon({
     html: `
       <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px; pointer-events: auto; cursor: pointer;">
+        ${isCurrentAircraftSelected ? `<div style="${selectionRingStyle} pointer-events: none;"></div>` : ""}
         <div style="${dotStyle} pointer-events: none;"></div>
         <div style="${headingLineStyle} pointer-events: none;"></div>
         <div style="${labelStyle} pointer-events: none;">
