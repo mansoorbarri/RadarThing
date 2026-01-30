@@ -69,7 +69,6 @@ export const useWeatherOverlayLayer = ({
     const bindPopup = (feature: any, layer: L.Layer) => {
       const p = feature.properties || {};
 
-      // Format altitude - API uses altitudeLow1/altitudeHi1 or altitudeLow/altitudeHi
       const altLow = p.altitudeLow1 ?? p.altitudeLow ?? p.base;
       const altHi = p.altitudeHi1 ?? p.altitudeHi ?? p.top;
       let altStr = "N/A";
@@ -81,7 +80,6 @@ export const useWeatherOverlayLayer = ({
         altStr = `Up to FL${Math.round(altHi / 100)}`;
       }
 
-      // Format validity times - API uses validTimeFrom/validTimeTo
       const validFrom = p.validTimeFrom ?? p.issueTime;
       const validTo = p.validTimeTo ?? p.expireTime;
       const formatTime = (iso: string | null | undefined) => {

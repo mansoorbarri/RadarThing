@@ -25,6 +25,7 @@ import {
 import { MapGlobalStyles } from "~/styles/MapGlobalStyles";
 import { useMetarOverlay } from "~/hooks/useMetarOverlay";
 import { useAtisOverlay } from "~/hooks/useAtisOverlay";
+import { useNotamOverlay } from "~/hooks/useNotamOverlay";
 import { useWeatherOverlayLayer } from "~/hooks/useWeatherOverlayLayer";
 import { MetarPanel } from "./MetarPanel";
 import { RadarSettings } from "~/components/atc/radarSettings";
@@ -87,8 +88,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [localSelectedIds, setLocalSelectedIds] = useState<string[]>([]);
 
   const [icaoInput, setIcaoInput] = useState("");
-  const [showMetar, setShowMetar] = useState(true);
-  const [showAtis, setShowAtis] = useState(true);
 
   const headingControlRef = useRef<HeadingModeControl | null>(null);
   const radarControlRef = useRef<RadarModeControl | null>(null);
@@ -311,6 +310,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const { atis } = useAtisOverlay(icaoInput || selectedAirport?.icao);
 
+  // Fetch NOTAMs when we have an ICAO (PRO users fetch from API, free users only see cache)
+  const { notamData } = useNotamOverlay(icaoInput || selectedAirport?.icao, isProUser);
+
   // Render historic flight path from Flight Log
   useEffect(() => {
     if (!mapRefs.mapInstance.current || !mapRefs.historyLayerGroup.current) {
@@ -370,11 +372,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
         <MetarPanel
           icaoInput={icaoInput}
           onChange={setIcaoInput}
-          metarText={showMetar && metar?.raw ? metar.raw : null}
-          onCloseMetar={() => setShowMetar(false)}
-          atisText={showAtis && atis?.datis ? atis.datis : null}
-          atisCode={showAtis && atis?.code ? atis.code : null}
-          onCloseAtis={() => setShowAtis(false)}
+          metarText={metar?.raw || null}
+          atisText={atis?.datis || null}
+          atisCode={atis?.code || null}
+          notams={notamData?.notams || null}
+          notamCount={notamData?.count || 0}
+          isPro={isProUser}
         />
       )}
     </>

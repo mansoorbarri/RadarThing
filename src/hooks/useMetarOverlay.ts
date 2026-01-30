@@ -17,7 +17,10 @@ export const useMetarOverlay = (
   const [metar, setMetar] = useState<MetarData | null>(null);
 
   useEffect(() => {
-    if (!icao) return;
+    if (!icao || icao.length < 4) {
+      setMetar(null);
+      return;
+    }
     const fetchMetar = async () => {
       try {
         const res = await fetch(`https://avwx.rest/api/metar/${icao}`, {

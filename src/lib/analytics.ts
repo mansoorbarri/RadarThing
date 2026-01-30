@@ -24,7 +24,7 @@ interface FeatureAccessProps extends BaseEventProps {
 }
 
 interface WeatherLayerProps extends BaseEventProps {
-  layer: "precipitation" | "airmet" | "sigmet";
+  layer: "precipitation" | "airmet" | "sigmet" | "notam";
   enabled: boolean;
 }
 
