@@ -34,6 +34,7 @@ export const useWeatherOverlayLayer = ({
             opacity: 0.8,
             zIndex: 200,
             attribution: "Weather © OpenWeatherMap",
+            className: "precipitation-layer",
           },
         );
       }

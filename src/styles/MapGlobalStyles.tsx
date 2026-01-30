@@ -160,5 +160,10 @@ export const MapGlobalStyles = () => (
     .leaflet-top.leaflet-left .leaflet-control:first-child {
       margin-top: 0 !important;
     }
+
+    /* Shift precipitation layer to red for better visibility */
+    .precipitation-layer {
+      filter: hue-rotate(90deg) saturate(1.4);
+    }
   `}</style>
 );
