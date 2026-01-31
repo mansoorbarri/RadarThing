@@ -117,6 +117,18 @@ export function MissingNotificationsTab() {
   const saveNote = async (airlineCode: string, aircraftType: string, note: string) => {
     try {
       await updateNoteMutation({ airlineCode, aircraftType, note });
+
+      // Delete Discord message when note is saved
+      try {
+        await fetch("https://sse.radarthing.com/api/image-uploaded", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ airlineCode, aircraftType }),
+        });
+      } catch {
+        // Silently fail - Discord message deletion is best-effort
+      }
+
       toast.success("Note saved");
     } catch {
       toast.error("Failed to save note");
