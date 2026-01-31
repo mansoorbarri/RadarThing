@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/logo-white.svg" alt="GeoFS Radar" width="200">
+  <img src="public/logo-white.svg" alt="RadarThing" width="200">
 </p>
 
 A modern, feature-rich flight radar for the [GeoFS](https://www.geo-fs.com/) flight simulator. Track flights in real-time, view detailed flight information, and manage air traffic with professional-grade tools.
@@ -9,7 +9,7 @@ This project is a complete reimagining of the original [GeoFS Radar](https://git
 ## Quick Start
 
 1. **Install the mod:** [xyzmani.com/radar](https://xyzmani.com/radar)
-2. **Open the radar:** [radar.xyzmani.com](https://radar.xyzmani.com/)
+2. **Open the radar:** [radarthing](https://radarthing.com)
 3. Enter your departure/arrival airports (ICAO codes), callsign, and squawk code
 4. Click **Save** — you're now visible on the radar
 
