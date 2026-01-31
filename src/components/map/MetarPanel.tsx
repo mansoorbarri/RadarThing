@@ -87,26 +87,19 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
         <div className="max-w-[300px] rounded-lg border border-cyan-300/30 bg-gradient-to-br from-black/85 to-cyan-950/90 p-3 text-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.2)]">
           <div
             className="flex cursor-pointer items-center gap-2"
-            onClick={() => isPro && setAtisExpanded(!atisExpanded)}
+            onClick={() => setAtisExpanded(!atisExpanded)}
           >
             <strong className="text-cyan-300">
               ATIS{atisCode ? ` ${atisCode}` : ""}
             </strong>
-            {!isPro ? (
-              <Link
-                href="/pricing"
-                className="ml-auto rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wide hover:from-amber-400 hover:to-orange-400"
-              >
-                PRO
-              </Link>
-            ) : atisExpanded ? (
+            {atisExpanded ? (
               <ChevronUp className="ml-auto h-4 w-4 text-cyan-400" />
             ) : (
               <ChevronDown className="ml-auto h-4 w-4 text-cyan-400" />
             )}
           </div>
 
-          {isPro && atisExpanded && (
+          {atisExpanded && (
             <div className="mt-1.5 max-h-[200px] overflow-y-auto border-t border-cyan-300/20 pt-2 text-[13px] leading-[1.4] break-words">
               {atisText}
             </div>
