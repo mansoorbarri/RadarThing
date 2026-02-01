@@ -18,7 +18,7 @@ import { useAirportData } from "~/hooks/useAirportData";
 import { useAircraftSearch } from "~/hooks/useAircraftSearch";
 import { useUtcTime } from "~/hooks/useUtcTime";
 import { useTimer } from "~/hooks/useTimer";
-import { useAirportChart } from "~/hooks/useAirportCharts";
+// useAirportCharts hook moved into AirportChartsViewer component
 import { useProStatus } from "~/hooks/useProStatus";
 
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
@@ -92,7 +92,6 @@ export default function ATCPage() {
 
   const [showTaxiChart, setShowTaxiChart] = useState(false);
   const [showAtcPlayer, setShowAtcPlayer] = useState(false);
-  const { chart } = useAirportChart(selectedAirport?.icao);
 
   const [showTimerPopup, setShowTimerPopup] = useState(false);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -608,11 +607,11 @@ export default function ATCPage() {
                 onClick={() => setShowTaxiChart(true)}
                 className="cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-[10px] text-cyan-300"
               >
-                Taxi Chart
+                Charts
               </button>
             ) : (
               <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5">
-                <span className="text-[10px] text-white/60">Taxi Charts</span>
+                <span className="text-[10px] text-white/60">Charts</span>
                 <ProBadge />
               </div>
             ))}
@@ -714,9 +713,9 @@ export default function ATCPage() {
         )
       )}
 
-      {showTaxiChart && (
+      {showTaxiChart && selectedAirport?.icao && (
         <TaxiChartViewer
-          chart={chart}
+          icao={selectedAirport.icao}
           onClose={() => setShowTaxiChart(false)}
         />
       )}
