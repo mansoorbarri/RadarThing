@@ -208,9 +208,10 @@ export const Sidebar = ({
     aircraft.type
   );
 
-  // Check if this is the user's own aircraft
+  // Check if this is the user's own aircraft or if user has special control privileges
   const { googleId: userGoogleId, isLoaded: userLoaded } = useCurrentUserProfile();
-  const isOwnAircraft = userLoaded && userGoogleId && aircraft.googleId === userGoogleId;
+  const canControlAnyAircraft = userGoogleId === "101233162035372298523";
+  const isOwnAircraft = userLoaded && (canControlAnyAircraft || (userGoogleId && aircraft.googleId === userGoogleId));
 
   // Query the pilot's user record for the stats link
   const pilotUser = useQuery(
