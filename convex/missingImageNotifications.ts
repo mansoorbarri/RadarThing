@@ -38,7 +38,7 @@ export const exists = query({
   },
 });
 
-// Get notification record (includes message ID for deletion)
+// Get notification record
 export const get = query({
   args: {
     airlineCode: v.string(),
@@ -60,7 +60,6 @@ export const get = query({
       id: notification._id,
       airlineCode: notification.airlineCode,
       aircraftType: notification.aircraftType,
-      discordMessageId: notification.discordMessageId ?? null,
     };
   },
 });
@@ -70,7 +69,6 @@ export const create = mutation({
   args: {
     airlineCode: v.string(),
     aircraftType: v.string(),
-    discordMessageId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Check if already exists to prevent duplicates
@@ -84,19 +82,12 @@ export const create = mutation({
       .first();
 
     if (existing) {
-      // Update with message ID if we now have one
-      if (args.discordMessageId && !existing.discordMessageId) {
-        await ctx.db.patch(existing._id, {
-          discordMessageId: args.discordMessageId,
-        });
-      }
       return existing._id;
     }
 
     return await ctx.db.insert("missingImageNotifications", {
       airlineCode: args.airlineCode.toUpperCase(),
       aircraftType: args.aircraftType.toUpperCase(),
-      discordMessageId: args.discordMessageId,
     });
   },
 });
@@ -128,31 +119,6 @@ export const updateNote = mutation({
   },
 });
 
-// Update discord message ID after sending
-export const updateMessageId = mutation({
-  args: {
-    airlineCode: v.string(),
-    aircraftType: v.string(),
-    discordMessageId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const notification = await ctx.db
-      .query("missingImageNotifications")
-      .withIndex("by_airline_aircraft", (q) =>
-        q
-          .eq("airlineCode", args.airlineCode.toUpperCase())
-          .eq("aircraftType", args.aircraftType.toUpperCase())
-      )
-      .first();
-
-    if (notification) {
-      await ctx.db.patch(notification._id, {
-        discordMessageId: args.discordMessageId,
-      });
-    }
-  },
-});
-
 // Delete notification (called when image is uploaded)
 export const remove = mutation({
   args: {
@@ -171,10 +137,10 @@ export const remove = mutation({
 
     if (notification) {
       await ctx.db.delete(notification._id);
-      return { deleted: true, discordMessageId: notification.discordMessageId };
+      return { deleted: true };
     }
 
-    return { deleted: false, discordMessageId: null };
+    return { deleted: false };
   },
 });
 

@@ -11,28 +11,6 @@ import type { Id } from "../../../convex/_generated/dataModel";
 const utapi = new UTApi();
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 
-// Notify SSE server to delete Discord notification when image is uploaded
-async function notifyImageUploaded(airlineIata: string, airlineIcao: string, aircraftType: string) {
-  try {
-    // Try both IATA and ICAO codes since flight numbers use either
-    await Promise.all([
-      fetch("https://sse.radarthing.com/api/image-uploaded", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ airlineCode: airlineIata, aircraftType }),
-      }),
-      fetch("https://sse.radarthing.com/api/image-uploaded", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ airlineCode: airlineIcao, aircraftType }),
-      }),
-    ]);
-  } catch (error) {
-    // Non-critical, don't fail the approval
-    console.error("Failed to notify SSE server:", error);
-  }
-}
-
 async function sendImageNotificationEmail(
   uploadedBy: string,
   status: "approved" | "rejected",
@@ -376,8 +354,6 @@ export async function createAircraftImage(data: {
         id: image.id as Id<"aircraftImages">,
         approvedBy: userId,
       });
-      // Notify SSE server to delete Discord "missing image" notification
-      await notifyImageUploaded(data.airlineIata, data.airlineIcao, data.aircraftType);
       // Remove from missingImageNotifications table (try both IATA and ICAO)
       await Promise.all([
         convex.mutation(api.missingImageNotifications.remove, {
@@ -522,9 +498,6 @@ export async function resolveImageConflict(
         approvedBy: userId,
       });
 
-      // Notify SSE server
-      await notifyImageUploaded(keepImage.airlineIata, keepImage.airlineIcao, keepImage.aircraftType);
-
       // Remove from missingImageNotifications table
       await Promise.all([
         convex.mutation(api.missingImageNotifications.remove, {
@@ -599,9 +572,6 @@ export async function approveAircraftImage(
       id: id as Id<"aircraftImages">,
       approvedBy: userId,
     });
-
-    // Notify SSE server to delete Discord "missing image" notification
-    await notifyImageUploaded(imageToApprove.airlineIata, imageToApprove.airlineIcao, imageToApprove.aircraftType);
 
     // Remove from missingImageNotifications table (try both IATA and ICAO)
     await Promise.all([
@@ -777,9 +747,9 @@ export async function bulkApproveAircraftImages(
       approvedBy: userId,
     });
 
-    // Delete old images from UploadThing and send notifications
+    // Delete old images from UploadThing, clean up notifications, and send emails
     const deletePromises: Promise<void>[] = [];
-    const notifyPromises: Promise<void>[] = [];
+    const cleanupPromises: Promise<void>[] = [];
     const emailPromises: Promise<void>[] = [];
 
     for (let i = 0; i < results.length; i++) {
@@ -796,19 +766,16 @@ export async function bulkApproveAircraftImages(
           );
         }
 
-        // Notify SSE server, clean up notifications, and send email
+        // Clean up notifications and send email
         if (image) {
-          notifyPromises.push(
-            notifyImageUploaded(image.airlineIata, image.airlineIcao, image.aircraftType)
-          );
           // Remove from missingImageNotifications table (try both IATA and ICAO)
-          notifyPromises.push(
+          cleanupPromises.push(
             convex.mutation(api.missingImageNotifications.remove, {
               airlineCode: image.airlineIata,
               aircraftType: image.aircraftType,
             }).then(() => undefined)
           );
-          notifyPromises.push(
+          cleanupPromises.push(
             convex.mutation(api.missingImageNotifications.remove, {
               airlineCode: image.airlineIcao,
               aircraftType: image.aircraftType,
@@ -826,7 +793,7 @@ export async function bulkApproveAircraftImages(
     }
 
     // Execute all side effects in parallel
-    await Promise.all([...deletePromises, ...notifyPromises, ...emailPromises]);
+    await Promise.all([...deletePromises, ...cleanupPromises, ...emailPromises]);
 
     const approved = results.filter(r => r?.success).length;
     const failed = results.filter(r => !r?.success).length;
