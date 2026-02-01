@@ -9,7 +9,7 @@ interface AircraftControlPanelProps {
   aircraft: PositionUpdate & { altMSL?: number };
 }
 
-type PendingAction = "heading" | "setAll";
+type PendingAction = "setAll";
 
 export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   const { setSpeed, setAltitude, setHeading, setVS, setSquawk, setFlaps, isLoading } = useAircraftCommands();
@@ -29,131 +29,54 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   // Check navMode - but note this may be stale (updates every 5 seconds)
   const isInNavMode = aircraft.navMode === true;
 
-  const handleSetSpeed = useCallback(() => {
-    const value = parseInt(speedInput, 10);
-    if (!isNaN(value) && value >= 0) {
-      setSpeed(aircraftId, value);
-      Analytics.controlSet({ control: "speed", callsign: aircraftId, value });
-    }
-  }, [aircraftId, speedInput, setSpeed]);
-
-  const handleSetAltitude = useCallback(() => {
-    const value = parseInt(altitudeInput, 10);
-    if (!isNaN(value) && value >= 0) {
-      setAltitude(aircraftId, value);
-      Analytics.controlSet({ control: "altitude", callsign: aircraftId, value });
-    }
-  }, [aircraftId, altitudeInput, setAltitude]);
-
-  // Check if heading input is valid
-  const hasValidHeading = useCallback(() => {
-    const value = parseInt(headingInput, 10);
-    return !isNaN(value) && value >= 0 && value <= 360;
-  }, [headingInput]);
-
-  // When user clicks SET on heading - only show warning if in NAV mode
-  const handleSetHeading = useCallback(() => {
-    if (!hasValidHeading()) return;
-
-    if (isInNavMode) {
-      // In NAV mode - show warning before switching to HDG
-      setPendingAction("heading");
-      setShowNavWarning(true);
-    } else {
-      // Already in HDG mode - set heading directly
-      const value = parseInt(headingInput, 10);
-      setHeading(aircraftId, value);
-      Analytics.controlSet({ control: "heading", callsign: aircraftId, value });
-    }
-  }, [hasValidHeading, isInNavMode, aircraftId, headingInput, setHeading]);
 
   // User confirms they want to switch from NAV to HDG mode
   const handleConfirmHeadingChange = useCallback(() => {
+    const speed = parseInt(speedInput, 10);
+    const altitude = parseInt(altitudeInput, 10);
     const headingValue = parseInt(headingInput, 10);
+    const vs = parseInt(vsInput, 10);
+    const flaps = parseInt(flapsInput, 10);
 
-    if (pendingAction === "heading") {
-      // Just setting heading
-      if (!isNaN(headingValue) && headingValue >= 0 && headingValue <= 360) {
-        setHeading(aircraftId, headingValue);
-        Analytics.controlSet({ control: "heading", callsign: aircraftId, value: headingValue });
-      }
-    } else if (pendingAction === "setAll") {
-      // Setting all values
-      const speed = parseInt(speedInput, 10);
-      const altitude = parseInt(altitudeInput, 10);
-      const vs = parseInt(vsInput, 10);
-      const flaps = parseInt(flapsInput, 10);
+    const controlsSet: string[] = [];
 
-      const controlsSet: string[] = [];
+    if (!isNaN(speed) && speed >= 0) {
+      setSpeed(aircraftId, speed);
+      controlsSet.push("speed");
+    }
+    if (!isNaN(altitude) && altitude >= 0) {
+      setAltitude(aircraftId, altitude);
+      controlsSet.push("altitude");
+    }
+    if (!isNaN(headingValue) && headingValue >= 0 && headingValue <= 360) {
+      setHeading(aircraftId, headingValue);
+      controlsSet.push("heading");
+    }
+    if (!isNaN(vs)) {
+      setVS(aircraftId, vs);
+      controlsSet.push("vs");
+    }
+    if (/^[0-7]{4}$/.test(squawkInput)) {
+      setSquawk(aircraftId, squawkInput);
+      controlsSet.push("squawk");
+    }
+    if (!isNaN(flaps) && flaps >= 0 && (flapsMaxPosition === 0 || flaps <= flapsMaxPosition)) {
+      setFlaps(aircraftId, flaps);
+      controlsSet.push("flaps");
+    }
 
-      if (!isNaN(speed) && speed >= 0) {
-        setSpeed(aircraftId, speed);
-        controlsSet.push("speed");
-      }
-      if (!isNaN(altitude) && altitude >= 0) {
-        setAltitude(aircraftId, altitude);
-        controlsSet.push("altitude");
-      }
-      if (!isNaN(headingValue) && headingValue >= 0 && headingValue <= 360) {
-        setHeading(aircraftId, headingValue);
-        controlsSet.push("heading");
-      }
-      if (!isNaN(vs)) {
-        setVS(aircraftId, vs);
-        controlsSet.push("vs");
-      }
-      if (/^[0-7]{4}$/.test(squawkInput)) {
-        setSquawk(aircraftId, squawkInput);
-        controlsSet.push("squawk");
-      }
-      if (!isNaN(flaps) && flaps >= 0 && (flapsMaxPosition === 0 || flaps <= flapsMaxPosition)) {
-        setFlaps(aircraftId, flaps);
-        controlsSet.push("flaps");
-      }
-
-      if (controlsSet.length > 0) {
-        Analytics.controlSetAll({ callsign: aircraftId, controls: controlsSet });
-      }
+    if (controlsSet.length > 0) {
+      Analytics.controlSetAll({ callsign: aircraftId, controls: controlsSet });
     }
 
     setShowNavWarning(false);
     setPendingAction(null);
-  }, [pendingAction, aircraftId, headingInput, speedInput, altitudeInput, vsInput, squawkInput, flapsInput, flapsMaxPosition, setHeading, setSpeed, setAltitude, setVS, setSquawk, setFlaps]);
+  }, [aircraftId, headingInput, speedInput, altitudeInput, vsInput, squawkInput, flapsInput, flapsMaxPosition, setHeading, setSpeed, setAltitude, setVS, setSquawk, setFlaps]);
 
   const handleCancelWarning = useCallback(() => {
     setShowNavWarning(false);
     setPendingAction(null);
   }, []);
-
-  const handleSetVS = useCallback(() => {
-    const value = parseInt(vsInput, 10);
-    if (!isNaN(value)) {
-      setVS(aircraftId, value);
-      Analytics.controlSet({ control: "vs", callsign: aircraftId, value });
-    }
-  }, [aircraftId, vsInput, setVS]);
-
-  const handleSetSquawk = useCallback(() => {
-    if (/^[0-7]{4}$/.test(squawkInput)) {
-      setSquawk(aircraftId, squawkInput);
-      Analytics.controlSet({ control: "squawk", callsign: aircraftId, value: squawkInput });
-    }
-  }, [aircraftId, squawkInput, setSquawk]);
-
-  const handleSetFlaps = useCallback(() => {
-    const value = parseInt(flapsInput, 10);
-    if (isNaN(value) || value < 0) {
-      setFlapsError("Invalid value");
-      return;
-    }
-    if (flapsMaxPosition > 0 && value > flapsMaxPosition) {
-      setFlapsError(`Max is ${flapsMaxPosition}`);
-      return;
-    }
-    setFlapsError("");
-    setFlaps(aircraftId, value);
-    Analytics.controlSet({ control: "flaps", callsign: aircraftId, value });
-  }, [aircraftId, flapsInput, flapsMaxPosition, setFlaps]);
 
   const handleSetAll = useCallback(() => {
     const speed = parseInt(speedInput, 10);
@@ -252,8 +175,6 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
           unit="KTS"
           value={speedInput}
           onChange={setSpeedInput}
-          onSet={handleSetSpeed}
-          disabled={isLoading}
           min={0}
           max={999}
         />
@@ -263,8 +184,6 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
           unit="FT"
           value={altitudeInput}
           onChange={setAltitudeInput}
-          onSet={handleSetAltitude}
-          disabled={isLoading}
           min={0}
           max={60000}
           step={100}
@@ -275,8 +194,6 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
           unit="DEG"
           value={headingInput}
           onChange={setHeadingInput}
-          onSet={handleSetHeading}
-          disabled={isLoading}
           min={0}
           max={360}
         />
@@ -286,8 +203,6 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
           unit="FPM"
           value={vsInput}
           onChange={setVsInput}
-          onSet={handleSetVS}
-          disabled={isLoading}
           min={-9999}
           max={9999}
           step={100}
@@ -302,8 +217,6 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
               setFlapsInput(v);
               setFlapsError("");
             }}
-            onSet={handleSetFlaps}
-            disabled={isLoading}
             min={0}
             max={flapsMaxPosition || 10}
             step={1}
@@ -318,8 +231,6 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
           unit=""
           value={squawkInput}
           onChange={(v) => setSquawkInput(v.replace(/[^0-7]/g, "").slice(0, 4))}
-          onSet={handleSetSquawk}
-          disabled={isLoading || !/^[0-7]{4}$/.test(squawkInput)}
           isText
           placeholder="0000"
         />
@@ -330,7 +241,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
         disabled={isLoading || !hasAnyInput}
         className="w-full rounded-xl bg-cyan-600 py-3 font-mono text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        Set All
+        SET
       </button>
 
       <p className="px-1 font-mono text-[9px] text-white/30">
@@ -345,8 +256,6 @@ interface ControlRowProps {
   unit: string;
   value: string;
   onChange: (value: string) => void;
-  onSet: () => void;
-  disabled?: boolean;
   min?: number;
   max?: number;
   step?: number;
@@ -360,8 +269,6 @@ function ControlRow({
   unit,
   value,
   onChange,
-  onSet,
-  disabled,
   min = 0,
   max = 99999,
   step = 1,
@@ -369,10 +276,6 @@ function ControlRow({
   isPercentage = false,
   placeholder,
 }: ControlRowProps) {
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") onSet();
-  };
-
   // For percentage, display is 0-100 but stored value is 0-1
   const displayValue = isPercentage ? String(Math.round(parseFloat(value || "0") * 100)) : value;
 
@@ -430,7 +333,6 @@ function ControlRow({
         type={isText ? "text" : "number"}
         value={isPercentage ? displayValue : value}
         onChange={(e) => isPercentage ? handlePercentageChange(e.target.value) : onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className="w-20 flex-1 rounded-lg border border-white/20 bg-black/60 px-2 py-1.5 text-center font-mono text-base font-bold text-white outline-none transition-colors focus:border-cyan-500/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
@@ -447,14 +349,6 @@ function ControlRow({
       {unit && (
         <span className="w-8 font-mono text-[9px] font-bold text-white/40">{unit}</span>
       )}
-
-      <button
-        onClick={onSet}
-        disabled={disabled}
-        className="rounded-lg bg-cyan-600 px-3 py-1.5 font-mono text-[10px] font-bold text-white transition-colors hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        SET
-      </button>
     </div>
   );
 }
