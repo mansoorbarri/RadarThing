@@ -10,6 +10,7 @@ import {
   bulkApproveAirportCharts,
   bulkRejectAirportCharts,
   getChartUserInfoByIds,
+  updateAirportChart,
 } from "~/app/actions/airport-charts";
 import {
   Trash2,
@@ -22,6 +23,7 @@ import {
   CheckSquare,
   Square,
   ExternalLink,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { RejectModal } from "./RejectModal";
@@ -51,6 +53,138 @@ function matchesChartSearch(chart: ChartType2, query: string) {
     chart.icao?.toLowerCase().includes(q) ||
     chart.chartName?.toLowerCase().includes(q) ||
     chart.chartType?.toLowerCase().includes(q)
+  );
+}
+
+function EditableChartDetails({
+  chartId,
+  initialIcao,
+  initialChartType,
+  initialChartName,
+  onSaveSuccess,
+}: {
+  chartId: string;
+  initialIcao: string;
+  initialChartType: ChartType;
+  initialChartName: string;
+  onSaveSuccess?: () => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [icao, setIcao] = useState(initialIcao);
+  const [chartType, setChartType] = useState<ChartType>(initialChartType);
+  const [chartName, setChartName] = useState(initialChartName);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (icao === initialIcao && chartType === initialChartType && chartName === initialChartName) {
+      setIsEditing(false);
+      return;
+    }
+    setIsSaving(true);
+    const result = await updateAirportChart(chartId, icao, chartType, chartName);
+    setIsSaving(false);
+    if (result.success) {
+      toast.success("Chart details updated");
+      setIsEditing(false);
+      onSaveSuccess?.();
+    } else {
+      toast.error(result.error || "Failed to update chart");
+    }
+  };
+
+  const handleCancel = () => {
+    setIcao(initialIcao);
+    setChartType(initialChartType);
+    setChartName(initialChartName);
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSave();
+    } else if (e.key === "Escape") {
+      handleCancel();
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <input
+            type="text"
+            value={icao}
+            onChange={(e) => setIcao(e.target.value.toUpperCase())}
+            onKeyDown={handleKeyDown}
+            placeholder="ICAO"
+            maxLength={4}
+            className="w-16 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400"
+            disabled={isSaving}
+            autoFocus
+          />
+          <select
+            value={chartType}
+            onChange={(e) => setChartType(e.target.value as ChartType)}
+            className="rounded-md border border-blue-500/50 bg-black/60 px-2 py-1 text-sm text-blue-400 outline-none focus:border-blue-400"
+            disabled={isSaving}
+          >
+            {CHART_TYPES.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <input
+          type="text"
+          value={chartName}
+          onChange={(e) => setChartName(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Chart Name"
+          className="w-full rounded-md border border-white/20 bg-black/60 px-2 py-1 text-sm text-white outline-none focus:border-white/40"
+          disabled={isSaving}
+        />
+        <div className="flex gap-2">
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="cursor-pointer rounded-md bg-emerald-500/20 p-1 text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
+          >
+            <Check className="h-4 w-4" />
+          </button>
+          <button
+            onClick={handleCancel}
+            disabled={isSaving}
+            className="cursor-pointer rounded-md bg-red-500/20 p-1 text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group/details">
+      <div className="mb-2 flex items-center gap-2 flex-wrap">
+        <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">
+          {initialIcao}
+        </span>
+        <span className="rounded-md bg-blue-500/20 px-2 py-1 text-xs font-medium text-blue-400">
+          {initialChartType}
+        </span>
+        <button
+          onClick={() => setIsEditing(true)}
+          className="cursor-pointer rounded-md p-1 text-slate-600 opacity-0 transition-all hover:bg-white/10 hover:text-cyan-400 group-hover/details:opacity-100"
+          title="Edit chart details"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <p className="text-sm text-white truncate" title={initialChartName}>
+        {initialChartName}
+      </p>
+    </div>
   );
 }
 
@@ -491,18 +625,13 @@ export function AirportChartsTab() {
                     </button>
                   </div>
                   <div className="p-4">
-                    <div className="mb-2 flex items-center gap-2 flex-wrap">
-                      <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">
-                        {chart.icao}
-                      </span>
-                      <span className="rounded-md bg-blue-500/20 px-2 py-1 text-xs font-medium text-blue-400">
-                        {chart.chartType}
-                      </span>
-                    </div>
-                    <p className="mb-2 text-sm text-white truncate" title={chart.chartName}>
-                      {chart.chartName}
-                    </p>
-                    <p className="mb-1 text-xs text-slate-500">
+                    <EditableChartDetails
+                      chartId={chart.id}
+                      initialIcao={chart.icao}
+                      initialChartType={chart.chartType as ChartType}
+                      initialChartName={chart.chartName}
+                    />
+                    <p className="mt-2 text-xs text-slate-500">
                       Uploaded by:{" "}
                       <span className="text-cyan-400">
                         {chart.discordUsername || userInfo[chart.uploadedBy ?? ""]?.email || "Unknown"}
@@ -583,18 +712,17 @@ export function AirportChartsTab() {
                     </button>
                   </div>
                   <div className="p-4">
-                    <div className="mb-2 flex items-center gap-2 flex-wrap">
-                      <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">
-                        {chart.icao}
-                      </span>
-                      <span className="rounded-md bg-blue-500/20 px-2 py-1 text-xs font-medium text-blue-400">
-                        {chart.chartType}
-                      </span>
-                      <CheckCircle className="ml-auto h-4 w-4 text-emerald-400" />
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1">
+                        <EditableChartDetails
+                          chartId={chart.id}
+                          initialIcao={chart.icao}
+                          initialChartType={chart.chartType as ChartType}
+                          initialChartName={chart.chartName}
+                        />
+                      </div>
+                      <CheckCircle className="h-4 w-4 text-emerald-400 flex-shrink-0 mt-1" />
                     </div>
-                    <p className="text-sm text-white truncate" title={chart.chartName}>
-                      {chart.chartName}
-                    </p>
                     <p className="mt-2 text-xs text-slate-500">
                       Uploaded by:{" "}
                       <span className="text-cyan-400">

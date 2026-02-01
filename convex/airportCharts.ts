@@ -199,6 +199,34 @@ export const approve = mutation({
   },
 });
 
+// Update airport chart details
+export const update = mutation({
+  args: {
+    id: v.id("airportCharts"),
+    icao: v.string(),
+    chartType: chartTypeValidator,
+    chartName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const chart = await ctx.db.get(args.id);
+    if (!chart) return null;
+
+    await ctx.db.patch(args.id, {
+      icao: args.icao.toUpperCase(),
+      chartType: args.chartType,
+      chartName: args.chartName,
+    });
+
+    return {
+      id: chart._id,
+      icao: args.icao.toUpperCase(),
+      chartType: args.chartType,
+      chartName: args.chartName,
+      imageKey: chart.imageKey ?? null,
+    };
+  },
+});
+
 // Delete airport chart
 export const remove = mutation({
   args: { id: v.id("airportCharts") },

@@ -113,19 +113,6 @@ function toAirportChartRecord(chart: {
   };
 }
 
-async function isProUser(): Promise<boolean> {
-  const { userId } = await auth();
-  if (!userId) return false;
-
-  const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
-  if (!user) return false;
-
-  if (user.role === "ADMIN" || user.role === "PRO") return true;
-
-  const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
-  return Boolean(superAdminGoogleId && user.googleId === superAdminGoogleId);
-}
-
 async function isAdminUser(): Promise<boolean> {
   const { userId } = await auth();
   if (!userId) return false;
@@ -197,11 +184,6 @@ export async function validateChartUploadEligibility(data: {
     return { canUpload: false, error: "You must be signed in to upload charts" };
   }
 
-  const isPro = await isProUser();
-  if (!isPro) {
-    return { canUpload: false, error: "PRO subscription required to upload charts" };
-  }
-
   if (!data.icao || data.icao.length < 3 || data.icao.length > 4) {
     return { canUpload: false, error: "Valid ICAO code required (3-4 characters)" };
   }
@@ -251,11 +233,6 @@ export async function createAirportChart(data: {
   const userId = await getCurrentUserId();
   if (!userId) {
     return { success: false, error: "You must be signed in to upload charts" };
-  }
-
-  const isPro = await isProUser();
-  if (!isPro) {
-    return { success: false, error: "PRO subscription required to upload charts" };
   }
 
   try {
@@ -462,6 +439,71 @@ export async function deleteAirportChart(
   } catch (error) {
     console.error("Error deleting airport chart:", error);
     return { success: false, error: "Failed to delete chart" };
+  }
+}
+
+// Update airport chart details (ADMIN only)
+export async function updateAirportChart(
+  id: string,
+  newIcao: string,
+  newChartType: ChartType,
+  newChartName: string
+): Promise<{ success: boolean; error?: string }> {
+  const admin = await isAdminUser();
+  if (!admin) {
+    return { success: false, error: "Only ADMIN users can update chart details" };
+  }
+
+  // Validate inputs
+  const icao = newIcao.trim().toUpperCase();
+  const chartName = newChartName.trim();
+
+  if (icao.length < 3 || icao.length > 4) {
+    return { success: false, error: "ICAO code must be 3-4 characters" };
+  }
+
+  if (chartName.length < 3) {
+    return { success: false, error: "Chart name must be at least 3 characters" };
+  }
+
+  try {
+    // Update the database
+    const result = await convex.mutation(api.airportCharts.update, {
+      id: id as Id<"airportCharts">,
+      icao,
+      chartType: newChartType,
+      chartName,
+    });
+
+    if (!result) {
+      return { success: false, error: "Chart not found" };
+    }
+
+    // Rename the file in UploadThing if it has a key
+    // File naming format: {ICAO}-{chartType}-{chartName}.{extension}
+    if (result.imageKey) {
+      try {
+        const extension = result.imageKey.split(".").pop() || "png";
+        // Sanitize chart name for filename (remove special chars, replace spaces)
+        const sanitizedName = chartName.replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
+        const newFileName = `${icao}-${newChartType}-${sanitizedName}.${extension}`;
+
+        await utapi.renameFiles({
+          fileKey: result.imageKey,
+          newName: newFileName,
+        });
+      } catch (e) {
+        // Non-critical - file rename failed but DB is updated
+        console.error("Failed to rename file in UploadThing:", e);
+      }
+    }
+
+    revalidatePath("/airport-charts");
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating airport chart:", error);
+    return { success: false, error: "Failed to update chart" };
   }
 }
 
