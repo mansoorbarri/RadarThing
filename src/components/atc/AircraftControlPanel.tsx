@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { useAircraftCommands } from "~/hooks/useAircraftCommands";
 import { type PositionUpdate } from "~/lib/aircraft-store";
+import { Analytics } from "~/lib/analytics";
 
 interface AircraftControlPanelProps {
   aircraft: PositionUpdate & { altMSL?: number };
@@ -32,6 +33,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     const value = parseInt(speedInput, 10);
     if (!isNaN(value) && value >= 0) {
       setSpeed(aircraftId, value);
+      Analytics.controlSet({ control: "speed", callsign: aircraftId, value });
     }
   }, [aircraftId, speedInput, setSpeed]);
 
@@ -39,6 +41,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     const value = parseInt(altitudeInput, 10);
     if (!isNaN(value) && value >= 0) {
       setAltitude(aircraftId, value);
+      Analytics.controlSet({ control: "altitude", callsign: aircraftId, value });
     }
   }, [aircraftId, altitudeInput, setAltitude]);
 
@@ -58,7 +61,9 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       setShowNavWarning(true);
     } else {
       // Already in HDG mode - set heading directly
-      setHeading(aircraftId, parseInt(headingInput, 10));
+      const value = parseInt(headingInput, 10);
+      setHeading(aircraftId, value);
+      Analytics.controlSet({ control: "heading", callsign: aircraftId, value });
     }
   }, [hasValidHeading, isInNavMode, aircraftId, headingInput, setHeading]);
 
@@ -70,6 +75,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       // Just setting heading
       if (!isNaN(headingValue) && headingValue >= 0 && headingValue <= 360) {
         setHeading(aircraftId, headingValue);
+        Analytics.controlSet({ control: "heading", callsign: aircraftId, value: headingValue });
       }
     } else if (pendingAction === "setAll") {
       // Setting all values
@@ -78,23 +84,35 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       const vs = parseInt(vsInput, 10);
       const flaps = parseInt(flapsInput, 10);
 
+      const controlsSet: string[] = [];
+
       if (!isNaN(speed) && speed >= 0) {
         setSpeed(aircraftId, speed);
+        controlsSet.push("speed");
       }
       if (!isNaN(altitude) && altitude >= 0) {
         setAltitude(aircraftId, altitude);
+        controlsSet.push("altitude");
       }
       if (!isNaN(headingValue) && headingValue >= 0 && headingValue <= 360) {
         setHeading(aircraftId, headingValue);
+        controlsSet.push("heading");
       }
       if (!isNaN(vs)) {
         setVS(aircraftId, vs);
+        controlsSet.push("vs");
       }
       if (/^[0-7]{4}$/.test(squawkInput)) {
         setSquawk(aircraftId, squawkInput);
+        controlsSet.push("squawk");
       }
       if (!isNaN(flaps) && flaps >= 0 && (flapsMaxPosition === 0 || flaps <= flapsMaxPosition)) {
         setFlaps(aircraftId, flaps);
+        controlsSet.push("flaps");
+      }
+
+      if (controlsSet.length > 0) {
+        Analytics.controlSetAll({ callsign: aircraftId, controls: controlsSet });
       }
     }
 
@@ -111,12 +129,14 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     const value = parseInt(vsInput, 10);
     if (!isNaN(value)) {
       setVS(aircraftId, value);
+      Analytics.controlSet({ control: "vs", callsign: aircraftId, value });
     }
   }, [aircraftId, vsInput, setVS]);
 
   const handleSetSquawk = useCallback(() => {
     if (/^[0-7]{4}$/.test(squawkInput)) {
       setSquawk(aircraftId, squawkInput);
+      Analytics.controlSet({ control: "squawk", callsign: aircraftId, value: squawkInput });
     }
   }, [aircraftId, squawkInput, setSquawk]);
 
@@ -132,6 +152,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     }
     setFlapsError("");
     setFlaps(aircraftId, value);
+    Analytics.controlSet({ control: "flaps", callsign: aircraftId, value });
   }, [aircraftId, flapsInput, flapsMaxPosition, setFlaps]);
 
   const handleSetAll = useCallback(() => {
@@ -150,24 +171,37 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       return;
     }
 
+    // Track which controls are being set
+    const controlsSet: string[] = [];
+
     // Execute all commands
     if (!isNaN(speed) && speed >= 0) {
       setSpeed(aircraftId, speed);
+      controlsSet.push("speed");
     }
     if (!isNaN(altitude) && altitude >= 0) {
       setAltitude(aircraftId, altitude);
+      controlsSet.push("altitude");
     }
     if (hasHeadingToSet) {
       setHeading(aircraftId, heading);
+      controlsSet.push("heading");
     }
     if (!isNaN(vs)) {
       setVS(aircraftId, vs);
+      controlsSet.push("vs");
     }
     if (/^[0-7]{4}$/.test(squawkInput)) {
       setSquawk(aircraftId, squawkInput);
+      controlsSet.push("squawk");
     }
     if (!isNaN(flaps) && flaps >= 0 && (flapsMaxPosition === 0 || flaps <= flapsMaxPosition)) {
       setFlaps(aircraftId, flaps);
+      controlsSet.push("flaps");
+    }
+
+    if (controlsSet.length > 0) {
+      Analytics.controlSetAll({ callsign: aircraftId, controls: controlsSet });
     }
   }, [aircraftId, speedInput, altitudeInput, headingInput, vsInput, squawkInput, flapsInput, flapsMaxPosition, isInNavMode, setSpeed, setAltitude, setHeading, setVS, setSquawk, setFlaps]);
 

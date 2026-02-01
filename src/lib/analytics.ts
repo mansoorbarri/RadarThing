@@ -228,6 +228,15 @@ export const Analytics = {
     track("signed_out", props);
   },
 
+  // ===== AIRCRAFT CONTROL EVENTS =====
+  controlSet: (props: { control: string; callsign?: string; value?: string | number }) => {
+    track("control_set", props);
+  },
+
+  controlSetAll: (props: { callsign?: string; controls?: string[] }) => {
+    track("control_set_all", props);
+  },
+
   // ===== GENERIC EVENT =====
   track: (eventName: string, properties?: Record<string, unknown>) => {
     track(eventName, properties);
