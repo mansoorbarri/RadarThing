@@ -159,18 +159,25 @@
 
     // If flight was active and is now cleared, end the flight immediately
     if (wasActive && !info.active) {
+      console.log("[RadarThing] Flight cleared, ending immediately...");
       endFlight();
     }
   });
 
   // End flight and save to database immediately
   async function endFlight() {
-    if (!geofs?.userRecord) return;
+    if (!geofs?.userRecord) {
+      console.warn("[RadarThing] Cannot end flight - no userRecord");
+      return;
+    }
 
     const id = geofs.userRecord.googleid || geofs.userRecord.callsign;
-    if (!id) return;
+    if (!id) {
+      console.warn("[RadarThing] Cannot end flight - no id");
+      return;
+    }
 
-    console.log("[RadarThing] Ending flight session...");
+    console.log(`[RadarThing] Ending flight session for id=${id}...`);
 
     try {
       const res = await fetch(`${API_BASE}/api/end-flight`, {
@@ -187,8 +194,10 @@
         if (data.finalized) {
           console.log(`[RadarThing] Flight ended and saved: ${data.flightNo}`);
         } else {
-          console.log("[RadarThing] No active session to end");
+          console.log(`[RadarThing] No active session to end: ${data.reason || "unknown"}`);
         }
+      } else {
+        console.error(`[RadarThing] End flight request failed: ${res.status}`);
       }
     } catch (err) {
       console.error("[RadarThing] Error ending flight:", err);
