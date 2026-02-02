@@ -18,6 +18,8 @@ import {
   Navigation,
   Copy,
   Check,
+  Camera,
+  FileText,
 } from "lucide-react";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -61,6 +63,14 @@ export default function DashboardPage() {
   const dbUser = useQuery(
     api.users.getByClerkId,
     clerkId ? { clerkId } : "skip"
+  );
+  const approvedAircraftImages = useQuery(
+    api.aircraftImages.getApprovedCountByUser,
+    clerkId ? { uploadedBy: clerkId } : "skip"
+  );
+  const approvedAirportCharts = useQuery(
+    api.airportCharts.getApprovedCountByUser,
+    clerkId ? { uploadedBy: clerkId } : "skip"
   );
 
   const stats = useMemo(() => statsQuery ?? null, [statsQuery]);
@@ -200,6 +210,34 @@ export default function DashboardPage() {
                 locked={!isPro}
               />
             </div>
+
+            {/* Contributions Section */}
+            {(approvedAircraftImages !== undefined && approvedAircraftImages > 0) ||
+            (approvedAirportCharts !== undefined && approvedAirportCharts > 0) ? (
+              <div className="mb-8">
+                <h3 className="font-mono text-sm font-bold text-slate-400 tracking-wider mb-4">
+                  YOUR CONTRIBUTIONS
+                </h3>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {approvedAircraftImages !== undefined && approvedAircraftImages > 0 && (
+                    <StatCard
+                      icon={<Camera className="h-5 w-5" />}
+                      label="Aircraft Images"
+                      value={approvedAircraftImages.toString()}
+                      color="purple"
+                    />
+                  )}
+                  {approvedAirportCharts !== undefined && approvedAirportCharts > 0 && (
+                    <StatCard
+                      icon={<FileText className="h-5 w-5" />}
+                      label="Airport Charts"
+                      value={approvedAirportCharts.toString()}
+                      color="emerald"
+                    />
+                  )}
+                </div>
+              </div>
+            ) : null}
 
             <div className="grid gap-6 lg:grid-cols-3 mb-8">
               {/* Top Aircraft - PRO */}

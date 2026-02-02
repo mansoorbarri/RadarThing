@@ -304,6 +304,20 @@ export const bulkRemove = mutation({
   },
 });
 
+// Get count of approved charts uploaded by a specific user
+export const getApprovedCountByUser = query({
+  args: { uploadedBy: v.string() },
+  handler: async (ctx, args) => {
+    const charts = await ctx.db
+      .query("airportCharts")
+      .withIndex("by_uploadedBy", (q) => q.eq("uploadedBy", args.uploadedBy))
+      .filter((q) => q.eq(q.field("isApproved"), true))
+      .collect();
+
+    return charts.length;
+  },
+});
+
 // Check upload eligibility (check for duplicate pending by user)
 export const checkUploadEligibility = query({
   args: {

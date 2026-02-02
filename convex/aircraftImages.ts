@@ -494,6 +494,20 @@ export const findExistingApproved = query({
   },
 });
 
+// Get count of approved images uploaded by a specific user
+export const getApprovedCountByUser = query({
+  args: { uploadedBy: v.string() },
+  handler: async (ctx, args) => {
+    const images = await ctx.db
+      .query("aircraftImages")
+      .withIndex("by_uploadedBy", (q) => q.eq("uploadedBy", args.uploadedBy))
+      .filter((q) => q.eq(q.field("isApproved"), true))
+      .collect();
+
+    return images.length;
+  },
+});
+
 // Find existing approved image with full details (for conflict resolution modal)
 export const findExistingApprovedFull = query({
   args: {
