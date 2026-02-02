@@ -71,6 +71,18 @@ const getAirlineLogoFromFlightNumber = (flightNo?: string): string | null => {
   return `https://content.airhex.com/content/logos/airlines_${code}_200_200_s.png?theme=dark`;
 };
 
+export interface HistoryFlight {
+  id: string;
+  depICAO?: string;
+  arrICAO?: string;
+  startTime: number;
+  endTime?: number;
+  aircraftType?: string;
+  callsign?: string;
+  duration?: number;
+  routeData?: [number, number][];
+}
+
 export const Sidebar = ({
   aircraft,
   onWaypointClick,
@@ -80,7 +92,7 @@ export const Sidebar = ({
 }: {
   aircraft: PositionUpdate & { altMSL?: number };
   onWaypointClick?: (waypoint: any, index: number) => void;
-  onHistoryClick?: (path: [number, number][]) => void;
+  onHistoryClick?: (flight: HistoryFlight) => void;
   isMobile: boolean;
   onClose?: () => void;
 }) => {
@@ -428,18 +440,40 @@ export const Sidebar = ({
                       key={f.id}
                       onClick={() => {
                         if (f.routeData) {
-                          onHistoryClick?.(f.routeData as [number, number][]);
+                          onHistoryClick?.({
+                            id: f.id as string,
+                            depICAO: f.depICAO,
+                            arrICAO: f.arrICAO,
+                            startTime: f.startTime.getTime(),
+                            endTime: f.endTime,
+                            aircraftType: f.aircraftType,
+                            callsign: f.callsign,
+                            duration: f.duration,
+                            routeData: f.routeData as [number, number][],
+                          });
                         }
                       }}
-                      className="group relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg transition-all hover:border-cyan-500/40"
+                      className="group relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg transition-all hover:border-amber-500/40"
                     >
                       <div className="mb-1.5 flex items-center justify-between">
-                        <span className="font-mono text-sm font-black text-white group-hover:text-cyan-400">
+                        <span className="font-mono text-sm font-black text-white group-hover:text-amber-400">
                           {f.depICAO} → {f.arrICAO}
                         </span>
                         <span className="font-mono text-[10px] font-bold text-white/30">
                           {new Date(f.startTime).toLocaleDateString()}
                         </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {f.callsign && (
+                          <span className="font-mono text-[10px] text-cyan-400/70">
+                            {f.callsign}
+                          </span>
+                        )}
+                        {f.aircraftType && (
+                          <span className="font-mono text-[10px] text-white/40">
+                            {f.aircraftType}
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))

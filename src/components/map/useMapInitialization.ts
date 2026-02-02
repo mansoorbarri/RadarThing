@@ -32,6 +32,7 @@ interface MapRefs {
   aircraftMarkersLayer: React.MutableRefObject<L.LayerGroup | null>;
   airportMarkersLayer: React.MutableRefObject<L.LayerGroup | null>;
   historyLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
+  replayLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
   osmLayer: React.MutableRefObject<L.TileLayer | null>;
   satelliteHybridLayer: React.MutableRefObject<L.TileLayer | null>;
   radarBaseLayer: React.MutableRefObject<L.TileLayer | null>;
@@ -61,6 +62,7 @@ export const useMapInitialization = ({
   const aircraftMarkersLayer = useRef<L.LayerGroup | null>(null);
   const airportMarkersLayer = useRef<L.LayerGroup | null>(null);
   const historyLayerGroup = useRef<L.LayerGroup | null>(null);
+  const replayLayerGroup = useRef<L.LayerGroup | null>(null);
 
   const osmLayer = useRef<L.TileLayer | null>(null);
   const satelliteHybridLayer = useRef<L.TileLayer | null>(null);
@@ -146,6 +148,7 @@ export const useMapInitialization = ({
     aircraftMarkersLayer.current = L.layerGroup().addTo(map);
     airportMarkersLayer.current = L.layerGroup().addTo(map);
     historyLayerGroup.current = L.layerGroup().addTo(map);
+    replayLayerGroup.current = L.layerGroup().addTo(map);
 
     // Signal that map and layers are ready
     setMapReady(true);
@@ -246,6 +249,7 @@ export const useMapInitialization = ({
     aircraftMarkersLayer,
     airportMarkersLayer,
     historyLayerGroup,
+    replayLayerGroup,
     osmLayer,
     satelliteHybridLayer,
     radarBaseLayer,

@@ -35,6 +35,18 @@ interface FlightEventProps extends BaseEventProps {
   arrICAO?: string;
 }
 
+interface FlightReplayEventProps extends BaseEventProps {
+  callsign?: string;
+  aircraftType?: string;
+  depICAO?: string;
+  arrICAO?: string;
+  duration?: number;
+}
+
+interface FlightReplaySpeedProps extends FlightReplayEventProps {
+  speed: number;
+}
+
 interface CheckoutEventProps extends BaseEventProps {
   priceId?: string;
   source?: string;
@@ -130,6 +142,26 @@ export const Analytics = {
 
   flightHistoryViewed: (props?: BaseEventProps) => {
     track("flight_history_viewed", props);
+  },
+
+  flightReplayStarted: (props: FlightReplayEventProps) => {
+    track("flight_replay_started", props);
+  },
+
+  flightReplayPaused: (props: FlightReplayEventProps) => {
+    track("flight_replay_paused", props);
+  },
+
+  flightReplaySpeedChanged: (props: FlightReplaySpeedProps) => {
+    track("flight_replay_speed_changed", props);
+  },
+
+  flightReplayCompleted: (props: FlightReplayEventProps) => {
+    track("flight_replay_completed", props);
+  },
+
+  flightReplayClosed: (props: FlightReplayEventProps) => {
+    track("flight_replay_closed", props);
   },
 
   // ===== FEATURE ACCESS EVENTS =====

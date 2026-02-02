@@ -318,3 +318,39 @@ export const RadarAirportIcon = L.divIcon({
   iconAnchor: [6, 6],
   popupAnchor: [0, -6],
 });
+
+// Replay aircraft icon with heading rotation
+export const getReplayAircraftIcon = (heading: number) => {
+  const iconUrl = "https://i.ibb.co/6cNhyMMj/1.png";
+  const planeSize = 36;
+
+  return L.divIcon({
+    html: `
+      <div style="position: relative; width: ${planeSize}px; height: ${planeSize}px;">
+        <img
+          src="${iconUrl}"
+          style="
+            width: ${planeSize}px;
+            height: ${planeSize}px;
+            transform: rotate(${heading}deg);
+            transform-origin: 50% 50%;
+            filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.8)) brightness(1.1);
+          "
+        />
+        <div style="
+          position: absolute;
+          top: -4px;
+          left: -4px;
+          right: -4px;
+          bottom: -4px;
+          border: 2px solid rgba(245, 158, 11, 0.6);
+          border-radius: 50%;
+          animation: pulse 1.5s ease-in-out infinite;
+        "></div>
+      </div>
+    `,
+    className: "leaflet-replay-aircraft-icon",
+    iconSize: [planeSize, planeSize],
+    iconAnchor: [planeSize / 2, planeSize / 2],
+  });
+};

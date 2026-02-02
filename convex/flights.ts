@@ -29,7 +29,10 @@ export const getHistoryByGoogleId = query({
         depICAO: flight.depICAO,
         arrICAO: flight.arrICAO,
         startTime: flight.startTime,
+        endTime: flight.endTime,
         aircraftType: flight.aircraftType,
+        callsign: flight.callsign,
+        duration: flight.duration,
         routeData: flight.routeData,
       }));
   },

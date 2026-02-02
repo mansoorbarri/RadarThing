@@ -23,6 +23,8 @@ import {
   RadarSettingsControl,
 } from "~/components/map/MapControls";
 
+import { getReplayAircraftIcon } from "~/components/map/MapIcons";
+
 import { MapGlobalStyles } from "~/styles/MapGlobalStyles";
 import { useMetarOverlay } from "~/hooks/useMetarOverlay";
 import { useAtisOverlay } from "~/hooks/useAtisOverlay";
@@ -37,6 +39,14 @@ export interface Airport {
   lon: number;
   icao: string;
   frequencies?: { type: string; frequency: string }[];
+}
+
+interface ReplayState {
+  currentPosition: [number, number] | null;
+  currentHeading: number;
+  traversedPath: [number, number][];
+  remainingPath: [number, number][];
+  isPlaying: boolean;
 }
 
 interface MapComponentProps {
@@ -54,6 +64,7 @@ interface MapComponentProps {
   onMapReady?: () => void;
   historyPath?: [number, number][] | null;
   onLayerModeChange?: (isDarkLayer: boolean) => void;
+  replayState?: ReplayState | null;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -67,6 +78,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onMapReady,
   historyPath,
   onLayerModeChange,
+  replayState,
 }) => {
   const isMobile = useMobileDetection();
   const { isProUser, isAdminUser, isLoading: proLoading } = useProStatus();
@@ -354,9 +366,35 @@ const MapComponent: React.FC<MapComponentProps> = ({
   // Fetch NOTAMs when we have an ICAO (PRO users fetch from API, free users only see cache)
   const { notamData } = useNotamOverlay(icaoInput || selectedAirport?.icao, isProUser);
 
-  // Render historic flight path from Flight Log
+  // Track previous historyPath to detect flight changes
+  const prevHistoryPathRef = useRef<[number, number][] | null>(null);
+
+  // Zoom to flight path when it changes (works for both replay and static history)
+  useEffect(() => {
+    if (!mapRefs.mapInstance.current || !historyPath || historyPath.length < 2) {
+      return;
+    }
+
+    // Only zoom if the path actually changed (new flight selected)
+    if (prevHistoryPathRef.current !== historyPath) {
+      prevHistoryPathRef.current = historyPath;
+      const bounds = L.latLngBounds(historyPath);
+      mapRefs.mapInstance.current.fitBounds(bounds, {
+        padding: [50, 50],
+        maxZoom: 10,
+      });
+    }
+  }, [historyPath, mapRefs.mapInstance]);
+
+  // Render historic flight path from Flight Log (only when NOT in replay mode)
   useEffect(() => {
     if (!mapRefs.mapInstance.current || !mapRefs.historyLayerGroup.current) {
+      return;
+    }
+
+    // If replay is active, don't render static history path
+    if (replayState) {
+      mapRefs.historyLayerGroup.current.clearLayers();
       return;
     }
 
@@ -377,14 +415,56 @@ const MapComponent: React.FC<MapComponentProps> = ({
       dashArray: isRadarMode ? "5, 5" : "",
     });
     mapRefs.historyLayerGroup.current.addLayer(historyPolyline);
+  }, [historyPath, isRadarMode, replayState, mapRefs.mapInstance, mapRefs.historyLayerGroup]);
 
-    // Fit map bounds to show the entire path
-    const bounds = L.latLngBounds(historyPath);
-    mapRefs.mapInstance.current.fitBounds(bounds, {
-      padding: [50, 50],
-      maxZoom: 10,
+  // Render flight replay animation
+  useEffect(() => {
+    if (!mapRefs.mapInstance.current || !mapRefs.replayLayerGroup.current) {
+      return;
+    }
+
+    // Clear replay layer if no replay state
+    if (!replayState?.currentPosition) {
+      mapRefs.replayLayerGroup.current.clearLayers();
+      return;
+    }
+
+    const { currentPosition, currentHeading, traversedPath, remainingPath } = replayState;
+
+    // Clear previous layers
+    mapRefs.replayLayerGroup.current.clearLayers();
+
+    // Draw traversed path (solid amber line)
+    if (traversedPath.length >= 2) {
+      const traversedPolyline = L.polyline(traversedPath, {
+        color: "#f59e0b", // amber-500
+        weight: isRadarMode ? 2 : 4,
+        opacity: isRadarMode ? 0.8 : 0.9,
+        smoothFactor: 1,
+      });
+      mapRefs.replayLayerGroup.current.addLayer(traversedPolyline);
+    }
+
+    // Draw remaining path (dashed, faded)
+    if (remainingPath.length >= 2) {
+      const remainingPolyline = L.polyline(remainingPath, {
+        color: "#f59e0b", // amber-500
+        weight: isRadarMode ? 1 : 2,
+        opacity: isRadarMode ? 0.3 : 0.4,
+        smoothFactor: 1,
+        dashArray: "8, 8",
+      });
+      mapRefs.replayLayerGroup.current.addLayer(remainingPolyline);
+    }
+
+    // Draw replay aircraft marker at current position
+    const replayMarker = L.marker(currentPosition, {
+      icon: getReplayAircraftIcon(currentHeading),
+      zIndexOffset: 1000,
     });
-  }, [historyPath, isRadarMode, mapRefs.mapInstance, mapRefs.historyLayerGroup]);
+    mapRefs.replayLayerGroup.current.addLayer(replayMarker);
+
+  }, [replayState, isRadarMode, mapRefs.mapInstance, mapRefs.replayLayerGroup]);
 
   return (
     <>

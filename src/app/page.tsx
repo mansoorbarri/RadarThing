@@ -23,8 +23,9 @@ import { useProStatus } from "~/hooks/useProStatus";
 
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
 import { SearchBar } from "~/components/atc/searchbar";
-import { Sidebar } from "~/components/atc/sidebar";
+import { Sidebar, type HistoryFlight } from "~/components/atc/sidebar";
 import { MultiAircraftSidebar } from "~/components/atc/MultiAircraftSidebar";
+import { FlightReplayControls } from "~/components/flight-replay/FlightReplayControls";
 import { CallsignFilter } from "~/components/atc/callsignFilter";
 import { UserAuth } from "~/components/atc/userAuth";
 import { ControlDock } from "~/components/atc/controlDock";
@@ -61,6 +62,16 @@ export default function ATCPage() {
     null,
   );
   const [isViewingHistory, setIsViewingHistory] = useState(false);
+
+  // Flight replay state
+  const [replayFlight, setReplayFlight] = useState<HistoryFlight | null>(null);
+  const [replayState, setReplayState] = useState<{
+    currentPosition: [number, number] | null;
+    currentHeading: number;
+    traversedPath: [number, number][];
+    remainingPath: [number, number][];
+    isPlaying: boolean;
+  } | null>(null);
 
   // Check if callsign param is a full flight number (e.g., EK213) vs just a prefix (e.g., EK)
   const callsignParam = searchParams.get("callsign");
@@ -165,6 +176,10 @@ export default function ATCPage() {
 
   const handleClearFilters = useCallback(() => {
     setSelectedCallsigns(new Set());
+  }, []);
+
+  const handleMapReady = useCallback(() => {
+    setIsMapLoaded(true);
   }, []);
 
   // Keep selected aircrafts in sync with updated positions and redraw paths
@@ -488,9 +503,10 @@ export default function ATCPage() {
             setDrawMultipleFlightPlansOnMap={(fn) => {
               drawMultipleFlightPlansOnMapRef.current = fn;
             }}
-            onMapReady={() => setIsMapLoaded(true)}
+            onMapReady={handleMapReady}
             historyPath={historyPath}
             onLayerModeChange={setIsDarkLayerMode}
+            replayState={replayState}
           />
         )}
       </main>
@@ -654,8 +670,9 @@ export default function ATCPage() {
               <Sidebar
                 aircraft={selectedAircrafts[0]!}
                 onWaypointClick={undefined}
-                onHistoryClick={(path) => {
-                  setHistoryPath(path);
+                onHistoryClick={(flight) => {
+                  setReplayFlight(flight);
+                  setHistoryPath(flight.routeData || null);
                   setIsViewingHistory(true);
                 }}
                 isMobile={isMobile}
@@ -685,8 +702,9 @@ export default function ATCPage() {
               <Sidebar
                 aircraft={selectedAircrafts[0]!}
                 onWaypointClick={undefined}
-                onHistoryClick={(path) => {
-                  setHistoryPath(path);
+                onHistoryClick={(flight) => {
+                  setReplayFlight(flight);
+                  setHistoryPath(flight.routeData || null);
                   setIsViewingHistory(true);
                 }}
                 isMobile={isMobile}
@@ -717,6 +735,21 @@ export default function ATCPage() {
         <TaxiChartViewer
           icao={selectedAirport.icao}
           onClose={() => setShowTaxiChart(false)}
+        />
+      )}
+
+      {/* Flight Replay Controls */}
+      {replayFlight && (
+        <FlightReplayControls
+          flight={replayFlight}
+          onClose={() => {
+            setReplayFlight(null);
+            setReplayState(null);
+            setHistoryPath(null);
+            setIsViewingHistory(false);
+          }}
+          onStateChange={setReplayState}
+          isMobile={isMobile}
         />
       )}
     </div>
