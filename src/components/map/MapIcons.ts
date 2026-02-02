@@ -64,12 +64,13 @@ export const getAircraftDivIcon = (
   aircraft: PositionUpdate & { altMSL?: number },
   selectedAircraftId: string | null,
   showTags = true,
+  isMobile = false,
 ) => {
   const iconUrl = "https://i.ibb.co/6cNhyMMj/1.png";
-  const planeSize = 30;
-  const tagHeight = 50;
-  const tagWidth = 155;
-  const tagOffsetFromPlane = 12;
+  const planeSize = isMobile ? 24 : 28;
+  const tagHeight = isMobile ? 28 : 32;
+  const tagWidth = isMobile ? 72 : 85;
+  const tagOffsetFromPlane = isMobile ? 6 : 8;
 
   const totalWidth = planeSize + tagOffsetFromPlane + tagWidth;
   const totalHeight = Math.max(planeSize, tagHeight);
@@ -81,10 +82,10 @@ export const getAircraftDivIcon = (
   const altAGL = aircraft.alt;
   const isOnGround = altAGL < 100;
   const displayAlt = isOnGround
-    ? `${altAGL.toFixed(0)}ft AGL`
+    ? `${altAGL.toFixed(0)}`
     : altMSL >= 18000
       ? `FL${Math.round(altMSL / 100)}`
-      : `${altAGL.toFixed(0)}ft AGL`;
+      : `${Math.round(altAGL / 100) * 100}`;
 
   const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
 
@@ -122,33 +123,23 @@ export const getAircraftDivIcon = (
     ${!showTags || (selectedAircraftId && !isCurrentAircraftSelected) ? "display: none;" : ""}
   `;
 
+  const fontSize = isMobile ? "9px" : "10px";
   const detailContent = `
     <div class="
-      flex flex-col gap-0.5 px-2.5 py-1.5
-      rounded-md
-      bg-black/75 backdrop-blur
+      flex flex-col px-1.5 py-1
+      rounded
+      bg-black/80 backdrop-blur
       border
-      ${isEmergency ? "border-red-500/70" : "border-cyan-400/40"}
-      shadow-[0_0_6px_rgba(0,255,255,0.25)]
-      font-mono text-[11px]
+      ${isEmergency ? "border-red-500/70" : "border-cyan-400/30"}
+      font-mono
       ${isEmergency ? "text-red-400" : "text-cyan-200"}
-    ">
-      <div class="flex items-center justify-between font-semibold text-[12px]">
+    " style="font-size: ${fontSize}; line-height: 1.2;">
+      <div class="flex items-center justify-between font-semibold" style="font-size: ${isMobile ? "10px" : "11px"};">
         <span>${aircraft.flightNo || aircraft.callsign || "N/A"}</span>
-        ${
-          isEmergency
-            ? `<span class="text-red-500 animate-pulse">EMRG</span>`
-            : ""
-        }
-      </div>
-      <div class="opacity-90">
-        ${displayAlt} · HDG ${aircraft.heading.toFixed(0)}°
+        ${isEmergency ? `<span class="text-red-500 animate-pulse">!</span>` : ""}
       </div>
       <div class="opacity-80">
-        ${aircraft.speed.toFixed(0)}kt · SQK ${aircraft.squawk || "---"}
-      </div>
-      <div class="opacity-65 text-[10px]">
-        ${aircraft.departure || "UNK"} → ${aircraft.arrival || "UNK"}
+        ${displayAlt} ${aircraft.speed.toFixed(0)}kt
       </div>
     </div>
   `;
@@ -173,6 +164,7 @@ export const getRadarAircraftDivIcon = (
   aircraft: PositionUpdate & { altMSL?: number },
   selectedAircraftId: string | null,
   showTags = true,
+  isMobile = false,
 ) => {
   const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
 
@@ -181,16 +173,16 @@ export const getRadarAircraftDivIcon = (
     (aircraft.id === selectedAircraftId ||
       aircraft.callsign === selectedAircraftId);
 
-  // Larger dot and heading line when selected for better visibility
-  const dotSize = isCurrentAircraftSelected ? 12 : 8;
-  const headingLineLength = isCurrentAircraftSelected ? 22 : 14;
-  const labelHeight = 38;
-  const labelWidth = 100;
-  const labelOffsetFromDot = 16;
+  // Smaller dot and heading line, even smaller on mobile
+  const dotSize = isCurrentAircraftSelected ? (isMobile ? 8 : 10) : (isMobile ? 5 : 6);
+  const headingLineLength = isCurrentAircraftSelected ? (isMobile ? 14 : 18) : (isMobile ? 10 : 12);
+  const labelHeight = isMobile ? 22 : 26;
+  const labelWidth = isMobile ? 58 : 68;
+  const labelOffsetFromDot = isMobile ? 10 : 12;
 
   const totalWidth =
     dotSize + headingLineLength + labelOffsetFromDot + labelWidth;
-  const totalHeight = Math.max(dotSize + 8, labelHeight); // Extra space for selection ring
+  const totalHeight = Math.max(dotSize + 8, labelHeight);
 
   const anchorX = dotSize / 2;
   const anchorY = totalHeight / 2;
@@ -199,10 +191,10 @@ export const getRadarAircraftDivIcon = (
   const altAGL = aircraft.alt;
   const isOnGround = altAGL < 100;
   const displayAlt = isOnGround
-    ? `${altAGL.toFixed(0)}AGL`
+    ? `${altAGL.toFixed(0)}`
     : altMSL >= 18000
       ? `FL${Math.round(altMSL / 100)}`
-      : `${altAGL.toFixed(0)}AGL`;
+      : `${Math.round(altAGL / 100) * 100}`;
 
   // Color scheme: selected = bright green, emergency = red, normal = cyan
   const dotColor = isEmergency ? "#ef4444" : isCurrentAircraftSelected ? "#4ade80" : "#22d3ee";
@@ -216,33 +208,33 @@ export const getRadarAircraftDivIcon = (
     height: ${dotSize}px;
     border-radius: 9999px;
     background-color: ${dotColor};
-    box-shadow: 0 0 ${isCurrentAircraftSelected ? "12px" : "5px"} ${glowColor}${isCurrentAircraftSelected ? `, 0 0 20px ${glowColor}` : ""};
+    box-shadow: 0 0 ${isCurrentAircraftSelected ? "8px" : "4px"} ${glowColor}${isCurrentAircraftSelected ? `, 0 0 14px ${glowColor}` : ""};
     ${isCurrentAircraftSelected ? "animation: radar-selected-pulse 1.5s ease-in-out infinite;" : ""}
   `;
 
   // Selection ring around selected aircraft
   const selectionRingStyle = isCurrentAircraftSelected ? `
     position: absolute;
-    top: ${(totalHeight - dotSize) / 2 - 6}px;
-    left: -6px;
-    width: ${dotSize + 12}px;
-    height: ${dotSize + 12}px;
+    top: ${(totalHeight - dotSize) / 2 - 4}px;
+    left: -4px;
+    width: ${dotSize + 8}px;
+    height: ${dotSize + 8}px;
     border-radius: 9999px;
-    border: 2px solid ${isEmergency ? "#ef4444" : "#4ade80"};
-    box-shadow: 0 0 8px ${isEmergency ? "rgba(239,68,68,0.6)" : "rgba(74,222,128,0.6)"};
+    border: 1.5px solid ${isEmergency ? "#ef4444" : "#4ade80"};
+    box-shadow: 0 0 6px ${isEmergency ? "rgba(239,68,68,0.6)" : "rgba(74,222,128,0.6)"};
     animation: radar-ring-pulse 1.5s ease-in-out infinite;
   ` : "";
 
   const headingLineStyle = `
     position: absolute;
-    top: ${totalHeight / 2 - (isCurrentAircraftSelected ? 1.5 : 1)}px;
+    top: ${totalHeight / 2 - (isCurrentAircraftSelected ? 1 : 0.5)}px;
     left: ${dotSize / 2}px;
     width: ${headingLineLength}px;
-    height: ${isCurrentAircraftSelected ? 3 : 2}px;
+    height: ${isCurrentAircraftSelected ? 2 : 1}px;
     background-color: ${dotColor};
     transform-origin: 0% 50%;
     transform: rotate(${(aircraft.heading || 0) - 90}deg);
-    ${isCurrentAircraftSelected ? `box-shadow: 0 0 6px ${glowColor};` : ""}
+    ${isCurrentAircraftSelected ? `box-shadow: 0 0 4px ${glowColor};` : ""}
   `;
 
   const labelStyle = `
@@ -255,26 +247,22 @@ export const getRadarAircraftDivIcon = (
     ${!showTags || (selectedAircraftId && !isCurrentAircraftSelected) ? "display: none;" : ""}
   `;
 
+  const fontSize = isMobile ? "8px" : "9px";
   const detailContent = `
     <div class="
-      px-2.5 py-1.5
+      px-1 py-0.5
       rounded-sm
-      bg-black/80 backdrop-blur
+      bg-black/85
       border
-      ${isEmergency ? "border-red-500/70" : "border-cyan-400/40"}
-      shadow-[0_0_6px_rgba(0,255,255,0.25)]
-      font-mono text-[11px] leading-snug
-      ${isEmergency ? "text-red-400" : "text-cyan-200"}
-    ">
-      <div class="flex justify-between font-semibold text-[12px]">
-        <span>${aircraft.flightNo || aircraft.callsign || "N/A"}</span>
-        ${isEmergency ? `<span class="animate-pulse">!</span>` : ""}
+      ${isEmergency ? "border-red-500/60" : "border-cyan-400/30"}
+      font-mono
+      ${isEmergency ? "text-red-400" : "text-cyan-300"}
+    " style="font-size: ${fontSize}; line-height: 1.3;">
+      <div class="font-semibold" style="font-size: ${isMobile ? "9px" : "10px"};">
+        ${aircraft.flightNo || aircraft.callsign || "N/A"}${isEmergency ? " !" : ""}
       </div>
-      <div class="opacity-90">
-        ${displayAlt} · ${aircraft.heading.toFixed(0)}°
-      </div>
-      <div class="opacity-80">
-        ${aircraft.speed.toFixed(0)}kt ${aircraft.squawk || ""}
+      <div class="opacity-85">
+        ${displayAlt} ${aircraft.speed.toFixed(0)}kt
       </div>
     </div>
   `;

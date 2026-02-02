@@ -295,6 +295,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     onAircraftSelect,
     showTags,
     mapReady: mapRefs.mapReady,
+    isMobile,
   });
 
   useSelectedAirportHandling({

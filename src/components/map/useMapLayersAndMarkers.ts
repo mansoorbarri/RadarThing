@@ -73,6 +73,7 @@ interface UseMapLayersAndMarkersProps {
   onAircraftSelect: (aircraft: PositionUpdate | null, ctrlKey?: boolean) => void;
   showTags: boolean;
   mapReady: boolean;
+  isMobile: boolean;
 }
 
 export const useMapLayersAndMarkers = ({
@@ -94,6 +95,7 @@ export const useMapLayersAndMarkers = ({
   onAircraftSelect,
   showTags,
   mapReady,
+  isMobile,
 }: UseMapLayersAndMarkersProps) => {
   // Track existing markers by aircraft ID for smooth updates
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -205,8 +207,8 @@ export const useMapLayersAndMarkers = ({
       const isSelected = selectedIdsSet.has(id);
       const selectedIdForIcon = isSelected ? id : null;
       const icon = isRadarMode
-        ? getRadarAircraftDivIcon(aircraft, selectedIdForIcon, showTags)
-        : getAircraftDivIcon(aircraft, selectedIdForIcon, showTags);
+        ? getRadarAircraftDivIcon(aircraft, selectedIdForIcon, showTags, isMobile)
+        : getAircraftDivIcon(aircraft, selectedIdForIcon, showTags, isMobile);
 
       const existingMarker = existingMarkers.get(id);
 
@@ -266,6 +268,7 @@ export const useMapLayersAndMarkers = ({
     onAircraftSelect,
     showTags,
     mapReady,
+    isMobile,
   ]);
 
   // Effect for managing airport markers
