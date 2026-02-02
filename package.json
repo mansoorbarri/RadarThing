@@ -6,7 +6,7 @@
   "scripts": {
     "build": "next build",
     "check": "next lint && tsc --noEmit",
-    "cf": "cloudflared tunnel run radarthing-dev",
+    "cf": "cloudflared tunnel run dev-tunnel",
     "stripe": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",
     "dev": "next dev --turbo",
     "dev:next": "next dev --turbo",
