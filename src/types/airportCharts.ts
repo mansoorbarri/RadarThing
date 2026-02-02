@@ -1,7 +1,25 @@
+export type ChartType = "TAXI" | "SID" | "STAR" | "APPROACH" | "GENERAL";
+export type ChartSource = "COMMUNITY";
+
 export interface AirportChart {
-  name: string;
-  taxi_chart_url: string;
-  info_url?: string;
+  id?: string;
+  icao: string;
+  chartType: ChartType;
+  chartName: string;
+  chartUrl: string;
+  imageKey?: string | null;
+  source: ChartSource;
+  isApproved?: boolean;
+  uploadedBy?: string | null;
+  approvedBy?: string | null;
+  approvedAt?: number | null;
+  createdAt?: number;
 }
 
-export type AirportChartIndex = Record<string, AirportChart>;
+export interface ChartsByType {
+  TAXI: AirportChart[];
+  SID: AirportChart[];
+  STAR: AirportChart[];
+  APPROACH: AirportChart[];
+  GENERAL: AirportChart[];
+}

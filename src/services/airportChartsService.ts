@@ -1,63 +1,50 @@
-import {
-  type AirportChart,
-  type AirportChartIndex,
+import type {
+  AirportChart,
+  ChartType,
+  ChartsByType,
 } from "~/types/airportCharts";
 
-const CHARTS_URL =
-  "https://raw.githubusercontent.com/mansoorbarri/geofs-charts/main/charts.json";
-const OPENNAV_URL = "https://opennav.com/diagrams";
+/**
+ * Organize charts by type
+ */
+export function organizeChartsByType(charts: AirportChart[]): ChartsByType {
+  const result: ChartsByType = {
+    TAXI: [],
+    SID: [],
+    STAR: [],
+    APPROACH: [],
+    GENERAL: [],
+  };
 
-let cache: AirportChartIndex | null = null;
-let lastFetch = 0;
-const CACHE_TTL = 1000 * 60 * 60;
-
-export async function loadAirportCharts(): Promise<AirportChartIndex> {
-  const now = Date.now();
-
-  if (cache && now - lastFetch < CACHE_TTL) {
-    return cache;
+  for (const chart of charts) {
+    result[chart.chartType].push(chart);
   }
 
-  const res = await fetch(CHARTS_URL, { cache: "no-store" });
-  if (!res.ok) {
-    throw new Error("Failed to load airport charts");
+  // Sort charts within each type by name
+  for (const type of Object.keys(result) as ChartType[]) {
+    result[type].sort((a, b) => a.chartName.localeCompare(b.chartName));
   }
 
-  const data = (await res.json()) as AirportChartIndex;
-  cache = data;
-  lastFetch = now;
-  return data;
+  return result;
 }
 
-async function checkOpenNav(icao: string): Promise<string | null> {
-  try {
-    const url = `${OPENNAV_URL}/${icao.toUpperCase()}.svg`;
-    const res = await fetch(url, { method: "HEAD" });
-    
-    if (res.ok) {
-      return url;
-    }
-    return null;
-  } catch {
-    return null;
-  }
+/**
+ * Get chart counts by type
+ */
+export function getChartCounts(charts: AirportChart[]): Record<ChartType, number> {
+  const organized = organizeChartsByType(charts);
+  return {
+    TAXI: organized.TAXI.length,
+    SID: organized.SID.length,
+    STAR: organized.STAR.length,
+    APPROACH: organized.APPROACH.length,
+    GENERAL: organized.GENERAL.length,
+  };
 }
 
-export async function getAirportChart(
-  icao: string,
-): Promise<AirportChart | null> {
-  const upperIcao = icao.toUpperCase();
-  
-  // First, check OpenNav
-  const openNavUrl = await checkOpenNav(upperIcao);
-  if (openNavUrl) {
-    return {
-      name: upperIcao,
-      taxi_chart_url: openNavUrl,
-    };
-  }
-
-  // Fall back to JSON file
-  const charts = await loadAirportCharts();
-  return charts[upperIcao] ?? null;
+/**
+ * Check if any charts are available
+ */
+export function hasChartsAvailable(charts: AirportChart[]): boolean {
+  return charts.length > 0;
 }

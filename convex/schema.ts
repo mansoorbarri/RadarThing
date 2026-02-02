@@ -74,6 +74,31 @@ export default defineSchema({
     aircraftType: v.string(), // Normalized type (e.g., "B777", "A320")
     discordMessageId: v.optional(v.string()), // Deprecated - kept for existing records
     note: v.optional(v.string()), // Optional note/description
+  }).index("by_airline_aircraft", ["airlineCode", "aircraftType"]),
+
+  // Airport charts (SIDs, STARs, approaches, taxi, general)
+  airportCharts: defineTable({
+    icao: v.string(),
+    chartType: v.union(
+      v.literal("TAXI"),
+      v.literal("SID"),
+      v.literal("STAR"),
+      v.literal("APPROACH"),
+      v.literal("GENERAL")
+    ),
+    chartName: v.string(),
+    chartUrl: v.string(),
+    imageKey: v.optional(v.string()), // UploadThing key for deletion
+    source: v.literal("COMMUNITY"),
+    isApproved: v.boolean(),
+    uploadedBy: v.optional(v.string()), // Clerk user ID
+    discordUsername: v.optional(v.string()),
+    approvedBy: v.optional(v.string()), // Clerk user ID
+    approvedAt: v.optional(v.number()), // timestamp
   })
-    .index("by_airline_aircraft", ["airlineCode", "aircraftType"]),
+    .index("by_icao", ["icao"])
+    .index("by_icao_type", ["icao", "chartType"])
+    .index("by_icao_type_approved", ["icao", "chartType", "isApproved"])
+    .index("by_isApproved", ["isApproved"])
+    .index("by_uploadedBy", ["uploadedBy"]),
 });
