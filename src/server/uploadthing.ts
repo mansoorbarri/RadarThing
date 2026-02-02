@@ -15,6 +15,20 @@ export const ourFileRouter = {
     .onUploadComplete(({ metadata, file }) => {
       return { uploadedBy: metadata.userId, url: file.ufsUrl, key: file.key };
     }),
+
+  airportChartUploader: f({
+    "image/png": { maxFileSize: "1MB", maxFileCount: 1 },
+  })
+    .middleware(async () => {
+      const { userId } = await auth();
+
+      if (!userId) throw new Error("Unauthorized");
+
+      return { userId };
+    })
+    .onUploadComplete(({ metadata, file }) => {
+      return { uploadedBy: metadata.userId, url: file.ufsUrl, key: file.key };
+    }),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;
