@@ -20,6 +20,7 @@ import {
   Check,
   Camera,
   FileText,
+  Play,
 } from "lucide-react";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -376,7 +377,18 @@ export default function DashboardPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="font-mono text-xs text-slate-600">{flight.callsign}</div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-xs text-slate-600">{flight.callsign}</span>
+                      {flight.routeData && flight.routeData.length > 1 && (
+                        <button
+                          onClick={() => router.push(`/?replay=${flight.id}`)}
+                          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 opacity-0 transition-all hover:bg-amber-500/20 group-hover:opacity-100"
+                          title="Replay this flight"
+                        >
+                          <Play className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
 

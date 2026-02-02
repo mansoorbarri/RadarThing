@@ -10,6 +10,9 @@ import React, {
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { type Id } from "../../convex/_generated/dataModel";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { useMobileDetection } from "~/hooks/useMobileDetection";
@@ -77,6 +80,13 @@ export default function ATCPage() {
   const callsignParam = searchParams.get("callsign");
   const isFullFlightNumberParam = callsignParam && /^[A-Z]+\d+.*$/i.test(callsignParam.trim());
 
+  // Handle replay param from dashboard
+  const replayParam = searchParams.get("replay");
+  const replayFlightQuery = useQuery(
+    api.flights.getById,
+    replayParam ? { id: replayParam as Id<"flights"> } : "skip"
+  );
+
   // State for full flight number filter (can be cleared with Escape)
   const [fullFlightFilter, setFullFlightFilter] = useState<string | null>(() => {
     if (isFullFlightNumberParam && callsignParam) {
@@ -140,6 +150,23 @@ export default function ATCPage() {
     const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
     window.history.replaceState(null, "", newUrl);
   }, [selectedCallsigns, fullFlightFilter]);
+
+  // Auto-start replay when flight data is loaded from URL param
+  useEffect(() => {
+    if (replayFlightQuery && !replayFlight) {
+      setReplayFlight(replayFlightQuery);
+      // Set history path to zoom the map to the flight route
+      if (replayFlightQuery.routeData && replayFlightQuery.routeData.length > 0) {
+        setHistoryPath(replayFlightQuery.routeData);
+        setIsViewingHistory(true);
+      }
+      // Clear the replay param from URL after loading
+      const params = new URLSearchParams(window.location.search);
+      params.delete("replay");
+      const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+      window.history.replaceState(null, "", newUrl);
+    }
+  }, [replayFlightQuery, replayFlight]);
 
   const filteredAircrafts = useMemo(() => {
     // If we have a full flight number filter, only show that aircraft

@@ -84,6 +84,27 @@ export const getByUserId = query({
   },
 });
 
+// Get a single flight by ID
+export const getById = query({
+  args: { id: v.id("flights") },
+  handler: async (ctx, args) => {
+    const flight = await ctx.db.get(args.id);
+    if (!flight) return null;
+
+    return {
+      id: flight._id,
+      depICAO: flight.depICAO,
+      arrICAO: flight.arrICAO,
+      startTime: flight.startTime,
+      endTime: flight.endTime,
+      aircraftType: flight.aircraftType,
+      callsign: flight.callsign,
+      duration: flight.duration,
+      routeData: flight.routeData,
+    };
+  },
+});
+
 // Delete all flights for a user (for cascading delete)
 export const deleteByUserId = mutation({
   args: { userId: v.id("users") },
