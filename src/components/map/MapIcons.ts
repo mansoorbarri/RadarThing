@@ -68,8 +68,8 @@ export const getAircraftDivIcon = (
 ) => {
   const iconUrl = "https://i.ibb.co/6cNhyMMj/1.png";
   const planeSize = isMobile ? 24 : 28;
-  const tagHeight = isMobile ? 28 : 32;
-  const tagWidth = isMobile ? 72 : 85;
+  const tagHeight = isMobile ? 38 : 52;
+  const tagWidth = isMobile ? 85 : 115;
   const tagOffsetFromPlane = isMobile ? 6 : 8;
 
   const totalWidth = planeSize + tagOffsetFromPlane + tagWidth;
@@ -123,7 +123,8 @@ export const getAircraftDivIcon = (
     ${!showTags || (selectedAircraftId && !isCurrentAircraftSelected) ? "display: none;" : ""}
   `;
 
-  const fontSize = isMobile ? "9px" : "10px";
+  const fontSize = isMobile ? "10px" : "12px";
+  const callsignDisplay = aircraft.callsign || "";
   const detailContent = `
     <div class="
       flex flex-col px-1.5 py-1
@@ -133,14 +134,15 @@ export const getAircraftDivIcon = (
       ${isEmergency ? "border-red-500/70" : "border-cyan-400/30"}
       font-mono
       ${isEmergency ? "text-red-400" : "text-cyan-200"}
-    " style="font-size: ${fontSize}; line-height: 1.2;">
-      <div class="flex items-center justify-between font-semibold" style="font-size: ${isMobile ? "10px" : "11px"};">
+    " style="font-size: ${fontSize}; line-height: 1.3;">
+      <div class="flex items-center justify-between font-semibold" style="font-size: ${isMobile ? "11px" : "13px"};">
         <span>${aircraft.flightNo || aircraft.callsign || "N/A"}</span>
         ${isEmergency ? `<span class="text-red-500 animate-pulse">!</span>` : ""}
       </div>
       <div class="opacity-80">
         ${displayAlt} ${aircraft.speed.toFixed(0)}kt
       </div>
+      ${callsignDisplay ? `<div class="opacity-60" style="font-size: ${isMobile ? "8px" : "10px"}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${callsignDisplay}</div>` : ""}
     </div>
   `;
 
@@ -176,8 +178,8 @@ export const getRadarAircraftDivIcon = (
   // Smaller dot and heading line, even smaller on mobile
   const dotSize = isCurrentAircraftSelected ? (isMobile ? 8 : 10) : (isMobile ? 5 : 6);
   const headingLineLength = isCurrentAircraftSelected ? (isMobile ? 14 : 18) : (isMobile ? 10 : 12);
-  const labelHeight = isMobile ? 22 : 26;
-  const labelWidth = isMobile ? 58 : 68;
+  const labelHeight = isMobile ? 32 : 46;
+  const labelWidth = isMobile ? 75 : 100;
   const labelOffsetFromDot = isMobile ? 10 : 12;
 
   const totalWidth =
@@ -247,10 +249,11 @@ export const getRadarAircraftDivIcon = (
     ${!showTags || (selectedAircraftId && !isCurrentAircraftSelected) ? "display: none;" : ""}
   `;
 
-  const fontSize = isMobile ? "8px" : "9px";
+  const fontSize = isMobile ? "10px" : "12px";
+  const callsignDisplay = aircraft.callsign || "";
   const detailContent = `
     <div class="
-      px-1 py-0.5
+      px-1.5 py-1
       rounded-sm
       bg-black/85
       border
@@ -258,12 +261,13 @@ export const getRadarAircraftDivIcon = (
       font-mono
       ${isEmergency ? "text-red-400" : "text-cyan-300"}
     " style="font-size: ${fontSize}; line-height: 1.3;">
-      <div class="font-semibold" style="font-size: ${isMobile ? "9px" : "10px"};">
+      <div class="font-semibold" style="font-size: ${isMobile ? "11px" : "13px"};">
         ${aircraft.flightNo || aircraft.callsign || "N/A"}${isEmergency ? " !" : ""}
       </div>
       <div class="opacity-85">
         ${displayAlt} ${aircraft.speed.toFixed(0)}kt
       </div>
+      ${callsignDisplay ? `<div class="opacity-60" style="font-size: ${isMobile ? "8px" : "10px"}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${callsignDisplay}</div>` : ""}
     </div>
   `;
 
