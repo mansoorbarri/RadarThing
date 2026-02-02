@@ -6,7 +6,7 @@ import { createCheckoutSession } from "~/app/actions/create-checkout";
 import { createPortalSession } from "~/app/actions/create-portal";
 import { useState, useEffect } from "react";
 import { useProStatus } from "~/hooks/useProStatus";
-import { Check, Zap } from "lucide-react";
+import { Check, Zap, ArrowLeft } from "lucide-react";
 import Loading from "~/components/loading";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -17,10 +17,8 @@ export default function PricingPage() {
   const { isSignedIn, isLoaded } = useUser();
   const [loading, setLoading] = useState(false);
 
-  // Real-time PRO status check
   const { isProUser, isLoading: checkingStatus } = useProStatus();
 
-  // Track page view
   useEffect(() => {
     if (isLoaded && !checkingStatus) {
       Analytics.pricingPageViewed();
@@ -55,70 +53,24 @@ export default function PricingPage() {
     }
   }
 
-  const features = [
-    { name: "Radar Mode", description: "Advanced radar visualization" },
-    {
-      name: "International AIRMETs/SIGMETs",
-      description: "Global weather alerts",
-    },
-    {
-      name: "Historic Flights",
-      description: "Access your complete flight history",
-    },
-    {
-      name: "Taxiway Charts",
-      description: "Interactive airport taxi diagrams",
-    },
-  ];
-
   if (!isLoaded || checkingStatus) {
     return <Loading />;
   }
 
-  // Show sign-in prompt if not signed in
   if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-black text-white">
-        <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-            <button
-              onClick={() => router.push("/")}
-              className="cursor-pointer font-mono text-xl text-cyan-400"
-            >
-              <Image
-                src="/logo-white.svg"
-                alt="RadarThing"
-                width={100}
-                height={30}
-              />
-            </button>
-            <button
-              onClick={() => router.push("/")}
-              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
-            >
-              Back to Map
-            </button>
-          </div>
-        </header>
-
-        <main className="mx-auto max-w-2xl px-6 py-20 text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
-            <Zap className="h-4 w-4 text-cyan-400" />
-            <span className="font-mono text-sm text-cyan-400">
-              SIGN IN REQUIRED
-            </span>
-          </div>
-
-          <h1 className="mb-4 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-5xl font-bold text-transparent">
-            Sign In to Continue
+        <Header router={router} showAuth={false} />
+        <main className="mx-auto max-w-lg px-6 py-24 text-center">
+          <h1 className="mb-4 text-3xl font-bold text-white">
+            Sign in to continue
           </h1>
-          <p className="mb-12 text-xl text-slate-400">
-            Create an account or sign in to access premium features
+          <p className="mb-8 text-slate-400">
+            Create an account or sign in to upgrade your plan
           </p>
-
           <SignInButton mode="modal">
-            <button className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-8 py-4 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40">
-              Sign In / Sign Up
+            <button className="cursor-pointer rounded-lg bg-white px-6 py-3 font-medium text-black transition-opacity hover:opacity-90">
+              Sign In
             </button>
           </SignInButton>
         </main>
@@ -126,154 +78,165 @@ export default function PricingPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <button
-            onClick={() => router.push("/")}
-            className="cursor-pointer font-mono text-xl text-cyan-400"
-          >
-            <Image
-              src="/logo-white.svg"
-              alt="RadarThing"
-              width={100}
-              height={30}
-            />
-          </button>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push("/")}
-              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
-            >
-              Back to Map
-            </button>
-            <UserAuth />
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="mx-auto max-w-6xl px-6 py-20">
-        {isProUser ? (
-          // Pro User View
-          <div className="text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2">
-              <Zap className="h-4 w-4 text-emerald-400" />
-              <span className="font-mono text-sm text-emerald-400">
-                PRO MEMBER
-              </span>
+  if (isProUser) {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        <Header router={router} showAuth={true} />
+        <main className="mx-auto max-w-2xl px-6 py-24">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center backdrop-blur-xl">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20">
+              <Check className="h-6 w-6 text-emerald-400" />
             </div>
-
-            <h1 className="mb-4 bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-5xl font-bold text-transparent">
-              {"You're All Set"}
+            <h1 className="mb-2 text-2xl font-bold text-white">
+              You&apos;re on Pro
             </h1>
-            <p className="mb-12 text-xl text-slate-400">
-              Enjoying all premium features
+            <p className="mb-6 text-slate-400">
+              You have access to all premium features
             </p>
-
-            <div className="mx-auto mb-12 grid max-w-2xl gap-4 md:grid-cols-2">
-              {features.map((feature) => (
-                <div
-                  key={feature.name}
-                  className="rounded-xl border border-white/10 bg-white/5 p-4 text-left"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-full bg-emerald-500/20 p-1">
-                      <Check className="h-4 w-4 text-emerald-400" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-white">
-                        {feature.name}
-                      </div>
-                      <div className="text-sm text-slate-400">
-                        {feature.description}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
             <button
               onClick={handleManageSubscription}
               disabled={loading}
-              className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-8 py-3 text-white backdrop-blur-xl transition-all hover:bg-white/10 disabled:opacity-50"
+              className="cursor-pointer rounded-lg border border-white/20 bg-white/5 px-6 py-2.5 text-sm text-white transition-colors hover:bg-white/10 disabled:opacity-50"
             >
               {loading ? "Loading..." : "Manage Subscription"}
             </button>
           </div>
-        ) : (
-          // Free User View
-          <div className="text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
-              <Zap className="h-4 w-4 text-cyan-400" />
-              <span className="font-mono text-sm text-cyan-400">
-                UPGRADE TO PRO
-              </span>
-            </div>
+        </main>
+      </div>
+    );
+  }
 
-            <h1 className="mb-4 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-5xl font-bold text-transparent">
-              Unlock Premium Features
-            </h1>
-            <p className="mb-12 text-xl text-slate-400">
-              Get access to advanced tools and data
-            </p>
+  return (
+    <div className="min-h-screen bg-black text-white">
+      <Header router={router} showAuth={true} />
 
-            {/* Pricing Card */}
-            <div className="mx-auto mb-12 max-w-md">
-              <div className="rounded-2xl border border-cyan-500/30 bg-gradient-to-b from-cyan-500/10 to-transparent p-8 backdrop-blur-xl">
-                <div className="mb-6">
-                  <div className="mb-2 text-5xl font-bold text-white">
-                    $3
-                    <span className="text-xl text-slate-400">/month</span>
-                  </div>
-                  <div className="font-mono text-sm text-cyan-400">
-                    CANCEL ANYTIME
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleUpgrade}
-                  disabled={loading}
-                  className="w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-8 py-4 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40 disabled:opacity-50"
-                >
-                  {loading ? "Loading..." : "Upgrade Now"}
-                </button>
-
-                <div className="mt-4 text-xs text-slate-500">
-                  Secure payment powered by Stripe
-                </div>
-              </div>
-            </div>
-
-            {/* Features List */}
-            <div className="mx-auto grid max-w-2xl gap-4 md:grid-cols-2">
-              {features.map((feature) => (
-                <div
-                  key={feature.name}
-                  className="rounded-xl border border-white/10 bg-black/40 p-6 text-left backdrop-blur-xl"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-full bg-cyan-500/20 p-1.5">
-                      <Check className="h-5 w-5 text-cyan-400" />
-                    </div>
-                    <div>
-                      <div className="mb-1 font-semibold text-white">
-                        {feature.name}
-                      </div>
-                      <div className="text-sm text-slate-400">
-                        {feature.description}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+      <main className="mx-auto max-w-4xl px-6 py-16">
+        {/* Hero */}
+        <div className="mb-16 text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1">
+            <Zap className="h-3.5 w-3.5 text-cyan-400" />
+            <span className="font-mono text-xs text-cyan-400">PRO</span>
           </div>
-        )}
+          <h1 className="mb-4 text-4xl font-bold text-white">
+            Upgrade to Pro
+          </h1>
+          <p className="mx-auto max-w-md text-lg text-slate-400">
+            Advanced weather data, comprehensive analytics, and full flight history
+          </p>
+        </div>
+
+        {/* Pricing Card */}
+        <div className="mx-auto mb-16 max-w-sm">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+            <div className="mb-6 text-center">
+              <div className="mb-1 text-4xl font-bold text-white">$3</div>
+              <div className="text-slate-400">per month</div>
+            </div>
+
+            <button
+              onClick={handleUpgrade}
+              disabled={loading}
+              className="mb-4 w-full cursor-pointer rounded-lg bg-white py-3 font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {loading ? "Loading..." : "Get Pro"}
+            </button>
+
+            <p className="text-center text-xs text-slate-500">
+              Cancel anytime · Powered by Stripe
+            </p>
+          </div>
+        </div>
+
+        {/* Features */}
+        <div className="space-y-12">
+          <FeatureSection
+            title="Weather Intelligence"
+            description="Stay ahead of hazardous conditions with real-time aviation weather data"
+            features={[
+              "International AIRMETs & SIGMETs",
+              "Full NOTAM access with decoded information",
+              "Global weather coverage",
+            ]}
+          />
+
+          <FeatureSection
+            title="Airport Data"
+            description="Professional-grade airport information at your fingertips"
+            features={[
+              "Interactive airport charts",
+              "Detailed airport diagrams",
+            ]}
+          />
+
+          <FeatureSection
+            title="Comprehensive Analytics"
+            description="Track your flying career with detailed statistics"
+            features={[
+              "Complete flight history",
+              "Flight time & distance tracking",
+              "Top aircraft, routes, and airports",
+            ]}
+          />
+        </div>
       </main>
     </div>
+  );
+}
+
+function FeatureSection({
+  title,
+  description,
+  features,
+}: {
+  title: string;
+  description: string;
+  features: string[];
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <h3 className="mb-1 text-lg font-semibold text-white">{title}</h3>
+      <p className="mb-4 text-sm text-slate-400">{description}</p>
+      <ul className="space-y-2">
+        {features.map((feature) => (
+          <li key={feature} className="flex items-center gap-3 text-sm text-slate-300">
+            <Check className="h-4 w-4 shrink-0 text-cyan-400" />
+            {feature}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function Header({
+  router,
+  showAuth,
+}: {
+  router: ReturnType<typeof useRouter>;
+  showAuth: boolean;
+}) {
+  return (
+    <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-5">
+        <button onClick={() => router.push("/")} className="cursor-pointer">
+          <Image
+            src="/logo-white.svg"
+            alt="RadarThing"
+            width={100}
+            height={30}
+          />
+        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.push("/")}
+            className="flex cursor-pointer items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
+          {showAuth && <UserAuth />}
+        </div>
+      </div>
+    </header>
   );
 }
