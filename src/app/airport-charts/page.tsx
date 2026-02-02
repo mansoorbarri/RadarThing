@@ -184,7 +184,8 @@ export default function AirportChartsPage() {
     const uploadSuccess = await uploaderRef.current?.triggerUpload();
 
     if (!uploadSuccess || !uploadedDataRef.current) {
-      setError("Failed to upload chart");
+      // Only set generic error if ChartUploader didn't already set a specific one
+      setError((prev) => prev || "Failed to upload chart. Please try again.");
       setSubmitStage("idle");
       return;
     }
