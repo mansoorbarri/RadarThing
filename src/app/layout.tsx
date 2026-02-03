@@ -53,19 +53,17 @@ export default function RootLayout({
                 <Toaster
                   theme="dark"
                   position="top-center"
-                  richColors
                   toastOptions={{
-                    style: {
-                      background: "rgba(0, 0, 0, 0.4)",
-                      backdropFilter: "blur(8px)",
-                      border: "1px solid rgba(34, 211, 238, 0.3)",
-                      color: "#fff",
-                    },
+                    className:
+                      "!bg-black/40 !backdrop-blur-md !border !border-cyan-400/30 !text-white !rounded-sm",
                     classNames: {
-                      success: "!border-emerald-500/30",
-                      error: "!border-red-500/30",
-                      warning: "!border-yellow-500/30",
-                      info: "!border-cyan-500/30",
+                      success:
+                        "!bg-black/40 !backdrop-blur-md !border-emerald-500/30 !text-emerald-200",
+                      error:
+                        "!bg-black/40 !backdrop-blur-md !border-red-500/30 !text-red-200",
+                      warning:
+                        "!bg-black/40 !backdrop-blur-md !border-yellow-500/30 !text-yellow-200",
+                      info: "!bg-black/40 !backdrop-blur-md !border-cyan-400/30 !text-cyan-200",
                     },
                   }}
                 />
