@@ -29,6 +29,15 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   // Check navMode - but note this may be stale (updates every 5 seconds)
   const isInNavMode = aircraft.navMode === true;
 
+  const resetForm = useCallback(() => {
+    setSpeedInput("");
+    setAltitudeInput("");
+    setHeadingInput("");
+    setVsInput("");
+    setSquawkInput("");
+    setFlapsInput("");
+    setFlapsError("");
+  }, []);
 
   // User confirms they want to switch from NAV to HDG mode
   const handleConfirmHeadingChange = useCallback(() => {
@@ -69,9 +78,10 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       Analytics.controlSetAll({ callsign: aircraftId, controls: controlsSet });
     }
 
+    resetForm();
     setShowNavWarning(false);
     setPendingAction(null);
-  }, [aircraftId, headingInput, speedInput, altitudeInput, vsInput, squawkInput, flapsInput, flapsMaxPosition, setHeading, setSpeed, setAltitude, setVS, setSquawk, setFlaps]);
+  }, [aircraftId, headingInput, speedInput, altitudeInput, vsInput, squawkInput, flapsInput, flapsMaxPosition, setHeading, setSpeed, setAltitude, setVS, setSquawk, setFlaps, resetForm]);
 
   const handleCancelWarning = useCallback(() => {
     setShowNavWarning(false);
@@ -125,8 +135,9 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
 
     if (controlsSet.length > 0) {
       Analytics.controlSetAll({ callsign: aircraftId, controls: controlsSet });
+      resetForm();
     }
-  }, [aircraftId, speedInput, altitudeInput, headingInput, vsInput, squawkInput, flapsInput, flapsMaxPosition, isInNavMode, setSpeed, setAltitude, setHeading, setVS, setSquawk, setFlaps]);
+  }, [aircraftId, speedInput, altitudeInput, headingInput, vsInput, squawkInput, flapsInput, flapsMaxPosition, isInNavMode, setSpeed, setAltitude, setHeading, setVS, setSquawk, setFlaps, resetForm]);
 
   const hasAnyInput = speedInput || altitudeInput || headingInput || vsInput || squawkInput || flapsInput;
 
