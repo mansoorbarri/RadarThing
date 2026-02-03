@@ -10,6 +10,7 @@ import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { ConvexProvider } from "~/components/providers/ConvexProvider";
 import { PostHogProvider } from "~/components/providers/PostHogProvider";
+import { ContributorRewardModal } from "~/components/ui/ContributorRewardModal";
 
 export const metadata: Metadata = {
   title: "RadarThing",
@@ -47,6 +48,7 @@ export default function RootLayout({
         <body>
           <ConvexProvider>
             <PostHogProvider>
+              <ContributorRewardModal />
               <Suspense fallback={null}>
                 <Toaster
                   theme="dark"
@@ -54,15 +56,16 @@ export default function RootLayout({
                   richColors
                   toastOptions={{
                     style: {
-                      background: "#0a0f14",
+                      background: "rgba(0, 0, 0, 0.4)",
+                      backdropFilter: "blur(8px)",
                       border: "1px solid rgba(34, 211, 238, 0.3)",
                       color: "#fff",
                     },
                     classNames: {
-                      success: "!border-emerald-500/30 !bg-emerald-500/10",
-                      error: "!border-red-500/30 !bg-red-500/10",
-                      warning: "!border-yellow-500/30 !bg-yellow-500/10",
-                      info: "!border-cyan-500/30 !bg-cyan-500/10",
+                      success: "!border-emerald-500/30",
+                      error: "!border-red-500/30",
+                      warning: "!border-yellow-500/30",
+                      info: "!border-cyan-500/30",
                     },
                   }}
                 />

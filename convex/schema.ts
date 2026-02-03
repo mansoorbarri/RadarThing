@@ -101,4 +101,13 @@ export default defineSchema({
     .index("by_icao_type_approved", ["icao", "chartType", "isApproved"])
     .index("by_isApproved", ["isApproved"])
     .index("by_uploadedBy", ["uploadedBy"]),
+
+  // Track contributor reward winners (first to 100 uploads)
+  contributorRewards: defineTable({
+    rewardType: v.union(v.literal("aircraftImages"), v.literal("airportCharts")),
+    clerkId: v.string(),
+    claimedAt: v.number(), // timestamp
+  })
+    .index("by_rewardType", ["rewardType"])
+    .index("by_clerkId", ["clerkId"]),
 });

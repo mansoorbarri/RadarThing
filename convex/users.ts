@@ -225,3 +225,29 @@ export const findByClerkIdOrEmail = query({
       .first();
   },
 });
+
+// Get total approved uploads count (aircraft images + airport charts) for a user
+export const getTotalApprovedUploads = query({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    // Count approved aircraft images
+    const aircraftImages = await ctx.db
+      .query("aircraftImages")
+      .withIndex("by_uploadedBy", (q) => q.eq("uploadedBy", args.clerkId))
+      .filter((q) => q.eq(q.field("isApproved"), true))
+      .collect();
+
+    // Count approved airport charts
+    const airportCharts = await ctx.db
+      .query("airportCharts")
+      .withIndex("by_uploadedBy", (q) => q.eq("uploadedBy", args.clerkId))
+      .filter((q) => q.eq(q.field("isApproved"), true))
+      .collect();
+
+    return {
+      aircraftImages: aircraftImages.length,
+      airportCharts: airportCharts.length,
+      total: aircraftImages.length + airportCharts.length,
+    };
+  },
+});
