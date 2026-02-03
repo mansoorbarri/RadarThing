@@ -128,8 +128,8 @@ export const getAircraftDivIcon = (
   const detailContent = `
     <div class="
       flex flex-col px-1.5 py-1
-      rounded
-      bg-black/80 backdrop-blur
+      rounded-sm
+      bg-black/40 backdrop-blur
       border
       ${isEmergency ? "border-red-500/70" : "border-cyan-400/30"}
       font-mono
@@ -255,7 +255,7 @@ export const getRadarAircraftDivIcon = (
     <div class="
       px-1.5 py-1
       rounded-sm
-      bg-black/85
+      bg-black/60
       border
       ${isEmergency ? "border-red-500/60" : "border-cyan-400/30"}
       font-mono
