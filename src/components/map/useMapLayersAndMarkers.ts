@@ -13,7 +13,27 @@ import {
 // Track active animations to cancel them when new position arrives
 const activeAnimations = new Map<L.Marker, number>();
 
-// Smoothly animate marker to new position
+// Track tab visibility - skip animation when returning from hidden
+let wasTabHidden = false;
+let skipNextAnimation = false;
+
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      wasTabHidden = true;
+    } else if (wasTabHidden) {
+      // Tab just became visible after being hidden - skip animation for next update
+      skipNextAnimation = true;
+      wasTabHidden = false;
+      // Reset flag after a short delay to allow normal animation to resume
+      setTimeout(() => {
+        skipNextAnimation = false;
+      }, 100);
+    }
+  });
+}
+
+// Smoothly animate marker to new position (or jump if returning from hidden tab)
 function slideTo(
   marker: L.Marker,
   destLat: number,
@@ -24,6 +44,13 @@ function slideTo(
   const existingAnimation = activeAnimations.get(marker);
   if (existingAnimation) {
     cancelAnimationFrame(existingAnimation);
+    activeAnimations.delete(marker);
+  }
+
+  // If returning from hidden tab, jump directly to position
+  if (skipNextAnimation) {
+    marker.setLatLng([destLat, destLng]);
+    return;
   }
 
   const start = performance.now();
