@@ -97,6 +97,7 @@ export default function AirportChartsPage() {
   const [hasSelectedFile, setHasSelectedFile] = useState(false);
   const uploaderRef = useRef<ChartUploaderRef>(null);
   const uploadedDataRef = useRef<{ url: string; key: string } | null>(null);
+  const uploadErrorRef = useRef<string | null>(null);
 
   const uniqueIcaos = useMemo(() => {
     const icaos = new Set<string>();
@@ -181,11 +182,19 @@ export default function AirportChartsPage() {
     }
 
     setSubmitStage("uploading");
+    uploadErrorRef.current = null;
     const uploadSuccess = await uploaderRef.current?.triggerUpload();
 
+    // Wait a tick for the upload callback to set the ref
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     if (!uploadSuccess || !uploadedDataRef.current) {
-      // Only set generic error if ChartUploader didn't already set a specific one
-      setError((prev) => prev || "Failed to upload chart. Please try again.");
+      // Error toast is shown by onError callback with specific message
+      // Only set generic error if onError wasn't called (e.g., ref timing issue)
+      if (!uploadErrorRef.current) {
+        setError("Upload failed. Please try again.");
+        toast.error("Upload failed. Please try again.");
+      }
       setSubmitStage("idle");
       return;
     }
@@ -586,7 +595,9 @@ export default function AirportChartsPage() {
                   onUploadComplete={handleUploadComplete}
                   onFileSelected={setHasSelectedFile}
                   onError={(err) => {
+                    uploadErrorRef.current = err;
                     setError(err);
+                    toast.error(err);
                     setSubmitStage("idle");
                   }}
                 />
