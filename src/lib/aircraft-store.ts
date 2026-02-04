@@ -80,6 +80,12 @@ class AircraftStore {
     return existed;
   }
 
+  clear() {
+    this.store.clear();
+    this.flightPaths.clear();
+    this.notifySubscribers();
+  }
+
   entries() {
     return this.store.entries();
   }

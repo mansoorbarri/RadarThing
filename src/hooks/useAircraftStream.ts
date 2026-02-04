@@ -35,17 +35,40 @@ export const useAircraftStream = () => {
       try {
         lastMessageTime.current = Date.now();
         const data = JSON.parse(event.data);
+
+        // Handle full vs delta updates
+        if (data.type === "full") {
+          // Full update: clear store and add all aircraft
+          activeAircraft.clear();
+        }
+
+        // Process aircraft (works for both full and delta)
         const processed: PositionUpdate[] =
           data.aircraft?.map((ac: any) => ({
             ...ac,
             ts: ac.ts || Date.now(),
           })) || [];
+
         // Update the store with each aircraft (this tracks flight paths)
         // Use callsign as primary key for consistency (id can be inconsistent)
         processed.forEach((ac) => {
           const key = ac.callsign || ac.id;
           activeAircraft.set(key, ac);
         });
+
+        // Handle removed aircraft (delta updates only)
+        if (data.type === "delta" && Array.isArray(data.removed)) {
+          data.removed.forEach((id: string) => {
+            // Try to find and remove by id or callsign
+            for (const [key, ac] of activeAircraft.entries()) {
+              if (ac.id === id || key === id) {
+                activeAircraft.delete(key);
+                break;
+              }
+            }
+          });
+        }
+
         // Get all aircraft with their accumulated flight paths
         setAircrafts(activeAircraft.getAll());
         setIsLoading(false);
