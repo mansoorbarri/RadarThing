@@ -2,10 +2,10 @@
 
 import { TransformWrapper, TransformComponent, useControls, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { useRef, useState, useEffect, useMemo, useCallback } from "react";
-import type { ChartType, AirportChart } from "~/types/airportCharts";
+import type { ChartType, AirportChart, ChartsByType } from "~/types/airportCharts";
 import { useAirportCharts } from "~/hooks/useAirportCharts";
 import { cn } from "~/lib/utils";
-import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw, Search, X } from "lucide-react";
 
 interface Props {
   icao: string;
@@ -82,17 +82,26 @@ function ChartTypeTab({
 
 function ChartSidebar({
   charts,
+  allCharts,
+  selectedType,
   selectedIndex,
   onChange,
+  onSelectChart,
   isCollapsed,
   onToggleCollapse,
 }: {
   charts: AirportChart[];
+  allCharts: ChartsByType | null;
+  selectedType: ChartType;
   selectedIndex: number;
   onChange: (index: number) => void;
+  onSelectChart: (type: ChartType, index: number) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
 }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   // Sort charts alphabetically - must be before early return
   const sortedCharts = useMemo(() => {
     return [...charts]
@@ -100,13 +109,37 @@ function ChartSidebar({
       .sort((a, b) => a.chart.chartName.localeCompare(b.chart.chartName));
   }, [charts]);
 
-  if (charts.length <= 1) return null;
+  // Get all charts flattened with their type info for search
+  const allChartsFlat = useMemo(() => {
+    if (!allCharts) return [];
+    const result: { chart: AirportChart; type: ChartType; indexInType: number }[] = [];
+    (Object.keys(allCharts) as ChartType[]).forEach((type) => {
+      allCharts[type].forEach((chart, index) => {
+        result.push({ chart, type, indexInType: index });
+      });
+    });
+    return result.sort((a, b) => a.chart.chartName.localeCompare(b.chart.chartName));
+  }, [allCharts]);
+
+  // Filter charts by search query
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const query = searchQuery.toLowerCase();
+    return allChartsFlat.filter((item) =>
+      item.chart.chartName.toLowerCase().includes(query)
+    );
+  }, [searchQuery, allChartsFlat]);
+
+  const isSearching = searchQuery.trim().length > 0;
+  const totalCharts = allChartsFlat.length;
+
+  if (totalCharts <= 1) return null;
 
   return (
     <div
       className={cn(
         "flex-shrink-0 border-r border-white/10 bg-slate-900/50 flex flex-col transition-all duration-300 ease-in-out overflow-hidden",
-        isCollapsed ? "w-12" : "w-56"
+        isCollapsed ? "w-12" : "w-72"
       )}
     >
       {/* Collapsed state - show expand button */}
@@ -132,26 +165,90 @@ function ChartSidebar({
           isCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
         )}
       >
-        <div className="flex-1 overflow-y-auto p-2">
-          <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wider px-2 py-1.5 whitespace-nowrap">
-            {charts.length} Charts
-          </div>
-          <div className="space-y-0.5">
-            {sortedCharts.map(({ chart, originalIndex }) => (
+        {/* Search input */}
+        <div className="p-2 border-b border-white/10">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search all charts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-800/50 border border-white/10 rounded-md pl-8 pr-8 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50"
+            />
+            {searchQuery && (
               <button
-                key={chart.id ?? originalIndex}
-                onClick={() => onChange(originalIndex)}
-                className={cn(
-                  "w-full text-left px-3 py-2 rounded-md text-xs transition-colors",
-                  selectedIndex === originalIndex
-                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-                    : "text-slate-300 hover:bg-white/5 border border-transparent"
-                )}
+                onClick={() => {
+                  setSearchQuery("");
+                  searchInputRef.current?.focus();
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
               >
-                <div className="truncate font-medium">{chart.chartName}</div>
+                <X className="h-3.5 w-3.5" />
               </button>
-            ))}
+            )}
           </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-2">
+          {isSearching ? (
+            <>
+              <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wider px-2 py-1.5 whitespace-nowrap">
+                {searchResults.length} Result{searchResults.length !== 1 ? "s" : ""}
+              </div>
+              <div className="space-y-0.5">
+                {searchResults.length === 0 ? (
+                  <div className="px-3 py-4 text-xs text-slate-500 text-center">
+                    No charts found
+                  </div>
+                ) : (
+                  searchResults.map(({ chart, type, indexInType }) => (
+                    <button
+                      key={chart.id ?? `${type}-${indexInType}`}
+                      onClick={() => {
+                        onSelectChart(type, indexInType);
+                        setSearchQuery("");
+                      }}
+                      className={cn(
+                        "w-full text-left px-3 py-2 rounded-md text-xs transition-colors",
+                        selectedType === type && selectedIndex === indexInType
+                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                          : "text-slate-300 hover:bg-white/5 border border-transparent"
+                      )}
+                    >
+                      <div className="font-medium">{chart.chartName}</div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">
+                        {CHART_TYPES.find((t) => t.type === type)?.label ?? type}
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wider px-2 py-1.5 whitespace-nowrap">
+                {charts.length} Charts
+              </div>
+              <div className="space-y-0.5">
+                {sortedCharts.map(({ chart, originalIndex }) => (
+                  <button
+                    key={chart.id ?? originalIndex}
+                    onClick={() => onChange(originalIndex)}
+                    className={cn(
+                      "w-full text-left px-3 py-2 rounded-md text-xs transition-colors",
+                      selectedIndex === originalIndex
+                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                        : "text-slate-300 hover:bg-white/5 border border-transparent"
+                    )}
+                  >
+                    <div className="font-medium">{chart.chartName}</div>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Collapse button at bottom right */}
@@ -257,6 +354,7 @@ export function AirportChartsViewer({ icao, onClose }: Props) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const {
+    charts,
     loading,
     error,
     selectedType,
@@ -269,6 +367,19 @@ export function AirportChartsViewer({ icao, onClose }: Props) {
     totalCharts,
     refetch,
   } = useAirportCharts(icao);
+
+  // Handler for selecting a chart from search (switches type and index)
+  const handleSelectChart = useCallback((type: ChartType, index: number) => {
+    if (type !== selectedType) {
+      // We need to set both type and index, but setSelectedType resets index to 0
+      // So we set the type first, then manually set the index
+      setSelectedType(type);
+      // Small delay to ensure type is set before index
+      setTimeout(() => setSelectedChartIndex(index), 0);
+    } else {
+      setSelectedChartIndex(index);
+    }
+  }, [selectedType, setSelectedType, setSelectedChartIndex]);
 
   // Reset PDF error when chart changes
   useEffect(() => {
@@ -329,8 +440,11 @@ export function AirportChartsViewer({ icao, onClose }: Props) {
           {/* Sidebar for multiple charts */}
           <ChartSidebar
             charts={currentCharts}
+            allCharts={charts}
+            selectedType={selectedType}
             selectedIndex={selectedChartIndex}
             onChange={setSelectedChartIndex}
+            onSelectChart={handleSelectChart}
             isCollapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           />
