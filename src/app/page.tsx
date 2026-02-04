@@ -119,6 +119,7 @@ export default function ATCPage() {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [isDarkLayerMode, setIsDarkLayerMode] = useState(false);
   const [isFollowMode, setIsFollowMode] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const { searchTerm, setSearchTerm, searchResults } = useAircraftSearch(
     aircrafts,
@@ -741,37 +742,75 @@ export default function ATCPage() {
             )}
           </MobileSwipeSheet>
         ) : (
-          <aside className="fixed inset-y-0 right-0 z-[10014] w-[400px] border-l border-white/10 bg-black/90 backdrop-blur-xl">
-            {selectedAircrafts.length === 1 ? (
-              <Sidebar
-                aircraft={selectedAircrafts[0]!}
-                onWaypointClick={undefined}
-                onHistoryClick={(flight) => {
-                  setReplayFlight(flight);
-                  setHistoryPath(flight.routeData || null);
-                  setIsViewingHistory(true);
-                }}
-                isMobile={isMobile}
-                onClose={() => setSelectedAircrafts([])}
-                isFollowMode={isFollowMode}
-                onToggleFollow={() => setIsFollowMode((prev) => !prev)}
-              />
+          <aside
+            className={`fixed inset-y-0 right-0 z-[10014] border-l border-white/10 bg-black/90 backdrop-blur-xl transition-all duration-300 ease-in-out ${
+              isSidebarCollapsed ? "w-12" : "w-[400px]"
+            }`}
+          >
+            {/* Collapse/Expand toggle button */}
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="absolute -left-3 top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-slate-900 text-slate-400 shadow-lg transition-colors hover:bg-slate-800 hover:text-white"
+              title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`transition-transform duration-300 ${isSidebarCollapsed ? "rotate-180" : ""}`}
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+
+            {/* Collapsed state - minimal info */}
+            {isSidebarCollapsed ? (
+              <div className="flex h-full flex-col items-center py-6">
+                <div className="mb-4 h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
+                <div className="writing-vertical font-mono text-[10px] font-bold tracking-wider text-cyan-400 uppercase" style={{ writingMode: "vertical-rl" }}>
+                  {selectedAircrafts.length === 1
+                    ? selectedAircrafts[0]?.flightNo || selectedAircrafts[0]?.callsign || "N/A"
+                    : `${selectedAircrafts.length} SELECTED`}
+                </div>
+              </div>
             ) : (
-              <MultiAircraftSidebar
-                aircrafts={selectedAircrafts}
-                onRemoveAircraft={(aircraft) => {
-                  const aircraftId = aircraft.callsign || aircraft.id;
-                  const newSelection = selectedAircrafts.filter(
-                    (ac) => (ac.callsign || ac.id) !== aircraftId
-                  );
-                  setSelectedAircrafts(newSelection);
-                  if (newSelection.length > 0) {
-                    drawMultipleFlightPlansOnMapRef.current?.(newSelection, false);
-                  }
-                }}
-                onClose={() => setSelectedAircrafts([])}
-                isMobile={isMobile}
-              />
+              /* Expanded state - full sidebar content */
+              selectedAircrafts.length === 1 ? (
+                <Sidebar
+                  aircraft={selectedAircrafts[0]!}
+                  onWaypointClick={undefined}
+                  onHistoryClick={(flight) => {
+                    setReplayFlight(flight);
+                    setHistoryPath(flight.routeData || null);
+                    setIsViewingHistory(true);
+                  }}
+                  isMobile={isMobile}
+                  onClose={() => setSelectedAircrafts([])}
+                  isFollowMode={isFollowMode}
+                  onToggleFollow={() => setIsFollowMode((prev) => !prev)}
+                />
+              ) : (
+                <MultiAircraftSidebar
+                  aircrafts={selectedAircrafts}
+                  onRemoveAircraft={(aircraft) => {
+                    const aircraftId = aircraft.callsign || aircraft.id;
+                    const newSelection = selectedAircrafts.filter(
+                      (ac) => (ac.callsign || ac.id) !== aircraftId
+                    );
+                    setSelectedAircrafts(newSelection);
+                    if (newSelection.length > 0) {
+                      drawMultipleFlightPlansOnMapRef.current?.(newSelection, false);
+                    }
+                  }}
+                  onClose={() => setSelectedAircrafts([])}
+                  isMobile={isMobile}
+                />
+              )
             )}
           </aside>
         )
