@@ -80,6 +80,8 @@ export const useMapInitialization = ({
       zoomAnimation: true,
       minZoom: isMobile ? 0 : 3,
       maxZoom: 18,
+      zoomSnap: 0.25,
+      zoomDelta: 0.25,
       // No maxBounds on mobile for unlimited panning, desktop has soft bounds
       ...(isMobile ? {} : {
         maxBounds: L.latLngBounds(L.latLng(-85, -540), L.latLng(85, 540)),
