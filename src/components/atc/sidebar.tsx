@@ -8,7 +8,7 @@ import React, {
   useEffect,
 } from "react";
 
-import { useUser } from "@clerk/nextjs";
+import { useUserByGoogleId } from "~/hooks/useUserByGoogleId";
 // Inline SVG icons to avoid bundling entire react-icons library (~7.8MB)
 const PlaneInflightIcon = ({ size = 24, className = "" }: { size?: number; className?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -229,11 +229,8 @@ export const Sidebar = ({
   const canControlAnyAircraft = userGoogleId === "101233162035372298523";
   const isOwnAircraft = userLoaded && (canControlAnyAircraft || (userGoogleId && aircraft.googleId === userGoogleId));
 
-  // Query the pilot's user record for the stats link
-  const pilotUser = useQuery(
-    api.users.getByGoogleId,
-    aircraft.googleId ? { googleId: aircraft.googleId } : "skip"
-  );
+  // Query the pilot's user record for the stats link (with client-side caching)
+  const pilotUser = useUserByGoogleId(aircraft.googleId);
 
   // Reset image loaded state when photo changes
   useEffect(() => {

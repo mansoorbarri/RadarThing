@@ -144,3 +144,50 @@ export const remove = mutation({
   },
 });
 
+// Delete notifications for both IATA and ICAO codes in a single mutation
+// This is more efficient than calling remove() twice
+export const removeByCodes = mutation({
+  args: {
+    airlineIata: v.string(),
+    airlineIcao: v.string(),
+    aircraftType: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const aircraftType = args.aircraftType.toUpperCase();
+    const iata = args.airlineIata.toUpperCase();
+    const icao = args.airlineIcao.toUpperCase();
+
+    let deletedCount = 0;
+
+    // Find and delete notification for IATA code
+    const iataNotification = await ctx.db
+      .query("missingImageNotifications")
+      .withIndex("by_airline_aircraft", (q) =>
+        q.eq("airlineCode", iata).eq("aircraftType", aircraftType)
+      )
+      .first();
+
+    if (iataNotification) {
+      await ctx.db.delete(iataNotification._id);
+      deletedCount++;
+    }
+
+    // Find and delete notification for ICAO code (if different from IATA)
+    if (icao !== iata) {
+      const icaoNotification = await ctx.db
+        .query("missingImageNotifications")
+        .withIndex("by_airline_aircraft", (q) =>
+          q.eq("airlineCode", icao).eq("aircraftType", aircraftType)
+        )
+        .first();
+
+      if (icaoNotification) {
+        await ctx.db.delete(icaoNotification._id);
+        deletedCount++;
+      }
+    }
+
+    return { deletedCount };
+  },
+});
+
