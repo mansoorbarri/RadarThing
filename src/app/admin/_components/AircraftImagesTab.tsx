@@ -171,6 +171,9 @@ export function AircraftImagesTab() {
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [deleteTargetInfo, setDeleteTargetInfo] = useState<{ iata: string; icao: string; aircraft: string } | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
+  const [bulkDeleteTargetIds, setBulkDeleteTargetIds] = useState<string[]>([]);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
 
   const allImages = useMemo(() => [...pendingImages, ...approvedImages], [pendingImages, approvedImages]);
 
@@ -378,7 +381,8 @@ export function AircraftImagesTab() {
   }
 
   function selectAllVisible() {
-    setSelectedImages(new Set(filteredPendingImages.map((img) => img.id)));
+    const images = imageSubTab === "pending" ? filteredPendingImages : filteredApprovedImages;
+    setSelectedImages(new Set(images.map((img) => img.id)));
   }
 
   function clearSelection() {
@@ -407,6 +411,41 @@ export function AircraftImagesTab() {
     const ids = Array.from(selectedImages);
     if (ids.length === 0) return;
     openRejectModal(ids);
+  }
+
+  function handleBulkDelete() {
+    const ids = Array.from(selectedImages);
+    if (ids.length === 0) return;
+    setBulkDeleteTargetIds(ids);
+    setBulkDeleteModalOpen(true);
+  }
+
+  async function handleBulkDeleteConfirm() {
+    if (bulkDeleteTargetIds.length === 0) return;
+    setBulkDeleteLoading(true);
+    let deleted = 0;
+    let failed = 0;
+    for (const id of bulkDeleteTargetIds) {
+      const result = await deleteAircraftImage(id);
+      if (result.success) {
+        deleted++;
+      } else {
+        failed++;
+      }
+    }
+    if (deleted > 0) {
+      setSelectedImages(new Set());
+      if (failed > 0) {
+        toast.warning(`Deleted ${deleted} images, ${failed} failed`);
+      } else {
+        toast.success(`Deleted ${deleted} images`);
+      }
+    } else if (failed > 0) {
+      toast.error(`Failed to delete ${failed} images`);
+    }
+    setBulkDeleteLoading(false);
+    setBulkDeleteModalOpen(false);
+    setBulkDeleteTargetIds([]);
   }
 
   return (
@@ -444,6 +483,20 @@ export function AircraftImagesTab() {
         onCancel={handleDeleteCancel}
       />
 
+      <ConfirmModal
+        isOpen={bulkDeleteModalOpen}
+        title="Delete Approved Images"
+        message={`Are you sure you want to delete ${bulkDeleteTargetIds.length} approved image(s)? This action cannot be undone.`}
+        confirmLabel="Delete All"
+        variant="danger"
+        isLoading={bulkDeleteLoading}
+        onConfirm={handleBulkDeleteConfirm}
+        onCancel={() => {
+          setBulkDeleteModalOpen(false);
+          setBulkDeleteTargetIds([]);
+        }}
+      />
+
       {/* Search and Filters */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1">
@@ -476,17 +529,25 @@ export function AircraftImagesTab() {
       </div>
 
       {/* Bulk Action Bar */}
-      {selectedImages.size > 0 && imageSubTab === "pending" && (
+      {selectedImages.size > 0 && (
         <div className="mb-4 flex items-center gap-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
           <span className="font-mono text-sm text-cyan-400">{selectedImages.size} selected</span>
           <div className="flex-1" />
           <button onClick={clearSelection} className="cursor-pointer rounded-lg px-3 py-1.5 text-sm text-slate-400 transition-colors hover:bg-white/10">Clear</button>
-          <button onClick={handleBulkApprove} disabled={bulkLoading} className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-500/20 px-4 py-1.5 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50">
-            <Check className="h-4 w-4" />Approve All
-          </button>
-          <button onClick={handleBulkReject} disabled={bulkLoading} className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50">
-            <X className="h-4 w-4" />Reject All
-          </button>
+          {imageSubTab === "pending" ? (
+            <>
+              <button onClick={handleBulkApprove} disabled={bulkLoading} className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-500/20 px-4 py-1.5 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50">
+                <Check className="h-4 w-4" />Approve All
+              </button>
+              <button onClick={handleBulkReject} disabled={bulkLoading} className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50">
+                <X className="h-4 w-4" />Reject All
+              </button>
+            </>
+          ) : (
+            <button onClick={handleBulkDelete} disabled={bulkLoading} className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50">
+              <Trash2 className="h-4 w-4" />Delete All
+            </button>
+          )}
         </div>
       )}
 
@@ -511,12 +572,20 @@ export function AircraftImagesTab() {
           Approved ({filteredApprovedImages.length}{hasActiveImageFilters && filteredApprovedImages.length !== approvedImages.length ? `/${approvedImages.length}` : ""})
         </button>
 
-        {imageSubTab === "pending" && filteredPendingImages.length > 0 && (
+        {((imageSubTab === "pending" && filteredPendingImages.length > 0) ||
+          (imageSubTab === "approved" && filteredApprovedImages.length > 0)) && (
           <button
-            onClick={selectedImages.size === filteredPendingImages.length ? clearSelection : selectAllVisible}
+            onClick={() => {
+              const currentImages = imageSubTab === "pending" ? filteredPendingImages : filteredApprovedImages;
+              if (selectedImages.size === currentImages.length) {
+                clearSelection();
+              } else {
+                selectAllVisible();
+              }
+            }}
             className="ml-auto flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-white/10"
           >
-            {selectedImages.size === filteredPendingImages.length ? (<><CheckSquare className="h-4 w-4" />Deselect All</>) : (<><Square className="h-4 w-4" />Select All</>)}
+            {selectedImages.size === (imageSubTab === "pending" ? filteredPendingImages : filteredApprovedImages).length ? (<><CheckSquare className="h-4 w-4" />Deselect All</>) : (<><Square className="h-4 w-4" />Select All</>)}
           </button>
         )}
       </div>
@@ -581,9 +650,23 @@ export function AircraftImagesTab() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredApprovedImages.map((image) => (
-                <div key={image.id} className="group overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl transition-all hover:border-cyan-500/30">
+                <div key={image.id} className={`group overflow-hidden rounded-2xl border bg-black/40 backdrop-blur-xl transition-all ${
+                  selectedImages.has(image.id)
+                    ? "border-cyan-500"
+                    : "border-white/10 hover:border-cyan-500/30"
+                }`}>
                   <div className="relative aspect-video">
                     <Image src={image.imageUrl} alt={`${image.airlineIata || image.airlineIcao} ${image.aircraftType}`} fill className="object-cover" />
+                    <button
+                      onClick={() => toggleSelect(image.id)}
+                      className={`absolute top-2 left-2 cursor-pointer rounded-lg p-1.5 transition-all ${
+                        selectedImages.has(image.id)
+                          ? "bg-cyan-500 text-white"
+                          : "bg-black/60 text-white opacity-0 group-hover:opacity-100"
+                      }`}
+                    >
+                      {selectedImages.has(image.id) ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5" />}
+                    </button>
                     <button onClick={() => openDeleteModal(image.id, image.airlineIata || "", image.airlineIcao || "", image.aircraftType)} className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 p-2 opacity-0 transition-all hover:bg-red-500 group-hover:opacity-100">
                       <Trash2 className="h-4 w-4 text-white" />
                     </button>

@@ -214,6 +214,9 @@ export function AirportChartsTab() {
     chartName: string;
   } | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
+  const [bulkDeleteTargetIds, setBulkDeleteTargetIds] = useState<string[]>([]);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
 
   const allCharts = useMemo(
     () => [...pendingCharts, ...approvedCharts],
@@ -377,7 +380,8 @@ export function AirportChartsTab() {
   }
 
   function selectAllVisible() {
-    setSelectedCharts(new Set(filteredPendingCharts.map((c) => c.id)));
+    const charts = chartSubTab === "pending" ? filteredPendingCharts : filteredApprovedCharts;
+    setSelectedCharts(new Set(charts.map((c) => c.id)));
   }
 
   function clearSelection() {
@@ -408,6 +412,41 @@ export function AirportChartsTab() {
     openRejectModal(ids);
   }
 
+  function handleBulkDelete() {
+    const ids = Array.from(selectedCharts);
+    if (ids.length === 0) return;
+    setBulkDeleteTargetIds(ids);
+    setBulkDeleteModalOpen(true);
+  }
+
+  async function handleBulkDeleteConfirm() {
+    if (bulkDeleteTargetIds.length === 0) return;
+    setBulkDeleteLoading(true);
+    let deleted = 0;
+    let failed = 0;
+    for (const id of bulkDeleteTargetIds) {
+      const result = await deleteAirportChart(id);
+      if (result.success) {
+        deleted++;
+      } else {
+        failed++;
+      }
+    }
+    if (deleted > 0) {
+      setSelectedCharts(new Set());
+      if (failed > 0) {
+        toast.warning(`Deleted ${deleted} charts, ${failed} failed`);
+      } else {
+        toast.success(`Deleted ${deleted} charts`);
+      }
+    } else if (failed > 0) {
+      toast.error(`Failed to delete ${failed} charts`);
+    }
+    setBulkDeleteLoading(false);
+    setBulkDeleteModalOpen(false);
+    setBulkDeleteTargetIds([]);
+  }
+
   return (
     <>
       <RejectModal
@@ -432,6 +471,20 @@ export function AirportChartsTab() {
         isLoading={deleteLoading}
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
+      />
+
+      <ConfirmModal
+        isOpen={bulkDeleteModalOpen}
+        title="Delete Approved Charts"
+        message={`Are you sure you want to delete ${bulkDeleteTargetIds.length} approved chart(s)? This action cannot be undone.`}
+        confirmLabel="Delete All"
+        variant="danger"
+        isLoading={bulkDeleteLoading}
+        onConfirm={handleBulkDeleteConfirm}
+        onCancel={() => {
+          setBulkDeleteModalOpen(false);
+          setBulkDeleteTargetIds([]);
+        }}
       />
 
       {/* Search and Filters */}
@@ -483,7 +536,7 @@ export function AirportChartsTab() {
       </div>
 
       {/* Bulk Action Bar */}
-      {selectedCharts.size > 0 && chartSubTab === "pending" && (
+      {selectedCharts.size > 0 && (
         <div className="mb-4 flex items-center gap-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
           <span className="font-mono text-sm text-cyan-400">
             {selectedCharts.size} selected
@@ -495,22 +548,35 @@ export function AirportChartsTab() {
           >
             Clear
           </button>
-          <button
-            onClick={handleBulkApprove}
-            disabled={bulkLoading}
-            className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-500/20 px-4 py-1.5 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
-          >
-            <Check className="h-4 w-4" />
-            Approve All
-          </button>
-          <button
-            onClick={handleBulkReject}
-            disabled={bulkLoading}
-            className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
-          >
-            <X className="h-4 w-4" />
-            Reject All
-          </button>
+          {chartSubTab === "pending" ? (
+            <>
+              <button
+                onClick={handleBulkApprove}
+                disabled={bulkLoading}
+                className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-500/20 px-4 py-1.5 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
+              >
+                <Check className="h-4 w-4" />
+                Approve All
+              </button>
+              <button
+                onClick={handleBulkReject}
+                disabled={bulkLoading}
+                className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+              >
+                <X className="h-4 w-4" />
+                Reject All
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={handleBulkDelete}
+              disabled={bulkLoading}
+              className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete All
+            </button>
+          )}
         </div>
       )}
 
@@ -549,16 +615,20 @@ export function AirportChartsTab() {
           )
         </button>
 
-        {chartSubTab === "pending" && filteredPendingCharts.length > 0 && (
+        {((chartSubTab === "pending" && filteredPendingCharts.length > 0) ||
+          (chartSubTab === "approved" && filteredApprovedCharts.length > 0)) && (
           <button
-            onClick={
-              selectedCharts.size === filteredPendingCharts.length
-                ? clearSelection
-                : selectAllVisible
-            }
+            onClick={() => {
+              const currentCharts = chartSubTab === "pending" ? filteredPendingCharts : filteredApprovedCharts;
+              if (selectedCharts.size === currentCharts.length) {
+                clearSelection();
+              } else {
+                selectAllVisible();
+              }
+            }}
             className="ml-auto flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-white/10"
           >
-            {selectedCharts.size === filteredPendingCharts.length ? (
+            {selectedCharts.size === (chartSubTab === "pending" ? filteredPendingCharts : filteredApprovedCharts).length ? (
               <>
                 <CheckSquare className="h-4 w-4" />
                 Deselect All
@@ -695,7 +765,11 @@ export function AirportChartsTab() {
               {filteredApprovedCharts.map((chart) => (
                 <div
                   key={chart.id}
-                  className="group overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl transition-all hover:border-cyan-500/30"
+                  className={`group overflow-hidden rounded-2xl border bg-black/40 backdrop-blur-xl transition-all ${
+                    selectedCharts.has(chart.id)
+                      ? "border-cyan-500"
+                      : "border-white/10 hover:border-cyan-500/30"
+                  }`}
                 >
                   <div className="relative aspect-[4/3] bg-slate-900/50 overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -704,6 +778,20 @@ export function AirportChartsTab() {
                       alt={chart.chartName}
                       className="h-full w-full object-cover"
                     />
+                    <button
+                      onClick={() => toggleSelect(chart.id)}
+                      className={`absolute top-2 left-2 cursor-pointer rounded-lg p-1.5 transition-all ${
+                        selectedCharts.has(chart.id)
+                          ? "bg-cyan-500 text-white"
+                          : "bg-black/60 text-white opacity-0 group-hover:opacity-100"
+                      }`}
+                    >
+                      {selectedCharts.has(chart.id) ? (
+                        <CheckSquare className="h-5 w-5" />
+                      ) : (
+                        <Square className="h-5 w-5" />
+                      )}
+                    </button>
                     <button
                       onClick={() => openDeleteModal(chart.id, chart.icao, chart.chartName)}
                       className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 p-2 opacity-0 transition-all hover:bg-red-500 group-hover:opacity-100"
