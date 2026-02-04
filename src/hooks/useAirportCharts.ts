@@ -1,8 +1,19 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type { ChartType, ChartsByType, AirportChart } from "~/types/airportCharts";
 
 const memoryCache = new Map<string, ChartsByType>();
 const STORAGE_KEY = "radarthing-airport-charts-v2";
+
+// Cache for viewer state (selected type, chart index) per ICAO
+const viewerStateCache = new Map<string, { selectedType: ChartType; selectedChartIndex: number }>();
+
+export function getViewerState(icao: string) {
+  return viewerStateCache.get(icao.toUpperCase());
+}
+
+export function setViewerState(icao: string, state: { selectedType: ChartType; selectedChartIndex: number }) {
+  viewerStateCache.set(icao.toUpperCase(), state);
+}
 
 function loadFromStorage(): Record<string, ChartsByType> {
   try {
@@ -30,8 +41,32 @@ export function useAirportCharts(icao?: string) {
   const [charts, setCharts] = useState<ChartsByType | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<ChartType>("GENERAL");
-  const [selectedChartIndex, setSelectedChartIndex] = useState(0);
+
+  // Initialize from cache if available
+  const cachedState = icao ? getViewerState(icao) : undefined;
+  const [selectedType, setSelectedTypeInternal] = useState<ChartType>(cachedState?.selectedType ?? "GENERAL");
+  const [selectedChartIndex, setSelectedChartIndexInternal] = useState(cachedState?.selectedChartIndex ?? 0);
+
+  // Track if this is the first render with cached state
+  const isInitialMount = useRef(!!cachedState);
+
+  // Wrapped setters that also update cache
+  const setSelectedType = useCallback((type: ChartType) => {
+    setSelectedTypeInternal(type);
+    // Reset chart index when changing types (different types have different charts)
+    setSelectedChartIndexInternal(0);
+    if (icao) {
+      setViewerState(icao, { selectedType: type, selectedChartIndex: 0 });
+    }
+  }, [icao]);
+
+  const setSelectedChartIndex = useCallback((index: number) => {
+    setSelectedChartIndexInternal(index);
+    if (icao) {
+      const current = getViewerState(icao);
+      setViewerState(icao, { selectedType: current?.selectedType ?? "GENERAL", selectedChartIndex: index });
+    }
+  }, [icao]);
 
   const refetch = useCallback(() => {
     if (!icao) return;
@@ -72,15 +107,17 @@ export function useAirportCharts(icao?: string) {
   useEffect(() => {
     if (!icao) {
       setCharts(null);
-      setSelectedChartIndex(0);
+      setSelectedChartIndexInternal(0);
       return;
     }
 
     const key = icao.toUpperCase();
+    // Only reset state if we don't have cached viewer state for this ICAO
+    const hasViewerState = !!getViewerState(key);
 
     if (memoryCache.has(key)) {
       setCharts(memoryCache.get(key)!);
-      setSelectedChartIndex(0);
+      if (!hasViewerState) setSelectedChartIndexInternal(0);
       return;
     }
 
@@ -88,7 +125,7 @@ export function useAirportCharts(icao?: string) {
     if (stored[key]) {
       memoryCache.set(key, stored[key]);
       setCharts(stored[key]);
-      setSelectedChartIndex(0);
+      if (!hasViewerState) setSelectedChartIndexInternal(0);
       return;
     }
 
@@ -107,7 +144,8 @@ export function useAirportCharts(icao?: string) {
         const chartData = data.charts ?? createEmptyChartsByType();
         memoryCache.set(key, chartData);
         setCharts(chartData);
-        setSelectedChartIndex(0);
+        // Always reset when fetching fresh data (no cache existed)
+        setSelectedChartIndexInternal(0);
 
         saveToStorage({ ...stored, [key]: chartData });
       })
@@ -118,10 +156,12 @@ export function useAirportCharts(icao?: string) {
       .finally(() => setLoading(false));
   }, [icao]);
 
-  // Reset selected chart index when type changes
+  // Reset initial mount flag after first render
   useEffect(() => {
-    setSelectedChartIndex(0);
-  }, [selectedType]);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+    }
+  }, []);
 
   // Get current charts for selected type
   const currentCharts = charts?.[selectedType] ?? [];

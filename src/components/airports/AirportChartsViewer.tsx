@@ -1,7 +1,7 @@
 "use client";
 
-import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
-import { useRef, useState, useEffect, useMemo } from "react";
+import { TransformWrapper, TransformComponent, useControls, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
+import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import type { ChartType, AirportChart } from "~/types/airportCharts";
 import { useAirportCharts } from "~/hooks/useAirportCharts";
 import { cn } from "~/lib/utils";
@@ -10,6 +10,22 @@ import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 interface Props {
   icao: string;
   onClose: () => void;
+}
+
+// Cache for transform state (zoom/pan) per chart URL
+interface TransformState {
+  scale: number;
+  positionX: number;
+  positionY: number;
+}
+const transformCache = new Map<string, TransformState>();
+
+function getTransformState(chartUrl: string): TransformState | undefined {
+  return transformCache.get(chartUrl);
+}
+
+function setTransformState(chartUrl: string, state: TransformState) {
+  transformCache.set(chartUrl, state);
 }
 
 const CHART_TYPES: { type: ChartType; label: string }[] = [
@@ -155,16 +171,83 @@ function ChartSidebar({
 }
 
 // Reset button component that uses the transform controls
-function ResetButton() {
+function ResetButton({ onReset }: { onReset?: () => void }) {
   const { resetTransform } = useControls();
   return (
     <button
-      onClick={() => resetTransform()}
+      onClick={() => {
+        resetTransform();
+        onReset?.();
+      }}
       className="absolute bottom-4 right-4 z-10 flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-300 backdrop-blur-sm hover:bg-slate-800"
     >
       <RotateCcw className="h-3 w-3" />
       Reset
     </button>
+  );
+}
+
+// Chart image component with zoom/pan state persistence
+function ChartImage({ chartUrl, chartName }: { chartUrl: string; chartName: string }) {
+  const transformRef = useRef<ReactZoomPanPinchRef>(null);
+  const hasInitialized = useRef(false);
+  const cachedState = getTransformState(chartUrl);
+
+  const handleTransformed = useCallback(
+    (_ref: ReactZoomPanPinchRef, state: { scale: number; positionX: number; positionY: number }) => {
+      // Only save after initial setup is done
+      if (hasInitialized.current) {
+        setTransformState(chartUrl, {
+          scale: state.scale,
+          positionX: state.positionX,
+          positionY: state.positionY,
+        });
+      }
+    },
+    [chartUrl]
+  );
+
+  const handleImageLoad = useCallback(() => {
+    // Only center on init if there's no cached state
+    if (!cachedState && transformRef.current) {
+      transformRef.current.resetTransform();
+    }
+    hasInitialized.current = true;
+  }, [cachedState]);
+
+  const handleReset = useCallback(() => {
+    // Clear cached state when user manually resets
+    transformCache.delete(chartUrl);
+  }, [chartUrl]);
+
+  return (
+    <TransformWrapper
+      ref={transformRef}
+      minScale={0.5}
+      maxScale={6}
+      centerOnInit={!cachedState}
+      limitToBounds={false}
+      initialScale={cachedState?.scale ?? 1}
+      initialPositionX={cachedState?.positionX ?? 0}
+      initialPositionY={cachedState?.positionY ?? 0}
+      onTransformed={handleTransformed}
+    >
+      <>
+        <ResetButton onReset={handleReset} />
+        <TransformComponent
+          wrapperClass="!w-full !h-full"
+          contentClass="flex h-full w-full items-center justify-center"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={chartUrl}
+            alt={chartName}
+            className="object-contain select-none invert"
+            onLoad={handleImageLoad}
+          />
+        </TransformComponent>
+      </>
+    </TransformWrapper>
   );
 }
 
@@ -309,31 +392,11 @@ export function AirportChartsViewer({ icao, onClose }: Props) {
                 />
               )
             ) : (
-              <TransformWrapper
-                minScale={0.5}
-                maxScale={6}
-                centerOnInit
-                limitToBounds={false}
-                initialScale={1}
-              >
-                {({ resetTransform }) => (
-                  <>
-                    <ResetButton />
-                    <TransformComponent
-                      wrapperClass="!w-full !h-full"
-                      contentClass="flex h-full w-full items-center justify-center"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={selectedChart.chartUrl}
-                        alt={selectedChart.chartName}
-                        className="object-contain select-none invert"
-                        onLoad={() => resetTransform()}
-                      />
-                    </TransformComponent>
-                  </>
-                )}
-              </TransformWrapper>
+              <ChartImage
+                key={selectedChart.chartUrl}
+                chartUrl={selectedChart.chartUrl}
+                chartName={selectedChart.chartName}
+              />
             )}
           </div>
         </div>
