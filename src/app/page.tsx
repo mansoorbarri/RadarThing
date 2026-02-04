@@ -118,6 +118,7 @@ export default function ATCPage() {
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [isDarkLayerMode, setIsDarkLayerMode] = useState(false);
+  const [isFollowMode, setIsFollowMode] = useState(false);
 
   const { searchTerm, setSearchTerm, searchResults } = useAircraftSearch(
     aircrafts,
@@ -255,7 +256,7 @@ export default function ATCPage() {
     }
   }, [aircrafts, fullFlightFilter, autoSelectedFromUrl]);
 
-  // Escape key to clear filters and return to normal view
+  // Escape key to clear filters, F key to toggle follow mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && (fullFlightFilter || selectedCallsigns.size > 0)) {
@@ -264,11 +265,23 @@ export default function ATCPage() {
         setSelectedAircrafts([]);
         setAutoSelectedFromUrl(false);
       }
+
+      // F key to toggle follow mode (only when aircraft is selected and not typing in input)
+      if ((e.key === "f" || e.key === "F") && selectedAircrafts.length > 0) {
+        const activeElement = document.activeElement;
+        const isInputFocused =
+          activeElement instanceof HTMLInputElement ||
+          activeElement instanceof HTMLTextAreaElement ||
+          activeElement?.getAttribute("contenteditable") === "true";
+        if (!isInputFocused) {
+          setIsFollowMode((prev) => !prev);
+        }
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [fullFlightFilter, selectedCallsigns]);
+  }, [fullFlightFilter, selectedCallsigns, selectedAircrafts.length]);
 
   function handleAircraftSelect(
     aircraft: PositionUpdate | null,
@@ -280,6 +293,7 @@ export default function ATCPage() {
     if (aircraft === null) {
       // Clear selection
       setSelectedAircrafts([]);
+      setIsFollowMode(false);
     } else if (ctrlKey) {
       // CTRL+click: toggle selection
       setSelectedAircrafts((prev) => {
@@ -534,6 +548,7 @@ export default function ATCPage() {
             historyPath={historyPath}
             onLayerModeChange={setIsDarkLayerMode}
             replayState={replayState}
+            followAircraft={isFollowMode ? selectedAircrafts[0] : undefined}
           />
         )}
       </main>
@@ -704,6 +719,8 @@ export default function ATCPage() {
                 }}
                 isMobile={isMobile}
                 onClose={() => setSelectedAircrafts([])}
+                isFollowMode={isFollowMode}
+                onToggleFollow={() => setIsFollowMode((prev) => !prev)}
               />
             ) : (
               <MultiAircraftSidebar
@@ -736,6 +753,8 @@ export default function ATCPage() {
                 }}
                 isMobile={isMobile}
                 onClose={() => setSelectedAircrafts([])}
+                isFollowMode={isFollowMode}
+                onToggleFollow={() => setIsFollowMode((prev) => !prev)}
               />
             ) : (
               <MultiAircraftSidebar

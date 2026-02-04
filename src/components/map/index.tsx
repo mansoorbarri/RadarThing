@@ -65,6 +65,7 @@ interface MapComponentProps {
   historyPath?: [number, number][] | null;
   onLayerModeChange?: (isDarkLayer: boolean) => void;
   replayState?: ReplayState | null;
+  followAircraft?: PositionUpdate;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -79,6 +80,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   historyPath,
   onLayerModeChange,
   replayState,
+  followAircraft,
 }) => {
   const isMobile = useMobileDetection();
   const { isProUser, isAdminUser, isLoading: proLoading } = useProStatus();
@@ -417,6 +419,21 @@ const MapComponent: React.FC<MapComponentProps> = ({
     });
     mapRefs.historyLayerGroup.current.addLayer(historyPolyline);
   }, [historyPath, isRadarMode, replayState, mapRefs.mapInstance, mapRefs.historyLayerGroup]);
+
+  // Follow mode - center map on followed aircraft
+  useEffect(() => {
+    if (!mapRefs.mapInstance.current || !followAircraft) return;
+
+    const lat = Number(followAircraft.lat);
+    const lon = Number(followAircraft.lon);
+
+    if (isNaN(lat) || isNaN(lon)) return;
+
+    mapRefs.mapInstance.current.setView([lat, lon], undefined, {
+      animate: true,
+      duration: 0.3,
+    });
+  }, [followAircraft?.lat, followAircraft?.lon, followAircraft, mapRefs.mapInstance]);
 
   // Render flight replay animation
   useEffect(() => {
