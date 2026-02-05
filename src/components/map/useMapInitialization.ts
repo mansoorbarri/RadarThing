@@ -113,8 +113,6 @@ export const useMapInitialization = ({
         maxZoom: 19,
         minZoom: 0,
         className: "osm-tiles",
-        tileSize: 512,
-        zoomOffset: -1,
         ...tileLoadingOptions,
       },
     );
