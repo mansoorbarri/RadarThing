@@ -14,7 +14,7 @@ export const checkEligibility = query({
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
       .first();
 
-    if (!user || user.role !== "FREE") {
+    if (user?.role !== "FREE") {
       return { eligible: false, reason: "not_free_tier" };
     }
 
@@ -57,7 +57,7 @@ export const checkEligibility = query({
       .filter((q) => q.eq(q.field("isApproved"), true))
       .collect();
 
-    const eligibleRewards: Array<"aircraftImages" | "airportCharts"> = [];
+    const eligibleRewards: ("aircraftImages" | "airportCharts")[] = [];
 
     // Check if eligible for aircraft images reward
     if (!aircraftImagesReward && aircraftImages.length >= REWARD_THRESHOLD) {
