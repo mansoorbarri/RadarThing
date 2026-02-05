@@ -463,6 +463,7 @@ export default function AircraftImagesPage() {
                     alt={`${image.airlineIata || image.airlineIcao} ${image.aircraftType}`}
                     fill
                     className="object-cover"
+                    unoptimized
                   />
                 </div>
                 <div className="p-4">

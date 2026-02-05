@@ -51,6 +51,7 @@ export function ConflictModal({
                 alt={`${pendingImage.airlineIata} ${pendingImage.aircraftType}`}
                 fill
                 className="object-cover"
+                unoptimized
               />
               <div className="absolute left-2 top-2 rounded-md bg-yellow-500/80 px-2 py-1 text-xs font-bold text-black">
                 NEW (PENDING)
@@ -100,6 +101,7 @@ export function ConflictModal({
                 alt={`${existingImage.airlineIata} ${existingImage.aircraftType}`}
                 fill
                 className="object-cover"
+                unoptimized
               />
               <div className="absolute left-2 top-2 rounded-md bg-emerald-500/80 px-2 py-1 text-xs font-bold text-black">
                 CURRENT (APPROVED)

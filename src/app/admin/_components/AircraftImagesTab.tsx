@@ -604,7 +604,7 @@ export function AircraftImagesTab() {
               {filteredPendingImages.map((image) => (
                 <div key={image.id} className={`group overflow-hidden rounded-2xl border bg-black/40 backdrop-blur-xl transition-all ${selectedImages.has(image.id) ? "border-cyan-500" : "border-yellow-500/30"}`}>
                   <div className="relative aspect-video">
-                    <Image src={image.imageUrl} alt={`${image.airlineIata || image.airlineIcao} ${image.aircraftType}`} fill className="object-cover" />
+                    <Image src={image.imageUrl} alt={`${image.airlineIata || image.airlineIcao} ${image.aircraftType}`} fill className="object-cover" unoptimized />
                     <div className="absolute top-2 left-2 rounded-md bg-yellow-500/80 px-2 py-1 text-xs font-bold text-black">PENDING</div>
                     <button onClick={() => toggleSelect(image.id)} className={`absolute top-2 right-2 cursor-pointer rounded-lg p-1.5 transition-all ${selectedImages.has(image.id) ? "bg-cyan-500 text-white" : "bg-black/60 text-white opacity-0 group-hover:opacity-100"}`}>
                       {selectedImages.has(image.id) ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5" />}
@@ -656,7 +656,7 @@ export function AircraftImagesTab() {
                     : "border-white/10 hover:border-cyan-500/30"
                 }`}>
                   <div className="relative aspect-video">
-                    <Image src={image.imageUrl} alt={`${image.airlineIata || image.airlineIcao} ${image.aircraftType}`} fill className="object-cover" />
+                    <Image src={image.imageUrl} alt={`${image.airlineIata || image.airlineIcao} ${image.aircraftType}`} fill className="object-cover" unoptimized />
                     <button
                       onClick={() => toggleSelect(image.id)}
                       className={`absolute top-2 left-2 cursor-pointer rounded-lg p-1.5 transition-all ${
