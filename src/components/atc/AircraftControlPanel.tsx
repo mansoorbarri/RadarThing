@@ -4,6 +4,7 @@ import React, { useState, useCallback } from "react";
 import { useAircraftCommands } from "~/hooks/useAircraftCommands";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { Analytics } from "~/lib/analytics";
+import { toast } from "sonner";
 
 interface AircraftControlPanelProps {
   aircraft: PositionUpdate & { altMSL?: number };
@@ -76,6 +77,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
 
     if (controlsSet.length > 0) {
       Analytics.controlSetAll({ callsign: aircraftId, controls: controlsSet });
+      toast.success(`Controls sent: ${controlsSet.join(", ").toUpperCase()}`);
     }
 
     resetForm();
@@ -135,6 +137,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
 
     if (controlsSet.length > 0) {
       Analytics.controlSetAll({ callsign: aircraftId, controls: controlsSet });
+      toast.success(`Controls sent: ${controlsSet.join(", ").toUpperCase()}`);
       resetForm();
     }
   }, [aircraftId, speedInput, altitudeInput, headingInput, vsInput, squawkInput, flapsInput, flapsMaxPosition, isInNavMode, setSpeed, setAltitude, setHeading, setVS, setSquawk, setFlaps, resetForm]);

@@ -63,7 +63,7 @@ export function ContributorRewardModal() {
         duration: Infinity,
         action: {
           label: "Got it!",
-          onClick: () => {},
+          onClick: () => { /* dismiss toast */ },
         },
       }
     );
