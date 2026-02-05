@@ -30,7 +30,7 @@
 /* Darken OpenStreetMap tiles */
 .osm-tiles,
 .osm-tiles img {
-  filter: brightness(0.9) contrast(1.05) saturate(0.95) !important;
+  filter: brightness(0.6) contrast(1.1) saturate(0.9) !important;
 }
 
 /* Map control button tooltips */
