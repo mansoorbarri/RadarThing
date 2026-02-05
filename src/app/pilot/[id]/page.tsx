@@ -111,7 +111,7 @@ function PilotPageContent() {
                 {callsignFromUrl || stats.pilotCallsign || "Unknown Pilot"}
               </h1>
               <p className="text-slate-400 font-mono text-sm">
-                {stats.userRole === "PRO" ? (
+                {stats.userRole === "PRO" || stats.userRole === "ADMIN" ? (
                   <span className="text-emerald-400">PRO Member</span>
                 ) : (
                   <span className="text-slate-500">Free Tier</span>

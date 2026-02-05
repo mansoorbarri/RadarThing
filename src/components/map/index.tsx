@@ -511,6 +511,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         <MetarPanel
           icaoInput={icaoInput}
           onChange={setIcaoInput}
+          selectedAirportIcao={selectedAirport?.icao}
           metarText={metar?.raw || null}
           atisText={atis?.datis || null}
           atisCode={atis?.code || null}
