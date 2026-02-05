@@ -381,7 +381,7 @@ export default function DashboardPage() {
                       <span className="font-mono text-xs text-slate-600">{flight.callsign}</span>
                       {flight.routeData && flight.routeData.length > 1 && (
                         <button
-                          onClick={() => router.push(`/?replay=${flight.id}`)}
+                          onClick={() => router.push(`/radar?replay=${flight.id}`)}
                           className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 opacity-0 transition-all hover:bg-amber-500/20 group-hover:opacity-100"
                           title="Replay this flight"
                         >
@@ -434,14 +434,14 @@ function Header({ router }: { router: ReturnType<typeof useRouter> }) {
     <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/radar")}
           className="cursor-pointer"
         >
           <Image src="/logo-white.svg" alt="RadarThing" width={100} height={30} />
         </button>
         <div className="flex items-center gap-4">
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/radar")}
             className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
           >
             Back to Map

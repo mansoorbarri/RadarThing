@@ -18,14 +18,14 @@ export default function CheckoutSuccessPage() {
           Analytics.checkoutCompleted();
           // Redirect after showing success briefly
           setTimeout(() => {
-            router.push("/?upgraded=true");
+            router.push("/radar?upgraded=true");
           }, 1500);
         } else {
           console.error("Sync failed:", result.error);
           setStatus("error");
           // Still redirect, webhook will handle it
           setTimeout(() => {
-            router.push("/");
+            router.push("/radar");
           }, 2000);
         }
       })
@@ -33,7 +33,7 @@ export default function CheckoutSuccessPage() {
         console.error("Sync error:", err);
         setStatus("error");
         setTimeout(() => {
-          router.push("/");
+          router.push("/radar");
         }, 2000);
       });
   }, [router]);

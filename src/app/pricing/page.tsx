@@ -218,7 +218,7 @@ function Header({
   return (
     <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
       <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-5">
-        <button onClick={() => router.push("/")} className="cursor-pointer">
+        <button onClick={() => router.push("/radar")} className="cursor-pointer">
           <Image
             src="/logo-white.svg"
             alt="RadarThing"
@@ -228,7 +228,7 @@ function Header({
         </button>
         <div className="flex items-center gap-4">
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/radar")}
             className="flex cursor-pointer items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />
