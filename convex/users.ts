@@ -226,6 +226,51 @@ export const findByClerkIdOrEmail = query({
   },
 });
 
+// Get upload counts for all FREE users (aircraft images + airport charts)
+export const getFreeUserUploadCounts = query({
+  args: {},
+  handler: async (ctx) => {
+    const freeUsers = await ctx.db
+      .query("users")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("role"), "FREE"),
+          q.eq(q.field("isDeleted"), false)
+        )
+      )
+      .collect();
+
+    const results = await Promise.all(
+      freeUsers.map(async (user) => {
+        const aircraftImages = await ctx.db
+          .query("aircraftImages")
+          .withIndex("by_uploadedBy", (q) =>
+            q.eq("uploadedBy", user.clerkId)
+          )
+          .collect();
+
+        const airportCharts = await ctx.db
+          .query("airportCharts")
+          .withIndex("by_uploadedBy", (q) =>
+            q.eq("uploadedBy", user.clerkId)
+          )
+          .collect();
+
+        return {
+          userId: user._id,
+          clerkId: user.clerkId,
+          email: user.email,
+          aircraftImages: aircraftImages.length,
+          airportCharts: airportCharts.length,
+          total: aircraftImages.length + airportCharts.length,
+        };
+      })
+    );
+
+    return results.filter((r) => r.total > 0);
+  },
+});
+
 // Get total approved uploads count (aircraft images + airport charts) for a user
 export const getTotalApprovedUploads = query({
   args: { clerkId: v.string() },
