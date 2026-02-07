@@ -26,6 +26,7 @@ import {
   Mail,
   Shield,
   AlertTriangle,
+  ChevronDown,
 } from "lucide-react";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -62,6 +63,7 @@ export default function DashboardPage() {
   const [copied, setCopied] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [flightsExpanded, setFlightsExpanded] = useState(false);
 
   // Real-time queries
   const { isProUser: isPro, isLoading: proLoading } = useProStatus();
@@ -342,76 +344,86 @@ export default function DashboardPage() {
             </div>
 
             {/* Recent Flights */}
-            <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
-              <div className="flex items-center justify-between mb-6">
+            <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
+              <button
+                onClick={() => setFlightsExpanded(!flightsExpanded)}
+                className="flex w-full cursor-pointer items-center justify-between p-6"
+              >
                 <h3 className="font-mono text-sm font-bold text-slate-400 tracking-wider">
                   RECENT FLIGHTS
                 </h3>
-                <span className="font-mono text-xs text-slate-600">
-                  {isPro ? "Last 10 flights" : "Last 3 flights"}
-                </span>
-              </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-xs text-slate-600">
+                    {isPro ? "Last 10 flights" : "Last 3 flights"}
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${flightsExpanded ? "rotate-180" : ""}`}
+                  />
+                </div>
+              </button>
 
-              <div className="space-y-3">
-                {stats.recentFlights.slice(0, isPro ? 10 : 3).map((flight) => (
-                  <div
-                    key={flight.id}
-                    className="group flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4 transition-all hover:border-cyan-500/30 hover:bg-white/10"
-                  >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10">
-                      <Plane className="h-5 w-5 text-cyan-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-sm font-bold text-white">
-                          {flight.depICAO || "???"}
-                        </span>
-                        <Route className="h-3 w-3 text-slate-500" />
-                        <span className="font-mono text-sm font-bold text-white">
-                          {flight.arrICAO || "???"}
-                        </span>
-                        <span className="ml-2 rounded bg-white/10 px-2 py-0.5 font-mono text-[10px] text-slate-400">
-                          {flight.aircraftType}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-slate-500">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {formatDate(flight.startTime)}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {formatDuration(flight.startTime, flight.endTime)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-xs text-slate-600">{flight.callsign}</span>
-                      {flight.routeData && flight.routeData.length > 1 && (
-                        <button
-                          onClick={() => router.push(`/radar?replay=${flight.id}`)}
-                          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 opacity-0 transition-all hover:bg-amber-500/20 group-hover:opacity-100"
-                          title="Replay this flight"
-                        >
-                          <Play className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                {!isPro && stats.recentFlights.length > 3 && (
-                  <div className="mt-4 text-center">
-                    <button
-                      onClick={() => router.push("/pricing")}
-                      className="inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 font-mono text-xs text-amber-400 transition-all hover:bg-amber-500/20"
+              {flightsExpanded && (
+                <div className="space-y-3 px-6 pb-6">
+                  {stats.recentFlights.slice(0, isPro ? 10 : 3).map((flight) => (
+                    <div
+                      key={flight.id}
+                      className="group flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4 transition-all hover:border-cyan-500/30 hover:bg-white/10"
                     >
-                      <Lock className="h-3 w-3" />
-                      Upgrade to see {stats.recentFlights.length - 3} more flights
-                    </button>
-                  </div>
-                )}
-              </div>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10">
+                        <Plane className="h-5 w-5 text-cyan-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-mono text-sm font-bold text-white">
+                            {flight.depICAO || "???"}
+                          </span>
+                          <Route className="h-3 w-3 text-slate-500" />
+                          <span className="font-mono text-sm font-bold text-white">
+                            {flight.arrICAO || "???"}
+                          </span>
+                          <span className="ml-2 rounded bg-white/10 px-2 py-0.5 font-mono text-[10px] text-slate-400">
+                            {flight.aircraftType}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-slate-500">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {formatDate(flight.startTime)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatDuration(flight.startTime, flight.endTime)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-xs text-slate-600">{flight.callsign}</span>
+                        {flight.routeData && flight.routeData.length > 1 && (
+                          <button
+                            onClick={() => router.push(`/radar?replay=${flight.id}`)}
+                            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 opacity-0 transition-all hover:bg-amber-500/20 group-hover:opacity-100"
+                            title="Replay this flight"
+                          >
+                            <Play className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {!isPro && stats.recentFlights.length > 3 && (
+                    <div className="mt-4 text-center">
+                      <button
+                        onClick={() => router.push("/pricing")}
+                        className="inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 font-mono text-xs text-amber-400 transition-all hover:bg-amber-500/20"
+                      >
+                        <Lock className="h-3 w-3" />
+                        Upgrade to see {stats.recentFlights.length - 3} more flights
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Upgrade CTA for Free Users */}
