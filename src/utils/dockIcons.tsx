@@ -75,7 +75,7 @@ export const DiscordIcon = (
   </svg>
 );
 
-export const DashboardIcon = (
+export const AccountIcon = (
   <svg
     width="18"
     height="18"
@@ -86,7 +86,8 @@ export const DashboardIcon = (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M3 12h4l3 8l4-16l3 8h4" />
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
   </svg>
 );
 

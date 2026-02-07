@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useUser, SignInButton } from "@clerk/nextjs";
+import { useUser, useClerk, SignInButton } from "@clerk/nextjs";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -21,6 +21,11 @@ import {
   Camera,
   FileText,
   Play,
+  LogOut,
+  Trash2,
+  Mail,
+  Shield,
+  AlertTriangle,
 } from "lucide-react";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -52,8 +57,11 @@ function formatDuration(start: number, end?: number): string {
 export default function DashboardPage() {
   const router = useRouter();
   const { isSignedIn, isLoaded, user } = useUser();
+  const { signOut } = useClerk();
   const clerkId = user?.id;
   const [copied, setCopied] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Real-time queries
   const { isProUser: isPro, isLoading: proLoading } = useProStatus();
@@ -117,10 +125,10 @@ export default function DashboardPage() {
             <span className="font-mono text-sm text-cyan-400">SIGN IN REQUIRED</span>
           </div>
           <h1 className="mb-4 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-5xl font-bold text-transparent">
-            Your Flight Dashboard
+            Your Account
           </h1>
           <p className="mb-12 text-xl text-slate-400">
-            Sign in to view your flight statistics and history
+            Sign in to view your account, flight statistics, and history
           </p>
           <SignInButton mode="modal">
             <button className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-8 py-4 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40">
@@ -151,7 +159,7 @@ export default function DashboardPage() {
             )}
             <div>
               <h1 className="text-3xl font-bold text-white">
-                {user?.firstName ? `${user.firstName}'s Dashboard` : "Your Dashboard"}
+                {user?.firstName ? `${user.firstName}'s Account` : "Your Account"}
               </h1>
               <p className="text-slate-400 font-mono text-sm">
                 {isPro ? (
@@ -424,6 +432,111 @@ export default function DashboardPage() {
             )}
           </>
         )}
+
+        {/* Account Section */}
+        <div className="mt-12">
+          <h3 className="font-mono text-sm font-bold text-slate-400 tracking-wider mb-4">
+            ACCOUNT
+          </h3>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Account Info */}
+            <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
+              <h4 className="mb-4 text-sm font-semibold text-white">Account Info</h4>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Mail className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm text-slate-300">
+                    {user?.primaryEmailAddress?.emailAddress ?? "No email"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm text-slate-300">
+                    Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "Unknown"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Shield className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm text-slate-300">
+                    {isPro ? (
+                      <span className="text-emerald-400">PRO</span>
+                    ) : (
+                      <span className="text-slate-500">Free Tier</span>
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Sign Out */}
+            <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl flex flex-col justify-between">
+              <div>
+                <h4 className="mb-2 text-sm font-semibold text-white">Session</h4>
+                <p className="mb-4 text-xs text-slate-500">
+                  Sign out of your account on this device.
+                </p>
+              </div>
+              <button
+                onClick={() => signOut({ redirectUrl: "/" })}
+                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-300 transition-all hover:bg-white/10 hover:text-white"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </button>
+            </div>
+          </div>
+
+          {/* Danger Zone */}
+          <div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/5 p-6 backdrop-blur-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-4 w-4 text-red-400" />
+              <h4 className="text-sm font-semibold text-red-400">Danger Zone</h4>
+            </div>
+            <p className="mb-4 text-xs text-slate-500">
+              Permanently delete your account and all associated data. This action cannot be undone.
+            </p>
+
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex cursor-pointer items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-400 transition-all hover:bg-red-500/20"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Account
+              </button>
+            ) : (
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4">
+                <p className="mb-3 text-sm font-medium text-red-300">
+                  Are you sure? This will permanently delete your account.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={async () => {
+                      setIsDeleting(true);
+                      try {
+                        await user?.delete();
+                      } catch {
+                        setIsDeleting(false);
+                        setShowDeleteConfirm(false);
+                      }
+                    }}
+                    disabled={isDeleting}
+                    className="flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {isDeleting ? "Deleting..." : "Yes, delete my account"}
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 transition-all hover:bg-white/10"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </main>
     </div>
   );

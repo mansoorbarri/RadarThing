@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
+import { SignInButton, useUser } from "@clerk/nextjs";
+import Link from "next/link";
+import Image from "next/image";
 
 export const UserAuth = () => {
-  const { isSignedIn, isLoaded } = useUser();
+  const { isSignedIn, isLoaded, user } = useUser();
   const [mounted, setMounted] = useState(false);
 
   // Avoid hydration mismatch by only rendering after mount
@@ -22,16 +24,18 @@ export const UserAuth = () => {
 
   if (isSignedIn) {
     return (
-      <div className="flex h-full items-center justify-center leading-none">
-        <UserButton
-          appearance={{
-            elements: {
-              avatarBox: "border border-cyan-400/50 w-8 h-8",
-              userButtonTrigger: "focus:shadow-none focus:outline-none",
-            },
-          }}
+      <Link
+        href="/dashboard"
+        className="flex h-full items-center justify-center leading-none"
+      >
+        <Image
+          src={user?.imageUrl ?? ""}
+          alt="Account"
+          width={32}
+          height={32}
+          className="rounded-full border border-cyan-400/50 transition-all hover:border-cyan-400 hover:shadow-[0_0_8px_rgba(0,255,255,0.4)]"
         />
-      </div>
+      </Link>
     );
   }
 
