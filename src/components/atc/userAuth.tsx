@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { SignInButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
-import Image from "next/image";
 
 export const UserAuth = () => {
   const { isSignedIn, isLoaded, user } = useUser();
@@ -28,7 +27,8 @@ export const UserAuth = () => {
         href="/dashboard"
         className="flex h-full items-center justify-center leading-none"
       >
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={user?.imageUrl ?? ""}
           alt="Account"
           width={32}
