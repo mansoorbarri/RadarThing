@@ -71,17 +71,63 @@ export const getRole = query({
   },
 });
 
-// Create user
-export const create = mutation({
+// Store user (client-side upsert, called once per session)
+export const storeUser = mutation({
   args: {
-    clerkId: v.string(),
-    email: v.string(),
     googleId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const clerkId = identity.subject;
+    const email = identity.email!;
+
+    // Try to find existing user by clerkId
+    let user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
+      .first();
+
+    // If not found by clerkId, try by email (handles pre-existing or migrated users)
+    if (!user) {
+      user = await ctx.db
+        .query("users")
+        .withIndex("by_email", (q) => q.eq("email", email))
+        .first();
+    }
+
+    if (user) {
+      // Re-activate soft-deleted user
+      if (user.isDeleted) {
+        await ctx.db.patch(user._id, {
+          clerkId,
+          email,
+          googleId: args.googleId,
+          isDeleted: false,
+          deletedAt: undefined,
+          role: "FREE",
+        });
+        return user._id;
+      }
+
+      // Update existing active user only if something changed
+      const updates: Record<string, string | undefined> = {};
+      if (user.clerkId !== clerkId) updates.clerkId = clerkId;
+      if (user.email !== email) updates.email = email;
+      if (args.googleId && user.googleId !== args.googleId)
+        updates.googleId = args.googleId;
+
+      if (Object.keys(updates).length > 0) {
+        await ctx.db.patch(user._id, updates);
+      }
+      return user._id;
+    }
+
+    // Create new user
     return await ctx.db.insert("users", {
-      clerkId: args.clerkId,
-      email: args.email,
+      clerkId,
+      email,
       googleId: args.googleId,
       role: "FREE",
       isDeleted: false,
@@ -181,48 +227,6 @@ export const softDelete = mutation({
         role: "FREE",
       });
     }
-  },
-});
-
-// Undelete and update user (for when deleted user signs up again)
-export const undeleteAndUpdate = mutation({
-  args: {
-    id: v.id("users"),
-    clerkId: v.string(),
-    email: v.string(),
-    googleId: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, {
-      clerkId: args.clerkId,
-      email: args.email,
-      googleId: args.googleId,
-      isDeleted: false,
-      deletedAt: undefined,
-      role: "FREE",
-    });
-  },
-});
-
-// Find user by Clerk ID or email (for user.created webhook)
-export const findByClerkIdOrEmail = query({
-  args: {
-    clerkId: v.string(),
-    email: v.string(),
-  },
-  handler: async (ctx, args) => {
-    // First try by clerkId
-    const byClerkId = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .first();
-    if (byClerkId) return byClerkId;
-
-    // Then try by email
-    return await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
-      .first();
   },
 });
 
