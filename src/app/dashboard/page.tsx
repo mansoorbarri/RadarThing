@@ -85,7 +85,7 @@ export default function DashboardPage() {
 
   const stats = useMemo(() => statsQuery ?? null, [statsQuery]);
   const supportId = useMemo(() => dbUser?._id ?? null, [dbUser]);
-  const loading = !isLoaded || proLoading || (clerkId && statsQuery === undefined);
+  const loading = !isLoaded || (clerkId && statsQuery === undefined);
 
   // Track page view and stats (only once per page load)
   const hasTracked = useRef(false);
