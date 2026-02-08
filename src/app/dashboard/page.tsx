@@ -59,10 +59,15 @@ export default function DashboardPage() {
   const router = useRouter();
   const { isSignedIn, isLoaded, user } = useUser();
   const clerkId = user?.id;
+  const [mounted, setMounted] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [flightsExpanded, setFlightsExpanded] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Real-time queries
   const { isProUser: isPro, isLoading: proLoading } = useProStatus();
@@ -85,7 +90,8 @@ export default function DashboardPage() {
 
   const stats = useMemo(() => statsQuery ?? null, [statsQuery]);
   const supportId = useMemo(() => dbUser?._id ?? null, [dbUser]);
-  const loading = !isLoaded || (clerkId && statsQuery === undefined);
+  const loading = !mounted || !isLoaded;
+  const statsLoading = clerkId && statsQuery === undefined;
 
   // Track page view and stats (only once per page load)
   const hasTracked = useRef(false);
@@ -187,7 +193,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {!stats || stats.totalFlights === 0 ? (
+        {statsLoading ? (
+          <StatsSkeleton />
+        ) : !stats || stats.totalFlights === 0 ? (
           <EmptyState />
         ) : (
           <>
