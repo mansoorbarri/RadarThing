@@ -7,6 +7,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useProStatus } from "~/hooks/useProStatus";
 import { Analytics } from "~/lib/analytics";
+import { createPortalSession } from "~/app/actions/create-portal";
 import {
   Plane,
   Clock,
@@ -26,6 +27,7 @@ import {
   Shield,
   AlertTriangle,
   ChevronDown,
+  CreditCard,
 } from "lucide-react";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -483,6 +485,22 @@ export default function DashboardPage() {
                 </span>
               </div>
             </div>
+            {isPro && (
+              <button
+                onClick={async () => {
+                  try {
+                    const url = await createPortalSession();
+                    if (url) window.location.href = url;
+                  } catch {
+                    // silently fail
+                  }
+                }}
+                className="mt-4 flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-300 transition-all hover:bg-white/10 hover:text-white"
+              >
+                <CreditCard className="h-4 w-4" />
+                Manage Subscription
+              </button>
+            )}
           </div>
 
           {/* Danger Zone */}
