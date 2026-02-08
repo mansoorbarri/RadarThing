@@ -28,7 +28,9 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <ClerkProvider
-      afterSignOutUrl={"/radar"}
+      afterSignOutUrl="/radar"
+      signInForceRedirectUrl="/radar"
+      signUpForceRedirectUrl="/radar"
       appearance={{
         baseTheme: dark,
         variables: {

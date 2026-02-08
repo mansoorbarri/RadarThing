@@ -52,17 +52,17 @@ export const UserAuth = () => {
         </button>
 
         {open && (
-          <div className="absolute right-0 top-full mt-2 w-44 rounded-xl border border-white/10 bg-black/90 p-1.5 shadow-xl backdrop-blur-xl z-50">
+          <div className="absolute right-0 top-full mt-2 w-44 rounded-xl border border-cyan-400/30 bg-black/90 p-1.5 shadow-[0_0_15px_rgba(0,255,255,0.1)] backdrop-blur-xl z-50">
             <Link
               href="/dashboard"
               onClick={() => setOpen(false)}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-cyan-400/10 hover:text-cyan-400"
             >
               <User className="h-4 w-4" />
               Account
             </Link>
-            <SignOutButton redirectUrl="/">
-              <button className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white">
+            <SignOutButton redirectUrl="/radar">
+              <button className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-cyan-400/10 hover:text-cyan-400">
                 <LogOut className="h-4 w-4" />
                 Sign Out
               </button>
