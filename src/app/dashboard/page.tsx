@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useUser, useClerk, SignInButton } from "@clerk/nextjs";
+import { useUser, SignInButton, SignOutButton } from "@clerk/nextjs";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -58,7 +58,6 @@ function formatDuration(start: number, end?: number): string {
 export default function DashboardPage() {
   const router = useRouter();
   const { isSignedIn, isLoaded, user } = useUser();
-  const { signOut } = useClerk();
   const clerkId = user?.id;
   const [copied, setCopied] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -86,12 +85,12 @@ export default function DashboardPage() {
 
   const stats = useMemo(() => statsQuery ?? null, [statsQuery]);
   const supportId = useMemo(() => dbUser?._id ?? null, [dbUser]);
-  const loading = !isLoaded || proLoading || (clerkId && statsQuery === undefined);
+  const statsLoading = proLoading || (clerkId && statsQuery === undefined);
 
   // Track page view and stats (only once per page load)
   const hasTracked = useRef(false);
   useEffect(() => {
-    if (!loading && isSignedIn && !hasTracked.current) {
+    if (!statsLoading && isSignedIn && !hasTracked.current) {
       hasTracked.current = true;
       Analytics.dashboardViewed();
       Analytics.flightHistoryViewed();
@@ -103,7 +102,7 @@ export default function DashboardPage() {
         });
       }
     }
-  }, [loading, isSignedIn, stats]);
+  }, [statsLoading, isSignedIn, stats]);
 
   const copySupportId = () => {
     if (supportId) {
@@ -113,7 +112,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (loading) {
+  if (!isLoaded) {
     return <DashboardSkeleton />;
   }
 
@@ -188,7 +187,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {!stats || stats.totalFlights === 0 ? (
+        {statsLoading ? (
+          <StatsSkeleton />
+        ) : !stats || stats.totalFlights === 0 ? (
           <EmptyState />
         ) : (
           <>
@@ -489,13 +490,14 @@ export default function DashboardPage() {
                   Sign out of your account on this device.
                 </p>
               </div>
-              <button
-                onClick={() => signOut({ redirectUrl: "/" })}
-                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-300 transition-all hover:bg-white/10 hover:text-white"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </button>
+              <SignOutButton redirectUrl="/">
+                <button
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-300 transition-all hover:bg-white/10 hover:text-white"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </button>
+              </SignOutButton>
             </div>
           </div>
 
@@ -645,6 +647,60 @@ function EmptyState() {
         Make sure you&apos;re signed in with the same Google account.
       </p>
     </div>
+  );
+}
+
+function StatsSkeleton() {
+  return (
+    <>
+      {/* Stats Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="rounded-2xl border border-white/10 bg-black/40 p-5 backdrop-blur-xl">
+            <div className="mb-3 h-9 w-9 animate-pulse rounded-lg bg-white/10" />
+            <div className="mb-2 h-3 w-20 animate-pulse rounded bg-white/10" />
+            <div className="h-8 w-24 animate-pulse rounded bg-white/10" />
+          </div>
+        ))}
+      </div>
+
+      {/* Three Column Grid */}
+      <div className="grid gap-6 lg:grid-cols-3 mb-8">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
+            <div className="mb-4 h-4 w-28 animate-pulse rounded bg-white/10" />
+            <div className="space-y-3">
+              {[...Array(5)].map((_, j) => (
+                <div key={j} className="flex items-center justify-between">
+                  <div className="h-4 w-24 animate-pulse rounded bg-white/10" />
+                  <div className="h-4 w-16 animate-pulse rounded bg-white/10" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent Flights */}
+      <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
+        <div className="flex items-center justify-between mb-6">
+          <div className="h-4 w-32 animate-pulse rounded bg-white/10" />
+          <div className="h-3 w-24 animate-pulse rounded bg-white/10" />
+        </div>
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4">
+              <div className="h-10 w-10 animate-pulse rounded-lg bg-white/10" />
+              <div className="flex-1">
+                <div className="mb-2 h-4 w-40 animate-pulse rounded bg-white/10" />
+                <div className="h-3 w-32 animate-pulse rounded bg-white/10" />
+              </div>
+              <div className="h-3 w-16 animate-pulse rounded bg-white/10" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
   );
 }
 
