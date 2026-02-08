@@ -78,6 +78,8 @@ export const useMapInitialization = ({
 
     const map = L.map(mapContainerId, {
       zoomAnimation: true,
+      fadeAnimation: true,
+      markerZoomAnimation: true,
       minZoom: isMobile ? 0 : 3,
       maxZoom: 18,
       zoomSnap: 0.25,
@@ -102,9 +104,9 @@ export const useMapInitialization = ({
 
     // Shared tile loading optimizations
     const tileLoadingOptions = {
-      keepBuffer: 4,           // Buffer more tiles around viewport (default: 2)
+      keepBuffer: 6,           // Buffer more tiles around viewport (default: 2)
       updateWhenIdle: false,   // Update tiles while panning, not after
-      updateWhenZooming: false, // Don't wait for zoom animation to finish
+      updateWhenZooming: true, // Start loading tiles during zoom animation
     };
 
     osmLayer.current = L.tileLayer(

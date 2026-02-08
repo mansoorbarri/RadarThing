@@ -19,6 +19,17 @@ const animationTargets = new Map<L.Marker, { lat: number; lng: number }>();
 // Track last update time per marker to measure actual update intervals
 const lastUpdateTimes = new Map<L.Marker, number>();
 
+// Track whether the map is currently zooming - pause all marker DOM mutations during zoom
+let isZooming = false;
+
+// Cancel all running animations without touching marker positions (used on zoomstart).
+// Leaflet's CSS zoom transform will handle visual scaling — calling setLatLng here
+// would fight with that transform and cause jumping.
+function cancelAllAnimations() {
+  activeAnimations.forEach((frameId) => cancelAnimationFrame(frameId));
+  activeAnimations.clear();
+}
+
 // Track tab visibility - skip animation when returning from hidden
 let wasTabHidden = false;
 let skipNextAnimation = false;
@@ -55,6 +66,13 @@ function slideTo(
   // Store the target destination
   animationTargets.set(marker, { lat: destLat, lng: destLng });
 
+  // If map is zooming, don't animate or call setLatLng — Leaflet's
+  // CSS zoom transform handles visual positioning during zoom.
+  // The target is stored above so the next post-zoom update picks it up.
+  if (isZooming) {
+    return;
+  }
+
   // Measure actual interval between position updates to use as animation duration
   const now = performance.now();
   const lastUpdate = lastUpdateTimes.get(marker);
@@ -74,6 +92,12 @@ function slideTo(
   const deltaLng = destLng - startLng;
 
   function animate(currentTime: number) {
+    // If zoom started mid-animation, stop — don't call setLatLng during zoom
+    if (isZooming) {
+      activeAnimations.delete(marker);
+      return;
+    }
+
     const elapsed = currentTime - start;
     const progress = Math.min(elapsed / duration, 1);
 
@@ -157,6 +181,28 @@ export const useMapLayersAndMarkers = ({
   useEffect(() => {
     aircraftsRef.current = aircrafts;
   }, [aircrafts]);
+
+  // Pause marker animations during zoom to prevent jitter
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+
+    const onZoomStart = () => {
+      isZooming = true;
+      cancelAllAnimations();
+    };
+    const onZoomEnd = () => {
+      isZooming = false;
+    };
+
+    map.on("zoomstart", onZoomStart);
+    map.on("zoomend", onZoomEnd);
+
+    return () => {
+      map.off("zoomstart", onZoomStart);
+      map.off("zoomend", onZoomEnd);
+    };
+  }, [mapInstance]);
 
   // Effect for managing base layers (OSM/Satellite/Radar)
   useEffect(() => {
@@ -269,8 +315,13 @@ export const useMapLayersAndMarkers = ({
           slideTo(existingMarker, newLat, newLng);
         }
 
-        // Update the icon (for heading rotation, selection state, etc.)
-        existingMarker.setIcon(icon);
+        // Skip icon updates during zoom — setIcon() destroys and recreates the
+        // marker's DOM element, which conflicts with Leaflet's CSS zoom transform
+        // and causes markers to visually jump. Icons refresh on the next SSE update
+        // after zoom ends.
+        if (!isZooming) {
+          existingMarker.setIcon(icon);
+        }
       } else {
         // Create new marker
         const marker = L.marker([aircraft.lat, aircraft.lon], {
