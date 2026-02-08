@@ -85,12 +85,12 @@ export default function DashboardPage() {
 
   const stats = useMemo(() => statsQuery ?? null, [statsQuery]);
   const supportId = useMemo(() => dbUser?._id ?? null, [dbUser]);
-  const statsLoading = proLoading || (clerkId && statsQuery === undefined);
+  const loading = !isLoaded || proLoading || (clerkId && statsQuery === undefined);
 
   // Track page view and stats (only once per page load)
   const hasTracked = useRef(false);
   useEffect(() => {
-    if (!statsLoading && isSignedIn && !hasTracked.current) {
+    if (!loading && isSignedIn && !hasTracked.current) {
       hasTracked.current = true;
       Analytics.dashboardViewed();
       Analytics.flightHistoryViewed();
@@ -102,7 +102,7 @@ export default function DashboardPage() {
         });
       }
     }
-  }, [statsLoading, isSignedIn, stats]);
+  }, [loading, isSignedIn, stats]);
 
   const copySupportId = () => {
     if (supportId) {
@@ -112,7 +112,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (!isLoaded) {
+  if (loading) {
     return <DashboardSkeleton />;
   }
 
@@ -187,9 +187,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {statsLoading ? (
-          <StatsSkeleton />
-        ) : !stats || stats.totalFlights === 0 ? (
+        {!stats || stats.totalFlights === 0 ? (
           <EmptyState />
         ) : (
           <>
