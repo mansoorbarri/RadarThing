@@ -13,6 +13,12 @@ import {
 // Track active animations to cancel them when new position arrives
 const activeAnimations = new Map<L.Marker, number>();
 
+// Track animation target destinations to avoid restarting animations on re-renders
+const animationTargets = new Map<L.Marker, { lat: number; lng: number }>();
+
+// Track last update time per marker to measure actual update intervals
+const lastUpdateTimes = new Map<L.Marker, number>();
+
 // Track tab visibility - skip animation when returning from hidden
 let wasTabHidden = false;
 let skipNextAnimation = false;
@@ -38,7 +44,6 @@ function slideTo(
   marker: L.Marker,
   destLat: number,
   destLng: number,
-  duration = 3000
 ) {
   // Cancel any existing animation for this marker
   const existingAnimation = activeAnimations.get(marker);
@@ -46,6 +51,15 @@ function slideTo(
     cancelAnimationFrame(existingAnimation);
     activeAnimations.delete(marker);
   }
+
+  // Store the target destination
+  animationTargets.set(marker, { lat: destLat, lng: destLng });
+
+  // Measure actual interval between position updates to use as animation duration
+  const now = performance.now();
+  const lastUpdate = lastUpdateTimes.get(marker);
+  lastUpdateTimes.set(marker, now);
+  const duration = lastUpdate ? Math.min(now - lastUpdate, 10000) : 3000;
 
   // If returning from hidden tab, jump directly to position
   if (skipNextAnimation) {
@@ -241,16 +255,18 @@ export const useMapLayersAndMarkers = ({
 
       if (existingMarker) {
         // Update existing marker - animate to new position
-        const currentLatLng = existingMarker.getLatLng();
         const newLat = aircraft.lat;
         const newLng = aircraft.lon;
 
-        // Only animate if position actually changed
+        // Only start a new animation if the TARGET destination changed
+        // (not the current mid-animation position, which would restart animations on re-renders)
+        const currentTarget = animationTargets.get(existingMarker);
         if (
-          Math.abs(currentLatLng.lat - newLat) > 0.0001 ||
-          Math.abs(currentLatLng.lng - newLng) > 0.0001
+          !currentTarget ||
+          Math.abs(currentTarget.lat - newLat) > 0.0001 ||
+          Math.abs(currentTarget.lng - newLng) > 0.0001
         ) {
-          slideTo(existingMarker, newLat, newLng, 3000); // Match 3s update interval for continuous motion
+          slideTo(existingMarker, newLat, newLng);
         }
 
         // Update the icon (for heading rotation, selection state, etc.)

@@ -120,6 +120,11 @@ export const MapGlobalStyles = () => (
       }
     }
 
+    .leaflet-aircraft-icon,
+    .leaflet-radar-aircraft-icon {
+      transition: none !important;
+    }
+
     .leaflet-control-zoom a {
       width: 36px !important;
       height: 36px !important;
