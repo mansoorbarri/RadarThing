@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useUser, SignInButton, SignOutButton } from "@clerk/nextjs";
+import { useUser, SignInButton } from "@clerk/nextjs";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -21,7 +21,6 @@ import {
   Camera,
   FileText,
   Play,
-  LogOut,
   Trash2,
   Mail,
   Shield,
@@ -458,52 +457,31 @@ export default function DashboardPage() {
             ACCOUNT
           </h3>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* Account Info */}
-            <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
-              <h4 className="mb-4 text-sm font-semibold text-white">Account Info</h4>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Mail className="h-4 w-4 text-slate-500" />
-                  <span className="text-sm text-slate-300">
-                    {user?.primaryEmailAddress?.emailAddress ?? "No email"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-slate-500" />
-                  <span className="text-sm text-slate-300">
-                    Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "Unknown"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Shield className="h-4 w-4 text-slate-500" />
-                  <span className="text-sm text-slate-300">
-                    {isPro ? (
-                      <span className="text-emerald-400">PRO</span>
-                    ) : (
-                      <span className="text-slate-500">Free Tier</span>
-                    )}
-                  </span>
-                </div>
+          <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
+            <h4 className="mb-4 text-sm font-semibold text-white">Account Info</h4>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Mail className="h-4 w-4 text-slate-500" />
+                <span className="text-sm text-slate-300">
+                  {user?.primaryEmailAddress?.emailAddress ?? "No email"}
+                </span>
               </div>
-            </div>
-
-            {/* Sign Out */}
-            <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl flex flex-col justify-between">
-              <div>
-                <h4 className="mb-2 text-sm font-semibold text-white">Session</h4>
-                <p className="mb-4 text-xs text-slate-500">
-                  Sign out of your account on this device.
-                </p>
+              <div className="flex items-center gap-3">
+                <Calendar className="h-4 w-4 text-slate-500" />
+                <span className="text-sm text-slate-300">
+                  Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "Unknown"}
+                </span>
               </div>
-              <SignOutButton redirectUrl="/">
-                <button
-                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-300 transition-all hover:bg-white/10 hover:text-white"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </button>
-              </SignOutButton>
+              <div className="flex items-center gap-3">
+                <Shield className="h-4 w-4 text-slate-500" />
+                <span className="text-sm text-slate-300">
+                  {isPro ? (
+                    <span className="text-emerald-400">PRO</span>
+                  ) : (
+                    <span className="text-slate-500">Free Tier</span>
+                  )}
+                </span>
+              </div>
             </div>
           </div>
 

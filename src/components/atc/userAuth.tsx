@@ -1,17 +1,30 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { SignInButton, useUser } from "@clerk/nextjs";
+import React, { useState, useEffect, useRef } from "react";
+import { SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import { LogOut, User } from "lucide-react";
 
 export const UserAuth = () => {
   const { isSignedIn, isLoaded, user } = useUser();
   const [mounted, setMounted] = useState(false);
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Avoid hydration mismatch by only rendering after mount
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Close menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    if (open) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
 
   if (!mounted || !isLoaded) return null;
 
@@ -23,19 +36,40 @@ export const UserAuth = () => {
 
   if (isSignedIn) {
     return (
-      <Link
-        href="/dashboard"
-        className="flex h-full items-center justify-center leading-none"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={user?.imageUrl ?? ""}
-          alt="Account"
-          width={32}
-          height={32}
-          className="rounded-full border border-cyan-400/50 transition-all hover:border-cyan-400 hover:shadow-[0_0_8px_rgba(0,255,255,0.4)]"
-        />
-      </Link>
+      <div className="relative" ref={menuRef}>
+        <button
+          onClick={() => setOpen(!open)}
+          className="flex h-full cursor-pointer items-center justify-center leading-none"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={user?.imageUrl ?? ""}
+            alt="Account"
+            width={32}
+            height={32}
+            className="rounded-full border border-cyan-400/50 transition-all hover:border-cyan-400 hover:shadow-[0_0_8px_rgba(0,255,255,0.4)]"
+          />
+        </button>
+
+        {open && (
+          <div className="absolute right-0 top-full mt-2 w-44 rounded-xl border border-white/10 bg-black/90 p-1.5 shadow-xl backdrop-blur-xl z-50">
+            <Link
+              href="/dashboard"
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <User className="h-4 w-4" />
+              Account
+            </Link>
+            <SignOutButton redirectUrl="/">
+              <button className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white">
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </button>
+            </SignOutButton>
+          </div>
+        )}
+      </div>
     );
   }
 
