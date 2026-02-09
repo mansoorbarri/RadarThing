@@ -1,8 +1,16 @@
 import { ImageResponse } from "next/og";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export const alt = "RadarThing - Real-time Flight Radar for GeoFS";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+const logoSvg = readFileSync(
+  join(process.cwd(), "public", "logo-white.svg"),
+  "utf-8",
+);
+const logoDataUri = `data:image/svg+xml;base64,${Buffer.from(logoSvg).toString("base64")}`;
 
 export default function OGImage() {
   return new ImageResponse(
@@ -16,95 +24,141 @@ export default function OGImage() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          position: "relative",
+          padding: "60px 80px",
         }}
       >
-        {/* Radar rings */}
-        {[200, 340, 480].map((ringSize) => (
-          <div
-            key={ringSize}
-            style={{
-              position: "absolute",
-              width: ringSize,
-              height: ringSize,
-              borderRadius: "50%",
-              border: "1px solid rgba(34, 211, 238, 0.12)",
-            }}
-          />
-        ))}
-
-        {/* Glow */}
-        <div
-          style={{
-            position: "absolute",
-            width: 600,
-            height: 600,
-            borderRadius: "50%",
-            background:
-              "radial-gradient(circle, rgba(34, 211, 238, 0.06) 0%, transparent 60%)",
-          }}
-        />
-
-        {/* Title */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 16,
-            zIndex: 1,
+            justifyContent: "center",
+            flex: 1,
+            width: "100%",
+            borderRadius: 24,
+            border: "1px solid rgba(34, 211, 238, 0.15)",
+            background:
+              "linear-gradient(145deg, rgba(34, 211, 238, 0.06) 0%, rgba(10, 22, 40, 0.8) 50%, rgba(34, 211, 238, 0.03) 100%)",
+            boxShadow:
+              "0 0 80px rgba(34, 211, 238, 0.08), inset 0 0 60px rgba(34, 211, 238, 0.03)",
+            padding: "40px 60px",
           }}
         >
           <div
             style={{
-              fontSize: 72,
-              fontWeight: 700,
-              color: "white",
-              letterSpacing: "-2px",
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              marginBottom: 16,
             }}
           >
-            RadarThing
+            <div
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 6,
+                background: "#22d3ee",
+                boxShadow: "0 0 12px rgba(34, 211, 238, 0.6)",
+              }}
+            />
+            <span
+              style={{
+                fontSize: 16,
+                fontWeight: 600,
+                color: "#22d3ee",
+                letterSpacing: 4,
+                textTransform: "uppercase" as const,
+              }}
+            >
+              Flight Radar for GeoFS
+            </span>
           </div>
-          <div
+          <img
+            src={logoDataUri}
+            width={480}
+            height={100}
+            style={{ marginBottom: 32 }}
+          />
+          <span
             style={{
-              fontSize: 28,
-              color: "rgba(34, 211, 238, 0.8)",
-              fontWeight: 500,
+              fontSize: 22,
+              color: "rgba(255, 255, 255, 0.45)",
+              textAlign: "center" as const,
+              lineHeight: 1.5,
+              maxWidth: 600,
+              marginBottom: 40,
             }}
           >
-            Real-time Flight Radar for GeoFS
-          </div>
+            Real-time aircraft tracking, flight recording, aviation weather, and airport charts.
+          </span>
           <div
             style={{
               display: "flex",
-              gap: 32,
-              marginTop: 24,
-              fontSize: 18,
-              color: "rgba(255, 255, 255, 0.4)",
+              gap: 12,
             }}
           >
-            <span>Live Tracking</span>
-            <span style={{ color: "rgba(34, 211, 238, 0.4)" }}>|</span>
-            <span>Flight Recording</span>
-            <span style={{ color: "rgba(34, 211, 238, 0.4)" }}>|</span>
-            <span>Weather Data</span>
-            <span style={{ color: "rgba(34, 211, 238, 0.4)" }}>|</span>
-            <span>Airport Charts</span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                background: "rgba(34, 211, 238, 0.1)",
+                border: "1px solid rgba(34, 211, 238, 0.2)",
+                borderRadius: 8,
+                padding: "8px 16px",
+              }}
+            >
+              <span style={{ fontSize: 14, color: "#22d3ee", fontWeight: 600 }}>
+                Live Tracking
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                background: "rgba(34, 211, 238, 0.1)",
+                border: "1px solid rgba(34, 211, 238, 0.2)",
+                borderRadius: 8,
+                padding: "8px 16px",
+              }}
+            >
+              <span style={{ fontSize: 14, color: "#22d3ee", fontWeight: 600 }}>
+                Weather Data
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                background: "rgba(34, 211, 238, 0.1)",
+                border: "1px solid rgba(34, 211, 238, 0.2)",
+                borderRadius: 8,
+                padding: "8px 16px",
+              }}
+            >
+              <span style={{ fontSize: 14, color: "#22d3ee", fontWeight: 600 }}>
+                Airport Charts
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                background: "rgba(34, 211, 238, 0.1)",
+                border: "1px solid rgba(34, 211, 238, 0.2)",
+                borderRadius: 8,
+                padding: "8px 16px",
+              }}
+            >
+              <span style={{ fontSize: 14, color: "#22d3ee", fontWeight: 600 }}>
+                Flight Recording
+              </span>
+            </div>
           </div>
         </div>
-
-        {/* Bottom accent line */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 4,
-            background:
-              "linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.6), transparent)",
-          }}
-        />
       </div>
     ),
     { ...size },
