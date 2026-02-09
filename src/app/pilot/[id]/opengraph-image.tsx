@@ -10,6 +10,7 @@ const logoSvg = readFileSync(
 );
 const logoDataUri = `data:image/svg+xml;base64,${Buffer.from(logoSvg).toString("base64")}`;
 
+export const runtime = "nodejs";
 export const alt = "Pilot Profile - RadarThing";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -27,9 +28,17 @@ export default async function OGImage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const stats = await convex.query(api.flights.getStatsById, {
-    userId: id as Id<"users">,
-  });
+
+  let stats: Awaited<
+    ReturnType<typeof convex.query<typeof api.flights.getStatsById>>
+  > = null;
+  try {
+    stats = await convex.query(api.flights.getStatsById, {
+      userId: id as Id<"users">,
+    });
+  } catch {
+    // Convex query failed — render with defaults
+  }
 
   const callsign = stats?.pilotCallsign ?? "Unknown Pilot";
   const totalFlights = stats?.totalFlights ?? 0;
