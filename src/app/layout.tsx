@@ -13,9 +13,33 @@ import { PostHogProvider } from "~/components/providers/PostHogProvider";
 import { ContributorRewardModal } from "~/components/ui/ContributorRewardModal";
 
 export const metadata: Metadata = {
-  title: "RadarThing",
-  description: "RadarThing for GeoFS",
+  metadataBase: new URL("https://radarthing.com"),
+  title: {
+    default: "RadarThing - Real-time Flight Radar for GeoFS",
+    template: "%s | RadarThing",
+  },
+  description:
+    "Real-time aircraft tracking for GeoFS flight simulator. Track flights, record routes, access aviation weather, airport charts, and more.",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://radarthing.com",
+    siteName: "RadarThing",
+    title: "RadarThing - Real-time Flight Radar for GeoFS",
+    description:
+      "Real-time aircraft tracking for GeoFS flight simulator. Track flights, record routes, access aviation weather, airport charts, and more.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "RadarThing - Real-time Flight Radar for GeoFS",
+    description:
+      "Real-time aircraft tracking for GeoFS flight simulator. Track flights, record routes, access aviation weather, airport charts, and more.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 const geist = Geist({
