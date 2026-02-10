@@ -5,6 +5,7 @@ import { type PositionUpdate } from "~/lib/aircraft-store";
 import {
   findActiveWaypointIndex,
   splitPathAtAntimeridian,
+  unwrapPath,
 } from "~/lib/map-utils";
 import {
   WaypointIcon,
@@ -111,17 +112,40 @@ export const useFlightPlanDrawing = ({
             const waypoints = JSON.parse(aircraft.flightPlan);
 
             if (waypoints.length > 0) {
-              const coordinates: [number, number][] = [];
               const activeWaypointIndex = findActiveWaypointIndex(
                 aircraft,
                 waypoints
               );
 
+              // Collect valid waypoints and their raw coordinates
+              const validWaypoints: { wp: any; wpIndex: number }[] = [];
+              const rawCoords: [number, number][] = [];
               waypoints.forEach((wp: any, wpIndex: number) => {
                 if (wp.lat && wp.lon) {
-                  coordinates.push([wp.lat, wp.lon]);
+                  validWaypoints.push({ wp, wpIndex });
+                  rawCoords.push([wp.lat, wp.lon]);
+                }
+              });
 
-                  const popupContent = `
+              // Unwrap longitudes so the entire flight plan appears on one
+              // continuous side of the map (no split at the antimeridian),
+              // then shift to the same world copy as the aircraft
+              const coords = unwrapPath(rawCoords);
+              if (coords.length >= 2) {
+                const midLon =
+                  (coords[0]![1] + coords[coords.length - 1]![1]) / 2;
+                const shift =
+                  Math.round((aircraft.lon - midLon) / 360) * 360;
+                if (shift !== 0) {
+                  for (const c of coords) c[1] += shift;
+                }
+              }
+
+              // Place markers and polyline at the unwrapped positions
+              coords.forEach((coord, i) => {
+                const { wp, wpIndex } = validWaypoints[i]!;
+
+                const popupContent = `
                     <div style="font-family: system-ui; padding: 4px; color: ${
                       isRadarMode ? "#00ff00" : "#333"
                     }; background-color: ${
@@ -145,42 +169,37 @@ export const useFlightPlanDrawing = ({
                     </div>
                   `;
 
-                  const icon = isRadarMode
-                    ? wpIndex === activeWaypointIndex
-                      ? RadarActiveWaypointIcon
-                      : RadarWaypointIcon
-                    : wpIndex === activeWaypointIndex
-                      ? ActiveWaypointIcon
-                      : WaypointIcon;
+                const icon = isRadarMode
+                  ? wpIndex === activeWaypointIndex
+                    ? RadarActiveWaypointIcon
+                    : RadarWaypointIcon
+                  : wpIndex === activeWaypointIndex
+                    ? ActiveWaypointIcon
+                    : WaypointIcon;
 
-                  const waypointMarker = L.marker([wp.lat, wp.lon], {
-                    icon: icon,
-                    title: wp.ident,
-                    zIndexOffset: 100,
+                const waypointMarker = L.marker(coord, {
+                  icon: icon,
+                  title: wp.ident,
+                  zIndexOffset: 100,
+                })
+                  .bindPopup(popupContent, {
+                    className: isRadarMode ? "radar-popup" : "",
                   })
-                    .bindPopup(popupContent, {
-                      className: isRadarMode ? "radar-popup" : "",
-                    })
-                    .addTo(flightPlanLayerGroup.current!);
+                  .addTo(flightPlanLayerGroup.current!);
 
-                  waypointMarker.on("click", (e) => {
-                    L.DomEvent.stopPropagation(e);
-                  });
-                }
+                waypointMarker.on("click", (e) => {
+                  L.DomEvent.stopPropagation(e);
+                });
               });
 
-              if (coordinates.length >= 2) {
-                for (const segment of splitPathAtAntimeridian(coordinates)) {
-                  if (segment.length >= 2) {
-                    const plannedPolyline = L.polyline(segment, {
-                      color: color,
-                      weight: isRadarMode ? 2 : 3,
-                      opacity: isRadarMode ? 0.7 : 0.6,
-                      dashArray: isRadarMode ? "8, 8" : "10, 5",
-                    });
-                    flightPlanLayerGroup.current!.addLayer(plannedPolyline);
-                  }
-                }
+              if (coords.length >= 2) {
+                const plannedPolyline = L.polyline(coords, {
+                  color: color,
+                  weight: isRadarMode ? 2 : 3,
+                  opacity: isRadarMode ? 0.7 : 0.6,
+                  dashArray: isRadarMode ? "8, 8" : "10, 5",
+                });
+                flightPlanLayerGroup.current!.addLayer(plannedPolyline);
               }
             }
           } catch (error) {

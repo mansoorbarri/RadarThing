@@ -48,6 +48,29 @@ export const calculateBearing = (
 };
 
 /**
+ * Make a path's longitudes continuous so it renders on one side of the map.
+ * Use this when you control both the markers and the polyline (e.g. flight plans),
+ * so everything appears together without splitting across the antimeridian.
+ */
+export function unwrapPath(path: [number, number][]): [number, number][] {
+  if (path.length < 2) return path;
+
+  const result: [number, number][] = [[path[0]![0], path[0]![1]]];
+
+  for (let i = 1; i < path.length; i++) {
+    const prevLon = result[i - 1]![1];
+    let currLon = path[i]![1];
+
+    while (currLon - prevLon > 180) currLon -= 360;
+    while (currLon - prevLon < -180) currLon += 360;
+
+    result.push([path[i]![0], currLon]);
+  }
+
+  return result;
+}
+
+/**
  * Split a path into segments at antimeridian (±180°) crossings.
  * Each segment stays within the standard [-180, 180] longitude range,
  * so Leaflet draws polylines correctly without stretching across the map.
