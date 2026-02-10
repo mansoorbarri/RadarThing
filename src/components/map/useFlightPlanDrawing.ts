@@ -2,7 +2,10 @@
 import { useCallback, useRef } from "react";
 import L from "leaflet";
 import { type PositionUpdate } from "~/lib/aircraft-store";
-import { findActiveWaypointIndex } from "~/lib/map-utils";
+import {
+  findActiveWaypointIndex,
+  splitPathAtAntimeridian,
+} from "~/lib/map-utils";
 import {
   WaypointIcon,
   ActiveWaypointIcon,
@@ -70,27 +73,35 @@ export const useFlightPlanDrawing = ({
           // Draw the main historical path (excluding last point)
           const mainPath = history.slice(0, -1);
           if (mainPath.length >= 2) {
-            const historyPolyline = L.polyline(mainPath, {
-              color: color,
-              weight: isRadarMode ? 2 : 4,
-              opacity: isRadarMode ? 0.7 : 0.8,
-              smoothFactor: 1,
-              dashArray: isRadarMode ? "5, 5" : "",
-            });
-            historyLayerGroup.current!.addLayer(historyPolyline);
+            for (const segment of splitPathAtAntimeridian(mainPath)) {
+              if (segment.length >= 2) {
+                const historyPolyline = L.polyline(segment, {
+                  color: color,
+                  weight: isRadarMode ? 2 : 4,
+                  opacity: isRadarMode ? 0.7 : 0.8,
+                  smoothFactor: 1,
+                  dashArray: isRadarMode ? "5, 5" : "",
+                });
+                historyLayerGroup.current!.addLayer(historyPolyline);
+              }
+            }
           }
 
           // Draw faded trailing segment (connects to aircraft's current position)
           const trailingSegment = history.slice(-2);
           if (trailingSegment.length === 2) {
-            const trailingPolyline = L.polyline(trailingSegment, {
-              color: color,
-              weight: isRadarMode ? 1 : 2,
-              opacity: isRadarMode ? 0.3 : 0.4,
-              smoothFactor: 1,
-              dashArray: "4, 4",
-            });
-            historyLayerGroup.current!.addLayer(trailingPolyline);
+            for (const segment of splitPathAtAntimeridian(trailingSegment)) {
+              if (segment.length >= 2) {
+                const trailingPolyline = L.polyline(segment, {
+                  color: color,
+                  weight: isRadarMode ? 1 : 2,
+                  opacity: isRadarMode ? 0.3 : 0.4,
+                  smoothFactor: 1,
+                  dashArray: "4, 4",
+                });
+                historyLayerGroup.current!.addLayer(trailingPolyline);
+              }
+            }
           }
         }
 
@@ -100,7 +111,7 @@ export const useFlightPlanDrawing = ({
             const waypoints = JSON.parse(aircraft.flightPlan);
 
             if (waypoints.length > 0) {
-              const coordinates: L.LatLngTuple[] = [];
+              const coordinates: [number, number][] = [];
               const activeWaypointIndex = findActiveWaypointIndex(
                 aircraft,
                 waypoints
@@ -159,13 +170,17 @@ export const useFlightPlanDrawing = ({
               });
 
               if (coordinates.length >= 2) {
-                const plannedPolyline = L.polyline(coordinates, {
-                  color: color,
-                  weight: isRadarMode ? 2 : 3,
-                  opacity: isRadarMode ? 0.7 : 0.6,
-                  dashArray: isRadarMode ? "8, 8" : "10, 5",
-                });
-                flightPlanLayerGroup.current!.addLayer(plannedPolyline);
+                for (const segment of splitPathAtAntimeridian(coordinates)) {
+                  if (segment.length >= 2) {
+                    const plannedPolyline = L.polyline(segment, {
+                      color: color,
+                      weight: isRadarMode ? 2 : 3,
+                      opacity: isRadarMode ? 0.7 : 0.6,
+                      dashArray: isRadarMode ? "8, 8" : "10, 5",
+                    });
+                    flightPlanLayerGroup.current!.addLayer(plannedPolyline);
+                  }
+                }
               }
             }
           } catch (error) {

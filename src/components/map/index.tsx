@@ -5,6 +5,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
+import { splitPathAtAntimeridian } from "~/lib/map-utils";
 import { useMobileDetection } from "~/hooks/useMobileDetection";
 import { useProStatus } from "~/hooks/useProStatus";
 import { getBooleanCookie, setBooleanCookie } from "~/lib/cookies";
@@ -411,15 +412,19 @@ const MapComponent: React.FC<MapComponentProps> = ({
     // Clear existing layers before drawing the historic path
     mapRefs.historyLayerGroup.current.clearLayers();
 
-    // Draw the historic path
-    const historyPolyline = L.polyline(historyPath, {
-      color: isRadarMode ? "#00ff00" : "#00ff00",
-      weight: isRadarMode ? 2 : 4,
-      opacity: isRadarMode ? 0.7 : 0.8,
-      smoothFactor: 1,
-      dashArray: isRadarMode ? "5, 5" : "",
-    });
-    mapRefs.historyLayerGroup.current.addLayer(historyPolyline);
+    // Draw the historic path (split at antimeridian for trans-Pacific flights)
+    for (const segment of splitPathAtAntimeridian(historyPath)) {
+      if (segment.length >= 2) {
+        const historyPolyline = L.polyline(segment, {
+          color: isRadarMode ? "#00ff00" : "#00ff00",
+          weight: isRadarMode ? 2 : 4,
+          opacity: isRadarMode ? 0.7 : 0.8,
+          smoothFactor: 1,
+          dashArray: isRadarMode ? "5, 5" : "",
+        });
+        mapRefs.historyLayerGroup.current.addLayer(historyPolyline);
+      }
+    }
   }, [historyPath, isRadarMode, replayState, mapRefs.mapInstance, mapRefs.historyLayerGroup]);
 
   // Follow mode - center map on followed aircraft
@@ -456,25 +461,33 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     // Draw traversed path (solid amber line)
     if (traversedPath.length >= 2) {
-      const traversedPolyline = L.polyline(traversedPath, {
-        color: "#f59e0b", // amber-500
-        weight: isRadarMode ? 2 : 4,
-        opacity: isRadarMode ? 0.8 : 0.9,
-        smoothFactor: 1,
-      });
-      mapRefs.replayLayerGroup.current.addLayer(traversedPolyline);
+      for (const segment of splitPathAtAntimeridian(traversedPath)) {
+        if (segment.length >= 2) {
+          const traversedPolyline = L.polyline(segment, {
+            color: "#f59e0b", // amber-500
+            weight: isRadarMode ? 2 : 4,
+            opacity: isRadarMode ? 0.8 : 0.9,
+            smoothFactor: 1,
+          });
+          mapRefs.replayLayerGroup.current.addLayer(traversedPolyline);
+        }
+      }
     }
 
     // Draw remaining path (dashed, faded)
     if (remainingPath.length >= 2) {
-      const remainingPolyline = L.polyline(remainingPath, {
-        color: "#f59e0b", // amber-500
-        weight: isRadarMode ? 1 : 2,
-        opacity: isRadarMode ? 0.3 : 0.4,
-        smoothFactor: 1,
-        dashArray: "8, 8",
-      });
-      mapRefs.replayLayerGroup.current.addLayer(remainingPolyline);
+      for (const segment of splitPathAtAntimeridian(remainingPath)) {
+        if (segment.length >= 2) {
+          const remainingPolyline = L.polyline(segment, {
+            color: "#f59e0b", // amber-500
+            weight: isRadarMode ? 1 : 2,
+            opacity: isRadarMode ? 0.3 : 0.4,
+            smoothFactor: 1,
+            dashArray: "8, 8",
+          });
+          mapRefs.replayLayerGroup.current.addLayer(remainingPolyline);
+        }
+      }
     }
 
     // Draw replay aircraft marker at current position

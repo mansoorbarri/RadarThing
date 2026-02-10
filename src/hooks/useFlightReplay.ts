@@ -88,13 +88,24 @@ function calculateHeading(
   return heading;
 }
 
-// Interpolate between two points
+// Interpolate between two points (handles antimeridian crossings)
 function interpolatePosition(
   p1: [number, number],
   p2: [number, number],
   t: number
 ): [number, number] {
-  return [p1[0] + (p2[0] - p1[0]) * t, p1[1] + (p2[1] - p1[1]) * t];
+  let lon1 = p1[1],
+    lon2 = p2[1];
+  // If the longitude difference > 180°, the shortest path crosses the antimeridian
+  if (Math.abs(lon2 - lon1) > 180) {
+    if (lon2 > lon1) lon2 -= 360;
+    else lon2 += 360;
+  }
+  let lon = lon1 + (lon2 - lon1) * t;
+  // Normalize back to [-180, 180]
+  if (lon > 180) lon -= 360;
+  if (lon < -180) lon += 360;
+  return [p1[0] + (p2[0] - p1[0]) * t, lon];
 }
 
 export function useFlightReplay(flight: FlightData | null) {

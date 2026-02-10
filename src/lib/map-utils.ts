@@ -47,6 +47,49 @@ export const calculateBearing = (
   return (θ + 360) % 360;
 };
 
+/**
+ * Split a path into segments at antimeridian (±180°) crossings.
+ * Each segment stays within the standard [-180, 180] longitude range,
+ * so Leaflet draws polylines correctly without stretching across the map.
+ */
+export function splitPathAtAntimeridian(
+  path: [number, number][],
+): [number, number][][] {
+  if (path.length < 2) return path.length > 0 ? [path] : [];
+
+  const segments: [number, number][][] = [];
+  let current: [number, number][] = [path[0]!];
+
+  for (let i = 1; i < path.length; i++) {
+    const [lat1, lon1] = path[i - 1]!;
+    const [lat2, lon2] = path[i]!;
+    const diff = lon2 - lon1;
+
+    if (Math.abs(diff) > 180) {
+      // Antimeridian crossing detected.
+      // Wrap lon2 to be continuous with lon1, then find the ±180 crossing.
+      const wrapOffset = diff > 0 ? -360 : 360;
+      const adjustedLon2 = lon2 + wrapOffset;
+      const boundary = diff > 0 ? -180 : 180;
+
+      const t = (boundary - lon1) / (adjustedLon2 - lon1);
+      const crossLat = lat1 + t * (lat2 - lat1);
+
+      current.push([crossLat, boundary]);
+      segments.push(current);
+      current = [[crossLat, -boundary], [lat2, lon2]];
+    } else {
+      current.push([lat2, lon2]);
+    }
+  }
+
+  if (current.length > 0) {
+    segments.push(current);
+  }
+
+  return segments;
+}
+
 export const findActiveWaypointIndex = (
   aircraft: PositionUpdate,
   waypoints: any[],
