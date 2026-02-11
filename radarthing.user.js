@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RadarThing
 // @namespace    http://tampermonkey.net/
-// @version      1.3.3
+// @version      1.3.4
 // @description  Always loads the latest GeoFS ATC Radar script from GitHub
 // @Author       xyzmani
 // @icon         https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/public/favicon.ico
@@ -31,6 +31,67 @@
 
   let flightUI;
   let isListeningForKey = false;
+  let lastSyncedPlan = "";
+
+  function isICAO(str) {
+    return /^[A-Z]{4}$/.test(str);
+  }
+
+  function syncFlightPlan() {
+    try {
+      const g = window.geofs;
+      if (!g || !g.flightPlan || typeof g.flightPlan.export !== "function")
+        return;
+
+      let waypoints = g.flightPlan.export();
+      if (!waypoints) return;
+      if (typeof waypoints === "string") waypoints = JSON.parse(waypoints);
+      if (!waypoints || waypoints.length < 2) return;
+
+      let depIdent = "";
+      let arrIdent = "";
+
+      for (let i = 0; i < waypoints.length; i++) {
+        const wp = waypoints[i];
+        if (wp && wp.type === "DPT" && wp.ident) depIdent = wp.ident;
+        if (wp && wp.type === "DST" && wp.ident) arrIdent = wp.ident;
+      }
+
+      if (!depIdent) depIdent = (waypoints[0] && waypoints[0].ident) || "";
+      if (!arrIdent)
+        arrIdent =
+          (waypoints[waypoints.length - 1] &&
+            waypoints[waypoints.length - 1].ident) ||
+          "";
+
+      depIdent = depIdent.toUpperCase();
+      arrIdent = arrIdent.toUpperCase();
+
+      const planKey = depIdent + "-" + arrIdent;
+      if (planKey === lastSyncedPlan) return;
+
+      const depEl = document.getElementById(DEP_INPUT_ID);
+      const arrEl = document.getElementById(ARR_INPUT_ID);
+      if (!depEl || !arrEl) return;
+
+      let filled = false;
+
+      if (isICAO(depIdent) && !depEl.value.trim()) {
+        depEl.value = depIdent;
+        filled = true;
+      }
+
+      if (isICAO(arrIdent) && !arrEl.value.trim()) {
+        arrEl.value = arrIdent;
+        filled = true;
+      }
+
+      if (filled) {
+        lastSyncedPlan = planKey;
+        showToast("Flight plan detected");
+      }
+    } catch (_) {}
+  }
 
   function validateSquawk(squawk) {
     const rgx = /^[0-7]{4}$/;
@@ -289,4 +350,5 @@
   });
 
   injectFlightUI();
+  setInterval(syncFlightPlan, 3000);
 })();
