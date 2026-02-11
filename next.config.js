@@ -46,8 +46,9 @@ const config = {
             value: "nosniff",
           },
           {
-            key: "X-Frame-Options",
-            value: "SAMEORIGIN",
+            key: "Content-Security-Policy",
+            value:
+              "frame-ancestors 'self' https://klmgeofsvirtual.github.io",
           },
           {
             key: "Referrer-Policy",
