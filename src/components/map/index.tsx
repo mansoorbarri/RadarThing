@@ -68,6 +68,7 @@ interface MapComponentProps {
   onLayerModeChange?: (isDarkLayer: boolean) => void;
   replayState?: ReplayState | null;
   followAircraft?: PositionUpdate;
+  setResetMapView?: (func: () => void) => void;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -83,6 +84,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onLayerModeChange,
   replayState,
   followAircraft,
+  setResetMapView,
 }) => {
   const isMobile = useMobileDetection();
   const { isProUser, isAdminUser, isLoading: proLoading } = useProStatus();
@@ -361,6 +363,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
       onMapReady();
     }
   }, [mapRefs.mapInstance, onMapReady]);
+
+  useEffect(() => {
+    if (setResetMapView) {
+      setResetMapView(mapRefs.resetMapView);
+    }
+  }, [mapRefs.resetMapView, setResetMapView]);
 
   const metar = useMetarOverlay(
     mapRefs.mapInstance,

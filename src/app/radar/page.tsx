@@ -37,7 +37,7 @@ import { TaxiChartViewer } from "~/components/airports/TaxiChartsViewer";
 import { AtcPlayer } from "~/components/atc/AtcPlayer";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
-import { UpgradeIcon, FlightsIcon, FilterIcon, DiscordIcon, AccountIcon, InstallIcon } from "~/utils/dockIcons";
+import { UpgradeIcon, FlightsIcon, FilterIcon, DiscordIcon, InstallIcon } from "~/utils/dockIcons";
 
 const DynamicMapComponent = dynamic(() => import("~/components/map"), {
   ssr: false,
@@ -136,6 +136,7 @@ export default function ATCPage() {
   const drawMultipleFlightPlansOnMapRef = useRef<
     ((aircrafts: PositionUpdate[], zoom?: boolean) => void) | null
   >(null);
+  const resetMapViewRef = useRef<(() => void) | null>(null);
 
 
   useEffect(() => {
@@ -550,6 +551,9 @@ export default function ATCPage() {
             onLayerModeChange={setIsDarkLayerMode}
             replayState={replayState}
             followAircraft={isFollowMode ? selectedAircrafts[0] : undefined}
+            setResetMapView={(fn) => {
+              resetMapViewRef.current = fn;
+            }}
           />
         )}
       </main>
@@ -583,6 +587,16 @@ export default function ATCPage() {
       {!isMobile && (
         <ControlDock
           side="right"
+          bottomAction={{
+            icon: (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 4.5 4.5 0 0 0-4.5 4.5" />
+                <polyline points="1 4 3.5 7.5 7 5" />
+              </svg>
+            ),
+            label: "Reset map view",
+            onClick: () => resetMapViewRef.current?.(),
+          }}
           items={[
             // Core features (closest to toggle button)
             {
@@ -605,16 +619,6 @@ export default function ATCPage() {
                 const newState = activeRightPanel !== "filter";
                 setActiveRightPanel(newState ? "filter" : null);
                 if (newState) setSelectedAircrafts([]);
-              },
-            },
-            // User account
-            {
-              id: "account",
-              label: "Account",
-              icon: AccountIcon,
-              active: false,
-              onClick: () => {
-                router.push("/dashboard");
               },
             },
             ...(!isProUser ? [{

@@ -11,12 +11,19 @@ interface DockItem {
   onClick: () => void;
 }
 
+interface BottomAction {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}
+
 interface ControlDockProps {
   items: DockItem[];
   side?: "left" | "right";
+  bottomAction?: BottomAction;
 }
 
-export function ControlDock({ items, side = "left" }: ControlDockProps) {
+export function ControlDock({ items, side = "left", bottomAction }: ControlDockProps) {
   const [open, setOpen] = useState(false);
 
   const isRight = side === "right";
@@ -25,8 +32,9 @@ export function ControlDock({ items, side = "left" }: ControlDockProps) {
     <div
       className={`pointer-events-auto fixed bottom-6 ${
         isRight ? "right-6" : "left-6"
-      } z-[10020]`}
+      } z-[10020] flex flex-col items-center gap-2`}
     >
+      {/* Dock toggle + items wrapper */}
       <div className="relative">
         {/* Tool buttons (absolute, so dock never moves) */}
         <div
@@ -66,6 +74,17 @@ export function ControlDock({ items, side = "left" }: ControlDockProps) {
           {DockIcon}
         </button>
       </div>
+
+      {/* Bottom action (below dock, outside relative wrapper) */}
+      {bottomAction && (
+        <button
+          onClick={bottomAction.onClick}
+          title={bottomAction.label}
+          className="flex h-13 w-13 cursor-pointer items-center justify-center rounded-md border border-cyan-400/30 bg-black/80 text-cyan-400 shadow-[0_0_6px_rgba(0,255,255,0.25)] transition-all duration-200 hover:border-cyan-400/50 hover:bg-cyan-400/15 hover:shadow-[0_0_10px_rgba(0,255,255,0.5)]"
+        >
+          {bottomAction.icon}
+        </button>
+      )}
     </div>
   );
 }

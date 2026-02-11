@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
+import { getCookie, setCookie } from "~/lib/cookies";
 import {
   HeadingModeControl,
   RadarModeControl,
@@ -39,7 +40,11 @@ interface MapRefs {
   openAIPLayer: React.MutableRefObject<L.TileLayer | null>;
   weatherOverlayLayer: React.MutableRefObject<L.TileLayer | null>;
   mapReady: boolean;
+  resetMapView: () => void;
 }
+
+const DEFAULT_CENTER: [number, number] = [20, 0];
+const DEFAULT_ZOOM = 3;
 
 export const useMapInitialization = ({
   mapContainerId,
@@ -73,8 +78,25 @@ export const useMapInitialization = ({
   // State to signal when map and layers are ready
   const [mapReady, setMapReady] = useState(false);
 
+  const resetMapView = useCallback(() => {
+    if (!mapInstance.current) return;
+    mapInstance.current.setView(DEFAULT_CENTER, DEFAULT_ZOOM, { animate: true });
+    setCookie("map_zoom", String(DEFAULT_ZOOM));
+    setCookie("map_center_lat", String(DEFAULT_CENTER[0]));
+    setCookie("map_center_lng", String(DEFAULT_CENTER[1]));
+  }, []);
+
   useEffect(() => {
     if (mapInstance.current) return;
+
+    // Restore saved map position or use defaults
+    const savedZoom = parseFloat(getCookie("map_zoom") ?? "");
+    const savedLat = parseFloat(getCookie("map_center_lat") ?? "");
+    const savedLng = parseFloat(getCookie("map_center_lng") ?? "");
+
+    const initialCenter: [number, number] =
+      !isNaN(savedLat) && !isNaN(savedLng) ? [savedLat, savedLng] : DEFAULT_CENTER;
+    const initialZoom = !isNaN(savedZoom) ? savedZoom : DEFAULT_ZOOM;
 
     const map = L.map(mapContainerId, {
       zoomAnimation: true,
@@ -91,7 +113,7 @@ export const useMapInitialization = ({
       }),
       attributionControl: false,
       zoomControl: !isMobile,
-    }).setView([20, 0], 3);
+    }).setView(initialCenter, initialZoom);
 
     mapInstance.current = map;
 
@@ -168,8 +190,19 @@ export const useMapInitialization = ({
 
     map.on("click", onMapClick);
 
+    // Persist zoom and center to cookies on move/zoom
+    const saveMapPosition = () => {
+      const center = map.getCenter();
+      const zoom = map.getZoom();
+      setCookie("map_zoom", String(zoom));
+      setCookie("map_center_lat", String(center.lat));
+      setCookie("map_center_lng", String(center.lng));
+    };
+    map.on("moveend", saveMapPosition);
+
     return () => {
       map.off("click", onMapClick);
+      map.off("moveend", saveMapPosition);
       map.remove();
       mapInstance.current = null;
     };
@@ -260,5 +293,6 @@ export const useMapInitialization = ({
     openAIPLayer,
     weatherOverlayLayer,
     mapReady,
+    resetMapView,
   };
 };
