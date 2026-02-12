@@ -38,6 +38,7 @@ import { AtcPlayer } from "~/components/atc/AtcPlayer";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
 import { UpgradeIcon, FlightsIcon, FilterIcon, DiscordIcon, InstallIcon } from "~/utils/dockIcons";
+import { RotateCcw } from "lucide-react";
 
 const DynamicMapComponent = dynamic(() => import("~/components/map"), {
   ssr: false,
@@ -589,10 +590,7 @@ export default function ATCPage() {
           side="right"
           bottomAction={{
             icon: (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 4.5 4.5 0 0 0-4.5 4.5" />
-                <polyline points="1 4 3.5 7.5 7 5" />
-              </svg>
+              <RotateCcw size={18} strokeWidth={1.8} />
             ),
             label: "Reset map view",
             onClick: () => resetMapViewRef.current?.(),
