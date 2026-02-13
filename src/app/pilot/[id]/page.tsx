@@ -4,6 +4,8 @@ import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
+import { toast } from "sonner";
+import { Analytics } from "~/lib/analytics";
 import {
   Plane,
   Clock,
@@ -14,6 +16,7 @@ import {
   Route,
   Calendar,
   Play,
+  Share2,
 } from "lucide-react";
 import Image from "next/image";
 import { useProStatus } from "~/hooks/useProStatus";
@@ -292,16 +295,37 @@ function PilotPageContent() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <span className="font-mono text-xs text-slate-600">{flight.callsign}</span>
                       {flight.routeData && flight.routeData.length > 1 && (
-                        <button
-                          onClick={() => router.push(`/radar?replay=${flight.id}`)}
-                          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 opacity-0 transition-all hover:bg-amber-500/20 group-hover:opacity-100"
-                          title="Replay this flight"
-                        >
-                          <Play className="h-4 w-4" />
-                        </button>
+                        <>
+                          <button
+                            onClick={() => {
+                              const url = `${window.location.origin}/radar?replay=${flight.id}`;
+                              navigator.clipboard.writeText(url).then(() => {
+                                toast.success("Flight replay link copied to clipboard");
+                                Analytics.flightReplayShared({
+                                  callsign: flight.callsign,
+                                  aircraftType: flight.aircraftType,
+                                  depICAO: flight.depICAO,
+                                  arrICAO: flight.arrICAO,
+                                  flightId: flight.id as string,
+                                });
+                              });
+                            }}
+                            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/40 opacity-0 transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400 group-hover:opacity-100"
+                            title="Copy share link"
+                          >
+                            <Share2 className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => router.push(`/radar?replay=${flight.id}`)}
+                            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 opacity-0 transition-all hover:bg-amber-500/20 group-hover:opacity-100"
+                            title="Replay this flight"
+                          >
+                            <Play className="h-4 w-4" />
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>

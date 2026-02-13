@@ -164,6 +164,10 @@ export const Analytics = {
     track("flight_replay_closed", props);
   },
 
+  flightReplayShared: (props: FlightReplayEventProps & { flightId: string }) => {
+    track("flight_replay_shared", props);
+  },
+
   // ===== FEATURE ACCESS EVENTS =====
   featureAccessed: (props: FeatureAccessProps) => {
     track("feature_accessed", props);

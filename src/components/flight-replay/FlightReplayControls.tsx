@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import { type FlightData, useFlightReplay } from "~/hooks/useFlightReplay";
 import { Analytics } from "~/lib/analytics";
 
@@ -43,6 +44,24 @@ const CloseIcon = ({ className = "" }: { className?: string }) => (
   >
     <line x1="18" y1="6" x2="6" y2="18" />
     <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
+const ShareIcon = ({ className = "" }: { className?: string }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+    <polyline points="16 6 12 2 8 6" />
+    <line x1="12" y1="2" x2="12" y2="15" />
   </svg>
 );
 
@@ -145,6 +164,15 @@ export function FlightReplayControls({
     onClose();
   }, [onClose, getAnalyticsProps]);
 
+  // Share flight replay link
+  const handleShare = useCallback(() => {
+    const url = `${window.location.origin}/radar?replay=${flight.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      toast.success("Flight replay link copied to clipboard");
+      Analytics.flightReplayShared({ ...getAnalyticsProps(), flightId: flight.id });
+    });
+  }, [flight.id, getAnalyticsProps]);
+
   // Track completion
   const prevProgressRef = useRef(replay.progress);
   useEffect(() => {
@@ -198,12 +226,21 @@ export function FlightReplayControls({
               </div>
             </div>
           </div>
-          <button
-            onClick={handleClose}
-            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-          >
-            <CloseIcon />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleShare}
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-colors hover:bg-amber-500/20 hover:text-amber-400 hover:border-amber-500/30"
+              title="Copy share link"
+            >
+              <ShareIcon />
+            </button>
+            <button
+              onClick={handleClose}
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <CloseIcon />
+            </button>
+          </div>
         </div>
 
         {/* Controls */}
