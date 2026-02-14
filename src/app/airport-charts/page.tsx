@@ -98,6 +98,19 @@ export default function AirportChartsPage() {
   const uploaderRef = useRef<ChartUploaderRef>(null);
   const uploadedDataRef = useRef<{ url: string; key: string } | null>(null);
   const uploadErrorRef = useRef<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (!showUploadModal) return;
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        formRef.current?.requestSubmit();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showUploadModal]);
 
   const uniqueIcaos = useMemo(() => {
     const icaos = new Set<string>();
@@ -496,7 +509,7 @@ export default function AirportChartsPage() {
               Your chart will be reviewed by our team before appearing in the library.
             </p>
 
-            <form onSubmit={handleUploadAndSubmit} className="space-y-4">
+            <form ref={formRef} onSubmit={handleUploadAndSubmit} className="space-y-4">
               {error && (
                 <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
                   {error}
