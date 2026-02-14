@@ -55,6 +55,7 @@ interface MapComponentProps {
   aircrafts: PositionUpdate[];
   airports: Airport[];
   onAircraftSelect: (aircraft: PositionUpdate | null, ctrlKey?: boolean) => void;
+  onAirportSelect?: (airport: Airport) => void;
   selectedAircraftIds?: string[];
   selectedAirport?: Airport;
   setDrawFlightPlanOnMap: (
@@ -75,6 +76,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   aircrafts,
   airports,
   onAircraftSelect,
+  onAirportSelect,
   selectedAircraftIds = [],
   selectedAirport,
   setDrawFlightPlanOnMap,
@@ -297,9 +299,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
     isRadarMode,
     isOpenAIPEnabled,
     selectedAircraftIds,
+    selectedAirport,
     currentSelectedAircraftRef,
     drawFlightPlan,
     onAircraftSelect,
+    onAirportSelect,
     showTags,
     mapReady: mapRefs.mapReady,
     isMobile,

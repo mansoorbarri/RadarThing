@@ -23,6 +23,7 @@ import { useUtcTime } from "~/hooks/useUtcTime";
 import { useTimer } from "~/hooks/useTimer";
 // useAirportCharts hook moved into AirportChartsViewer component
 import { useProStatus } from "~/hooks/useProStatus";
+import { useRecentSearches } from "~/hooks/useRecentSearches";
 
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
 import { SearchBar } from "~/components/atc/searchbar";
@@ -127,6 +128,13 @@ export default function ATCPage() {
     airports,
     fetchAirports,
   );
+
+  const {
+    recentSearches,
+    addAircraftSearch,
+    addAirportSearch,
+    clearRecentSearches,
+  } = useRecentSearches();
 
   const time = useUtcTime();
   const { formattedTime, isRunning, start, stop, reset } = useTimer();
@@ -325,9 +333,6 @@ export default function ATCPage() {
     }
 
     setActiveRightPanel(null);
-    if (aircraft) {
-      setSelectedAirport(undefined);
-    }
   }
 
   return (
@@ -355,12 +360,35 @@ export default function ATCPage() {
                 onSelectAircraft={(ac) => {
                   setSelectedAircrafts([ac]);
                   drawFlightPlanOnMapRef.current?.(ac, true);
+                  addAircraftSearch(ac);
                   setSearchTerm("");
                 }}
                 onSelectAirport={(ap) => {
                   setSelectedAirport(ap);
+                  addAirportSearch(ap);
                   setSearchTerm("");
                 }}
+                recentSearches={recentSearches}
+                onSelectRecentSearch={(search) => {
+                  if (search.type === "aircraft") {
+                    const aircraft = aircrafts.find(
+                      (ac) =>
+                        ac.callsign === search.id ||
+                        ac.flightNo === search.id ||
+                        ac.id === search.id
+                    );
+                    if (aircraft) {
+                      setSelectedAircrafts([aircraft]);
+                      drawFlightPlanOnMapRef.current?.(aircraft, true);
+                    }
+                  } else {
+                    const airport = airports.find((ap) => ap.icao === search.id);
+                    if (airport) {
+                      setSelectedAirport(airport);
+                    }
+                  }
+                }}
+                onClearRecentSearches={clearRecentSearches}
               />
             </div>
           )}
@@ -482,6 +510,7 @@ export default function ATCPage() {
                         onClick={() => {
                           setSelectedAircrafts([aircraft]);
                           drawFlightPlanOnMapRef.current?.(aircraft, true);
+                          addAircraftSearch(aircraft);
                           setSearchTerm("");
                           setShowMobileSearch(false);
                         }}
@@ -507,6 +536,7 @@ export default function ATCPage() {
                         key={`ap-${airport.icao}`}
                         onClick={() => {
                           setSelectedAirport(airport);
+                          addAirportSearch(airport);
                           setSearchTerm("");
                           setShowMobileSearch(false);
                         }}
@@ -518,6 +548,65 @@ export default function ATCPage() {
                     ))}
                   </>
                 )}
+              </div>
+            )}
+
+            {/* Recent searches - shown when no search term */}
+            {!searchTerm && recentSearches.length > 0 && (
+              <div className="mt-3 max-h-[50vh] overflow-y-auto rounded-xl border border-white/10 bg-black/40">
+                <div className="flex items-center justify-between bg-cyan-950/30 px-4 py-2 border-b border-white/10">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-cyan-400">
+                    Recent Searches
+                  </div>
+                  <button
+                    onClick={clearRecentSearches}
+                    className="text-[10px] text-cyan-400/60 hover:text-cyan-400 transition-colors"
+                  >
+                    Clear
+                  </button>
+                </div>
+                {recentSearches.map((search, index) => (
+                  <div
+                    key={`${search.type}-${search.id}-${index}`}
+                    onClick={() => {
+                      if (search.type === "aircraft") {
+                        const aircraft = aircrafts.find(
+                          (ac) =>
+                            ac.callsign === search.id ||
+                            ac.flightNo === search.id ||
+                            ac.id === search.id
+                        );
+                        if (aircraft) {
+                          setSelectedAircrafts([aircraft]);
+                          drawFlightPlanOnMapRef.current?.(aircraft, true);
+                        }
+                      } else {
+                        const airport = airports.find((ap) => ap.icao === search.id);
+                        if (airport) {
+                          setSelectedAirport(airport);
+                        }
+                      }
+                      setShowMobileSearch(false);
+                    }}
+                    className="border-b border-white/5 px-4 py-3 active:bg-white/10 last:border-b-0"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="text-[14px]">
+                        {search.type === "aircraft" ? "✈" : "🛫"}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-white">
+                          {search.displayName}
+                        </div>
+                        {search.subtitle && (
+                          <div className="mt-0.5 text-[12px] text-white/50">
+                            {search.subtitle}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -541,6 +630,10 @@ export default function ATCPage() {
               (ac) => ac.callsign || ac.id,
             )}
             onAircraftSelect={handleAircraftSelect}
+            onAirportSelect={(airport) => {
+              setSelectedAirport(airport);
+              addAirportSearch(airport);
+            }}
             setDrawFlightPlanOnMap={(fn) => {
               drawFlightPlanOnMapRef.current = fn;
             }}

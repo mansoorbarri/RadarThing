@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type SearchResults } from "~/hooks/useAircraftSearch";
+import { type RecentSearch } from "~/hooks/useRecentSearches";
 
 interface Airport {
   name: string;
@@ -16,6 +17,9 @@ interface SearchBarProps {
   isMobile: boolean;
   onSelectAircraft: (aircraft: PositionUpdate) => void;
   onSelectAirport: (airport: Airport) => void;
+  recentSearches?: RecentSearch[];
+  onSelectRecentSearch?: (search: RecentSearch) => void;
+  onClearRecentSearches?: () => void;
 }
 
 export const SearchBar: React.FC<SearchBarProps> = ({
@@ -25,7 +29,15 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   isMobile,
   onSelectAircraft,
   onSelectAirport,
+  recentSearches = [],
+  onSelectRecentSearch,
+  onClearRecentSearches,
 }) => {
+  const [isFocused, setIsFocused] = useState(false);
+
+  const showRecentSearches = isFocused && !searchTerm && recentSearches.length > 0;
+  const showSearchResults = searchTerm && (searchResults.aircrafts.length > 0 || searchResults.airports.length > 0);
+
   return (
     <div className={`flex flex-col ${isMobile ? "w-full" : "items-start"}`}>
       <input
@@ -33,11 +45,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         placeholder="Search flight or airport..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setTimeout(() => setIsFocused(false), 200)}
         autoFocus={isMobile}
         className={`rounded-lg border border-cyan-400/30 bg-black/80 px-4 py-2.5 text-[14px] text-cyan-400 placeholder-cyan-500/50 transition-all duration-200 outline-none ${
           isMobile ? "w-full" : "ml-5 mt-1 w-[280px]"
         } ${
-          searchTerm && (searchResults.aircrafts.length > 0 || searchResults.airports.length > 0) ? "mb-2" : ""
+          showSearchResults || showRecentSearches ? "mb-2" : ""
         } hover:border-cyan-400/60 focus:border-cyan-400 focus:shadow-[0_0_12px_rgba(0,255,255,0.3)]`}
       />
 
@@ -99,6 +113,56 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               ))}
             </>
           )}
+        </div>
+      )}
+
+      {showRecentSearches && onSelectRecentSearch && (
+        <div
+          className={`overflow-y-auto rounded-lg border border-cyan-400/20 bg-black/90 ${
+            isMobile ? "max-h-[70vh] w-full" : "ml-5 max-h-[300px] w-[280px]"
+          }`}
+        >
+          <div className="flex items-center justify-between bg-cyan-950/50 px-4 py-2 border-b border-cyan-400/20">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-cyan-400">
+              Recent Searches
+            </div>
+            {onClearRecentSearches && (
+              <button
+                onClick={onClearRecentSearches}
+                className="text-[10px] text-cyan-400/60 hover:text-cyan-400 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {recentSearches.map((search, index) => (
+            <div
+              key={`${search.type}-${search.id}-${index}`}
+              onClick={() => {
+                onSelectRecentSearch(search);
+                setSearchTerm("");
+              }}
+              className={`cursor-pointer border-b border-cyan-400/10 px-4 py-3 text-[14px] text-cyan-100 transition-colors duration-150 last:border-b-0 active:bg-cyan-400/20 ${
+                isMobile ? "" : "hover:bg-cyan-400/10"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <div className="text-[10px] text-cyan-400/60 uppercase">
+                  {search.type === "aircraft" ? "✈" : "🛫"}
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-cyan-300">
+                    {search.displayName}
+                  </div>
+                  {search.subtitle && (
+                    <div className="mt-1 text-[12px] text-cyan-200/60">
+                      {search.subtitle}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

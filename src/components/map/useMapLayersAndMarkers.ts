@@ -133,9 +133,11 @@ interface UseMapLayersAndMarkersProps {
   isRadarMode: boolean;
   isOpenAIPEnabled: boolean;
   selectedAircraftIds: string[];
+  selectedAirport?: Airport;
   currentSelectedAircraftRef: React.MutableRefObject<string | null>;
   drawFlightPlan: (aircraft: PositionUpdate, shouldZoom?: boolean) => void;
   onAircraftSelect: (aircraft: PositionUpdate | null, ctrlKey?: boolean) => void;
+  onAirportSelect?: (airport: Airport) => void;
   showTags: boolean;
   mapReady: boolean;
   isMobile: boolean;
@@ -155,9 +157,11 @@ export const useMapLayersAndMarkers = ({
   isRadarMode,
   isOpenAIPEnabled,
   selectedAircraftIds,
+  selectedAirport,
   currentSelectedAircraftRef,
   drawFlightPlan,
   onAircraftSelect,
+  onAirportSelect,
   showTags,
   mapReady,
   isMobile,
@@ -365,61 +369,119 @@ export const useMapLayersAndMarkers = ({
     isMobile,
   ]);
 
-  // Effect for managing airport markers
-  // COMMENTED OUT - Uncomment to show airports on map
-  /*
+  // Use refs for callbacks to avoid stale closures
+  const onAirportSelectRef = useRef(onAirportSelect);
   useEffect(() => {
-    if (!airportMarkersLayer.current) return;
+    onAirportSelectRef.current = onAirportSelect;
+  }, [onAirportSelect]);
 
-    airportMarkersLayer.current.clearLayers();
-    airports.forEach((airport) => {
-      let popupContent = `
-        <div style="color: ${isRadarMode ? "#00ffff" : "#333"}; background-color: ${
-          isRadarMode ? "rgba(0,0,0,0.8)" : "white"
-        }; border: ${isRadarMode ? "1px solid #00ffff" : "none"}; padding: 4px;">
-          <strong style="color: ${
-            isRadarMode ? "#00ffff" : "#333"
-          };">Airport:</strong> ${airport.name}<br>(${airport.icao})
-        </div>
-      `;
+  // Effect for managing airport markers with zoom-based visibility
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map || !airportMarkersLayer.current) return;
 
-      if (airport.frequencies && airport.frequencies.length > 0) {
-        popupContent += `
-          <div style="margin-top: 8px;">
-            <strong style="color: ${
-              isRadarMode ? "#99ff99" : "#333"
-            };">Frequencies:</strong><br>
-            <ul style="list-style-type: none; padding: 0; margin: 0;">
-        `;
-        airport.frequencies.forEach((freq) => {
-          popupContent += `
-              <li style="font-size: 12px; margin-bottom: 2px;">
-                <span style="color: ${
-                  isRadarMode ? "#00ffff" : "#666"
-                };">${freq.type}:</span>
-                <span style="font-weight: bold; color: ${
-                  isRadarMode ? "#fff" : "#333"
-                };">${freq.frequency} MHz</span>
-              </li>
-          `;
+    const updateAirportMarkers = () => {
+      if (!airportMarkersLayer.current) return;
+
+      const currentZoom = map.getZoom();
+      const shouldShowAirports = currentZoom >= 8; // Only show airports when zoomed in
+
+      // Clear existing markers
+      airportMarkersLayer.current.clearLayers();
+
+      if (!shouldShowAirports) return;
+
+      // Get map bounds to only show airports in view (performance optimization)
+      const bounds = map.getBounds();
+
+      airports.forEach((airport) => {
+        // Skip airports outside current view
+        if (!bounds.contains([airport.lat, airport.lon])) return;
+
+        const isSelected = selectedAirport?.icao === airport.icao;
+
+        // Create custom icon based on selection state
+        const icon = L.divIcon({
+          className: 'custom-airport-marker',
+          html: `
+            <div style="
+              width: ${isSelected ? '12px' : '8px'};
+              height: ${isSelected ? '12px' : '8px'};
+              background-color: ${isSelected ? (isRadarMode ? '#22d3ee' : '#3b82f6') : (isRadarMode ? '#06b6d4' : '#60a5fa')};
+              border: 2px solid ${isSelected ? (isRadarMode ? '#22d3ee' : '#3b82f6') : (isRadarMode ? 'rgba(6, 182, 212, 0.4)' : 'rgba(96, 165, 250, 0.4)')};
+              border-radius: 50%;
+              box-shadow: ${isSelected ? '0 0 12px rgba(34, 211, 238, 0.6)' : '0 0 6px rgba(6, 182, 212, 0.3)'};
+              transition: all 0.2s ease;
+            "></div>
+          `,
+          iconSize: [isSelected ? 16 : 12, isSelected ? 16 : 12],
+          iconAnchor: [isSelected ? 8 : 6, isSelected ? 8 : 6],
         });
-        popupContent += `
-            </ul>
+
+        let popupContent = `
+          <div style="color: ${isRadarMode ? "#00ffff" : "#333"}; background-color: ${
+            isRadarMode ? "rgba(0,0,0,0.8)" : "white"
+          }; border: ${isRadarMode ? "1px solid #00ffff" : "none"}; padding: 4px;">
+            <strong style="color: ${
+              isRadarMode ? "#00ffff" : "#333"
+            };">Airport:</strong> ${airport.name}<br>(${airport.icao})
           </div>
         `;
-      }
 
-      const icon = isRadarMode ? RadarAirportIcon : AirportIcon;
+        if (airport.frequencies && airport.frequencies.length > 0) {
+          popupContent += `
+            <div style="margin-top: 8px;">
+              <strong style="color: ${
+                isRadarMode ? "#99ff99" : "#333"
+              };">Frequencies:</strong><br>
+              <ul style="list-style-type: none; padding: 0; margin: 0;">
+          `;
+          airport.frequencies.forEach((freq) => {
+            popupContent += `
+                <li style="font-size: 12px; margin-bottom: 2px;">
+                  <span style="color: ${
+                    isRadarMode ? "#00ffff" : "#666"
+                  };">${freq.type}:</span>
+                  <span style="font-weight: bold; color: ${
+                    isRadarMode ? "#fff" : "#333"
+                  };">${freq.frequency} MHz</span>
+                </li>
+            `;
+          });
+          popupContent += `
+              </ul>
+            </div>
+          `;
+        }
 
-      L.marker([airport.lat, airport.lon], {
-        title: airport.name,
-        icon: icon,
-      })
-        .addTo(airportMarkersLayer.current!)
-        .bindPopup(popupContent, {
-          className: isRadarMode ? "radar-popup" : "",
+        const marker = L.marker([airport.lat, airport.lon], {
+          title: airport.name,
+          icon: icon,
+        })
+          .addTo(airportMarkersLayer.current!)
+          .bindPopup(popupContent, {
+            className: isRadarMode ? "radar-popup" : "",
+          });
+
+        // Add click handler to select airport
+        marker.on('click', () => {
+          if (onAirportSelectRef.current) {
+            onAirportSelectRef.current(airport);
+          }
         });
-    });
-  }, [airports, isRadarMode, airportMarkersLayer]);
-  */
+      });
+    };
+
+    // Update markers on mount and when dependencies change
+    updateAirportMarkers();
+
+    // Update markers when zoom changes
+    map.on('zoomend', updateAirportMarkers);
+    map.on('moveend', updateAirportMarkers);
+
+    return () => {
+      map.off('zoomend', updateAirportMarkers);
+      map.off('moveend', updateAirportMarkers);
+    };
+  }, [airports, isRadarMode, airportMarkersLayer, mapInstance, selectedAirport]);
 };
