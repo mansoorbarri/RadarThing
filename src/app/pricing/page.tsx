@@ -153,6 +153,7 @@ export default function PricingPage() {
             title="Weather Intelligence"
             description="Stay ahead of hazardous conditions with real-time aviation weather data"
             features={[
+              "D-ATIS for US airports",
               "International AIRMETs & SIGMETs",
               "Full NOTAM access with decoded information",
               "Global weather coverage",
