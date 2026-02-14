@@ -27,12 +27,14 @@ export interface PositionUpdate {
 
 type Subscriber = (aircraft: Map<string, PositionUpdate>) => void;
 
-const MAX_FLIGHT_PATH_POINTS = 500;
+const MAX_FLIGHT_PATH_POINTS = 150;
 
 class AircraftStore {
   private store = new Map<string, PositionUpdate>();
   private flightPaths = new Map<string, [number, number][]>();
   private subscribers = new Set<Subscriber>();
+  private pendingNotification = false;
+  private notificationFrame: number | null = null;
 
   set(id: string, data: PositionUpdate) {
     // Track flight path history
@@ -100,7 +102,23 @@ class AircraftStore {
   }
 
   private notifySubscribers() {
-    this.subscribers.forEach((callback) => callback(this.store));
+    // Throttle notifications using requestAnimationFrame to batch updates
+    if (this.pendingNotification) return;
+
+    this.pendingNotification = true;
+    this.notificationFrame = requestAnimationFrame(() => {
+      this.pendingNotification = false;
+      this.notificationFrame = null;
+      this.subscribers.forEach((callback) => callback(this.store));
+    });
+  }
+
+  // Clean up animation frame on destroy
+  destroy() {
+    if (this.notificationFrame !== null) {
+      cancelAnimationFrame(this.notificationFrame);
+      this.notificationFrame = null;
+    }
   }
 
   getAll() {

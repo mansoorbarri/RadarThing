@@ -1,5 +1,5 @@
 // hooks/useAircraftSearch.ts
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 
 interface Airport {
@@ -32,10 +32,10 @@ export const useAircraftSearch = (
     }
   }, [searchTerm, onSearchStart]);
 
-  const performSearch = useCallback(() => {
+  // Memoize search results to avoid recalculating on every render
+  const memoizedSearchResults = useMemo(() => {
     if (!searchTerm) {
-      setSearchResults({ aircrafts: [], airports: [] });
-      return;
+      return { aircrafts: [], airports: [] };
     }
 
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
@@ -73,8 +73,12 @@ export const useAircraftSearch = (
     // Sort airports alphabetically by ICAO code
     matchedAirports.sort((a, b) => a.icao.localeCompare(b.icao));
 
-    setSearchResults({ aircrafts: matchedAircrafts, airports: matchedAirports });
+    return { aircrafts: matchedAircrafts, airports: matchedAirports };
   }, [searchTerm, aircrafts, airports]);
+
+  const performSearch = useCallback(() => {
+    setSearchResults(memoizedSearchResults);
+  }, [memoizedSearchResults]);
 
   useEffect(() => {
     const handler = setTimeout(() => {

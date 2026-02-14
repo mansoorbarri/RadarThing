@@ -1,8 +1,8 @@
 // Service Worker for caching map tiles (cache-first strategy)
 // Only intercepts requests to known tile servers — all other requests pass through untouched.
 
-const CACHE_NAME = "tile-cache-v1";
-const MAX_CACHE_ENTRIES = 2000;
+const CACHE_NAME = "tile-cache-v3";
+const MAX_CACHE_ENTRIES = 1000;
 
 // Tile server hostname patterns to cache
 const TILE_HOSTS = [
@@ -44,17 +44,22 @@ async function trimCache() {
   }
 }
 
-// Cache-first: serve from cache if available, otherwise fetch and cache
-async function cacheFirst(request) {
-  const cache = await caches.open(CACHE_NAME);
-  const cached = await cache.match(request);
-  if (cached) return cached;
-
-  const response = await fetch(request);
-  if (response.ok) {
-    cache.put(request, response.clone());
+// Network-first: fetch from network, fall back to cache if network fails
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    // Network failed, try cache as fallback
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    throw error;
   }
-  return response;
 }
 
 self.addEventListener("install", () => {
@@ -79,7 +84,7 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (!isTileRequest(event.request.url)) return;
-  event.respondWith(cacheFirst(event.request));
+  event.respondWith(networkFirst(event.request));
 });
 
 // Periodic cache trimming

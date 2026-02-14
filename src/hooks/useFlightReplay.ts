@@ -94,8 +94,8 @@ function interpolatePosition(
   p2: [number, number],
   t: number
 ): [number, number] {
-  let lon1 = p1[1],
-    lon2 = p2[1];
+  const lon1 = p1[1];
+  let lon2 = p2[1];
   // If the longitude difference > 180°, the shortest path crosses the antimeridian
   if (Math.abs(lon2 - lon1) > 180) {
     if (lon2 > lon1) lon2 -= 360;

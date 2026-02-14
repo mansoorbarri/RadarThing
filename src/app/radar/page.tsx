@@ -201,6 +201,12 @@ export default function ATCPage() {
     });
   }, [aircrafts, selectedCallsigns, fullFlightFilter]);
 
+  // Memoize selected aircraft IDs to avoid recalculating on every render
+  const selectedAircraftIds = useMemo(
+    () => selectedAircrafts.map((ac) => ac.callsign || ac.id),
+    [selectedAircrafts]
+  );
+
   const handleToggleCallsign = useCallback((prefix: string) => {
     setSelectedCallsigns((prev) => {
       const next = new Set(prev);
@@ -626,9 +632,7 @@ export default function ATCPage() {
             aircrafts={filteredAircrafts}
             airports={airports}
             selectedAirport={selectedAirport}
-            selectedAircraftIds={selectedAircrafts.map(
-              (ac) => ac.callsign || ac.id,
-            )}
+            selectedAircraftIds={selectedAircraftIds}
             onAircraftSelect={handleAircraftSelect}
             onAirportSelect={(airport) => {
               setSelectedAirport(airport);
