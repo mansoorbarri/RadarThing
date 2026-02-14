@@ -10,6 +10,7 @@ interface ChartUploaderProps {
   onUploadComplete: (url: string, key: string) => void;
   onError: (error: string) => void;
   onFileSelected?: (hasFile: boolean) => void;
+  onFileNameAvailable?: (fileName: string) => void;
   icao?: string;
   chartName?: string;
   externalUploadTrigger?: boolean;
@@ -69,6 +70,7 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
       onUploadComplete,
       onError,
       onFileSelected,
+      onFileNameAvailable,
       icao,
       chartName,
       externalUploadTrigger = false,
@@ -118,13 +120,19 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
         setFile(selectedFile);
         onFileSelected?.(true);
 
+        // Extract file name without extension for auto-filling chart name
+        const nameWithoutExt = selectedFile.name.replace(/\.[^.]+$/, "");
+        if (nameWithoutExt) {
+          onFileNameAvailable?.(nameWithoutExt);
+        }
+
         const reader = new FileReader();
         reader.onload = (e) => {
           setPreview(e.target?.result as string);
         };
         reader.readAsDataURL(selectedFile);
       },
-      [onFileSelected]
+      [onFileSelected, onFileNameAvailable]
     );
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({

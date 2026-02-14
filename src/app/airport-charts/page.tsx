@@ -594,6 +594,11 @@ export default function AirportChartsPage() {
                   externalUploadTrigger={true}
                   onUploadComplete={handleUploadComplete}
                   onFileSelected={setHasSelectedFile}
+                  onFileNameAvailable={(fileName) => {
+                    setFormData((prev) =>
+                      prev.chartName ? prev : { ...prev, chartName: fileName }
+                    );
+                  }}
                   onError={(err) => {
                     uploadErrorRef.current = err;
                     setError(err);
