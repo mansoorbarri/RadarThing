@@ -98,7 +98,7 @@ export function ProManagementTab() {
               <Switch
                 checked={user.role === "PRO"}
                 onCheckedChange={() => handleToggle(user._id, user.role)}
-                className="ml-4 shrink-0 data-[state=checked]:bg-yellow-500"
+                className="ml-4 shrink-0 h-5 w-10 data-[state=checked]:bg-yellow-500 data-[state=unchecked]:bg-white/20"
               />
             )}
           </div>
