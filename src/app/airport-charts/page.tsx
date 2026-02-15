@@ -5,11 +5,11 @@ import { useUser, SignInButton } from "@clerk/nextjs";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { createAirportChart } from "~/app/actions/airport-charts";
 import {
-  createAirportChart,
-  validateChartUploadEligibility,
-} from "~/app/actions/airport-charts";
-import { ChartUploader, type ChartUploaderRef } from "~/components/ui/chart-uploader";
+  ChartUploader,
+  type ChartUploaderRef,
+} from "~/components/ui/chart-uploader";
 import {
   Upload,
   Map,
@@ -47,7 +47,7 @@ const CHART_TYPES: { value: ChartType; label: string }[] = [
   { value: "APPROACH", label: "Approach" },
 ];
 
-type SubmitStage = "idle" | "validating" | "uploading" | "submitting" | "success";
+type SubmitStage = "idle" | "uploading" | "submitting" | "success";
 
 function matchesSearch(
   chart: { icao?: string; chartName?: string; chartType?: string },
@@ -78,9 +78,6 @@ export default function AirportChartsPage() {
   const [formData, setFormData] = useState({
     icao: "",
     chartType: "GENERAL" as ChartType,
-    chartName: "",
-    chartUrl: "",
-    imageKey: "",
     discordUsername: "",
   });
 
@@ -93,11 +90,10 @@ export default function AirportChartsPage() {
   }, []);
 
   const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
+  const [submitProgress, setSubmitProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [hasSelectedFile, setHasSelectedFile] = useState(false);
+  const [hasSelectedFiles, setHasSelectedFiles] = useState(false);
   const uploaderRef = useRef<ChartUploaderRef>(null);
-  const uploadedDataRef = useRef<{ url: string; key: string } | null>(null);
-  const uploadErrorRef = useRef<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -153,17 +149,12 @@ export default function AirportChartsPage() {
       });
   }, [charts, searchQuery, icaoFilter, typeFilter]);
 
-  const handleUploadComplete = (url: string, key: string) => {
-    uploadedDataRef.current = { url, key };
-    setFormData((prev) => ({ ...prev, chartUrl: url, imageKey: key }));
-  };
-
   async function handleUploadAndSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!hasSelectedFile) {
-      toast.error("Please select a chart file first");
-      setError("Please select a chart file first");
+    if (!hasSelectedFiles) {
+      toast.error("Please select at least one chart file");
+      setError("Please select at least one chart file");
       return;
     }
     if (!formData.icao || formData.icao.length < 3) {
@@ -171,112 +162,84 @@ export default function AirportChartsPage() {
       setError("Valid ICAO code required (3-4 characters)");
       return;
     }
-    if (!formData.chartName || formData.chartName.length < 3) {
-      toast.error("Chart name is required (at least 3 characters)");
-      setError("Chart name is required (at least 3 characters)");
-      return;
-    }
 
     setError(null);
-    uploadedDataRef.current = null;
-
-    setSubmitStage("validating");
-    const validation = await validateChartUploadEligibility({
-      icao: formData.icao,
-      chartType: formData.chartType,
-      chartName: formData.chartName,
-    });
-
-    if (!validation.canUpload) {
-      setError(validation.error || "Validation failed");
-      toast.error(validation.error || "Validation failed");
-      setSubmitStage("idle");
-      return;
-    }
-
     setSubmitStage("uploading");
-    uploadErrorRef.current = null;
-    const uploadSuccess = await uploaderRef.current?.triggerUpload();
+    setSubmitProgress(null);
 
-    // Wait a tick for the upload callback to set the ref
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    const results = await uploaderRef.current?.triggerUpload();
 
-    if (!uploadSuccess || !uploadedDataRef.current) {
-      // Error toast is shown by onError callback with specific message
-      // Only set generic error if onError wasn't called (e.g., ref timing issue)
-      if (!uploadErrorRef.current) {
-        setError("Upload failed. Please try again.");
-        toast.error("Upload failed. Please try again.");
+    if (!results || results.length === 0) {
+      if (submitStage !== "idle") {
+        setSubmitStage("idle");
       }
-      setSubmitStage("idle");
       return;
     }
-
-    const { url: chartUrl, key: imageKey } = uploadedDataRef.current;
 
     setSubmitStage("submitting");
-    const result = await createAirportChart({
-      icao: formData.icao,
-      chartType: formData.chartType,
-      chartName: formData.chartName,
-      chartUrl,
-      imageKey,
-      discordUsername: formData.discordUsername || undefined,
-    });
+    setSubmitProgress(`Creating ${results.length} entries...`);
 
-    if (result.success) {
-      // Save Discord username to cookie for next time
-      if (formData.discordUsername) {
-        setCookie("radarthing_discord", formData.discordUsername);
-      }
+    const dbResults = await Promise.all(
+      results.map((upload) =>
+        createAirportChart({
+          icao: formData.icao,
+          chartType: formData.chartType,
+          chartName: upload.chartName,
+          chartUrl: upload.url,
+          imageKey: upload.key,
+          discordUsername: formData.discordUsername || undefined,
+        })
+      )
+    );
 
-      setSubmitStage("success");
+    const successCount = dbResults.filter((r) => r.success).length;
+    const failCount = dbResults.length - successCount;
 
-      setTimeout(() => {
-        toast.success("Chart submitted for review!");
-        setShowUploadModal(false);
-        setSubmitStage("idle");
-        setHasSelectedFile(false);
-        uploadedDataRef.current = null;
-        uploaderRef.current?.reset();
-        // Keep Discord username when resetting form
-        setFormData((prev) => ({
-          icao: "",
-          chartType: "GENERAL" as ChartType,
-          chartName: "",
-          chartUrl: "",
-          imageKey: "",
-          discordUsername: prev.discordUsername,
-        }));
-      }, 1500);
-    } else {
-      toast.error(result.error || "Failed to submit chart");
-      setError(result.error || "Failed to submit chart");
-      setSubmitStage("idle");
+    if (formData.discordUsername) {
+      setCookie("radarthing_discord", formData.discordUsername);
     }
+
+    setSubmitStage("success");
+    setSubmitProgress(null);
+
+    setTimeout(() => {
+      if (failCount > 0) {
+        toast.success(
+          `${successCount} chart${successCount !== 1 ? "s" : ""} submitted for review! (${failCount} failed)`
+        );
+      } else {
+        toast.success(
+          `${successCount} chart${successCount !== 1 ? "s" : ""} submitted for review!`
+        );
+      }
+      setShowUploadModal(false);
+      setSubmitStage("idle");
+      setSubmitProgress(null);
+      setHasSelectedFiles(false);
+      uploaderRef.current?.reset();
+      setFormData((prev) => ({
+        icao: "",
+        chartType: "GENERAL" as ChartType,
+        discordUsername: prev.discordUsername,
+      }));
+    }, 1500);
   }
 
   const getButtonContent = () => {
+    const fileCount = uploaderRef.current?.fileCount() ?? 0;
     switch (submitStage) {
-      case "validating":
-        return (
-          <>
-            <Loader2 className="h-5 w-5 animate-spin" />
-            Validating...
-          </>
-        );
       case "uploading":
         return (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            Uploading Chart...
+            Uploading...
           </>
         );
       case "submitting":
         return (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            Submitting...
+            {submitProgress ?? "Submitting..."}
           </>
         );
       case "success":
@@ -290,7 +253,7 @@ export default function AirportChartsPage() {
         return (
           <>
             <Upload className="h-5 w-5" />
-            Upload & Submit
+            Upload & Submit{fileCount > 1 ? ` (${fileCount})` : ""}
           </>
         );
     }
@@ -485,16 +448,12 @@ export default function AirportChartsPage() {
                 setShowUploadModal(false);
                 setError(null);
                 setSubmitStage("idle");
-                setHasSelectedFile(false);
-                uploadedDataRef.current = null;
+                setSubmitProgress(null);
+                setHasSelectedFiles(false);
                 uploaderRef.current?.reset();
-                // Keep Discord username when closing modal
                 setFormData((prev) => ({
                   icao: "",
                   chartType: "GENERAL" as ChartType,
-                  chartName: "",
-                  chartUrl: "",
-                  imageKey: "",
                   discordUsername: prev.discordUsername,
                 }));
               }}
@@ -565,23 +524,6 @@ export default function AirportChartsPage() {
 
               <div>
                 <label className="mb-2 block font-mono text-xs text-slate-400">
-                  CHART NAME *
-                </label>
-                <input
-                  type="text"
-                  value={formData.chartName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, chartName: e.target.value })
-                  }
-                  placeholder="e.g., RNAV (GPS) RWY 22L"
-                  required
-                  disabled={isProcessing}
-                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50 disabled:opacity-50"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block font-mono text-xs text-slate-400">
                   YOUR DISCORD USERNAME (OPTIONAL)
                 </label>
                 <input
@@ -598,22 +540,22 @@ export default function AirportChartsPage() {
 
               <div>
                 <label className="mb-2 block font-mono text-xs text-slate-400">
-                  SELECT CHART FILE
+                  SELECT CHART FILES
+                  {hasSelectedFiles && uploaderRef.current && (
+                    <span className="ml-2 rounded-full bg-cyan-500/20 px-2 py-0.5 text-cyan-400">
+                      {uploaderRef.current.fileCount()} file
+                      {uploaderRef.current.fileCount() !== 1 ? "s" : ""} selected
+                    </span>
+                  )}
                 </label>
                 <ChartUploader
                   ref={uploaderRef}
                   icao={formData.icao}
-                  chartName={formData.chartName}
-                  externalUploadTrigger={true}
-                  onUploadComplete={handleUploadComplete}
-                  onFileSelected={setHasSelectedFile}
-                  onFileNameAvailable={(fileName) => {
-                    setFormData((prev) =>
-                      prev.chartName ? prev : { ...prev, chartName: fileName }
-                    );
+                  onUploadComplete={() => {
+                    // handled via triggerUpload return value
                   }}
+                  onFileSelected={setHasSelectedFiles}
                   onError={(err) => {
-                    uploadErrorRef.current = err;
                     setError(err);
                     toast.error(err);
                     setSubmitStage("idle");
@@ -638,14 +580,14 @@ export default function AirportChartsPage() {
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-slate-500">
-                    Your chart is now in the queue
+                    Your charts are now in the queue
                   </p>
                 </div>
               )}
 
               <button
                 type="submit"
-                disabled={isProcessing || !hasSelectedFile || submitStage === "success"}
+                disabled={isProcessing || !hasSelectedFiles || submitStage === "success"}
                 className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
                   submitStage === "success"
                     ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/20"

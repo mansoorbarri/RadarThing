@@ -422,16 +422,13 @@ export function AirportChartsTab() {
   async function handleBulkDeleteConfirm() {
     if (bulkDeleteTargetIds.length === 0) return;
     setBulkDeleteLoading(true);
-    let deleted = 0;
-    let failed = 0;
-    for (const id of bulkDeleteTargetIds) {
-      const result = await deleteAirportChart(id);
-      if (result.success) {
-        deleted++;
-      } else {
-        failed++;
-      }
-    }
+
+    const results = await Promise.all(
+      bulkDeleteTargetIds.map((id) => deleteAirportChart(id))
+    );
+    const deleted = results.filter((r) => r.success).length;
+    const failed = results.length - deleted;
+
     if (deleted > 0) {
       setSelectedCharts(new Set());
       if (failed > 0) {
