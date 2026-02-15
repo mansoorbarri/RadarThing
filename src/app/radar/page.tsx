@@ -692,6 +692,7 @@ export default function ATCPage() {
       {!isMobile && (
         <ControlDock
           side="right"
+          rightOffset={chartOverlayActive && selectedAirport?.icao ? 544 : undefined}
           bottomAction={{
             icon: (
               <RotateCcw size={18} strokeWidth={1.8} />

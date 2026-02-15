@@ -21,9 +21,10 @@ interface ControlDockProps {
   items: DockItem[];
   side?: "left" | "right";
   bottomAction?: BottomAction;
+  rightOffset?: number;
 }
 
-export function ControlDock({ items, side = "left", bottomAction }: ControlDockProps) {
+export function ControlDock({ items, side = "left", bottomAction, rightOffset }: ControlDockProps) {
   const [open, setOpen] = useState(false);
 
   const isRight = side === "right";
@@ -31,8 +32,9 @@ export function ControlDock({ items, side = "left", bottomAction }: ControlDockP
   return (
     <div
       className={`pointer-events-auto fixed bottom-6 ${
-        isRight ? "right-6" : "left-6"
-      } z-[10020] flex flex-col items-center gap-2`}
+        isRight && !rightOffset ? "right-6" : !isRight ? "left-6" : ""
+      } z-[10020] flex flex-col items-center gap-2 transition-[right] duration-200`}
+      style={isRight && rightOffset ? { right: rightOffset } : undefined}
     >
       {/* Dock toggle + items wrapper */}
       <div className="relative">
