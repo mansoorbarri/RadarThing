@@ -148,7 +148,6 @@ export default function ATCPage() {
     ((aircrafts: PositionUpdate[], zoom?: boolean) => void) | null
   >(null);
   const resetMapViewRef = useRef<(() => void) | null>(null);
-  const calibrationClickRef = useRef<((latlng: { lat: number; lng: number }) => void) | null>(null);
 
 
   useEffect(() => {
@@ -660,7 +659,6 @@ export default function ATCPage() {
             setResetMapView={(fn) => {
               resetMapViewRef.current = fn;
             }}
-            calibrationClickRef={calibrationClickRef}
           />
         )}
       </main>
@@ -937,8 +935,6 @@ export default function ATCPage() {
         <ChartSidePanel
           icao={selectedAirport.icao}
           onClose={() => setChartOverlayActive(false)}
-          aircrafts={filteredAircrafts}
-          calibrationClickRef={calibrationClickRef}
         />
       )}
 
