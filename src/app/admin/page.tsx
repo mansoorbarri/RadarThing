@@ -4,8 +4,8 @@ import { useUser } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { isAdmin } from "~/app/actions/is-pro";
-import { Plane, Bell, ImageIcon, Map } from "lucide-react";
+import { getProAndAdminStatus } from "~/app/actions/is-pro";
+import { Plane, Bell, ImageIcon, Map, Crown } from "lucide-react";
 
 import { AdminHeader } from "./_components/AdminHeader";
 import { AdminAccessDenied } from "./_components/AdminAccessDenied";
@@ -13,12 +13,14 @@ import { AdminSkeleton } from "./_components/skeletons";
 import { AircraftImagesTab } from "./_components/AircraftImagesTab";
 import { MissingNotificationsTab } from "./_components/MissingNotificationsTab";
 import { AirportChartsTab } from "./_components/AirportChartsTab";
+import { ProManagementTab } from "./_components/ProManagementTab";
 
-type MainTab = "images" | "charts" | "notifications";
+type MainTab = "images" | "charts" | "notifications" | "pro";
 
 export default function AdminPage() {
   const { isSignedIn, isLoaded } = useUser();
   const [isAdminUser, setIsAdminUser] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [adminCheckDone, setAdminCheckDone] = useState(false);
   const [mainTab, setMainTab] = useState<MainTab>("images");
 
@@ -36,9 +38,10 @@ export default function AdminPage() {
   // Check admin status
   useEffect(() => {
     if (isLoaded && isSignedIn) {
-      isAdmin()
-        .then((admin) => {
-          setIsAdminUser(admin);
+      getProAndAdminStatus()
+        .then(({ isAdmin, isSuperAdmin: superAdmin }) => {
+          setIsAdminUser(isAdmin);
+          setIsSuperAdmin(superAdmin);
           setAdminCheckDone(true);
         })
         .catch(() => setAdminCheckDone(true));
@@ -104,11 +107,23 @@ export default function AdminPage() {
             Missing Notifications
             <span className="ml-1 rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-400">{notificationsCount}</span>
           </button>
+          {isSuperAdmin && (
+            <button
+              onClick={() => setMainTab("pro")}
+              className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-all ${
+                mainTab === "pro" ? "bg-yellow-500/20 text-yellow-400" : "bg-white/5 text-slate-400 hover:bg-white/10"
+              }`}
+            >
+              <Crown className="h-4 w-4" />
+              Pro
+            </button>
+          )}
         </div>
 
         {mainTab === "images" && <AircraftImagesTab />}
         {mainTab === "charts" && <AirportChartsTab />}
         {mainTab === "notifications" && <MissingNotificationsTab />}
+        {mainTab === "pro" && <ProManagementTab />}
       </main>
     </div>
   );

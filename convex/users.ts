@@ -230,6 +230,17 @@ export const softDelete = mutation({
   },
 });
 
+// Get all non-deleted users (admin only)
+export const getAll = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("isDeleted"), false))
+      .collect();
+  },
+});
+
 // Get upload counts for all FREE users (aircraft images + airport charts)
 export const getFreeUserUploadCounts = query({
   args: {},
