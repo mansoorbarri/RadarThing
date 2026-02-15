@@ -70,6 +70,7 @@ interface MapComponentProps {
   replayState?: ReplayState | null;
   followAircraft?: PositionUpdate;
   setResetMapView?: (func: () => void) => void;
+  calibrationClickRef?: React.MutableRefObject<((latlng: { lat: number; lng: number }) => void) | null>;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -87,6 +88,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   replayState,
   followAircraft,
   setResetMapView,
+  calibrationClickRef,
 }) => {
   const isMobile = useMobileDetection();
   const { isProUser, isAdminUser, isLoading: proLoading } = useProStatus();
@@ -136,6 +138,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const clearHistoryPolylineRef = useRef<(() => void) | null>(null);
 
+  // Store calibration click ref internally so handleMapClick can access it without recreating
+  const calibrationClickRefLocal = useRef(calibrationClickRef);
+  useEffect(() => {
+    calibrationClickRefLocal.current = calibrationClickRef;
+  }, [calibrationClickRef]);
 
   const toggleRadarMode = useCallback(() => {
     if (!canUseRadarMode) return;
@@ -206,6 +213,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const handleMapClick = useCallback(
     (e: L.LeafletMouseEvent) => {
+      // Intercept click for chart calibration
+      if (calibrationClickRefLocal.current?.current) {
+        calibrationClickRefLocal.current.current({ lat: e.latlng.lat, lng: e.latlng.lng });
+        return;
+      }
+
       const target = e.originalEvent.target as HTMLElement;
 
       if (
@@ -510,6 +523,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
     mapRefs.replayLayerGroup.current.addLayer(replayMarker);
 
   }, [replayState, isRadarMode, mapRefs.mapInstance, mapRefs.replayLayerGroup]);
+
+  // Change cursor to crosshair when calibration is waiting for a map click
+  useEffect(() => {
+    const container = document.getElementById("map-container");
+    if (!container) return;
+    const isCalibrating = calibrationClickRef?.current != null;
+    container.style.cursor = isCalibrating ? "crosshair" : "";
+  });
 
   return (
     <>

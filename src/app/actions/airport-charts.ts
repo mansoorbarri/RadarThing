@@ -631,6 +631,69 @@ export async function bulkRejectAirportCharts(
   }
 }
 
+// Save chart calibration data (PRO users)
+export async function calibrateChart(
+  chartId: string,
+  calibrationData: {
+    p1PixelX: number;
+    p1PixelY: number;
+    p1Lat: number;
+    p1Lon: number;
+    p2PixelX: number;
+    p2PixelY: number;
+    p2Lat: number;
+    p2Lon: number;
+  }
+): Promise<{ success: boolean; error?: string }> {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    return { success: false, error: "You must be signed in to calibrate charts" };
+  }
+
+  // Validate fractions are in 0-1 range
+  const { p1PixelX, p1PixelY, p2PixelX, p2PixelY } = calibrationData;
+  if (
+    p1PixelX < 0 || p1PixelX > 1 ||
+    p1PixelY < 0 || p1PixelY > 1 ||
+    p2PixelX < 0 || p2PixelX > 1 ||
+    p2PixelY < 0 || p2PixelY > 1
+  ) {
+    return { success: false, error: "Pixel coordinates must be between 0 and 1" };
+  }
+
+  // Validate lat/lon ranges
+  const { p1Lat, p1Lon, p2Lat, p2Lon } = calibrationData;
+  if (
+    p1Lat < -90 || p1Lat > 90 || p2Lat < -90 || p2Lat > 90 ||
+    p1Lon < -180 || p1Lon > 180 || p2Lon < -180 || p2Lon > 180
+  ) {
+    return { success: false, error: "Invalid latitude/longitude values" };
+  }
+
+  // Validate points are >100m apart using flat-earth approximation
+  const DEG_TO_RAD = Math.PI / 180;
+  const EARTH_RADIUS = 6371000;
+  const dmx = (p2Lon - p1Lon) * DEG_TO_RAD * EARTH_RADIUS * Math.cos(p1Lat * DEG_TO_RAD);
+  const dmy = (p2Lat - p1Lat) * DEG_TO_RAD * EARTH_RADIUS;
+  const dist = Math.sqrt(dmx * dmx + dmy * dmy);
+  if (dist < 100) {
+    return { success: false, error: "Reference points must be at least 100m apart" };
+  }
+
+  try {
+    await convex.mutation(api.airportCharts.calibrate, {
+      id: chartId as Id<"airportCharts">,
+      ...calibrationData,
+      calibratedBy: userId,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error calibrating chart:", error);
+    return { success: false, error: "Failed to save calibration" };
+  }
+}
+
 // Get user info by Clerk IDs (ADMIN only)
 export async function getChartUserInfoByIds(
   userIds: string[]

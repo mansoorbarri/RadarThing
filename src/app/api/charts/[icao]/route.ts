@@ -46,6 +46,7 @@ export async function GET(request: NextRequest, context: any) {
       approvedBy: c.approvedBy,
       approvedAt: c.approvedAt,
       createdAt: c.createdAt,
+      calibration: c.calibration ?? null,
     }));
 
     // If specific type requested, return filtered charts
