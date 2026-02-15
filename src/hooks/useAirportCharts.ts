@@ -163,6 +163,16 @@ export function useAirportCharts(icao?: string) {
     }
   }, []);
 
+  // Auto-select first type with charts if current type is empty
+  useEffect(() => {
+    if (!charts || charts[selectedType].length > 0) return;
+    const types: ChartType[] = ["TAXI", "SID", "STAR", "APPROACH", "GENERAL"];
+    const firstWithCharts = types.find((t) => charts[t].length > 0);
+    if (firstWithCharts) {
+      setSelectedType(firstWithCharts);
+    }
+  }, [charts, selectedType, setSelectedType]);
+
   // Get current charts for selected type
   const currentCharts = charts?.[selectedType] ?? [];
   const selectedChart = currentCharts[selectedChartIndex] ?? null;

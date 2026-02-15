@@ -10,6 +10,7 @@ import { ChevronLeft, ChevronRight, RotateCcw, Search, X } from "lucide-react";
 interface Props {
   icao: string;
   onClose: () => void;
+  onOpenSideView?: () => void;
 }
 
 // Cache for transform state (zoom/pan) per chart URL
@@ -321,7 +322,7 @@ function ChartImage({ chartUrl, chartName }: { chartUrl: string; chartName: stri
     <TransformWrapper
       ref={transformRef}
       minScale={0.5}
-      maxScale={6}
+      maxScale={Infinity}
       centerOnInit={!cachedState}
       limitToBounds={false}
       initialScale={cachedState?.scale ?? 1}
@@ -348,7 +349,7 @@ function ChartImage({ chartUrl, chartName }: { chartUrl: string; chartName: stri
   );
 }
 
-export function AirportChartsViewer({ icao, onClose }: Props) {
+export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [pdfError, setPdfError] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -404,6 +405,17 @@ export function AirportChartsViewer({ icao, onClose }: Props) {
             </div>
 
             <div className="flex items-center gap-2">
+              {onOpenSideView && totalCharts > 0 && (
+                <button
+                  onClick={() => {
+                    onOpenSideView();
+                    onClose();
+                  }}
+                  className="cursor-pointer rounded-md border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs text-cyan-300 hover:bg-cyan-500/20"
+                >
+                  Side View
+                </button>
+              )}
               <button
                 onClick={refetch}
                 disabled={loading}

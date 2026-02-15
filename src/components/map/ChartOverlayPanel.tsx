@@ -1,0 +1,266 @@
+"use client";
+
+import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { TransformWrapper, TransformComponent, useControls, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
+import { useAirportCharts } from "~/hooks/useAirportCharts";
+import type { ChartType } from "~/types/airportCharts";
+import { X, RotateCcw } from "lucide-react";
+
+const CHART_TYPES: { key: ChartType; label: string }[] = [
+  { key: "TAXI", label: "TAXI" },
+  { key: "SID", label: "SID" },
+  { key: "STAR", label: "STAR" },
+  { key: "APPROACH", label: "APP" },
+  { key: "GENERAL", label: "GEN" },
+];
+
+// Cache for transform state (zoom/pan) per chart URL
+interface TransformState {
+  scale: number;
+  positionX: number;
+  positionY: number;
+}
+const transformCache = new Map<string, TransformState>();
+
+function ResetButton({ onReset }: { onReset?: () => void }) {
+  const { resetTransform } = useControls();
+  return (
+    <button
+      onClick={() => {
+        resetTransform();
+        onReset?.();
+      }}
+      className="absolute bottom-4 right-4 z-10 flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-300 backdrop-blur-sm hover:bg-slate-800"
+    >
+      <RotateCcw className="h-3 w-3" />
+      Reset
+    </button>
+  );
+}
+
+function ZoomableChartImage({ chartUrl, chartName }: { chartUrl: string; chartName: string }) {
+  const transformRef = useRef<ReactZoomPanPinchRef>(null);
+  const hasInitialized = useRef(false);
+  const cachedState = transformCache.get(chartUrl);
+
+  const handleTransformed = useCallback(
+    (_ref: ReactZoomPanPinchRef, state: { scale: number; positionX: number; positionY: number }) => {
+      if (hasInitialized.current) {
+        transformCache.set(chartUrl, {
+          scale: state.scale,
+          positionX: state.positionX,
+          positionY: state.positionY,
+        });
+      }
+    },
+    [chartUrl],
+  );
+
+  const handleImageLoad = useCallback(() => {
+    if (!cachedState && transformRef.current) {
+      transformRef.current.resetTransform();
+    }
+    hasInitialized.current = true;
+  }, [cachedState]);
+
+  const handleReset = useCallback(() => {
+    transformCache.delete(chartUrl);
+  }, [chartUrl]);
+
+  return (
+    <TransformWrapper
+      ref={transformRef}
+      minScale={0.5}
+      maxScale={Infinity}
+      centerOnInit={!cachedState}
+      limitToBounds={false}
+      initialScale={cachedState?.scale ?? 1}
+      initialPositionX={cachedState?.positionX ?? 0}
+      initialPositionY={cachedState?.positionY ?? 0}
+      onTransformed={handleTransformed}
+    >
+      <>
+        <ResetButton onReset={handleReset} />
+        <TransformComponent
+          wrapperClass="!w-full !h-full"
+          contentClass="flex h-full w-full items-center justify-center"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={chartUrl}
+            alt={chartName}
+            className="object-contain select-none invert"
+            onLoad={handleImageLoad}
+          />
+        </TransformComponent>
+      </>
+    </TransformWrapper>
+  );
+}
+
+interface ChartSidePanelProps {
+  icao: string;
+  onClose: () => void;
+}
+
+export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
+  const { charts, loading } = useAirportCharts(icao);
+  const [pdfError, setPdfError] = useState(false);
+
+  const [selectedType, setSelectedType] = useState<ChartType>("TAXI");
+  const [selectedChartIndex, setSelectedChartIndex] = useState(0);
+
+  const chartsByType = useMemo(() => {
+    if (!charts) return null;
+    return {
+      TAXI: charts.TAXI,
+      SID: charts.SID,
+      STAR: charts.STAR,
+      APPROACH: charts.APPROACH,
+      GENERAL: charts.GENERAL,
+    };
+  }, [charts]);
+
+  const currentCharts = chartsByType?.[selectedType] ?? [];
+  const selectedChart = currentCharts[selectedChartIndex] ?? null;
+  const isPdf = selectedChart?.chartUrl.toLowerCase().endsWith(".pdf");
+
+  const availableTabs = useMemo(() => {
+    if (!chartsByType) return [];
+    return CHART_TYPES.filter((t) => chartsByType[t.key].length > 0);
+  }, [chartsByType]);
+
+  // Auto-select first available tab if current has no charts
+  useEffect(() => {
+    if (!chartsByType) return;
+    if (chartsByType[selectedType].length === 0 && availableTabs.length > 0) {
+      setSelectedType(availableTabs[0]!.key);
+      setSelectedChartIndex(0);
+    }
+  }, [chartsByType, selectedType, availableTabs]);
+
+  // Reset PDF error when chart changes
+  useEffect(() => {
+    setPdfError(false);
+  }, [selectedChart?.chartUrl]);
+
+  const handleTypeChange = (type: ChartType) => {
+    setSelectedType(type);
+    setSelectedChartIndex(0);
+  };
+
+  const hasCharts = availableTabs.length > 0;
+
+  return (
+    <aside className="fixed inset-y-0 right-0 z-[10012] flex w-[520px] flex-col border-l border-white/10 bg-black/90 backdrop-blur-xl">
+      {/* Header */}
+      <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-white">Charts</span>
+          <span className="font-mono text-xs text-cyan-400">{icao}</span>
+        </div>
+        <button
+          onClick={onClose}
+          className="cursor-pointer rounded-md p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex flex-1 items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-cyan-500" />
+            <span className="text-xs text-white/40">Loading charts...</span>
+          </div>
+        </div>
+      ) : !hasCharts ? (
+        <div className="flex flex-1 items-center justify-center">
+          <span className="text-xs text-white/40">No charts available</span>
+        </div>
+      ) : (
+        <>
+          {/* Controls */}
+          <div className="shrink-0 border-b border-white/10 px-4 py-3">
+            {/* Chart type tabs */}
+            <div className="mb-2 flex gap-1">
+              {availableTabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => handleTypeChange(tab.key)}
+                  className={`cursor-pointer rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                    selectedType === tab.key
+                      ? "bg-cyan-500/20 text-cyan-300"
+                      : "text-white/50 hover:bg-white/10 hover:text-white/80"
+                  }`}
+                >
+                  {tab.label}
+                  <span className="ml-1 text-[9px] opacity-60">
+                    {chartsByType?.[tab.key].length}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Chart selector */}
+            {currentCharts.length > 1 && (
+              <select
+                value={selectedChartIndex}
+                onChange={(e) => setSelectedChartIndex(Number(e.target.value))}
+                className="w-full cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-white/80 outline-none focus:border-cyan-500/30"
+              >
+                {currentCharts.map((chart, i) => (
+                  <option key={i} value={i} className="bg-[#0a1219]">
+                    {chart.chartName}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {currentCharts.length === 1 && (
+              <div className="truncate text-[11px] text-white/50">
+                {currentCharts[0]!.chartName}
+              </div>
+            )}
+          </div>
+
+          {/* Chart content */}
+          <div className="relative min-h-0 flex-1 overflow-hidden bg-black">
+            {!selectedChart ? (
+              <div className="flex h-full items-center justify-center">
+                <span className="text-xs text-white/40">Select a chart</span>
+              </div>
+            ) : isPdf ? (
+              pdfError ? (
+                <div className="flex h-full flex-col items-center justify-center gap-3 p-4">
+                  <span className="text-xs text-white/40">PDF preview unavailable</span>
+                  <a
+                    href={selectedChart.chartUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-[11px] text-cyan-300 transition-colors hover:bg-cyan-500/20"
+                  >
+                    Open PDF in new tab
+                  </a>
+                </div>
+              ) : (
+                <iframe
+                  src={selectedChart.chartUrl}
+                  className="h-full w-full border-0 invert"
+                  title={selectedChart.chartName}
+                  onError={() => setPdfError(true)}
+                />
+              )
+            ) : (
+              <ZoomableChartImage
+                key={selectedChart.chartUrl}
+                chartUrl={selectedChart.chartUrl}
+                chartName={selectedChart.chartName}
+              />
+            )}
+          </div>
+        </>
+      )}
+    </aside>
+  );
+}

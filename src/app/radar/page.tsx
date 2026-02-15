@@ -35,6 +35,7 @@ import { UserAuth } from "~/components/atc/userAuth";
 import { ControlDock } from "~/components/atc/controlDock";
 import { FIDSPanel } from "~/components/atc/FIDSPanel";
 import { TaxiChartViewer } from "~/components/airports/TaxiChartsViewer";
+import { ChartSidePanel } from "~/components/map/ChartOverlayPanel";
 import { AtcPlayer } from "~/components/atc/AtcPlayer";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
@@ -115,6 +116,7 @@ export default function ATCPage() {
 
   const [showTaxiChart, setShowTaxiChart] = useState(false);
   const [showAtcPlayer, setShowAtcPlayer] = useState(false);
+  const [chartOverlayActive, setChartOverlayActive] = useState(false);
 
   const [showTimerPopup, setShowTimerPopup] = useState(false);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -299,6 +301,11 @@ export default function ATCPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [fullFlightFilter, selectedCallsigns, selectedAircrafts.length]);
+
+  // Deactivate chart overlay when airport changes
+  useEffect(() => {
+    setChartOverlayActive(false);
+  }, [selectedAirport?.icao]);
 
   function handleAircraftSelect(
     aircraft: PositionUpdate | null,
@@ -789,6 +796,7 @@ export default function ATCPage() {
               onClick={() => {
                 setSelectedAirport(undefined);
                 setShowAtcPlayer(false);
+                setChartOverlayActive(false);
               }}
               className={`cursor-pointer rounded-lg border border-white/10 bg-white/5 text-white/60 ${isMobile ? 'px-2 py-1 text-[9px]' : 'px-3 py-1.5 text-[10px]'}`}
             >
@@ -919,6 +927,14 @@ export default function ATCPage() {
         <TaxiChartViewer
           icao={selectedAirport.icao}
           onClose={() => setShowTaxiChart(false)}
+          onOpenSideView={() => setChartOverlayActive(true)}
+        />
+      )}
+
+      {chartOverlayActive && selectedAirport?.icao && (
+        <ChartSidePanel
+          icao={selectedAirport.icao}
+          onClose={() => setChartOverlayActive(false)}
         />
       )}
 
