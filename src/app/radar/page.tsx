@@ -690,11 +690,10 @@ export default function ATCPage() {
         </aside>
       )}
 
-      {/* Control dock - hidden on mobile */}
-      {!isMobile && (
+      {/* Control dock - hidden on mobile and when chart side panel is open */}
+      {!isMobile && !(chartOverlayActive && selectedAirport?.icao) && (
         <ControlDock
           side="right"
-          rightOffset={chartOverlayActive && selectedAirport?.icao ? 544 : undefined}
           bottomAction={{
             icon: (
               <RotateCcw size={18} strokeWidth={1.8} />
