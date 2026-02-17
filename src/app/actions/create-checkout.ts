@@ -64,7 +64,8 @@ export async function createCheckoutSession() {
     // create a new one and retry
     if (
       err instanceof Stripe.errors.StripeInvalidRequestError &&
-      err.code === "resource_missing"
+      err.code === "resource_missing" &&
+      err.param === "customer"
     ) {
       const customer = await stripe.customers.create({
         email,
