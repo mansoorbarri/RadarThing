@@ -95,16 +95,6 @@ export default defineSchema({
     discordUsername: v.optional(v.string()),
     approvedBy: v.optional(v.string()), // Clerk user ID
     approvedAt: v.optional(v.number()), // timestamp
-    // Deprecated calibration fields (kept for existing data)
-    calibrationP1PixelX: v.optional(v.float64()),
-    calibrationP1PixelY: v.optional(v.float64()),
-    calibrationP1Lat: v.optional(v.float64()),
-    calibrationP1Lon: v.optional(v.float64()),
-    calibrationP2PixelX: v.optional(v.float64()),
-    calibrationP2PixelY: v.optional(v.float64()),
-    calibrationP2Lat: v.optional(v.float64()),
-    calibrationP2Lon: v.optional(v.float64()),
-    calibratedBy: v.optional(v.string()),
   })
     .index("by_icao", ["icao"])
     .index("by_icao_type", ["icao", "chartType"])
