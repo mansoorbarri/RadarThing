@@ -146,6 +146,7 @@
   setInterval(() => {
     if (!ws || ws.readyState !== 1) return;
     if (!flightInfo.active) return;
+    if (window.__radarPrefs?.jth === false) return;
 
     const snap = readSnapshot();
     if (!snap) return;

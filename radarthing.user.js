@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RadarThing
 // @namespace    http://tampermonkey.net/
-// @version      1.3.4
+// @version      1.3.5
 // @description  Always loads the latest GeoFS ATC Radar script from GitHub
 // @Author       xyzmani
 // @icon         https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/public/favicon.ico
@@ -17,6 +17,7 @@
   "use strict";
 
   const STORAGE_KEY = "geofs-atc-toggle-key";
+  const RADAR_PREFS_KEY = "geofs-atc-radar-prefs";
   let toggleKey = localStorage.getItem(STORAGE_KEY) || "w";
 
   const UI_CONTAINER_ID = "geofs-atc-radar-flightInfoUI";
@@ -28,10 +29,20 @@
   const CLEAR_BTN_ID = "atc-clearBtn";
   const STATUS_INDICATOR_ID = "atc-statusIndicator";
   const KEYBIND_BTN_ID = "atc-keybind-btn";
+  const RADAR_SETTINGS_HEADER_ID = "atc-radar-settings-header";
+  const RADAR_SETTINGS_BODY_ID = "atc-radar-settings-body";
+  const RADAR_SETTINGS_ARROW_ID = "atc-radar-settings-arrow";
+  const JTH_TOGGLE_ID = "atc-toggle-jth";
+  const SEABUS_TOGGLE_ID = "atc-toggle-seabus";
 
   let flightUI;
   let isListeningForKey = false;
   let lastSyncedPlan = "";
+
+  let radarPrefs = JSON.parse(
+    localStorage.getItem(RADAR_PREFS_KEY) || '{"jth":true,"seabus":true}',
+  );
+  window.__radarPrefs = radarPrefs;
 
   function isICAO(str) {
     return /^[A-Z]{4}$/.test(str);
@@ -154,6 +165,47 @@
     `;
   }
 
+  function buildToggleRow(label, id, checked) {
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:2px 0;">
+        <span style="font-size:10px; color:#94a3b8; letter-spacing:0.08em;">${label}</span>
+        <div id="${id}" style="
+          width:34px; height:18px;
+          border-radius:9px;
+          background:${checked ? "rgba(34,211,238,0.4)" : "rgba(255,255,255,0.12)"};
+          position:relative;
+          cursor:pointer;
+          transition:background 0.2s;
+        ">
+          <div style="
+            position:absolute;
+            top:2px;
+            left:${checked ? "18px" : "2px"};
+            width:14px;
+            height:14px;
+            background:#e5e7eb;
+            border-radius:50%;
+            transition:left 0.2s;
+          "></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function updateToggleVisual(id, on) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.background = on
+      ? "rgba(34,211,238,0.4)"
+      : "rgba(255,255,255,0.12)";
+    el.firstElementChild.style.left = on ? "18px" : "2px";
+  }
+
+  function saveRadarPrefs() {
+    localStorage.setItem(RADAR_PREFS_KEY, JSON.stringify(radarPrefs));
+    window.__radarPrefs = radarPrefs;
+  }
+
   function injectFlightUI() {
     flightUI = document.createElement("div");
     flightUI.id = UI_CONTAINER_ID;
@@ -254,6 +306,34 @@
       ">
         Flight info required
       </div>
+
+      <div style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;">
+        <div id="${RADAR_SETTINGS_HEADER_ID}" style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          cursor:pointer;
+          font-size:9px;
+          letter-spacing:0.12em;
+          text-transform:uppercase;
+          color:#94a3b8;
+          user-select:none;
+        ">
+          <span>Radar Settings</span>
+          <span id="${RADAR_SETTINGS_ARROW_ID}" style="
+            font-size:8px;
+            transition:transform 0.2s;
+          ">&#9654;</span>
+        </div>
+        <div id="${RADAR_SETTINGS_BODY_ID}" style="
+          display:none;
+          margin-top:8px;
+          padding:0 2px;
+        ">
+          ${buildToggleRow("JTH Radar", JTH_TOGGLE_ID, radarPrefs.jth)}
+          ${buildToggleRow("Seabus Radar", SEABUS_TOGGLE_ID, radarPrefs.seabus)}
+        </div>
+      </div>
     `;
 
     document.body.appendChild(flightUI);
@@ -269,6 +349,28 @@
       isListeningForKey = true;
       document.getElementById(KEYBIND_BTN_ID).textContent = "...";
     };
+
+    // Radar settings collapse toggle
+    document.getElementById(RADAR_SETTINGS_HEADER_ID).onclick = () => {
+      const body = document.getElementById(RADAR_SETTINGS_BODY_ID);
+      const arrow = document.getElementById(RADAR_SETTINGS_ARROW_ID);
+      const opening = body.style.display === "none";
+      body.style.display = opening ? "grid" : "none";
+      body.style.gap = "6px";
+      arrow.style.transform = opening ? "rotate(90deg)" : "rotate(0deg)";
+    };
+
+    // Radar toggle handlers
+    function setupToggle(id, key) {
+      document.getElementById(id).onclick = () => {
+        radarPrefs[key] = !radarPrefs[key];
+        saveRadarPrefs();
+        updateToggleVisual(id, radarPrefs[key]);
+      };
+    }
+
+    setupToggle(JTH_TOGGLE_ID, "jth");
+    setupToggle(SEABUS_TOGGLE_ID, "seabus");
 
     document.getElementById(SAVE_BTN_ID).onclick = () => {
       const dep = document.getElementById(DEP_INPUT_ID).value.trim();
