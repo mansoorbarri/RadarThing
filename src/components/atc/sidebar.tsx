@@ -226,7 +226,7 @@ export const Sidebar = ({
 
   // Check if this is the user's own aircraft or if user has special control privileges
   const { googleId: userGoogleId, isLoaded: userLoaded } = useCurrentUserProfile();
-  const canControlAnyAircraft = userGoogleId === "101233162035372298523";
+  const canControlAnyAircraft = process.env.NODE_ENV === "development" && userGoogleId === "101233162035372298523";
   const isOwnAircraft = userLoaded && (canControlAnyAircraft || (userGoogleId && aircraft.googleId === userGoogleId));
 
   // Query the pilot's user record for the stats link (with client-side caching)
