@@ -37,25 +37,68 @@ export async function createCheckoutSession() {
   }
 
   // Always create checkout with customer ID (not customer_email)
-  const session = await stripe.checkout.sessions.create({
-    customer: stripeCustomerId,
-    line_items: [
-      {
-        price: process.env.STRIPE_PRICE_ID!,
-        quantity: 1,
+  try {
+    const session = await stripe.checkout.sessions.create({
+      customer: stripeCustomerId,
+      line_items: [
+        {
+          price: process.env.STRIPE_PRICE_ID!,
+          quantity: 1,
+        },
+      ],
+      mode: "subscription",
+      allow_promotion_codes: true,
+      subscription_data: {
+        trial_period_days: 7,
       },
-    ],
-    mode: "subscription",
-    allow_promotion_codes: true,
-    subscription_data: {
-      trial_period_days: 7,
-    },
-    success_url: `${baseUrl}/checkout/success`,
-    cancel_url: `${baseUrl}/pricing`,
-    metadata: {
-      clerkId: userId,
-    },
-  });
+      success_url: `${baseUrl}/checkout/success`,
+      cancel_url: `${baseUrl}/pricing`,
+      metadata: {
+        clerkId: userId,
+      },
+    });
 
-  return session.url;
+    return session.url;
+  } catch (err) {
+    // If the stored Stripe customer no longer exists (e.g. test/live mode mismatch),
+    // create a new one and retry
+    if (
+      err instanceof Stripe.errors.StripeInvalidRequestError &&
+      err.code === "resource_missing"
+    ) {
+      const customer = await stripe.customers.create({
+        email,
+        metadata: { clerkId: userId },
+      });
+
+      await convex.mutation(api.users.updateByClerkId, {
+        clerkId: userId,
+        stripeCustomerId: customer.id,
+      });
+
+      const session = await stripe.checkout.sessions.create({
+        customer: customer.id,
+        line_items: [
+          {
+            price: process.env.STRIPE_PRICE_ID!,
+            quantity: 1,
+          },
+        ],
+        mode: "subscription",
+        allow_promotion_codes: true,
+        subscription_data: {
+          trial_period_days: 7,
+        },
+        success_url: `${baseUrl}/checkout/success`,
+        cancel_url: `${baseUrl}/pricing`,
+        metadata: {
+          clerkId: userId,
+        },
+      });
+
+      return session.url;
+    }
+
+    throw err;
+  }
 }
