@@ -176,7 +176,7 @@ function PilotPageContent() {
                         <div key={aircraft.name} className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <span className="font-mono text-xs text-cyan-400 w-4">{i + 1}</span>
-                            <span className="text-white font-medium">{aircraft.name}</span>
+                            <span className="text-white font-medium">{aircraft.name.replace(/\s*\([^)]*\)/g, "").trim()}</span>
                           </div>
                           <span className="font-mono text-sm text-slate-400">
                             {aircraft.count} flights
@@ -281,7 +281,7 @@ function PilotPageContent() {
                           {flight.arrICAO || "???"}
                         </span>
                         <span className="ml-2 rounded bg-white/10 px-2 py-0.5 font-mono text-[10px] text-slate-400">
-                          {flight.aircraftType}
+                          {flight.aircraftType.replace(/\s*\([^)]*\)/g, "").trim()}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-slate-500">
