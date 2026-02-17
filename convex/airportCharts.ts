@@ -9,44 +9,6 @@ const chartTypeValidator = v.union(
   v.literal("GENERAL")
 );
 
-// Helper to extract calibration data from a chart document
-function mapCalibration(chart: {
-  calibrationP1PixelX?: number;
-  calibrationP1PixelY?: number;
-  calibrationP1Lat?: number;
-  calibrationP1Lon?: number;
-  calibrationP2PixelX?: number;
-  calibrationP2PixelY?: number;
-  calibrationP2Lat?: number;
-  calibrationP2Lon?: number;
-  calibratedBy?: string;
-}) {
-  if (
-    chart.calibrationP1PixelX != null &&
-    chart.calibrationP1PixelY != null &&
-    chart.calibrationP1Lat != null &&
-    chart.calibrationP1Lon != null &&
-    chart.calibrationP2PixelX != null &&
-    chart.calibrationP2PixelY != null &&
-    chart.calibrationP2Lat != null &&
-    chart.calibrationP2Lon != null &&
-    chart.calibratedBy != null
-  ) {
-    return {
-      p1PixelX: chart.calibrationP1PixelX,
-      p1PixelY: chart.calibrationP1PixelY,
-      p1Lat: chart.calibrationP1Lat,
-      p1Lon: chart.calibrationP1Lon,
-      p2PixelX: chart.calibrationP2PixelX,
-      p2PixelY: chart.calibrationP2PixelY,
-      p2Lat: chart.calibrationP2Lat,
-      p2Lon: chart.calibrationP2Lon,
-      calibratedBy: chart.calibratedBy,
-    };
-  }
-  return null;
-}
-
 // Get approved charts for an airport, optionally filtered by type
 export const getChartsForAirport = query({
   args: {
@@ -85,7 +47,7 @@ export const getChartsForAirport = query({
       approvedBy: chart.approvedBy ?? null,
       approvedAt: chart.approvedAt ?? null,
       createdAt: chart._creationTime,
-      calibration: mapCalibration(chart),
+
     }));
   },
 });
@@ -114,7 +76,7 @@ export const getPending = query({
       approvedBy: chart.approvedBy ?? null,
       approvedAt: chart.approvedAt ?? null,
       createdAt: chart._creationTime,
-      calibration: mapCalibration(chart),
+
     }));
   },
 });
@@ -151,7 +113,7 @@ export const getApproved = query({
         approvedBy: chart.approvedBy ?? null,
         approvedAt: chart.approvedAt ?? null,
         createdAt: chart._creationTime,
-        calibration: mapCalibration(chart),
+  
       }));
   },
 });
@@ -176,7 +138,7 @@ export const getById = query({
       approvedBy: chart.approvedBy ?? null,
       approvedAt: chart.approvedAt ?? null,
       createdAt: chart._creationTime,
-      calibration: mapCalibration(chart),
+
     };
   },
 });
@@ -222,7 +184,7 @@ export const create = mutation({
       approvedBy: chart.approvedBy ?? null,
       approvedAt: chart.approvedAt ?? null,
       createdAt: chart._creationTime,
-      calibration: mapCalibration(chart),
+
     };
   },
 });
@@ -358,38 +320,6 @@ export const getApprovedCountByUser = query({
       .collect();
 
     return charts.length;
-  },
-});
-
-// Save calibration data for a chart
-export const calibrate = mutation({
-  args: {
-    id: v.id("airportCharts"),
-    p1PixelX: v.float64(),
-    p1PixelY: v.float64(),
-    p1Lat: v.float64(),
-    p1Lon: v.float64(),
-    p2PixelX: v.float64(),
-    p2PixelY: v.float64(),
-    p2Lat: v.float64(),
-    p2Lon: v.float64(),
-    calibratedBy: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const chart = await ctx.db.get(args.id);
-    if (!chart) throw new Error("Chart not found");
-
-    await ctx.db.patch(args.id, {
-      calibrationP1PixelX: args.p1PixelX,
-      calibrationP1PixelY: args.p1PixelY,
-      calibrationP1Lat: args.p1Lat,
-      calibrationP1Lon: args.p1Lon,
-      calibrationP2PixelX: args.p2PixelX,
-      calibrationP2PixelY: args.p2PixelY,
-      calibrationP2Lat: args.p2Lat,
-      calibrationP2Lon: args.p2Lon,
-      calibratedBy: args.calibratedBy,
-    });
   },
 });
 
