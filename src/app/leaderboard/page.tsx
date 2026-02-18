@@ -6,9 +6,9 @@ import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Image from "next/image";
-import { ArrowLeft, Plane, Navigation, Clock, Trophy, ChevronDown } from "lucide-react";
+import { ArrowLeft, Plane, Navigation, Clock, Trophy, ChevronDown, Flame } from "lucide-react";
 
-type SortKey = "flights" | "distance" | "time";
+type SortKey = "flights" | "distance" | "time" | "streak";
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -29,6 +29,7 @@ export default function LeaderboardPage() {
     ? [...leaderboard].sort((a, b) => {
         if (sortBy === "flights") return b.totalFlights - a.totalFlights;
         if (sortBy === "distance") return b.totalDistanceNm - a.totalDistanceNm;
+        if (sortBy === "streak") return b.currentStreak - a.currentStreak;
         return b.totalFlightTimeMs - a.totalFlightTimeMs;
       })
     : null;
@@ -103,6 +104,10 @@ export default function LeaderboardPage() {
                 <div className="text-[10px] text-slate-600 font-mono uppercase">Time</div>
                 <div className="font-mono text-sm font-bold text-white">{formatFlightTime(currentUserEntry.totalFlightTimeMs)}</div>
               </div>
+              <div className="hidden sm:block">
+                <div className="text-[10px] text-slate-600 font-mono uppercase">Streak</div>
+                <div className="font-mono text-sm font-bold text-amber-400">{currentUserEntry.currentStreak > 0 ? `${currentUserEntry.currentStreak}d` : "—"}</div>
+              </div>
               <ChevronDown className="h-4 w-4 text-cyan-400/60" />
             </div>
           </button>
@@ -114,6 +119,7 @@ export default function LeaderboardPage() {
             { key: "flights" as SortKey, label: "Flights", icon: Plane },
             { key: "distance" as SortKey, label: "Distance", icon: Navigation },
             { key: "time" as SortKey, label: "Flight Time", icon: Clock },
+            { key: "streak" as SortKey, label: "Streak", icon: Flame },
           ]).map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -158,6 +164,9 @@ export default function LeaderboardPage() {
                 </div>
                 <div className="hidden w-14 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600 sm:block">
                   Time
+                </div>
+                <div className="hidden w-12 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600 sm:block">
+                  Streak
                 </div>
               </div>
             </div>
@@ -242,6 +251,13 @@ export default function LeaderboardPage() {
                       >
                         {formatFlightTime(pilot.totalFlightTimeMs)}
                       </div>
+                      <div
+                        className={`hidden w-12 text-right font-mono text-sm font-bold sm:block ${
+                          sortBy === "streak" ? "text-cyan-400" : "text-amber-400"
+                        }`}
+                      >
+                        {pilot.currentStreak > 0 ? `${pilot.currentStreak}d` : "—"}
+                      </div>
                     </div>
                   </button>
                 );
@@ -270,6 +286,7 @@ function LeaderboardSkeleton() {
             <div className="h-4 w-12 animate-pulse rounded bg-white/10" />
             <div className="hidden h-4 w-16 animate-pulse rounded bg-white/10 sm:block" />
             <div className="hidden h-4 w-14 animate-pulse rounded bg-white/10 sm:block" />
+            <div className="hidden h-4 w-12 animate-pulse rounded bg-white/10 sm:block" />
           </div>
         </div>
       ))}

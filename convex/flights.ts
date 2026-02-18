@@ -204,11 +204,15 @@ export const getStatsByClerkId = query({
         routeData: f.routeData,
       }));
 
+    const streaks = calculateStreaks(flights);
+
     return {
       totalFlights,
       totalFlightTimeMs: totalFlightTime,
       totalDistanceNm: Math.round(totalDistance),
       uniqueAirports: Object.keys(airportVisits).length,
+      currentStreak: streaks.currentStreak,
+      longestStreak: streaks.longestStreak,
       topAircraft,
       topRoutes,
       topAirports,
@@ -216,6 +220,68 @@ export const getStatsByClerkId = query({
     };
   },
 });
+
+// Calculate flight streaks from a list of flights
+function calculateStreaks(flights: { startTime: number }[]): {
+  currentStreak: number;
+  longestStreak: number;
+} {
+  if (flights.length === 0) return { currentStreak: 0, longestStreak: 0 };
+
+  // Get unique flight dates as "YYYY-MM-DD" strings (UTC)
+  const dateSet = new Set<string>();
+  for (const f of flights) {
+    const d = new Date(f.startTime);
+    dateSet.add(
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`
+    );
+  }
+
+  const sortedDates = [...dateSet].sort();
+
+  // Calculate longest streak
+  let longestStreak = 1;
+  let runLength = 1;
+  for (let i = 1; i < sortedDates.length; i++) {
+    const prev = new Date(sortedDates[i - 1] + "T00:00:00Z");
+    const curr = new Date(sortedDates[i] + "T00:00:00Z");
+    const diffDays =
+      (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+    if (diffDays === 1) {
+      runLength++;
+      longestStreak = Math.max(longestStreak, runLength);
+    } else {
+      runLength = 1;
+    }
+  }
+
+  // Calculate current streak (count backwards from today/yesterday)
+  const now = new Date();
+  const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const yesterdayStr = `${yesterday.getUTCFullYear()}-${String(yesterday.getUTCMonth() + 1).padStart(2, "0")}-${String(yesterday.getUTCDate()).padStart(2, "0")}`;
+
+  const lastDate = sortedDates[sortedDates.length - 1];
+  if (lastDate !== todayStr && lastDate !== yesterdayStr) {
+    return { currentStreak: 0, longestStreak };
+  }
+
+  // Walk backwards from the last flight date
+  let currentStreak = 1;
+  for (let i = sortedDates.length - 2; i >= 0; i--) {
+    const curr = new Date(sortedDates[i + 1] + "T00:00:00Z");
+    const prev = new Date(sortedDates[i] + "T00:00:00Z");
+    const diffDays =
+      (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+    if (diffDays === 1) {
+      currentStreak++;
+    } else {
+      break;
+    }
+  }
+
+  return { currentStreak, longestStreak };
+}
 
 // Haversine formula to calculate distance between two points in nautical miles
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -269,6 +335,7 @@ export const getLeaderboard = query({
       }
 
       const mostRecent = flights.sort((a, b) => b.startTime - a.startTime)[0];
+      const streaks = calculateStreaks(flights);
 
       leaderboard.push({
         userId: user._id,
@@ -279,6 +346,7 @@ export const getLeaderboard = query({
         totalFlights: flights.length,
         totalFlightTimeMs,
         totalDistanceNm: Math.round(totalDistanceNm),
+        currentStreak: streaks.currentStreak,
       });
     }
 
@@ -370,6 +438,8 @@ export const getStatsById = query({
       routeData: f.routeData,
     }));
 
+    const streaks = calculateStreaks(flights);
+
     return {
       userRole: user.role,
       pilotCallsign,
@@ -378,6 +448,8 @@ export const getStatsById = query({
       totalFlightTimeMs: totalFlightTime,
       totalDistanceNm: Math.round(totalDistance),
       uniqueAirports: Object.keys(airportVisits).length,
+      currentStreak: streaks.currentStreak,
+      longestStreak: streaks.longestStreak,
       topAircraft,
       topRoutes,
       topAirports,

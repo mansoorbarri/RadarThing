@@ -31,6 +31,7 @@ import {
   AlertTriangle,
   ChevronDown,
   CreditCard,
+  Flame,
 } from "lucide-react";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -339,6 +340,13 @@ export default function DashboardPage() {
                 value={stats.uniqueAirports.toString()}
                 color="emerald"
                 locked={!isPro}
+              />
+              <StatCard
+                icon={<Flame className="h-5 w-5" />}
+                label="Current Streak"
+                value={stats.currentStreak > 0 ? `${stats.currentStreak}d` : "0d"}
+                color="amber"
+                subtitle={stats.longestStreak > 0 ? `Best: ${stats.longestStreak}d` : undefined}
               />
             </div>
 
@@ -721,18 +729,21 @@ function StatCard({
   value,
   color,
   locked = false,
+  subtitle,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
-  color: "cyan" | "blue" | "purple" | "emerald";
+  color: "cyan" | "blue" | "purple" | "emerald" | "amber";
   locked?: boolean;
+  subtitle?: string;
 }) {
   const colorClasses = {
     cyan: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400",
     blue: "border-blue-500/30 bg-blue-500/10 text-blue-400",
     purple: "border-purple-500/30 bg-purple-500/10 text-purple-400",
     emerald: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+    amber: "border-amber-500/30 bg-amber-500/10 text-amber-400",
   };
 
   return (
@@ -749,7 +760,12 @@ function StatCard({
           <span className="text-slate-600 font-mono text-sm">PRO</span>
         </div>
       ) : (
-        <div className="text-2xl font-bold text-white">{value}</div>
+        <>
+          <div className="text-2xl font-bold text-white">{value}</div>
+          {subtitle && (
+            <div className="font-mono text-xs text-slate-600 mt-0.5">{subtitle}</div>
+          )}
+        </>
       )}
     </div>
   );
