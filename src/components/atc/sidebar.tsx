@@ -8,6 +8,7 @@ import React, {
   useEffect,
 } from "react";
 
+import { toast } from "sonner";
 import { useUserByGoogleId } from "~/hooks/useUserByGoogleId";
 // Inline SVG icons to avoid bundling entire react-icons library (~7.8MB)
 const PlaneInflightIcon = ({ size = 24, className = "" }: { size?: number; className?: string }) => (
@@ -317,34 +318,67 @@ export const Sidebar = ({
       </div>
 
       <div className={`relative ${isMobile ? 'px-4 pb-2' : 'px-6 pb-4'}`}>
-        {/* Follow button */}
-        {onToggleFollow && (
-          <button
-            onClick={onToggleFollow}
-            className={`mb-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-2.5 font-mono text-[10px] font-black tracking-wider uppercase transition-all ${
-              isFollowMode
-                ? "border-cyan-400/50 bg-cyan-500/20 text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.2)]"
-                : "border-white/10 bg-black/40 text-white/60 hover:border-cyan-500/30 hover:bg-black/60 hover:text-white"
-            }`}
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={isFollowMode ? "text-cyan-400" : ""}
+        {/* Follow + Share buttons */}
+        <div className="mb-3 flex gap-2">
+          {onToggleFollow && (
+            <button
+              onClick={onToggleFollow}
+              className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-2.5 font-mono text-[10px] font-black tracking-wider uppercase transition-all ${
+                isFollowMode
+                  ? "border-cyan-400/50 bg-cyan-500/20 text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.2)]"
+                  : "border-white/10 bg-black/40 text-white/60 hover:border-cyan-500/30 hover:bg-black/60 hover:text-white"
+              }`}
             >
-              <circle cx="12" cy="12" r="3" />
-              <path d="M12 2v3m0 14v3m10-10h-3M5 12H2m15.5-6.5l-2.1 2.1m-6.8 6.8l-2.1 2.1m0-11l2.1 2.1m6.8 6.8l2.1 2.1" />
-            </svg>
-            {isFollowMode ? "Following" : "Follow"}
-            <span className="text-[8px] text-white/40">(F)</span>
-          </button>
-        )}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={isFollowMode ? "text-cyan-400" : ""}
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 2v3m0 14v3m10-10h-3M5 12H2m15.5-6.5l-2.1 2.1m-6.8 6.8l-2.1 2.1m0-11l2.1 2.1m6.8 6.8l2.1 2.1" />
+              </svg>
+              {isFollowMode ? "Following" : "Follow"}
+              <span className="text-[8px] text-white/40">(F)</span>
+            </button>
+          )}
+
+          {(aircraft.callsign || aircraft.flightNo) && (
+            <button
+              onClick={() => {
+                const identifier = aircraft.flightNo || aircraft.callsign;
+                const url = `${window.location.origin}/radar?callsign=${identifier}&follow=true`;
+                navigator.clipboard.writeText(url).then(() => {
+                  toast.success("Live tracking link copied to clipboard");
+                });
+              }}
+              className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 font-mono text-[10px] font-black tracking-wider text-white/60 uppercase transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+              Share
+            </button>
+          )}
+        </div>
 
         <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-white/10 bg-black/40 p-1.5 shadow-inner">
           <div className="flex flex-col items-center rounded-xl p-3.5">

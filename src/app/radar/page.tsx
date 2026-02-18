@@ -259,6 +259,8 @@ export default function ATCPage() {
   }, [aircrafts, isViewingHistory, selectedAircrafts]);
 
   // Auto-select aircraft from URL param if it's a full flight number
+  const followParam = searchParams.get("follow") === "true";
+
   useEffect(() => {
     if (!fullFlightFilter || autoSelectedFromUrl || aircrafts.length === 0) return;
 
@@ -272,8 +274,11 @@ export default function ATCPage() {
       setSelectedAircrafts([matchedAircraft]);
       drawFlightPlanOnMapRef.current?.(matchedAircraft, true);
       setAutoSelectedFromUrl(true);
+      if (followParam) {
+        setIsFollowMode(true);
+      }
     }
-  }, [aircrafts, fullFlightFilter, autoSelectedFromUrl]);
+  }, [aircrafts, fullFlightFilter, autoSelectedFromUrl, followParam]);
 
   // Escape key to clear filters, F key to toggle follow mode
   useEffect(() => {
