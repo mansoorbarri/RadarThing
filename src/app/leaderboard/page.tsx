@@ -99,6 +99,10 @@ export default function LeaderboardPage() {
                 <div className="text-[10px] text-slate-600 font-mono uppercase">Distance</div>
                 <div className="font-mono text-sm font-bold text-white">{currentUserEntry.totalDistanceNm.toLocaleString()}</div>
               </div>
+              <div className="hidden sm:block">
+                <div className="text-[10px] text-slate-600 font-mono uppercase">Time</div>
+                <div className="font-mono text-sm font-bold text-white">{formatFlightTime(currentUserEntry.totalFlightTimeMs)}</div>
+              </div>
               <ChevronDown className="h-4 w-4 text-cyan-400/60" />
             </div>
           </button>
