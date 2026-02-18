@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Image from "next/image";
-import { ArrowLeft, Plane, Navigation, Clock, Trophy } from "lucide-react";
+import { ArrowLeft, Plane, Navigation, Clock, Trophy, ChevronDown } from "lucide-react";
 
 type SortKey = "flights" | "distance" | "time";
 
@@ -23,6 +23,8 @@ export default function LeaderboardPage() {
   const leaderboard = useQuery(api.flights.getLeaderboard);
   const [sortBy, setSortBy] = useState<SortKey>("flights");
 
+  const currentUserRef = useRef<HTMLButtonElement>(null);
+
   const sorted = leaderboard
     ? [...leaderboard].sort((a, b) => {
         if (sortBy === "flights") return b.totalFlights - a.totalFlights;
@@ -30,6 +32,15 @@ export default function LeaderboardPage() {
         return b.totalFlightTimeMs - a.totalFlightTimeMs;
       })
     : null;
+
+  const currentUserRank = sorted
+    ? sorted.findIndex((p) => p.clerkId === user?.id) + 1
+    : 0;
+  const currentUserEntry = sorted?.find((p) => p.clerkId === user?.id) ?? null;
+
+  const scrollToCurrentUser = () => {
+    currentUserRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
@@ -63,6 +74,35 @@ export default function LeaderboardPage() {
             <p className="text-sm text-slate-500">Top pilots on RadarThing</p>
           </div>
         </div>
+
+        {/* Your Position */}
+        {currentUserEntry && currentUserRank > 0 && (
+          <button
+            onClick={scrollToCurrentUser}
+            className="mb-6 flex w-full cursor-pointer items-center gap-4 rounded-xl border border-cyan-500/30 bg-cyan-500/[0.06] p-4 text-left transition-all hover:bg-cyan-500/[0.1]"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 font-mono text-sm font-bold text-cyan-400">
+              {currentUserRank}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs text-slate-500 font-mono uppercase tracking-wider">Your Position</div>
+              <div className="font-mono text-sm font-bold text-white truncate">
+                {currentUserEntry.discordUsername ?? currentUserEntry.callsign}
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-4 text-right">
+              <div className="hidden sm:block">
+                <div className="text-[10px] text-slate-600 font-mono uppercase">Flights</div>
+                <div className="font-mono text-sm font-bold text-white">{currentUserEntry.totalFlights}</div>
+              </div>
+              <div className="hidden sm:block">
+                <div className="text-[10px] text-slate-600 font-mono uppercase">Distance</div>
+                <div className="font-mono text-sm font-bold text-white">{currentUserEntry.totalDistanceNm.toLocaleString()}</div>
+              </div>
+              <ChevronDown className="h-4 w-4 text-cyan-400/60" />
+            </div>
+          </button>
+        )}
 
         {/* Sort Tabs */}
         <div className="mb-6 flex gap-1 rounded-xl border border-white/10 bg-white/5 p-1 w-fit">
@@ -135,6 +175,7 @@ export default function LeaderboardPage() {
                 return (
                   <button
                     key={pilot.userId}
+                    ref={isCurrentUser ? currentUserRef : undefined}
                     onClick={() => router.push(`/pilot/${pilot.userId}`)}
                     className={`flex w-full cursor-pointer items-center gap-4 rounded-xl border p-4 text-left transition-all hover:border-cyan-500/30 hover:bg-white/10 ${
                       isCurrentUser
