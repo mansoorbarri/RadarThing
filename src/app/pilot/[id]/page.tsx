@@ -118,39 +118,29 @@ function PilotPageContent() {
         {/* Profile Header */}
         <div className="mb-10">
           <div className="flex items-center gap-4 mb-2">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-cyan-500/50 bg-cyan-500/10">
-              <Plane className="h-6 w-6 text-cyan-400" />
-            </div>
+            <button
+              onClick={copyProfileLink}
+              className="group/icon flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border-2 border-cyan-500/50 bg-cyan-500/10 transition-all hover:border-cyan-400 hover:bg-cyan-500/20"
+              title="Copy profile link"
+            >
+              <Plane className="h-6 w-6 text-cyan-400 transition-all group-hover/icon:hidden" />
+              {linkCopied ? (
+                <Check className="hidden h-6 w-6 text-emerald-400 group-hover/icon:block" />
+              ) : (
+                <Link className="hidden h-6 w-6 text-cyan-300 group-hover/icon:block" />
+              )}
+            </button>
             <div>
               <h1 className="text-3xl font-bold text-white">
                 {callsignFromUrl || stats.pilotCallsign || "Unknown Pilot"}
               </h1>
-              <div className="flex items-center gap-3">
-                <p className="text-slate-400 font-mono text-sm">
-                  {stats.userRole === "PRO" || stats.userRole === "ADMIN" ? (
-                    <span className="text-emerald-400">PRO Member</span>
-                  ) : (
-                    <span className="text-slate-500">Free Tier</span>
-                  )}
-                </p>
-                <button
-                  onClick={copyProfileLink}
-                  className="flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-400 transition-all hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400 cursor-pointer"
-                  title="Copy profile link"
-                >
-                  {linkCopied ? (
-                    <>
-                      <Check className="h-3 w-3 text-emerald-400" />
-                      <span className="text-emerald-400">Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Link className="h-3 w-3" />
-                      <span>Copy Link</span>
-                    </>
-                  )}
-                </button>
-              </div>
+              <p className="text-slate-400 font-mono text-sm">
+                {stats.userRole === "PRO" || stats.userRole === "ADMIN" ? (
+                  <span className="text-emerald-400">PRO Member</span>
+                ) : (
+                  <span className="text-slate-500">Free Tier</span>
+                )}
+              </p>
             </div>
           </div>
         </div>

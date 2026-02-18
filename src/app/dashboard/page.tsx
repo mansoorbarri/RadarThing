@@ -24,6 +24,7 @@ import {
   FileText,
   Play,
   Share2,
+  Link,
   Trash2,
   Mail,
   Shield,
@@ -169,14 +170,40 @@ export default function DashboardPage() {
         {/* Profile Header */}
         <div className="mb-10">
           <div className="flex items-center gap-4 mb-2">
-            {user?.imageUrl && (
-              <Image
-                src={user.imageUrl}
-                alt="Profile"
-                width={56}
-                height={56}
-                className="rounded-full border-2 border-cyan-500/50"
-              />
+            {user?.imageUrl ? (
+              <button
+                onClick={copyProfileLink}
+                className="group/icon relative h-14 w-14 cursor-pointer overflow-hidden rounded-full border-2 border-cyan-500/50 transition-all hover:border-cyan-400"
+                title="Copy profile link"
+              >
+                <Image
+                  src={user.imageUrl}
+                  alt="Profile"
+                  width={56}
+                  height={56}
+                  className="rounded-full transition-opacity group-hover/icon:opacity-20"
+                />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover/icon:opacity-100">
+                  {profileCopied ? (
+                    <Check className="h-6 w-6 text-emerald-400" />
+                  ) : (
+                    <Link className="h-6 w-6 text-cyan-300" />
+                  )}
+                </div>
+              </button>
+            ) : (
+              <button
+                onClick={copyProfileLink}
+                className="group/icon flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border-2 border-cyan-500/50 bg-cyan-500/10 transition-all hover:border-cyan-400 hover:bg-cyan-500/20"
+                title="Copy profile link"
+              >
+                <Plane className="h-6 w-6 text-cyan-400 transition-all group-hover/icon:hidden" />
+                {profileCopied ? (
+                  <Check className="hidden h-6 w-6 text-emerald-400 group-hover/icon:block" />
+                ) : (
+                  <Link className="hidden h-6 w-6 text-cyan-300 group-hover/icon:block" />
+                )}
+              </button>
             )}
             <div>
               <h1 className="text-3xl font-bold text-white">
@@ -190,7 +217,7 @@ export default function DashboardPage() {
                 )}
               </p>
               {supportId && (
-                <div className="mt-1 flex items-center gap-3">
+                <div className="mt-1">
                   <button
                     onClick={copySupportId}
                     className="flex items-center gap-1.5 text-slate-600 font-mono text-xs hover:text-slate-400 transition-colors cursor-pointer"
@@ -201,23 +228,6 @@ export default function DashboardPage() {
                       <Check className="h-3 w-3 text-emerald-400" />
                     ) : (
                       <Copy className="h-3 w-3" />
-                    )}
-                  </button>
-                  <button
-                    onClick={copyProfileLink}
-                    className="flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-400 transition-all hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400 cursor-pointer"
-                    title="Copy your public profile link"
-                  >
-                    {profileCopied ? (
-                      <>
-                        <Check className="h-3 w-3 text-emerald-400" />
-                        <span className="text-emerald-400">Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Share2 className="h-3 w-3" />
-                        <span>Share Profile</span>
-                      </>
                     )}
                   </button>
                 </div>
