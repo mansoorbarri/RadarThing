@@ -39,7 +39,7 @@ import { ChartSidePanel } from "~/components/map/ChartOverlayPanel";
 import { AtcPlayer } from "~/components/atc/AtcPlayer";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
-import { UpgradeIcon, FlightsIcon, FilterIcon, DiscordIcon, InstallIcon } from "~/utils/dockIcons";
+import { UpgradeIcon, FlightsIcon, FilterIcon, DiscordIcon, InstallIcon, LeaderboardIcon } from "~/utils/dockIcons";
 import { RotateCcw } from "lucide-react";
 
 const DynamicMapComponent = dynamic(() => import("~/components/map"), {
@@ -727,6 +727,13 @@ export default function ATCPage() {
                 setActiveRightPanel(newState ? "filter" : null);
                 if (newState) setSelectedAircrafts([]);
               },
+            },
+            {
+              id: "leaderboard",
+              label: "Leaderboard",
+              icon: LeaderboardIcon,
+              active: false,
+              onClick: () => router.push("/leaderboard"),
             },
             ...(!isProUser ? [{
               id: "upgrade",

@@ -233,6 +233,58 @@ function toRad(deg: number): number {
   return deg * (Math.PI / 180);
 }
 
+// Get leaderboard data across all users
+export const getLeaderboard = query({
+  handler: async (ctx) => {
+    const users = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("isDeleted"), false))
+      .collect();
+
+    const leaderboard = [];
+
+    for (const user of users) {
+      const flights = await ctx.db
+        .query("flights")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .collect();
+
+      if (flights.length === 0) continue;
+
+      let totalFlightTimeMs = 0;
+      let totalDistanceNm = 0;
+
+      for (const flight of flights) {
+        if (flight.endTime && flight.startTime) {
+          totalFlightTimeMs += flight.endTime - flight.startTime;
+        }
+
+        if (flight.routeData && Array.isArray(flight.routeData)) {
+          for (let i = 1; i < flight.routeData.length; i++) {
+            const [lat1, lon1] = flight.routeData[i - 1];
+            const [lat2, lon2] = flight.routeData[i];
+            totalDistanceNm += haversineDistance(lat1, lon1, lat2, lon2);
+          }
+        }
+      }
+
+      const mostRecent = flights.sort((a, b) => b.startTime - a.startTime)[0];
+
+      leaderboard.push({
+        userId: user._id,
+        clerkId: user.clerkId,
+        callsign: mostRecent?.callsign ?? "Unknown",
+        role: user.role,
+        totalFlights: flights.length,
+        totalFlightTimeMs,
+        totalDistanceNm: Math.round(totalDistanceNm),
+      });
+    }
+
+    return leaderboard;
+  },
+});
+
 // Get user stats by Convex user ID (for public pilot profile)
 export const getStatsById = query({
   args: { userId: v.id("users") },
