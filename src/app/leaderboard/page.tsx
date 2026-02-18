@@ -103,7 +103,7 @@ export default function LeaderboardPage() {
             <div className="flex items-center gap-4 px-4 pb-3">
               <div className="w-9 shrink-0" />
               <div className="min-w-0 flex-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">
-                Last Callsign
+                Pilot
               </div>
               <div className="flex shrink-0 items-center gap-6">
                 <div className="w-12 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">
@@ -155,11 +155,11 @@ export default function LeaderboardPage() {
                       {rank}
                     </div>
 
-                    {/* Callsign + Badge */}
+                    {/* Pilot Name + Badge */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="truncate font-mono text-sm font-bold text-white">
-                          {pilot.callsign}
+                          {pilot.discordUsername ?? pilot.callsign}
                         </span>
                         {isCurrentUser && (
                           <span className="shrink-0 rounded bg-cyan-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-cyan-400">

@@ -275,6 +275,7 @@ export const getLeaderboard = query({
         clerkId: user.clerkId,
         callsign: mostRecent?.callsign ?? "Unknown",
         role: user.role,
+        discordUsername: user.discordUsername ?? null,
         totalFlights: flights.length,
         totalFlightTimeMs,
         totalDistanceNm: Math.round(totalDistanceNm),
@@ -372,6 +373,7 @@ export const getStatsById = query({
     return {
       userRole: user.role,
       pilotCallsign,
+      discordUsername: user.discordUsername ?? null,
       totalFlights,
       totalFlightTimeMs: totalFlightTime,
       totalDistanceNm: Math.round(totalDistance),

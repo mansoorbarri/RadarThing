@@ -230,6 +230,27 @@ export const softDelete = mutation({
   },
 });
 
+// Update Discord username for a user
+export const updateDiscordUsername = mutation({
+  args: {
+    clerkId: v.string(),
+    discordUsername: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+
+    if (!user) return null;
+
+    await ctx.db.patch(user._id, {
+      discordUsername: args.discordUsername,
+    });
+    return user._id;
+  },
+});
+
 // Get all non-deleted users (admin only)
 export const getAll = query({
   args: {},

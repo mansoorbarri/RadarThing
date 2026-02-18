@@ -132,8 +132,13 @@ function PilotPageContent() {
             </button>
             <div>
               <h1 className="text-3xl font-bold text-white">
-                {callsignFromUrl || stats.pilotCallsign || "Unknown Pilot"}
+                {stats.discordUsername ?? callsignFromUrl ?? stats.pilotCallsign ?? "Unknown Pilot"}
               </h1>
+              {stats.discordUsername && (callsignFromUrl || stats.pilotCallsign) && (
+                <p className="text-slate-500 font-mono text-xs">
+                  {callsignFromUrl ?? stats.pilotCallsign}
+                </p>
+              )}
               <p className="text-slate-400 font-mono text-sm">
                 {stats.userRole === "PRO" || stats.userRole === "ADMIN" ? (
                   <span className="text-emerald-400">PRO Member</span>
