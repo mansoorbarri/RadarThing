@@ -20,7 +20,6 @@ import {
   Share2,
   Check,
   Link,
-  Flame,
 } from "lucide-react";
 import Image from "next/image";
 import { useProStatus } from "~/hooks/useProStatus";
@@ -182,13 +181,6 @@ function PilotPageContent() {
                 value={stats.uniqueAirports.toString()}
                 color="emerald"
                 locked={!isPro}
-              />
-              <StatCard
-                icon={<Flame className="h-5 w-5" />}
-                label="Current Streak"
-                value={stats.currentStreak > 0 ? `${stats.currentStreak}d` : "0d"}
-                color="amber"
-                subtitle={stats.longestStreak > 0 ? `Best: ${stats.longestStreak}d` : undefined}
               />
             </div>
 
