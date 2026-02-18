@@ -47,7 +47,7 @@ export default function LeaderboardPage() {
     <div className="min-h-screen bg-[#0a0a0f] text-white">
       {/* Header */}
       <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-5">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
           <button
             onClick={() => router.push("/radar")}
             className="cursor-pointer"
@@ -64,15 +64,15 @@ export default function LeaderboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-6 py-12">
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
         {/* Title */}
-        <div className="mb-8 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-amber-500/50 bg-amber-500/10">
-            <Trophy className="h-5 w-5 text-amber-400" />
+        <div className="mb-6 flex items-center gap-3 sm:mb-8">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-amber-500/50 bg-amber-500/10 sm:h-12 sm:w-12">
+            <Trophy className="h-4 w-4 text-amber-400 sm:h-5 sm:w-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Leaderboard</h1>
-            <p className="text-sm text-slate-500">Top pilots on RadarThing</p>
+            <h1 className="text-xl font-bold text-white sm:text-2xl">Leaderboard</h1>
+            <p className="text-xs text-slate-500 sm:text-sm">Top pilots on RadarThing</p>
           </div>
         </div>
 
@@ -80,39 +80,55 @@ export default function LeaderboardPage() {
         {currentUserEntry && currentUserRank > 0 && (
           <button
             onClick={scrollToCurrentUser}
-            className="mb-6 flex w-full cursor-pointer items-center gap-4 rounded-xl border border-cyan-500/30 bg-cyan-500/[0.06] p-4 text-left transition-all hover:bg-cyan-500/[0.1]"
+            className="mb-6 flex w-full cursor-pointer items-center gap-3 rounded-xl border border-cyan-500/30 bg-cyan-500/[0.06] p-3 text-left transition-all hover:bg-cyan-500/[0.1] sm:gap-4 sm:p-4"
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 font-mono text-sm font-bold text-cyan-400">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 font-mono text-xs font-bold text-cyan-400 sm:h-9 sm:w-9 sm:text-sm">
               {currentUserRank}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-xs text-slate-500 font-mono uppercase tracking-wider">Your Position</div>
+              <div className="text-[10px] text-slate-500 font-mono uppercase tracking-wider sm:text-xs">Your Position</div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-sm font-bold text-white truncate">
+                <span className="font-mono text-xs font-bold text-white truncate sm:text-sm">
                   {currentUserEntry.discordUsername ?? currentUserEntry.callsign}
                 </span>
                 {currentUserEntry.currentStreak > 0 && (
-                  <div className="flex shrink-0 items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5">
+                  <div className="flex shrink-0 items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 sm:px-2">
                     <Flame className="h-3 w-3 text-amber-400" />
-                    <span className="font-mono text-xs font-bold text-amber-400">{currentUserEntry.currentStreak}d</span>
+                    <span className="font-mono text-[10px] font-bold text-amber-400 sm:text-xs">{currentUserEntry.currentStreak}d</span>
                   </div>
                 )}
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-4 text-right">
-              <div className="hidden sm:block">
+            {/* Mobile: show active sort stat */}
+            <div className="flex shrink-0 items-center gap-3 text-right sm:hidden">
+              <div>
+                <div className="text-[10px] text-slate-600 font-mono uppercase">
+                  {sortBy === "flights" ? "Flights" : sortBy === "distance" ? "Dist" : sortBy === "time" ? "Time" : "Streak"}
+                </div>
+                <div className={`font-mono text-sm font-bold ${sortBy === "streak" ? "text-amber-400" : "text-white"}`}>
+                  {sortBy === "flights" ? currentUserEntry.totalFlights
+                    : sortBy === "distance" ? currentUserEntry.totalDistanceNm.toLocaleString()
+                    : sortBy === "time" ? formatFlightTime(currentUserEntry.totalFlightTimeMs)
+                    : currentUserEntry.currentStreak > 0 ? `${currentUserEntry.currentStreak}d` : "—"}
+                </div>
+              </div>
+              <ChevronDown className="h-4 w-4 text-cyan-400/60" />
+            </div>
+            {/* Desktop: show all stats */}
+            <div className="hidden shrink-0 items-center gap-4 text-right sm:flex">
+              <div>
                 <div className="text-[10px] text-slate-600 font-mono uppercase">Flights</div>
                 <div className="font-mono text-sm font-bold text-white">{currentUserEntry.totalFlights}</div>
               </div>
-              <div className="hidden sm:block">
+              <div>
                 <div className="text-[10px] text-slate-600 font-mono uppercase">Distance</div>
                 <div className="font-mono text-sm font-bold text-white">{currentUserEntry.totalDistanceNm.toLocaleString()}</div>
               </div>
-              <div className="hidden sm:block">
+              <div>
                 <div className="text-[10px] text-slate-600 font-mono uppercase">Time</div>
                 <div className="font-mono text-sm font-bold text-white">{formatFlightTime(currentUserEntry.totalFlightTimeMs)}</div>
               </div>
-              <div className="hidden sm:block">
+              <div>
                 <div className="text-[10px] text-slate-600 font-mono uppercase">Streak</div>
                 <div className="font-mono text-sm font-bold text-amber-400">{currentUserEntry.currentStreak > 0 ? `${currentUserEntry.currentStreak}d` : "—"}</div>
               </div>
@@ -122,26 +138,28 @@ export default function LeaderboardPage() {
         )}
 
         {/* Sort Tabs */}
-        <div className="mb-6 flex gap-1 rounded-xl border border-white/10 bg-white/5 p-1 w-fit">
-          {([
-            { key: "flights" as SortKey, label: "Flights", icon: Plane },
-            { key: "distance" as SortKey, label: "Distance", icon: Navigation },
-            { key: "time" as SortKey, label: "Flight Time", icon: Clock },
-            { key: "streak" as SortKey, label: "Streak", icon: Flame },
-          ]).map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setSortBy(key)}
-              className={`flex cursor-pointer items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                sortBy === key
-                  ? "bg-white/10 text-white"
-                  : "text-slate-500 hover:text-slate-300"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
-            </button>
-          ))}
+        <div className="mb-6 -mx-4 px-4 overflow-x-auto sm:mx-0 sm:px-0">
+          <div className="flex gap-1 rounded-xl border border-white/10 bg-white/5 p-1 w-fit">
+            {([
+              { key: "flights" as SortKey, label: "Flights", icon: Plane },
+              { key: "distance" as SortKey, label: "Distance", icon: Navigation },
+              { key: "time" as SortKey, label: "Time", icon: Clock },
+              { key: "streak" as SortKey, label: "Streak", icon: Flame },
+            ]).map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                onClick={() => setSortBy(key)}
+                className={`flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:px-4 sm:py-2 sm:text-sm ${
+                  sortBy === key
+                    ? "bg-white/10 text-white"
+                    : "text-slate-500 hover:text-slate-300"
+                }`}
+              >
+                <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Leaderboard List */}
@@ -158,22 +176,27 @@ export default function LeaderboardPage() {
         ) : (
           <div>
             {/* Column Headers */}
-            <div className="flex items-center gap-4 px-4 pb-3">
-              <div className="w-9 shrink-0" />
+            <div className="flex items-center gap-3 px-3 pb-3 sm:gap-4 sm:px-4">
+              <div className="w-8 shrink-0 sm:w-9" />
               <div className="min-w-0 flex-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">
                 Pilot
               </div>
-              <div className="flex shrink-0 items-center gap-6">
+              {/* Mobile: show active sort column */}
+              <div className="w-12 shrink-0 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600 sm:hidden">
+                {sortBy === "flights" ? "Flights" : sortBy === "distance" ? "Dist" : sortBy === "time" ? "Time" : "Streak"}
+              </div>
+              {/* Desktop: show all columns */}
+              <div className="hidden shrink-0 items-center gap-6 sm:flex">
                 <div className="w-12 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">
                   Flights
                 </div>
-                <div className="hidden w-16 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600 sm:block">
+                <div className="w-16 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">
                   Distance
                 </div>
-                <div className="hidden w-14 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600 sm:block">
+                <div className="w-14 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">
                   Time
                 </div>
-                <div className="hidden w-12 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600 sm:block">
+                <div className="w-12 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">
                   Streak
                 </div>
               </div>
@@ -198,7 +221,7 @@ export default function LeaderboardPage() {
                     key={pilot.userId}
                     ref={isCurrentUser ? currentUserRef : undefined}
                     onClick={() => router.push(`/pilot/${pilot.userId}`)}
-                    className={`flex w-full cursor-pointer items-center gap-4 rounded-xl border p-4 text-left transition-all hover:border-cyan-500/30 hover:bg-white/10 ${
+                    className={`flex w-full cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition-all hover:border-cyan-500/30 hover:bg-white/10 sm:gap-4 sm:p-4 ${
                       isCurrentUser
                         ? "border-cyan-500/40 bg-cyan-500/[0.08] ring-1 ring-cyan-500/20"
                         : isTop3
@@ -208,7 +231,7 @@ export default function LeaderboardPage() {
                   >
                     {/* Rank */}
                     <div
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border font-mono text-sm font-bold ${
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border font-mono text-xs font-bold sm:h-9 sm:w-9 sm:text-sm ${
                         isTop3
                           ? medalColor
                           : "border-white/10 bg-white/5 text-slate-500"
@@ -219,25 +242,39 @@ export default function LeaderboardPage() {
 
                     {/* Pilot Name + Badge */}
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate font-mono text-sm font-bold text-white">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <span className="truncate font-mono text-xs font-bold text-white sm:text-sm">
                           {pilot.discordUsername ?? pilot.callsign}
                         </span>
                         {isCurrentUser && (
-                          <span className="shrink-0 rounded bg-cyan-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-cyan-400">
+                          <span className="shrink-0 rounded bg-cyan-500/20 px-1 py-0.5 font-mono text-[8px] font-bold text-cyan-400 sm:px-1.5 sm:text-[9px]">
                             YOU
                           </span>
                         )}
                         {(pilot.role === "PRO" || pilot.role === "ADMIN") && (
-                          <span className="shrink-0 rounded bg-emerald-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-emerald-400">
+                          <span className="shrink-0 rounded bg-emerald-500/20 px-1 py-0.5 font-mono text-[8px] font-bold text-emerald-400 sm:px-1.5 sm:text-[9px]">
                             PRO
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Stats */}
-                    <div className="flex shrink-0 items-center gap-6">
+                    {/* Mobile: show active sort stat */}
+                    <div className="w-12 shrink-0 text-right sm:hidden">
+                      <div
+                        className={`font-mono text-xs font-bold ${
+                          sortBy === "streak" ? "text-amber-400" : "text-cyan-400"
+                        }`}
+                      >
+                        {sortBy === "flights" ? pilot.totalFlights
+                          : sortBy === "distance" ? pilot.totalDistanceNm.toLocaleString()
+                          : sortBy === "time" ? formatFlightTime(pilot.totalFlightTimeMs)
+                          : pilot.currentStreak > 0 ? `${pilot.currentStreak}d` : "—"}
+                      </div>
+                    </div>
+
+                    {/* Desktop: show all stats */}
+                    <div className="hidden shrink-0 items-center gap-6 sm:flex">
                       <div
                         className={`w-12 text-right font-mono text-sm font-bold ${
                           sortBy === "flights" ? "text-cyan-400" : "text-white"
@@ -246,21 +283,21 @@ export default function LeaderboardPage() {
                         {pilot.totalFlights}
                       </div>
                       <div
-                        className={`hidden w-16 text-right font-mono text-sm font-bold sm:block ${
+                        className={`w-16 text-right font-mono text-sm font-bold ${
                           sortBy === "distance" ? "text-cyan-400" : "text-white"
                         }`}
                       >
                         {pilot.totalDistanceNm.toLocaleString()}
                       </div>
                       <div
-                        className={`hidden w-14 text-right font-mono text-sm font-bold sm:block ${
+                        className={`w-14 text-right font-mono text-sm font-bold ${
                           sortBy === "time" ? "text-cyan-400" : "text-white"
                         }`}
                       >
                         {formatFlightTime(pilot.totalFlightTimeMs)}
                       </div>
                       <div
-                        className={`hidden w-12 text-right font-mono text-sm font-bold sm:block ${
+                        className={`w-12 text-right font-mono text-sm font-bold ${
                           sortBy === "streak" ? "text-cyan-400" : "text-amber-400"
                         }`}
                       >
@@ -284,17 +321,20 @@ function LeaderboardSkeleton() {
       {[...Array(8)].map((_, i) => (
         <div
           key={i}
-          className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4"
+          className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3 sm:gap-4 sm:p-4"
         >
-          <div className="h-9 w-9 animate-pulse rounded-full bg-white/10" />
+          <div className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-white/10 sm:h-9 sm:w-9" />
           <div className="flex-1">
-            <div className="h-4 w-28 animate-pulse rounded bg-white/10" />
+            <div className="h-4 w-20 animate-pulse rounded bg-white/10 sm:w-28" />
           </div>
-          <div className="flex items-center gap-6">
+          {/* Mobile: single stat */}
+          <div className="h-4 w-12 animate-pulse rounded bg-white/10 sm:hidden" />
+          {/* Desktop: all stats */}
+          <div className="hidden items-center gap-6 sm:flex">
             <div className="h-4 w-12 animate-pulse rounded bg-white/10" />
-            <div className="hidden h-4 w-16 animate-pulse rounded bg-white/10 sm:block" />
-            <div className="hidden h-4 w-14 animate-pulse rounded bg-white/10 sm:block" />
-            <div className="hidden h-4 w-12 animate-pulse rounded bg-white/10 sm:block" />
+            <div className="h-4 w-16 animate-pulse rounded bg-white/10" />
+            <div className="h-4 w-14 animate-pulse rounded bg-white/10" />
+            <div className="h-4 w-12 animate-pulse rounded bg-white/10" />
           </div>
         </div>
       ))}
