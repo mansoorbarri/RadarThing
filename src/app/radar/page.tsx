@@ -35,6 +35,7 @@ import { UserAuth } from "~/components/atc/userAuth";
 import { ControlDock } from "~/components/atc/controlDock";
 import { FIDSPanel } from "~/components/atc/FIDSPanel";
 import { TaxiChartViewer } from "~/components/airports/TaxiChartsViewer";
+import { AirportFIDPanel } from "~/components/airports/AirportFIDPanel";
 import { ChartSidePanel } from "~/components/map/ChartOverlayPanel";
 import { AtcPlayer } from "~/components/atc/AtcPlayer";
 import { ProBadge } from "~/components/ui/pro-badge";
@@ -116,6 +117,7 @@ export default function ATCPage() {
 
   const [showTaxiChart, setShowTaxiChart] = useState(false);
   const [showAtcPlayer, setShowAtcPlayer] = useState(false);
+  const [showAirportFID, setShowAirportFID] = useState(false);
   const [chartOverlayActive, setChartOverlayActive] = useState(false);
 
   const [showTimerPopup, setShowTimerPopup] = useState(false);
@@ -307,9 +309,10 @@ export default function ATCPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [fullFlightFilter, selectedCallsigns, selectedAircrafts.length]);
 
-  // Deactivate chart overlay when airport changes
+  // Deactivate chart overlay and FID when airport changes
   useEffect(() => {
     setChartOverlayActive(false);
+    setShowAirportFID(false);
   }, [selectedAirport?.icao]);
 
   function handleAircraftSelect(
@@ -794,6 +797,17 @@ export default function ATCPage() {
             ))}
 
             <button
+              onClick={() => setShowAirportFID(!showAirportFID)}
+              className={`cursor-pointer rounded-lg border px-3 py-1.5 text-[10px] transition-colors ${
+                showAirportFID
+                  ? "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
+                  : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
+              } ${isMobile ? 'px-2 py-1 text-[9px]' : ''}`}
+            >
+              {isMobile ? 'FID' : 'Flights'}
+            </button>
+
+            <button
               onClick={() => setShowAtcPlayer(!showAtcPlayer)}
               className={`cursor-pointer rounded-lg border px-3 py-1.5 text-[10px] transition-colors ${
                 showAtcPlayer
@@ -808,6 +822,7 @@ export default function ATCPage() {
               onClick={() => {
                 setSelectedAirport(undefined);
                 setShowAtcPlayer(false);
+                setShowAirportFID(false);
                 setChartOverlayActive(false);
               }}
               className={`cursor-pointer rounded-lg border border-white/10 bg-white/5 text-white/60 ${isMobile ? 'px-2 py-1 text-[9px]' : 'px-3 py-1.5 text-[10px]'}`}
@@ -823,6 +838,40 @@ export default function ATCPage() {
           icao={selectedAirport.icao}
           onClose={() => setShowAtcPlayer(false)}
         />
+      )}
+
+      {showAirportFID && selectedAirport && (
+        isMobile ? (
+          <MobileSwipeSheet onClose={() => setShowAirportFID(false)}>
+            <AirportFIDPanel
+              icao={selectedAirport.icao}
+              airportLat={selectedAirport.lat}
+              airportLon={selectedAirport.lon}
+              aircrafts={aircrafts}
+              onTrack={(ac) => {
+                setSelectedAircrafts([ac]);
+                setShowAirportFID(false);
+                drawFlightPlanOnMapRef.current?.(ac, true);
+              }}
+              onClose={() => setShowAirportFID(false)}
+              isMobile={true}
+            />
+          </MobileSwipeSheet>
+        ) : (
+          <AirportFIDPanel
+            icao={selectedAirport.icao}
+            airportLat={selectedAirport.lat}
+            airportLon={selectedAirport.lon}
+            aircrafts={aircrafts}
+            onTrack={(ac) => {
+              setSelectedAircrafts([ac]);
+              setShowAirportFID(false);
+              drawFlightPlanOnMapRef.current?.(ac, true);
+            }}
+            onClose={() => setShowAirportFID(false)}
+            isMobile={false}
+          />
+        )
       )}
 
       {selectedAircrafts.length > 0 && (
