@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RadarThing
 // @namespace    http://tampermonkey.net/
-// @version      1.3.5
+// @version      1.3.6
 // @description  Always loads the latest GeoFS ATC Radar script from GitHub
 // @Author       xyzmani
 // @icon         https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/public/favicon.ico
@@ -107,6 +107,36 @@
   function validateSquawk(squawk) {
     const rgx = /^[0-7]{4}$/;
     return squawk.length === 0 || rgx.test(squawk);
+  }
+
+  function checkFlightNoAvailable(flightNo, myId) {
+    return new Promise((resolve) => {
+      const es = new EventSource("https://sse.radarthing.com/api/stream");
+      const timeout = setTimeout(() => {
+        es.close();
+        resolve(true);
+      }, 5000);
+
+      es.onmessage = (event) => {
+        clearTimeout(timeout);
+        es.close();
+        try {
+          const data = JSON.parse(event.data);
+          const taken = (data.aircraft || []).some(
+            (ac) => ac.flightNo === flightNo && ac.id !== myId,
+          );
+          resolve(!taken);
+        } catch {
+          resolve(true);
+        }
+      };
+
+      es.onerror = () => {
+        clearTimeout(timeout);
+        es.close();
+        resolve(true);
+      };
+    });
   }
 
   function showToast(msg, isError = false) {
@@ -372,7 +402,7 @@
     setupToggle(JTH_TOGGLE_ID, "jth");
     setupToggle(SEABUS_TOGGLE_ID, "seabus");
 
-    document.getElementById(SAVE_BTN_ID).onclick = () => {
+    document.getElementById(SAVE_BTN_ID).onclick = async () => {
       const dep = document.getElementById(DEP_INPUT_ID).value.trim();
       const arr = document.getElementById(ARR_INPUT_ID).value.trim();
       const flt = document.getElementById(FLT_INPUT_ID).value.trim();
@@ -385,6 +415,14 @@
 
       if (sqk && !validateSquawk(sqk)) {
         showToast("Invalid squawk", true);
+        return;
+      }
+
+      // Check flight number uniqueness before accepting
+      const myId = geofs?.userRecord?.googleid || geofs?.userRecord?.callsign;
+      const available = await checkFlightNoAvailable(flt, myId);
+      if (!available) {
+        showToast("Callsign already in use", true);
         return;
       }
 
