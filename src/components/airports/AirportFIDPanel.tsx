@@ -195,7 +195,7 @@ export function AirportFIDPanel({
   onClose,
   isMobile,
 }: AirportFIDPanelProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("arrivals");
+  const [activeTab, setActiveTab] = useState<Tab>("departures");
 
   const arrivals = useMemo(
     () => aircrafts.filter((ac) => ac.arrival === icao),
@@ -228,16 +228,6 @@ export function AirportFIDPanel({
       {/* Tabs */}
       <div className="flex shrink-0 border-b border-white/10">
         <button
-          onClick={() => setActiveTab("arrivals")}
-          className={`flex-1 cursor-pointer px-4 py-2 text-center text-xs font-medium transition-colors ${
-            activeTab === "arrivals"
-              ? "border-b-2 border-cyan-400 text-cyan-400"
-              : "text-white/50 hover:text-white/80"
-          }`}
-        >
-          Arrivals ({arrivals.length})
-        </button>
-        <button
           onClick={() => setActiveTab("departures")}
           className={`flex-1 cursor-pointer px-4 py-2 text-center text-xs font-medium transition-colors ${
             activeTab === "departures"
@@ -246,6 +236,16 @@ export function AirportFIDPanel({
           }`}
         >
           Departures ({departures.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("arrivals")}
+          className={`flex-1 cursor-pointer px-4 py-2 text-center text-xs font-medium transition-colors ${
+            activeTab === "arrivals"
+              ? "border-b-2 border-cyan-400 text-cyan-400"
+              : "text-white/50 hover:text-white/80"
+          }`}
+        >
+          Arrivals ({arrivals.length})
         </button>
       </div>
 
