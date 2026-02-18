@@ -277,7 +277,7 @@ export default function DashboardPage() {
                   </button>
                 </div>
               )}
-              <div className="mt-1.5">
+              <div className="mt-1.5 flex items-center gap-3">
                 {discordUsername ? (
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 text-indigo-400 font-mono text-xs">
@@ -301,6 +301,12 @@ export default function DashboardPage() {
                     <DiscordIcon className="h-3.5 w-3.5" />
                     <span>{discordLoading ? "Connecting..." : "Connect Discord"}</span>
                   </button>
+                )}
+                {stats && stats.currentStreak > 0 && (
+                  <div className="flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5">
+                    <Flame className="h-3 w-3 text-amber-400" />
+                    <span className="font-mono text-xs font-bold text-amber-400">{stats.currentStreak}d</span>
+                  </div>
                 )}
               </div>
             </div>
@@ -340,13 +346,6 @@ export default function DashboardPage() {
                 value={stats.uniqueAirports.toString()}
                 color="emerald"
                 locked={!isPro}
-              />
-              <StatCard
-                icon={<Flame className="h-5 w-5" />}
-                label="Current Streak"
-                value={stats.currentStreak > 0 ? `${stats.currentStreak}d` : "0d"}
-                color="amber"
-                subtitle={stats.longestStreak > 0 ? `Best: ${stats.longestStreak}d` : undefined}
               />
             </div>
 
