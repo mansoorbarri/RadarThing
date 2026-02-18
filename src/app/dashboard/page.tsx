@@ -64,6 +64,7 @@ export default function DashboardPage() {
   const clerkId = user?.id;
   const [mounted, setMounted] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [profileCopied, setProfileCopied] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [flightsExpanded, setFlightsExpanded] = useState(false);
@@ -118,6 +119,16 @@ export default function DashboardPage() {
       navigator.clipboard.writeText(supportId);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const copyProfileLink = () => {
+    if (supportId) {
+      const url = `${window.location.origin}/pilot/${supportId}`;
+      navigator.clipboard.writeText(url);
+      setProfileCopied(true);
+      toast.success("Profile link copied to clipboard");
+      setTimeout(() => setProfileCopied(false), 2000);
     }
   };
 
@@ -179,18 +190,37 @@ export default function DashboardPage() {
                 )}
               </p>
               {supportId && (
-                <button
-                  onClick={copySupportId}
-                  className="mt-1 flex items-center gap-1.5 text-slate-600 font-mono text-xs hover:text-slate-400 transition-colors cursor-pointer"
-                  title="Click to copy - share this with support when reporting issues"
-                >
-                  <span>ID: {supportId.slice(0, 8)}...</span>
-                  {copied ? (
-                    <Check className="h-3 w-3 text-emerald-400" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
-                  )}
-                </button>
+                <div className="mt-1 flex items-center gap-3">
+                  <button
+                    onClick={copySupportId}
+                    className="flex items-center gap-1.5 text-slate-600 font-mono text-xs hover:text-slate-400 transition-colors cursor-pointer"
+                    title="Click to copy - share this with support when reporting issues"
+                  >
+                    <span>ID: {supportId.slice(0, 8)}...</span>
+                    {copied ? (
+                      <Check className="h-3 w-3 text-emerald-400" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                  </button>
+                  <button
+                    onClick={copyProfileLink}
+                    className="flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-400 transition-all hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400 cursor-pointer"
+                    title="Copy your public profile link"
+                  >
+                    {profileCopied ? (
+                      <>
+                        <Check className="h-3 w-3 text-emerald-400" />
+                        <span className="text-emerald-400">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="h-3 w-3" />
+                        <span>Share Profile</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
             </div>
           </div>

@@ -4,6 +4,7 @@ import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Analytics } from "~/lib/analytics";
 import {
@@ -17,6 +18,8 @@ import {
   Calendar,
   Play,
   Share2,
+  Check,
+  Link,
 } from "lucide-react";
 import Image from "next/image";
 import { useProStatus } from "~/hooks/useProStatus";
@@ -63,8 +66,17 @@ function PilotPageContent() {
   // Get callsign from URL query param (from SSE), fall back to DB
   const callsignFromUrl = searchParams.get("callsign");
 
+  const [linkCopied, setLinkCopied] = useState(false);
   const stats = useQuery(api.flights.getStatsById, { userId });
   const { isProUser, isLoading: proLoading } = useProStatus();
+
+  const copyProfileLink = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    setLinkCopied(true);
+    toast.success("Profile link copied to clipboard");
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
 
   if (stats === undefined || proLoading) {
     return <PilotPageSkeleton callsign={callsignFromUrl} />;
@@ -113,13 +125,32 @@ function PilotPageContent() {
               <h1 className="text-3xl font-bold text-white">
                 {callsignFromUrl || stats.pilotCallsign || "Unknown Pilot"}
               </h1>
-              <p className="text-slate-400 font-mono text-sm">
-                {stats.userRole === "PRO" || stats.userRole === "ADMIN" ? (
-                  <span className="text-emerald-400">PRO Member</span>
-                ) : (
-                  <span className="text-slate-500">Free Tier</span>
-                )}
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="text-slate-400 font-mono text-sm">
+                  {stats.userRole === "PRO" || stats.userRole === "ADMIN" ? (
+                    <span className="text-emerald-400">PRO Member</span>
+                  ) : (
+                    <span className="text-slate-500">Free Tier</span>
+                  )}
+                </p>
+                <button
+                  onClick={copyProfileLink}
+                  className="flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-400 transition-all hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400 cursor-pointer"
+                  title="Copy profile link"
+                >
+                  {linkCopied ? (
+                    <>
+                      <Check className="h-3 w-3 text-emerald-400" />
+                      <span className="text-emerald-400">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Link className="h-3 w-3" />
+                      <span>Copy Link</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
