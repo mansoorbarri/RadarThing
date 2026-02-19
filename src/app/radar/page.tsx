@@ -24,6 +24,7 @@ import { useTimer } from "~/hooks/useTimer";
 // useAirportCharts hook moved into AirportChartsViewer component
 import { useProStatus } from "~/hooks/useProStatus";
 import { useRecentSearches } from "~/hooks/useRecentSearches";
+import { Analytics } from "~/lib/analytics";
 
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
 import { SearchBar } from "~/components/atc/searchbar";
@@ -736,7 +737,10 @@ export default function ATCPage() {
               label: "Leaderboard",
               icon: LeaderboardIcon,
               active: false,
-              onClick: () => router.push("/leaderboard"),
+              onClick: () => {
+                Analytics.leaderboardIconClicked();
+                router.push("/leaderboard");
+              },
             },
             ...(!isProUser ? [{
               id: "upgrade",

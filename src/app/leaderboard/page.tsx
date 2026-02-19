@@ -7,6 +7,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Image from "next/image";
 import { ArrowLeft, Plane, Navigation, Clock, Trophy, ChevronDown, Flame } from "lucide-react";
+import { Analytics } from "~/lib/analytics";
 
 type SortKey = "flights" | "distance" | "time" | "streak";
 
@@ -24,6 +25,10 @@ export default function LeaderboardPage() {
   const [sortBy, setSortBy] = useState<SortKey>("flights");
 
   const currentUserRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    Analytics.leaderboardViewed();
+  }, []);
 
   const sorted = leaderboard
     ? [...leaderboard].sort((a, b) => {

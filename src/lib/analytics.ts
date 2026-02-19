@@ -225,6 +225,15 @@ export const Analytics = {
     track("subscription_cancelled", props);
   },
 
+  // ===== LEADERBOARD EVENTS =====
+  leaderboardViewed: (props?: BaseEventProps) => {
+    track("leaderboard_viewed", props);
+  },
+
+  leaderboardIconClicked: (props?: BaseEventProps) => {
+    track("leaderboard_icon_clicked", props);
+  },
+
   // ===== DASHBOARD EVENTS =====
   dashboardViewed: (props?: BaseEventProps) => {
     track("dashboard_viewed", props);
