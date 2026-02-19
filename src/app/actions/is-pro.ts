@@ -7,9 +7,9 @@ import { env } from "~/env";
 // Helper to get user by email (consistent across Clerk dev/prod)
 async function getUserByEmail() {
   const clerkUser = await currentUser();
-  if (!clerkUser?.emailAddresses?.[0]?.emailAddress) return null;
+  const email = clerkUser?.primaryEmailAddress?.emailAddress;
+  if (!email) return null;
 
-  const email = clerkUser.emailAddresses[0].emailAddress;
   return await convex.query(api.users.getByEmail, { email });
 }
 
