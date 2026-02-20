@@ -96,9 +96,14 @@ export const RadarSettings = ({
           label="Conflict Alerts"
           checked={showConflicts}
           onChange={(v) => {
+            if (!isPRO) {
+              Analytics.proFeatureBlocked({ feature: "traffic_conflicts" });
+              return;
+            }
             setShowConflicts(v);
             Analytics.conflictLayerToggled({ enabled: v });
           }}
+          disabled={!isPRO}
         />
       </div>
 

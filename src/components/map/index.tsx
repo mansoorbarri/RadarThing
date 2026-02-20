@@ -96,6 +96,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const canUseRadarMode = isProUser;
   const canUseAdvancedWeather = isProUser;
+  const canUseConflictAlerts = isProUser;
 
   const [isHeadingMode, setIsHeadingMode] = useState(false);
   const [isRadarMode, setIsRadarMode] = useState(() =>
@@ -183,6 +184,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
       setShowSigmets(false);
     }
   }, [proLoading, canUseAdvancedWeather]);
+
+  useEffect(() => {
+    // Only reset when loading is complete and user doesn't have access
+    if (!proLoading && !canUseConflictAlerts && showConflicts) {
+      setShowConflicts(false);
+    }
+  }, [proLoading, canUseConflictAlerts, showConflicts]);
 
   // Persist map mode settings to cookies
   useEffect(() => {
@@ -342,7 +350,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     onAircraftSelect,
     onAirportSelect,
     showTags,
-    showConflicts,
+    showConflicts: canUseConflictAlerts && showConflicts,
     onConflictsChange: setConflictAlerts,
     mapReady: mapRefs.mapReady,
     isMobile,
@@ -574,7 +582,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         </div>
       )}
 
-      {showConflicts && !isMobile && (
+      {canUseConflictAlerts && showConflicts && !isMobile && (
         <div className="pointer-events-none absolute top-[180px] right-[22px] z-[10012] w-[300px] select-none">
           <div className="rounded-xl border border-cyan-400/30 bg-gradient-to-b from-[#03131c]/95 to-[#01090f]/95 p-4 shadow-[0_0_30px_rgba(34,211,238,0.12)] backdrop-blur-xl">
             <div
