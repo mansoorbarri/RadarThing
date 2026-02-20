@@ -19,6 +19,9 @@ interface RadarSettingsProps {
 
   showSigmets: boolean;
   setShowSigmets: (v: boolean) => void;
+
+  showConflicts: boolean;
+  setShowConflicts: (v: boolean) => void;
 }
 
 export const RadarSettings = ({
@@ -30,6 +33,8 @@ export const RadarSettings = ({
   setShowAirmets,
   showSigmets,
   setShowSigmets,
+  showConflicts,
+  setShowConflicts,
 }: RadarSettingsProps) => {
   const router = useRouter();
 
@@ -79,6 +84,21 @@ export const RadarSettings = ({
             Analytics.weatherLayerToggled({ layer: "sigmet", enabled: v });
           }}
           disabled={!isPRO}
+        />
+      </div>
+
+      <div className="space-y-3 border-t border-white/10 pt-4">
+        <span className="text-[11px] tracking-widest text-cyan-300 uppercase">
+          TRAFFIC
+        </span>
+
+        <SettingsToggle
+          label="Conflict Alerts"
+          checked={showConflicts}
+          onChange={(v) => {
+            setShowConflicts(v);
+            Analytics.conflictLayerToggled({ enabled: v });
+          }}
         />
       </div>
 

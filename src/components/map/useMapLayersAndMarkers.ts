@@ -1,5 +1,5 @@
 // components/map/useMapLayersAndMarkers.ts
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import L from "leaflet";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type Airport } from "~/components/map"; // Adjusted path
@@ -139,8 +139,186 @@ interface UseMapLayersAndMarkersProps {
   onAircraftSelect: (aircraft: PositionUpdate | null, ctrlKey?: boolean) => void;
   onAirportSelect?: (airport: Airport) => void;
   showTags: boolean;
+  showConflicts: boolean;
+  onConflictsChange?: (conflicts: ConflictAlertSummary[]) => void;
   mapReady: boolean;
   isMobile: boolean;
+}
+
+type ConflictSeverity = "high" | "medium" | "low";
+
+interface ConflictAlert {
+  aircraftA: PositionUpdate;
+  aircraftB: PositionUpdate;
+  horizontalSeparationNm: number;
+  verticalSeparationFt: number;
+  timeToCpaMinutes: number;
+  severity: ConflictSeverity;
+  cpaMidpoint: [number, number];
+}
+
+export interface ConflictAlertSummary {
+  id: string;
+  callsignA: string;
+  callsignB: string;
+  severity: ConflictSeverity;
+  horizontalSeparationNm: number;
+  verticalSeparationFt: number;
+  timeToCpaMinutes: number;
+}
+
+const NM_PER_DEG_LAT = 60;
+const LOOKAHEAD_MINUTES = 6;
+const MAX_INITIAL_DISTANCE_NM = 30;
+const HORIZONTAL_THRESHOLD_NM = 3;
+const VERTICAL_THRESHOLD_FT = 1200;
+const MAX_DISPLAYED_CONFLICTS = 40;
+
+function toFiniteNumber(value: unknown, fallback = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function toRadians(degrees: number): number {
+  return (degrees * Math.PI) / 180;
+}
+
+function getVelocityVectorNmPerMinute(aircraft: PositionUpdate) {
+  const speedKts = Math.max(0, toFiniteNumber(aircraft.speed, 0));
+  const headingRad = toRadians(toFiniteNumber(aircraft.heading, 0));
+  const speedNmPerMinute = speedKts / 60;
+
+  return {
+    east: speedNmPerMinute * Math.sin(headingRad),
+    north: speedNmPerMinute * Math.cos(headingRad),
+  };
+}
+
+function getRelativeOffsetNm(
+  from: PositionUpdate,
+  to: PositionUpdate,
+): { east: number; north: number; cosLat: number } {
+  const avgLatRad = toRadians((from.lat + to.lat) / 2);
+  const cosLat = Math.max(0.2, Math.cos(avgLatRad));
+
+  return {
+    east: (to.lon - from.lon) * NM_PER_DEG_LAT * cosLat,
+    north: (to.lat - from.lat) * NM_PER_DEG_LAT,
+    cosLat,
+  };
+}
+
+function getConflictSeverity(
+  horizontalSeparationNm: number,
+  verticalSeparationFt: number,
+): ConflictSeverity {
+  if (horizontalSeparationNm <= 1.2 && verticalSeparationFt <= 700) {
+    return "high";
+  }
+  if (horizontalSeparationNm <= 2 && verticalSeparationFt <= 1000) {
+    return "medium";
+  }
+  return "low";
+}
+
+function getConflictStyle(severity: ConflictSeverity) {
+  if (severity === "high") {
+    return { color: "#ef4444", weight: 3, radius: 7 };
+  }
+  if (severity === "medium") {
+    return { color: "#f59e0b", weight: 2.5, radius: 6 };
+  }
+  return { color: "#facc15", weight: 2, radius: 5 };
+}
+
+function detectConflicts(aircrafts: PositionUpdate[]): ConflictAlert[] {
+  const conflicts: ConflictAlert[] = [];
+
+  for (let i = 0; i < aircrafts.length; i++) {
+    const aircraftA = aircrafts[i];
+    if (!aircraftA) continue;
+
+    const velocityA = getVelocityVectorNmPerMinute(aircraftA);
+    const altitudeA = toFiniteNumber(aircraftA.altMSL ?? aircraftA.alt, 0);
+    const vSpeedA = toFiniteNumber(aircraftA.vspeed, 0) / 60;
+
+    for (let j = i + 1; j < aircrafts.length; j++) {
+      const aircraftB = aircrafts[j];
+      if (!aircraftB) continue;
+
+      const offset = getRelativeOffsetNm(aircraftA, aircraftB);
+      const currentHorizontalNm = Math.hypot(offset.east, offset.north);
+
+      if (currentHorizontalNm > MAX_INITIAL_DISTANCE_NM) {
+        continue;
+      }
+
+      const velocityB = getVelocityVectorNmPerMinute(aircraftB);
+      const relativeVelocityEast = velocityB.east - velocityA.east;
+      const relativeVelocityNorth = velocityB.north - velocityA.north;
+      const relativeVelocitySquared =
+        relativeVelocityEast * relativeVelocityEast +
+        relativeVelocityNorth * relativeVelocityNorth;
+
+      let timeToCpa = 0;
+      if (relativeVelocitySquared > 1e-8) {
+        timeToCpa =
+          -(
+            offset.east * relativeVelocityEast +
+            offset.north * relativeVelocityNorth
+          ) / relativeVelocitySquared;
+      }
+      timeToCpa = Math.min(Math.max(timeToCpa, 0), LOOKAHEAD_MINUTES);
+
+      const cpaEast = offset.east + relativeVelocityEast * timeToCpa;
+      const cpaNorth = offset.north + relativeVelocityNorth * timeToCpa;
+      const horizontalSeparationNm = Math.hypot(cpaEast, cpaNorth);
+
+      if (horizontalSeparationNm > HORIZONTAL_THRESHOLD_NM) {
+        continue;
+      }
+
+      const altitudeB = toFiniteNumber(aircraftB.altMSL ?? aircraftB.alt, 0);
+      const vSpeedB = toFiniteNumber(aircraftB.vspeed, 0) / 60;
+      const verticalSeparationFt = Math.abs(
+        altitudeB +
+          vSpeedB * timeToCpa -
+          (altitudeA + vSpeedA * timeToCpa),
+      );
+
+      if (verticalSeparationFt > VERTICAL_THRESHOLD_FT) {
+        continue;
+      }
+
+      const aircraftAXAtCpa = velocityA.east * timeToCpa;
+      const aircraftAYAtCpa = velocityA.north * timeToCpa;
+      const aircraftBXAtCpa = offset.east + velocityB.east * timeToCpa;
+      const aircraftBYAtCpa = offset.north + velocityB.north * timeToCpa;
+      const midpointEast = (aircraftAXAtCpa + aircraftBXAtCpa) / 2;
+      const midpointNorth = (aircraftAYAtCpa + aircraftBYAtCpa) / 2;
+      const cpaLat = aircraftA.lat + midpointNorth / NM_PER_DEG_LAT;
+      const cpaLon =
+        aircraftA.lon + midpointEast / (NM_PER_DEG_LAT * offset.cosLat);
+
+      conflicts.push({
+        aircraftA,
+        aircraftB,
+        horizontalSeparationNm,
+        verticalSeparationFt,
+        timeToCpaMinutes: timeToCpa,
+        severity: getConflictSeverity(horizontalSeparationNm, verticalSeparationFt),
+        cpaMidpoint: [cpaLat, cpaLon],
+      });
+    }
+  }
+
+  return conflicts.sort((a, b) => {
+    const severityOrder = { high: 0, medium: 1, low: 2 };
+    if (severityOrder[a.severity] !== severityOrder[b.severity]) {
+      return severityOrder[a.severity] - severityOrder[b.severity];
+    }
+    return a.horizontalSeparationNm - b.horizontalSeparationNm;
+  });
 }
 
 export const useMapLayersAndMarkers = ({
@@ -163,11 +341,14 @@ export const useMapLayersAndMarkers = ({
   onAircraftSelect,
   onAirportSelect,
   showTags,
+  showConflicts,
+  onConflictsChange,
   mapReady,
   isMobile,
 }: UseMapLayersAndMarkersProps) => {
   // Track existing markers by aircraft ID for smooth updates
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const conflictLayerRef = useRef<L.LayerGroup | null>(null);
 
   // Use refs for callbacks to avoid stale closures in event handlers
   const onAircraftSelectRef = useRef(onAircraftSelect);
@@ -207,6 +388,21 @@ export const useMapLayersAndMarkers = ({
       map.off("zoomend", onZoomEnd);
     };
   }, [mapInstance]);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map || !mapReady) return;
+
+    if (!conflictLayerRef.current) {
+      conflictLayerRef.current = L.layerGroup().addTo(map);
+    }
+
+    return () => {
+      if (!conflictLayerRef.current) return;
+      map.removeLayer(conflictLayerRef.current);
+      conflictLayerRef.current = null;
+    };
+  }, [mapInstance, mapReady]);
 
   // Effect for managing base layers (OSM/Satellite/Radar)
   useEffect(() => {
@@ -368,6 +564,65 @@ export const useMapLayersAndMarkers = ({
     mapReady,
     isMobile,
   ]);
+
+  useEffect(() => {
+    const conflictLayer = conflictLayerRef.current;
+    if (!conflictLayer) return;
+
+    conflictLayer.clearLayers();
+    if (!showConflicts || !mapReady) {
+      onConflictsChange?.([]);
+      return;
+    }
+
+    const conflicts = detectConflicts(aircrafts).slice(0, MAX_DISPLAYED_CONFLICTS);
+    onConflictsChange?.(
+      conflicts.map((conflict) => ({
+        id: `${conflict.aircraftA.id}-${conflict.aircraftB.id}`,
+        callsignA: conflict.aircraftA.callsign || conflict.aircraftA.flightNo || conflict.aircraftA.id,
+        callsignB: conflict.aircraftB.callsign || conflict.aircraftB.flightNo || conflict.aircraftB.id,
+        severity: conflict.severity,
+        horizontalSeparationNm: conflict.horizontalSeparationNm,
+        verticalSeparationFt: conflict.verticalSeparationFt,
+        timeToCpaMinutes: conflict.timeToCpaMinutes,
+      })),
+    );
+
+    conflicts.forEach((conflict) => {
+      const style = getConflictStyle(conflict.severity);
+
+      L.polyline(
+        [
+          [conflict.aircraftA.lat, conflict.aircraftA.lon],
+          [conflict.aircraftB.lat, conflict.aircraftB.lon],
+        ],
+        {
+          color: style.color,
+          weight: style.weight,
+          opacity: 0.65,
+          dashArray: "5, 7",
+          interactive: false,
+        },
+      ).addTo(conflictLayer);
+
+      L.circleMarker(conflict.cpaMidpoint, {
+        radius: style.radius,
+        color: style.color,
+        fillColor: style.color,
+        fillOpacity: 0.35,
+        weight: 1.5,
+        interactive: false,
+      })
+        .addTo(conflictLayer)
+        .bindTooltip(
+          `CPA ${conflict.horizontalSeparationNm.toFixed(1)}nm / ${Math.round(conflict.verticalSeparationFt)}ft in ${conflict.timeToCpaMinutes.toFixed(1)}m`,
+          {
+            direction: "top",
+            opacity: 0.95,
+          },
+        );
+    });
+  }, [aircrafts, mapReady, onConflictsChange, showConflicts]);
 
   // Use refs for callbacks to avoid stale closures
   const onAirportSelectRef = useRef(onAirportSelect);

@@ -13,6 +13,7 @@ import { getBooleanCookie, setBooleanCookie } from "~/lib/cookies";
 import { useMapInitialization } from "./useMapInitialization";
 import { useFlightPlanDrawing } from "./useFlightPlanDrawing";
 import { useMapLayersAndMarkers } from "./useMapLayersAndMarkers";
+import { type ConflictAlertSummary } from "./useMapLayersAndMarkers";
 import { useSelectedAirportHandling } from "./useSelectedAirportHandling";
 import { useHeadingModeInteraction } from "./useHeadingModeInteraction";
 
@@ -34,6 +35,7 @@ import { useNotamOverlay } from "~/hooks/useNotamOverlay";
 import { useWeatherOverlayLayer } from "~/hooks/useWeatherOverlayLayer";
 import { MetarPanel } from "./MetarPanel";
 import { RadarSettings } from "~/components/atc/radarSettings";
+import { Analytics } from "~/lib/analytics";
 
 export interface Airport {
   name: string;
@@ -115,7 +117,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [showSigmets, setShowSigmets] = useState(() =>
     getBooleanCookie("weather_sigmets", false)
   );
+  const [showConflicts, setShowConflicts] = useState(() =>
+    getBooleanCookie("traffic_conflicts", false)
+  );
   const [showTags, setShowTags] = useState(true);
+  const [conflictAlerts, setConflictAlerts] = useState<ConflictAlertSummary[]>([]);
+  const lastConflictSnapshotRef = useRef<string>("");
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // Local selection state for internal use (cleared when clicking map background)
@@ -202,6 +209,37 @@ const MapComponent: React.FC<MapComponentProps> = ({
   useEffect(() => {
     setBooleanCookie("weather_sigmets", showSigmets);
   }, [showSigmets]);
+
+  useEffect(() => {
+    setBooleanCookie("traffic_conflicts", showConflicts);
+  }, [showConflicts]);
+
+  useEffect(() => {
+    if (!showConflicts) return;
+    Analytics.conflictMonitorViewed();
+  }, [showConflicts]);
+
+  useEffect(() => {
+    if (!showConflicts) {
+      lastConflictSnapshotRef.current = "";
+      return;
+    }
+
+    const high = conflictAlerts.filter((a) => a.severity === "high").length;
+    const medium = conflictAlerts.filter((a) => a.severity === "medium").length;
+    const low = conflictAlerts.filter((a) => a.severity === "low").length;
+    const snapshot = `${conflictAlerts.length}:${high}:${medium}:${low}`;
+
+    if (snapshot === lastConflictSnapshotRef.current) return;
+    lastConflictSnapshotRef.current = snapshot;
+
+    Analytics.conflictSnapshotUpdated({
+      total: conflictAlerts.length,
+      high,
+      medium,
+      low,
+    });
+  }, [conflictAlerts, showConflicts]);
 
   const handleMapClick = useCallback(
     (e: L.LeafletMouseEvent) => {
@@ -304,6 +342,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     onAircraftSelect,
     onAirportSelect,
     showTags,
+    showConflicts,
+    onConflictsChange: setConflictAlerts,
     mapReady: mapRefs.mapReady,
     isMobile,
   });
@@ -527,7 +567,84 @@ const MapComponent: React.FC<MapComponentProps> = ({
               setShowAirmets={setShowAirmets}
               showSigmets={showSigmets}
               setShowSigmets={setShowSigmets}
+              showConflicts={showConflicts}
+              setShowConflicts={setShowConflicts}
             />
+          </div>
+        </div>
+      )}
+
+      {showConflicts && !isMobile && (
+        <div className="pointer-events-none absolute top-[180px] right-[22px] z-[10012] w-[300px] select-none">
+          <div className="rounded-xl border border-cyan-400/30 bg-gradient-to-b from-[#03131c]/95 to-[#01090f]/95 p-4 shadow-[0_0_30px_rgba(34,211,238,0.12)] backdrop-blur-xl">
+            <div
+              className="pointer-events-none absolute inset-0 rounded-xl opacity-20"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(180deg, transparent, transparent 5px, rgba(34,211,238,0.08) 6px)",
+              }}
+            />
+            <div className="relative">
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <p className="font-mono text-[10px] tracking-[0.2em] text-cyan-400/80 uppercase">
+                    Conflict Monitor
+                  </p>
+                  <p className="font-mono text-xs text-white/60">
+                    Live CPA prediction
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-1">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-80" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />
+                  </span>
+                  <span className="font-mono text-[10px] font-bold text-cyan-300">
+                    {conflictAlerts.length} ACTIVE
+                  </span>
+                </div>
+              </div>
+
+              <div className="mb-3 grid grid-cols-3 gap-2">
+                <SeverityStat
+                  label="HIGH"
+                  tone="text-red-300 border-red-400/30 bg-red-500/10"
+                  count={conflictAlerts.filter((a) => a.severity === "high").length}
+                />
+                <SeverityStat
+                  label="MED"
+                  tone="text-amber-300 border-amber-400/30 bg-amber-500/10"
+                  count={conflictAlerts.filter((a) => a.severity === "medium").length}
+                />
+                <SeverityStat
+                  label="LOW"
+                  tone="text-yellow-200 border-yellow-300/30 bg-yellow-500/10"
+                  count={conflictAlerts.filter((a) => a.severity === "low").length}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                {conflictAlerts.length === 0 ? (
+                  <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 font-mono text-[11px] text-white/50">
+                    No predicted conflicts in current traffic.
+                  </div>
+                ) : (
+                  conflictAlerts.slice(0, 5).map((alert) => (
+                    <div key={alert.id} className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 font-mono text-[11px]">
+                      <div className="flex items-center justify-between text-white/85">
+                        <span>{alert.callsignA}</span>
+                        <span className="text-white/35">×</span>
+                        <span>{alert.callsignB}</span>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-[10px] text-white/50">
+                        <span>{alert.horizontalSeparationNm.toFixed(1)}nm / {Math.round(alert.verticalSeparationFt)}ft</span>
+                        <span>T-{alert.timeToCpaMinutes.toFixed(1)}m</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -551,3 +668,20 @@ const MapComponent: React.FC<MapComponentProps> = ({
 };
 
 export default MapComponent;
+
+function SeverityStat({
+  label,
+  count,
+  tone,
+}: {
+  label: string;
+  count: number;
+  tone: string;
+}) {
+  return (
+    <div className={`rounded-lg border px-2 py-1.5 text-center font-mono ${tone}`}>
+      <p className="text-[9px] tracking-[0.18em] uppercase">{label}</p>
+      <p className="text-sm font-bold">{count}</p>
+    </div>
+  );
+}

@@ -67,6 +67,17 @@ interface MapEventProps extends BaseEventProps {
   zoomLevel?: number;
 }
 
+interface ConflictLayerProps extends BaseEventProps {
+  enabled: boolean;
+}
+
+interface ConflictSnapshotProps extends BaseEventProps {
+  total: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
 // All analytics events
 export const Analytics = {
   // Initialize PostHog (only in production)
@@ -193,6 +204,18 @@ export const Analytics = {
 
   headingModeToggled: (props: { enabled: boolean; callsign?: string }) => {
     track("heading_mode_toggled", props);
+  },
+
+  conflictLayerToggled: (props: ConflictLayerProps) => {
+    track("conflict_layer_toggled", props);
+  },
+
+  conflictMonitorViewed: (props?: BaseEventProps) => {
+    track("conflict_monitor_viewed", props);
+  },
+
+  conflictSnapshotUpdated: (props: ConflictSnapshotProps) => {
+    track("conflict_snapshot_updated", props);
   },
 
   // ===== AIRPORT EVENTS =====
