@@ -104,6 +104,16 @@ export default defineSchema({
     .index("by_uploadedBy", ["uploadedBy"]),
 
   // Track contributor reward winners (first to 100 uploads)
+  // Track which flights users are currently watching
+  activeTrackers: defineTable({
+    clerkId: v.string(),
+    callsign: v.string(),
+    lastSeen: v.number(),
+  })
+    .index("by_clerkId", ["clerkId"])
+    .index("by_callsign", ["callsign"])
+    .index("by_lastSeen", ["lastSeen"]),
+
   contributorRewards: defineTable({
     rewardType: v.union(v.literal("aircraftImages"), v.literal("airportCharts")),
     clerkId: v.string(),

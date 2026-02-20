@@ -305,6 +305,15 @@ export const Analytics = {
     track("control_set_all", props);
   },
 
+  // ===== MOST TRACKED EVENTS =====
+  mostTrackedFlightClicked: (props: {
+    callsign: string;
+    trackerCount: number;
+    rank: number;
+  }) => {
+    track("most_tracked_flight_clicked", props);
+  },
+
   // ===== GENERIC EVENT =====
   track: (eventName: string, properties?: Record<string, unknown>) => {
     track(eventName, properties);

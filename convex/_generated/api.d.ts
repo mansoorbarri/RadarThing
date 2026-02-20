@@ -8,9 +8,11 @@
  * @module
  */
 
+import type * as activeTrackers from "../activeTrackers.js";
 import type * as aircraftImages from "../aircraftImages.js";
 import type * as airportCharts from "../airportCharts.js";
 import type * as contributorRewards from "../contributorRewards.js";
+import type * as crons from "../crons.js";
 import type * as flights from "../flights.js";
 import type * as missingImageNotifications from "../missingImageNotifications.js";
 import type * as users from "../users.js";
@@ -22,9 +24,11 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  activeTrackers: typeof activeTrackers;
   aircraftImages: typeof aircraftImages;
   airportCharts: typeof airportCharts;
   contributorRewards: typeof contributorRewards;
+  crons: typeof crons;
   flights: typeof flights;
   missingImageNotifications: typeof missingImageNotifications;
   users: typeof users;

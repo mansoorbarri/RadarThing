@@ -24,6 +24,8 @@ import { useTimer } from "~/hooks/useTimer";
 // useAirportCharts hook moved into AirportChartsViewer component
 import { useProStatus } from "~/hooks/useProStatus";
 import { useRecentSearches } from "~/hooks/useRecentSearches";
+import { useActiveTracker } from "~/hooks/useActiveTracker";
+import { useMostTrackedFlights } from "~/hooks/useMostTrackedFlights";
 import { Analytics } from "~/lib/analytics";
 
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
@@ -32,6 +34,7 @@ import { Sidebar, type HistoryFlight } from "~/components/atc/sidebar";
 import { MultiAircraftSidebar } from "~/components/atc/MultiAircraftSidebar";
 import { FlightReplayControls } from "~/components/flight-replay/FlightReplayControls";
 import { CallsignFilter } from "~/components/atc/callsignFilter";
+import { MostTrackedPanel } from "~/components/atc/MostTrackedPanel";
 import { UserAuth } from "~/components/atc/userAuth";
 import { ControlDock } from "~/components/atc/controlDock";
 import { FIDSPanel } from "~/components/atc/FIDSPanel";
@@ -140,6 +143,9 @@ export default function ATCPage() {
     addAirportSearch,
     clearRecentSearches,
   } = useRecentSearches();
+
+  useActiveTracker(selectedAircrafts);
+  const mostTrackedFlights = useMostTrackedFlights(aircrafts);
 
   const time = useUtcTime();
   const { formattedTime, isRunning, start, stop, reset } = useTimer();
@@ -1015,6 +1021,14 @@ export default function ATCPage() {
           }}
           onStateChange={setReplayState}
           isMobile={isMobile}
+        />
+      )}
+
+      {/* Most Tracked Flights - desktop only, hidden when airport selected */}
+      {!isMobile && !selectedAirport && (
+        <MostTrackedPanel
+          flights={mostTrackedFlights}
+          onTrack={(ac) => handleAircraftSelect(ac)}
         />
       )}
     </div>
