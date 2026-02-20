@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { TrendingUp, Eye, X } from "lucide-react";
 import { type PositionUpdate } from "~/lib/aircraft-store";
-import { type MostTrackedFlight } from "~/hooks/useMostTrackedFlights";
+import {
+  MIN_TRACKERS_FOR_MOST_TRACKED,
+  type MostTrackedFlight,
+} from "~/hooks/useMostTrackedFlights";
 import { Analytics } from "~/lib/analytics";
 
 interface Props {
@@ -13,8 +16,11 @@ interface Props {
 
 export function MostTrackedPanel({ flights, onTrack }: Props) {
   const [dismissed, setDismissed] = useState(false);
+  const visibleFlights = flights.filter(
+    (flight) => flight.count >= MIN_TRACKERS_FOR_MOST_TRACKED,
+  );
 
-  if (dismissed || flights.length === 0) return null;
+  if (dismissed || visibleFlights.length === 0) return null;
 
   return (
     <div className="fixed left-6 top-1/2 z-[10011] w-[280px] -translate-y-1/2 rounded-2xl border border-white/10 bg-black/90 backdrop-blur-xl">
@@ -36,7 +42,7 @@ export function MostTrackedPanel({ flights, onTrack }: Props) {
 
       {/* Flight list */}
       <div className="max-h-[300px] overflow-y-auto py-1">
-        {flights.map((flight, index) => (
+        {visibleFlights.map((flight, index) => (
           <button
             key={flight.callsign}
             onClick={() => {

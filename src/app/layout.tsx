@@ -70,7 +70,7 @@ export default function RootLayout({
         },
       }}
     >
-      <html lang="en" className={`${geist.variable}`}>
+      <html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
         <body suppressHydrationWarning>
           <ConvexProvider>
             <PostHogProvider>

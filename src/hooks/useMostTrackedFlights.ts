@@ -11,17 +11,16 @@ export interface MostTrackedFlight {
   aircraft: PositionUpdate | null;
 }
 
+export const MIN_TRACKERS_FOR_MOST_TRACKED = 3;
+
 export function useMostTrackedFlights(aircrafts: PositionUpdate[]) {
   const mostTracked = useQuery(api.activeTrackers.getMostTracked);
-
-  const isDev = process.env.NODE_ENV === "development";
-  const threshold = isDev ? -1 : 3;
 
   return useMemo(() => {
     if (!mostTracked) return [];
 
     return mostTracked
-      .filter((entry) => entry.count > threshold)
+      .filter((entry) => entry.count >= MIN_TRACKERS_FOR_MOST_TRACKED)
       .map((entry) => ({
         callsign: entry.callsign,
         count: entry.count,
@@ -32,5 +31,5 @@ export function useMostTrackedFlights(aircrafts: PositionUpdate[]) {
               ac.flightNo === entry.callsign,
           ) ?? null,
       }));
-  }, [mostTracked, aircrafts, threshold]);
+  }, [mostTracked, aircrafts]);
 }
