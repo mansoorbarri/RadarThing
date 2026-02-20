@@ -368,7 +368,7 @@ export default function ATCPage() {
               width={130}
               height={40}
               className="cursor-pointer"
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/radar")}
             />
           )}
 
