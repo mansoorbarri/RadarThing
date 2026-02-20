@@ -266,6 +266,28 @@ export const Sidebar = ({
           </>
         )}
 
+        {!aircraftPhoto && (
+          <div className={`${isMobile ? "mx-4 mt-3 mb-2 p-3" : "mx-6 mt-4 mb-3 p-3.5"} relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-sky-500/5 to-black/40`}>
+            <div className="pointer-events-none absolute -right-4 -top-5 text-cyan-300/15">
+              <PlaneIcon size={72} />
+            </div>
+            <div className="relative">
+              <p className="font-mono text-[10px] font-black tracking-[0.18em] text-cyan-300/90 uppercase">
+                No Aircraft Image
+              </p>
+              <p className="mt-0.5 max-w-[280px] font-mono text-[10px] leading-relaxed text-white/60">
+                Help the community identify this aircraft by uploading a photo.
+              </p>
+              <Link
+                href="/aircraft-images"
+                className="mt-2 inline-flex rounded-lg border border-cyan-400/40 bg-cyan-500/20 px-3 py-1.5 font-mono text-[10px] font-black tracking-wide text-cyan-200 transition-colors hover:bg-cyan-500/30"
+              >
+                Upload at /aircraft-images
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Flight Info Overlay */}
         <div className={`relative z-10 ${isMobile ? 'p-4 pb-2' : 'p-6 pb-4'} ${aircraftPhoto ? 'pt-32' : ''}`}>
           <div className={`${isMobile ? 'mb-3' : 'mb-5'} flex items-end justify-between`}>
