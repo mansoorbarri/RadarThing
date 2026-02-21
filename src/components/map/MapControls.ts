@@ -105,6 +105,7 @@ export class HeadingModeControl extends L.Control {
   onAdd(): HTMLDivElement {
     const container = L.DomUtil.create("div");
     applyMetarStyleButton(container, "Heading Mode", "&#8599;");
+    container.dataset.control = "heading";
     L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
     L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
     L.DomEvent.on(container, "click", this._boundClick);

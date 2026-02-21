@@ -278,7 +278,7 @@ export const useMapInitialization = ({
     map.addControl(settingsControl);
     settingsControlInstanceRef.current = settingsControl;
     setSettingsControlRef.current = settingsControl;
-  }, [canUseRadarMode, setIsRadarMode, setRadarControlRef, setIsOSMMode, setOSMControlRef, setIsOpenAIPEnabled, setOpenAIPControlRef, setIsSettingsOpen, setSettingsControlRef]);
+  }, [isMobile, canUseRadarMode, setIsRadarMode, setRadarControlRef, setIsOSMMode, setOSMControlRef, setIsOpenAIPEnabled, setOpenAIPControlRef, setIsSettingsOpen, setSettingsControlRef]);
 
   return {
     mapInstance,

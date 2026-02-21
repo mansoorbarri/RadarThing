@@ -156,6 +156,12 @@ export const MapGlobalStyles = () => (
       top: 90px !important;
     }
 
+    @media (max-width: 767px) {
+      .leaflet-top.leaflet-left {
+        top: 60px !important;
+      }
+    }
+
     /* Reduce gap between left-side controls */
     .leaflet-top.leaflet-left .leaflet-control {
       margin-top: 6px !important;
