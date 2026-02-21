@@ -369,6 +369,85 @@ export const Sidebar = ({
     }
   }, [aircraft.flightPlan, onWaypointClick, nextWaypointIdent]);
 
+  const renderHistoryContent = () => (
+    <div className="space-y-3">
+      {loadingHistory ? (
+        <div className="flex flex-col items-center justify-center py-20 opacity-60">
+          <div className="mb-4 h-6 w-6 animate-spin rounded-full border-2 border-cyan-400" />
+          <span className="font-mono text-[11px] font-black tracking-widest">
+            LOADING
+          </span>
+        </div>
+      ) : canAccessHistory === false ? (
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/10">
+            <HistoryIcon size={28} className="text-amber-400" />
+          </div>
+          <span className="mb-2 font-mono text-sm font-black tracking-wide text-white">
+            PRO Feature
+          </span>
+          <p className="mb-4 max-w-[240px] text-center font-mono text-[10px] leading-relaxed text-white/50">
+            Flight history is available for Pro and Admin users only.
+          </p>
+          <a
+            href="/pricing"
+            className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 font-mono text-[10px] font-black tracking-wide text-black transition-all hover:shadow-lg hover:shadow-amber-500/20"
+          >
+            UPGRADE TO PRO
+          </a>
+        </div>
+      ) : history.length === 0 ? (
+        <div className="py-20 text-center font-mono text-[10px] tracking-widest text-white/40 uppercase">
+          No Records
+        </div>
+      ) : (
+        history.map((f, histIdx) => (
+          <div
+            key={f.id}
+            onClick={() => {
+              if (f.routeData) {
+                onHistoryClick?.({
+                  id: f.id as string,
+                  depICAO: f.depICAO,
+                  arrICAO: f.arrICAO,
+                  startTime: f.startTime.getTime(),
+                  endTime: f.endTime,
+                  aircraftType: f.aircraftType,
+                  callsign: f.callsign,
+                  duration: f.duration,
+                  routeData: f.routeData as [number, number][],
+                });
+              }
+            }}
+            className="animate-fade-in-up group relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg transition-all hover:border-amber-500/40"
+            style={{ animationDelay: `${histIdx * 50}ms` }}
+          >
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="font-mono text-sm font-black text-white group-hover:text-amber-400">
+                {f.depICAO} → {f.arrICAO}
+              </span>
+              <span className="font-mono text-[10px] font-bold text-white/30">
+                {new Date(f.startTime).toLocaleDateString()}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {f.callsign && (
+                <span className="font-mono text-[10px] text-cyan-400/70">
+                  {f.callsign}
+                </span>
+              )}
+              {f.aircraftType && (
+                <span className="font-mono text-[10px] text-white/40">
+                  {f.aircraftType}
+                </span>
+              )}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+
   const airlineLogo = getAirlineLogoFromFlightNumber(aircraft.flightNo);
   const { photo: aircraftPhoto } = useAircraftPhoto(
     aircraft.flightNo || aircraft.callsign,
@@ -587,40 +666,76 @@ export const Sidebar = ({
       {/* Mobile: Show control panel and flight plan */}
       {isMobile ? (
         <div className="px-4 pb-6">
-          <TimelineCard
-            departure={timelineData.departureText}
-            eta={timelineData.etaText}
-            progressPercent={timelineData.progressPercent}
-            remaining={timelineData.remainingText}
-            className="mb-4"
-          />
-          {isOwnAircraft && <AircraftControlPanel aircraft={aircraft} />}
-          {!isOwnAircraft && (
-            <div className="py-4 text-center font-mono text-[10px] tracking-widest text-white/40 uppercase">
-              {isClickableAirport(departureIcao) && onAirportClick ? (
-                <button
-                  onClick={() => onAirportClick(departureIcao)}
-                  className="cursor-pointer text-cyan-300 hover:text-cyan-200 hover:underline"
-                >
-                  {departureIcao}
-                </button>
-              ) : (
-                departureIcao || "---"
-              )}{" "}
-              →{" "}
-              {isClickableAirport(arrivalIcao) && onAirportClick ? (
-                <button
-                  onClick={() => onAirportClick(arrivalIcao)}
-                  className="cursor-pointer text-cyan-300 hover:text-cyan-200 hover:underline"
-                >
-                  {arrivalIcao}
-                </button>
-              ) : (
-                arrivalIcao || "---"
-              )}
+          <nav className="mb-4 flex">
+            <div className="flex w-full rounded-2xl border border-white/10 bg-black/60 p-1">
+              <button
+                onClick={() => setTab("info")}
+                className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2 font-mono text-[10px] font-black transition-all ${
+                  tab === "info"
+                    ? "bg-white text-black shadow-lg"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <InfoCircleIcon size={13} /> LIVE DATA
+              </button>
+              <button
+                onClick={() => setTab("history")}
+                className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2 font-mono text-[10px] font-black transition-all ${
+                  tab === "history"
+                    ? "bg-white text-black shadow-lg"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <HistoryIcon size={13} /> LOGBOOK
+              </button>
             </div>
+          </nav>
+
+          {tab === "info" ? (
+            <div className="space-y-4">
+              <TimelineCard
+                departure={timelineData.departureText}
+                eta={timelineData.etaText}
+                progressPercent={timelineData.progressPercent}
+                remaining={timelineData.remainingText}
+              />
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <StatBox
+                  label="Departure"
+                  value={departureIcao || "---"}
+                  sub="ORIG"
+                  onClick={
+                    isClickableAirport(departureIcao) && onAirportClick
+                      ? () => onAirportClick(departureIcao)
+                      : undefined
+                  }
+                />
+                <StatBox
+                  label="Arrival"
+                  value={arrivalIcao || "---"}
+                  sub="DEST"
+                  onClick={
+                    isClickableAirport(arrivalIcao) && onAirportClick
+                      ? () => onAirportClick(arrivalIcao)
+                      : undefined
+                  }
+                />
+              </div>
+
+              <div className="grid grid-cols-4 gap-2 rounded-2xl border border-white/10 bg-black/30 p-2.5">
+                <MiniStat label="V/S" value={displayValues.vspeed} />
+                <MiniStat label="HDG" value={displayValues.heading} />
+                <MiniStat label="SQWK" value={displayValues.squawk} />
+                <MiniStat label="AGL" value={displayValues.altAGL} />
+              </div>
+
+              {isOwnAircraft && <AircraftControlPanel aircraft={aircraft} />}
+              {renderFlightPlan()}
+            </div>
+          ) : (
+            <div className="pb-2">{renderHistoryContent()}</div>
           )}
-          {renderFlightPlan()}
         </div>
       ) : (
         <>
@@ -690,82 +805,7 @@ export const Sidebar = ({
                 {renderFlightPlan()}
               </div>
             ) : (
-              <div className="space-y-3">
-                {loadingHistory ? (
-                  <div className="flex flex-col items-center justify-center py-20 opacity-60">
-                    <div className="mb-4 h-6 w-6 animate-spin rounded-full border-2 border-cyan-400" />
-                    <span className="font-mono text-[11px] font-black tracking-widest">
-                      LOADING
-                    </span>
-                  </div>
-                ) : canAccessHistory === false ? (
-                  <div className="flex flex-col items-center justify-center py-16">
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/10">
-                      <HistoryIcon size={28} className="text-amber-400" />
-                    </div>
-                    <span className="mb-2 font-mono text-sm font-black tracking-wide text-white">
-                      PRO Feature
-                    </span>
-                    <p className="mb-4 max-w-[240px] text-center font-mono text-[10px] leading-relaxed text-white/50">
-                      Flight history is available for Pro and Admin users only.
-                    </p>
-                    <a
-                      href="/pricing"
-                      className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 font-mono text-[10px] font-black tracking-wide text-black transition-all hover:shadow-lg hover:shadow-amber-500/20"
-                    >
-                      UPGRADE TO PRO
-                    </a>
-                  </div>
-                ) : history.length === 0 ? (
-                  <div className="py-20 text-center font-mono text-[10px] tracking-widest text-white/40 uppercase">
-                    No Records
-                  </div>
-                ) : (
-                  history.map((f, histIdx) => (
-                    <div
-                      key={f.id}
-                      onClick={() => {
-                        if (f.routeData) {
-                          onHistoryClick?.({
-                            id: f.id as string,
-                            depICAO: f.depICAO,
-                            arrICAO: f.arrICAO,
-                            startTime: f.startTime.getTime(),
-                            endTime: f.endTime,
-                            aircraftType: f.aircraftType,
-                            callsign: f.callsign,
-                            duration: f.duration,
-                            routeData: f.routeData as [number, number][],
-                          });
-                        }
-                      }}
-                      className="animate-fade-in-up group relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg transition-all hover:border-amber-500/40"
-                      style={{ animationDelay: `${histIdx * 50}ms` }}
-                    >
-                      <div className="mb-1.5 flex items-center justify-between">
-                        <span className="font-mono text-sm font-black text-white group-hover:text-amber-400">
-                          {f.depICAO} → {f.arrICAO}
-                        </span>
-                        <span className="font-mono text-[10px] font-bold text-white/30">
-                          {new Date(f.startTime).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {f.callsign && (
-                          <span className="font-mono text-[10px] text-cyan-400/70">
-                            {f.callsign}
-                          </span>
-                        )}
-                        {f.aircraftType && (
-                          <span className="font-mono text-[10px] text-white/40">
-                            {f.aircraftType}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+              renderHistoryContent()
             )}
           </div>
         </>
@@ -861,6 +901,17 @@ const TimelineCard = ({
 
     <div className="mt-2 font-mono text-[10px] text-white/50">
       Remaining: <span className="text-cyan-300">{remaining}</span>
+    </div>
+  </div>
+);
+
+const MiniStat = ({ label, value }: { label: string; value: string }) => (
+  <div className="rounded-xl border border-white/10 bg-black/40 px-2 py-2 text-center">
+    <div className="font-mono text-[8px] font-black tracking-wider text-slate-400 uppercase">
+      {label}
+    </div>
+    <div className="mt-0.5 truncate font-mono text-[10px] font-black text-white">
+      {value}
     </div>
   </div>
 );
