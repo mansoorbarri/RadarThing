@@ -72,6 +72,66 @@ const getAirlineLogoFromFlightNumber = (flightNo?: string): string | null => {
   return `https://content.airhex.com/content/logos/airlines_${code}_200_200_s.png?theme=dark`;
 };
 
+const EARTH_RADIUS_NM = 3440.065;
+
+const toRadians = (value: number) => (value * Math.PI) / 180;
+
+const distanceNm = (
+  fromLat: number,
+  fromLon: number,
+  toLat: number,
+  toLon: number,
+) => {
+  const dLat = toRadians(toLat - fromLat);
+  const dLon = toRadians(toLon - fromLon);
+  const lat1 = toRadians(fromLat);
+  const lat2 = toRadians(toLat);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return EARTH_RADIUS_NM * c;
+};
+
+const parseWaypointPosition = (
+  waypoint: Record<string, unknown>,
+): [number, number] | null => {
+  const lat =
+    typeof waypoint.lat === "number"
+      ? waypoint.lat
+      : typeof waypoint.latitude === "number"
+        ? waypoint.latitude
+        : null;
+  const lon =
+    typeof waypoint.lon === "number"
+      ? waypoint.lon
+      : typeof waypoint.lng === "number"
+        ? waypoint.lng
+        : typeof waypoint.longitude === "number"
+          ? waypoint.longitude
+          : null;
+
+  if (lat === null || lon === null) return null;
+  return [lat, lon];
+};
+
+const formatClockTime = (timestamp: number | null) => {
+  if (!timestamp) return "--:--";
+  const date = new Date(timestamp);
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}z`;
+};
+
+const formatDuration = (minutes: number | null) => {
+  if (minutes === null || !Number.isFinite(minutes)) return "--";
+  const totalMinutes = Math.max(0, Math.round(minutes));
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  if (hours <= 0) return `${mins}m`;
+  return `${hours}h ${String(mins).padStart(2, "0")}m`;
+};
+
 export interface HistoryFlight {
   id: string;
   depICAO?: string;
@@ -157,6 +217,90 @@ export const Sidebar = ({
       ),
     [aircraft.alt, aircraft.vspeed, aircraft.flightPlan],
   );
+
+  const timelineData = useMemo(() => {
+    const parsedTakeoff = Date.parse(aircraft.takeoffTime || "");
+    const departureTs = Number.isFinite(parsedTakeoff) ? parsedTakeoff : null;
+    const now = Date.now();
+    const elapsedHours =
+      departureTs && departureTs <= now ? (now - departureTs) / 3_600_000 : 0;
+
+    let waypointProgress: number | null = null;
+    let remainingDistanceNm: number | null = null;
+
+    if (aircraft.flightPlan) {
+      try {
+        const waypoints = JSON.parse(aircraft.flightPlan) as Record<string, unknown>[];
+        if (Array.isArray(waypoints) && waypoints.length > 1) {
+          const nextWaypoint = aircraft.nextWaypoint;
+          const nextIdx = waypoints.findIndex(
+            (wp) => typeof wp.ident === "string" && wp.ident === nextWaypoint,
+          );
+
+          if (nextIdx >= 0) {
+            const rawProgress = nextIdx / Math.max(waypoints.length - 1, 1);
+            waypointProgress = Math.max(0, Math.min(1, rawProgress));
+
+            const currentLat = Number(aircraft.lat ?? 0);
+            const currentLon = Number(aircraft.lon ?? 0);
+            let distance = 0;
+            let previous: [number, number] | null = [currentLat, currentLon];
+
+            for (let i = nextIdx; i < waypoints.length; i++) {
+              const point = parseWaypointPosition(waypoints[i]!);
+              if (!point || !previous) continue;
+              distance += distanceNm(previous[0], previous[1], point[0], point[1]);
+              previous = point;
+            }
+
+            if (distance > 1) {
+              remainingDistanceNm = distance;
+            }
+          }
+        }
+      } catch {
+        // Ignore invalid flight plan payloads in the live stream.
+      }
+    }
+
+    const groundSpeed = Math.max(0, Number(aircraft.speed ?? 0));
+    const flownDistanceNm = elapsedHours > 0 ? elapsedHours * groundSpeed : 0;
+    let progress = waypointProgress ?? 0;
+
+    if (remainingDistanceNm !== null && (flownDistanceNm > 1 || elapsedHours > 0)) {
+      const totalDistance = flownDistanceNm + remainingDistanceNm;
+      if (totalDistance > 1) {
+        progress = flownDistanceNm / totalDistance;
+      }
+    }
+
+    progress = Math.max(0, Math.min(1, progress));
+
+    let etaTs: number | null = null;
+    if (remainingDistanceNm !== null && groundSpeed > 60) {
+      etaTs = now + (remainingDistanceNm / groundSpeed) * 3_600_000;
+    } else if (departureTs && progress > 0.02 && progress < 1) {
+      const totalMs = (now - departureTs) / progress;
+      etaTs = departureTs + totalMs;
+    }
+
+    const remainingMinutes =
+      etaTs && etaTs >= now ? (etaTs - now) / 60_000 : null;
+
+    return {
+      departureText: formatClockTime(departureTs),
+      etaText: formatClockTime(etaTs),
+      progressPercent: Math.round(progress * 100),
+      remainingText: formatDuration(remainingMinutes),
+    };
+  }, [
+    aircraft.takeoffTime,
+    aircraft.flightPlan,
+    aircraft.nextWaypoint,
+    aircraft.lat,
+    aircraft.lon,
+    aircraft.speed,
+  ]);
 
   // Get the next waypoint identifier from the aircraft
   const nextWaypointIdent = aircraft.nextWaypoint;
@@ -438,6 +582,13 @@ export const Sidebar = ({
       {/* Mobile: Show control panel and flight plan */}
       {isMobile ? (
         <div className="px-4 pb-6">
+          <TimelineCard
+            departure={timelineData.departureText}
+            eta={timelineData.etaText}
+            progressPercent={timelineData.progressPercent}
+            remaining={timelineData.remainingText}
+            className="mb-4"
+          />
           {isOwnAircraft && <AircraftControlPanel aircraft={aircraft} />}
           {!isOwnAircraft && (
             <div className="py-4 text-center font-mono text-[10px] tracking-widest text-white/40 uppercase">
@@ -476,6 +627,12 @@ export const Sidebar = ({
           <div className="custom-scrollbar flex-1 overflow-y-auto px-6 pb-12">
             {tab === "info" ? (
               <div className="space-y-6">
+                <TimelineCard
+                  departure={timelineData.departureText}
+                  eta={timelineData.etaText}
+                  progressPercent={timelineData.progressPercent}
+                  remaining={timelineData.remainingText}
+                />
                 <div className="grid grid-cols-2 gap-3.5">
                   <StatBox
                     label="Departure"
@@ -608,6 +765,60 @@ const StatBox = ({
       <span className="font-mono text-[9px] font-black tracking-tighter text-cyan-400 uppercase opacity-80">
         {sub}
       </span>
+    </div>
+  </div>
+);
+
+const TimelineCard = ({
+  departure,
+  eta,
+  progressPercent,
+  remaining,
+  className = "",
+}: {
+  departure: string;
+  eta: string;
+  progressPercent: number;
+  remaining: string;
+  className?: string;
+}) => (
+  <div
+    className={`animate-fade-in-up rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg ${className}`}
+    style={{ animationDelay: "120ms" }}
+  >
+    <div className="mb-3 flex items-center justify-between">
+      <span className="font-mono text-[9px] font-black tracking-[0.2em] text-slate-400 uppercase">
+        Flight Timeline
+      </span>
+      <span className="font-mono text-[10px] font-black text-cyan-400">
+        {Math.max(0, Math.min(100, progressPercent))}%
+      </span>
+    </div>
+
+    <div className="relative h-2 overflow-hidden rounded-full bg-white/10">
+      <div
+        className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 transition-all duration-500"
+        style={{ width: `${Math.max(0, Math.min(100, progressPercent))}%` }}
+      />
+    </div>
+
+    <div className="mt-3 grid grid-cols-2 gap-3">
+      <div>
+        <div className="font-mono text-[9px] tracking-wider text-white/40 uppercase">
+          Departure
+        </div>
+        <div className="font-mono text-sm font-black text-white">{departure}</div>
+      </div>
+      <div>
+        <div className="font-mono text-[9px] tracking-wider text-white/40 uppercase">
+          Est. Arrival
+        </div>
+        <div className="font-mono text-sm font-black text-white">{eta}</div>
+      </div>
+    </div>
+
+    <div className="mt-2 font-mono text-[10px] text-white/50">
+      Remaining: <span className="text-cyan-300">{remaining}</span>
     </div>
   </div>
 );
