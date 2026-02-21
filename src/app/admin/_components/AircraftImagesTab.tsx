@@ -46,38 +46,50 @@ function EditableCodes({
   imageId,
   initialIata,
   initialIcao,
+  initialAircraftType,
   onSaveSuccess,
 }: {
   imageId: string;
   initialIata: string;
   initialIcao: string;
+  initialAircraftType: string;
   onSaveSuccess?: () => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [iata, setIata] = useState(initialIata);
   const [icao, setIcao] = useState(initialIcao);
+  const [aircraftType, setAircraftType] = useState(initialAircraftType);
   const [isSaving, setIsSaving] = useState(false);
 
+  useEffect(() => {
+    if (!isEditing) {
+      setIata(initialIata);
+      setIcao(initialIcao);
+      setAircraftType(initialAircraftType);
+    }
+  }, [initialIata, initialIcao, initialAircraftType, isEditing]);
+
   const handleSave = async () => {
-    if (iata === initialIata && icao === initialIcao) {
+    if (iata === initialIata && icao === initialIcao && aircraftType === initialAircraftType) {
       setIsEditing(false);
       return;
     }
     setIsSaving(true);
-    const result = await updateAircraftImageCodes(imageId, iata, icao);
+    const result = await updateAircraftImageCodes(imageId, iata, icao, aircraftType);
     setIsSaving(false);
     if (result.success) {
-      toast.success("Codes updated");
+      toast.success("Details updated");
       setIsEditing(false);
       onSaveSuccess?.();
     } else {
-      toast.error(result.error || "Failed to update codes");
+      toast.error(result.error || "Failed to update details");
     }
   };
 
   const handleCancel = () => {
     setIata(initialIata);
     setIcao(initialIcao);
+    setAircraftType(initialAircraftType);
     setIsEditing(false);
   };
 
@@ -113,6 +125,15 @@ function EditableCodes({
           className="w-14 rounded-md border border-blue-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-blue-400 outline-none focus:border-blue-400"
           disabled={isSaving}
         />
+        <input
+          type="text"
+          value={aircraftType}
+          onChange={(e) => setAircraftType(e.target.value.toUpperCase())}
+          onKeyDown={handleKeyDown}
+          placeholder="Aircraft"
+          className="w-24 rounded-md border border-white/20 bg-black/60 px-2 py-1 font-mono text-sm text-white outline-none focus:border-white/40"
+          disabled={isSaving}
+        />
         <button
           onClick={handleSave}
           disabled={isSaving}
@@ -135,10 +156,11 @@ function EditableCodes({
     <div className="flex items-center gap-2 flex-wrap group/codes">
       {initialIata && <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">{initialIata}</span>}
       {initialIcao && <span className="rounded-md bg-blue-500/20 px-2 py-1 font-mono text-sm font-bold text-blue-400">{initialIcao}</span>}
+      {initialAircraftType && <span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">{initialAircraftType}</span>}
       <button
         onClick={() => setIsEditing(true)}
         className="cursor-pointer rounded-md p-1 text-slate-600 opacity-0 transition-all hover:bg-white/10 hover:text-cyan-400 group-hover/codes:opacity-100"
-        title="Edit codes"
+        title="Edit details"
       >
         <Pencil className="h-3.5 w-3.5" />
       </button>
@@ -616,8 +638,8 @@ export function AircraftImagesTab() {
                         imageId={image.id}
                         initialIata={image.airlineIata || ""}
                         initialIcao={image.airlineIcao || ""}
+                        initialAircraftType={image.aircraftType || ""}
                       />
-                      <span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">{image.aircraftType}</span>
                     </div>
                     {image.discordUsername && <p className="mb-2 text-xs text-slate-500">Discord: {image.discordUsername}</p>}
                     <p className="mb-1 text-xs text-slate-500">Uploaded by <span className="text-cyan-400">{userInfo[image.uploadedBy]?.email ?? image.uploadedBy}</span></p>
@@ -677,8 +699,8 @@ export function AircraftImagesTab() {
                         imageId={image.id}
                         initialIata={image.airlineIata || ""}
                         initialIcao={image.airlineIcao || ""}
+                        initialAircraftType={image.aircraftType || ""}
                       />
-                      <span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">{image.aircraftType}</span>
                       <CheckCircle className="ml-auto h-4 w-4 text-emerald-400" />
                     </div>
                     {image.discordUsername && <p className="mt-2 text-xs text-slate-500">Discord: {image.discordUsername}</p>}

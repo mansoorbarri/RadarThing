@@ -436,6 +436,7 @@ export const updateCodes = mutation({
     id: v.id("aircraftImages"),
     airlineIata: v.string(),
     airlineIcao: v.string(),
+    aircraftType: v.string(),
   },
   handler: async (ctx, args) => {
     const image = await ctx.db.get(args.id);
@@ -444,6 +445,7 @@ export const updateCodes = mutation({
     await ctx.db.patch(args.id, {
       airlineIata: args.airlineIata.toUpperCase(),
       airlineIcao: args.airlineIcao.toUpperCase(),
+      aircraftType: args.aircraftType.toUpperCase(),
     });
 
     const updated = await ctx.db.get(args.id);
@@ -553,4 +555,3 @@ export const findExistingApprovedFull = query({
     };
   },
 });
-

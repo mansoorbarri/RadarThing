@@ -788,26 +788,31 @@ export async function bulkApproveAircraftImages(
   }
 }
 
-// Update IATA/ICAO codes for an image (ADMIN only)
+// Update IATA/ICAO/aircraft type for an image (ADMIN only)
 export async function updateAircraftImageCodes(
   id: string,
   newIata: string,
-  newIcao: string
+  newIcao: string,
+  newAircraftType: string
 ): Promise<{ success: boolean; error?: string }> {
   const admin = await isAdminUser();
   if (!admin) {
-    return { success: false, error: "Only ADMIN users can update image codes" };
+    return { success: false, error: "Only ADMIN users can update image details" };
   }
 
-  // Validate codes
+  // Validate details
   const iata = newIata.trim().toUpperCase();
   const icao = newIcao.trim().toUpperCase();
+  const aircraftType = newAircraftType.trim().toUpperCase();
 
   if (iata.length < 1 || iata.length > 2) {
     return { success: false, error: "IATA code must be 1-2 characters" };
   }
   if (icao.length !== 3) {
     return { success: false, error: "ICAO code must be exactly 3 characters" };
+  }
+  if (!aircraftType) {
+    return { success: false, error: "Aircraft type is required" };
   }
 
   try {
@@ -816,6 +821,7 @@ export async function updateAircraftImageCodes(
       id: id as Id<"aircraftImages">,
       airlineIata: iata,
       airlineIcao: icao,
+      aircraftType,
     });
 
     if (!result) {
@@ -848,7 +854,7 @@ export async function updateAircraftImageCodes(
     return { success: true };
   } catch (error) {
     console.error("Error updating aircraft image codes:", error);
-    return { success: false, error: "Failed to update image codes" };
+    return { success: false, error: "Failed to update image details" };
   }
 }
 
