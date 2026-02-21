@@ -5,77 +5,7 @@ import Image from "next/image";
 import { X, Plane } from "lucide-react";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { calculateDistance } from "~/lib/map-utils";
-
-const AIRCRAFT_TYPE_MAP: Record<string, string> = {
-  // Boeing
-  "Boeing 737-800": "B738",
-  "Boeing 737-700": "B737",
-  "Boeing 737-900": "B739",
-  "Boeing 737 MAX 8": "B38M",
-  "Boeing 737 MAX 9": "B39M",
-  "Boeing 737 MAX 10": "B3XM",
-  "Boeing 747-400": "B744",
-  "Boeing 747-8": "B748",
-  "Boeing 757-200": "B752",
-  "Boeing 757-300": "B753",
-  "Boeing 767-300": "B763",
-  "Boeing 767-300ER": "B763",
-  "Boeing 767-400ER": "B764",
-  "Boeing 777-200": "B772",
-  "Boeing 777-200ER": "B772",
-  "Boeing 777-200LR": "B77L",
-  "Boeing 777-300": "B773",
-  "Boeing 777-300ER": "B77W",
-  "Boeing 777X": "B779",
-  "Boeing 787-8": "B788",
-  "Boeing 787-9": "B789",
-  "Boeing 787-10": "B78X",
-  // Airbus
-  "Airbus A220-300": "BCS3",
-  "Airbus A220-100": "BCS1",
-  "Airbus A300": "A306",
-  "Airbus A310": "A310",
-  "Airbus A318": "A318",
-  "Airbus A319": "A319",
-  "Airbus A320": "A320",
-  "Airbus A320neo": "A20N",
-  "Airbus A321": "A321",
-  "Airbus A321neo": "A21N",
-  "Airbus A330-200": "A332",
-  "Airbus A330-300": "A333",
-  "Airbus A330-900neo": "A339",
-  "Airbus A340-300": "A343",
-  "Airbus A340-600": "A346",
-  "Airbus A350-900": "A359",
-  "Airbus A350-1000": "A35K",
-  "Airbus A380": "A388",
-  "Airbus A380-800": "A388",
-  // Regional / Others
-  "Bombardier CRJ-700": "CRJ7",
-  "Bombardier CRJ-900": "CRJ9",
-  "Embraer E170": "E170",
-  "Embraer E175": "E75S",
-  "Embraer E190": "E190",
-  "Embraer E195": "E195",
-  "ATR 72": "AT76",
-  "ATR 42": "AT45",
-  "Cessna 172": "C172",
-  "Cessna 208": "C208",
-  "Bombardier Dash 8": "DH8D",
-  "McDonnell Douglas MD-11": "MD11",
-  "Concorde": "CONC",
-};
-
-function normalizeAircraftType(type?: string): string {
-  if (!type) return "???";
-  if (/^[A-Z0-9]{2,4}$/.test(type)) return type;
-  const upper = type.trim();
-  if (AIRCRAFT_TYPE_MAP[upper]) return AIRCRAFT_TYPE_MAP[upper];
-  for (const [key, code] of Object.entries(AIRCRAFT_TYPE_MAP)) {
-    if (upper.toLowerCase().startsWith(key.toLowerCase())) return code;
-  }
-  return type.length > 6 ? type.slice(0, 6) : type;
-}
+import { normalizeAircraftType } from "~/lib/utils";
 
 function getAirlineLogoUrl(flightNo?: string): string | null {
   const match = flightNo?.match(/^([A-Z]{2,3})/);
@@ -180,7 +110,7 @@ function FlightRow({
 
       {/* Aircraft type */}
       <div className="shrink-0 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-white/50">
-        {normalizeAircraftType(ac.type)}
+        {normalizeAircraftType(ac.type) || "???"}
       </div>
     </button>
   );
