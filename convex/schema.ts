@@ -33,7 +33,20 @@ export default defineSchema({
     endTime: v.optional(v.number()), // timestamp
   })
     .index("by_userId", ["userId"])
+    .index("by_userId_startTime", ["userId", "startTime"])
     .index("by_startTime", ["startTime"]),
+
+  userStats: defineTable({
+    userId: v.id("users"),
+    totalFlights: v.number(),
+    totalFlightTimeMs: v.number(),
+    totalDistanceNm: v.number(),
+    streakAtLastFlight: v.number(),
+    longestStreak: v.number(),
+    lastFlightDate: v.optional(v.string()), // YYYY-MM-DD UTC
+    lastFlightStartTime: v.optional(v.number()),
+    lastFlightCallsign: v.optional(v.string()),
+  }).index("by_userId", ["userId"]),
 
   aircraftImages: defineTable({
     airlineIata: v.string(), // 2-letter IATA code (e.g., "EK")

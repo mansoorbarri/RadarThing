@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { paginationOptsValidator } from "convex/server";
 
 // Get flight history for a user by their Google ID
 export const getHistoryByGoogleId = query({
@@ -38,6 +39,57 @@ export const getHistoryByGoogleId = query({
   },
 });
 
+function isCoordinatePair(point: unknown): point is [number, number] {
+  return (
+    Array.isArray(point) &&
+    point.length >= 2 &&
+    typeof point[0] === "number" &&
+    Number.isFinite(point[0]) &&
+    typeof point[1] === "number" &&
+    Number.isFinite(point[1])
+  );
+}
+
+function calculateRouteDistanceNm(routeData: unknown): number {
+  if (!Array.isArray(routeData)) return 0;
+
+  let totalDistanceNm = 0;
+  for (let i = 1; i < routeData.length; i++) {
+    const prev = routeData[i - 1];
+    const curr = routeData[i];
+    if (!isCoordinatePair(prev) || !isCoordinatePair(curr)) continue;
+    totalDistanceNm += haversineDistance(prev[0], prev[1], curr[0], curr[1]);
+  }
+
+  return totalDistanceNm;
+}
+
+function utcDateStringFromTimestamp(timestamp: number): string {
+  const d = new Date(timestamp);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+function diffDaysUtc(prevDateStr: string, currDateStr: string): number {
+  const prev = new Date(`${prevDateStr}T00:00:00Z`);
+  const curr = new Date(`${currDateStr}T00:00:00Z`);
+  return (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+}
+
+function deriveVisibleCurrentStreak(lastFlightDate?: string, streakAtLastFlight = 0): number {
+  if (!lastFlightDate || streakAtLastFlight <= 0) return 0;
+
+  const now = new Date();
+  const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const yesterdayStr = `${yesterday.getUTCFullYear()}-${String(yesterday.getUTCMonth() + 1).padStart(2, "0")}-${String(yesterday.getUTCDate()).padStart(2, "0")}`;
+
+  if (lastFlightDate !== todayStr && lastFlightDate !== yesterdayStr) {
+    return 0;
+  }
+
+  return streakAtLastFlight;
+}
+
 // Create a new flight
 export const create = mutation({
   args: {
@@ -55,7 +107,7 @@ export const create = mutation({
     endTime: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("flights", {
+    const flightId = await ctx.db.insert("flights", {
       userId: args.userId,
       callsign: args.callsign,
       aircraftType: args.aircraftType,
@@ -69,6 +121,69 @@ export const create = mutation({
       startTime: args.startTime,
       endTime: args.endTime,
     });
+
+    const stats = await ctx.db
+      .query("userStats")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .first();
+
+    const flightTimeMs =
+      args.endTime !== undefined ? Math.max(0, args.endTime - args.startTime) : 0;
+    const distanceNm = calculateRouteDistanceNm(args.routeData);
+    const flightDate = utcDateStringFromTimestamp(args.startTime);
+
+    if (!stats) {
+      await ctx.db.insert("userStats", {
+        userId: args.userId,
+        totalFlights: 1,
+        totalFlightTimeMs: flightTimeMs,
+        totalDistanceNm: distanceNm,
+        streakAtLastFlight: 1,
+        longestStreak: 1,
+        lastFlightDate: flightDate,
+        lastFlightStartTime: args.startTime,
+        lastFlightCallsign: args.callsign,
+      });
+      return flightId;
+    }
+
+    const isNewestFlight =
+      stats.lastFlightStartTime === undefined || args.startTime >= stats.lastFlightStartTime;
+
+    let streakAtLastFlight = stats.streakAtLastFlight;
+    let longestStreak = stats.longestStreak;
+    let lastFlightDate = stats.lastFlightDate;
+
+    if (isNewestFlight) {
+      if (!lastFlightDate) {
+        streakAtLastFlight = 1;
+        longestStreak = Math.max(longestStreak, 1);
+      } else if (flightDate !== lastFlightDate) {
+        const dayDiff = diffDaysUtc(lastFlightDate, flightDate);
+        if (dayDiff === 1) {
+          streakAtLastFlight += 1;
+        } else if (dayDiff > 1) {
+          streakAtLastFlight = 1;
+        }
+        longestStreak = Math.max(longestStreak, streakAtLastFlight);
+      }
+      lastFlightDate = flightDate;
+    }
+
+    await ctx.db.patch(stats._id, {
+      totalFlights: stats.totalFlights + 1,
+      totalFlightTimeMs: stats.totalFlightTimeMs + flightTimeMs,
+      totalDistanceNm: stats.totalDistanceNm + distanceNm,
+      streakAtLastFlight,
+      longestStreak,
+      lastFlightDate,
+      lastFlightStartTime: isNewestFlight
+        ? args.startTime
+        : stats.lastFlightStartTime,
+      lastFlightCallsign: isNewestFlight ? args.callsign : stats.lastFlightCallsign,
+    });
+
+    return flightId;
   },
 });
 
@@ -117,6 +232,151 @@ export const deleteByUserId = mutation({
     for (const flight of flights) {
       await ctx.db.delete(flight._id);
     }
+
+    const stats = await ctx.db
+      .query("userStats")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .first();
+    if (stats) {
+      await ctx.db.delete(stats._id);
+    }
+  },
+});
+
+export const backfillUserStatsPage = mutation({
+  args: {
+    userId: v.id("users"),
+    paginationOpts: paginationOptsValidator,
+    reset: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    let stats = await ctx.db
+      .query("userStats")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .first();
+
+    if (!stats) {
+      const statsId = await ctx.db.insert("userStats", {
+        userId: args.userId,
+        totalFlights: 0,
+        totalFlightTimeMs: 0,
+        totalDistanceNm: 0,
+        streakAtLastFlight: 0,
+        longestStreak: 0,
+      });
+      stats = await ctx.db.get(statsId);
+    }
+
+    if (!stats) {
+      throw new Error("Failed to initialize user stats");
+    }
+
+    if (args.reset) {
+      await ctx.db.patch(stats._id, {
+        totalFlights: 0,
+        totalFlightTimeMs: 0,
+        totalDistanceNm: 0,
+        streakAtLastFlight: 0,
+        longestStreak: 0,
+        lastFlightDate: undefined,
+        lastFlightStartTime: undefined,
+        lastFlightCallsign: undefined,
+      });
+      stats = {
+        ...stats,
+        totalFlights: 0,
+        totalFlightTimeMs: 0,
+        totalDistanceNm: 0,
+        streakAtLastFlight: 0,
+        longestStreak: 0,
+        lastFlightDate: undefined,
+        lastFlightStartTime: undefined,
+        lastFlightCallsign: undefined,
+      };
+    }
+
+    const page = await ctx.db
+      .query("flights")
+      .withIndex("by_userId_startTime", (q) => q.eq("userId", args.userId))
+      .paginate(args.paginationOpts);
+
+    let totalFlights = stats.totalFlights;
+    let totalFlightTimeMs = stats.totalFlightTimeMs;
+    let totalDistanceNm = stats.totalDistanceNm;
+    let streakAtLastFlight = stats.streakAtLastFlight;
+    let longestStreak = stats.longestStreak;
+    let lastFlightDate = stats.lastFlightDate;
+    let lastFlightStartTime = stats.lastFlightStartTime;
+    let lastFlightCallsign = stats.lastFlightCallsign;
+
+    for (const flight of page.page) {
+      totalFlights += 1;
+      if (flight.endTime !== undefined) {
+        totalFlightTimeMs += Math.max(0, flight.endTime - flight.startTime);
+      }
+      totalDistanceNm += calculateRouteDistanceNm(flight.routeData);
+
+      if (lastFlightStartTime === undefined || flight.startTime >= lastFlightStartTime) {
+        lastFlightStartTime = flight.startTime;
+        lastFlightCallsign = flight.callsign;
+      }
+
+      const flightDate = utcDateStringFromTimestamp(flight.startTime);
+      if (!lastFlightDate) {
+        streakAtLastFlight = 1;
+        longestStreak = Math.max(longestStreak, 1);
+        lastFlightDate = flightDate;
+        continue;
+      }
+
+      if (flightDate === lastFlightDate) continue;
+
+      const dayDiff = diffDaysUtc(lastFlightDate, flightDate);
+      if (dayDiff === 1) {
+        streakAtLastFlight += 1;
+      } else if (dayDiff > 1) {
+        streakAtLastFlight = 1;
+      }
+      longestStreak = Math.max(longestStreak, streakAtLastFlight);
+      lastFlightDate = flightDate;
+    }
+
+    await ctx.db.patch(stats._id, {
+      totalFlights,
+      totalFlightTimeMs,
+      totalDistanceNm,
+      streakAtLastFlight,
+      longestStreak,
+      lastFlightDate,
+      lastFlightStartTime,
+      lastFlightCallsign,
+    });
+
+    return {
+      processedFlights: page.page.length,
+      isDone: page.isDone,
+      continueCursor: page.continueCursor,
+      totalFlights,
+    };
+  },
+});
+
+export const listActiveUserIdsForStatsBackfill = query({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("isDeleted"), false))
+      .paginate(args.paginationOpts);
+
+    return {
+      isDone: page.isDone,
+      continueCursor: page.continueCursor,
+      users: page.page.map((user) => ({
+        userId: user._id,
+        clerkId: user.clerkId,
+      })),
+    };
   },
 });
 
@@ -131,32 +391,29 @@ export const getStatsByClerkId = query({
 
     if (!user) return null;
 
+    const stats = await ctx.db
+      .query("userStats")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+
     const flights = await ctx.db
       .query("flights")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
 
     // Calculate stats
-    const totalFlights = flights.length;
-    let totalFlightTime = 0;
-    let totalDistance = 0;
     const aircraftCounts: Record<string, number> = {};
     const routeCounts: Record<string, number> = {};
     const airportVisits: Record<string, number> = {};
+    let fallbackTotalFlightTimeMs = 0;
+    let fallbackTotalDistanceNm = 0;
 
     for (const flight of flights) {
-      // Flight time
-      if (flight.endTime && flight.startTime) {
-        totalFlightTime += flight.endTime - flight.startTime;
-      }
-
-      // Distance from route data
-      if (flight.routeData && Array.isArray(flight.routeData)) {
-        for (let i = 1; i < flight.routeData.length; i++) {
-          const [lat1, lon1] = flight.routeData[i - 1];
-          const [lat2, lon2] = flight.routeData[i];
-          totalDistance += haversineDistance(lat1, lon1, lat2, lon2);
+      if (!stats) {
+        if (flight.endTime !== undefined) {
+          fallbackTotalFlightTimeMs += Math.max(0, flight.endTime - flight.startTime);
         }
+        fallbackTotalDistanceNm += calculateRouteDistanceNm(flight.routeData);
       }
 
       // Aircraft counts
@@ -207,12 +464,14 @@ export const getStatsByClerkId = query({
     const streaks = calculateStreaks(flights);
 
     return {
-      totalFlights,
-      totalFlightTimeMs: totalFlightTime,
-      totalDistanceNm: Math.round(totalDistance),
+      totalFlights: stats?.totalFlights ?? flights.length,
+      totalFlightTimeMs: Math.round(stats?.totalFlightTimeMs ?? fallbackTotalFlightTimeMs),
+      totalDistanceNm: Math.round(stats?.totalDistanceNm ?? fallbackTotalDistanceNm),
       uniqueAirports: Object.keys(airportVisits).length,
-      currentStreak: streaks.currentStreak,
-      longestStreak: streaks.longestStreak,
+      currentStreak: stats
+        ? deriveVisibleCurrentStreak(stats.lastFlightDate, stats.streakAtLastFlight)
+        : streaks.currentStreak,
+      longestStreak: stats?.longestStreak ?? streaks.longestStreak,
       topAircraft,
       topRoutes,
       topAirports,
@@ -307,46 +566,28 @@ export const getLeaderboard = query({
       .filter((q) => q.eq(q.field("isDeleted"), false))
       .collect();
 
+    const stats = await ctx.db.query("userStats").collect();
+    const statsByUserId = new Map(stats.map((entry) => [entry.userId, entry]));
+
     const leaderboard = [];
 
     for (const user of users) {
-      const flights = await ctx.db
-        .query("flights")
-        .withIndex("by_userId", (q) => q.eq("userId", user._id))
-        .collect();
-
-      if (flights.length === 0) continue;
-
-      let totalFlightTimeMs = 0;
-      let totalDistanceNm = 0;
-
-      for (const flight of flights) {
-        if (flight.endTime && flight.startTime) {
-          totalFlightTimeMs += flight.endTime - flight.startTime;
-        }
-
-        if (flight.routeData && Array.isArray(flight.routeData)) {
-          for (let i = 1; i < flight.routeData.length; i++) {
-            const [lat1, lon1] = flight.routeData[i - 1];
-            const [lat2, lon2] = flight.routeData[i];
-            totalDistanceNm += haversineDistance(lat1, lon1, lat2, lon2);
-          }
-        }
-      }
-
-      const mostRecent = flights.sort((a, b) => b.startTime - a.startTime)[0];
-      const streaks = calculateStreaks(flights);
+      const userStats = statsByUserId.get(user._id);
+      if (!userStats || userStats.totalFlights <= 0) continue;
 
       leaderboard.push({
         userId: user._id,
         clerkId: user.clerkId,
-        callsign: mostRecent?.callsign ?? "Unknown",
+        callsign: userStats.lastFlightCallsign ?? "Unknown",
         role: user.role,
         discordUsername: user.discordUsername ?? null,
-        totalFlights: flights.length,
-        totalFlightTimeMs,
-        totalDistanceNm: Math.round(totalDistanceNm),
-        currentStreak: streaks.currentStreak,
+        totalFlights: userStats.totalFlights,
+        totalFlightTimeMs: Math.round(userStats.totalFlightTimeMs),
+        totalDistanceNm: Math.round(userStats.totalDistanceNm),
+        currentStreak: deriveVisibleCurrentStreak(
+          userStats.lastFlightDate,
+          userStats.streakAtLastFlight
+        ),
       });
     }
 
@@ -361,32 +602,29 @@ export const getStatsById = query({
     const user = await ctx.db.get(args.userId);
     if (!user) return null;
 
+    const stats = await ctx.db
+      .query("userStats")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+
     const flights = await ctx.db
       .query("flights")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
 
     // Calculate stats
-    const totalFlights = flights.length;
-    let totalFlightTime = 0;
-    let totalDistance = 0;
     const aircraftCounts: Record<string, number> = {};
     const routeCounts: Record<string, number> = {};
     const airportVisits: Record<string, number> = {};
+    let fallbackTotalFlightTimeMs = 0;
+    let fallbackTotalDistanceNm = 0;
 
     for (const flight of flights) {
-      // Flight time
-      if (flight.endTime && flight.startTime) {
-        totalFlightTime += flight.endTime - flight.startTime;
-      }
-
-      // Distance from route data
-      if (flight.routeData && Array.isArray(flight.routeData)) {
-        for (let i = 1; i < flight.routeData.length; i++) {
-          const [lat1, lon1] = flight.routeData[i - 1];
-          const [lat2, lon2] = flight.routeData[i];
-          totalDistance += haversineDistance(lat1, lon1, lat2, lon2);
+      if (!stats) {
+        if (flight.endTime !== undefined) {
+          fallbackTotalFlightTimeMs += Math.max(0, flight.endTime - flight.startTime);
         }
+        fallbackTotalDistanceNm += calculateRouteDistanceNm(flight.routeData);
       }
 
       // Aircraft counts
@@ -424,7 +662,7 @@ export const getStatsById = query({
 
     // Get pilot's callsign from most recent flight
     const mostRecentFlight = sortedFlights[0];
-    const pilotCallsign = mostRecentFlight?.callsign ?? null;
+    const pilotCallsign = stats?.lastFlightCallsign ?? mostRecentFlight?.callsign ?? null;
 
     // Recent flights (last 10)
     const recentFlights = sortedFlights.slice(0, 10).map((f) => ({
@@ -444,12 +682,14 @@ export const getStatsById = query({
       userRole: user.role,
       pilotCallsign,
       discordUsername: user.discordUsername ?? null,
-      totalFlights,
-      totalFlightTimeMs: totalFlightTime,
-      totalDistanceNm: Math.round(totalDistance),
+      totalFlights: stats?.totalFlights ?? flights.length,
+      totalFlightTimeMs: Math.round(stats?.totalFlightTimeMs ?? fallbackTotalFlightTimeMs),
+      totalDistanceNm: Math.round(stats?.totalDistanceNm ?? fallbackTotalDistanceNm),
       uniqueAirports: Object.keys(airportVisits).length,
-      currentStreak: streaks.currentStreak,
-      longestStreak: streaks.longestStreak,
+      currentStreak: stats
+        ? deriveVisibleCurrentStreak(stats.lastFlightDate, stats.streakAtLastFlight)
+        : streaks.currentStreak,
+      longestStreak: stats?.longestStreak ?? streaks.longestStreak,
       topAircraft,
       topRoutes,
       topAirports,
