@@ -23,7 +23,7 @@ export function MostTrackedPanel({ flights, onTrack }: Props) {
   if (dismissed || visibleFlights.length === 0) return null;
 
   return (
-    <div className="fixed left-6 top-1/2 z-[10011] w-[280px] -translate-y-1/2 rounded-2xl border border-white/10 bg-black/90 backdrop-blur-xl">
+    <div className="animate-slide-in-left fixed left-6 top-1/2 z-[10011] w-[280px] -translate-y-1/2 rounded-2xl border border-white/10 bg-black/90 backdrop-blur-xl">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <div className="flex items-center gap-2">
@@ -45,6 +45,7 @@ export function MostTrackedPanel({ flights, onTrack }: Props) {
         {visibleFlights.map((flight, index) => (
           <button
             key={flight.callsign}
+            style={{ animationDelay: `${150 + index * 50}ms` }}
             onClick={() => {
               if (flight.aircraft) {
                 Analytics.mostTrackedFlightClicked({
@@ -56,7 +57,7 @@ export function MostTrackedPanel({ flights, onTrack }: Props) {
               }
             }}
             disabled={!flight.aircraft}
-            className="flex w-full cursor-pointer items-center gap-3 px-4 py-2 transition-colors hover:bg-white/5 disabled:cursor-default disabled:opacity-40"
+            className="animate-fade-in-up flex w-full cursor-pointer items-center gap-3 px-4 py-2 transition-colors hover:bg-white/5 disabled:cursor-default disabled:opacity-40"
           >
             {/* Rank */}
             <span className="w-5 text-right font-mono text-xs font-bold text-slate-500">

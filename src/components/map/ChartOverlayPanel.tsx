@@ -211,7 +211,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
 
   return (
     <aside
-      className="fixed inset-y-0 right-0 z-[10012] flex flex-col border-l border-white/10 bg-black/90 backdrop-blur-xl"
+      className="animate-slide-in-right fixed inset-y-0 right-0 z-[10012] flex flex-col border-l border-white/10 bg-black/90 backdrop-blur-xl"
       style={{ width: panelWidth }}
     >
       {/* Resize handle */}

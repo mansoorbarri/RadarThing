@@ -457,7 +457,7 @@ export default function ATCPage() {
             </button>
 
             {showTimerPopup && (
-              <div className="absolute top-full left-1/2 mt-2 -translate-x-1/2">
+              <div className="animate-fade-in-up absolute top-full left-1/2 mt-2 -translate-x-1/2">
                 <div className="rounded-xl border border-white/10 bg-black/90 p-3 backdrop-blur-xl">
                   <div className="flex gap-2">
                     <button
@@ -680,7 +680,7 @@ export default function ATCPage() {
 
       {/* Right panels - hidden on mobile */}
       {!isMobile && activeRightPanel === "fids" && (
-        <aside className="fixed inset-y-0 right-0 z-[10012] w-[420px] border-l border-white/10 bg-black/80 backdrop-blur-xl">
+        <aside className="animate-slide-in-right fixed inset-y-0 right-0 z-[10012] w-[420px] border-l border-white/10 bg-black/80 backdrop-blur-xl">
           <FIDSPanel
             aircrafts={aircrafts}
             onTrack={(ac) => {
@@ -693,7 +693,7 @@ export default function ATCPage() {
       )}
 
       {!isMobile && activeRightPanel === "filter" && (
-        <aside className="fixed inset-y-0 right-0 z-[10013] w-[360px] border-l border-white/10 bg-black/80 backdrop-blur-xl">
+        <aside className="animate-slide-in-right fixed inset-y-0 right-0 z-[10013] w-[360px] border-l border-white/10 bg-black/80 backdrop-blur-xl">
           <CallsignFilter
             aircrafts={aircrafts}
             selectedCallsigns={selectedCallsigns}
@@ -779,7 +779,7 @@ export default function ATCPage() {
       )}
 
       {selectedAirport && (
-        <div className={`fixed left-1/2 z-[10012] -translate-x-1/2 ${isMobile ? 'bottom-3' : 'bottom-6'}`}>
+        <div className={`animate-fade-in-up fixed left-1/2 z-[10012] -translate-x-1/2 ${isMobile ? 'bottom-3' : 'bottom-6'}`}>
           <div className={`flex items-center rounded-2xl border border-white/10 bg-black/80 backdrop-blur-xl ${isMobile ? 'gap-2 px-3 py-2' : 'gap-4 px-5 py-3'}`}>
             <div>
               <div className={`font-mono text-cyan-300 ${isMobile ? 'text-[10px]' : 'text-xs'}`}>
@@ -921,7 +921,7 @@ export default function ATCPage() {
           </MobileSwipeSheet>
         ) : (
           <aside
-            className={`fixed inset-y-0 right-0 z-[10014] border-l border-white/10 bg-black/90 backdrop-blur-xl transition-all duration-300 ease-in-out ${
+            className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10014] border-l border-white/10 bg-black/90 backdrop-blur-xl transition-[width] duration-300 ease-in-out ${
               isSidebarCollapsed ? "w-12" : "w-[400px]"
             }`}
           >

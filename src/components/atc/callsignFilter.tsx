@@ -68,13 +68,14 @@ export function CallsignFilter({
           </div>
         ) : (
           <ul className="divide-y divide-white/5">
-            {callsignPrefixes.map(({ prefix, count }) => (
+            {callsignPrefixes.map(({ prefix, count }, index) => (
               <AirlineRow
                 key={prefix}
                 prefix={prefix}
                 count={count}
                 isSelected={selectedCallsigns.has(prefix)}
                 onToggle={onToggleCallsign}
+                index={index}
               />
             ))}
           </ul>
@@ -93,17 +94,19 @@ function AirlineRow({
   count,
   isSelected,
   onToggle,
+  index,
 }: {
   prefix: string;
   count: number;
   isSelected: boolean;
   onToggle: (prefix: string) => void;
+  index: number;
 }) {
   const [logoError, setLogoError] = useState(false);
   const logoUrl = getAirlineLogoFromFlightNumber(prefix);
 
   return (
-    <li>
+    <li className="animate-fade-in-up" style={{ animationDelay: `${100 + index * 30}ms` }}>
       <button
         onClick={() => onToggle(prefix)}
         className={`flex w-full cursor-pointer items-center gap-5 px-6 py-4 transition-all duration-150 ${
@@ -141,7 +144,7 @@ function AirlineRow({
 
         {/* Selected indicator */}
         {isSelected && (
-          <div className="ml-auto rounded-full bg-cyan-400/20 px-3 py-1 text-xs font-bold text-cyan-300 uppercase">
+          <div className="animate-scale-in ml-auto rounded-full bg-cyan-400/20 px-3 py-1 text-xs font-bold text-cyan-300 uppercase">
             Active
           </div>
         )}

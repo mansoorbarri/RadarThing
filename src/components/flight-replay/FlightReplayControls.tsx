@@ -191,7 +191,7 @@ export function FlightReplayControls({
 
   return (
     <div
-      className={`fixed z-[10015] ${
+      className={`animate-fade-in-up fixed z-[10015] ${
         isMobile
           ? "inset-x-3 bottom-3"
           : "bottom-6 left-1/2 -translate-x-1/2"

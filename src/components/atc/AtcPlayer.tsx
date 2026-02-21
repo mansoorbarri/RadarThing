@@ -15,7 +15,7 @@ export function AtcPlayer({ icao, onClose }: AtcPlayerProps) {
   };
 
   return (
-    <div className="fixed bottom-24 left-1/2 z-[10013] w-[320px] -translate-x-1/2 rounded-2xl border border-white/10 bg-black/90 p-4 backdrop-blur-xl">
+    <div className="animate-scale-in fixed bottom-24 left-1/2 z-[10013] w-[320px] -translate-x-1/2 rounded-2xl border border-white/10 bg-black/90 p-4 backdrop-blur-xl">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">

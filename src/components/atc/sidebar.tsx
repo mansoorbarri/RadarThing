@@ -179,11 +179,12 @@ export const Sidebar = ({
             return (
               <div
                 key={i}
-                className={`group flex cursor-pointer items-center gap-4 rounded-xl border p-3.5 transition ${
+                className={`animate-fade-in-up group flex cursor-pointer items-center gap-4 rounded-xl border p-3.5 transition ${
                   isActive
                     ? "border-green-500/60 bg-green-500/10 shadow-[0_0_12px_rgba(34,197,94,0.2)]"
                     : "border-white/10 bg-black/40 hover:border-cyan-500/40 hover:bg-black/60"
                 }`}
+                style={{ animationDelay: `${i * 40}ms` }}
                 onClick={() => onWaypointClick?.(wp, i)}
               >
                 <div className={`font-mono text-xs font-black ${isActive ? "text-green-400" : "text-cyan-400"}`}>
@@ -341,7 +342,7 @@ export const Sidebar = ({
 
       <div className={`relative ${isMobile ? 'px-4 pb-2' : 'px-6 pb-4'}`}>
         {/* Follow + Share buttons */}
-        <div className="mb-3 flex gap-2">
+        <div className="animate-fade-in-up mb-3 flex gap-2" style={{ animationDelay: "50ms" }}>
           {onToggleFollow && (
             <button
               onClick={onToggleFollow}
@@ -402,7 +403,7 @@ export const Sidebar = ({
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-white/10 bg-black/40 p-1.5 shadow-inner">
+        <div className="animate-fade-in-up grid grid-cols-3 gap-1.5 rounded-2xl border border-white/10 bg-black/40 p-1.5 shadow-inner" style={{ animationDelay: "100ms" }}>
           <div className="flex flex-col items-center rounded-xl p-3.5">
             <span className="mb-1.5 font-mono text-[9px] font-black text-slate-400 uppercase">
               Altitude
@@ -480,16 +481,18 @@ export const Sidebar = ({
                     label="Departure"
                     value={aircraft.departure || "---"}
                     sub="ORIG"
+                    delay={0}
                   />
                   <StatBox
                     label="Arrival"
                     value={aircraft.arrival || "---"}
                     sub="DEST"
+                    delay={1}
                   />
-                  <StatBox label="V-Speed" value={displayValues.vspeed} sub="FPM" />
-                  <StatBox label="Heading" value={displayValues.heading} sub="MAG" />
-                  <StatBox label="Squawk" value={displayValues.squawk} sub="XPDR" />
-                  <StatBox label="Alt AGL" value={displayValues.altAGL} sub="FEET" />
+                  <StatBox label="V-Speed" value={displayValues.vspeed} sub="FPM" delay={2} />
+                  <StatBox label="Heading" value={displayValues.heading} sub="MAG" delay={3} />
+                  <StatBox label="Squawk" value={displayValues.squawk} sub="XPDR" delay={4} />
+                  <StatBox label="Alt AGL" value={displayValues.altAGL} sub="FEET" delay={5} />
                 </div>
                 {isOwnAircraft && <AircraftControlPanel aircraft={aircraft} />}
                 {renderFlightPlan()}
@@ -526,7 +529,7 @@ export const Sidebar = ({
                     No Records
                   </div>
                 ) : (
-                  history.map((f) => (
+                  history.map((f, histIdx) => (
                     <div
                       key={f.id}
                       onClick={() => {
@@ -544,7 +547,8 @@ export const Sidebar = ({
                           });
                         }
                       }}
-                      className="group relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg transition-all hover:border-amber-500/40"
+                      className="animate-fade-in-up group relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg transition-all hover:border-amber-500/40"
+                      style={{ animationDelay: `${histIdx * 50}ms` }}
                     >
                       <div className="mb-1.5 flex items-center justify-between">
                         <span className="font-mono text-sm font-black text-white group-hover:text-amber-400">
@@ -583,12 +587,17 @@ const StatBox = ({
   label,
   value,
   sub,
+  delay = 0,
 }: {
   label: string;
   value: string;
   sub: string;
+  delay?: number;
 }) => (
-  <div className="group rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg transition-all hover:bg-black/60">
+  <div
+    className="animate-fade-in-up group rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg transition-all hover:bg-black/60"
+    style={{ animationDelay: `${150 + delay * 50}ms` }}
+  >
     <div className="mb-2 font-mono text-[9px] font-black tracking-[0.2em] text-slate-400 uppercase transition-colors group-hover:text-cyan-400/80">
       {label}
     </div>

@@ -278,7 +278,7 @@ export function AirportFIDPanel({
 
   // Desktop: floating popup above bottom bar, same style as ATC Audio
   return (
-    <div className="fixed bottom-24 left-1/2 z-[10013] w-[420px] -translate-x-1/2 rounded-2xl border border-white/10 bg-black/90 backdrop-blur-xl">
+    <div className="animate-scale-in fixed bottom-24 left-1/2 z-[10013] w-[420px] -translate-x-1/2 rounded-2xl border border-white/10 bg-black/90 backdrop-blur-xl">
       {content}
     </div>
   );

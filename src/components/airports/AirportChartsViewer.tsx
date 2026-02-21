@@ -390,8 +390,8 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
   const isPdfChart = selectedChart && isPdf(selectedChart.chartUrl);
 
   return (
-    <div className="fixed inset-0 z-[10020] bg-black/80 backdrop-blur-sm">
-      <div className="absolute inset-4 flex flex-col rounded-xl bg-slate-950 shadow-2xl">
+    <div className="animate-fade-in fixed inset-0 z-[10020] bg-black/80 backdrop-blur-sm">
+      <div className="animate-scale-in absolute inset-4 flex flex-col rounded-xl bg-slate-950 shadow-2xl">
         {/* Header */}
         <header className="flex flex-col gap-3 border-b border-white/10 px-4 py-3">
           <div className="flex items-center justify-between">

@@ -17,8 +17,8 @@ export function FIDSPanel({ aircrafts, onTrack }: Props) {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {aircrafts.map((ac) => (
-          <FIDSRow key={ac.id ?? ac.callsign} aircraft={ac} onTrack={onTrack} />
+        {aircrafts.map((ac, index) => (
+          <FIDSRow key={ac.id ?? ac.callsign} aircraft={ac} onTrack={onTrack} index={index} />
         ))}
       </div>
     </div>
@@ -28,12 +28,17 @@ export function FIDSPanel({ aircrafts, onTrack }: Props) {
 function FIDSRow({
   aircraft,
   onTrack,
+  index,
 }: {
   aircraft: PositionUpdate;
   onTrack: (aircraft: PositionUpdate) => void;
+  index: number;
 }) {
   return (
-    <div className="grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-3 border-b border-white/5 px-4 py-2 text-xs">
+    <div
+      className="animate-fade-in-up grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-3 border-b border-white/5 px-4 py-2 text-xs"
+      style={{ animationDelay: `${Math.min(index * 25, 500)}ms` }}
+    >
       <div className="font-mono text-cyan-300">
         {aircraft.flightNo || aircraft.callsign || "—"}
       </div>

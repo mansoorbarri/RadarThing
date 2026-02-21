@@ -113,7 +113,7 @@ const AircraftCard = ({ aircraft, colorIndex, onRemove }: AircraftCardProps) => 
   }, [aircraft.alt, aircraft.altMSL, aircraft.speed, aircraft.heading, aircraft.vspeed, aircraft.flightPlan]);
 
   return (
-    <div className="relative rounded-xl border border-white/10 bg-black/60 p-3 backdrop-blur-sm">
+    <div className="animate-fade-in-up relative rounded-xl border border-white/10 bg-black/60 p-3 backdrop-blur-sm" style={{ animationDelay: `${colorIndex * 60}ms` }}>
       {/* Color indicator strip */}
       <div
         className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
