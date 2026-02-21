@@ -130,6 +130,9 @@ export default function ATCPage() {
   const [isDarkLayerMode, setIsDarkLayerMode] = useState(false);
   const [isFollowMode, setIsFollowMode] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [pendingAirportIcao, setPendingAirportIcao] = useState<string | null>(
+    null,
+  );
 
   const { searchTerm, setSearchTerm, searchResults } = useAircraftSearch(
     aircrafts,
@@ -238,6 +241,25 @@ export default function ATCPage() {
     setIsMapLoaded(true);
   }, []);
 
+  const handleAirportSelectByIcao = useCallback(
+    (icao: string) => {
+      const normalizedIcao = icao.trim().toUpperCase();
+      if (!normalizedIcao) return;
+
+      const airport = airports.find((ap) => ap.icao === normalizedIcao);
+      if (airport) {
+        setSelectedAirport(airport);
+        addAirportSearch(airport);
+        setPendingAirportIcao(null);
+        return;
+      }
+
+      setPendingAirportIcao(normalizedIcao);
+      fetchAirports();
+    },
+    [airports, addAirportSearch, fetchAirports],
+  );
+
   // Keep selected aircrafts in sync with updated positions and redraw paths
   useEffect(() => {
     if (selectedAircrafts.length === 0 || isViewingHistory) return;
@@ -321,6 +343,18 @@ export default function ATCPage() {
     setChartOverlayActive(false);
     setShowAirportFID(false);
   }, [selectedAirport?.icao]);
+
+  useEffect(() => {
+    if (!pendingAirportIcao || airports.length === 0) return;
+
+    const airport = airports.find((ap) => ap.icao === pendingAirportIcao);
+    if (airport) {
+      setSelectedAirport(airport);
+      addAirportSearch(airport);
+    }
+
+    setPendingAirportIcao(null);
+  }, [pendingAirportIcao, airports, addAirportSearch]);
 
   function handleAircraftSelect(
     aircraft: PositionUpdate | null,
@@ -896,6 +930,7 @@ export default function ATCPage() {
                   setHistoryPath(flight.routeData || null);
                   setIsViewingHistory(true);
                 }}
+                onAirportClick={handleAirportSelectByIcao}
                 isMobile={isMobile}
                 onClose={() => setSelectedAircrafts([])}
                 isFollowMode={isFollowMode}
@@ -967,6 +1002,7 @@ export default function ATCPage() {
                     setHistoryPath(flight.routeData || null);
                     setIsViewingHistory(true);
                   }}
+                  onAirportClick={handleAirportSelectByIcao}
                   isMobile={isMobile}
                   onClose={() => setSelectedAircrafts([])}
                   isFollowMode={isFollowMode}

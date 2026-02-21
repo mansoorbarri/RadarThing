@@ -148,6 +148,7 @@ export const Sidebar = ({
   aircraft,
   onWaypointClick,
   onHistoryClick,
+  onAirportClick,
   isMobile,
   onClose,
   isFollowMode,
@@ -156,6 +157,7 @@ export const Sidebar = ({
   aircraft: PositionUpdate & { altMSL?: number };
   onWaypointClick?: (waypoint: any, index: number) => void;
   onHistoryClick?: (flight: HistoryFlight) => void;
+  onAirportClick?: (icao: string) => void;
   isMobile: boolean;
   onClose?: () => void;
   isFollowMode?: boolean;
@@ -304,6 +306,9 @@ export const Sidebar = ({
 
   // Get the next waypoint identifier from the aircraft
   const nextWaypointIdent = aircraft.nextWaypoint;
+  const departureIcao = (aircraft.departure || "").trim().toUpperCase();
+  const arrivalIcao = (aircraft.arrival || "").trim().toUpperCase();
+  const isClickableAirport = (icao: string) => /^[A-Z0-9]{3,4}$/.test(icao);
 
   const renderFlightPlan = useCallback(() => {
     if (!aircraft.flightPlan) return null;
@@ -592,7 +597,27 @@ export const Sidebar = ({
           {isOwnAircraft && <AircraftControlPanel aircraft={aircraft} />}
           {!isOwnAircraft && (
             <div className="py-4 text-center font-mono text-[10px] tracking-widest text-white/40 uppercase">
-              {aircraft.departure || "---"} → {aircraft.arrival || "---"}
+              {isClickableAirport(departureIcao) && onAirportClick ? (
+                <button
+                  onClick={() => onAirportClick(departureIcao)}
+                  className="cursor-pointer text-cyan-300 hover:text-cyan-200 hover:underline"
+                >
+                  {departureIcao}
+                </button>
+              ) : (
+                departureIcao || "---"
+              )}{" "}
+              →{" "}
+              {isClickableAirport(arrivalIcao) && onAirportClick ? (
+                <button
+                  onClick={() => onAirportClick(arrivalIcao)}
+                  className="cursor-pointer text-cyan-300 hover:text-cyan-200 hover:underline"
+                >
+                  {arrivalIcao}
+                </button>
+              ) : (
+                arrivalIcao || "---"
+              )}
             </div>
           )}
           {renderFlightPlan()}
@@ -636,15 +661,25 @@ export const Sidebar = ({
                 <div className="grid grid-cols-2 gap-3.5">
                   <StatBox
                     label="Departure"
-                    value={aircraft.departure || "---"}
+                    value={departureIcao || "---"}
                     sub="ORIG"
                     delay={0}
+                    onClick={
+                      isClickableAirport(departureIcao) && onAirportClick
+                        ? () => onAirportClick(departureIcao)
+                        : undefined
+                    }
                   />
                   <StatBox
                     label="Arrival"
-                    value={aircraft.arrival || "---"}
+                    value={arrivalIcao || "---"}
                     sub="DEST"
                     delay={1}
+                    onClick={
+                      isClickableAirport(arrivalIcao) && onAirportClick
+                        ? () => onAirportClick(arrivalIcao)
+                        : undefined
+                    }
                   />
                   <StatBox label="V-Speed" value={displayValues.vspeed} sub="FPM" delay={2} />
                   <StatBox label="Heading" value={displayValues.heading} sub="MAG" delay={3} />
@@ -745,15 +780,22 @@ const StatBox = ({
   value,
   sub,
   delay = 0,
+  onClick,
 }: {
   label: string;
   value: string;
   sub: string;
   delay?: number;
+  onClick?: () => void;
 }) => (
-  <div
-    className="animate-fade-in-up group rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg transition-all hover:bg-black/60"
+  <button
+    type="button"
+    onClick={onClick}
+    className={`animate-fade-in-up group rounded-2xl border border-white/10 bg-black/40 p-4 text-left shadow-lg transition-all hover:bg-black/60 ${
+      onClick ? "cursor-pointer hover:border-cyan-500/40" : "cursor-default"
+    }`}
     style={{ animationDelay: `${150 + delay * 50}ms` }}
+    disabled={!onClick}
   >
     <div className="mb-2 font-mono text-[9px] font-black tracking-[0.2em] text-slate-400 uppercase transition-colors group-hover:text-cyan-400/80">
       {label}
@@ -766,7 +808,7 @@ const StatBox = ({
         {sub}
       </span>
     </div>
-  </div>
+  </button>
 );
 
 const TimelineCard = ({
