@@ -749,12 +749,14 @@ export const Sidebar = ({
 
           {tab === "info" ? (
             <div className="space-y-4">
-              <TimelineCard
-                departure={timelineData.departureText}
-                eta={timelineData.etaText}
-                progressPercent={timelineData.progressPercent}
-                remaining={timelineData.remainingText}
-              />
+              {!diversionStatus.isDiverting && (
+                <TimelineCard
+                  departure={timelineData.departureText}
+                  eta={timelineData.etaText}
+                  progressPercent={timelineData.progressPercent}
+                  remaining={timelineData.remainingText}
+                />
+              )}
 
               {diversionStatus.isDiverting && (
                 <DiversionStatusCard
@@ -830,12 +832,14 @@ export const Sidebar = ({
           <div className="custom-scrollbar flex-1 overflow-y-auto px-6 pb-12">
             {tab === "info" ? (
               <div className="space-y-6">
-                <TimelineCard
-                  departure={timelineData.departureText}
-                  eta={timelineData.etaText}
-                  progressPercent={timelineData.progressPercent}
-                  remaining={timelineData.remainingText}
-                />
+                {!diversionStatus.isDiverting && (
+                  <TimelineCard
+                    departure={timelineData.departureText}
+                    eta={timelineData.etaText}
+                    progressPercent={timelineData.progressPercent}
+                    remaining={timelineData.remainingText}
+                  />
+                )}
                 {diversionStatus.isDiverting && (
                   <DiversionStatusCard
                     filedArrival={diversionStatus.filedArrival}
