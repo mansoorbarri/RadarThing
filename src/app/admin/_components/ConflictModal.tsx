@@ -7,7 +7,6 @@ interface ConflictModalProps {
   isOpen: boolean;
   pendingImage: AircraftImage | null;
   existingImage: AircraftImage | null;
-  userInfo: Record<string, { email: string; name: string | null }>;
   isLoading: boolean;
   onKeepPending: () => void;
   onKeepExisting: () => void;
@@ -18,7 +17,6 @@ export function ConflictModal({
   isOpen,
   pendingImage,
   existingImage,
-  userInfo,
   isLoading,
   onKeepPending,
   onKeepExisting,
@@ -69,15 +67,10 @@ export function ConflictModal({
                   {pendingImage.aircraftType}
                 </span>
               </div>
-              {pendingImage.discordUsername && (
-                <p className="mb-1 text-xs text-slate-500">
-                  Discord: {pendingImage.discordUsername}
-                </p>
-              )}
               <p className="mb-1 text-xs text-slate-500">
                 Uploaded by{" "}
                 <span className="text-cyan-400">
-                  {userInfo[pendingImage.uploadedBy]?.email ?? pendingImage.uploadedBy}
+                  {pendingImage.discordUsername ?? pendingImage.uploadedBy}
                 </span>
               </p>
               <p className="text-xs text-slate-600">
@@ -119,15 +112,10 @@ export function ConflictModal({
                   {existingImage.aircraftType}
                 </span>
               </div>
-              {existingImage.discordUsername && (
-                <p className="mb-1 text-xs text-slate-500">
-                  Discord: {existingImage.discordUsername}
-                </p>
-              )}
               <p className="mb-1 text-xs text-slate-500">
                 Uploaded by{" "}
                 <span className="text-cyan-400">
-                  {userInfo[existingImage.uploadedBy]?.email ?? existingImage.uploadedBy}
+                  {existingImage.discordUsername ?? existingImage.uploadedBy}
                 </span>
               </p>
               <p className="text-xs text-slate-600">

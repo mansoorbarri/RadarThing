@@ -9,7 +9,6 @@ import {
   deleteAircraftImage,
   bulkApproveAircraftImages,
   bulkRejectAircraftImages,
-  getUserInfoByIds,
   updateAircraftImageCodes,
   checkApprovalConflict,
   resolveImageConflict,
@@ -174,7 +173,6 @@ export function AircraftImagesTab() {
   const pendingImages = useMemo(() => pendingQuery ?? [], [pendingQuery]);
   const approvedImages = useMemo(() => approvedQuery ?? [], [approvedQuery]);
 
-  const [userInfo, setUserInfo] = useState<Record<string, { email: string; name: string | null }>>({});
   const [imageSubTab, setImageSubTab] = useState<ImageSubTab>("pending");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -261,15 +259,6 @@ export function AircraftImagesTab() {
 
   const filteredPendingImages = filterImages(pendingImages);
   const filteredApprovedImages = filterImages(approvedImages);
-
-  useEffect(() => {
-    const allUserIds = [...pendingImages, ...approvedImages].map((img) => img.uploadedBy);
-    if (allUserIds.length > 0) {
-      getUserInfoByIds(allUserIds)
-        .then(setUserInfo)
-        .catch((e) => console.error("Failed to fetch user info:", e));
-    }
-  }, [pendingImages, approvedImages]);
 
   async function handleApprove(id: string) {
     setActionLoading(id);
@@ -485,7 +474,6 @@ export function AircraftImagesTab() {
         isOpen={conflictModalOpen}
         pendingImage={conflictPendingImage}
         existingImage={conflictExistingImage}
-        userInfo={userInfo}
         isLoading={conflictLoading}
         onKeepPending={handleConflictKeepPending}
         onKeepExisting={handleConflictKeepExisting}
@@ -641,8 +629,7 @@ export function AircraftImagesTab() {
                         initialAircraftType={image.aircraftType || ""}
                       />
                     </div>
-                    {image.discordUsername && <p className="mb-2 text-xs text-slate-500">Discord: {image.discordUsername}</p>}
-                    <p className="mb-1 text-xs text-slate-500">Uploaded by <span className="text-cyan-400">{userInfo[image.uploadedBy]?.email ?? image.uploadedBy}</span></p>
+                    <p className="mb-1 text-xs text-slate-500">Uploaded by <span className="text-cyan-400">{image.discordUsername ?? image.uploadedBy}</span></p>
                     <p className="mb-3 text-xs text-slate-600">{new Date(image.createdAt).toLocaleDateString()}</p>
                     <div className="flex gap-2">
                       <button onClick={() => handleApprove(image.id)} disabled={actionLoading === image.id} className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-lg bg-emerald-500/20 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50">
@@ -703,8 +690,7 @@ export function AircraftImagesTab() {
                       />
                       <CheckCircle className="ml-auto h-4 w-4 text-emerald-400" />
                     </div>
-                    {image.discordUsername && <p className="mt-2 text-xs text-slate-500">Discord: {image.discordUsername}</p>}
-                    <p className="mt-1 text-xs text-slate-500">Uploaded by <span className="text-cyan-400">{userInfo[image.uploadedBy]?.email ?? image.uploadedBy}</span></p>
+                    <p className="mt-1 text-xs text-slate-500">Uploaded by <span className="text-cyan-400">{image.discordUsername ?? image.uploadedBy}</span></p>
                     {image.approvedAt && <p className="mt-1 text-xs text-slate-600">Approved {new Date(image.approvedAt).toLocaleDateString()}</p>}
                   </div>
                 </div>

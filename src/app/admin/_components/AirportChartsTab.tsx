@@ -701,7 +701,7 @@ export function AirportChartsTab() {
                     <p className="mt-2 text-xs text-slate-500">
                       Uploaded by:{" "}
                       <span className="text-cyan-400">
-                        {chart.discordUsername || userInfo[chart.uploadedBy ?? ""]?.email || "Unknown"}
+                        {chart.discordUsername ?? chart.uploadedBy ?? "Unknown"}
                       </span>
                     </p>
                     <p className="mb-3 text-xs text-slate-600">
@@ -811,7 +811,7 @@ export function AirportChartsTab() {
                     <p className="mt-2 text-xs text-slate-500">
                       Uploaded by:{" "}
                       <span className="text-cyan-400">
-                        {chart.discordUsername || userInfo[chart.uploadedBy ?? ""]?.email || "Unknown"}
+                        {chart.discordUsername ?? chart.uploadedBy ?? "Unknown"}
                       </span>
                     </p>
                     {chart.approvedBy && (
