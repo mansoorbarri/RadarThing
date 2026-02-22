@@ -132,6 +132,41 @@ const formatDuration = (minutes: number | null) => {
   return `${hours}h ${String(mins).padStart(2, "0")}m`;
 };
 
+const normalizeAirportCode = (value: unknown): string | null => {
+  if (typeof value !== "string") return null;
+  const code = value.trim().toUpperCase();
+  return /^[A-Z0-9]{3,4}$/.test(code) ? code : null;
+};
+
+const getPlannedDestination = (flightPlan?: string): string | null => {
+  if (!flightPlan) return null;
+
+  try {
+    const waypoints = JSON.parse(flightPlan) as Record<string, unknown>[];
+    if (!Array.isArray(waypoints) || waypoints.length === 0) return null;
+
+    const destinationWaypoint = waypoints.find(
+      (wp) =>
+        typeof wp === "object" &&
+        wp !== null &&
+        typeof wp.type === "string" &&
+        wp.type.toUpperCase() === "DST" &&
+        typeof wp.ident === "string",
+    );
+
+    if (destinationWaypoint?.ident) {
+      return normalizeAirportCode(destinationWaypoint.ident);
+    }
+
+    const lastWaypoint = waypoints[waypoints.length - 1];
+    if (!lastWaypoint || typeof lastWaypoint !== "object") return null;
+
+    return normalizeAirportCode(lastWaypoint.ident);
+  } catch {
+    return null;
+  }
+};
+
 export interface HistoryFlight {
   id: string;
   depICAO?: string;
@@ -309,6 +344,27 @@ export const Sidebar = ({
   const departureIcao = (aircraft.departure || "").trim().toUpperCase();
   const arrivalIcao = (aircraft.arrival || "").trim().toUpperCase();
   const isClickableAirport = (icao: string) => /^[A-Z0-9]{3,4}$/.test(icao);
+
+  const diversionStatus = useMemo(() => {
+    const filedArrival = normalizeAirportCode(aircraft.arrival);
+    const plannedArrival = getPlannedDestination(aircraft.flightPlan);
+
+    if (!filedArrival || !plannedArrival) {
+      return {
+        isDiverting: false,
+        hasSignal: false,
+        filedArrival: filedArrival ?? "---",
+        plannedArrival: plannedArrival ?? "---",
+      };
+    }
+
+    return {
+      isDiverting: plannedArrival !== filedArrival,
+      hasSignal: true,
+      filedArrival,
+      plannedArrival,
+    };
+  }, [aircraft.arrival, aircraft.flightPlan]);
 
   const renderFlightPlan = useCallback(() => {
     if (!aircraft.flightPlan) return null;
@@ -700,6 +756,13 @@ export const Sidebar = ({
                 remaining={timelineData.remainingText}
               />
 
+              {diversionStatus.isDiverting && (
+                <DiversionStatusCard
+                  filedArrival={diversionStatus.filedArrival}
+                  plannedArrival={diversionStatus.plannedArrival}
+                />
+              )}
+
               <div className="grid grid-cols-2 gap-2.5">
                 <StatBox
                   label="Departure"
@@ -773,6 +836,12 @@ export const Sidebar = ({
                   progressPercent={timelineData.progressPercent}
                   remaining={timelineData.remainingText}
                 />
+                {diversionStatus.isDiverting && (
+                  <DiversionStatusCard
+                    filedArrival={diversionStatus.filedArrival}
+                    plannedArrival={diversionStatus.plannedArrival}
+                  />
+                )}
                 <div className="grid grid-cols-2 gap-3.5">
                   <StatBox
                     label="Departure"
@@ -903,6 +972,26 @@ const TimelineCard = ({
       Remaining: <span className="text-cyan-300">{remaining}</span>
     </div>
   </div>
+);
+
+const DiversionStatusCard = ({
+  filedArrival,
+  plannedArrival,
+}: {
+  filedArrival: string;
+  plannedArrival: string;
+}) => (
+  <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 shadow-lg">
+      <div className="font-mono text-[9px] font-black tracking-[0.2em] text-amber-300 uppercase">
+        Diversion Status
+      </div>
+      <div className="mt-1 font-mono text-sm font-black text-amber-200">
+        DIVERTING
+      </div>
+      <p className="mt-1 font-mono text-[10px] text-white/60">
+        Filed ARR {filedArrival} • Plan DST {plannedArrival}
+      </p>
+    </div>
 );
 
 const MiniStat = ({ label, value }: { label: string; value: string }) => (
