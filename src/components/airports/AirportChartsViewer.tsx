@@ -286,7 +286,15 @@ function ResetButton({ onReset }: { onReset?: () => void }) {
 }
 
 // Chart image component with zoom/pan state persistence
-function ChartImage({ chartUrl, chartName }: { chartUrl: string; chartName: string }) {
+function ChartImage({
+  chartUrl,
+  chartName,
+  isInverted,
+}: {
+  chartUrl: string;
+  chartName: string;
+  isInverted: boolean;
+}) {
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
   const hasInitialized = useRef(false);
   const cachedState = getTransformState(chartUrl);
@@ -340,7 +348,7 @@ function ChartImage({ chartUrl, chartName }: { chartUrl: string; chartName: stri
           <img
             src={chartUrl}
             alt={chartName}
-            className="object-contain select-none invert"
+            className={cn("object-contain select-none", isInverted && "invert")}
             onLoad={handleImageLoad}
           />
         </TransformComponent>
@@ -353,6 +361,7 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [pdfError, setPdfError] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isInverted, setIsInverted] = useState(true);
 
   const {
     charts,
@@ -466,6 +475,19 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
             ref={containerRef}
             className="relative flex-1 overflow-hidden bg-black"
           >
+            {selectedChart && (
+              <button
+                onClick={() => setIsInverted((prev) => !prev)}
+                className={cn(
+                  "absolute bottom-14 right-4 z-10 cursor-pointer rounded-md border px-3 py-1.5 text-xs transition-colors",
+                  isInverted
+                    ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20"
+                    : "border-white/10 bg-slate-900/90 text-slate-300 hover:bg-slate-800"
+                )}
+              >
+                Invert: {isInverted ? "On" : "Off"}
+              </button>
+            )}
             {loading ? (
               <div className="flex h-full w-full items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
@@ -512,7 +534,7 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
               ) : (
                 <iframe
                   src={selectedChart.chartUrl}
-                  className="h-full w-full border-0 invert"
+                  className={cn("h-full w-full border-0", isInverted && "invert")}
                   title={selectedChart.chartName}
                   onError={() => setPdfError(true)}
                 />
@@ -522,6 +544,7 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
                 key={selectedChart.chartUrl}
                 chartUrl={selectedChart.chartUrl}
                 chartName={selectedChart.chartName}
+                isInverted={isInverted}
               />
             )}
           </div>
