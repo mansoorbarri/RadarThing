@@ -24,7 +24,7 @@ function corsHeaders(origin: string | null) {
   };
 }
 
-export async function OPTIONS(request: NextRequest) {
+export function OPTIONS(request: NextRequest) {
   const origin = request.headers.get("origin");
   if (!isAllowedOrigin(origin)) {
     return new NextResponse(null, { status: 403 });
