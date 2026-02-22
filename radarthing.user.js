@@ -358,9 +358,13 @@
 
   function saveChartsSize(el) {
     try {
+      const maxHeight = parseInt(el.style.maxHeight, 10);
       localStorage.setItem(
         CHARTS_SIZE_KEY,
-        JSON.stringify({ width: el.offsetWidth }),
+        JSON.stringify({
+          width: el.offsetWidth,
+          maxHeight: Number.isFinite(maxHeight) ? maxHeight : null,
+        }),
       );
     } catch (_) {}
   }
@@ -372,10 +376,38 @@
       const p = JSON.parse(s);
       return {
         width: Math.max(300, Math.min(p.width, window.innerWidth - 20)),
+        maxHeight: Number.isFinite(p.maxHeight)
+          ? Math.max(120, Math.min(p.maxHeight, window.innerHeight - 16))
+          : null,
       };
     } catch (_) {
       return null;
     }
+  }
+
+  function clampChartsPanelToViewport(panel) {
+    if (!panel) return;
+    const margin = 8;
+    const minWidth = 300;
+    const viewportMaxWidth = Math.max(minWidth, window.innerWidth - margin * 2);
+    if (panel.offsetWidth > viewportMaxWidth) {
+      panel.style.width = viewportMaxWidth + "px";
+    }
+
+    if (panel.offsetHeight > window.innerHeight - margin * 2) {
+      panel.style.maxHeight = Math.max(120, window.innerHeight - margin * 2) + "px";
+      panel.style.height = "auto";
+    }
+
+    const currentLeft = parseInt(panel.style.left, 10);
+    const currentTop = parseInt(panel.style.top, 10);
+    const left = Number.isFinite(currentLeft) ? currentLeft : CHARTS_DEFAULT_LEFT;
+    const top = Number.isFinite(currentTop) ? currentTop : CHARTS_DEFAULT_TOP;
+
+    const maxLeft = Math.max(margin, window.innerWidth - panel.offsetWidth - margin);
+    const maxTop = Math.max(margin, window.innerHeight - panel.offsetHeight - margin);
+    panel.style.left = Math.min(Math.max(left, margin), maxLeft) + "px";
+    panel.style.top = Math.min(Math.max(top, margin), maxTop) + "px";
   }
 
   function syncChartsViewerHeight() {
@@ -404,10 +436,17 @@
     const horizontalPadding = 28;
     const imageWidth = Math.max(1, panel.clientWidth - horizontalPadding);
     const naturalHeight = Math.round((img.naturalHeight / img.naturalWidth) * imageWidth);
-    const maxPreviewHeight = Math.max(
+    let maxPreviewHeight = Math.max(
       0,
       window.innerHeight - panel.offsetTop - 16 - nonPreviewHeight,
     );
+    const panelMaxHeight = parseInt(panel.style.maxHeight, 10);
+    if (Number.isFinite(panelMaxHeight)) {
+      maxPreviewHeight = Math.min(
+        maxPreviewHeight,
+        Math.max(0, panelMaxHeight - nonPreviewHeight),
+      );
+    }
     const appliedHeight = Math.min(naturalHeight, maxPreviewHeight);
 
     preview.style.height = `${appliedHeight}px`;
@@ -441,25 +480,29 @@
       if (!dragging) return;
       panel.style.left = (sl + e.clientX - sx) + "px";
       panel.style.top = (st + e.clientY - sy) + "px";
+      clampChartsPanelToViewport(panel);
     });
 
     document.addEventListener("mouseup", () => {
       if (!dragging) return;
       dragging = false;
       handle.style.cursor = "grab";
+      clampChartsPanelToViewport(panel);
       saveChartsPos(panel);
     });
   }
 
   function makeChartsResizable(panel) {
     const handles = panel.querySelectorAll(".gc-resize-handle");
-    let resizing = false, startX, startW, resizeType;
+    let resizing = false, startX, startY, startW, startH, resizeType;
 
     handles.forEach((handle) => {
       handle.addEventListener("mousedown", (e) => {
         resizing = true;
         startX = e.clientX;
+        startY = e.clientY;
         startW = panel.offsetWidth;
+        startH = panel.offsetHeight;
         if (handle.classList.contains("gc-resize-right")) resizeType = "right";
         else if (handle.classList.contains("gc-resize-bottom")) resizeType = "bottom";
         else resizeType = "corner";
@@ -471,16 +514,24 @@
     document.addEventListener("mousemove", (e) => {
       if (!resizing) return;
       const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
       if (resizeType === "right" || resizeType === "corner") {
         panel.style.width = Math.max(300, startW + dx) + "px";
       }
+      if (resizeType === "bottom" || resizeType === "corner") {
+        panel.style.maxHeight = Math.max(120, startH + dy) + "px";
+      }
+      clampChartsPanelToViewport(panel);
       syncChartsViewerHeight();
     });
 
     document.addEventListener("mouseup", () => {
       if (!resizing) return;
       resizing = false;
+      clampChartsPanelToViewport(panel);
+      syncChartsViewerHeight();
       saveChartsSize(panel);
+      saveChartsPos(panel);
     });
   }
 
@@ -1239,7 +1290,6 @@
       }
 
       .gc-resize-bottom {
-        display: none;
         left: 12px;
         right: 12px;
         bottom: -3px;
@@ -1248,7 +1298,6 @@
       }
 
       .gc-resize-corner {
-        display: none;
         right: 0;
         bottom: 0;
         width: 16px;
@@ -1331,7 +1380,9 @@
     const size = loadChartsSize();
     if (size) {
       panel.style.width = size.width + "px";
+      if (size.maxHeight) panel.style.maxHeight = size.maxHeight + "px";
     }
+    clampChartsPanelToViewport(panel);
 
     // Draggable header
     makeChartsDraggable(panel, panel.querySelector(".gc-header"));
@@ -1357,7 +1408,12 @@
       renderChartsContent();
     };
 
-    window.addEventListener("resize", syncChartsViewerHeight);
+    window.addEventListener("resize", () => {
+      clampChartsPanelToViewport(panel);
+      syncChartsViewerHeight();
+      saveChartsPos(panel);
+      saveChartsSize(panel);
+    });
   }
 
   // ==========================================
