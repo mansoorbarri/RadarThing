@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RadarThing
 // @namespace    http://tampermonkey.net/
-// @version      1.4.3
+// @version      1.4.4
 // @description  Always loads the latest GeoFS ATC Radar script from GitHub
 // @Author       xyzmani
 // @icon         https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/public/favicon.ico
@@ -21,8 +21,10 @@
   // ==========================================
 
   const STORAGE_KEY = "geofs-atc-toggle-key";
+  const CHARTS_TOGGLE_KEY = "geofs-atc-charts-toggle-key";
   const RADAR_PREFS_KEY = "geofs-atc-radar-prefs";
   let toggleKey = localStorage.getItem(STORAGE_KEY) || "w";
+  let chartsToggleKey = localStorage.getItem(CHARTS_TOGGLE_KEY) || "q";
 
   const UI_CONTAINER_ID = "geofs-atc-radar-flightInfoUI";
   const DEP_INPUT_ID = "atc-depInput";
@@ -33,6 +35,7 @@
   const CLEAR_BTN_ID = "atc-clearBtn";
   const STATUS_INDICATOR_ID = "atc-statusIndicator";
   const KEYBIND_BTN_ID = "atc-keybind-btn";
+  const CHARTS_KEYBIND_BTN_ID = "atc-charts-keybind-btn";
   const RADAR_SETTINGS_HEADER_ID = "atc-radar-settings-header";
   const RADAR_SETTINGS_BODY_ID = "atc-radar-settings-body";
   const RADAR_SETTINGS_ARROW_ID = "atc-radar-settings-arrow";
@@ -41,7 +44,7 @@
   const CHARTS_BTN_ID = "atc-charts-btn";
 
   let flightUI;
-  let isListeningForKey = false;
+  let keybindMode = null;
   let lastSyncedPlan = "";
 
   let radarPrefs = JSON.parse(
@@ -831,6 +834,27 @@
         ">${toggleKey.toUpperCase()}</button>
       </div>
 
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin-top:6px;
+        font-size:9px;
+        color:#94a3b8;
+      ">
+        <span>Charts key</span>
+        <button id="${CHARTS_KEYBIND_BTN_ID}" style="
+          padding:4px 8px;
+          border-radius:6px;
+          border:1px solid rgba(255,255,255,0.15);
+          background:rgba(255,255,255,0.08);
+          color:#e5e7eb;
+          font-size:9px;
+          letter-spacing:0.12em;
+          cursor:pointer;
+        ">${chartsToggleKey.toUpperCase()}</button>
+      </div>
+
       <div id="${STATUS_INDICATOR_ID}" style="
         margin-top:8px;
         text-align:center;
@@ -898,8 +922,13 @@
     });
 
     document.getElementById(KEYBIND_BTN_ID).onclick = () => {
-      isListeningForKey = true;
+      keybindMode = "flight";
       document.getElementById(KEYBIND_BTN_ID).textContent = "...";
+    };
+
+    document.getElementById(CHARTS_KEYBIND_BTN_ID).onclick = () => {
+      keybindMode = "charts";
+      document.getElementById(CHARTS_KEYBIND_BTN_ID).textContent = "...";
     };
 
     document.getElementById(RADAR_SETTINGS_HEADER_ID).onclick = () => {
@@ -1421,13 +1450,22 @@
   // ==========================================
 
   window.addEventListener("keydown", (e) => {
-    if (isListeningForKey) {
+    if (keybindMode === "flight") {
       toggleKey = e.key.toLowerCase();
       localStorage.setItem(STORAGE_KEY, toggleKey);
-      document.getElementById(KEYBIND_BTN_ID).textContent =
-        toggleKey.toUpperCase();
-      isListeningForKey = false;
+      document.getElementById(KEYBIND_BTN_ID).textContent = toggleKey.toUpperCase();
+      keybindMode = null;
       showToast("Toggle key updated");
+      return;
+    }
+
+    if (keybindMode === "charts") {
+      chartsToggleKey = e.key.toLowerCase();
+      localStorage.setItem(CHARTS_TOGGLE_KEY, chartsToggleKey);
+      document.getElementById(CHARTS_KEYBIND_BTN_ID).textContent =
+        chartsToggleKey.toUpperCase();
+      keybindMode = null;
+      showToast("Charts key updated");
       return;
     }
 
@@ -1438,6 +1476,15 @@
     ) {
       flightUI.style.display =
         flightUI.style.display === "none" ? "block" : "none";
+      return;
+    }
+
+    if (
+      e.key.toLowerCase() === chartsToggleKey &&
+      e.target.tagName !== "INPUT" &&
+      e.target.tagName !== "TEXTAREA"
+    ) {
+      toggleChartsPanel();
     }
   });
 
