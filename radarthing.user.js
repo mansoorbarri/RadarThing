@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RadarThing
 // @namespace    http://tampermonkey.net/
-// @version      1.4.1
+// @version      1.4.2
 // @description  Always loads the latest GeoFS ATC Radar script from GitHub
 // @Author       xyzmani
 // @icon         https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/public/favicon.ico
@@ -59,6 +59,9 @@
   const CHARTS_SIZE_KEY = "geofs-charts-size";
   const CHARTS_ICAO_KEY = "geofs-charts-icao";
   const CHART_TYPES = ["GENERAL", "TAXI", "SID", "STAR", "APPROACH"];
+  const CHARTS_DEFAULT_TOP = 60;
+  const CHARTS_DEFAULT_LEFT = 16;
+  const CHARTS_DEFAULT_WIDTH = 370;
 
   const chartsState = {
     currentIcao: "",
@@ -331,7 +334,10 @@
     try {
       localStorage.setItem(
         CHARTS_POS_KEY,
-        JSON.stringify({ top: parseInt(el.style.top) || 60, left: parseInt(el.style.left) || (window.innerWidth - 390) }),
+        JSON.stringify({
+          top: parseInt(el.style.top) || CHARTS_DEFAULT_TOP,
+          left: parseInt(el.style.left) || CHARTS_DEFAULT_LEFT,
+        }),
       );
     } catch (_) {}
   }
@@ -354,7 +360,7 @@
     try {
       localStorage.setItem(
         CHARTS_SIZE_KEY,
-        JSON.stringify({ width: el.offsetWidth, height: el.offsetHeight }),
+        JSON.stringify({ width: el.offsetWidth }),
       );
     } catch (_) {}
   }
@@ -366,11 +372,47 @@
       const p = JSON.parse(s);
       return {
         width: Math.max(300, Math.min(p.width, window.innerWidth - 20)),
-        height: Math.max(300, Math.min(p.height, window.innerHeight - 20)),
       };
     } catch (_) {
       return null;
     }
+  }
+
+  function syncChartsViewerHeight() {
+    const panel = document.getElementById(CHARTS_PANEL_ID);
+    const preview = panel?.querySelector(".gc-preview");
+    if (!panel || !preview) return;
+
+    const img = preview.querySelector(".gc-image-wrap img");
+    if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) {
+      preview.style.height = "0px";
+      preview.style.overflowY = "hidden";
+      panel.style.height = "auto";
+      return;
+    }
+
+    const nonPreviewHeight = Array.from(panel.children).reduce((sum, child) => {
+      if (
+        child.classList.contains("gc-preview") ||
+        child.classList.contains("gc-resize-handle")
+      ) {
+        return sum;
+      }
+      return sum + child.offsetHeight;
+    }, 0);
+
+    const horizontalPadding = 28;
+    const imageWidth = Math.max(1, panel.clientWidth - horizontalPadding);
+    const naturalHeight = Math.round((img.naturalHeight / img.naturalWidth) * imageWidth);
+    const maxPreviewHeight = Math.max(
+      0,
+      window.innerHeight - panel.offsetTop - 16 - nonPreviewHeight,
+    );
+    const appliedHeight = Math.min(naturalHeight, maxPreviewHeight);
+
+    preview.style.height = `${appliedHeight}px`;
+    preview.style.overflowY = naturalHeight > maxPreviewHeight ? "auto" : "hidden";
+    panel.style.height = "auto";
   }
 
   function saveChartsIcao(icao) {
@@ -411,15 +453,13 @@
 
   function makeChartsResizable(panel) {
     const handles = panel.querySelectorAll(".gc-resize-handle");
-    let resizing = false, startX, startY, startW, startH, resizeType;
+    let resizing = false, startX, startW, resizeType;
 
     handles.forEach((handle) => {
       handle.addEventListener("mousedown", (e) => {
         resizing = true;
         startX = e.clientX;
-        startY = e.clientY;
         startW = panel.offsetWidth;
-        startH = panel.offsetHeight;
         if (handle.classList.contains("gc-resize-right")) resizeType = "right";
         else if (handle.classList.contains("gc-resize-bottom")) resizeType = "bottom";
         else resizeType = "corner";
@@ -431,14 +471,10 @@
     document.addEventListener("mousemove", (e) => {
       if (!resizing) return;
       const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
       if (resizeType === "right" || resizeType === "corner") {
         panel.style.width = Math.max(300, startW + dx) + "px";
       }
-      if (resizeType === "bottom" || resizeType === "corner") {
-        panel.style.height = Math.max(300, startH + dy) + "px";
-        panel.style.maxHeight = "none";
-      }
+      syncChartsViewerHeight();
     });
 
     document.addEventListener("mouseup", () => {
@@ -517,6 +553,7 @@
 
     if (!sel) {
       preview.innerHTML = `<div class="gc-empty">Select a chart from the list above.</div>`;
+      syncChartsViewerHeight();
       return;
     }
 
@@ -526,6 +563,12 @@
         <img src="${sel.chartUrl}" alt="${sel.chartName}" class="${cls}" draggable="false">
       </div>
     `;
+    const img = preview.querySelector("img");
+    if (img) {
+      img.addEventListener("load", syncChartsViewerHeight);
+      img.addEventListener("error", syncChartsViewerHeight);
+      if (img.complete) syncChartsViewerHeight();
+    }
   }
 
   async function chartsSearch() {
@@ -895,9 +938,9 @@
         z-index: 100002;
         display: none;
         flex-direction: column;
-        width: 370px;
-        height: calc(100vh - 80px);
-        max-height: 860px;
+        width: ${CHARTS_DEFAULT_WIDTH}px;
+        height: auto;
+        max-height: calc(100vh - 16px);
         font-family: 'Figtree', system-ui, sans-serif;
         color: #ffffff;
         background: rgba(1, 11, 16, 0.94);
@@ -1156,9 +1199,9 @@
       }
 
       .gc-preview {
-        flex: 1;
-        min-height: 0;
-        overflow: auto;
+        flex: none;
+        height: 0;
+        overflow: hidden;
         padding: 10px 14px 14px;
       }
 
@@ -1196,6 +1239,7 @@
       }
 
       .gc-resize-bottom {
+        display: none;
         left: 12px;
         right: 12px;
         bottom: -3px;
@@ -1204,6 +1248,7 @@
       }
 
       .gc-resize-corner {
+        display: none;
         right: 0;
         bottom: 0;
         width: 16px;
@@ -1274,10 +1319,10 @@
     `;
     document.body.appendChild(panel);
 
-    // Restore position (default: right side)
+    // Restore position (default: left side)
     const pos = loadChartsPos();
-    panel.style.top = (pos ? pos.top : 60) + "px";
-    panel.style.left = (pos ? pos.left : window.innerWidth - 390) + "px";
+    panel.style.top = (pos ? pos.top : CHARTS_DEFAULT_TOP) + "px";
+    panel.style.left = (pos ? pos.left : CHARTS_DEFAULT_LEFT) + "px";
 
     // Stop clicks from reaching GeoFS
     panel.addEventListener("click", (e) => e.stopPropagation());
@@ -1286,8 +1331,6 @@
     const size = loadChartsSize();
     if (size) {
       panel.style.width = size.width + "px";
-      panel.style.height = size.height + "px";
-      panel.style.maxHeight = "none";
     }
 
     // Draggable header
@@ -1313,6 +1356,8 @@
       chartsState.invertColors = !chartsState.invertColors;
       renderChartsContent();
     };
+
+    window.addEventListener("resize", syncChartsViewerHeight);
   }
 
   // ==========================================
