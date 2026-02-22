@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RadarThing
 // @namespace    http://tampermonkey.net/
-// @version      1.4.4
+// @version      1.4.5
 // @description  Always loads the latest GeoFS ATC Radar script from GitHub
 // @Author       xyzmani
 // @icon         https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/public/favicon.ico
@@ -61,10 +61,12 @@
   const CHARTS_POS_KEY = "geofs-charts-pos";
   const CHARTS_SIZE_KEY = "geofs-charts-size";
   const CHARTS_ICAO_KEY = "geofs-charts-icao";
+  const CHARTS_CACHE_KEY = "geofs-airport-charts-v1";
   const CHART_TYPES = ["GENERAL", "TAXI", "SID", "STAR", "APPROACH"];
   const CHARTS_DEFAULT_TOP = 60;
   const CHARTS_DEFAULT_LEFT = 16;
   const CHARTS_DEFAULT_WIDTH = 370;
+  const chartsMemoryCache = new Map();
 
   const chartsState = {
     currentIcao: "",
@@ -279,8 +281,72 @@
     return { GENERAL: [], TAXI: [], SID: [], STAR: [], APPROACH: [] };
   }
 
-  async function fetchChartsForAirport(icao) {
+  function loadChartsCacheStorage() {
+    try {
+      const raw = localStorage.getItem(CHARTS_CACHE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function saveChartsCacheStorage(data) {
+    try {
+      localStorage.setItem(CHARTS_CACHE_KEY, JSON.stringify(data));
+    } catch (_) {}
+  }
+
+  function sanitizeChartsByType(raw) {
+    const byType = createEmptyChartsByType();
+    if (!raw || typeof raw !== "object") return byType;
+
+    for (const type of CHART_TYPES) {
+      const list = Array.isArray(raw[type]) ? raw[type] : [];
+      for (const chart of list) {
+        if (!chart || !chart.chartName || !chart.chartUrl) continue;
+        byType[type].push({
+          id: chart.id || `${chart.icao || ""}-${type}-${chart.chartName}-${chart.chartUrl}`,
+          icao: (chart.icao || "").toUpperCase(),
+          chartType: type,
+          chartName: chart.chartName,
+          chartUrl: chart.chartUrl,
+        });
+      }
+      byType[type].sort((a, b) => a.chartName.localeCompare(b.chartName));
+    }
+
+    return byType;
+  }
+
+  function clearChartsCacheForAirport(icao) {
+    const key = icao.toUpperCase();
+    chartsMemoryCache.delete(key);
+    const stored = loadChartsCacheStorage();
+    if (stored[key]) {
+      delete stored[key];
+      saveChartsCacheStorage(stored);
+    }
+  }
+
+  async function fetchChartsForAirport(icao, opts = {}) {
     const upperIcao = icao.toUpperCase();
+    const force = !!opts.force;
+
+    if (!force && chartsMemoryCache.has(upperIcao)) {
+      return { byType: chartsMemoryCache.get(upperIcao), fromCache: true };
+    }
+
+    if (!force) {
+      const stored = loadChartsCacheStorage();
+      if (stored[upperIcao]) {
+        const cachedByType = sanitizeChartsByType(stored[upperIcao]);
+        chartsMemoryCache.set(upperIcao, cachedByType);
+        return { byType: cachedByType, fromCache: true };
+      }
+    }
+
     const res = await fetch(
       `${CHARTS_API}/api/userscript/charts?icao=${encodeURIComponent(upperIcao)}`,
       { headers: { "X-Requested-With": "GeoFS-Charts" } },
@@ -307,7 +373,13 @@
     for (const type of CHART_TYPES) {
       byType[type].sort((a, b) => a.chartName.localeCompare(b.chartName));
     }
-    return byType;
+
+    chartsMemoryCache.set(upperIcao, byType);
+    const stored = loadChartsCacheStorage();
+    stored[upperIcao] = byType;
+    saveChartsCacheStorage(stored);
+
+    return { byType, fromCache: false };
   }
 
   function getChartCount(byType) {
@@ -625,7 +697,7 @@
     }
   }
 
-  async function chartsSearch() {
+  async function chartsSearch(opts = {}) {
     const input = document.getElementById("gc-icao-input");
     const status = document.getElementById("gc-search-status");
     if (!input || !status) return;
@@ -635,18 +707,39 @@
 
     status.textContent = "Loading...";
     try {
-      const byType = await fetchChartsForAirport(icao);
+      const { byType, fromCache } = await fetchChartsForAirport(icao, opts);
       chartsState.currentIcao = icao;
       chartsState.chartsByType = byType;
       saveChartsIcao(icao);
       selectFirstNonEmptyType();
       const total = getChartCount(byType);
-      status.textContent = total > 0 ? `${total} chart(s) loaded.` : "No charts found.";
+      if (total > 0) {
+        status.textContent = fromCache
+          ? `${total} chart(s) loaded from cache.`
+          : `${total} chart(s) loaded from API.`;
+      } else {
+        status.textContent = fromCache ? "No charts found in cache." : "No charts found.";
+      }
       renderChartsContent();
     } catch (err) {
       console.error("Charts fetch failed:", err);
       status.textContent = "Failed to load charts.";
     }
+  }
+
+  function resetChartsAndRefetch() {
+    const input = document.getElementById("gc-icao-input");
+    const status = document.getElementById("gc-search-status");
+    if (!input || !status) return;
+
+    const icao = input.value.trim().toUpperCase();
+    if (!icao) {
+      status.textContent = "Enter an ICAO code first.";
+      return;
+    }
+
+    clearChartsCacheForAirport(icao);
+    chartsSearch({ force: true });
   }
 
   function toggleChartsPanel() {
@@ -1170,6 +1263,30 @@
         transform: scale(0.96);
       }
 
+      .gc-reset-btn {
+        width: 64px;
+        height: 36px;
+        border-radius: 7px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(255, 255, 255, 0.85);
+        font-family: 'Figtree', system-ui, sans-serif;
+        font-size: 0.74rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .gc-reset-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.22);
+      }
+
+      .gc-reset-btn:active {
+        transform: scale(0.96);
+      }
+
       .gc-status {
         padding: 0 14px;
         margin-top: 6px;
@@ -1386,6 +1503,7 @@
       <div class="gc-search">
         <input id="gc-icao-input" type="text" placeholder="ICAO code..." maxlength="4" spellcheck="false" />
         <button id="gc-search-btn" class="gc-search-btn">Load</button>
+        <button id="gc-reset-btn" class="gc-reset-btn">Reset</button>
       </div>
       <div id="gc-search-status" class="gc-status"></div>
       <div class="gc-type-tabs"></div>
@@ -1431,6 +1549,7 @@
     }
 
     document.getElementById("gc-search-btn").onclick = chartsSearch;
+    document.getElementById("gc-reset-btn").onclick = resetChartsAndRefetch;
     panel.querySelector(".gc-close").onclick = hideChartsPanel;
     panel.querySelector(".gc-invert-toggle").onclick = () => {
       chartsState.invertColors = !chartsState.invertColors;
