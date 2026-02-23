@@ -1,6 +1,39 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+function parseDiscordWebhook(webhookUrl: string): { id: string; token: string } | null {
+  try {
+    const url = new URL(webhookUrl);
+    const match = url.pathname.match(/\/api\/webhooks\/([^/]+)\/([^/]+)/);
+    if (!match) return null;
+    const id = match[1];
+    const token = match[2];
+    if (!id || !token) return null;
+    return { id, token };
+  } catch {
+    return null;
+  }
+}
+
+async function deleteDiscordMessage(messageId: string | undefined) {
+  if (!messageId) return;
+
+  const webhookUrl = process.env.DISCORD_MISSING_IMAGE_WEBHOOK;
+  if (!webhookUrl) return;
+
+  const parsed = parseDiscordWebhook(webhookUrl);
+  if (!parsed) return;
+
+  try {
+    await fetch(
+      `https://discord.com/api/webhooks/${parsed.id}/${parsed.token}/messages/${messageId}`,
+      { method: "DELETE" }
+    );
+  } catch (error) {
+    console.error("Failed to delete Discord missing-image message:", error);
+  }
+}
+
 // Get all missing image notifications
 export const getAll = query({
   handler: async (ctx) => {
@@ -112,8 +145,14 @@ export const updateNote = mutation({
       .first();
 
     if (notification) {
+      const hasNote = args.note.trim().length > 0;
+      if (hasNote && notification.discordMessageId) {
+        await deleteDiscordMessage(notification.discordMessageId);
+      }
+
       await ctx.db.patch(notification._id, {
         note: args.note || undefined,
+        discordMessageId: hasNote ? undefined : notification.discordMessageId,
       });
       return true;
     }
@@ -138,6 +177,7 @@ export const remove = mutation({
       .first();
 
     if (notification) {
+      await deleteDiscordMessage(notification.discordMessageId);
       await ctx.db.delete(notification._id);
       return { deleted: true };
     }
@@ -170,6 +210,7 @@ export const removeByCodes = mutation({
       .first();
 
     if (iataNotification) {
+      await deleteDiscordMessage(iataNotification.discordMessageId);
       await ctx.db.delete(iataNotification._id);
       deletedCount++;
     }
@@ -184,6 +225,7 @@ export const removeByCodes = mutation({
         .first();
 
       if (icaoNotification) {
+        await deleteDiscordMessage(icaoNotification.discordMessageId);
         await ctx.db.delete(icaoNotification._id);
         deletedCount++;
       }
@@ -193,3 +235,29 @@ export const removeByCodes = mutation({
   },
 });
 
+// Store Discord message ID so we can delete the message later
+export const setDiscordMessageId = mutation({
+  args: {
+    airlineCode: v.string(),
+    aircraftType: v.string(),
+    discordMessageId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const notification = await ctx.db
+      .query("missingImageNotifications")
+      .withIndex("by_airline_aircraft", (q) =>
+        q
+          .eq("airlineCode", args.airlineCode.toUpperCase())
+          .eq("aircraftType", args.aircraftType.toUpperCase())
+      )
+      .first();
+
+    if (!notification) return { updated: false };
+
+    await ctx.db.patch(notification._id, {
+      discordMessageId: args.discordMessageId,
+    });
+
+    return { updated: true };
+  },
+});
