@@ -1,13 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Analytics } from "~/lib/analytics";
 
 interface ProBadgeProps {
   className?: string;
   size?: "sm" | "md";
+  source?: string;
 }
 
-export function ProBadge({ className = "", size = "sm" }: ProBadgeProps) {
+export function ProBadge({
+  className = "",
+  size = "sm",
+  source = "pro_badge",
+}: ProBadgeProps) {
   const router = useRouter();
 
   const sizeClasses = {
@@ -19,6 +25,7 @@ export function ProBadge({ className = "", size = "sm" }: ProBadgeProps) {
     <button
       onClick={(e) => {
         e.stopPropagation();
+        Analytics.upgradeButtonClicked({ source });
         router.push("/pricing");
       }}
       className={`cursor-pointer rounded bg-yellow-500/20 font-mono font-bold tracking-wider text-yellow-400 transition-all hover:bg-yellow-500/30 hover:scale-105 ${sizeClasses[size]} ${className}`}

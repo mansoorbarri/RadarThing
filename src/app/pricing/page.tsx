@@ -1,10 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useUser, SignInButton } from "@clerk/nextjs";
 import { createCheckoutSession } from "~/app/actions/create-checkout";
 import { createPortalSession } from "~/app/actions/create-portal";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useProStatus } from "~/hooks/useProStatus";
 import { Check, Zap, ArrowLeft } from "lucide-react";
 import Loading from "~/components/loading";
@@ -14,8 +14,10 @@ import { Analytics } from "~/lib/analytics";
 
 export default function PricingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isSignedIn, isLoaded } = useUser();
   const [loading, setLoading] = useState(false);
+  const autoCheckoutStartedRef = useRef(false);
 
   const { isProUser, isLoading: checkingStatus } = useProStatus();
 
@@ -25,9 +27,11 @@ export default function PricingPage() {
     }
   }, [isLoaded, checkingStatus]);
 
-  async function handleUpgrade() {
-    Analytics.upgradeButtonClicked({ source: "pricing_page" });
-    Analytics.checkoutStarted({ source: "pricing_page" });
+  const handleUpgrade = useCallback(async (source: string) => {
+    if (!isSignedIn) return;
+
+    Analytics.upgradeButtonClicked({ source, feature: "pro_plan" });
+    Analytics.checkoutStarted({ source });
     try {
       setLoading(true);
       const url = await createCheckoutSession();
@@ -38,7 +42,16 @@ export default function PricingPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [isSignedIn]);
+
+  useEffect(() => {
+    if (!isLoaded || checkingStatus || !isSignedIn) return;
+    if (searchParams.get("checkout") !== "1") return;
+    if (autoCheckoutStartedRef.current) return;
+
+    autoCheckoutStartedRef.current = true;
+    void handleUpgrade("pricing_page_post_signin");
+  }, [isLoaded, checkingStatus, isSignedIn, searchParams, handleUpgrade]);
 
   async function handleManageSubscription() {
     try {
@@ -57,46 +70,32 @@ export default function PricingPage() {
     return <Loading />;
   }
 
-  if (!isSignedIn) {
-    return (
-      <div className="min-h-screen bg-black text-white">
-        <Header router={router} showAuth={false} />
-        <main className="mx-auto max-w-lg px-6 py-24 text-center">
-          <h1 className="mb-4 text-3xl font-bold text-white">
-            Sign in to continue
-          </h1>
-          <p className="mb-8 text-slate-400">
-            Create an account or sign in to upgrade your plan
-          </p>
-          <SignInButton mode="modal">
-            <button className="cursor-pointer rounded-lg bg-white px-6 py-3 font-medium text-black transition-opacity hover:opacity-90">
-              Sign In
-            </button>
-          </SignInButton>
-        </main>
-      </div>
-    );
-  }
-
   if (isProUser) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="relative min-h-screen overflow-hidden bg-[#03070d] text-white">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -left-24 top-20 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
+          <div className="absolute -right-28 bottom-10 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
+        </div>
         <Header router={router} showAuth={true} />
-        <main className="mx-auto max-w-2xl px-6 py-24">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center backdrop-blur-xl">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20">
-              <Check className="h-6 w-6 text-emerald-400" />
+        <main className="relative mx-auto max-w-2xl px-6 py-24">
+          <div className="rounded-3xl border border-emerald-400/25 bg-gradient-to-br from-emerald-500/12 via-cyan-500/8 to-blue-500/10 p-10 text-center shadow-[0_0_80px_rgba(16,185,129,0.12)] backdrop-blur-xl">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/30 bg-emerald-500/15">
+              <Check className="h-7 w-7 text-emerald-300" />
             </div>
-            <h1 className="mb-2 text-2xl font-bold text-white">
-              You&apos;re on Pro
+            <p className="mb-2 font-mono text-[11px] tracking-[0.18em] text-emerald-300/80 uppercase">
+              Subscription Active
+            </p>
+            <h1 className="mb-3 text-3xl font-bold text-white">
+              You&apos;re flying with PRO
             </h1>
-            <p className="mb-6 text-slate-400">
-              You have access to all premium features
+            <p className="mb-8 text-slate-300">
+              Weather intel, charts, and full analytics are unlocked on your account.
             </p>
             <button
               onClick={handleManageSubscription}
               disabled={loading}
-              className="cursor-pointer rounded-lg border border-white/20 bg-white/5 px-6 py-2.5 text-sm text-white transition-colors hover:bg-white/10 disabled:opacity-50"
+              className="cursor-pointer rounded-xl border border-white/20 bg-white/8 px-6 py-3 text-sm font-semibold text-white transition-all hover:border-cyan-300/40 hover:bg-white/14 disabled:opacity-50"
             >
               {loading ? "Loading..." : "Manage Subscription"}
             </button>
@@ -107,79 +106,167 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <Header router={router} showAuth={true} />
+    <div className="relative min-h-screen overflow-hidden bg-[#03070d] text-white">
+      <div className="pointer-events-none absolute inset-0">
+        <div
+          className="absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(148,163,184,0.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.25) 1px, transparent 1px)",
+            backgroundSize: "48px 48px",
+          }}
+        />
+        <div className="absolute left-1/2 top-[-260px] h-[720px] w-[720px] -translate-x-1/2 rounded-full border border-cyan-400/15" />
+        <div className="absolute left-1/2 top-[-220px] h-[620px] w-[620px] -translate-x-1/2 rounded-full border border-cyan-400/10" />
+        <div className="absolute left-1/2 top-[-170px] h-[520px] w-[520px] -translate-x-1/2 rounded-full border border-cyan-400/10" />
+        <div className="absolute -left-28 top-28 h-80 w-80 rounded-full bg-cyan-500/12 blur-3xl" />
+        <div className="absolute right-[-120px] bottom-[-60px] h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
+      </div>
 
-      <main className="mx-auto max-w-4xl px-6 py-16">
-        {/* Hero */}
-        <div className="mb-16 text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1">
-            <Zap className="h-3.5 w-3.5 text-cyan-400" />
-            <span className="font-mono text-xs text-cyan-400">PRO</span>
-          </div>
-          <h1 className="mb-4 text-4xl font-bold text-white">
-            Upgrade to Pro
-          </h1>
-          <p className="mx-auto max-w-md text-lg text-slate-400">
-            Advanced weather data, comprehensive analytics, and full flight history
-          </p>
-        </div>
+      <Header router={router} showAuth={isSignedIn} />
 
-        {/* Pricing Card */}
-        <div className="mx-auto mb-16 max-w-sm">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
-            <div className="mb-6 text-center">
-              <div className="mb-1 text-4xl font-bold text-white">$3</div>
-              <div className="text-slate-400">per month</div>
+      <main className="relative mx-auto max-w-5xl px-6 py-14 md:py-20">
+        <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
+          <section>
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-cyan-400/35 bg-cyan-400/10 px-3 py-1.5">
+              <Zap className="h-3.5 w-3.5 text-cyan-300" />
+              <span className="font-mono text-[11px] tracking-wider text-cyan-200 uppercase">
+                PRO FLIGHT DECK
+              </span>
+            </div>
+            <h1 className="max-w-xl text-4xl leading-tight font-bold text-white md:text-5xl">
+              Fly with full situational awareness
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-300 md:text-lg">
+              Upgrade to RadarThing PRO for advanced weather intelligence, airport charts,
+              and deep flight analytics built for serious GeoFS pilots.
+            </p>
+
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              <SignalCard title="Aviation Weather" value="Live" subtitle="NOTAMs, AIRMETs, SIGMETs, D-ATIS" />
+              <SignalCard title="Flight History" value="Full" subtitle="Complete route timeline + replay context" />
+              <SignalCard title="Charts Access" value="Global" subtitle="Taxi, SID, STAR, approach procedures" />
             </div>
 
-            <button
-              onClick={handleUpgrade}
-              disabled={loading}
-              className="mb-4 w-full cursor-pointer rounded-lg bg-white py-3 font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              {loading ? "Loading..." : "Get Pro"}
-            </button>
+            <div className="mt-10 space-y-6">
+              <FeatureSection
+                title="Weather Intelligence"
+                description="Stay ahead of hazardous conditions with real-time aviation weather feeds."
+                features={[
+                  "D-ATIS for US airports",
+                  "International AIRMETs & SIGMETs",
+                  "Full NOTAM access with decoded information",
+                  "Global weather coverage",
+                ]}
+              />
 
-            <p className="text-center text-xs text-slate-500">
-              Cancel anytime · Powered by Stripe
-            </p>
-          </div>
-        </div>
+              <FeatureSection
+                title="Airport Data"
+                description="Procedures and charts where you need them while tracking flights."
+                features={[
+                  "Interactive airport charts",
+                  "Detailed airport diagrams",
+                  "Approach, SID, and STAR procedures",
+                ]}
+              />
 
-        {/* Features */}
-        <div className="space-y-12">
-          <FeatureSection
-            title="Weather Intelligence"
-            description="Stay ahead of hazardous conditions with real-time aviation weather data"
-            features={[
-              "D-ATIS for US airports",
-              "International AIRMETs & SIGMETs",
-              "Full NOTAM access with decoded information",
-              "Global weather coverage",
-            ]}
-          />
+              <FeatureSection
+                title="Comprehensive Analytics"
+                description="Track your flying activity with meaningful stats and complete history."
+                features={[
+                  "Complete flight history",
+                  "Flight time & distance tracking",
+                  "Top aircraft, routes, and airports",
+                ]}
+              />
+            </div>
+          </section>
 
-          <FeatureSection
-            title="Airport Data"
-            description="Professional-grade airport information at your fingertips"
-            features={[
-              "Interactive airport charts",
-              "Detailed airport diagrams",
-            ]}
-          />
+          <aside className="lg:sticky lg:top-24 lg:self-start">
+            <div className="relative overflow-hidden rounded-3xl border border-cyan-400/25 bg-[#07101a]/85 p-7 shadow-[0_20px_70px_rgba(6,182,212,0.18)] backdrop-blur-xl">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/70 to-transparent" />
+              <p className="font-mono text-[11px] tracking-[0.16em] text-cyan-200/80 uppercase">
+                Pro Subscription
+              </p>
+              <div className="mt-3 flex items-end gap-2">
+                <div className="text-5xl font-bold text-white">$3</div>
+                <div className="pb-1 text-slate-300">/ month</div>
+              </div>
+              <p className="mt-2 text-sm text-cyan-100/85">
+                Start with a 7-day free trial. Cancel anytime.
+              </p>
 
-          <FeatureSection
-            title="Comprehensive Analytics"
-            description="Track your flying career with detailed statistics"
-            features={[
-              "Complete flight history",
-              "Flight time & distance tracking",
-              "Top aircraft, routes, and airports",
-            ]}
-          />
+              {!isSignedIn && (
+                <SignInButton mode="modal" forceRedirectUrl="/pricing?checkout=1">
+                  <button
+                    onClick={() =>
+                      Analytics.upgradeButtonClicked({
+                        source: "pricing_page_signed_out",
+                        feature: "pro_plan",
+                      })
+                    }
+                    className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-white shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400"
+                  >
+                    Continue with Google
+                  </button>
+                </SignInButton>
+              )}
+
+              {isSignedIn && (
+                <button
+                  onClick={() => handleUpgrade("pricing_page")}
+                  disabled={loading}
+                  className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-white shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loading ? "Loading..." : "Start 7-day free trial"}
+                </button>
+              )}
+
+              <p className="mt-4 text-center text-[11px] text-slate-300/85">
+                Secure checkout by Stripe
+              </p>
+
+              <div className="mt-6 space-y-2 rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="font-mono text-[10px] tracking-[0.14em] text-slate-400 uppercase">
+                  Included in PRO
+                </p>
+                <ul className="space-y-2 text-sm text-slate-200">
+                  <li className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-cyan-300" />
+                    Full NOTAM/AIRMET/SIGMET access
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-cyan-300" />
+                    Airport charts and procedures
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-cyan-300" />
+                    Complete pilot analytics
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </aside>
         </div>
       </main>
+    </div>
+  );
+}
+
+function SignalCard({
+  title,
+  value,
+  subtitle,
+}: {
+  title: string;
+  value: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/12 bg-white/[0.04] p-4 backdrop-blur-xl">
+      <p className="font-mono text-[10px] tracking-wider text-slate-400 uppercase">{title}</p>
+      <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+      <p className="mt-1 text-xs leading-relaxed text-slate-400">{subtitle}</p>
     </div>
   );
 }
@@ -194,13 +281,13 @@ function FeatureSection({
   features: string[];
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl">
       <h3 className="mb-1 text-lg font-semibold text-white">{title}</h3>
-      <p className="mb-4 text-sm text-slate-400">{description}</p>
-      <ul className="space-y-2">
+      <p className="mb-4 text-sm text-slate-300">{description}</p>
+      <ul className="grid gap-2 sm:grid-cols-2">
         {features.map((feature) => (
-          <li key={feature} className="flex items-center gap-3 text-sm text-slate-300">
-            <Check className="h-4 w-4 shrink-0 text-cyan-400" />
+          <li key={feature} className="flex items-center gap-2 text-sm text-slate-200">
+            <Check className="h-4 w-4 shrink-0 text-cyan-300" />
             {feature}
           </li>
         ))}
@@ -217,8 +304,8 @@ function Header({
   showAuth: boolean;
 }) {
   return (
-    <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-5">
+    <header className="relative z-10 border-b border-white/10 bg-black/35 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
         <button onClick={() => router.push("/radar")} className="cursor-pointer">
           <Image
             src="/logo-white.svg"
@@ -230,7 +317,7 @@ function Header({
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.push("/radar")}
-            className="flex cursor-pointer items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
+            className="flex cursor-pointer items-center gap-2 text-sm text-slate-300 transition-colors hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />
             Back

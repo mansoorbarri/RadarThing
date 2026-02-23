@@ -1,5 +1,6 @@
 import L from "leaflet";
 import React from "react";
+import { Analytics } from "~/lib/analytics";
 
 // SVG Icons for map controls (matching theme style)
 const ICONS = {
@@ -171,6 +172,10 @@ export class LockedRadarModeControl extends L.Control {
   constructor(options: L.ControlOptions) {
     super(options);
     this._boundClick = () => {
+      Analytics.upgradeButtonClicked({
+        source: "map_locked_radar_mode",
+        feature: "radar_mode_layer",
+      });
       window.location.href = "/pricing";
     };
   }

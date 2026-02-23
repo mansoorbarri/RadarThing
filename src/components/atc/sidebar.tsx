@@ -47,6 +47,7 @@ import { useAircraftPhoto } from "~/hooks/useAircraftPhoto";
 import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
 import { AircraftControlPanel } from "./AircraftControlPanel";
 import Link from "next/link";
+import { Analytics } from "~/lib/analytics";
 
 const getFlightPhase = (
   altAGL: number,
@@ -447,9 +448,15 @@ export const Sidebar = ({
           </p>
           <a
             href="/pricing"
+            onClick={() =>
+              Analytics.upgradeButtonClicked({
+                source: "sidebar_flight_history_locked",
+                feature: "flight_history",
+              })
+            }
             className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 font-mono text-[10px] font-black tracking-wide text-black transition-all hover:shadow-lg hover:shadow-amber-500/20"
           >
-            UPGRADE TO PRO
+            START 7-DAY TRIAL
           </a>
         </div>
       ) : history.length === 0 ? (

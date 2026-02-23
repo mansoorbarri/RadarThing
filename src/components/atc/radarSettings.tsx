@@ -70,6 +70,7 @@ export const RadarSettings = ({
             Analytics.weatherLayerToggled({ layer: "airmet", enabled: v });
           }}
           disabled={!isPRO}
+          proBadgeSource="radar_settings_airmets_lock"
         />
 
         <SettingsToggle
@@ -84,6 +85,7 @@ export const RadarSettings = ({
             Analytics.weatherLayerToggled({ layer: "sigmet", enabled: v });
           }}
           disabled={!isPRO}
+          proBadgeSource="radar_settings_sigmets_lock"
         />
       </div>
 
@@ -104,6 +106,7 @@ export const RadarSettings = ({
             Analytics.conflictLayerToggled({ enabled: v });
           }}
           disabled={!isPRO}
+          proBadgeSource="radar_settings_conflict_alerts_lock"
         />
       </div>
 
@@ -148,11 +151,13 @@ function SettingsToggle({
   checked,
   onChange,
   disabled = false,
+  proBadgeSource,
 }: {
   label: string;
   checked: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;
+  proBadgeSource?: string;
 }) {
   return (
     <div
@@ -162,7 +167,7 @@ function SettingsToggle({
     >
       <span className="flex items-center gap-2">
         {label}
-        {disabled && <ProBadge />}
+        {disabled && <ProBadge source={proBadgeSource} />}
       </span>
 
       <Switch

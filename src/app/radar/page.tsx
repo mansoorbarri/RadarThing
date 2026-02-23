@@ -782,13 +782,21 @@ export default function ATCPage() {
                 router.push("/leaderboard");
               },
             },
-            ...(!isProUser ? [{
-              id: "upgrade",
-              label: "Upgrade",
+            {
+              id: "pricing",
+              label: isProUser ? "Subscription" : "Upgrade",
               icon: UpgradeIcon,
               active: false,
-              onClick: () => router.push("/pricing"),
-            }] : []),
+              onClick: () => {
+                Analytics.upgradeButtonClicked({
+                  source: isProUser
+                    ? "radar_control_dock_pricing_pro_user"
+                    : "radar_control_dock_upgrade",
+                  feature: isProUser ? "manage_subscription" : "pro_plan",
+                });
+                router.push("/pricing");
+              },
+            },
             // External links (furthest from toggle)
             {
               id: "install",
@@ -836,7 +844,7 @@ export default function ATCPage() {
             ) : (
               <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5">
                 <span className="text-[10px] text-white/60">Charts</span>
-                <ProBadge />
+                <ProBadge source="radar_airport_charts_badge" />
               </div>
             ))}
 

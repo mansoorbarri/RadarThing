@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
+import { Analytics } from "~/lib/analytics";
 
 interface Notam {
   text: string;
@@ -54,9 +55,15 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
             {!isPro ? (
               <Link
                 href="/pricing"
+                onClick={() =>
+                  Analytics.upgradeButtonClicked({
+                    source: "metar_panel_notams_lock",
+                    feature: "notams",
+                  })
+                }
                 className="ml-auto rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wide hover:from-amber-400 hover:to-orange-400"
               >
-                PRO
+                TRIAL
               </Link>
             ) : notams && notams.length > 0 ? (
               notamsExpanded ? (
@@ -105,9 +112,15 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
             {!isPro ? (
               <Link
                 href="/pricing"
+                onClick={() =>
+                  Analytics.upgradeButtonClicked({
+                    source: "metar_panel_atis_lock",
+                    feature: "atis",
+                  })
+                }
                 className="ml-auto rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wide hover:from-amber-400 hover:to-orange-400"
               >
-                PRO
+                TRIAL
               </Link>
             ) : atisExpanded ? (
               <ChevronUp className="ml-auto h-4 w-4 text-cyan-400" />

@@ -562,11 +562,17 @@ export default function DashboardPage() {
                   {!isPro && stats.recentFlights.length > 3 && (
                     <div className="mt-4 text-center">
                       <button
-                        onClick={() => router.push("/pricing")}
+                        onClick={() => {
+                          Analytics.upgradeButtonClicked({
+                            source: "dashboard_recent_flights_lock",
+                            feature: "full_flight_history",
+                          });
+                          router.push("/pricing");
+                        }}
                         className="inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 font-mono text-xs text-amber-400 transition-all hover:bg-amber-500/20"
                       >
                         <Lock className="h-3 w-3" />
-                        Upgrade to see {stats.recentFlights.length - 3} more flights
+                        Start 7-day trial to see {stats.recentFlights.length - 3} more flights
                       </button>
                     </div>
                   )}
@@ -583,10 +589,16 @@ export default function DashboardPage() {
                   Get detailed insights with flight time, top airports, routes, and complete history
                 </p>
                 <button
-                  onClick={() => router.push("/pricing")}
+                  onClick={() => {
+                    Analytics.upgradeButtonClicked({
+                      source: "dashboard_main_upgrade_cta",
+                      feature: "advanced_analytics",
+                    });
+                    router.push("/pricing");
+                  }}
                   className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
                 >
-                  Upgrade to PRO - $3/month
+                  Start 7-day PRO trial
                 </button>
               </div>
             )}
@@ -777,10 +789,16 @@ function ProLockedContent() {
       <Lock className="mb-2 h-8 w-8 text-slate-600" />
       <p className="mb-3 text-sm text-slate-500">Available with PRO</p>
       <button
-        onClick={() => router.push("/pricing")}
+        onClick={() => {
+          Analytics.upgradeButtonClicked({
+            source: "dashboard_pro_locked_card",
+            feature: "advanced_analytics",
+          });
+          router.push("/pricing");
+        }}
         className="rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-3 py-1.5 font-mono text-xs text-cyan-400 transition-all hover:from-cyan-500/30 hover:to-blue-500/30"
       >
-        Upgrade
+        Start 7-day trial
       </button>
     </div>
   );

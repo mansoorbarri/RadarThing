@@ -232,7 +232,7 @@ export const Analytics = {
     track("pricing_page_viewed", props);
   },
 
-  upgradeButtonClicked: (props: { source: string }) => {
+  upgradeButtonClicked: (props: { source: string; feature?: string }) => {
     track("upgrade_button_clicked", props);
   },
 

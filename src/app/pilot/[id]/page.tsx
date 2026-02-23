@@ -445,10 +445,23 @@ function StatCard({
 }
 
 function ProLockedContent() {
+  const router = useRouter();
   return (
     <div className="flex flex-col items-center justify-center py-6 text-center">
       <Lock className="mb-2 h-8 w-8 text-slate-600" />
-      <p className="text-sm text-slate-500">PRO feature</p>
+      <p className="mb-3 text-sm text-slate-500">Unlock full pilot stats with PRO</p>
+      <button
+        onClick={() => {
+          Analytics.upgradeButtonClicked({
+            source: "pilot_page_pro_locked_card",
+            feature: "pilot_stats",
+          });
+          router.push("/pricing");
+        }}
+        className="rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-3 py-1.5 font-mono text-xs text-cyan-400 transition-all hover:from-cyan-500/30 hover:to-blue-500/30"
+      >
+        Start 7-day trial
+      </button>
     </div>
   );
 }
