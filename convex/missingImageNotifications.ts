@@ -82,13 +82,15 @@ export const create = mutation({
       .first();
 
     if (existing) {
-      return existing._id;
+      return { id: existing._id, created: false };
     }
 
-    return await ctx.db.insert("missingImageNotifications", {
+    const id = await ctx.db.insert("missingImageNotifications", {
       airlineCode: args.airlineCode.toUpperCase(),
       aircraftType: args.aircraftType.toUpperCase(),
     });
+
+    return { id, created: true };
   },
 });
 
