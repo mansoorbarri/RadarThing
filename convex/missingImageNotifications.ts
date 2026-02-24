@@ -1,10 +1,11 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { isValidAirlineCode } from "./lib/airlineCodes";
 
 function parseDiscordWebhook(webhookUrl: string): { id: string; token: string } | null {
   try {
     const url = new URL(webhookUrl);
-    const match = url.pathname.match(/\/api\/webhooks\/([^/]+)\/([^/]+)/);
+    const match = /\/api\/webhooks\/([^/]+)\/([^/]+)/.exec(url.pathname);
     if (!match) return null;
     const id = match[1];
     const token = match[2];
@@ -104,13 +105,19 @@ export const create = mutation({
     aircraftType: v.string(),
   },
   handler: async (ctx, args) => {
+    const airlineCode = args.airlineCode.toUpperCase();
+    const aircraftType = args.aircraftType.toUpperCase();
+
+    // Reject invalid airline codes silently (external SSE backend calls this)
+    if (!isValidAirlineCode(airlineCode)) {
+      return { id: null, created: false };
+    }
+
     // Check if already exists to prevent duplicates
     const existing = await ctx.db
       .query("missingImageNotifications")
       .withIndex("by_airline_aircraft", (q) =>
-        q
-          .eq("airlineCode", args.airlineCode.toUpperCase())
-          .eq("aircraftType", args.aircraftType.toUpperCase())
+        q.eq("airlineCode", airlineCode).eq("aircraftType", aircraftType)
       )
       .first();
 
@@ -119,8 +126,8 @@ export const create = mutation({
     }
 
     const id = await ctx.db.insert("missingImageNotifications", {
-      airlineCode: args.airlineCode.toUpperCase(),
-      aircraftType: args.aircraftType.toUpperCase(),
+      airlineCode,
+      aircraftType,
     });
 
     return { id, created: true };
@@ -227,6 +234,24 @@ export const removeByCodes = mutation({
       if (icaoNotification) {
         await deleteDiscordMessage(icaoNotification.discordMessageId);
         await ctx.db.delete(icaoNotification._id);
+        deletedCount++;
+      }
+    }
+
+    return { deletedCount };
+  },
+});
+
+// Purge all notifications with invalid airline codes
+export const purgeInvalid = mutation({
+  handler: async (ctx) => {
+    const all = await ctx.db.query("missingImageNotifications").collect();
+    let deletedCount = 0;
+
+    for (const notification of all) {
+      if (!isValidAirlineCode(notification.airlineCode)) {
+        await deleteDiscordMessage(notification.discordMessageId);
+        await ctx.db.delete(notification._id);
         deletedCount++;
       }
     }

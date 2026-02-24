@@ -14,6 +14,7 @@ import type * as airportCharts from "../airportCharts.js";
 import type * as contributorRewards from "../contributorRewards.js";
 import type * as crons from "../crons.js";
 import type * as flights from "../flights.js";
+import type * as lib_airlineCodes from "../lib/airlineCodes.js";
 import type * as missingImageNotifications from "../missingImageNotifications.js";
 import type * as users from "../users.js";
 
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   contributorRewards: typeof contributorRewards;
   crons: typeof crons;
   flights: typeof flights;
+  "lib/airlineCodes": typeof lib_airlineCodes;
   missingImageNotifications: typeof missingImageNotifications;
   users: typeof users;
 }>;

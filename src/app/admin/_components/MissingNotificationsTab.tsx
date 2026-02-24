@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { Trash2, Search, Bell } from "lucide-react";
+import { Trash2, Search, Bell, Flame } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmModal } from "./ConfirmModal";
 
@@ -59,6 +59,7 @@ export function MissingNotificationsTab() {
   const notifications = useMemo(() => notificationsQuery ?? [], [notificationsQuery]);
   const updateNoteMutation = useMutation(api.missingImageNotifications.updateNote);
   const removeNotificationMutation = useMutation(api.missingImageNotifications.remove);
+  const purgeInvalidMutation = useMutation(api.missingImageNotifications.purgeInvalid);
 
   const [notifSearchQuery, setNotifSearchQuery] = useState("");
   const [notifAirlineFilter, setNotifAirlineFilter] = useState<string>("");
@@ -66,6 +67,8 @@ export function MissingNotificationsTab() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ airlineCode: string; aircraftType: string } | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [purgeModalOpen, setPurgeModalOpen] = useState(false);
+  const [purgeLoading, setPurgeLoading] = useState(false);
 
   const uniqueNotifAirlines = useMemo(() => {
     const airlines = new Set<string>();
@@ -147,6 +150,18 @@ export function MissingNotificationsTab() {
     setDeleteTarget(null);
   };
 
+  const handlePurgeConfirm = async () => {
+    setPurgeLoading(true);
+    try {
+      const result = await purgeInvalidMutation();
+      toast.success(`Purged ${result.deletedCount} invalid notification${result.deletedCount === 1 ? "" : "s"}`);
+    } catch {
+      toast.error("Failed to purge invalid notifications");
+    }
+    setPurgeLoading(false);
+    setPurgeModalOpen(false);
+  };
+
   return (
     <>
       <ConfirmModal
@@ -160,6 +175,16 @@ export function MissingNotificationsTab() {
         isLoading={deleteLoading}
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
+      />
+      <ConfirmModal
+        isOpen={purgeModalOpen}
+        title="Purge Invalid Notifications"
+        message="This will delete all notifications with invalid airline codes (military callsigns, junk text, virtual airlines, etc.) and their associated Discord messages. This cannot be undone."
+        confirmLabel="Purge"
+        variant="danger"
+        isLoading={purgeLoading}
+        onConfirm={handlePurgeConfirm}
+        onCancel={() => setPurgeModalOpen(false)}
       />
 
       {/* Search and Filters */}
@@ -186,6 +211,13 @@ export function MissingNotificationsTab() {
           {hasActiveNotifFilters && (
             <button onClick={clearNotifFilters} className="cursor-pointer rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-slate-400 transition-all hover:border-red-500/30 hover:text-red-400">Clear</button>
           )}
+          <button
+            onClick={() => setPurgeModalOpen(true)}
+            className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-2.5 text-sm text-orange-400 transition-all hover:border-orange-500/50 hover:bg-orange-500/20"
+          >
+            <Flame className="h-4 w-4" />
+            Purge Invalid
+          </button>
         </div>
       </div>
 
