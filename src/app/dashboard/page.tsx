@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
+import { ChallengesSection } from "./_components/ChallengesSection";
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -376,6 +377,9 @@ export default function DashboardPage() {
                 </div>
               </div>
             ) : null}
+
+            {/* Active Challenges */}
+            {dbUser && <ChallengesSection userId={dbUser._id} />}
 
             <div className="grid gap-6 lg:grid-cols-3 mb-8">
               {/* Top Aircraft - PRO */}

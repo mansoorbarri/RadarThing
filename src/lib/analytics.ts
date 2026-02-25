@@ -83,6 +83,12 @@ interface WhatsNewEventProps extends BaseEventProps {
   entry_id?: string;
 }
 
+interface ChallengeEventProps extends BaseEventProps {
+  challengeId?: string;
+  challengeCount?: number;
+  isFirstCompleter?: boolean;
+}
+
 // All analytics events
 export const Analytics = {
   // Initialize PostHog (only in production)
@@ -330,6 +336,15 @@ export const Analytics = {
 
   whatsNewToastClicked: (props?: WhatsNewEventProps) => {
     track("whats_new_toast_clicked", props);
+  },
+
+  // ===== CHALLENGE EVENTS =====
+  challengeViewed: (props: ChallengeEventProps) => {
+    track("challenge_viewed", props);
+  },
+
+  challengeCompleted: (props: ChallengeEventProps) => {
+    track("challenge_completed", props);
   },
 
   // ===== GENERIC EVENT =====

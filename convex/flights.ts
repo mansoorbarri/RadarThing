@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { paginationOptsValidator } from "convex/server";
 
 // Get flight history for a user by their Google ID
@@ -144,6 +145,14 @@ export const create = mutation({
         lastFlightStartTime: args.startTime,
         lastFlightCallsign: args.callsign,
       });
+
+      // Evaluate flight for active challenges (async)
+      await ctx.scheduler.runAfter(
+        0,
+        internal.challenges.evaluateFlightForChallenges,
+        { userId: args.userId, flightId },
+      );
+
       return flightId;
     }
 
@@ -182,6 +191,13 @@ export const create = mutation({
         : stats.lastFlightStartTime,
       lastFlightCallsign: isNewestFlight ? args.callsign : stats.lastFlightCallsign,
     });
+
+    // Evaluate flight for active challenges (async)
+    await ctx.scheduler.runAfter(
+      0,
+      internal.challenges.evaluateFlightForChallenges,
+      { userId: args.userId, flightId },
+    );
 
     return flightId;
   },
