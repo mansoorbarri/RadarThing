@@ -40,3 +40,6 @@ Validated in `src/env.js` using T3 Env. Server-side vars include Clerk, Stripe, 
 
 ### New Features
 When adding new features, make sure to add PostHog hooks **IF** it makes sense. For example, adding it on an upload button to upload airport charts would not make sense but it would make sense to add the posthog hook for clicking the button to go to the page for uploading the airport charts.
+
+### What's New Notifications
+When a new user-facing feature is added, add an entry to the top of the `changelog` array in `src/lib/changelog.ts`. This automatically triggers a toast notification and shows an unread dot on the megaphone icon in the radar header (`src/components/ui/WhatsNew.tsx`) for all users on their next visit.
