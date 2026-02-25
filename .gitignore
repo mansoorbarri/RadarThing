@@ -8,8 +8,6 @@
 # testing
 /coverage
 
-# convex
-convex/_generated/
 
 # database
 /prisma/db.sqlite
