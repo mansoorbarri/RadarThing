@@ -5,6 +5,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
+import { type OnlineAirport } from "~/hooks/useAircraftStream";
 import { splitPathAtAntimeridian } from "~/lib/map-utils";
 import { useMobileDetection } from "~/hooks/useMobileDetection";
 import { useProStatus } from "~/hooks/useProStatus";
@@ -56,6 +57,7 @@ interface ReplayState {
 interface MapComponentProps {
   aircrafts: PositionUpdate[];
   airports: Airport[];
+  onlineAirports?: OnlineAirport[];
   onAircraftSelect: (aircraft: PositionUpdate | null, ctrlKey?: boolean) => void;
   onAirportSelect?: (airport: Airport) => void;
   selectedAircraftIds?: string[];
@@ -77,6 +79,7 @@ interface MapComponentProps {
 const MapComponent: React.FC<MapComponentProps> = ({
   aircrafts,
   airports,
+  onlineAirports,
   onAircraftSelect,
   onAirportSelect,
   selectedAircraftIds = [],
@@ -340,6 +343,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     openAIPLayer: mapRefs.openAIPLayer,
     aircrafts,
     airports,
+    onlineAirports,
     isOSMMode,
     isRadarMode,
     isOpenAIPEnabled,

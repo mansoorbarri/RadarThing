@@ -59,8 +59,15 @@ export default function ATCPage() {
   const searchParams = useSearchParams();
   const isMobile = useMobileDetection();
 
-  const { aircrafts, isLoading, connectionStatus } = useAircraftStream();
+  const { aircrafts, isLoading, connectionStatus, onlineAirports } = useAircraftStream();
   const { airports, fetchAirports } = useAirportData();
+
+  // Fetch airports when online ATC data arrives so markers can render
+  useEffect(() => {
+    if (onlineAirports.length > 0) {
+      fetchAirports();
+    }
+  }, [onlineAirports, fetchAirports]);
 
   const { isProUser, isLoading: proLoading } = useProStatus();
 
@@ -219,6 +226,11 @@ export default function ATCPage() {
   const selectedAircraftIds = useMemo(
     () => selectedAircrafts.map((ac) => ac.callsign || ac.id),
     [selectedAircrafts]
+  );
+
+  const onlineAtcForSelected = useMemo(
+    () => selectedAirport ? onlineAirports.find((a) => a.icao === selectedAirport.icao) : undefined,
+    [onlineAirports, selectedAirport]
   );
 
   const handleToggleCallsign = useCallback((prefix: string) => {
@@ -687,6 +699,7 @@ export default function ATCPage() {
           <DynamicMapComponent
             aircrafts={filteredAircrafts}
             airports={airports}
+            onlineAirports={onlineAirports}
             selectedAirport={selectedAirport}
             selectedAircraftIds={selectedAircraftIds}
             onAircraftSelect={handleAircraftSelect}
@@ -863,11 +876,15 @@ export default function ATCPage() {
               onClick={() => setShowAtcPlayer(!showAtcPlayer)}
               className={`cursor-pointer rounded-lg border px-3 py-1.5 text-[10px] transition-colors ${
                 showAtcPlayer
-                  ? "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
-                  : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
+                  ? onlineAtcForSelected
+                    ? "border-green-500/50 bg-green-500/20 text-green-300"
+                    : "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
+                  : onlineAtcForSelected
+                    ? "border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20"
+                    : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
               } ${isMobile ? 'px-2 py-1 text-[9px]' : ''}`}
             >
-              {isMobile ? '📻' : 'ATC Audio'}
+              {isMobile ? '📻' : onlineAtcForSelected ? 'Live ATC' : 'ATC Audio'}
             </button>
 
             <button
@@ -889,6 +906,7 @@ export default function ATCPage() {
         <AtcPlayer
           icao={selectedAirport.icao}
           onClose={() => setShowAtcPlayer(false)}
+          onlineAtc={onlineAtcForSelected}
         />
       )}
 

@@ -1,8 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { type PositionUpdate, activeAircraft } from "~/lib/aircraft-store";
 
+export interface OnlineAirport {
+  icao: string;
+  user: string;
+  discordInvite: string;
+  activatedAt: number;
+}
+
 export const useAircraftStream = () => {
   const [aircrafts, setAircrafts] = useState<PositionUpdate[]>(activeAircraft.getAll());
+  const [onlineAirports, setOnlineAirports] = useState<OnlineAirport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<
@@ -71,6 +79,7 @@ export const useAircraftStream = () => {
 
         // Get all aircraft with their accumulated flight paths
         setAircrafts(activeAircraft.getAll());
+        setOnlineAirports(data.onlineAirports || []);
         setIsLoading(false);
         setError(null);
       } catch {}
@@ -119,5 +128,5 @@ export const useAircraftStream = () => {
     };
   }, [connectToStream]);
 
-  return { aircrafts, isLoading, error, connectionStatus };
+  return { aircrafts, isLoading, error, connectionStatus, onlineAirports };
 };

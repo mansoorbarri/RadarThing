@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type Airport } from "~/components/map"; // Adjusted path
+import { type OnlineAirport } from "~/hooks/useAircraftStream";
 import {
   getAircraftDivIcon,
   getRadarAircraftDivIcon,
@@ -129,6 +130,7 @@ interface UseMapLayersAndMarkersProps {
   openAIPLayer: React.MutableRefObject<L.TileLayer | null>;
   aircrafts: PositionUpdate[];
   airports: Airport[];
+  onlineAirports?: OnlineAirport[];
   isOSMMode: boolean;
   isRadarMode: boolean;
   isOpenAIPEnabled: boolean;
@@ -331,6 +333,7 @@ export const useMapLayersAndMarkers = ({
   openAIPLayer,
   aircrafts,
   airports,
+  onlineAirports,
   isOSMMode,
   isRadarMode,
   isOpenAIPEnabled,
@@ -635,42 +638,92 @@ export const useMapLayersAndMarkers = ({
     const map = mapInstance.current;
     if (!map || !airportMarkersLayer.current) return;
 
+    // Inject pulse animation CSS once
+    if (!document.getElementById('online-atc-pulse-style')) {
+      const style = document.createElement('style');
+      style.id = 'online-atc-pulse-style';
+      style.textContent = `
+        @keyframes atc-pulse {
+          0%, 100% { box-shadow: 0 0 6px rgba(34, 197, 94, 0.4); }
+          50% { box-shadow: 0 0 14px rgba(34, 197, 94, 0.8); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    const onlineIcaoSet = new Set((onlineAirports || []).map((a) => a.icao));
+    const onlineByIcao = new Map((onlineAirports || []).map((a) => [a.icao, a]));
+
     const updateAirportMarkers = () => {
       if (!airportMarkersLayer.current) return;
 
       const currentZoom = map.getZoom();
-      const shouldShowAirports = currentZoom >= 8; // Only show airports when zoomed in
+      const shouldShowAllAirports = currentZoom >= 8; // Only show regular airports when zoomed in
 
       // Clear existing markers
       airportMarkersLayer.current.clearLayers();
 
-      if (!shouldShowAirports) return;
-
       // Get map bounds to only show airports in view (performance optimization)
       const bounds = map.getBounds();
 
+      // Always render online ATC airports that aren't in the airports list
+      // (they might not be fetched yet or not in the OurAirports dataset)
+      const renderedIcaos = new Set<string>();
+
       airports.forEach((airport) => {
-        // Skip airports outside current view
-        if (!bounds.contains([airport.lat, airport.lon])) return;
+        const isOnline = onlineIcaoSet.has(airport.icao);
+
+        // Skip non-online airports when zoomed out or outside view
+        if (!isOnline && (!shouldShowAllAirports || !bounds.contains([airport.lat, airport.lon]))) return;
+        // Skip online airports outside view
+        if (isOnline && !bounds.contains([airport.lat, airport.lon])) return;
+
+        renderedIcaos.add(airport.icao);
 
         const isSelected = selectedAirport?.icao === airport.icao;
+        const onlineEntry = onlineByIcao.get(airport.icao);
+
+        // Color scheme: green for online ATC, cyan/blue for normal
+        let bgColor: string;
+        let borderColor: string;
+        let boxShadow: string;
+
+        if (isOnline) {
+          bgColor = '#22c55e';
+          borderColor = isSelected ? '#22c55e' : 'rgba(34, 197, 94, 0.5)';
+          boxShadow = isSelected
+            ? '0 0 14px rgba(34, 197, 94, 0.7)'
+            : '0 0 6px rgba(34, 197, 94, 0.4); animation: atc-pulse 2s ease-in-out infinite';
+        } else if (isSelected) {
+          bgColor = isRadarMode ? '#22d3ee' : '#3b82f6';
+          borderColor = isRadarMode ? '#22d3ee' : '#3b82f6';
+          boxShadow = '0 0 12px rgba(34, 211, 238, 0.6)';
+        } else {
+          bgColor = isRadarMode ? '#06b6d4' : '#60a5fa';
+          borderColor = isRadarMode ? 'rgba(6, 182, 212, 0.4)' : 'rgba(96, 165, 250, 0.4)';
+          boxShadow = '0 0 6px rgba(6, 182, 212, 0.3)';
+        }
+
+        const dotSize = isSelected || isOnline ? '12px' : '8px';
+        const iconDim = isSelected || isOnline ? 16 : 12;
+        const anchorDim = isSelected || isOnline ? 8 : 6;
 
         // Create custom icon based on selection state
         const icon = L.divIcon({
           className: 'custom-airport-marker',
           html: `
             <div style="
-              width: ${isSelected ? '12px' : '8px'};
-              height: ${isSelected ? '12px' : '8px'};
-              background-color: ${isSelected ? (isRadarMode ? '#22d3ee' : '#3b82f6') : (isRadarMode ? '#06b6d4' : '#60a5fa')};
-              border: 2px solid ${isSelected ? (isRadarMode ? '#22d3ee' : '#3b82f6') : (isRadarMode ? 'rgba(6, 182, 212, 0.4)' : 'rgba(96, 165, 250, 0.4)')};
+              width: ${dotSize};
+              height: ${dotSize};
+              background-color: ${bgColor};
+              border: 2px solid ${borderColor};
               border-radius: 50%;
-              box-shadow: ${isSelected ? '0 0 12px rgba(34, 211, 238, 0.6)' : '0 0 6px rgba(6, 182, 212, 0.3)'};
+              box-shadow: ${boxShadow};
               transition: all 0.2s ease;
             "></div>
           `,
-          iconSize: [isSelected ? 16 : 12, isSelected ? 16 : 12],
-          iconAnchor: [isSelected ? 8 : 6, isSelected ? 8 : 6],
+          iconSize: [iconDim, iconDim],
+          iconAnchor: [anchorDim, anchorDim],
         });
 
         let popupContent = `
@@ -718,6 +771,16 @@ export const useMapLayersAndMarkers = ({
             className: isRadarMode ? "radar-popup" : "",
           });
 
+        // Bind hover tooltip for online ATC airports
+        if (isOnline && onlineEntry) {
+          marker.bindTooltip(`ATC Online — ${onlineEntry.user}`, {
+            direction: 'top',
+            offset: [0, -10],
+            opacity: 0.95,
+            className: 'atc-online-tooltip',
+          });
+        }
+
         // Add click handler to select airport
         marker.on('click', () => {
           if (onAirportSelectRef.current) {
@@ -738,5 +801,5 @@ export const useMapLayersAndMarkers = ({
       map.off('zoomend', updateAirportMarkers);
       map.off('moveend', updateAirportMarkers);
     };
-  }, [airports, isRadarMode, airportMarkersLayer, mapInstance, selectedAirport]);
+  }, [airports, isRadarMode, airportMarkersLayer, mapInstance, selectedAirport, onlineAirports]);
 };
