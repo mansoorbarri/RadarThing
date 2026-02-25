@@ -78,6 +78,11 @@ interface ConflictSnapshotProps extends BaseEventProps {
   low: number;
 }
 
+interface WhatsNewEventProps extends BaseEventProps {
+  had_unread?: boolean;
+  entry_id?: string;
+}
+
 // All analytics events
 export const Analytics = {
   // Initialize PostHog (only in production)
@@ -312,6 +317,19 @@ export const Analytics = {
     rank: number;
   }) => {
     track("most_tracked_flight_clicked", props);
+  },
+
+  // ===== WHATS NEW EVENTS =====
+  whatsNewOpened: (props: WhatsNewEventProps) => {
+    track("whats_new_opened", props);
+  },
+
+  whatsNewToastShown: (props?: WhatsNewEventProps) => {
+    track("whats_new_toast_shown", props);
+  },
+
+  whatsNewToastClicked: (props?: WhatsNewEventProps) => {
+    track("whats_new_toast_clicked", props);
   },
 
   // ===== GENERIC EVENT =====

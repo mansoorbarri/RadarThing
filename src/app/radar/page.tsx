@@ -43,6 +43,7 @@ import { AirportFIDPanel } from "~/components/airports/AirportFIDPanel";
 import { ChartSidePanel } from "~/components/map/ChartOverlayPanel";
 import { AtcPlayer } from "~/components/atc/AtcPlayer";
 import { ProBadge } from "~/components/ui/pro-badge";
+import { WhatsNew } from "~/components/ui/WhatsNew";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
 import { UpgradeIcon, FlightsIcon, FilterIcon, DiscordIcon, InstallIcon, LeaderboardIcon } from "~/utils/dockIcons";
 import { RotateCcw } from "lucide-react";
@@ -538,6 +539,7 @@ export default function ATCPage() {
             status={connectionStatus}
             isMobile={isMobile}
           />
+          <WhatsNew isMobile={isMobile} />
           <UserAuth />
         </div>
       </header>
