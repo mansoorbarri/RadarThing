@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import {
   Plus,
+  Pencil,
   Trophy,
   ToggleLeft,
   ToggleRight,
@@ -74,28 +75,97 @@ function DatePicker({
   );
 }
 
-function CreateChallengeForm({ onClose }: { onClose: () => void }) {
+interface ChallengeData {
+  _id: Id<"challenges">;
+  title: string;
+  description: string;
+  type: "weekly" | "monthly";
+  startDate: number;
+  endDate: number;
+  isActive: boolean;
+  criteria: {
+    minFlights?: number;
+    regions?: string[];
+    uniqueAirports?: number;
+    specificAirports?: string[];
+    minAvgDurationMs?: number;
+    minTotalDurationMs?: number;
+    minSingleDurationMs?: number;
+    minTotalDistanceNm?: number;
+    minSingleDistanceNm?: number;
+    aircraftTypes?: string[];
+    minMaxAltitude?: number;
+  };
+  firstCompletedBy?: Id<"users">;
+}
+
+function utcTsToDate(ts: number): Date {
+  const d = new Date(ts);
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+function ChallengeForm({
+  onClose,
+  editingChallenge,
+}: {
+  onClose: () => void;
+  editingChallenge?: ChallengeData;
+}) {
+  const isEditing = !!editingChallenge;
   const { user } = useUser();
   const createChallenge = useMutation(api.challenges.create);
+  const updateChallenge = useMutation(api.challenges.update);
   const [submitting, setSubmitting] = useState(false);
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [type, setType] = useState<"weekly" | "monthly">("weekly");
-  const [startDate, setStartDate] = useState<Date | undefined>();
-  const [endDate, setEndDate] = useState<Date | undefined>();
+  const c = editingChallenge?.criteria;
+
+  const [title, setTitle] = useState(editingChallenge?.title ?? "");
+  const [description, setDescription] = useState(
+    editingChallenge?.description ?? "",
+  );
+  const [type, setType] = useState<"weekly" | "monthly">(
+    editingChallenge?.type ?? "weekly",
+  );
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    editingChallenge ? utcTsToDate(editingChallenge.startDate) : undefined,
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    editingChallenge ? utcTsToDate(editingChallenge.endDate) : undefined,
+  );
 
   // Criteria
-  const [minFlights, setMinFlights] = useState("");
-  const [uniqueAirports, setUniqueAirports] = useState("");
-  const [specificAirports, setSpecificAirports] = useState("");
-  const [regions, setRegions] = useState("");
-  const [aircraftTypes, setAircraftTypes] = useState("");
-  const [minTotalDurationMs, setMinTotalDurationMs] = useState("");
-  const [minSingleDurationMs, setMinSingleDurationMs] = useState("");
-  const [minTotalDistanceNm, setMinTotalDistanceNm] = useState("");
-  const [minSingleDistanceNm, setMinSingleDistanceNm] = useState("");
-  const [minMaxAltitude, setMinMaxAltitude] = useState("");
+  const [minFlights, setMinFlights] = useState(
+    c?.minFlights?.toString() ?? "",
+  );
+  const [uniqueAirports, setUniqueAirports] = useState(
+    c?.uniqueAirports?.toString() ?? "",
+  );
+  const [specificAirports, setSpecificAirports] = useState(
+    c?.specificAirports?.join(", ") ?? "",
+  );
+  const [regions, setRegions] = useState(c?.regions?.join(", ") ?? "");
+  const [aircraftTypes, setAircraftTypes] = useState(
+    c?.aircraftTypes?.join(", ") ?? "",
+  );
+  const [minTotalDurationMs, setMinTotalDurationMs] = useState(
+    c?.minTotalDurationMs
+      ? (c.minTotalDurationMs / (60 * 60 * 1000)).toString()
+      : "",
+  );
+  const [minSingleDurationMs, setMinSingleDurationMs] = useState(
+    c?.minSingleDurationMs
+      ? (c.minSingleDurationMs / (60 * 1000)).toString()
+      : "",
+  );
+  const [minTotalDistanceNm, setMinTotalDistanceNm] = useState(
+    c?.minTotalDistanceNm?.toString() ?? "",
+  );
+  const [minSingleDistanceNm, setMinSingleDistanceNm] = useState(
+    c?.minSingleDistanceNm?.toString() ?? "",
+  );
+  const [minMaxAltitude, setMinMaxAltitude] = useState(
+    c?.minMaxAltitude?.toString() ?? "",
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,32 +226,49 @@ function CreateChallengeForm({ onClose }: { onClose: () => void }) {
         ),
       ).getTime();
 
-      await createChallenge({
-        title,
-        description,
-        type,
-        startDate: startTs,
-        endDate: endTs,
-        criteria: criteria as {
-          minFlights?: number;
-          regions?: string[];
-          uniqueAirports?: number;
-          specificAirports?: string[];
-          minAvgDurationMs?: number;
-          minTotalDurationMs?: number;
-          minSingleDurationMs?: number;
-          minTotalDistanceNm?: number;
-          minSingleDistanceNm?: number;
-          aircraftTypes?: string[];
-          minMaxAltitude?: number;
-        },
-        createdBy: user.id,
-      });
+      const typedCriteria = criteria as {
+        minFlights?: number;
+        regions?: string[];
+        uniqueAirports?: number;
+        specificAirports?: string[];
+        minAvgDurationMs?: number;
+        minTotalDurationMs?: number;
+        minSingleDurationMs?: number;
+        minTotalDistanceNm?: number;
+        minSingleDistanceNm?: number;
+        aircraftTypes?: string[];
+        minMaxAltitude?: number;
+      };
 
-      toast.success("Challenge created");
+      if (isEditing) {
+        await updateChallenge({
+          id: editingChallenge._id,
+          title,
+          description,
+          type,
+          startDate: startTs,
+          endDate: endTs,
+          criteria: typedCriteria,
+        });
+        toast.success("Challenge updated");
+      } else {
+        await createChallenge({
+          title,
+          description,
+          type,
+          startDate: startTs,
+          endDate: endTs,
+          criteria: typedCriteria,
+          createdBy: user.id,
+        });
+        toast.success("Challenge created");
+      }
+
       onClose();
     } catch {
-      toast.error("Failed to create challenge");
+      toast.error(
+        isEditing ? "Failed to update challenge" : "Failed to create challenge",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -195,7 +282,9 @@ function CreateChallengeForm({ onClose }: { onClose: () => void }) {
       onSubmit={handleSubmit}
       className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl"
     >
-      <h3 className="mb-4 text-lg font-bold text-white">New Challenge</h3>
+      <h3 className="mb-4 text-lg font-bold text-white">
+        {isEditing ? "Edit Challenge" : "New Challenge"}
+      </h3>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label className="mb-1 block text-xs text-slate-400">Title</label>
@@ -394,7 +483,13 @@ function CreateChallengeForm({ onClose }: { onClose: () => void }) {
           disabled={submitting}
           className="flex cursor-pointer items-center gap-2 rounded-lg bg-cyan-500/20 px-4 py-2.5 text-sm font-medium text-cyan-400 transition-all hover:bg-cyan-500/30 disabled:opacity-50"
         >
-          {submitting ? "Creating..." : "Create Challenge"}
+          {submitting
+            ? isEditing
+              ? "Saving..."
+              : "Creating..."
+            : isEditing
+              ? "Save Changes"
+              : "Create Challenge"}
         </button>
         <button
           type="button"
@@ -410,17 +505,10 @@ function CreateChallengeForm({ onClose }: { onClose: () => void }) {
 
 function ChallengeRow({
   challenge,
+  onEdit,
 }: {
-  challenge: {
-    _id: Id<"challenges">;
-    title: string;
-    description: string;
-    type: "weekly" | "monthly";
-    startDate: number;
-    endDate: number;
-    isActive: boolean;
-    firstCompletedBy?: Id<"users">;
-  };
+  challenge: ChallengeData;
+  onEdit: () => void;
 }) {
   const toggleActive = useMutation(api.challenges.deactivate);
   const completions = useQuery(api.challenges.getCompletions, {
@@ -487,25 +575,47 @@ function ChallengeRow({
           </span>
         </div>
       </div>
-      <button
-        onClick={handleToggle}
-        disabled={toggling}
-        className="cursor-pointer p-2 text-slate-400 transition-colors hover:text-white disabled:opacity-50"
-        title={challenge.isActive ? "Deactivate" : "Activate"}
-      >
-        {challenge.isActive ? (
-          <ToggleRight className="h-5 w-5 text-emerald-400" />
-        ) : (
-          <ToggleLeft className="h-5 w-5 text-slate-600" />
-        )}
-      </button>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={onEdit}
+          className="cursor-pointer p-2 text-slate-400 transition-colors hover:text-white"
+          title="Edit"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+        <button
+          onClick={handleToggle}
+          disabled={toggling}
+          className="cursor-pointer p-2 text-slate-400 transition-colors hover:text-white disabled:opacity-50"
+          title={challenge.isActive ? "Deactivate" : "Activate"}
+        >
+          {challenge.isActive ? (
+            <ToggleRight className="h-5 w-5 text-emerald-400" />
+          ) : (
+            <ToggleLeft className="h-5 w-5 text-slate-600" />
+          )}
+        </button>
+      </div>
     </div>
   );
 }
 
 export function ChallengesTab() {
   const challenges = useQuery(api.challenges.getAll);
-  const [showCreate, setShowCreate] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingChallenge, setEditingChallenge] = useState<
+    ChallengeData | undefined
+  >();
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingChallenge(undefined);
+  };
+
+  const handleEdit = (challenge: ChallengeData) => {
+    setEditingChallenge(challenge);
+    setShowForm(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -520,9 +630,12 @@ export function ChallengesTab() {
             </span>
           )}
         </div>
-        {!showCreate && (
+        {!showForm && (
           <button
-            onClick={() => setShowCreate(true)}
+            onClick={() => {
+              setEditingChallenge(undefined);
+              setShowForm(true);
+            }}
             className="flex cursor-pointer items-center gap-2 rounded-lg bg-cyan-500/20 px-4 py-2 text-sm font-medium text-cyan-400 transition-all hover:bg-cyan-500/30"
           >
             <Plus className="h-4 w-4" />
@@ -531,9 +644,12 @@ export function ChallengesTab() {
         )}
       </div>
 
-      {/* Create Form */}
-      {showCreate && (
-        <CreateChallengeForm onClose={() => setShowCreate(false)} />
+      {/* Create / Edit Form */}
+      {showForm && (
+        <ChallengeForm
+          onClose={closeForm}
+          editingChallenge={editingChallenge}
+        />
       )}
 
       {/* Challenges List */}
@@ -559,7 +675,11 @@ export function ChallengesTab() {
       ) : (
         <div className="space-y-3">
           {challenges.map((challenge) => (
-            <ChallengeRow key={challenge._id} challenge={challenge} />
+            <ChallengeRow
+              key={challenge._id}
+              challenge={challenge}
+              onEdit={() => handleEdit(challenge)}
+            />
           ))}
         </div>
       )}
