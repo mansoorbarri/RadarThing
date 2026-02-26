@@ -33,7 +33,7 @@ export function ControlDock({ items, side = "left", bottomAction, rightOffset }:
     <div
       className={`pointer-events-auto fixed bottom-6 ${
         isRight && !rightOffset ? "right-6" : !isRight ? "left-6" : ""
-      } z-[10020] flex flex-col items-center gap-2 transition-[right] duration-200`}
+      } z-[10013] flex flex-col items-center gap-2 transition-[right] duration-200`}
       style={isRight && rightOffset ? { right: rightOffset } : undefined}
     >
       {/* Dock toggle + items wrapper */}
