@@ -9,10 +9,4 @@ crons.interval(
   internal.activeTrackers.cleanupStale,
 );
 
-crons.daily(
-  "deactivate expired challenges",
-  { hourUTC: 0, minuteUTC: 5 },
-  internal.challenges.deactivateExpired,
-);
-
 export default crons;

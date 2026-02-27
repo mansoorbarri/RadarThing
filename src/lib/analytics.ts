@@ -83,12 +83,6 @@ interface WhatsNewEventProps extends BaseEventProps {
   entry_id?: string;
 }
 
-interface ChallengeEventProps extends BaseEventProps {
-  challengeId?: string;
-  challengeCount?: number;
-  isFirstCompleter?: boolean;
-}
-
 // All analytics events
 export const Analytics = {
   // Initialize PostHog (only in production)
@@ -115,7 +109,7 @@ export const Analytics = {
       role: UserRole;
       googleId?: string;
       stripeCustomerId?: string;
-    }
+    },
   ) => {
     if (typeof window === "undefined") return;
     if (process.env.NODE_ENV === "development") return;
@@ -157,7 +151,7 @@ export const Analytics = {
   },
 
   flightEnded: (
-    props: FlightEventProps & { duration?: number; maxAltitude?: number }
+    props: FlightEventProps & { duration?: number; maxAltitude?: number },
   ) => {
     track("flight_ended", props);
   },
@@ -186,7 +180,9 @@ export const Analytics = {
     track("flight_replay_closed", props);
   },
 
-  flightReplayShared: (props: FlightReplayEventProps & { flightId: string }) => {
+  flightReplayShared: (
+    props: FlightReplayEventProps & { flightId: string },
+  ) => {
     track("flight_replay_shared", props);
   },
 
@@ -308,7 +304,11 @@ export const Analytics = {
   },
 
   // ===== AIRCRAFT CONTROL EVENTS =====
-  controlSet: (props: { control: string; callsign?: string; value?: string | number }) => {
+  controlSet: (props: {
+    control: string;
+    callsign?: string;
+    value?: string | number;
+  }) => {
     track("control_set", props);
   },
 
@@ -336,15 +336,6 @@ export const Analytics = {
 
   whatsNewToastClicked: (props?: WhatsNewEventProps) => {
     track("whats_new_toast_clicked", props);
-  },
-
-  // ===== CHALLENGE EVENTS =====
-  challengeViewed: (props: ChallengeEventProps) => {
-    track("challenge_viewed", props);
-  },
-
-  challengeCompleted: (props: ChallengeEventProps) => {
-    track("challenge_completed", props);
   },
 
   // ===== GENERIC EVENT =====

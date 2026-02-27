@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useProStatus } from "~/hooks/useProStatus";
-import { ChallengesSection } from "~/app/dashboard/_components/ChallengesSection";
 import { Suspense } from "react";
 
 function formatFlightTime(ms: number): string {
@@ -276,11 +275,6 @@ function PilotPageContent() {
                   <ProLockedContent />
                 )}
               </div>
-            </div>
-
-            {/* Challenge Progress */}
-            <div className="mb-8">
-              <ChallengesSection userId={userId} collapsible defaultCollapsed />
             </div>
 
             {/* Recent Flights */}

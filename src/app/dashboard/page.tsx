@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
-import { ChallengesSection } from "./_components/ChallengesSection";
+
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -82,19 +82,19 @@ export default function DashboardPage() {
   const { isProUser: isPro, isLoading: proLoading } = useProStatus();
   const statsQuery = useQuery(
     api.flights.getStatsByClerkId,
-    clerkId ? { clerkId } : "skip"
+    clerkId ? { clerkId } : "skip",
   );
   const dbUser = useQuery(
     api.users.getByClerkId,
-    clerkId ? { clerkId } : "skip"
+    clerkId ? { clerkId } : "skip",
   );
   const approvedAircraftImages = useQuery(
     api.aircraftImages.getApprovedCountByUser,
-    clerkId ? { uploadedBy: clerkId } : "skip"
+    clerkId ? { uploadedBy: clerkId } : "skip",
   );
   const approvedAirportCharts = useQuery(
     api.airportCharts.getApprovedCountByUser,
-    clerkId ? { uploadedBy: clerkId } : "skip"
+    clerkId ? { uploadedBy: clerkId } : "skip",
   );
 
   const stats = useMemo(() => statsQuery ?? null, [statsQuery]);
@@ -121,7 +121,7 @@ export default function DashboardPage() {
 
   // Discord account from Clerk
   const discordAccount = user?.externalAccounts?.find(
-    (a) => a.provider === "discord"
+    (a) => a.provider === "discord",
   );
   const discordUsername = discordAccount?.username ?? null;
 
@@ -197,7 +197,9 @@ export default function DashboardPage() {
         <main className="mx-auto max-w-2xl px-6 py-20 text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
             <Plane className="h-4 w-4 text-cyan-400" />
-            <span className="font-mono text-sm text-cyan-400">SIGN IN REQUIRED</span>
+            <span className="font-mono text-sm text-cyan-400">
+              SIGN IN REQUIRED
+            </span>
           </div>
           <h1 className="mb-4 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-5xl font-bold text-transparent">
             Your Account
@@ -222,7 +224,7 @@ export default function DashboardPage() {
       <main className="mx-auto max-w-6xl px-6 py-12">
         {/* Profile Header */}
         <div className="mb-10">
-          <div className="flex items-center gap-4 mb-2">
+          <div className="mb-2 flex items-center gap-4">
             {user?.imageUrl ? (
               <button
                 onClick={copyProfileLink}
@@ -260,13 +262,15 @@ export default function DashboardPage() {
             )}
             <div>
               <h1 className="text-3xl font-bold text-white">
-                {user?.firstName ? `${user.firstName}'s Account` : "Your Account"}
+                {user?.firstName
+                  ? `${user.firstName}'s Account`
+                  : "Your Account"}
               </h1>
               {supportId && (
                 <div className="mt-1">
                   <button
                     onClick={copySupportId}
-                    className="flex items-center gap-1.5 text-slate-600 font-mono text-xs hover:text-slate-400 transition-colors cursor-pointer"
+                    className="flex cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-600 transition-colors hover:text-slate-400"
                     title="Click to copy - share this with support when reporting issues"
                   >
                     <span>ID: {supportId.slice(0, 8)}...</span>
@@ -281,14 +285,14 @@ export default function DashboardPage() {
               <div className="mt-1.5 flex items-center gap-3">
                 {discordUsername ? (
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 text-indigo-400 font-mono text-xs">
+                    <div className="flex items-center gap-1.5 font-mono text-xs text-indigo-400">
                       <DiscordIcon className="h-3.5 w-3.5" />
                       <span>{discordUsername}</span>
                     </div>
                     <button
                       onClick={disconnectDiscord}
                       disabled={discordLoading}
-                      className="text-slate-600 font-mono text-[10px] hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50"
+                      className="cursor-pointer font-mono text-[10px] text-slate-600 transition-colors hover:text-red-400 disabled:opacity-50"
                     >
                       Disconnect
                     </button>
@@ -297,16 +301,20 @@ export default function DashboardPage() {
                   <button
                     onClick={connectDiscord}
                     disabled={discordLoading}
-                    className="flex items-center gap-1.5 text-slate-600 font-mono text-xs hover:text-indigo-400 transition-colors cursor-pointer disabled:opacity-50"
+                    className="flex cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-600 transition-colors hover:text-indigo-400 disabled:opacity-50"
                   >
                     <DiscordIcon className="h-3.5 w-3.5" />
-                    <span>{discordLoading ? "Connecting..." : "Connect Discord"}</span>
+                    <span>
+                      {discordLoading ? "Connecting..." : "Connect Discord"}
+                    </span>
                   </button>
                 )}
                 {stats && stats.currentStreak > 0 && (
                   <div className="flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5">
                     <Flame className="h-3 w-3 text-amber-400" />
-                    <span className="font-mono text-xs font-bold text-amber-400">{stats.currentStreak}d</span>
+                    <span className="font-mono text-xs font-bold text-amber-400">
+                      {stats.currentStreak}d
+                    </span>
                   </div>
                 )}
               </div>
@@ -321,7 +329,7 @@ export default function DashboardPage() {
         ) : (
           <>
             {/* Stats Grid - Free Tier */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+            <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard
                 icon={<Plane className="h-5 w-5" />}
                 label="Total Flights"
@@ -351,41 +359,44 @@ export default function DashboardPage() {
             </div>
 
             {/* Contributions Section */}
-            {(approvedAircraftImages !== undefined && approvedAircraftImages > 0) ||
-            (approvedAirportCharts !== undefined && approvedAirportCharts > 0) ? (
+            {(approvedAircraftImages !== undefined &&
+              approvedAircraftImages > 0) ||
+            (approvedAirportCharts !== undefined &&
+              approvedAirportCharts > 0) ? (
               <div className="mb-8">
-                <h3 className="font-mono text-sm font-bold text-slate-400 tracking-wider mb-4">
+                <h3 className="mb-4 font-mono text-sm font-bold tracking-wider text-slate-400">
                   YOUR CONTRIBUTIONS
                 </h3>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  {approvedAircraftImages !== undefined && approvedAircraftImages > 0 && (
-                    <StatCard
-                      icon={<Camera className="h-5 w-5" />}
-                      label="Aircraft Images"
-                      value={approvedAircraftImages.toString()}
-                      color="purple"
-                    />
-                  )}
-                  {approvedAirportCharts !== undefined && approvedAirportCharts > 0 && (
-                    <StatCard
-                      icon={<FileText className="h-5 w-5" />}
-                      label="Airport Charts"
-                      value={approvedAirportCharts.toString()}
-                      color="emerald"
-                    />
-                  )}
+                  {approvedAircraftImages !== undefined &&
+                    approvedAircraftImages > 0 && (
+                      <StatCard
+                        icon={<Camera className="h-5 w-5" />}
+                        label="Aircraft Images"
+                        value={approvedAircraftImages.toString()}
+                        color="purple"
+                      />
+                    )}
+                  {approvedAirportCharts !== undefined &&
+                    approvedAirportCharts > 0 && (
+                      <StatCard
+                        icon={<FileText className="h-5 w-5" />}
+                        label="Airport Charts"
+                        value={approvedAirportCharts.toString()}
+                        color="emerald"
+                      />
+                    )}
                 </div>
               </div>
             ) : null}
 
             {/* Active Challenges */}
-            {dbUser && <ChallengesSection userId={dbUser._id} />}
 
-            <div className="grid gap-6 lg:grid-cols-3 mb-8">
+            <div className="mb-8 grid gap-6 lg:grid-cols-3">
               {/* Top Aircraft - PRO */}
               <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-mono text-sm font-bold text-slate-400 tracking-wider">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                     TOP AIRCRAFT
                   </h3>
                   {!isPro && <Lock className="h-4 w-4 text-slate-600" />}
@@ -393,13 +404,22 @@ export default function DashboardPage() {
                 {isPro ? (
                   <div className="space-y-3">
                     {stats.topAircraft.length === 0 ? (
-                      <p className="text-slate-500 text-sm">No data yet</p>
+                      <p className="text-sm text-slate-500">No data yet</p>
                     ) : (
                       stats.topAircraft.map((aircraft, i) => (
-                        <div key={aircraft.name} className="flex items-center justify-between">
+                        <div
+                          key={aircraft.name}
+                          className="flex items-center justify-between"
+                        >
                           <div className="flex items-center gap-3">
-                            <span className="font-mono text-xs text-cyan-400 w-4">{i + 1}</span>
-                            <span className="text-white font-medium">{aircraft.name.replace(/\s*\([^)]*\)/g, "").trim()}</span>
+                            <span className="w-4 font-mono text-xs text-cyan-400">
+                              {i + 1}
+                            </span>
+                            <span className="font-medium text-white">
+                              {aircraft.name
+                                .replace(/\s*\([^)]*\)/g, "")
+                                .trim()}
+                            </span>
                           </div>
                           <span className="font-mono text-sm text-slate-400">
                             {aircraft.count} flights
@@ -415,8 +435,8 @@ export default function DashboardPage() {
 
               {/* Top Routes - PRO */}
               <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-mono text-sm font-bold text-slate-400 tracking-wider">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                     TOP ROUTES
                   </h3>
                   {!isPro && <Lock className="h-4 w-4 text-slate-600" />}
@@ -424,15 +444,24 @@ export default function DashboardPage() {
                 {isPro ? (
                   <div className="space-y-3">
                     {stats.topRoutes.length === 0 ? (
-                      <p className="text-slate-500 text-sm">No data yet</p>
+                      <p className="text-sm text-slate-500">No data yet</p>
                     ) : (
                       stats.topRoutes.map((route, i) => (
-                        <div key={route.route} className="flex items-center justify-between">
+                        <div
+                          key={route.route}
+                          className="flex items-center justify-between"
+                        >
                           <div className="flex items-center gap-3">
-                            <span className="font-mono text-xs text-cyan-400 w-4">{i + 1}</span>
-                            <span className="text-white font-medium font-mono">{route.route}</span>
+                            <span className="w-4 font-mono text-xs text-cyan-400">
+                              {i + 1}
+                            </span>
+                            <span className="font-mono font-medium text-white">
+                              {route.route}
+                            </span>
                           </div>
-                          <span className="font-mono text-sm text-slate-400">{route.count}x</span>
+                          <span className="font-mono text-sm text-slate-400">
+                            {route.count}x
+                          </span>
                         </div>
                       ))
                     )}
@@ -444,8 +473,8 @@ export default function DashboardPage() {
 
               {/* Top Airports - PRO */}
               <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-mono text-sm font-bold text-slate-400 tracking-wider">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                     TOP AIRPORTS
                   </h3>
                   {!isPro && <Lock className="h-4 w-4 text-slate-600" />}
@@ -453,13 +482,20 @@ export default function DashboardPage() {
                 {isPro ? (
                   <div className="space-y-3">
                     {stats.topAirports.length === 0 ? (
-                      <p className="text-slate-500 text-sm">No data yet</p>
+                      <p className="text-sm text-slate-500">No data yet</p>
                     ) : (
                       stats.topAirports.map((airport, i) => (
-                        <div key={airport.code} className="flex items-center justify-between">
+                        <div
+                          key={airport.code}
+                          className="flex items-center justify-between"
+                        >
                           <div className="flex items-center gap-3">
-                            <span className="font-mono text-xs text-cyan-400 w-4">{i + 1}</span>
-                            <span className="text-white font-medium font-mono">{airport.code}</span>
+                            <span className="w-4 font-mono text-xs text-cyan-400">
+                              {i + 1}
+                            </span>
+                            <span className="font-mono font-medium text-white">
+                              {airport.code}
+                            </span>
                           </div>
                           <span className="font-mono text-sm text-slate-400">
                             {airport.count} visits
@@ -480,7 +516,7 @@ export default function DashboardPage() {
                 onClick={() => setFlightsExpanded(!flightsExpanded)}
                 className="flex w-full cursor-pointer items-center justify-between p-6"
               >
-                <h3 className="font-mono text-sm font-bold text-slate-400 tracking-wider">
+                <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                   RECENT FLIGHTS
                 </h3>
                 <div className="flex items-center gap-3">
@@ -495,73 +531,85 @@ export default function DashboardPage() {
 
               {flightsExpanded && (
                 <div className="space-y-3 px-6 pb-6">
-                  {stats.recentFlights.slice(0, isPro ? 10 : 3).map((flight) => (
-                    <div
-                      key={flight.id}
-                      className="group flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4 transition-all hover:border-cyan-500/30 hover:bg-white/10"
-                    >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10">
-                        <Plane className="h-5 w-5 text-cyan-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-sm font-bold text-white">
-                            {flight.depICAO || "???"}
-                          </span>
-                          <Route className="h-3 w-3 text-slate-500" />
-                          <span className="font-mono text-sm font-bold text-white">
-                            {flight.arrICAO || "???"}
-                          </span>
-                          <span className="ml-2 rounded bg-white/10 px-2 py-0.5 font-mono text-[10px] text-slate-400">
-                            {flight.aircraftType.replace(/\s*\([^)]*\)/g, "").trim()}
-                          </span>
+                  {stats.recentFlights
+                    .slice(0, isPro ? 10 : 3)
+                    .map((flight) => (
+                      <div
+                        key={flight.id}
+                        className="group flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4 transition-all hover:border-cyan-500/30 hover:bg-white/10"
+                      >
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10">
+                          <Plane className="h-5 w-5 text-cyan-400" />
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {formatDate(flight.startTime)}
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex items-center gap-2">
+                            <span className="font-mono text-sm font-bold text-white">
+                              {flight.depICAO || "???"}
+                            </span>
+                            <Route className="h-3 w-3 text-slate-500" />
+                            <span className="font-mono text-sm font-bold text-white">
+                              {flight.arrICAO || "???"}
+                            </span>
+                            <span className="ml-2 rounded bg-white/10 px-2 py-0.5 font-mono text-[10px] text-slate-400">
+                              {flight.aircraftType
+                                .replace(/\s*\([^)]*\)/g, "")
+                                .trim()}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-slate-500">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {formatDate(flight.startTime)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {formatDuration(flight.startTime, flight.endTime)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-slate-600">
+                            {flight.callsign}
                           </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {formatDuration(flight.startTime, flight.endTime)}
-                          </span>
+                          {flight.routeData && flight.routeData.length > 1 && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  const url = `${window.location.origin}/radar?replay=${flight.id}`;
+                                  navigator.clipboard
+                                    .writeText(url)
+                                    .then(() => {
+                                      toast.success(
+                                        "Flight replay link copied to clipboard",
+                                      );
+                                      Analytics.flightReplayShared({
+                                        callsign: flight.callsign,
+                                        aircraftType: flight.aircraftType,
+                                        depICAO: flight.depICAO,
+                                        arrICAO: flight.arrICAO,
+                                        flightId: flight.id as string,
+                                      });
+                                    });
+                                }}
+                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/40 opacity-0 transition-all group-hover:opacity-100 hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400"
+                                title="Copy share link"
+                              >
+                                <Share2 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  router.push(`/radar?replay=${flight.id}`)
+                                }
+                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 opacity-0 transition-all group-hover:opacity-100 hover:bg-amber-500/20"
+                                title="Replay this flight"
+                              >
+                                <Play className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs text-slate-600">{flight.callsign}</span>
-                        {flight.routeData && flight.routeData.length > 1 && (
-                          <>
-                            <button
-                              onClick={() => {
-                                const url = `${window.location.origin}/radar?replay=${flight.id}`;
-                                navigator.clipboard.writeText(url).then(() => {
-                                  toast.success("Flight replay link copied to clipboard");
-                                  Analytics.flightReplayShared({
-                                    callsign: flight.callsign,
-                                    aircraftType: flight.aircraftType,
-                                    depICAO: flight.depICAO,
-                                    arrICAO: flight.arrICAO,
-                                    flightId: flight.id as string,
-                                  });
-                                });
-                              }}
-                              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/40 opacity-0 transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400 group-hover:opacity-100"
-                              title="Copy share link"
-                            >
-                              <Share2 className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={() => router.push(`/radar?replay=${flight.id}`)}
-                              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 opacity-0 transition-all hover:bg-amber-500/20 group-hover:opacity-100"
-                              title="Replay this flight"
-                            >
-                              <Play className="h-4 w-4" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
 
                   {!isPro && stats.recentFlights.length > 3 && (
                     <div className="mt-4 text-center">
@@ -576,7 +624,8 @@ export default function DashboardPage() {
                         className="inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 font-mono text-xs text-amber-400 transition-all hover:bg-amber-500/20"
                       >
                         <Lock className="h-3 w-3" />
-                        Start 7-day trial to see {stats.recentFlights.length - 3} more flights
+                        Start 7-day trial to see{" "}
+                        {stats.recentFlights.length - 3} more flights
                       </button>
                     </div>
                   )}
@@ -588,9 +637,12 @@ export default function DashboardPage() {
             {!isPro && (
               <div className="mt-8 rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 p-8 text-center backdrop-blur-xl">
                 <TrendingUp className="mx-auto mb-4 h-10 w-10 text-cyan-400" />
-                <h3 className="mb-2 text-xl font-bold text-white">Unlock Full Analytics</h3>
+                <h3 className="mb-2 text-xl font-bold text-white">
+                  Unlock Full Analytics
+                </h3>
                 <p className="mb-6 text-slate-400">
-                  Get detailed insights with flight time, top airports, routes, and complete history
+                  Get detailed insights with flight time, top airports, routes,
+                  and complete history
                 </p>
                 <button
                   onClick={() => {
@@ -611,12 +663,14 @@ export default function DashboardPage() {
 
         {/* Account Section */}
         <div className="mt-12">
-          <h3 className="font-mono text-sm font-bold text-slate-400 tracking-wider mb-4">
+          <h3 className="mb-4 font-mono text-sm font-bold tracking-wider text-slate-400">
             ACCOUNT
           </h3>
 
           <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
-            <h4 className="mb-4 text-sm font-semibold text-white">Account Info</h4>
+            <h4 className="mb-4 text-sm font-semibold text-white">
+              Account Info
+            </h4>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-slate-500" />
@@ -627,7 +681,13 @@ export default function DashboardPage() {
               <div className="flex items-center gap-3">
                 <Calendar className="h-4 w-4 text-slate-500" />
                 <span className="text-sm text-slate-300">
-                  Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "Unknown"}
+                  Member since{" "}
+                  {user?.createdAt
+                    ? new Date(user.createdAt).toLocaleDateString("en-US", {
+                        month: "long",
+                        year: "numeric",
+                      })
+                    : "Unknown"}
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -661,12 +721,15 @@ export default function DashboardPage() {
 
           {/* Danger Zone */}
           <div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/5 p-6 backdrop-blur-xl">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="mb-2 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-red-400" />
-              <h4 className="text-sm font-semibold text-red-400">Danger Zone</h4>
+              <h4 className="text-sm font-semibold text-red-400">
+                Danger Zone
+              </h4>
             </div>
             <p className="mb-4 text-xs text-slate-500">
-              Permanently delete your account and all associated data. This action cannot be undone.
+              Permanently delete your account and all associated data. This
+              action cannot be undone.
             </p>
 
             {!showDeleteConfirm ? (
@@ -722,7 +785,12 @@ function Header({ router }: { router: ReturnType<typeof useRouter> }) {
           onClick={() => router.push("/radar")}
           className="cursor-pointer"
         >
-          <Image src="/logo-white.svg" alt="RadarThing" width={100} height={30} />
+          <Image
+            src="/logo-white.svg"
+            alt="RadarThing"
+            width={100}
+            height={30}
+          />
         </button>
         <div className="flex items-center gap-4">
           <button
@@ -763,22 +831,26 @@ function StatCard({
 
   return (
     <div className="rounded-2xl border border-white/10 bg-black/40 p-5 backdrop-blur-xl">
-      <div className={`mb-3 inline-flex rounded-lg border p-2 ${colorClasses[color]}`}>
+      <div
+        className={`mb-3 inline-flex rounded-lg border p-2 ${colorClasses[color]}`}
+      >
         {icon}
       </div>
-      <div className="font-mono text-xs text-slate-500 uppercase tracking-wider mb-1">
+      <div className="mb-1 font-mono text-xs tracking-wider text-slate-500 uppercase">
         {label}
       </div>
       {locked ? (
         <div className="flex items-center gap-2">
           <Lock className="h-4 w-4 text-slate-600" />
-          <span className="text-slate-600 font-mono text-sm">PRO</span>
+          <span className="font-mono text-sm text-slate-600">PRO</span>
         </div>
       ) : (
         <>
           <div className="text-2xl font-bold text-white">{value}</div>
           {subtitle && (
-            <div className="font-mono text-xs text-slate-600 mt-0.5">{subtitle}</div>
+            <div className="mt-0.5 font-mono text-xs text-slate-600">
+              {subtitle}
+            </div>
           )}
         </>
       )}
@@ -826,9 +898,12 @@ function StatsSkeleton() {
   return (
     <>
       {/* Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="rounded-2xl border border-white/10 bg-black/40 p-5 backdrop-blur-xl">
+          <div
+            key={i}
+            className="rounded-2xl border border-white/10 bg-black/40 p-5 backdrop-blur-xl"
+          >
             <div className="mb-3 h-9 w-9 animate-pulse rounded-lg bg-white/10" />
             <div className="mb-2 h-3 w-20 animate-pulse rounded bg-white/10" />
             <div className="h-8 w-24 animate-pulse rounded bg-white/10" />
@@ -837,9 +912,12 @@ function StatsSkeleton() {
       </div>
 
       {/* Three Column Grid */}
-      <div className="grid gap-6 lg:grid-cols-3 mb-8">
+      <div className="mb-8 grid gap-6 lg:grid-cols-3">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
+          <div
+            key={i}
+            className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl"
+          >
             <div className="mb-4 h-4 w-28 animate-pulse rounded bg-white/10" />
             <div className="space-y-3">
               {[...Array(5)].map((_, j) => (
@@ -855,13 +933,16 @@ function StatsSkeleton() {
 
       {/* Recent Flights */}
       <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <div className="h-4 w-32 animate-pulse rounded bg-white/10" />
           <div className="h-3 w-24 animate-pulse rounded bg-white/10" />
         </div>
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4">
+            <div
+              key={i}
+              className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4"
+            >
               <div className="h-10 w-10 animate-pulse rounded-lg bg-white/10" />
               <div className="flex-1">
                 <div className="mb-2 h-4 w-40 animate-pulse rounded bg-white/10" />
@@ -878,11 +959,7 @@ function StatsSkeleton() {
 
 function DiscordIcon({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className={className}
-    >
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
       <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
     </svg>
   );
@@ -905,19 +982,22 @@ function DashboardSkeleton() {
       <main className="mx-auto max-w-6xl px-6 py-12">
         {/* Profile Header */}
         <div className="mb-10">
-          <div className="flex items-center gap-4 mb-2">
+          <div className="mb-2 flex items-center gap-4">
             <div className="h-14 w-14 animate-pulse rounded-full bg-white/10" />
             <div>
-              <div className="h-8 w-48 animate-pulse rounded bg-white/10 mb-2" />
+              <div className="mb-2 h-8 w-48 animate-pulse rounded bg-white/10" />
               <div className="h-4 w-24 animate-pulse rounded bg-white/10" />
             </div>
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="rounded-2xl border border-white/10 bg-black/40 p-5 backdrop-blur-xl">
+            <div
+              key={i}
+              className="rounded-2xl border border-white/10 bg-black/40 p-5 backdrop-blur-xl"
+            >
               <div className="mb-3 h-9 w-9 animate-pulse rounded-lg bg-white/10" />
               <div className="mb-2 h-3 w-20 animate-pulse rounded bg-white/10" />
               <div className="h-8 w-24 animate-pulse rounded bg-white/10" />
@@ -926,9 +1006,12 @@ function DashboardSkeleton() {
         </div>
 
         {/* Three Column Grid */}
-        <div className="grid gap-6 lg:grid-cols-3 mb-8">
+        <div className="mb-8 grid gap-6 lg:grid-cols-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
+            <div
+              key={i}
+              className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl"
+            >
               <div className="mb-4 h-4 w-28 animate-pulse rounded bg-white/10" />
               <div className="space-y-3">
                 {[...Array(5)].map((_, j) => (
@@ -944,13 +1027,16 @@ function DashboardSkeleton() {
 
         {/* Recent Flights */}
         <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
-          <div className="flex items-center justify-between mb-6">
+          <div className="mb-6 flex items-center justify-between">
             <div className="h-4 w-32 animate-pulse rounded bg-white/10" />
             <div className="h-3 w-24 animate-pulse rounded bg-white/10" />
           </div>
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4">
+              <div
+                key={i}
+                className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4"
+              >
                 <div className="h-10 w-10 animate-pulse rounded-lg bg-white/10" />
                 <div className="flex-1">
                   <div className="mb-2 h-4 w-40 animate-pulse rounded bg-white/10" />

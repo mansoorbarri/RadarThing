@@ -1,6 +1,5 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { internal } from "./_generated/api";
 import { paginationOptsValidator } from "convex/server";
 
 // Get flight history for a user by their Google ID
@@ -76,7 +75,10 @@ function diffDaysUtc(prevDateStr: string, currDateStr: string): number {
   return (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
 }
 
-function deriveVisibleCurrentStreak(lastFlightDate?: string, streakAtLastFlight = 0): number {
+function deriveVisibleCurrentStreak(
+  lastFlightDate?: string,
+  streakAtLastFlight = 0,
+): number {
   if (!lastFlightDate || streakAtLastFlight <= 0) return 0;
 
   const now = new Date();
@@ -129,7 +131,9 @@ export const create = mutation({
       .first();
 
     const flightTimeMs =
-      args.endTime !== undefined ? Math.max(0, args.endTime - args.startTime) : 0;
+      args.endTime !== undefined
+        ? Math.max(0, args.endTime - args.startTime)
+        : 0;
     const distanceNm = calculateRouteDistanceNm(args.routeData);
     const flightDate = utcDateStringFromTimestamp(args.startTime);
 
@@ -146,18 +150,12 @@ export const create = mutation({
         lastFlightCallsign: args.callsign,
       });
 
-      // Evaluate flight for active challenges (async)
-      await ctx.scheduler.runAfter(
-        0,
-        internal.challenges.evaluateFlightForChallenges,
-        { userId: args.userId, flightId },
-      );
-
       return flightId;
     }
 
     const isNewestFlight =
-      stats.lastFlightStartTime === undefined || args.startTime >= stats.lastFlightStartTime;
+      stats.lastFlightStartTime === undefined ||
+      args.startTime >= stats.lastFlightStartTime;
 
     let streakAtLastFlight = stats.streakAtLastFlight;
     let longestStreak = stats.longestStreak;
@@ -189,15 +187,10 @@ export const create = mutation({
       lastFlightStartTime: isNewestFlight
         ? args.startTime
         : stats.lastFlightStartTime,
-      lastFlightCallsign: isNewestFlight ? args.callsign : stats.lastFlightCallsign,
+      lastFlightCallsign: isNewestFlight
+        ? args.callsign
+        : stats.lastFlightCallsign,
     });
-
-    // Evaluate flight for active challenges (async)
-    await ctx.scheduler.runAfter(
-      0,
-      internal.challenges.evaluateFlightForChallenges,
-      { userId: args.userId, flightId },
-    );
 
     return flightId;
   },
@@ -332,7 +325,10 @@ export const backfillUserStatsPage = mutation({
       }
       totalDistanceNm += calculateRouteDistanceNm(flight.routeData);
 
-      if (lastFlightStartTime === undefined || flight.startTime >= lastFlightStartTime) {
+      if (
+        lastFlightStartTime === undefined ||
+        flight.startTime >= lastFlightStartTime
+      ) {
         lastFlightStartTime = flight.startTime;
         lastFlightCallsign = flight.callsign;
       }
@@ -427,22 +423,28 @@ export const getStatsByClerkId = query({
     for (const flight of flights) {
       if (!stats) {
         if (flight.endTime !== undefined) {
-          fallbackTotalFlightTimeMs += Math.max(0, flight.endTime - flight.startTime);
+          fallbackTotalFlightTimeMs += Math.max(
+            0,
+            flight.endTime - flight.startTime,
+          );
         }
         fallbackTotalDistanceNm += calculateRouteDistanceNm(flight.routeData);
       }
 
       // Aircraft counts
       if (flight.aircraftType) {
-        aircraftCounts[flight.aircraftType] = (aircraftCounts[flight.aircraftType] || 0) + 1;
+        aircraftCounts[flight.aircraftType] =
+          (aircraftCounts[flight.aircraftType] || 0) + 1;
       }
 
       // Route counts
       if (flight.depICAO && flight.arrICAO) {
         const route = `${flight.depICAO}-${flight.arrICAO}`;
         routeCounts[route] = (routeCounts[route] || 0) + 1;
-        airportVisits[flight.depICAO] = (airportVisits[flight.depICAO] || 0) + 1;
-        airportVisits[flight.arrICAO] = (airportVisits[flight.arrICAO] || 0) + 1;
+        airportVisits[flight.depICAO] =
+          (airportVisits[flight.depICAO] || 0) + 1;
+        airportVisits[flight.arrICAO] =
+          (airportVisits[flight.arrICAO] || 0) + 1;
       }
     }
 
@@ -481,11 +483,18 @@ export const getStatsByClerkId = query({
 
     return {
       totalFlights: stats?.totalFlights ?? flights.length,
-      totalFlightTimeMs: Math.round(stats?.totalFlightTimeMs ?? fallbackTotalFlightTimeMs),
-      totalDistanceNm: Math.round(stats?.totalDistanceNm ?? fallbackTotalDistanceNm),
+      totalFlightTimeMs: Math.round(
+        stats?.totalFlightTimeMs ?? fallbackTotalFlightTimeMs,
+      ),
+      totalDistanceNm: Math.round(
+        stats?.totalDistanceNm ?? fallbackTotalDistanceNm,
+      ),
       uniqueAirports: Object.keys(airportVisits).length,
       currentStreak: stats
-        ? deriveVisibleCurrentStreak(stats.lastFlightDate, stats.streakAtLastFlight)
+        ? deriveVisibleCurrentStreak(
+            stats.lastFlightDate,
+            stats.streakAtLastFlight,
+          )
         : streaks.currentStreak,
       longestStreak: stats?.longestStreak ?? streaks.longestStreak,
       topAircraft,
@@ -508,7 +517,7 @@ function calculateStreaks(flights: { startTime: number }[]): {
   for (const f of flights) {
     const d = new Date(f.startTime);
     dateSet.add(
-      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`,
     );
   }
 
@@ -520,8 +529,7 @@ function calculateStreaks(flights: { startTime: number }[]): {
   for (let i = 1; i < sortedDates.length; i++) {
     const prev = new Date(sortedDates[i - 1] + "T00:00:00Z");
     const curr = new Date(sortedDates[i] + "T00:00:00Z");
-    const diffDays =
-      (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+    const diffDays = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
     if (diffDays === 1) {
       runLength++;
       longestStreak = Math.max(longestStreak, runLength);
@@ -546,8 +554,7 @@ function calculateStreaks(flights: { startTime: number }[]): {
   for (let i = sortedDates.length - 2; i >= 0; i--) {
     const curr = new Date(sortedDates[i + 1] + "T00:00:00Z");
     const prev = new Date(sortedDates[i] + "T00:00:00Z");
-    const diffDays =
-      (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+    const diffDays = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
     if (diffDays === 1) {
       currentStreak++;
     } else {
@@ -559,13 +566,21 @@ function calculateStreaks(flights: { startTime: number }[]): {
 }
 
 // Haversine formula to calculate distance between two points in nautical miles
-function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function haversineDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
   const R = 3440.065; // Earth's radius in nautical miles
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
@@ -602,7 +617,7 @@ export const getLeaderboard = query({
         totalDistanceNm: Math.round(userStats.totalDistanceNm),
         currentStreak: deriveVisibleCurrentStreak(
           userStats.lastFlightDate,
-          userStats.streakAtLastFlight
+          userStats.streakAtLastFlight,
         ),
       });
     }
@@ -638,22 +653,28 @@ export const getStatsById = query({
     for (const flight of flights) {
       if (!stats) {
         if (flight.endTime !== undefined) {
-          fallbackTotalFlightTimeMs += Math.max(0, flight.endTime - flight.startTime);
+          fallbackTotalFlightTimeMs += Math.max(
+            0,
+            flight.endTime - flight.startTime,
+          );
         }
         fallbackTotalDistanceNm += calculateRouteDistanceNm(flight.routeData);
       }
 
       // Aircraft counts
       if (flight.aircraftType) {
-        aircraftCounts[flight.aircraftType] = (aircraftCounts[flight.aircraftType] || 0) + 1;
+        aircraftCounts[flight.aircraftType] =
+          (aircraftCounts[flight.aircraftType] || 0) + 1;
       }
 
       // Route counts
       if (flight.depICAO && flight.arrICAO) {
         const route = `${flight.depICAO}-${flight.arrICAO}`;
         routeCounts[route] = (routeCounts[route] || 0) + 1;
-        airportVisits[flight.depICAO] = (airportVisits[flight.depICAO] || 0) + 1;
-        airportVisits[flight.arrICAO] = (airportVisits[flight.arrICAO] || 0) + 1;
+        airportVisits[flight.depICAO] =
+          (airportVisits[flight.depICAO] || 0) + 1;
+        airportVisits[flight.arrICAO] =
+          (airportVisits[flight.arrICAO] || 0) + 1;
       }
     }
 
@@ -674,11 +695,14 @@ export const getStatsById = query({
       .map(([code, count]) => ({ code, count }));
 
     // Sort flights by start time (most recent first)
-    const sortedFlights = [...flights].sort((a, b) => b.startTime - a.startTime);
+    const sortedFlights = [...flights].sort(
+      (a, b) => b.startTime - a.startTime,
+    );
 
     // Get pilot's callsign from most recent flight
     const mostRecentFlight = sortedFlights[0];
-    const pilotCallsign = stats?.lastFlightCallsign ?? mostRecentFlight?.callsign ?? null;
+    const pilotCallsign =
+      stats?.lastFlightCallsign ?? mostRecentFlight?.callsign ?? null;
 
     // Recent flights (last 10)
     const recentFlights = sortedFlights.slice(0, 10).map((f) => ({
@@ -699,11 +723,18 @@ export const getStatsById = query({
       pilotCallsign,
       discordUsername: user.discordUsername ?? null,
       totalFlights: stats?.totalFlights ?? flights.length,
-      totalFlightTimeMs: Math.round(stats?.totalFlightTimeMs ?? fallbackTotalFlightTimeMs),
-      totalDistanceNm: Math.round(stats?.totalDistanceNm ?? fallbackTotalDistanceNm),
+      totalFlightTimeMs: Math.round(
+        stats?.totalFlightTimeMs ?? fallbackTotalFlightTimeMs,
+      ),
+      totalDistanceNm: Math.round(
+        stats?.totalDistanceNm ?? fallbackTotalDistanceNm,
+      ),
       uniqueAirports: Object.keys(airportVisits).length,
       currentStreak: stats
-        ? deriveVisibleCurrentStreak(stats.lastFlightDate, stats.streakAtLastFlight)
+        ? deriveVisibleCurrentStreak(
+            stats.lastFlightDate,
+            stats.streakAtLastFlight,
+          )
         : streaks.currentStreak,
       longestStreak: stats?.longestStreak ?? streaks.longestStreak,
       topAircraft,

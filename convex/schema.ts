@@ -98,7 +98,7 @@ export default defineSchema({
       v.literal("SID"),
       v.literal("STAR"),
       v.literal("APPROACH"),
-      v.literal("GENERAL")
+      v.literal("GENERAL"),
     ),
     chartName: v.string(),
     chartUrl: v.string(),
@@ -128,56 +128,13 @@ export default defineSchema({
     .index("by_lastSeen", ["lastSeen"]),
 
   contributorRewards: defineTable({
-    rewardType: v.union(v.literal("aircraftImages"), v.literal("airportCharts")),
+    rewardType: v.union(
+      v.literal("aircraftImages"),
+      v.literal("airportCharts"),
+    ),
     clerkId: v.string(),
     claimedAt: v.number(), // timestamp
   })
     .index("by_rewardType", ["rewardType"])
     .index("by_clerkId", ["clerkId"]),
-
-  // Pilot challenges
-  challenges: defineTable({
-    title: v.string(),
-    description: v.string(),
-    type: v.union(v.literal("weekly"), v.literal("monthly")),
-    startDate: v.number(), // UTC timestamp
-    endDate: v.number(), // UTC timestamp
-    criteria: v.object({
-      minFlights: v.optional(v.number()),
-      regions: v.optional(v.array(v.string())), // ICAO prefixes
-      uniqueAirports: v.optional(v.number()),
-      specificAirports: v.optional(v.array(v.string())),
-      minAvgDurationMs: v.optional(v.number()),
-      minTotalDurationMs: v.optional(v.number()),
-      minSingleDurationMs: v.optional(v.number()),
-      minTotalDistanceNm: v.optional(v.number()),
-      minSingleDistanceNm: v.optional(v.number()),
-      aircraftTypes: v.optional(v.array(v.string())),
-      minMaxAltitude: v.optional(v.number()),
-    }),
-    isActive: v.boolean(),
-    createdBy: v.string(), // Clerk user ID
-    createdAt: v.number(),
-    firstCompletedBy: v.optional(v.id("users")),
-    firstCompletedAt: v.optional(v.number()),
-  })
-    .index("by_isActive", ["isActive"])
-    .index("by_type", ["type"])
-    .index("by_isActive_type", ["isActive", "type"]),
-
-  challengeProgress: defineTable({
-    challengeId: v.id("challenges"),
-    userId: v.id("users"),
-    qualifyingFlightIds: v.array(v.id("flights")),
-    qualifyingFlightCount: v.number(),
-    uniqueAirportsVisited: v.array(v.string()),
-    totalDurationMs: v.number(),
-    totalDistanceNm: v.number(),
-    isCompleted: v.boolean(),
-    completedAt: v.optional(v.number()),
-  })
-    .index("by_challengeId", ["challengeId"])
-    .index("by_userId", ["userId"])
-    .index("by_challengeId_userId", ["challengeId", "userId"])
-    .index("by_challengeId_isCompleted", ["challengeId", "isCompleted"]),
 });
