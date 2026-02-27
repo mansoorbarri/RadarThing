@@ -10,7 +10,6 @@ import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { ConvexProvider } from "~/components/providers/ConvexProvider";
 import { PostHogProvider } from "~/components/providers/PostHogProvider";
-import { ContributorRewardModal } from "~/components/ui/ContributorRewardModal";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://radarthing.com"),
@@ -74,7 +73,6 @@ export default function RootLayout({
         <body suppressHydrationWarning>
           <ConvexProvider>
             <PostHogProvider>
-              <ContributorRewardModal />
               <Suspense fallback={null}>
                 <Toaster
                   theme="dark"

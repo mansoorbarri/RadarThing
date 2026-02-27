@@ -126,15 +126,4 @@ export default defineSchema({
     .index("by_clerkId", ["clerkId"])
     .index("by_callsign", ["callsign"])
     .index("by_lastSeen", ["lastSeen"]),
-
-  contributorRewards: defineTable({
-    rewardType: v.union(
-      v.literal("aircraftImages"),
-      v.literal("airportCharts"),
-    ),
-    clerkId: v.string(),
-    claimedAt: v.number(), // timestamp
-  })
-    .index("by_rewardType", ["rewardType"])
-    .index("by_clerkId", ["clerkId"]),
 });
