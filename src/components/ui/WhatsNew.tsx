@@ -13,10 +13,22 @@ import { Analytics } from "~/lib/analytics";
 const SEEN_KEY = "radarthing_whats_new_seen";
 const TOAST_KEY = "radarthing_whats_new_toast";
 
-const typeBadge: Record<ChangelogEntry["type"], { label: string; cls: string }> = {
-  new: { label: "New", cls: "bg-cyan-400/20 text-cyan-400" },
-  improvement: { label: "Improvement", cls: "bg-emerald-400/20 text-emerald-400" },
-  fix: { label: "Fix", cls: "bg-amber-400/20 text-amber-400" },
+const typeBadge: Record<
+  ChangelogEntry["type"],
+  { label: string; cls: string }
+> = {
+  new: { label: "New", cls: "bg-cyan-400/15 text-cyan-400" },
+  improvement: {
+    label: "Improvement",
+    cls: "bg-emerald-400/15 text-emerald-400",
+  },
+  fix: { label: "Fix", cls: "bg-amber-400/15 text-amber-400" },
+};
+
+const typeAccent: Record<ChangelogEntry["type"], string> = {
+  new: "bg-cyan-400",
+  improvement: "bg-emerald-400",
+  fix: "bg-amber-400",
 };
 
 export function WhatsNew({ isMobile }: { isMobile: boolean }) {
@@ -50,12 +62,16 @@ export function WhatsNew({ isMobile }: { isMobile: boolean }) {
             <Megaphone className="h-4 w-4 text-cyan-400" strokeWidth={2} />
           </div>
           <div className="flex flex-col gap-0.5">
-            <span className="text-[13px] font-semibold text-slate-100">{latest.title}</span>
-            <span className="text-xs leading-relaxed text-slate-400">{latest.description}</span>
+            <span className="text-[13px] font-semibold text-slate-100">
+              {latest.title}
+            </span>
+            <span className="text-xs leading-relaxed text-slate-400">
+              {latest.description}
+            </span>
           </div>
         </div>,
         {
-          duration: 8000,
+          duration: 4000,
           className:
             "!rounded-xl !bg-black/80 !backdrop-blur-xl !border !border-cyan-400/20 !shadow-[0_4px_24px_rgba(0,255,255,0.08)] !p-4",
           actionButtonStyle: {
@@ -110,45 +126,56 @@ export function WhatsNew({ isMobile }: { isMobile: boolean }) {
         onClick={handleToggle}
         className="relative flex cursor-pointer items-center justify-center rounded-md border border-slate-600/50 bg-black/70 p-1.5 text-slate-400 transition-all hover:border-cyan-400/50 hover:text-cyan-400 hover:shadow-[0_0_8px_rgba(0,255,255,0.3)]"
       >
-        <Megaphone className={isMobile ? "h-4 w-4" : "h-[18px] w-[18px]"} strokeWidth={1.8} />
+        <Megaphone
+          className={isMobile ? "h-4 w-4" : "h-[18px] w-[18px]"}
+          strokeWidth={1.8}
+        />
 
         {hasUnread && (
-          <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(0,255,255,0.8)]" />
+          <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(0,255,255,0.8)]" />
         )}
       </button>
 
       {open && (
         <div
-          className={`animate-fade-in-up absolute right-0 top-full z-50 mt-2 rounded-xl border border-cyan-400/30 bg-black/90 shadow-[0_0_15px_rgba(0,255,255,0.1)] backdrop-blur-xl ${isMobile ? "w-72" : "w-80"}`}
+          className={`animate-fade-in-up absolute top-full right-0 z-50 mt-2 overflow-hidden rounded-xl border border-slate-700/60 bg-slate-950/95 shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_1px_rgba(255,255,255,0.05)_inset] backdrop-blur-2xl ${isMobile ? "w-80" : "w-[22rem]"}`}
         >
-          <div className="border-b border-slate-700/50 px-4 py-3">
-            <h3 className="text-sm font-semibold text-slate-200">
+          <div className="flex items-center justify-between border-b border-slate-800/80 px-4 py-3">
+            <h3 className="text-[13px] font-semibold tracking-wide text-slate-300 uppercase">
               What&apos;s New
             </h3>
+            <span className="rounded-full bg-slate-800/80 px-2 py-0.5 text-[10px] font-medium tabular-nums text-slate-500">
+              {changelog.length} {changelog.length === 1 ? "update" : "updates"}
+            </span>
           </div>
 
-          <div className="max-h-72 overflow-y-auto p-2">
-            {changelog.map((entry) => (
+          <div className="max-h-80 overflow-y-auto overscroll-contain p-1.5">
+            {changelog.map((entry, i) => (
               <div
                 key={entry.id}
-                className="rounded-lg px-3 py-2.5 transition-colors hover:bg-cyan-400/5"
+                className={`group relative rounded-lg p-3 transition-colors duration-150 hover:bg-white/[0.03] ${i > 0 ? "mt-0.5" : ""}`}
               >
-                <div className="mb-1 flex items-center gap-2">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${typeBadge[entry.type].cls}`}
-                  >
-                    {typeBadge[entry.type].label}
-                  </span>
-                  <span className="text-[11px] text-slate-500">
-                    {entry.date}
-                  </span>
+                <div
+                  className={`absolute top-3 bottom-3 left-0 w-[3px] rounded-full transition-opacity duration-150 ${typeAccent[entry.type]} opacity-40 group-hover:opacity-100`}
+                />
+                <div className="pl-3">
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <span
+                      className={`shrink-0 rounded-md px-1.5 py-px text-[10px] font-semibold uppercase tracking-wider ${typeBadge[entry.type].cls}`}
+                    >
+                      {typeBadge[entry.type].label}
+                    </span>
+                    <span className="text-[11px] tabular-nums text-slate-600">
+                      {entry.date}
+                    </span>
+                  </div>
+                  <p className="text-[13px] leading-snug font-medium text-slate-200">
+                    {entry.title}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                    {entry.description}
+                  </p>
                 </div>
-                <p className="text-sm font-medium text-slate-300">
-                  {entry.title}
-                </p>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  {entry.description}
-                </p>
               </div>
             ))}
           </div>
