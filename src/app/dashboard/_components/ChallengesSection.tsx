@@ -3,8 +3,8 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import { Trophy, Clock, Target, Medal } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Trophy, Clock, Target, Medal, ChevronDown } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Analytics } from "~/lib/analytics";
 
 function formatTimeRemaining(endDate: number): string {
@@ -315,7 +315,16 @@ function ChallengeCard({ data }: { data: ChallengeProgressData }) {
   );
 }
 
-export function ChallengesSection({ userId }: { userId: Id<"users"> }) {
+export function ChallengesSection({
+  userId,
+  collapsible = false,
+  defaultCollapsed = false,
+}: {
+  userId: Id<"users">;
+  collapsible?: boolean;
+  defaultCollapsed?: boolean;
+}) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const challengeProgress = useQuery(api.challenges.getProgressForUser, {
     userId,
   });
@@ -334,14 +343,28 @@ export function ChallengesSection({ userId }: { userId: Id<"users"> }) {
 
   return (
     <div className="mb-8">
-      <h3 className="mb-4 font-mono text-sm font-bold uppercase tracking-wider text-slate-400">
-        ACTIVE CHALLENGES
-      </h3>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {challengeProgress.map((data) => (
-          <ChallengeCard key={data.challenge._id} data={data} />
-        ))}
-      </div>
+      {collapsible ? (
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="mb-4 flex w-full cursor-pointer items-center gap-2 font-mono text-sm font-bold uppercase tracking-wider text-slate-400 transition-colors hover:text-slate-300"
+        >
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${collapsed ? "-rotate-90" : ""}`}
+          />
+          ACTIVE CHALLENGES
+        </button>
+      ) : (
+        <h3 className="mb-4 font-mono text-sm font-bold uppercase tracking-wider text-slate-400">
+          ACTIVE CHALLENGES
+        </h3>
+      )}
+      {!collapsed && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {challengeProgress.map((data) => (
+            <ChallengeCard key={data.challenge._id} data={data} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

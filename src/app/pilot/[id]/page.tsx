@@ -280,7 +280,7 @@ function PilotPageContent() {
 
             {/* Challenge Progress */}
             <div className="mb-8">
-              <ChallengesSection userId={userId} />
+              <ChallengesSection userId={userId} collapsible defaultCollapsed />
             </div>
 
             {/* Recent Flights */}
