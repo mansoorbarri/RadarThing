@@ -11,11 +11,14 @@ import {
   Plus,
   Pencil,
   Trophy,
+  Medal,
   ToggleLeft,
   ToggleRight,
   Users,
   CalendarIcon,
+  X,
 } from "lucide-react";
+import Link from "next/link";
 import {
   Select,
   SelectContent,
@@ -102,6 +105,107 @@ interface ChallengeData {
 function utcTsToDate(ts: number): Date {
   const d = new Date(ts);
   return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+const PLACE_COLORS = [
+  "text-amber-400", // 1st - gold
+  "text-slate-300", // 2nd - silver
+  "text-amber-600", // 3rd - bronze
+];
+
+const PLACE_LABELS = ["1st", "2nd", "3rd"];
+
+function formatCompletionDate(ts?: number): string {
+  if (!ts) return "";
+  const d = new Date(ts);
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  return `${day}/${month}`;
+}
+
+function CompletersDialog({
+  challengeId,
+  challengeTitle,
+  onClose,
+}: {
+  challengeId: Id<"challenges">;
+  challengeTitle: string;
+  onClose: () => void;
+}) {
+  const completions = useQuery(api.challenges.getCompletions, { challengeId });
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="mx-4 w-full max-w-md rounded-2xl border border-white/10 bg-zinc-900 p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-white">{challengeTitle}</h3>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {!completions ? (
+          <div className="py-8 text-center font-mono text-xs text-slate-500">
+            Loading...
+          </div>
+        ) : completions.length === 0 ? (
+          <div className="py-8 text-center font-mono text-xs text-slate-500">
+            No completers yet
+          </div>
+        ) : (
+          <div className="max-h-80 space-y-1.5 overflow-y-auto pr-1">
+            {completions.map((completer, i) => (
+              <div
+                key={completer.userId}
+                className="flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors hover:bg-white/5"
+              >
+                <div className="flex items-center gap-2">
+                  {i < 3 ? (
+                    i === 0 ? (
+                      <Trophy
+                        className={`h-3.5 w-3.5 ${PLACE_COLORS[i]}`}
+                      />
+                    ) : (
+                      <Medal
+                        className={`h-3.5 w-3.5 ${PLACE_COLORS[i]}`}
+                      />
+                    )
+                  ) : (
+                    <span className="inline-flex h-3.5 w-3.5 items-center justify-center font-mono text-[9px] text-slate-500">
+                      {i + 1}
+                    </span>
+                  )}
+                  <span
+                    className={`font-mono text-xs font-bold ${i < 3 ? PLACE_COLORS[i] : "text-slate-500"}`}
+                  >
+                    {i < 3 ? PLACE_LABELS[i] : `${i + 1}th`}
+                  </span>
+                  <Link
+                    href={`/pilot/${completer.userId}`}
+                    className="font-mono text-xs text-slate-300 transition-colors hover:text-white hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {completer.callsign}
+                  </Link>
+                </div>
+                <span className="font-mono text-[10px] text-slate-600">
+                  {formatCompletionDate(completer.completedAt)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function ChallengeForm({
@@ -506,9 +610,11 @@ function ChallengeForm({
 function ChallengeRow({
   challenge,
   onEdit,
+  onViewCompleters,
 }: {
   challenge: ChallengeData;
   onEdit: () => void;
+  onViewCompleters: () => void;
 }) {
   const toggleActive = useMutation(api.challenges.deactivate);
   const completions = useQuery(api.challenges.getCompletions, {
@@ -569,10 +675,13 @@ function ChallengeRow({
             {formatDate(challenge.startDate)} -{" "}
             {formatDate(challenge.endDate)}
           </span>
-          <span className="flex items-center gap-1">
+          <button
+            onClick={onViewCompleters}
+            className="flex cursor-pointer items-center gap-1 transition-colors hover:text-slate-300"
+          >
             <Users className="h-3 w-3" />
             {completions?.length ?? 0} completions
-          </span>
+          </button>
         </div>
       </div>
       <div className="flex items-center gap-1">
@@ -606,6 +715,10 @@ export function ChallengesTab() {
   const [editingChallenge, setEditingChallenge] = useState<
     ChallengeData | undefined
   >();
+  const [viewingCompletersFor, setViewingCompletersFor] = useState<{
+    id: Id<"challenges">;
+    title: string;
+  } | null>(null);
 
   const closeForm = () => {
     setShowForm(false);
@@ -679,9 +792,22 @@ export function ChallengesTab() {
               key={challenge._id}
               challenge={challenge}
               onEdit={() => handleEdit(challenge)}
+              onViewCompleters={() =>
+                setViewingCompletersFor({
+                  id: challenge._id,
+                  title: challenge.title,
+                })
+              }
             />
           ))}
         </div>
+      )}
+      {viewingCompletersFor && (
+        <CompletersDialog
+          challengeId={viewingCompletersFor.id}
+          challengeTitle={viewingCompletersFor.title}
+          onClose={() => setViewingCompletersFor(null)}
+        />
       )}
     </div>
   );
