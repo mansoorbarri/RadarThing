@@ -2,7 +2,9 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { isValidAirlineCode } from "./lib/airlineCodes";
 
-function parseDiscordWebhook(webhookUrl: string): { id: string; token: string } | null {
+function parseDiscordWebhook(
+  webhookUrl: string,
+): { id: string; token: string } | null {
   try {
     const url = new URL(webhookUrl);
     const match = /\/api\/webhooks\/([^/]+)\/([^/]+)/.exec(url.pathname);
@@ -28,7 +30,7 @@ async function deleteDiscordMessage(messageId: string | undefined) {
   try {
     await fetch(
       `https://discord.com/api/webhooks/${parsed.id}/${parsed.token}/messages/${messageId}`,
-      { method: "DELETE" }
+      { method: "DELETE" },
     );
   } catch (error) {
     console.error("Failed to delete Discord missing-image message:", error);
@@ -64,7 +66,7 @@ export const exists = query({
       .withIndex("by_airline_aircraft", (q) =>
         q
           .eq("airlineCode", args.airlineCode.toUpperCase())
-          .eq("aircraftType", args.aircraftType.toUpperCase())
+          .eq("aircraftType", args.aircraftType.toUpperCase()),
       )
       .first();
 
@@ -84,7 +86,7 @@ export const get = query({
       .withIndex("by_airline_aircraft", (q) =>
         q
           .eq("airlineCode", args.airlineCode.toUpperCase())
-          .eq("aircraftType", args.aircraftType.toUpperCase())
+          .eq("aircraftType", args.aircraftType.toUpperCase()),
       )
       .first();
 
@@ -117,7 +119,7 @@ export const create = mutation({
     const existing = await ctx.db
       .query("missingImageNotifications")
       .withIndex("by_airline_aircraft", (q) =>
-        q.eq("airlineCode", airlineCode).eq("aircraftType", aircraftType)
+        q.eq("airlineCode", airlineCode).eq("aircraftType", aircraftType),
       )
       .first();
 
@@ -147,7 +149,7 @@ export const updateNote = mutation({
       .withIndex("by_airline_aircraft", (q) =>
         q
           .eq("airlineCode", args.airlineCode.toUpperCase())
-          .eq("aircraftType", args.aircraftType.toUpperCase())
+          .eq("aircraftType", args.aircraftType.toUpperCase()),
       )
       .first();
 
@@ -179,7 +181,7 @@ export const remove = mutation({
       .withIndex("by_airline_aircraft", (q) =>
         q
           .eq("airlineCode", args.airlineCode.toUpperCase())
-          .eq("aircraftType", args.aircraftType.toUpperCase())
+          .eq("aircraftType", args.aircraftType.toUpperCase()),
       )
       .first();
 
@@ -212,7 +214,7 @@ export const removeByCodes = mutation({
     const iataNotification = await ctx.db
       .query("missingImageNotifications")
       .withIndex("by_airline_aircraft", (q) =>
-        q.eq("airlineCode", iata).eq("aircraftType", aircraftType)
+        q.eq("airlineCode", iata).eq("aircraftType", aircraftType),
       )
       .first();
 
@@ -227,7 +229,7 @@ export const removeByCodes = mutation({
       const icaoNotification = await ctx.db
         .query("missingImageNotifications")
         .withIndex("by_airline_aircraft", (q) =>
-          q.eq("airlineCode", icao).eq("aircraftType", aircraftType)
+          q.eq("airlineCode", icao).eq("aircraftType", aircraftType),
         )
         .first();
 
@@ -273,7 +275,7 @@ export const setDiscordMessageId = mutation({
       .withIndex("by_airline_aircraft", (q) =>
         q
           .eq("airlineCode", args.airlineCode.toUpperCase())
-          .eq("aircraftType", args.aircraftType.toUpperCase())
+          .eq("aircraftType", args.aircraftType.toUpperCase()),
       )
       .first();
 

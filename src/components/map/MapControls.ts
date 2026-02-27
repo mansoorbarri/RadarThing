@@ -132,10 +132,7 @@ export class RadarModeControl extends L.Control {
   private _boundClick: () => void;
   private _currentState = false;
 
-  constructor(
-    options: L.ControlOptions,
-    toggleRadarMode: () => void,
-  ) {
+  constructor(options: L.ControlOptions, toggleRadarMode: () => void) {
     super(options);
     this._toggleRadarMode = toggleRadarMode;
     this._boundClick = () => {
@@ -209,10 +206,7 @@ export class OSMControl extends L.Control {
   private _boundClick: () => void;
   private _currentState = false;
 
-  constructor(
-    options: L.ControlOptions,
-    toggleOSM: () => void,
-  ) {
+  constructor(options: L.ControlOptions, toggleOSM: () => void) {
     super(options);
     this._toggleOSM = toggleOSM;
     this._boundClick = () => {
@@ -248,10 +242,7 @@ export class OpenAIPControl extends L.Control {
   private _boundClick: () => void;
   private _currentState = false;
 
-  constructor(
-    options: L.ControlOptions,
-    toggleAIP: () => void,
-  ) {
+  constructor(options: L.ControlOptions, toggleAIP: () => void) {
     super(options);
     this._toggleAIP = toggleAIP;
     this._boundClick = () => {

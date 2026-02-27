@@ -37,7 +37,9 @@ export function AtcPlayer({ icao, onClose, onlineAtc }: AtcPlayerProps) {
             </span>
           </div>
           <p className="mb-1 text-sm font-medium text-white">Live ATC Online</p>
-          <p className="text-xs text-green-300/80">Controller: {onlineAtc.user}</p>
+          <p className="text-xs text-green-300/80">
+            Controller: {onlineAtc.user}
+          </p>
         </div>
 
         {/* Actions */}
@@ -61,7 +63,11 @@ export function AtcPlayer({ icao, onClose, onlineAtc }: AtcPlayerProps) {
   const searchUrl = `https://www.liveatc.net/search/?icao=${icao}`;
 
   const openLiveATC = () => {
-    window.open(searchUrl, "liveatc", "width=800,height=600,menubar=no,toolbar=no");
+    window.open(
+      searchUrl,
+      "liveatc",
+      "width=800,height=600,menubar=no,toolbar=no",
+    );
   };
 
   return (

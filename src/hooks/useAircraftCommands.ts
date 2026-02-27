@@ -60,7 +60,7 @@ export function useAircraftCommands() {
         targetId,
         command: { type: "setSpeed", value: speed },
       }),
-    [sendCommand]
+    [sendCommand],
   );
 
   const setAltitude = useCallback(
@@ -69,7 +69,7 @@ export function useAircraftCommands() {
         targetId,
         command: { type: "setAltitude", value: altitude },
       }),
-    [sendCommand]
+    [sendCommand],
   );
 
   const setHeading = useCallback(
@@ -78,7 +78,7 @@ export function useAircraftCommands() {
         targetId,
         command: { type: "setHeading", value: heading },
       }),
-    [sendCommand]
+    [sendCommand],
   );
 
   const setVS = useCallback(
@@ -87,7 +87,7 @@ export function useAircraftCommands() {
         targetId,
         command: { type: "setVS", value: vspeed },
       }),
-    [sendCommand]
+    [sendCommand],
   );
 
   const setSquawk = useCallback(
@@ -96,7 +96,7 @@ export function useAircraftCommands() {
         targetId,
         command: { type: "setSquawk", value: squawk },
       }),
-    [sendCommand]
+    [sendCommand],
   );
 
   const setFlaps = useCallback(
@@ -105,7 +105,7 @@ export function useAircraftCommands() {
         targetId,
         command: { type: "setFlaps", value: flaps },
       }),
-    [sendCommand]
+    [sendCommand],
   );
 
   const disableNav = useCallback(
@@ -114,7 +114,7 @@ export function useAircraftCommands() {
         targetId,
         command: { type: "disableNav", value: true },
       }),
-    [sendCommand]
+    [sendCommand],
   );
 
   const toggleAutopilot = useCallback(
@@ -123,7 +123,7 @@ export function useAircraftCommands() {
         targetId,
         command: { type: "toggleAutopilot", value: enabled },
       }),
-    [sendCommand]
+    [sendCommand],
   );
 
   return {

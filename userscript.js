@@ -55,13 +55,13 @@
           if (info) {
             info.sqk = String(cmd.value);
             window.dispatchEvent(
-              new CustomEvent("atc-data-sync", { detail: info })
+              new CustomEvent("atc-data-sync", { detail: info }),
             );
             // Also update the squawk input field in the UI
             window.dispatchEvent(
               new CustomEvent("atc-squawk-update", {
                 detail: { squawk: String(cmd.value) },
-              })
+              }),
             );
           }
           break;
@@ -73,7 +73,9 @@
             const flapsSteps = geofs.animation?.values?.flapsSteps || maxPos;
             const notch = Math.round(Number(cmd.value));
             if (notch < 0 || notch > flapsSteps) {
-              console.warn(`[RadarThing] setFlaps - invalid notch ${notch}, must be 0-${flapsSteps}`);
+              console.warn(
+                `[RadarThing] setFlaps - invalid notch ${notch}, must be 0-${flapsSteps}`,
+              );
               break;
             }
             // Convert notch to actual position: notch/steps * maxPosition
@@ -93,7 +95,10 @@
         case "toggleAutopilot":
           if (cmd.value && typeof geofs.autopilot.turnOn === "function") {
             geofs.autopilot.turnOn();
-          } else if (!cmd.value && typeof geofs.autopilot.turnOff === "function") {
+          } else if (
+            !cmd.value &&
+            typeof geofs.autopilot.turnOff === "function"
+          ) {
             geofs.autopilot.turnOff();
           }
           break;
@@ -106,14 +111,19 @@
       window.dispatchEvent(
         new CustomEvent("radarthing-command-executed", {
           detail: { type: cmd.type, value: cmd.value, success: true },
-        })
+        }),
       );
     } catch (err) {
       console.error("[RadarThing] Command execution error:", err);
       window.dispatchEvent(
         new CustomEvent("radarthing-command-executed", {
-          detail: { type: cmd.type, value: cmd.value, success: false, error: err.message },
-        })
+          detail: {
+            type: cmd.type,
+            value: cmd.value,
+            success: false,
+            error: err.message,
+          },
+        }),
       );
     }
   }
@@ -126,7 +136,9 @@
     if (!id) return;
 
     try {
-      const res = await fetch(`${API_BASE}/api/commands/${encodeURIComponent(id)}`);
+      const res = await fetch(
+        `${API_BASE}/api/commands/${encodeURIComponent(id)}`,
+      );
       if (!res.ok) return;
 
       const data = await res.json();
@@ -194,7 +206,9 @@
         if (data.finalized) {
           console.log(`[RadarThing] Flight ended and saved: ${data.flightNo}`);
         } else {
-          console.log(`[RadarThing] No active session to end: ${data.reason || "unknown"}`);
+          console.log(
+            `[RadarThing] No active session to end: ${data.reason || "unknown"}`,
+          );
         }
       } else {
         console.error(`[RadarThing] End flight request failed: ${res.status}`);
@@ -260,7 +274,10 @@
       vspeed: Math.floor(geofs.animation?.values?.verticalSpeed || 0),
       navMode: geofs.autopilot?.mode === "NAV",
       flapsPosition: controls?.flaps?.position || 0,
-      flapsMaxPosition: geofs.animation?.values?.flapsSteps || controls?.flaps?.maxPosition || 0,
+      flapsMaxPosition:
+        geofs.animation?.values?.flapsSteps ||
+        controls?.flaps?.maxPosition ||
+        0,
     };
 
     fetch(`${API_BASE}/api/atc/position`, {

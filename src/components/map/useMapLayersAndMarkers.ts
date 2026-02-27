@@ -52,11 +52,7 @@ if (typeof document !== "undefined") {
 }
 
 // Smoothly animate marker to new position (or jump if returning from hidden tab)
-function slideTo(
-  marker: L.Marker,
-  destLat: number,
-  destLng: number,
-) {
+function slideTo(marker: L.Marker, destLat: number, destLng: number) {
   // Cancel any existing animation for this marker
   const existingAnimation = activeAnimations.get(marker);
   if (existingAnimation) {
@@ -138,7 +134,10 @@ interface UseMapLayersAndMarkersProps {
   selectedAirport?: Airport;
   currentSelectedAircraftRef: React.MutableRefObject<string | null>;
   drawFlightPlan: (aircraft: PositionUpdate, shouldZoom?: boolean) => void;
-  onAircraftSelect: (aircraft: PositionUpdate | null, ctrlKey?: boolean) => void;
+  onAircraftSelect: (
+    aircraft: PositionUpdate | null,
+    ctrlKey?: boolean,
+  ) => void;
   onAirportSelect?: (airport: Airport) => void;
   showTags: boolean;
   showConflicts: boolean;
@@ -283,9 +282,7 @@ function detectConflicts(aircrafts: PositionUpdate[]): ConflictAlert[] {
       const altitudeB = toFiniteNumber(aircraftB.altMSL ?? aircraftB.alt, 0);
       const vSpeedB = toFiniteNumber(aircraftB.vspeed, 0) / 60;
       const verticalSeparationFt = Math.abs(
-        altitudeB +
-          vSpeedB * timeToCpa -
-          (altitudeA + vSpeedA * timeToCpa),
+        altitudeB + vSpeedB * timeToCpa - (altitudeA + vSpeedA * timeToCpa),
       );
 
       if (verticalSeparationFt > VERTICAL_THRESHOLD_FT) {
@@ -308,7 +305,10 @@ function detectConflicts(aircrafts: PositionUpdate[]): ConflictAlert[] {
         horizontalSeparationNm,
         verticalSeparationFt,
         timeToCpaMinutes: timeToCpa,
-        severity: getConflictSeverity(horizontalSeparationNm, verticalSeparationFt),
+        severity: getConflictSeverity(
+          horizontalSeparationNm,
+          verticalSeparationFt,
+        ),
         cpaMidpoint: [cpaLat, cpaLon],
       });
     }
@@ -475,7 +475,9 @@ export const useMapLayersAndMarkers = ({
   useEffect(() => {
     if (!aircraftMarkersLayer.current || !mapReady) return;
 
-    const currentAircraftIds = new Set(aircrafts.map((ac) => ac.callsign || ac.id));
+    const currentAircraftIds = new Set(
+      aircrafts.map((ac) => ac.callsign || ac.id),
+    );
     const existingMarkers = markersRef.current;
 
     // Remove markers for aircraft that are no longer present
@@ -497,7 +499,12 @@ export const useMapLayersAndMarkers = ({
       const isSelected = selectedIdsSet.has(id);
       const selectedIdForIcon = isSelected ? id : null;
       const icon = isRadarMode
-        ? getRadarAircraftDivIcon(aircraft, selectedIdForIcon, showTags, isMobile)
+        ? getRadarAircraftDivIcon(
+            aircraft,
+            selectedIdForIcon,
+            showTags,
+            isMobile,
+          )
         : getAircraftDivIcon(aircraft, selectedIdForIcon, showTags, isMobile);
 
       const existingMarker = existingMarkers.get(id);
@@ -537,10 +544,11 @@ export const useMapLayersAndMarkers = ({
         const aircraftId = id;
         marker.on("click", (e) => {
           L.DomEvent.stopPropagation(e);
-          const ctrlKey = e.originalEvent?.ctrlKey || e.originalEvent?.metaKey || false;
+          const ctrlKey =
+            e.originalEvent?.ctrlKey || e.originalEvent?.metaKey || false;
           // Get the latest aircraft data from the ref
           const currentAircraft = aircraftsRef.current.find(
-            (ac) => (ac.callsign || ac.id) === aircraftId
+            (ac) => (ac.callsign || ac.id) === aircraftId,
           );
           if (currentAircraft) {
             drawFlightPlanRef.current(currentAircraft, true);
@@ -578,12 +586,21 @@ export const useMapLayersAndMarkers = ({
       return;
     }
 
-    const conflicts = detectConflicts(aircrafts).slice(0, MAX_DISPLAYED_CONFLICTS);
+    const conflicts = detectConflicts(aircrafts).slice(
+      0,
+      MAX_DISPLAYED_CONFLICTS,
+    );
     onConflictsChange?.(
       conflicts.map((conflict) => ({
         id: `${conflict.aircraftA.id}-${conflict.aircraftB.id}`,
-        callsignA: conflict.aircraftA.callsign || conflict.aircraftA.flightNo || conflict.aircraftA.id,
-        callsignB: conflict.aircraftB.callsign || conflict.aircraftB.flightNo || conflict.aircraftB.id,
+        callsignA:
+          conflict.aircraftA.callsign ||
+          conflict.aircraftA.flightNo ||
+          conflict.aircraftA.id,
+        callsignB:
+          conflict.aircraftB.callsign ||
+          conflict.aircraftB.flightNo ||
+          conflict.aircraftB.id,
         severity: conflict.severity,
         horizontalSeparationNm: conflict.horizontalSeparationNm,
         verticalSeparationFt: conflict.verticalSeparationFt,
@@ -639,9 +656,9 @@ export const useMapLayersAndMarkers = ({
     if (!map || !airportMarkersLayer.current) return;
 
     // Inject pulse animation CSS once
-    if (!document.getElementById('online-atc-pulse-style')) {
-      const style = document.createElement('style');
-      style.id = 'online-atc-pulse-style';
+    if (!document.getElementById("online-atc-pulse-style")) {
+      const style = document.createElement("style");
+      style.id = "online-atc-pulse-style";
       style.textContent = `
         @keyframes atc-pulse {
           0%, 100% { box-shadow: 0 0 6px rgba(34, 197, 94, 0.4); }
@@ -652,7 +669,9 @@ export const useMapLayersAndMarkers = ({
     }
 
     const onlineIcaoSet = new Set((onlineAirports || []).map((a) => a.icao));
-    const onlineByIcao = new Map((onlineAirports || []).map((a) => [a.icao, a]));
+    const onlineByIcao = new Map(
+      (onlineAirports || []).map((a) => [a.icao, a]),
+    );
 
     const updateAirportMarkers = () => {
       if (!airportMarkersLayer.current) return;
@@ -674,7 +693,12 @@ export const useMapLayersAndMarkers = ({
         const isOnline = onlineIcaoSet.has(airport.icao);
 
         // Skip non-online airports when zoomed out or outside view
-        if (!isOnline && (!shouldShowAllAirports || !bounds.contains([airport.lat, airport.lon]))) return;
+        if (
+          !isOnline &&
+          (!shouldShowAllAirports ||
+            !bounds.contains([airport.lat, airport.lon]))
+        )
+          return;
         // Skip online airports outside view
         if (isOnline && !bounds.contains([airport.lat, airport.lon])) return;
 
@@ -689,28 +713,30 @@ export const useMapLayersAndMarkers = ({
         let boxShadow: string;
 
         if (isOnline) {
-          bgColor = '#22c55e';
-          borderColor = isSelected ? '#22c55e' : 'rgba(34, 197, 94, 0.5)';
+          bgColor = "#22c55e";
+          borderColor = isSelected ? "#22c55e" : "rgba(34, 197, 94, 0.5)";
           boxShadow = isSelected
-            ? '0 0 14px rgba(34, 197, 94, 0.7)'
-            : '0 0 6px rgba(34, 197, 94, 0.4); animation: atc-pulse 2s ease-in-out infinite';
+            ? "0 0 14px rgba(34, 197, 94, 0.7)"
+            : "0 0 6px rgba(34, 197, 94, 0.4); animation: atc-pulse 2s ease-in-out infinite";
         } else if (isSelected) {
-          bgColor = isRadarMode ? '#22d3ee' : '#3b82f6';
-          borderColor = isRadarMode ? '#22d3ee' : '#3b82f6';
-          boxShadow = '0 0 12px rgba(34, 211, 238, 0.6)';
+          bgColor = isRadarMode ? "#22d3ee" : "#3b82f6";
+          borderColor = isRadarMode ? "#22d3ee" : "#3b82f6";
+          boxShadow = "0 0 12px rgba(34, 211, 238, 0.6)";
         } else {
-          bgColor = isRadarMode ? '#06b6d4' : '#60a5fa';
-          borderColor = isRadarMode ? 'rgba(6, 182, 212, 0.4)' : 'rgba(96, 165, 250, 0.4)';
-          boxShadow = '0 0 6px rgba(6, 182, 212, 0.3)';
+          bgColor = isRadarMode ? "#06b6d4" : "#60a5fa";
+          borderColor = isRadarMode
+            ? "rgba(6, 182, 212, 0.4)"
+            : "rgba(96, 165, 250, 0.4)";
+          boxShadow = "0 0 6px rgba(6, 182, 212, 0.3)";
         }
 
-        const dotSize = isSelected || isOnline ? '12px' : '8px';
+        const dotSize = isSelected || isOnline ? "12px" : "8px";
         const iconDim = isSelected || isOnline ? 16 : 12;
         const anchorDim = isSelected || isOnline ? 8 : 6;
 
         // Create custom icon based on selection state
         const icon = L.divIcon({
-          className: 'custom-airport-marker',
+          className: "custom-airport-marker",
           html: `
             <div style="
               width: ${dotSize};
@@ -774,15 +800,15 @@ export const useMapLayersAndMarkers = ({
         // Bind hover tooltip for online ATC airports
         if (isOnline && onlineEntry) {
           marker.bindTooltip(`ATC Online — ${onlineEntry.user}`, {
-            direction: 'top',
+            direction: "top",
             offset: [0, -10],
             opacity: 0.95,
-            className: 'atc-online-tooltip',
+            className: "atc-online-tooltip",
           });
         }
 
         // Add click handler to select airport
-        marker.on('click', () => {
+        marker.on("click", () => {
           if (onAirportSelectRef.current) {
             onAirportSelectRef.current(airport);
           }
@@ -794,12 +820,19 @@ export const useMapLayersAndMarkers = ({
     updateAirportMarkers();
 
     // Update markers when zoom changes
-    map.on('zoomend', updateAirportMarkers);
-    map.on('moveend', updateAirportMarkers);
+    map.on("zoomend", updateAirportMarkers);
+    map.on("moveend", updateAirportMarkers);
 
     return () => {
-      map.off('zoomend', updateAirportMarkers);
-      map.off('moveend', updateAirportMarkers);
+      map.off("zoomend", updateAirportMarkers);
+      map.off("moveend", updateAirportMarkers);
     };
-  }, [airports, isRadarMode, airportMarkersLayer, mapInstance, selectedAirport, onlineAirports]);
+  }, [
+    airports,
+    isRadarMode,
+    airportMarkersLayer,
+    mapInstance,
+    selectedAirport,
+    onlineAirports,
+  ]);
 };

@@ -14,7 +14,18 @@ import {
   resolveImageConflict,
   type AircraftImage,
 } from "~/app/actions/aircraft-images";
-import { Trash2, Check, X, Plane, Clock, CheckCircle, Search, CheckSquare, Square, Pencil } from "lucide-react";
+import {
+  Trash2,
+  Check,
+  X,
+  Plane,
+  Clock,
+  CheckCircle,
+  Search,
+  CheckSquare,
+  Square,
+  Pencil,
+} from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import { RejectModal } from "./RejectModal";
@@ -69,12 +80,21 @@ function EditableCodes({
   }, [initialIata, initialIcao, initialAircraftType, isEditing]);
 
   const handleSave = async () => {
-    if (iata === initialIata && icao === initialIcao && aircraftType === initialAircraftType) {
+    if (
+      iata === initialIata &&
+      icao === initialIcao &&
+      aircraftType === initialAircraftType
+    ) {
       setIsEditing(false);
       return;
     }
     setIsSaving(true);
-    const result = await updateAircraftImageCodes(imageId, iata, icao, aircraftType);
+    const result = await updateAircraftImageCodes(
+      imageId,
+      iata,
+      icao,
+      aircraftType,
+    );
     setIsSaving(false);
     if (result.success) {
       toast.success("Details updated");
@@ -102,7 +122,7 @@ function EditableCodes({
 
   if (isEditing) {
     return (
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex flex-wrap items-center gap-2">
         <input
           type="text"
           value={iata}
@@ -152,13 +172,25 @@ function EditableCodes({
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap group/codes">
-      {initialIata && <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">{initialIata}</span>}
-      {initialIcao && <span className="rounded-md bg-blue-500/20 px-2 py-1 font-mono text-sm font-bold text-blue-400">{initialIcao}</span>}
-      {initialAircraftType && <span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">{initialAircraftType}</span>}
+    <div className="group/codes flex flex-wrap items-center gap-2">
+      {initialIata && (
+        <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">
+          {initialIata}
+        </span>
+      )}
+      {initialIcao && (
+        <span className="rounded-md bg-blue-500/20 px-2 py-1 font-mono text-sm font-bold text-blue-400">
+          {initialIcao}
+        </span>
+      )}
+      {initialAircraftType && (
+        <span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">
+          {initialAircraftType}
+        </span>
+      )}
       <button
         onClick={() => setIsEditing(true)}
-        className="cursor-pointer rounded-md p-1 text-slate-600 opacity-0 transition-all hover:bg-white/10 hover:text-cyan-400 group-hover/codes:opacity-100"
+        className="cursor-pointer rounded-md p-1 text-slate-600 opacity-0 transition-all group-hover/codes:opacity-100 hover:bg-white/10 hover:text-cyan-400"
         title="Edit details"
       >
         <Pencil className="h-3.5 w-3.5" />
@@ -184,18 +216,27 @@ export function AircraftImagesTab() {
   const [rejectReason, setRejectReason] = useState("");
   const [rejectTargetIds, setRejectTargetIds] = useState<string[]>([]);
   const [conflictModalOpen, setConflictModalOpen] = useState(false);
-  const [conflictPendingImage, setConflictPendingImage] = useState<AircraftImage | null>(null);
-  const [conflictExistingImage, setConflictExistingImage] = useState<AircraftImage | null>(null);
+  const [conflictPendingImage, setConflictPendingImage] =
+    useState<AircraftImage | null>(null);
+  const [conflictExistingImage, setConflictExistingImage] =
+    useState<AircraftImage | null>(null);
   const [conflictLoading, setConflictLoading] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
-  const [deleteTargetInfo, setDeleteTargetInfo] = useState<{ iata: string; icao: string; aircraft: string } | null>(null);
+  const [deleteTargetInfo, setDeleteTargetInfo] = useState<{
+    iata: string;
+    icao: string;
+    aircraft: string;
+  } | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
   const [bulkDeleteTargetIds, setBulkDeleteTargetIds] = useState<string[]>([]);
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
 
-  const allImages = useMemo(() => [...pendingImages, ...approvedImages], [pendingImages, approvedImages]);
+  const allImages = useMemo(
+    () => [...pendingImages, ...approvedImages],
+    [pendingImages, approvedImages],
+  );
 
   const uniqueImageAirlines = useMemo(() => {
     const airlinesMap = new Map<string, { iata: string; icao: string }>();
@@ -203,12 +244,18 @@ export function AircraftImagesTab() {
       const key = img.airlineIata || img.airlineIcao;
       if (!key) return;
       if (!matchesImageSearch(img, imageSearchQuery)) return;
-      if (imageAircraftFilter && img.aircraftType !== imageAircraftFilter) return;
+      if (imageAircraftFilter && img.aircraftType !== imageAircraftFilter)
+        return;
       if (!airlinesMap.has(key)) {
-        airlinesMap.set(key, { iata: img.airlineIata || "", icao: img.airlineIcao || "" });
+        airlinesMap.set(key, {
+          iata: img.airlineIata || "",
+          icao: img.airlineIcao || "",
+        });
       }
     });
-    return Array.from(airlinesMap.values()).sort((a, b) => (a.icao || a.iata).localeCompare(b.icao || b.iata));
+    return Array.from(airlinesMap.values()).sort((a, b) =>
+      (a.icao || a.iata).localeCompare(b.icao || b.iata),
+    );
   }, [allImages, imageSearchQuery, imageAircraftFilter]);
 
   const uniqueImageAircraftTypes = useMemo(() => {
@@ -216,36 +263,58 @@ export function AircraftImagesTab() {
     allImages.forEach((img) => {
       if (!img.aircraftType) return;
       if (!matchesImageSearch(img, imageSearchQuery)) return;
-      if (imageAirlineFilter && img.airlineIata !== imageAirlineFilter && img.airlineIcao !== imageAirlineFilter) return;
+      if (
+        imageAirlineFilter &&
+        img.airlineIata !== imageAirlineFilter &&
+        img.airlineIcao !== imageAirlineFilter
+      )
+        return;
       types.add(img.aircraftType);
     });
     return Array.from(types).sort();
   }, [allImages, imageSearchQuery, imageAirlineFilter]);
 
   useEffect(() => {
-    if (imageAirlineFilter && !uniqueImageAirlines.some((a) => a.iata === imageAirlineFilter || a.icao === imageAirlineFilter)) {
+    if (
+      imageAirlineFilter &&
+      !uniqueImageAirlines.some(
+        (a) => a.iata === imageAirlineFilter || a.icao === imageAirlineFilter,
+      )
+    ) {
       setImageAirlineFilter("");
     }
   }, [uniqueImageAirlines, imageAirlineFilter]);
 
   useEffect(() => {
-    if (imageAircraftFilter && !uniqueImageAircraftTypes.includes(imageAircraftFilter)) {
+    if (
+      imageAircraftFilter &&
+      !uniqueImageAircraftTypes.includes(imageAircraftFilter)
+    ) {
       setImageAircraftFilter("");
     }
   }, [uniqueImageAircraftTypes, imageAircraftFilter]);
 
-  const hasActiveImageFilters = imageSearchQuery || imageAirlineFilter || imageAircraftFilter;
+  const hasActiveImageFilters =
+    imageSearchQuery || imageAirlineFilter || imageAircraftFilter;
 
   const filterImages = (images: typeof pendingImages) => {
     return images
       .filter((image) => {
-        if (imageAirlineFilter && image.airlineIata !== imageAirlineFilter && image.airlineIcao !== imageAirlineFilter) return false;
-        if (imageAircraftFilter && image.aircraftType !== imageAircraftFilter) return false;
+        if (
+          imageAirlineFilter &&
+          image.airlineIata !== imageAirlineFilter &&
+          image.airlineIcao !== imageAirlineFilter
+        )
+          return false;
+        if (imageAircraftFilter && image.aircraftType !== imageAircraftFilter)
+          return false;
         if (!matchesImageSearch(image, imageSearchQuery)) return false;
         return true;
       })
       .sort((a, b) => {
-        const airlineCompare = (a.airlineIata || "").localeCompare(b.airlineIata || "");
+        const airlineCompare = (a.airlineIata || "").localeCompare(
+          b.airlineIata || "",
+        );
         if (airlineCompare !== 0) return airlineCompare;
         return (a.aircraftType || "").localeCompare(b.aircraftType || "");
       });
@@ -264,12 +333,20 @@ export function AircraftImagesTab() {
     setActionLoading(id);
     const result = await approveAircraftImage(id);
     if (result.success) {
-      setSelectedImages((prev) => { const next = new Set(prev); next.delete(id); return next; });
+      setSelectedImages((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       toast.success("Image approved");
     } else if (result.hasConflict) {
       // Conflict detected - fetch full details and show modal
       const conflictCheck = await checkApprovalConflict(id);
-      if (conflictCheck.hasConflict && conflictCheck.pendingImage && conflictCheck.existingImage) {
+      if (
+        conflictCheck.hasConflict &&
+        conflictCheck.pendingImage &&
+        conflictCheck.existingImage
+      ) {
         setConflictPendingImage(conflictCheck.pendingImage);
         setConflictExistingImage(conflictCheck.existingImage);
         setConflictModalOpen(true);
@@ -285,10 +362,17 @@ export function AircraftImagesTab() {
   async function handleConflictKeepPending() {
     if (!conflictPendingImage || !conflictExistingImage) return;
     setConflictLoading(true);
-    const result = await resolveImageConflict(conflictPendingImage.id, conflictExistingImage.id);
+    const result = await resolveImageConflict(
+      conflictPendingImage.id,
+      conflictExistingImage.id,
+    );
     if (result.success) {
       toast.success("New image approved, existing image removed");
-      setSelectedImages((prev) => { const next = new Set(prev); next.delete(conflictPendingImage.id); return next; });
+      setSelectedImages((prev) => {
+        const next = new Set(prev);
+        next.delete(conflictPendingImage.id);
+        return next;
+      });
     } else {
       toast.error(result.error || "Failed to resolve conflict");
     }
@@ -301,10 +385,17 @@ export function AircraftImagesTab() {
   async function handleConflictKeepExisting() {
     if (!conflictPendingImage || !conflictExistingImage) return;
     setConflictLoading(true);
-    const result = await resolveImageConflict(conflictExistingImage.id, conflictPendingImage.id);
+    const result = await resolveImageConflict(
+      conflictExistingImage.id,
+      conflictPendingImage.id,
+    );
     if (result.success) {
       toast.success("Existing image kept, pending image rejected");
-      setSelectedImages((prev) => { const next = new Set(prev); next.delete(conflictPendingImage.id); return next; });
+      setSelectedImages((prev) => {
+        const next = new Set(prev);
+        next.delete(conflictPendingImage.id);
+        return next;
+      });
     } else {
       toast.error(result.error || "Failed to resolve conflict");
     }
@@ -327,7 +418,10 @@ export function AircraftImagesTab() {
   }
 
   async function handleRejectConfirm() {
-    if (!rejectReason.trim()) { toast.error("Please provide a reason for rejection"); return; }
+    if (!rejectReason.trim()) {
+      toast.error("Please provide a reason for rejection");
+      return;
+    }
     setRejectModalOpen(false);
 
     if (rejectTargetIds.length === 1 && rejectTargetIds[0]) {
@@ -335,7 +429,11 @@ export function AircraftImagesTab() {
       setActionLoading(targetId);
       const result = await rejectAircraftImage(targetId, rejectReason);
       if (result.success) {
-        setSelectedImages((prev) => { const next = new Set(prev); next.delete(targetId); return next; });
+        setSelectedImages((prev) => {
+          const next = new Set(prev);
+          next.delete(targetId);
+          return next;
+        });
         toast.success("Image rejected");
       } else {
         toast.error(result.error || "Failed to reject image");
@@ -343,11 +441,16 @@ export function AircraftImagesTab() {
       setActionLoading(null);
     } else if (rejectTargetIds.length > 1) {
       setBulkLoading(true);
-      const result = await bulkRejectAircraftImages(rejectTargetIds, rejectReason);
+      const result = await bulkRejectAircraftImages(
+        rejectTargetIds,
+        rejectReason,
+      );
       if (result.rejected > 0) {
         setSelectedImages(new Set());
         if (result.failed > 0) {
-          toast.warning(`Rejected ${result.rejected} images, ${result.failed} failed`);
+          toast.warning(
+            `Rejected ${result.rejected} images, ${result.failed} failed`,
+          );
         } else {
           toast.success(`Rejected ${result.rejected} images`);
         }
@@ -360,7 +463,12 @@ export function AircraftImagesTab() {
     setRejectReason("");
   }
 
-  function openDeleteModal(id: string, iata: string, icao: string, aircraft: string) {
+  function openDeleteModal(
+    id: string,
+    iata: string,
+    icao: string,
+    aircraft: string,
+  ) {
     setDeleteTargetId(id);
     setDeleteTargetInfo({ iata, icao, aircraft });
     setDeleteModalOpen(true);
@@ -388,11 +496,19 @@ export function AircraftImagesTab() {
   }
 
   function toggleSelect(id: string) {
-    setSelectedImages((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+    setSelectedImages((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
   function selectAllVisible() {
-    const images = imageSubTab === "pending" ? filteredPendingImages : filteredApprovedImages;
+    const images =
+      imageSubTab === "pending"
+        ? filteredPendingImages
+        : filteredApprovedImages;
     setSelectedImages(new Set(images.map((img) => img.id)));
   }
 
@@ -408,7 +524,9 @@ export function AircraftImagesTab() {
     if (result.approved > 0) {
       setSelectedImages(new Set());
       if (result.failed > 0) {
-        toast.warning(`Approved ${result.approved} images, ${result.failed} failed`);
+        toast.warning(
+          `Approved ${result.approved} images, ${result.failed} failed`,
+        );
       } else {
         toast.success(`Approved ${result.approved} images`);
       }
@@ -483,9 +601,11 @@ export function AircraftImagesTab() {
       <ConfirmModal
         isOpen={deleteModalOpen}
         title="Delete Approved Image"
-        message={deleteTargetInfo
-          ? `Are you sure you want to delete the approved image for ${deleteTargetInfo.iata}/${deleteTargetInfo.icao} ${deleteTargetInfo.aircraft}? This action cannot be undone.`
-          : "Are you sure you want to delete this approved image?"}
+        message={
+          deleteTargetInfo
+            ? `Are you sure you want to delete the approved image for ${deleteTargetInfo.iata}/${deleteTargetInfo.icao} ${deleteTargetInfo.aircraft}? This action cannot be undone.`
+            : "Are you sure you want to delete this approved image?"
+        }
         confirmLabel="Delete"
         variant="danger"
         isLoading={deleteLoading}
@@ -510,30 +630,52 @@ export function AircraftImagesTab() {
       {/* Search and Filters */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={imageSearchQuery}
             onChange={(e) => setImageSearchQuery(e.target.value)}
             placeholder="Search by airline, aircraft type, discord username..."
-            className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 outline-none transition-all focus:border-cyan-500/50"
+            className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
           />
         </div>
         <div className="flex gap-3">
-          <select value={imageAirlineFilter} onChange={(e) => setImageAirlineFilter(e.target.value)} className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none transition-all focus:border-cyan-500/50">
+          <select
+            value={imageAirlineFilter}
+            onChange={(e) => setImageAirlineFilter(e.target.value)}
+            className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+          >
             <option value="">All Airlines</option>
             {uniqueImageAirlines.map((airline) => (
-              <option key={airline.iata || airline.icao} value={airline.iata || airline.icao}>
-                {airline.icao && airline.iata ? `${airline.icao} | ${airline.iata}` : airline.icao || airline.iata}
+              <option
+                key={airline.iata || airline.icao}
+                value={airline.iata || airline.icao}
+              >
+                {airline.icao && airline.iata
+                  ? `${airline.icao} | ${airline.iata}`
+                  : airline.icao || airline.iata}
               </option>
             ))}
           </select>
-          <select value={imageAircraftFilter} onChange={(e) => setImageAircraftFilter(e.target.value)} className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none transition-all focus:border-cyan-500/50">
+          <select
+            value={imageAircraftFilter}
+            onChange={(e) => setImageAircraftFilter(e.target.value)}
+            className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+          >
             <option value="">All Aircraft</option>
-            {uniqueImageAircraftTypes.map((type) => (<option key={type} value={type}>{type}</option>))}
+            {uniqueImageAircraftTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
           </select>
           {hasActiveImageFilters && (
-            <button onClick={clearImageFilters} className="cursor-pointer rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-slate-400 transition-all hover:border-red-500/30 hover:text-red-400">Clear</button>
+            <button
+              onClick={clearImageFilters}
+              className="cursor-pointer rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-slate-400 transition-all hover:border-red-500/30 hover:text-red-400"
+            >
+              Clear
+            </button>
           )}
         </div>
       </div>
@@ -541,21 +683,43 @@ export function AircraftImagesTab() {
       {/* Bulk Action Bar */}
       {selectedImages.size > 0 && (
         <div className="mb-4 flex items-center gap-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
-          <span className="font-mono text-sm text-cyan-400">{selectedImages.size} selected</span>
+          <span className="font-mono text-sm text-cyan-400">
+            {selectedImages.size} selected
+          </span>
           <div className="flex-1" />
-          <button onClick={clearSelection} className="cursor-pointer rounded-lg px-3 py-1.5 text-sm text-slate-400 transition-colors hover:bg-white/10">Clear</button>
+          <button
+            onClick={clearSelection}
+            className="cursor-pointer rounded-lg px-3 py-1.5 text-sm text-slate-400 transition-colors hover:bg-white/10"
+          >
+            Clear
+          </button>
           {imageSubTab === "pending" ? (
             <>
-              <button onClick={handleBulkApprove} disabled={bulkLoading} className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-500/20 px-4 py-1.5 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50">
-                <Check className="h-4 w-4" />Approve All
+              <button
+                onClick={handleBulkApprove}
+                disabled={bulkLoading}
+                className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-500/20 px-4 py-1.5 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
+              >
+                <Check className="h-4 w-4" />
+                Approve All
               </button>
-              <button onClick={handleBulkReject} disabled={bulkLoading} className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50">
-                <X className="h-4 w-4" />Reject All
+              <button
+                onClick={handleBulkReject}
+                disabled={bulkLoading}
+                className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+              >
+                <X className="h-4 w-4" />
+                Reject All
               </button>
             </>
           ) : (
-            <button onClick={handleBulkDelete} disabled={bulkLoading} className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50">
-              <Trash2 className="h-4 w-4" />Delete All
+            <button
+              onClick={handleBulkDelete}
+              disabled={bulkLoading}
+              className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete All
             </button>
           )}
         </div>
@@ -566,27 +730,45 @@ export function AircraftImagesTab() {
         <button
           onClick={() => setImageSubTab("pending")}
           className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-mono text-sm transition-all ${
-            imageSubTab === "pending" ? "bg-yellow-500/20 text-yellow-400" : "bg-white/5 text-slate-400 hover:bg-white/10"
+            imageSubTab === "pending"
+              ? "bg-yellow-500/20 text-yellow-400"
+              : "bg-white/5 text-slate-400 hover:bg-white/10"
           }`}
         >
           <Clock className="h-4 w-4" />
-          Pending ({filteredPendingImages.length}{hasActiveImageFilters && filteredPendingImages.length !== pendingImages.length ? `/${pendingImages.length}` : ""})
+          Pending ({filteredPendingImages.length}
+          {hasActiveImageFilters &&
+          filteredPendingImages.length !== pendingImages.length
+            ? `/${pendingImages.length}`
+            : ""}
+          )
         </button>
         <button
           onClick={() => setImageSubTab("approved")}
           className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-mono text-sm transition-all ${
-            imageSubTab === "approved" ? "bg-emerald-500/20 text-emerald-400" : "bg-white/5 text-slate-400 hover:bg-white/10"
+            imageSubTab === "approved"
+              ? "bg-emerald-500/20 text-emerald-400"
+              : "bg-white/5 text-slate-400 hover:bg-white/10"
           }`}
         >
           <CheckCircle className="h-4 w-4" />
-          Approved ({filteredApprovedImages.length}{hasActiveImageFilters && filteredApprovedImages.length !== approvedImages.length ? `/${approvedImages.length}` : ""})
+          Approved ({filteredApprovedImages.length}
+          {hasActiveImageFilters &&
+          filteredApprovedImages.length !== approvedImages.length
+            ? `/${approvedImages.length}`
+            : ""}
+          )
         </button>
 
         {((imageSubTab === "pending" && filteredPendingImages.length > 0) ||
-          (imageSubTab === "approved" && filteredApprovedImages.length > 0)) && (
+          (imageSubTab === "approved" &&
+            filteredApprovedImages.length > 0)) && (
           <button
             onClick={() => {
-              const currentImages = imageSubTab === "pending" ? filteredPendingImages : filteredApprovedImages;
+              const currentImages =
+                imageSubTab === "pending"
+                  ? filteredPendingImages
+                  : filteredApprovedImages;
               if (selectedImages.size === currentImages.length) {
                 clearSelection();
               } else {
@@ -595,7 +777,21 @@ export function AircraftImagesTab() {
             }}
             className="ml-auto flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-white/10"
           >
-            {selectedImages.size === (imageSubTab === "pending" ? filteredPendingImages : filteredApprovedImages).length ? (<><CheckSquare className="h-4 w-4" />Deselect All</>) : (<><Square className="h-4 w-4" />Select All</>)}
+            {selectedImages.size ===
+            (imageSubTab === "pending"
+              ? filteredPendingImages
+              : filteredApprovedImages
+            ).length ? (
+              <>
+                <CheckSquare className="h-4 w-4" />
+                Deselect All
+              </>
+            ) : (
+              <>
+                <Square className="h-4 w-4" />
+                Select All
+              </>
+            )}
           </button>
         )}
       </div>
@@ -606,22 +802,48 @@ export function AircraftImagesTab() {
           {filteredPendingImages.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
               <Clock className="mx-auto mb-4 h-12 w-12 text-slate-600" />
-              <h3 className="mb-2 text-xl font-semibold text-white">{hasActiveImageFilters ? "No Matching Images" : "No Pending Images"}</h3>
-              <p className="text-slate-400">{hasActiveImageFilters ? "Try adjusting your search or filters" : "All submissions have been reviewed"}</p>
+              <h3 className="mb-2 text-xl font-semibold text-white">
+                {hasActiveImageFilters
+                  ? "No Matching Images"
+                  : "No Pending Images"}
+              </h3>
+              <p className="text-slate-400">
+                {hasActiveImageFilters
+                  ? "Try adjusting your search or filters"
+                  : "All submissions have been reviewed"}
+              </p>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredPendingImages.map((image) => (
-                <div key={image.id} className={`group overflow-hidden rounded-2xl border bg-black/40 backdrop-blur-xl transition-all ${selectedImages.has(image.id) ? "border-cyan-500" : "border-yellow-500/30"}`}>
+                <div
+                  key={image.id}
+                  className={`group overflow-hidden rounded-2xl border bg-black/40 backdrop-blur-xl transition-all ${selectedImages.has(image.id) ? "border-cyan-500" : "border-yellow-500/30"}`}
+                >
                   <div className="relative aspect-video">
-                    <Image src={image.imageUrl} alt={`${image.airlineIata || image.airlineIcao} ${image.aircraftType}`} fill className="object-cover" unoptimized />
-                    <div className="absolute top-2 left-2 rounded-md bg-yellow-500/80 px-2 py-1 text-xs font-bold text-black">PENDING</div>
-                    <button onClick={() => toggleSelect(image.id)} className={`absolute top-2 right-2 cursor-pointer rounded-lg p-1.5 transition-all ${selectedImages.has(image.id) ? "bg-cyan-500 text-white" : "bg-black/60 text-white opacity-0 group-hover:opacity-100"}`}>
-                      {selectedImages.has(image.id) ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5" />}
+                    <Image
+                      src={image.imageUrl}
+                      alt={`${image.airlineIata || image.airlineIcao} ${image.aircraftType}`}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                    <div className="absolute top-2 left-2 rounded-md bg-yellow-500/80 px-2 py-1 text-xs font-bold text-black">
+                      PENDING
+                    </div>
+                    <button
+                      onClick={() => toggleSelect(image.id)}
+                      className={`absolute top-2 right-2 cursor-pointer rounded-lg p-1.5 transition-all ${selectedImages.has(image.id) ? "bg-cyan-500 text-white" : "bg-black/60 text-white opacity-0 group-hover:opacity-100"}`}
+                    >
+                      {selectedImages.has(image.id) ? (
+                        <CheckSquare className="h-5 w-5" />
+                      ) : (
+                        <Square className="h-5 w-5" />
+                      )}
                     </button>
                   </div>
                   <div className="p-4">
-                    <div className="mb-3 flex items-center gap-2 flex-wrap">
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
                       <EditableCodes
                         imageId={image.id}
                         initialIata={image.airlineIata || ""}
@@ -629,14 +851,31 @@ export function AircraftImagesTab() {
                         initialAircraftType={image.aircraftType || ""}
                       />
                     </div>
-                    <p className="mb-1 text-xs text-slate-500">Uploaded by <span className="text-cyan-400">{image.discordUsername ?? image.uploadedBy}</span></p>
-                    <p className="mb-3 text-xs text-slate-600">{new Date(image.createdAt).toLocaleDateString()}</p>
+                    <p className="mb-1 text-xs text-slate-500">
+                      Uploaded by{" "}
+                      <span className="text-cyan-400">
+                        {image.discordUsername ?? image.uploadedBy}
+                      </span>
+                    </p>
+                    <p className="mb-3 text-xs text-slate-600">
+                      {new Date(image.createdAt).toLocaleDateString()}
+                    </p>
                     <div className="flex gap-2">
-                      <button onClick={() => handleApprove(image.id)} disabled={actionLoading === image.id} className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-lg bg-emerald-500/20 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50">
-                        <Check className="h-4 w-4" />Approve
+                      <button
+                        onClick={() => handleApprove(image.id)}
+                        disabled={actionLoading === image.id}
+                        className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-lg bg-emerald-500/20 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
+                      >
+                        <Check className="h-4 w-4" />
+                        Approve
                       </button>
-                      <button onClick={() => openRejectModal([image.id])} disabled={actionLoading === image.id} className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-lg bg-red-500/20 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50">
-                        <X className="h-4 w-4" />Reject
+                      <button
+                        onClick={() => openRejectModal([image.id])}
+                        disabled={actionLoading === image.id}
+                        className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-lg bg-red-500/20 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+                      >
+                        <X className="h-4 w-4" />
+                        Reject
                       </button>
                     </div>
                   </div>
@@ -653,19 +892,36 @@ export function AircraftImagesTab() {
           {filteredApprovedImages.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
               <Plane className="mx-auto mb-4 h-12 w-12 text-slate-600" />
-              <h3 className="mb-2 text-xl font-semibold text-white">{hasActiveImageFilters ? "No Matching Images" : "No Approved Images"}</h3>
-              <p className="text-slate-400">{hasActiveImageFilters ? "Try adjusting your search or filters" : "Approve some pending images to see them here"}</p>
+              <h3 className="mb-2 text-xl font-semibold text-white">
+                {hasActiveImageFilters
+                  ? "No Matching Images"
+                  : "No Approved Images"}
+              </h3>
+              <p className="text-slate-400">
+                {hasActiveImageFilters
+                  ? "Try adjusting your search or filters"
+                  : "Approve some pending images to see them here"}
+              </p>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredApprovedImages.map((image) => (
-                <div key={image.id} className={`group overflow-hidden rounded-2xl border bg-black/40 backdrop-blur-xl transition-all ${
-                  selectedImages.has(image.id)
-                    ? "border-cyan-500"
-                    : "border-white/10 hover:border-cyan-500/30"
-                }`}>
+                <div
+                  key={image.id}
+                  className={`group overflow-hidden rounded-2xl border bg-black/40 backdrop-blur-xl transition-all ${
+                    selectedImages.has(image.id)
+                      ? "border-cyan-500"
+                      : "border-white/10 hover:border-cyan-500/30"
+                  }`}
+                >
                   <div className="relative aspect-video">
-                    <Image src={image.imageUrl} alt={`${image.airlineIata || image.airlineIcao} ${image.aircraftType}`} fill className="object-cover" unoptimized />
+                    <Image
+                      src={image.imageUrl}
+                      alt={`${image.airlineIata || image.airlineIcao} ${image.aircraftType}`}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
                     <button
                       onClick={() => toggleSelect(image.id)}
                       className={`absolute top-2 left-2 cursor-pointer rounded-lg p-1.5 transition-all ${
@@ -674,14 +930,28 @@ export function AircraftImagesTab() {
                           : "bg-black/60 text-white opacity-0 group-hover:opacity-100"
                       }`}
                     >
-                      {selectedImages.has(image.id) ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5" />}
+                      {selectedImages.has(image.id) ? (
+                        <CheckSquare className="h-5 w-5" />
+                      ) : (
+                        <Square className="h-5 w-5" />
+                      )}
                     </button>
-                    <button onClick={() => openDeleteModal(image.id, image.airlineIata || "", image.airlineIcao || "", image.aircraftType)} className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 p-2 opacity-0 transition-all hover:bg-red-500 group-hover:opacity-100">
+                    <button
+                      onClick={() =>
+                        openDeleteModal(
+                          image.id,
+                          image.airlineIata || "",
+                          image.airlineIcao || "",
+                          image.aircraftType,
+                        )
+                      }
+                      className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 p-2 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500"
+                    >
                       <Trash2 className="h-4 w-4 text-white" />
                     </button>
                   </div>
                   <div className="p-4">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex flex-wrap items-center gap-2">
                       <EditableCodes
                         imageId={image.id}
                         initialIata={image.airlineIata || ""}
@@ -690,8 +960,18 @@ export function AircraftImagesTab() {
                       />
                       <CheckCircle className="ml-auto h-4 w-4 text-emerald-400" />
                     </div>
-                    <p className="mt-1 text-xs text-slate-500">Uploaded by <span className="text-cyan-400">{image.discordUsername ?? image.uploadedBy}</span></p>
-                    {image.approvedAt && <p className="mt-1 text-xs text-slate-600">Approved {new Date(image.approvedAt).toLocaleDateString()}</p>}
+                    <p className="mt-1 text-xs text-slate-500">
+                      Uploaded by{" "}
+                      <span className="text-cyan-400">
+                        {image.discordUsername ?? image.uploadedBy}
+                      </span>
+                    </p>
+                    {image.approvedAt && (
+                      <p className="mt-1 text-xs text-slate-600">
+                        Approved{" "}
+                        {new Date(image.approvedAt).toLocaleDateString()}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}

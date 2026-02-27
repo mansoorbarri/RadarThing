@@ -46,8 +46,7 @@ const config = {
           },
           {
             key: "Content-Security-Policy",
-            value:
-              "frame-ancestors 'self' https://klmgeofsvirtual.github.io",
+            value: "frame-ancestors 'self' https://klmgeofsvirtual.github.io",
           },
           {
             key: "Referrer-Policy",

@@ -12,7 +12,7 @@ export const useProStatus = () => {
   // Real-time query - auto-updates when data changes in Convex
   const dbUser = useQuery(
     api.users.getByClerkId,
-    clerkId ? { clerkId } : "skip"
+    clerkId ? { clerkId } : "skip",
   );
 
   // Check for env-based super admin (break-glass access)

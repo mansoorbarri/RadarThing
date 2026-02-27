@@ -30,7 +30,7 @@ export default function HomePage() {
         />
 
         {/* Radar glow */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
           <div
             className="h-[900px] w-[900px] rounded-full"
             style={{
@@ -44,7 +44,7 @@ export default function HomePage() {
         {[300, 500, 700, 900].map((size, i) => (
           <div
             key={size}
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
           >
             <div
               className="rounded-full border border-cyan-400"
@@ -67,7 +67,7 @@ export default function HomePage() {
 
         {/* Bottom horizon glow */}
         <div
-          className="absolute bottom-0 left-0 right-0 h-[400px]"
+          className="absolute right-0 bottom-0 left-0 h-[400px]"
           style={{
             background:
               "radial-gradient(ellipse 80% 100% at 50% 100%, rgba(34,211,238,0.06) 0%, transparent 70%)",
@@ -107,9 +107,9 @@ export default function HomePage() {
 
       {/* Hero */}
       <main className="relative z-10">
-        <section className="mx-auto max-w-6xl px-6 pb-16 pt-8 md:pb-24 md:pt-12">
+        <section className="mx-auto max-w-6xl px-6 pt-8 pb-16 md:pt-12 md:pb-24">
           <div className="max-w-2xl">
-            <h1 className="mb-6 text-4xl font-bold leading-[1.1] tracking-tight text-white md:text-5xl lg:text-6xl">
+            <h1 className="mb-6 text-4xl leading-[1.1] font-bold tracking-tight text-white md:text-5xl lg:text-6xl">
               See every flight.
               <br />
               <span className="text-white/40">In real time.</span>
@@ -120,7 +120,8 @@ export default function HomePage() {
               <span className="text-white">GeoFS</span> flight simulator.
             </p>
             <p className="mb-10 max-w-md text-white/40">
-              Track aircraft, record routes, access weather data, airport charts, and more.
+              Track aircraft, record routes, access weather data, airport
+              charts, and more.
             </p>
 
             <div className="flex flex-col gap-4 sm:flex-row">
@@ -143,7 +144,10 @@ export default function HomePage() {
         </section>
 
         {/* Quick Install */}
-        <section id="install" className="border-t border-white/5 bg-white/[0.02]">
+        <section
+          id="install"
+          className="border-t border-white/5 bg-white/[0.02]"
+        >
           <div className="mx-auto max-w-6xl px-6 py-16">
             <div className="mb-8 flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-400/10 text-cyan-400">
@@ -247,7 +251,8 @@ export default function HomePage() {
                 Free to use, Pro to unlock more
               </h2>
               <p className="text-white/40">
-                Core tracking is completely free. Upgrade for weather and charts.
+                Core tracking is completely free. Upgrade for weather and
+                charts.
               </p>
             </div>
 
@@ -263,16 +268,30 @@ export default function HomePage() {
                   <span className="text-white/40"> / forever</span>
                 </div>
                 <ul className="mb-6 space-y-3">
-                  <PricingFeature included>Live aircraft tracking</PricingFeature>
-                  <PricingFeature included>Flight search & filtering</PricingFeature>
-                  <PricingFeature included>Multi-aircraft selection</PricingFeature>
+                  <PricingFeature included>
+                    Live aircraft tracking
+                  </PricingFeature>
+                  <PricingFeature included>
+                    Flight search & filtering
+                  </PricingFeature>
+                  <PricingFeature included>
+                    Multi-aircraft selection
+                  </PricingFeature>
                   <PricingFeature included>Follow mode</PricingFeature>
-                  <PricingFeature included>Flight recording & replay</PricingFeature>
-                  <PricingFeature included>Remote autopilot commands</PricingFeature>
+                  <PricingFeature included>
+                    Flight recording & replay
+                  </PricingFeature>
+                  <PricingFeature included>
+                    Remote autopilot commands
+                  </PricingFeature>
                   <PricingFeature included>Basic flight stats</PricingFeature>
                   <PricingFeature included>Live ATC audio</PricingFeature>
-                  <PricingFeature included>Precipitation overlay</PricingFeature>
-                  <PricingFeature included>Aircraft image uploads</PricingFeature>
+                  <PricingFeature included>
+                    Precipitation overlay
+                  </PricingFeature>
+                  <PricingFeature included>
+                    Aircraft image uploads
+                  </PricingFeature>
                   <PricingFeature>NOTAMs (decoded)</PricingFeature>
                   <PricingFeature>AIRMETs & SIGMETs</PricingFeature>
                   <PricingFeature>Airport charts</PricingFeature>
@@ -303,14 +322,24 @@ export default function HomePage() {
                 </div>
                 <ul className="mb-6 space-y-3">
                   <PricingFeature included>Everything in Free</PricingFeature>
-                  <PricingFeature included>NOTAMs with decoded text</PricingFeature>
-                  <PricingFeature included>AIRMETs & SIGMETs overlay</PricingFeature>
+                  <PricingFeature included>
+                    NOTAMs with decoded text
+                  </PricingFeature>
+                  <PricingFeature included>
+                    AIRMETs & SIGMETs overlay
+                  </PricingFeature>
                   <PricingFeature included>Airport taxi charts</PricingFeature>
-                  <PricingFeature included>Approach & departure charts</PricingFeature>
+                  <PricingFeature included>
+                    Approach & departure charts
+                  </PricingFeature>
                   <PricingFeature included>SID/STAR procedures</PricingFeature>
                   <PricingFeature included>Full flight history</PricingFeature>
-                  <PricingFeature included>Top routes & airports stats</PricingFeature>
-                  <PricingFeature included>Total flight time tracking</PricingFeature>
+                  <PricingFeature included>
+                    Top routes & airports stats
+                  </PricingFeature>
+                  <PricingFeature included>
+                    Total flight time tracking
+                  </PricingFeature>
                   <PricingFeature included>Radar mode map layer</PricingFeature>
                 </ul>
                 <Link

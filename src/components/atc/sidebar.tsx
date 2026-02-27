@@ -11,28 +11,92 @@ import React, {
 import { toast } from "sonner";
 import { useUserByGoogleId } from "~/hooks/useUserByGoogleId";
 // Inline SVG icons to avoid bundling entire react-icons library (~7.8MB)
-const PlaneInflightIcon = ({ size = 24, className = "" }: { size?: number; className?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+const PlaneInflightIcon = ({
+  size = 24,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
     <path d="M15 12h5a2 2 0 0 1 0 4h-15l-3 -6h3l2 2h3l-2 -7h3l4 7z" />
     <path d="M3 16h18" />
   </svg>
 );
 
-const PlaneIcon = ({ size = 24, className = "" }: { size?: number; className?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+const PlaneIcon = ({
+  size = 24,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
     <path d="M16 10h4a2 2 0 0 1 0 4h-4l-4 7h-3l2 -7h-4l-2 2h-3l2 -4l-2 -4h3l2 2h4l-2 -7h3z" />
   </svg>
 );
 
-const HistoryIcon = ({ size = 24, className = "" }: { size?: number; className?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+const HistoryIcon = ({
+  size = 24,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
     <path d="M12 8l0 4l2 2" />
     <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" />
   </svg>
 );
 
-const InfoCircleIcon = ({ size = 24, className = "" }: { size?: number; className?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+const InfoCircleIcon = ({
+  size = 24,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
     <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
     <path d="M12 9h.01" />
     <path d="M11 12h1v4h1" />
@@ -209,7 +273,7 @@ export const Sidebar = ({
   const shouldFetchHistory = tab === "history" && googleId && isProUser;
   const historyQuery = useQuery(
     api.flights.getHistoryByGoogleId,
-    shouldFetchHistory && googleId ? { googleId } : "skip"
+    shouldFetchHistory && googleId ? { googleId } : "skip",
   );
   const history = useMemo(() => {
     if (!historyQuery) return [];
@@ -268,7 +332,10 @@ export const Sidebar = ({
 
     if (aircraft.flightPlan) {
       try {
-        const waypoints = JSON.parse(aircraft.flightPlan) as Record<string, unknown>[];
+        const waypoints = JSON.parse(aircraft.flightPlan) as Record<
+          string,
+          unknown
+        >[];
         if (Array.isArray(waypoints) && waypoints.length > 1) {
           const nextWaypoint = aircraft.nextWaypoint;
           const nextIdx = waypoints.findIndex(
@@ -287,7 +354,12 @@ export const Sidebar = ({
             for (let i = nextIdx; i < waypoints.length; i++) {
               const point = parseWaypointPosition(waypoints[i]!);
               if (!point || !previous) continue;
-              distance += distanceNm(previous[0], previous[1], point[0], point[1]);
+              distance += distanceNm(
+                previous[0],
+                previous[1],
+                point[0],
+                point[1],
+              );
               previous = point;
             }
 
@@ -305,7 +377,10 @@ export const Sidebar = ({
     const flownDistanceNm = elapsedHours > 0 ? elapsedHours * groundSpeed : 0;
     let progress = waypointProgress ?? 0;
 
-    if (remainingDistanceNm !== null && (flownDistanceNm > 1 || elapsedHours > 0)) {
+    if (
+      remainingDistanceNm !== null &&
+      (flownDistanceNm > 1 || elapsedHours > 0)
+    ) {
       const totalDistance = flownDistanceNm + remainingDistanceNm;
       if (totalDistance > 1) {
         progress = flownDistanceNm / totalDistance;
@@ -393,12 +468,16 @@ export const Sidebar = ({
                 style={{ animationDelay: `${i * 40}ms` }}
                 onClick={() => onWaypointClick?.(wp, i)}
               >
-                <div className={`font-mono text-xs font-black ${isActive ? "text-green-400" : "text-cyan-400"}`}>
+                <div
+                  className={`font-mono text-xs font-black ${isActive ? "text-green-400" : "text-cyan-400"}`}
+                >
                   {String(i + 1).padStart(2, "0")}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <span className={`font-mono text-sm font-black tracking-wider ${isActive ? "text-green-300" : "text-white"}`}>
+                    <span
+                      className={`font-mono text-sm font-black tracking-wider ${isActive ? "text-green-300" : "text-white"}`}
+                    >
                       {wp.ident}
                     </span>
                     <span className="font-mono text-[9px] font-bold text-white/40 uppercase">
@@ -408,11 +487,23 @@ export const Sidebar = ({
                   <div className="flex gap-4 font-mono text-[10px] font-bold text-white/60">
                     <span>
                       ALT:{" "}
-                      <span className={isActive ? "text-green-200/90" : "text-cyan-100/90"}>{wp.alt ?? "---"}</span>
+                      <span
+                        className={
+                          isActive ? "text-green-200/90" : "text-cyan-100/90"
+                        }
+                      >
+                        {wp.alt ?? "---"}
+                      </span>
                     </span>
                     <span>
                       SPD:{" "}
-                      <span className={isActive ? "text-green-200/90" : "text-cyan-100/90"}>{wp.spd ?? "---"}</span>
+                      <span
+                        className={
+                          isActive ? "text-green-200/90" : "text-cyan-100/90"
+                        }
+                      >
+                        {wp.spd ?? "---"}
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -514,13 +605,19 @@ export const Sidebar = ({
   const airlineLogo = getAirlineLogoFromFlightNumber(aircraft.flightNo);
   const { photo: aircraftPhoto } = useAircraftPhoto(
     aircraft.flightNo || aircraft.callsign,
-    aircraft.type
+    aircraft.type,
   );
 
   // Check if this is the user's own aircraft or if user has special control privileges
-  const { googleId: userGoogleId, isLoaded: userLoaded } = useCurrentUserProfile();
-  const canControlAnyAircraft = process.env.NODE_ENV === "development" && userGoogleId === "101233162035372298523";
-  const isOwnAircraft = userLoaded && (canControlAnyAircraft || (userGoogleId && aircraft.googleId === userGoogleId));
+  const { googleId: userGoogleId, isLoaded: userLoaded } =
+    useCurrentUserProfile();
+  const canControlAnyAircraft =
+    process.env.NODE_ENV === "development" &&
+    userGoogleId === "101233162035372298523";
+  const isOwnAircraft =
+    userLoaded &&
+    (canControlAnyAircraft ||
+      (userGoogleId && aircraft.googleId === userGoogleId));
 
   // Query the pilot's user record for the stats link (with client-side caching)
   const pilotUser = useUserByGoogleId(aircraft.googleId);
@@ -533,312 +630,247 @@ export const Sidebar = ({
   return (
     <div
       ref={containerRef}
-      className="flex h-full flex-col text-white bg-[#050f14]/90"
+      className="flex h-full flex-col bg-[#050f14]/90 text-white"
     >
       {/* Scrollable content wrapper for mobile */}
-      <div className={`${isMobile ? 'flex-1 overflow-y-auto' : 'flex flex-col flex-1 overflow-hidden'}`}>
-      {/* Header with optional aircraft photo background */}
-      <div className={`relative ${isMobile ? '' : ''} ${aircraftPhoto ? (isMobile ? 'min-h-[140px]' : 'min-h-[200px]') : ''}`}>
-        {/* Aircraft Photo Background */}
-        {aircraftPhoto && (
-          <>
-            {/* Loading skeleton while image loads */}
-            {!imageLoaded && (
-              <div className="absolute inset-0 z-0 animate-pulse bg-white/5" />
-            )}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={aircraftPhoto.imageUrl}
-              alt="Aircraft"
-              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-              onLoad={() => setImageLoaded(true)}
-            />
-            {/* Dark gradient overlay for text readability */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#050f14] via-[#050f14]/80 to-black/40" />
-          </>
-        )}
-
-        {!aircraftPhoto && (
-          <div className={`${isMobile ? "mx-4 mt-3 mb-2 p-3" : "mx-6 mt-4 mb-3 p-3.5"} relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-sky-500/5 to-black/40`}>
-            <div className="pointer-events-none absolute -right-4 -top-5 text-cyan-300/15">
-              <PlaneIcon size={72} />
-            </div>
-            <div className="relative">
-              <p className="font-mono text-[10px] font-black tracking-[0.18em] text-cyan-300/90 uppercase">
-                No Aircraft Image
-              </p>
-              <p className="mt-0.5 max-w-[280px] font-mono text-[10px] leading-relaxed text-white/60">
-                Help the community identify this aircraft by uploading a photo.
-              </p>
-              <Link
-                href="/aircraft-images"
-                className="mt-2 inline-flex rounded-lg border border-cyan-400/40 bg-cyan-500/20 px-3 py-1.5 font-mono text-[10px] font-black tracking-wide text-cyan-200 transition-colors hover:bg-cyan-500/30"
-              >
-                Upload at /aircraft-images
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* Flight Info Overlay */}
-        <div className={`relative z-10 ${isMobile ? 'p-4 pb-2' : 'p-6 pb-4'} ${aircraftPhoto ? 'pt-32' : ''}`}>
-          <div className={`${isMobile ? 'mb-3' : 'mb-5'} flex items-end justify-between`}>
-            <div className="min-w-0 flex-1 pr-4">
-              <div className="mb-1.5 flex items-center gap-2">
-                <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
-                <span className="font-mono text-[10px] font-black tracking-[0.2em] text-cyan-400 uppercase">
-                  {aircraftPhoto ? 'Tracking' : 'Active Radar Lock'}
-                </span>
-              </div>
-              <h1 className="mb-1 truncate font-mono text-4xl leading-none font-black tracking-tighter text-white uppercase drop-shadow-lg">
-                {aircraft.flightNo || aircraft.callsign || "N/A"}
-              </h1>
-              <p className="truncate font-mono text-[11px] font-black tracking-[0.15em] text-slate-300 uppercase">
-                {aircraft.type || "Unknown Class"}
-              </p>
-              {aircraft.callsign && (
-                pilotUser ? (
-                  <Link
-                    href={`/pilot/${pilotUser._id}?callsign=${encodeURIComponent(aircraft.callsign)}`}
-                    className="mt-1 inline-flex items-center gap-1 font-mono text-[10px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
-                  >
-                    <span className="text-white/40">Pilot:</span> {aircraft.callsign}
-                  </Link>
-                ) : (
-                  <p className="mt-1 font-mono text-[10px] font-bold text-white/60">
-                    <span className="text-white/40">Pilot:</span> {aircraft.callsign}
-                  </p>
-                )
+      <div
+        className={`${isMobile ? "flex-1 overflow-y-auto" : "flex flex-1 flex-col overflow-hidden"}`}
+      >
+        {/* Header with optional aircraft photo background */}
+        <div
+          className={`relative ${isMobile ? "" : ""} ${aircraftPhoto ? (isMobile ? "min-h-[140px]" : "min-h-[200px]") : ""}`}
+        >
+          {/* Aircraft Photo Background */}
+          {aircraftPhoto && (
+            <>
+              {/* Loading skeleton while image loads */}
+              {!imageLoaded && (
+                <div className="absolute inset-0 z-0 animate-pulse bg-white/5" />
               )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={aircraftPhoto.imageUrl}
+                alt="Aircraft"
+                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+                onLoad={() => setImageLoaded(true)}
+              />
+              {/* Dark gradient overlay for text readability */}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#050f14] via-[#050f14]/80 to-black/40" />
+            </>
+          )}
+
+          {!aircraftPhoto && (
+            <div
+              className={`${isMobile ? "mx-4 mt-3 mb-2 p-3" : "mx-6 mt-4 mb-3 p-3.5"} relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-sky-500/5 to-black/40`}
+            >
+              <div className="pointer-events-none absolute -top-5 -right-4 text-cyan-300/15">
+                <PlaneIcon size={72} />
+              </div>
+              <div className="relative">
+                <p className="font-mono text-[10px] font-black tracking-[0.18em] text-cyan-300/90 uppercase">
+                  No Aircraft Image
+                </p>
+                <p className="mt-0.5 max-w-[280px] font-mono text-[10px] leading-relaxed text-white/60">
+                  Help the community identify this aircraft by uploading a
+                  photo.
+                </p>
+                <Link
+                  href="/aircraft-images"
+                  className="mt-2 inline-flex rounded-lg border border-cyan-400/40 bg-cyan-500/20 px-3 py-1.5 font-mono text-[10px] font-black tracking-wide text-cyan-200 transition-colors hover:bg-cyan-500/30"
+                >
+                  Upload at /aircraft-images
+                </Link>
+              </div>
             </div>
-            <div className="relative shrink-0">
-              {airlineLogo ? (
-                <Image
-                  src={airlineLogo}
-                  alt="Airline Logo"
-                  width={64}
-                  height={64}
-                  className="rounded-2xl border border-white/20 bg-black/80 object-contain p-2 shadow-xl backdrop-blur-sm"
-                  unoptimized
-                />
-              ) : (
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-black/50 text-white/20 backdrop-blur-sm">
-                  <PlaneIcon size={32} />
+          )}
+
+          {/* Flight Info Overlay */}
+          <div
+            className={`relative z-10 ${isMobile ? "p-4 pb-2" : "p-6 pb-4"} ${aircraftPhoto ? "pt-32" : ""}`}
+          >
+            <div
+              className={`${isMobile ? "mb-3" : "mb-5"} flex items-end justify-between`}
+            >
+              <div className="min-w-0 flex-1 pr-4">
+                <div className="mb-1.5 flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
+                  <span className="font-mono text-[10px] font-black tracking-[0.2em] text-cyan-400 uppercase">
+                    {aircraftPhoto ? "Tracking" : "Active Radar Lock"}
+                  </span>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className={`relative ${isMobile ? 'px-4 pb-2' : 'px-6 pb-4'}`}>
-        {/* Follow + Share buttons */}
-        <div className="animate-fade-in-up mb-3 flex gap-2" style={{ animationDelay: "50ms" }}>
-          {onToggleFollow && (
-            <button
-              onClick={onToggleFollow}
-              className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-2.5 font-mono text-[10px] font-black tracking-wider uppercase transition-all ${
-                isFollowMode
-                  ? "border-cyan-400/50 bg-cyan-500/20 text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.2)]"
-                  : "border-white/10 bg-black/40 text-white/60 hover:border-cyan-500/30 hover:bg-black/60 hover:text-white"
-              }`}
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={isFollowMode ? "text-cyan-400" : ""}
-              >
-                <circle cx="12" cy="12" r="3" />
-                <path d="M12 2v3m0 14v3m10-10h-3M5 12H2m15.5-6.5l-2.1 2.1m-6.8 6.8l-2.1 2.1m0-11l2.1 2.1m6.8 6.8l2.1 2.1" />
-              </svg>
-              {isFollowMode ? "Following" : "Follow"}
-              <span className="text-[8px] text-white/40">(F)</span>
-            </button>
-          )}
-
-          {(aircraft.callsign || aircraft.flightNo) && (
-            <button
-              onClick={() => {
-                const identifier = aircraft.flightNo || aircraft.callsign;
-                const url = `${window.location.origin}/radar?callsign=${identifier}&follow=true`;
-                navigator.clipboard.writeText(url).then(() => {
-                  toast.success("Live tracking link copied to clipboard");
-                });
-              }}
-              className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 font-mono text-[10px] font-black tracking-wider text-white/60 uppercase transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="18" cy="5" r="3" />
-                <circle cx="6" cy="12" r="3" />
-                <circle cx="18" cy="19" r="3" />
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-              </svg>
-              Share
-            </button>
-          )}
-        </div>
-
-        <div className="animate-fade-in-up grid grid-cols-3 gap-1.5 rounded-2xl border border-white/10 bg-black/40 p-1.5 shadow-inner" style={{ animationDelay: "100ms" }}>
-          <div className="flex flex-col items-center rounded-xl p-3.5">
-            <span className="mb-1.5 font-mono text-[9px] font-black text-slate-400 uppercase">
-              Altitude
-            </span>
-            <span className="font-mono text-base leading-none font-black tracking-tight text-white">
-              {displayValues.altitude}
-            </span>
-            <span className="mt-0.5 font-mono text-[8px] font-black tracking-widest text-cyan-400/80 uppercase">
-              FT MSL
-            </span>
-          </div>
-          <div className="z-10 flex scale-105 flex-col items-center rounded-xl border border-white/10 bg-white/10 p-3.5 shadow-lg">
-            <PlaneInflightIcon size={20} className="text-cyan-400" />
-            <span className="mt-1.5 font-mono text-[10px] font-black tracking-wide text-white uppercase">
-              {currentFlightPhase}
-            </span>
-          </div>
-          <div className="flex flex-col items-center rounded-xl p-3.5">
-            <span className="mb-1.5 font-mono text-[9px] font-black text-slate-400 uppercase">
-              Speed
-            </span>
-            <span className="font-mono text-base leading-none font-black tracking-tight text-white">
-              {displayValues.speed}
-            </span>
-            <span className="mt-0.5 font-mono text-[8px] font-black tracking-widest text-cyan-400/80 uppercase">
-              KNOTS GS
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile: Show control panel and flight plan */}
-      {isMobile ? (
-        <div className="px-4 pb-6">
-          <nav className="mb-4 flex">
-            <div className="flex w-full rounded-2xl border border-white/10 bg-black/60 p-1">
-              <button
-                onClick={() => setTab("info")}
-                className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2 font-mono text-[10px] font-black transition-all ${
-                  tab === "info"
-                    ? "bg-white text-black shadow-lg"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <InfoCircleIcon size={13} /> LIVE DATA
-              </button>
-              <button
-                onClick={() => setTab("history")}
-                className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2 font-mono text-[10px] font-black transition-all ${
-                  tab === "history"
-                    ? "bg-white text-black shadow-lg"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <HistoryIcon size={13} /> LOGBOOK
-              </button>
-            </div>
-          </nav>
-
-          {tab === "info" ? (
-            <div className="space-y-4">
-              {!diversionStatus.isDiverting && (
-                <TimelineCard
-                  departure={timelineData.departureText}
-                  eta={timelineData.etaText}
-                  progressPercent={timelineData.progressPercent}
-                  remaining={timelineData.remainingText}
-                />
-              )}
-
-              {diversionStatus.isDiverting && (
-                <DiversionStatusCard
-                  filedArrival={diversionStatus.filedArrival}
-                  plannedArrival={diversionStatus.plannedArrival}
-                />
-              )}
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <StatBox
-                  label="Departure"
-                  value={departureIcao || "---"}
-                  sub="ORIG"
-                  onClick={
-                    isClickableAirport(departureIcao) && onAirportClick
-                      ? () => onAirportClick(departureIcao)
-                      : undefined
-                  }
-                />
-                <StatBox
-                  label="Arrival"
-                  value={arrivalIcao || "---"}
-                  sub="DEST"
-                  onClick={
-                    isClickableAirport(arrivalIcao) && onAirportClick
-                      ? () => onAirportClick(arrivalIcao)
-                      : undefined
-                  }
-                />
+                <h1 className="mb-1 truncate font-mono text-4xl leading-none font-black tracking-tighter text-white uppercase drop-shadow-lg">
+                  {aircraft.flightNo || aircraft.callsign || "N/A"}
+                </h1>
+                <p className="truncate font-mono text-[11px] font-black tracking-[0.15em] text-slate-300 uppercase">
+                  {aircraft.type || "Unknown Class"}
+                </p>
+                {aircraft.callsign &&
+                  (pilotUser ? (
+                    <Link
+                      href={`/pilot/${pilotUser._id}?callsign=${encodeURIComponent(aircraft.callsign)}`}
+                      className="mt-1 inline-flex items-center gap-1 font-mono text-[10px] font-bold text-cyan-400 transition-colors hover:text-cyan-300"
+                    >
+                      <span className="text-white/40">Pilot:</span>{" "}
+                      {aircraft.callsign}
+                    </Link>
+                  ) : (
+                    <p className="mt-1 font-mono text-[10px] font-bold text-white/60">
+                      <span className="text-white/40">Pilot:</span>{" "}
+                      {aircraft.callsign}
+                    </p>
+                  ))}
               </div>
-
-              <div className="grid grid-cols-4 gap-2 rounded-2xl border border-white/10 bg-black/30 p-2.5">
-                <MiniStat label="V/S" value={displayValues.vspeed} />
-                <MiniStat label="HDG" value={displayValues.heading} />
-                <MiniStat label="SQWK" value={displayValues.squawk} />
-                <MiniStat label="AGL" value={displayValues.altAGL} />
+              <div className="relative shrink-0">
+                {airlineLogo ? (
+                  <Image
+                    src={airlineLogo}
+                    alt="Airline Logo"
+                    width={64}
+                    height={64}
+                    className="rounded-2xl border border-white/20 bg-black/80 object-contain p-2 shadow-xl backdrop-blur-sm"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-black/50 text-white/20 backdrop-blur-sm">
+                    <PlaneIcon size={32} />
+                  </div>
+                )}
               </div>
-
-              {isOwnAircraft && <AircraftControlPanel aircraft={aircraft} />}
-              {renderFlightPlan()}
             </div>
-          ) : (
-            <div className="pb-2">{renderHistoryContent()}</div>
-          )}
+          </div>
         </div>
-      ) : (
-        <>
-          <nav className="mb-5 flex px-6">
-            <div className="flex w-full rounded-2xl border border-white/10 bg-black/60 p-1.5 shadow-xl">
-              <button
-                onClick={() => setTab("info")}
-                className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
-                  tab === "info"
-                    ? "bg-white text-black shadow-lg"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <InfoCircleIcon size={14} /> LIVE DATA
-              </button>
-              <button
-                onClick={() => setTab("history")}
-                className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
-                  tab === "history"
-                    ? "bg-white text-black shadow-lg"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <HistoryIcon size={14} /> LOGBOOK
-              </button>
-            </div>
-          </nav>
 
-          <div className="custom-scrollbar flex-1 overflow-y-auto px-6 pb-12">
+        <div className={`relative ${isMobile ? "px-4 pb-2" : "px-6 pb-4"}`}>
+          {/* Follow + Share buttons */}
+          <div
+            className="animate-fade-in-up mb-3 flex gap-2"
+            style={{ animationDelay: "50ms" }}
+          >
+            {onToggleFollow && (
+              <button
+                onClick={onToggleFollow}
+                className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-2.5 font-mono text-[10px] font-black tracking-wider uppercase transition-all ${
+                  isFollowMode
+                    ? "border-cyan-400/50 bg-cyan-500/20 text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.2)]"
+                    : "border-white/10 bg-black/40 text-white/60 hover:border-cyan-500/30 hover:bg-black/60 hover:text-white"
+                }`}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={isFollowMode ? "text-cyan-400" : ""}
+                >
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12 2v3m0 14v3m10-10h-3M5 12H2m15.5-6.5l-2.1 2.1m-6.8 6.8l-2.1 2.1m0-11l2.1 2.1m6.8 6.8l2.1 2.1" />
+                </svg>
+                {isFollowMode ? "Following" : "Follow"}
+                <span className="text-[8px] text-white/40">(F)</span>
+              </button>
+            )}
+
+            {(aircraft.callsign || aircraft.flightNo) && (
+              <button
+                onClick={() => {
+                  const identifier = aircraft.flightNo || aircraft.callsign;
+                  const url = `${window.location.origin}/radar?callsign=${identifier}&follow=true`;
+                  navigator.clipboard.writeText(url).then(() => {
+                    toast.success("Live tracking link copied to clipboard");
+                  });
+                }}
+                className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 font-mono text-[10px] font-black tracking-wider text-white/60 uppercase transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+                Share
+              </button>
+            )}
+          </div>
+
+          <div
+            className="animate-fade-in-up grid grid-cols-3 gap-1.5 rounded-2xl border border-white/10 bg-black/40 p-1.5 shadow-inner"
+            style={{ animationDelay: "100ms" }}
+          >
+            <div className="flex flex-col items-center rounded-xl p-3.5">
+              <span className="mb-1.5 font-mono text-[9px] font-black text-slate-400 uppercase">
+                Altitude
+              </span>
+              <span className="font-mono text-base leading-none font-black tracking-tight text-white">
+                {displayValues.altitude}
+              </span>
+              <span className="mt-0.5 font-mono text-[8px] font-black tracking-widest text-cyan-400/80 uppercase">
+                FT MSL
+              </span>
+            </div>
+            <div className="z-10 flex scale-105 flex-col items-center rounded-xl border border-white/10 bg-white/10 p-3.5 shadow-lg">
+              <PlaneInflightIcon size={20} className="text-cyan-400" />
+              <span className="mt-1.5 font-mono text-[10px] font-black tracking-wide text-white uppercase">
+                {currentFlightPhase}
+              </span>
+            </div>
+            <div className="flex flex-col items-center rounded-xl p-3.5">
+              <span className="mb-1.5 font-mono text-[9px] font-black text-slate-400 uppercase">
+                Speed
+              </span>
+              <span className="font-mono text-base leading-none font-black tracking-tight text-white">
+                {displayValues.speed}
+              </span>
+              <span className="mt-0.5 font-mono text-[8px] font-black tracking-widest text-cyan-400/80 uppercase">
+                KNOTS GS
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile: Show control panel and flight plan */}
+        {isMobile ? (
+          <div className="px-4 pb-6">
+            <nav className="mb-4 flex">
+              <div className="flex w-full rounded-2xl border border-white/10 bg-black/60 p-1">
+                <button
+                  onClick={() => setTab("info")}
+                  className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2 font-mono text-[10px] font-black transition-all ${
+                    tab === "info"
+                      ? "bg-white text-black shadow-lg"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <InfoCircleIcon size={13} /> LIVE DATA
+                </button>
+                <button
+                  onClick={() => setTab("history")}
+                  className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2 font-mono text-[10px] font-black transition-all ${
+                    tab === "history"
+                      ? "bg-white text-black shadow-lg"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <HistoryIcon size={13} /> LOGBOOK
+                </button>
+              </div>
+            </nav>
+
             {tab === "info" ? (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {!diversionStatus.isDiverting && (
                   <TimelineCard
                     departure={timelineData.departureText}
@@ -847,18 +879,19 @@ export const Sidebar = ({
                     remaining={timelineData.remainingText}
                   />
                 )}
+
                 {diversionStatus.isDiverting && (
                   <DiversionStatusCard
                     filedArrival={diversionStatus.filedArrival}
                     plannedArrival={diversionStatus.plannedArrival}
                   />
                 )}
-                <div className="grid grid-cols-2 gap-3.5">
+
+                <div className="grid grid-cols-2 gap-2.5">
                   <StatBox
                     label="Departure"
                     value={departureIcao || "---"}
                     sub="ORIG"
-                    delay={0}
                     onClick={
                       isClickableAirport(departureIcao) && onAirportClick
                         ? () => onAirportClick(departureIcao)
@@ -869,27 +902,131 @@ export const Sidebar = ({
                     label="Arrival"
                     value={arrivalIcao || "---"}
                     sub="DEST"
-                    delay={1}
                     onClick={
                       isClickableAirport(arrivalIcao) && onAirportClick
                         ? () => onAirportClick(arrivalIcao)
                         : undefined
                     }
                   />
-                  <StatBox label="V-Speed" value={displayValues.vspeed} sub="FPM" delay={2} />
-                  <StatBox label="Heading" value={displayValues.heading} sub="MAG" delay={3} />
-                  <StatBox label="Squawk" value={displayValues.squawk} sub="XPDR" delay={4} />
-                  <StatBox label="Alt AGL" value={displayValues.altAGL} sub="FEET" delay={5} />
                 </div>
+
+                <div className="grid grid-cols-4 gap-2 rounded-2xl border border-white/10 bg-black/30 p-2.5">
+                  <MiniStat label="V/S" value={displayValues.vspeed} />
+                  <MiniStat label="HDG" value={displayValues.heading} />
+                  <MiniStat label="SQWK" value={displayValues.squawk} />
+                  <MiniStat label="AGL" value={displayValues.altAGL} />
+                </div>
+
                 {isOwnAircraft && <AircraftControlPanel aircraft={aircraft} />}
                 {renderFlightPlan()}
               </div>
             ) : (
-              renderHistoryContent()
+              <div className="pb-2">{renderHistoryContent()}</div>
             )}
           </div>
-        </>
-      )}
+        ) : (
+          <>
+            <nav className="mb-5 flex px-6">
+              <div className="flex w-full rounded-2xl border border-white/10 bg-black/60 p-1.5 shadow-xl">
+                <button
+                  onClick={() => setTab("info")}
+                  className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
+                    tab === "info"
+                      ? "bg-white text-black shadow-lg"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <InfoCircleIcon size={14} /> LIVE DATA
+                </button>
+                <button
+                  onClick={() => setTab("history")}
+                  className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
+                    tab === "history"
+                      ? "bg-white text-black shadow-lg"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <HistoryIcon size={14} /> LOGBOOK
+                </button>
+              </div>
+            </nav>
+
+            <div className="custom-scrollbar flex-1 overflow-y-auto px-6 pb-12">
+              {tab === "info" ? (
+                <div className="space-y-6">
+                  {!diversionStatus.isDiverting && (
+                    <TimelineCard
+                      departure={timelineData.departureText}
+                      eta={timelineData.etaText}
+                      progressPercent={timelineData.progressPercent}
+                      remaining={timelineData.remainingText}
+                    />
+                  )}
+                  {diversionStatus.isDiverting && (
+                    <DiversionStatusCard
+                      filedArrival={diversionStatus.filedArrival}
+                      plannedArrival={diversionStatus.plannedArrival}
+                    />
+                  )}
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <StatBox
+                      label="Departure"
+                      value={departureIcao || "---"}
+                      sub="ORIG"
+                      delay={0}
+                      onClick={
+                        isClickableAirport(departureIcao) && onAirportClick
+                          ? () => onAirportClick(departureIcao)
+                          : undefined
+                      }
+                    />
+                    <StatBox
+                      label="Arrival"
+                      value={arrivalIcao || "---"}
+                      sub="DEST"
+                      delay={1}
+                      onClick={
+                        isClickableAirport(arrivalIcao) && onAirportClick
+                          ? () => onAirportClick(arrivalIcao)
+                          : undefined
+                      }
+                    />
+                    <StatBox
+                      label="V-Speed"
+                      value={displayValues.vspeed}
+                      sub="FPM"
+                      delay={2}
+                    />
+                    <StatBox
+                      label="Heading"
+                      value={displayValues.heading}
+                      sub="MAG"
+                      delay={3}
+                    />
+                    <StatBox
+                      label="Squawk"
+                      value={displayValues.squawk}
+                      sub="XPDR"
+                      delay={4}
+                    />
+                    <StatBox
+                      label="Alt AGL"
+                      value={displayValues.altAGL}
+                      sub="FEET"
+                      delay={5}
+                    />
+                  </div>
+                  {isOwnAircraft && (
+                    <AircraftControlPanel aircraft={aircraft} />
+                  )}
+                  {renderFlightPlan()}
+                </div>
+              ) : (
+                renderHistoryContent()
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -969,7 +1106,9 @@ const TimelineCard = ({
         <div className="font-mono text-[9px] tracking-wider text-white/40 uppercase">
           Departure
         </div>
-        <div className="font-mono text-sm font-black text-white">{departure}</div>
+        <div className="font-mono text-sm font-black text-white">
+          {departure}
+        </div>
       </div>
       <div>
         <div className="font-mono text-[9px] tracking-wider text-white/40 uppercase">
@@ -993,16 +1132,16 @@ const DiversionStatusCard = ({
   plannedArrival: string;
 }) => (
   <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 shadow-lg">
-      <div className="font-mono text-[9px] font-black tracking-[0.2em] text-amber-300 uppercase">
-        Diversion Status
-      </div>
-      <div className="mt-1 font-mono text-sm font-black text-amber-200">
-        DIVERTING
-      </div>
-      <p className="mt-1 font-mono text-[10px] text-white/60">
-        Filed ARR {filedArrival} • Plan DST {plannedArrival}
-      </p>
+    <div className="font-mono text-[9px] font-black tracking-[0.2em] text-amber-300 uppercase">
+      Diversion Status
     </div>
+    <div className="mt-1 font-mono text-sm font-black text-amber-200">
+      DIVERTING
+    </div>
+    <p className="mt-1 font-mono text-[10px] text-white/60">
+      Filed ARR {filedArrival} • Plan DST {plannedArrival}
+    </p>
+  </div>
 );
 
 const MiniStat = ({ label, value }: { label: string; value: string }) => (

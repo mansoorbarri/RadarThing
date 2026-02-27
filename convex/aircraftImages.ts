@@ -19,7 +19,7 @@ export const getApprovedImage = query({
         q
           .eq("airlineIata", code)
           .eq("aircraftType", aircraftType)
-          .eq("isApproved", true)
+          .eq("isApproved", true),
       )
       .first();
 
@@ -31,7 +31,7 @@ export const getApprovedImage = query({
           q
             .eq("airlineIcao", code)
             .eq("aircraftType", aircraftType)
-            .eq("isApproved", true)
+            .eq("isApproved", true),
         )
         .first();
     }
@@ -197,7 +197,7 @@ export const checkApprovedExists = query({
           .eq("airlineIata", iata)
           .eq("airlineIcao", icao)
           .eq("aircraftType", aircraftType)
-          .eq("isApproved", true)
+          .eq("isApproved", true),
       )
       .first();
 
@@ -227,8 +227,8 @@ export const checkPendingByUser = query({
           q.eq(q.field("airlineIata"), iata),
           q.eq(q.field("airlineIcao"), icao),
           q.eq(q.field("aircraftType"), aircraftType),
-          q.eq(q.field("isApproved"), false)
-        )
+          q.eq(q.field("isApproved"), false),
+        ),
       )
       .first();
 
@@ -310,7 +310,11 @@ export const bulkApprove = mutation({
     approvedBy: v.string(),
   },
   handler: async (ctx, args) => {
-    const results: { id: string; success: boolean; existingImageKey?: string }[] = [];
+    const results: {
+      id: string;
+      success: boolean;
+      existingImageKey?: string;
+    }[] = [];
     const now = Date.now();
 
     for (const id of args.ids) {
@@ -328,7 +332,7 @@ export const bulkApprove = mutation({
             .eq("airlineIata", image.airlineIata)
             .eq("airlineIcao", image.airlineIcao)
             .eq("aircraftType", image.aircraftType)
-            .eq("isApproved", true)
+            .eq("isApproved", true),
         )
         .first();
 
@@ -359,7 +363,15 @@ export const bulkRemove = mutation({
     ids: v.array(v.id("aircraftImages")),
   },
   handler: async (ctx, args) => {
-    const results: { id: string; success: boolean; imageKey?: string; uploadedBy?: string; airlineIata?: string; airlineIcao?: string; aircraftType?: string }[] = [];
+    const results: {
+      id: string;
+      success: boolean;
+      imageKey?: string;
+      uploadedBy?: string;
+      airlineIata?: string;
+      airlineIcao?: string;
+      aircraftType?: string;
+    }[] = [];
 
     for (const id of args.ids) {
       const image = await ctx.db.get(id);
@@ -405,7 +417,7 @@ export const checkUploadEligibility = query({
           .eq("airlineIata", iata)
           .eq("airlineIcao", icao)
           .eq("aircraftType", aircraftType)
-          .eq("isApproved", true)
+          .eq("isApproved", true),
       )
       .first();
 
@@ -418,8 +430,8 @@ export const checkUploadEligibility = query({
           q.eq(q.field("airlineIata"), iata),
           q.eq(q.field("airlineIcao"), icao),
           q.eq(q.field("aircraftType"), aircraftType),
-          q.eq(q.field("isApproved"), false)
-        )
+          q.eq(q.field("isApproved"), false),
+        ),
       )
       .first();
 
@@ -482,7 +494,7 @@ export const findExistingApproved = query({
           .eq("airlineIata", iata)
           .eq("airlineIcao", icao)
           .eq("aircraftType", aircraftType)
-          .eq("isApproved", true)
+          .eq("isApproved", true),
       )
       .first();
 
@@ -531,7 +543,7 @@ export const findExistingApprovedFull = query({
           .eq("airlineIata", iata)
           .eq("airlineIcao", icao)
           .eq("aircraftType", aircraftType)
-          .eq("isApproved", true)
+          .eq("isApproved", true),
       )
       .first();
 

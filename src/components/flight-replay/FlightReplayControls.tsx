@@ -134,13 +134,22 @@ export function FlightReplayControls({
   }, [replay.elapsedTime, replay.isPlaying]);
 
   // Helper for analytics props
-  const getAnalyticsProps = useCallback(() => ({
-    callsign: flight.callsign,
-    aircraftType: flight.aircraftType,
-    depICAO: flight.depICAO,
-    arrICAO: flight.arrICAO,
-    duration: replay.totalDuration,
-  }), [flight.callsign, flight.aircraftType, flight.depICAO, flight.arrICAO, replay.totalDuration]);
+  const getAnalyticsProps = useCallback(
+    () => ({
+      callsign: flight.callsign,
+      aircraftType: flight.aircraftType,
+      depICAO: flight.depICAO,
+      arrICAO: flight.arrICAO,
+      duration: replay.totalDuration,
+    }),
+    [
+      flight.callsign,
+      flight.aircraftType,
+      flight.depICAO,
+      flight.arrICAO,
+      replay.totalDuration,
+    ],
+  );
 
   // Track play/pause
   const handleTogglePlay = useCallback(() => {
@@ -153,10 +162,13 @@ export function FlightReplayControls({
   }, [replay, getAnalyticsProps]);
 
   // Track speed change
-  const handleSpeedChange = useCallback((speed: number) => {
-    Analytics.flightReplaySpeedChanged({ ...getAnalyticsProps(), speed });
-    replay.setSpeed(speed as 1 | 2 | 4 | 8 | 16);
-  }, [replay, getAnalyticsProps]);
+  const handleSpeedChange = useCallback(
+    (speed: number) => {
+      Analytics.flightReplaySpeedChanged({ ...getAnalyticsProps(), speed });
+      replay.setSpeed(speed as 1 | 2 | 4 | 8 | 16);
+    },
+    [replay, getAnalyticsProps],
+  );
 
   // Track close
   const handleClose = useCallback(() => {
@@ -169,7 +181,10 @@ export function FlightReplayControls({
     const url = `${window.location.origin}/radar?replay=${flight.id}`;
     navigator.clipboard.writeText(url).then(() => {
       toast.success("Flight replay link copied to clipboard");
-      Analytics.flightReplayShared({ ...getAnalyticsProps(), flightId: flight.id });
+      Analytics.flightReplayShared({
+        ...getAnalyticsProps(),
+        flightId: flight.id,
+      });
     });
   }, [flight.id, getAnalyticsProps]);
 
@@ -192,9 +207,7 @@ export function FlightReplayControls({
   return (
     <div
       className={`animate-fade-in-up fixed z-[10015] ${
-        isMobile
-          ? "inset-x-3 bottom-3"
-          : "bottom-6 left-1/2 -translate-x-1/2"
+        isMobile ? "inset-x-3 bottom-3" : "bottom-6 left-1/2 -translate-x-1/2"
       }`}
     >
       <div
@@ -229,7 +242,7 @@ export function FlightReplayControls({
           <div className="flex items-center gap-1.5">
             <button
               onClick={handleShare}
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-colors hover:bg-amber-500/20 hover:text-amber-400 hover:border-amber-500/30"
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-colors hover:border-amber-500/30 hover:bg-amber-500/20 hover:text-amber-400"
               title="Copy share link"
             >
               <ShareIcon />
@@ -244,9 +257,7 @@ export function FlightReplayControls({
         </div>
 
         {/* Controls */}
-        <div
-          className={`flex items-center ${isMobile ? "gap-2" : "gap-4"}`}
-        >
+        <div className={`flex items-center ${isMobile ? "gap-2" : "gap-4"}`}>
           {/* Play/Pause Button */}
           <button
             onClick={handleTogglePlay}

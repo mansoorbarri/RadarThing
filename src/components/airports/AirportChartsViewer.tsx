@@ -1,8 +1,17 @@
 "use client";
 
-import { TransformWrapper, TransformComponent, useControls, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
+import {
+  TransformWrapper,
+  TransformComponent,
+  useControls,
+  type ReactZoomPanPinchRef,
+} from "react-zoom-pan-pinch";
 import { useRef, useState, useEffect, useMemo, useCallback } from "react";
-import type { ChartType, AirportChart, ChartsByType } from "~/types/airportCharts";
+import type {
+  ChartType,
+  AirportChart,
+  ChartsByType,
+} from "~/types/airportCharts";
 import { useAirportCharts } from "~/hooks/useAirportCharts";
 import { cn } from "~/lib/utils";
 import { ChevronLeft, ChevronRight, RotateCcw, Search, X } from "lucide-react";
@@ -58,11 +67,11 @@ function ChartTypeTab({
     <button
       onClick={onClick}
       className={cn(
-        "relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors rounded-md",
+        "relative flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
         isSelected
           ? "bg-white/10 text-white"
-          : "text-slate-400 hover:text-slate-200 hover:bg-white/5",
-        count === 0 && "opacity-50"
+          : "text-slate-400 hover:bg-white/5 hover:text-slate-200",
+        count === 0 && "opacity-50",
       )}
       disabled={count === 0}
     >
@@ -71,7 +80,9 @@ function ChartTypeTab({
         <span
           className={cn(
             "flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold",
-            isSelected ? "bg-blue-500 text-white" : "bg-slate-700 text-slate-300"
+            isSelected
+              ? "bg-blue-500 text-white"
+              : "bg-slate-700 text-slate-300",
           )}
         >
           {count}
@@ -113,13 +124,19 @@ function ChartSidebar({
   // Get all charts flattened with their type info for search
   const allChartsFlat = useMemo(() => {
     if (!allCharts) return [];
-    const result: { chart: AirportChart; type: ChartType; indexInType: number }[] = [];
+    const result: {
+      chart: AirportChart;
+      type: ChartType;
+      indexInType: number;
+    }[] = [];
     (Object.keys(allCharts) as ChartType[]).forEach((type) => {
       allCharts[type].forEach((chart, index) => {
         result.push({ chart, type, indexInType: index });
       });
     });
-    return result.sort((a, b) => a.chart.chartName.localeCompare(b.chart.chartName));
+    return result.sort((a, b) =>
+      a.chart.chartName.localeCompare(b.chart.chartName),
+    );
   }, [allCharts]);
 
   // Filter charts by search query
@@ -127,7 +144,7 @@ function ChartSidebar({
     if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase();
     return allChartsFlat.filter((item) =>
-      item.chart.chartName.toLowerCase().includes(query)
+      item.chart.chartName.toLowerCase().includes(query),
     );
   }, [searchQuery, allChartsFlat]);
 
@@ -139,20 +156,22 @@ function ChartSidebar({
   return (
     <div
       className={cn(
-        "flex-shrink-0 border-r border-white/10 bg-slate-900/50 flex flex-col transition-all duration-300 ease-in-out overflow-hidden",
-        isCollapsed ? "w-12" : "w-72"
+        "flex flex-shrink-0 flex-col overflow-hidden border-r border-white/10 bg-slate-900/50 transition-all duration-300 ease-in-out",
+        isCollapsed ? "w-12" : "w-72",
       )}
     >
       {/* Collapsed state - show expand button */}
       <div
         className={cn(
-          "flex items-end justify-center flex-1 p-2 transition-opacity duration-200",
-          isCollapsed ? "opacity-100" : "opacity-0 pointer-events-none absolute"
+          "flex flex-1 items-end justify-center p-2 transition-opacity duration-200",
+          isCollapsed
+            ? "opacity-100"
+            : "pointer-events-none absolute opacity-0",
         )}
       >
         <button
           onClick={onToggleCollapse}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-white/10 bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-white/10 bg-slate-800 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
           title="Show chart list"
         >
           <ChevronRight className="h-4 w-4" />
@@ -162,21 +181,21 @@ function ChartSidebar({
       {/* Expanded state - show chart list */}
       <div
         className={cn(
-          "flex flex-col flex-1 transition-opacity duration-200",
-          isCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+          "flex flex-1 flex-col transition-opacity duration-200",
+          isCollapsed ? "pointer-events-none opacity-0" : "opacity-100",
         )}
       >
         {/* Search input */}
-        <div className="p-2 border-b border-white/10">
+        <div className="border-b border-white/10 p-2">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+            <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
             <input
               ref={searchInputRef}
               type="text"
               placeholder="Search all charts..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-800/50 border border-white/10 rounded-md pl-8 pr-8 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50"
+              className="w-full rounded-md border border-white/10 bg-slate-800/50 py-1.5 pr-8 pl-8 text-xs text-white placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
             />
             {searchQuery && (
               <button
@@ -184,7 +203,7 @@ function ChartSidebar({
                   setSearchQuery("");
                   searchInputRef.current?.focus();
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                className="absolute top-1/2 right-2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -195,12 +214,13 @@ function ChartSidebar({
         <div className="flex-1 overflow-y-auto p-2">
           {isSearching ? (
             <>
-              <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wider px-2 py-1.5 whitespace-nowrap">
-                {searchResults.length} Result{searchResults.length !== 1 ? "s" : ""}
+              <div className="px-2 py-1.5 text-[10px] font-medium tracking-wider whitespace-nowrap text-slate-500 uppercase">
+                {searchResults.length} Result
+                {searchResults.length !== 1 ? "s" : ""}
               </div>
               <div className="space-y-0.5">
                 {searchResults.length === 0 ? (
-                  <div className="px-3 py-4 text-xs text-slate-500 text-center">
+                  <div className="px-3 py-4 text-center text-xs text-slate-500">
                     No charts found
                   </div>
                 ) : (
@@ -212,15 +232,16 @@ function ChartSidebar({
                         setSearchQuery("");
                       }}
                       className={cn(
-                        "w-full text-left px-3 py-2 rounded-md text-xs transition-colors",
+                        "w-full rounded-md px-3 py-2 text-left text-xs transition-colors",
                         selectedType === type && selectedIndex === indexInType
-                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-                          : "text-slate-300 hover:bg-white/5 border border-transparent"
+                          ? "border border-cyan-500/30 bg-cyan-500/20 text-cyan-300"
+                          : "border border-transparent text-slate-300 hover:bg-white/5",
                       )}
                     >
                       <div className="font-medium">{chart.chartName}</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">
-                        {CHART_TYPES.find((t) => t.type === type)?.label ?? type}
+                      <div className="mt-0.5 text-[10px] text-slate-500">
+                        {CHART_TYPES.find((t) => t.type === type)?.label ??
+                          type}
                       </div>
                     </button>
                   ))
@@ -229,7 +250,7 @@ function ChartSidebar({
             </>
           ) : (
             <>
-              <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wider px-2 py-1.5 whitespace-nowrap">
+              <div className="px-2 py-1.5 text-[10px] font-medium tracking-wider whitespace-nowrap text-slate-500 uppercase">
                 {charts.length} Charts
               </div>
               <div className="space-y-0.5">
@@ -238,10 +259,10 @@ function ChartSidebar({
                     key={chart.id ?? originalIndex}
                     onClick={() => onChange(originalIndex)}
                     className={cn(
-                      "w-full text-left px-3 py-2 rounded-md text-xs transition-colors",
+                      "w-full rounded-md px-3 py-2 text-left text-xs transition-colors",
                       selectedIndex === originalIndex
-                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-                        : "text-slate-300 hover:bg-white/5 border border-transparent"
+                        ? "border border-cyan-500/30 bg-cyan-500/20 text-cyan-300"
+                        : "border border-transparent text-slate-300 hover:bg-white/5",
                     )}
                   >
                     <div className="font-medium">{chart.chartName}</div>
@@ -253,10 +274,10 @@ function ChartSidebar({
         </div>
 
         {/* Collapse button at bottom right */}
-        <div className="flex justify-end p-2 border-t border-white/10">
+        <div className="flex justify-end border-t border-white/10 p-2">
           <button
             onClick={onToggleCollapse}
-            className="flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-800 px-2 text-xs text-slate-400 hover:bg-slate-700 hover:text-white transition-colors whitespace-nowrap"
+            className="flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-800 px-2 text-xs whitespace-nowrap text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
             title="Hide chart list"
           >
             <ChevronLeft className="h-3 w-3" />
@@ -277,7 +298,7 @@ function ResetButton({ onReset }: { onReset?: () => void }) {
         resetTransform();
         onReset?.();
       }}
-      className="absolute bottom-4 right-4 z-10 flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-300 backdrop-blur-sm hover:bg-slate-800"
+      className="absolute right-4 bottom-4 z-10 flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-300 backdrop-blur-sm hover:bg-slate-800"
     >
       <RotateCcw className="h-3 w-3" />
       Reset
@@ -300,7 +321,10 @@ function ChartImage({
   const cachedState = getTransformState(chartUrl);
 
   const handleTransformed = useCallback(
-    (_ref: ReactZoomPanPinchRef, state: { scale: number; positionX: number; positionY: number }) => {
+    (
+      _ref: ReactZoomPanPinchRef,
+      state: { scale: number; positionX: number; positionY: number },
+    ) => {
       // Only save after initial setup is done
       if (hasInitialized.current) {
         setTransformState(chartUrl, {
@@ -310,7 +334,7 @@ function ChartImage({
         });
       }
     },
-    [chartUrl]
+    [chartUrl],
   );
 
   const handleImageLoad = useCallback(() => {
@@ -379,17 +403,20 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
   } = useAirportCharts(icao);
 
   // Handler for selecting a chart from search (switches type and index)
-  const handleSelectChart = useCallback((type: ChartType, index: number) => {
-    if (type !== selectedType) {
-      // We need to set both type and index, but setSelectedType resets index to 0
-      // So we set the type first, then manually set the index
-      setSelectedType(type);
-      // Small delay to ensure type is set before index
-      setTimeout(() => setSelectedChartIndex(index), 0);
-    } else {
-      setSelectedChartIndex(index);
-    }
-  }, [selectedType, setSelectedType, setSelectedChartIndex]);
+  const handleSelectChart = useCallback(
+    (type: ChartType, index: number) => {
+      if (type !== selectedType) {
+        // We need to set both type and index, but setSelectedType resets index to 0
+        // So we set the type first, then manually set the index
+        setSelectedType(type);
+        // Small delay to ensure type is set before index
+        setTimeout(() => setSelectedChartIndex(index), 0);
+      } else {
+        setSelectedChartIndex(index);
+      }
+    },
+    [selectedType, setSelectedType, setSelectedChartIndex],
+  );
 
   // Reset PDF error when chart changes
   useEffect(() => {
@@ -479,10 +506,10 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
               <button
                 onClick={() => setIsInverted((prev) => !prev)}
                 className={cn(
-                  "absolute bottom-14 right-4 z-10 cursor-pointer rounded-md border px-3 py-1.5 text-xs transition-colors",
+                  "absolute right-4 bottom-14 z-10 cursor-pointer rounded-md border px-3 py-1.5 text-xs transition-colors",
                   isInverted
                     ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20"
-                    : "border-white/10 bg-slate-900/90 text-slate-300 hover:bg-slate-800"
+                    : "border-white/10 bg-slate-900/90 text-slate-300 hover:bg-slate-800",
                 )}
               >
                 Invert: {isInverted ? "On" : "Off"}
@@ -492,7 +519,9 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
               <div className="flex h-full w-full items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
                   <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-cyan-500" />
-                  <span className="text-sm text-slate-400">Loading charts...</span>
+                  <span className="text-sm text-slate-400">
+                    Loading charts...
+                  </span>
                 </div>
               </div>
             ) : error ? (
@@ -519,8 +548,9 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
                   <div className="mb-2 text-sm font-medium text-white">
                     PDF Preview Unavailable
                   </div>
-                  <div className="max-w-sm text-xs text-slate-400 mb-4">
-                    Your browser may not support embedded PDFs, or the PDF failed to load.
+                  <div className="mb-4 max-w-sm text-xs text-slate-400">
+                    Your browser may not support embedded PDFs, or the PDF
+                    failed to load.
                   </div>
                   <a
                     href={selectedChart.chartUrl}
@@ -534,7 +564,10 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
               ) : (
                 <iframe
                   src={selectedChart.chartUrl}
-                  className={cn("h-full w-full border-0", isInverted && "invert")}
+                  className={cn(
+                    "h-full w-full border-0",
+                    isInverted && "invert",
+                  )}
                   title={selectedChart.chartName}
                   onError={() => setPdfError(true)}
                 />

@@ -176,8 +176,20 @@ export const getRadarAircraftDivIcon = (
       aircraft.callsign === selectedAircraftId);
 
   // Smaller dot and heading line, even smaller on mobile
-  const dotSize = isCurrentAircraftSelected ? (isMobile ? 8 : 10) : (isMobile ? 5 : 6);
-  const headingLineLength = isCurrentAircraftSelected ? (isMobile ? 14 : 18) : (isMobile ? 10 : 12);
+  const dotSize = isCurrentAircraftSelected
+    ? isMobile
+      ? 8
+      : 10
+    : isMobile
+      ? 5
+      : 6;
+  const headingLineLength = isCurrentAircraftSelected
+    ? isMobile
+      ? 14
+      : 18
+    : isMobile
+      ? 10
+      : 12;
   const labelHeight = isMobile ? 32 : 46;
   const labelWidth = isMobile ? 75 : 100;
   const labelOffsetFromDot = isMobile ? 10 : 12;
@@ -199,8 +211,16 @@ export const getRadarAircraftDivIcon = (
       : `${Math.round(altAGL / 100) * 100}`;
 
   // Color scheme: selected = bright green, emergency = red, normal = cyan
-  const dotColor = isEmergency ? "#ef4444" : isCurrentAircraftSelected ? "#4ade80" : "#22d3ee";
-  const glowColor = isEmergency ? "rgba(239,68,68,0.8)" : isCurrentAircraftSelected ? "rgba(74,222,128,0.9)" : "rgba(0,255,255,0.5)";
+  const dotColor = isEmergency
+    ? "#ef4444"
+    : isCurrentAircraftSelected
+      ? "#4ade80"
+      : "#22d3ee";
+  const glowColor = isEmergency
+    ? "rgba(239,68,68,0.8)"
+    : isCurrentAircraftSelected
+      ? "rgba(74,222,128,0.9)"
+      : "rgba(0,255,255,0.5)";
 
   const dotStyle = `
     position: absolute;
@@ -215,7 +235,8 @@ export const getRadarAircraftDivIcon = (
   `;
 
   // Selection ring around selected aircraft
-  const selectionRingStyle = isCurrentAircraftSelected ? `
+  const selectionRingStyle = isCurrentAircraftSelected
+    ? `
     position: absolute;
     top: ${(totalHeight - dotSize) / 2 - 4}px;
     left: -4px;
@@ -225,7 +246,8 @@ export const getRadarAircraftDivIcon = (
     border: 1.5px solid ${isEmergency ? "#ef4444" : "#4ade80"};
     box-shadow: 0 0 6px ${isEmergency ? "rgba(239,68,68,0.6)" : "rgba(74,222,128,0.6)"};
     animation: radar-ring-pulse 1.5s ease-in-out infinite;
-  ` : "";
+  `
+    : "";
 
   const headingLineStyle = `
     position: absolute;

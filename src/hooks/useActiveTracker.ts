@@ -9,7 +9,10 @@ import { type PositionUpdate } from "~/lib/aircraft-store";
 const ANON_TRACKER_KEY = "radarthing.anonTrackerId";
 
 function createAnonTrackerId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
     return `anon:${crypto.randomUUID()}`;
   }
 

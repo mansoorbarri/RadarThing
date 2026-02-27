@@ -9,7 +9,14 @@ interface RejectModalProps {
   onCancel: () => void;
 }
 
-export function RejectModal({ isOpen, targetCount, reason, onReasonChange, onConfirm, onCancel }: RejectModalProps) {
+export function RejectModal({
+  isOpen,
+  targetCount,
+  reason,
+  onReasonChange,
+  onConfirm,
+  onCancel,
+}: RejectModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -18,7 +25,10 @@ export function RejectModal({ isOpen, targetCount, reason, onReasonChange, onCon
         <h3 className="mb-4 text-lg font-semibold text-white">
           Reject {targetCount} image{targetCount > 1 ? "s" : ""}
         </h3>
-        <p className="mb-4 text-sm text-slate-400">Please provide a reason for rejection. This will be sent to the uploader.</p>
+        <p className="mb-4 text-sm text-slate-400">
+          Please provide a reason for rejection. This will be sent to the
+          uploader.
+        </p>
         <textarea
           value={reason}
           onChange={(e) => onReasonChange(e.target.value)}
@@ -28,8 +38,19 @@ export function RejectModal({ isOpen, targetCount, reason, onReasonChange, onCon
           autoFocus
         />
         <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 cursor-pointer rounded-lg border border-white/10 py-2 text-sm text-slate-400 transition-colors hover:bg-white/5">Cancel</button>
-          <button onClick={onConfirm} disabled={!reason.trim()} className="flex-1 cursor-pointer rounded-lg bg-red-500/20 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50">Reject</button>
+          <button
+            onClick={onCancel}
+            className="flex-1 cursor-pointer rounded-lg border border-white/10 py-2 text-sm text-slate-400 transition-colors hover:bg-white/5"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={!reason.trim()}
+            className="flex-1 cursor-pointer rounded-lg bg-red-500/20 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Reject
+          </button>
         </div>
       </div>
     </div>

@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { getAircraftImage, type AircraftImage } from "~/app/actions/aircraft-images";
+import {
+  getAircraftImage,
+  type AircraftImage,
+} from "~/app/actions/aircraft-images";
 import { normalizeAircraftType } from "~/lib/utils";
 
 // In-memory cache for aircraft photos (persists across component instances)
@@ -39,7 +42,6 @@ function extractAirlineCode(flightNo: string | undefined): string | null {
   return match?.[1] ?? null;
 }
 
-
 export interface AircraftPhotoData {
   imageUrl: string;
   discordUsername: string | null;
@@ -47,7 +49,7 @@ export interface AircraftPhotoData {
 
 export const useAircraftPhoto = (
   callsign: string | undefined,
-  aircraftType: string | undefined
+  aircraftType: string | undefined,
 ) => {
   const [photo, setPhoto] = useState<AircraftPhotoData | null>(null);
   const [loading, setLoading] = useState(false);

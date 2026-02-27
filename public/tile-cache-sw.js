@@ -24,9 +24,7 @@ const TILE_HOSTS = [
 function isTileRequest(url) {
   try {
     const hostname = new URL(url).hostname;
-    return TILE_HOSTS.some(
-      (h) => hostname === h || hostname.endsWith("." + h),
-    );
+    return TILE_HOSTS.some((h) => hostname === h || hostname.endsWith("." + h));
   } catch {
     return false;
   }

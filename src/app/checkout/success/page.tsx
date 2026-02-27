@@ -8,7 +8,9 @@ import { Analytics } from "~/lib/analytics";
 
 export default function CheckoutSuccessPage() {
   const router = useRouter();
-  const [status, setStatus] = useState<"syncing" | "success" | "error">("syncing");
+  const [status, setStatus] = useState<"syncing" | "success" | "error">(
+    "syncing",
+  );
 
   useEffect(() => {
     syncAfterCheckout()

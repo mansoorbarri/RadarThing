@@ -44,7 +44,12 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
         <div className="max-w-[350px] rounded-lg border border-orange-400/40 bg-gradient-to-br from-black/90 to-orange-950/80 p-3 text-orange-300 shadow-[0_0_10px_rgba(255,150,0,0.2)]">
           <div
             className="flex cursor-pointer items-center gap-2"
-            onClick={() => isPro && notams && notams.length > 0 && setNotamsExpanded(!notamsExpanded)}
+            onClick={() =>
+              isPro &&
+              notams &&
+              notams.length > 0 &&
+              setNotamsExpanded(!notamsExpanded)
+            }
           >
             <strong className="text-orange-400">NOTAMs</strong>
             {isPro && notamCount > 0 && (
@@ -61,7 +66,7 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
                     feature: "notams",
                   })
                 }
-                className="ml-auto rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wide hover:from-amber-400 hover:to-orange-400"
+                className="ml-auto rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase hover:from-amber-400 hover:to-orange-400"
               >
                 TRIAL
               </Link>
@@ -88,7 +93,7 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
                       {notam.decoded}
                     </div>
                   ) : (
-                    <pre className="whitespace-pre-wrap text-[11px] leading-[1.3] text-orange-300/80">
+                    <pre className="text-[11px] leading-[1.3] whitespace-pre-wrap text-orange-300/80">
                       {notam.text}
                     </pre>
                   )}
@@ -118,7 +123,7 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
                     feature: "atis",
                   })
                 }
-                className="ml-auto rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wide hover:from-amber-400 hover:to-orange-400"
+                className="ml-auto rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase hover:from-amber-400 hover:to-orange-400"
               >
                 TRIAL
               </Link>

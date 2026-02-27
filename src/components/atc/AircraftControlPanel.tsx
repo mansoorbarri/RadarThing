@@ -13,7 +13,15 @@ interface AircraftControlPanelProps {
 type PendingAction = "setAll";
 
 export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
-  const { setSpeed, setAltitude, setHeading, setVS, setSquawk, setFlaps, isLoading } = useAircraftCommands();
+  const {
+    setSpeed,
+    setAltitude,
+    setHeading,
+    setVS,
+    setSquawk,
+    setFlaps,
+    isLoading,
+  } = useAircraftCommands();
 
   const [speedInput, setSpeedInput] = useState("");
   const [altitudeInput, setAltitudeInput] = useState("");
@@ -23,7 +31,9 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   const [flapsInput, setFlapsInput] = useState("");
   const [flapsError, setFlapsError] = useState("");
   const [showNavWarning, setShowNavWarning] = useState(false);
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(
+    null,
+  );
 
   const aircraftId = aircraft.id;
   const flapsMaxPosition = aircraft.flapsMaxPosition ?? 0;
@@ -70,7 +80,11 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       setSquawk(aircraftId, squawkInput);
       controlsSet.push("squawk");
     }
-    if (!isNaN(flaps) && flaps >= 0 && (flapsMaxPosition === 0 || flaps <= flapsMaxPosition)) {
+    if (
+      !isNaN(flaps) &&
+      flaps >= 0 &&
+      (flapsMaxPosition === 0 || flaps <= flapsMaxPosition)
+    ) {
       setFlaps(aircraftId, flaps);
       controlsSet.push("flaps");
     }
@@ -83,7 +97,23 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     resetForm();
     setShowNavWarning(false);
     setPendingAction(null);
-  }, [aircraftId, headingInput, speedInput, altitudeInput, vsInput, squawkInput, flapsInput, flapsMaxPosition, setHeading, setSpeed, setAltitude, setVS, setSquawk, setFlaps, resetForm]);
+  }, [
+    aircraftId,
+    headingInput,
+    speedInput,
+    altitudeInput,
+    vsInput,
+    squawkInput,
+    flapsInput,
+    flapsMaxPosition,
+    setHeading,
+    setSpeed,
+    setAltitude,
+    setVS,
+    setSquawk,
+    setFlaps,
+    resetForm,
+  ]);
 
   const handleCancelWarning = useCallback(() => {
     setShowNavWarning(false);
@@ -130,7 +160,11 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       setSquawk(aircraftId, squawkInput);
       controlsSet.push("squawk");
     }
-    if (!isNaN(flaps) && flaps >= 0 && (flapsMaxPosition === 0 || flaps <= flapsMaxPosition)) {
+    if (
+      !isNaN(flaps) &&
+      flaps >= 0 &&
+      (flapsMaxPosition === 0 || flaps <= flapsMaxPosition)
+    ) {
       setFlaps(aircraftId, flaps);
       controlsSet.push("flaps");
     }
@@ -140,9 +174,32 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       toast.success(`Controls sent: ${controlsSet.join(", ").toUpperCase()}`);
       resetForm();
     }
-  }, [aircraftId, speedInput, altitudeInput, headingInput, vsInput, squawkInput, flapsInput, flapsMaxPosition, isInNavMode, setSpeed, setAltitude, setHeading, setVS, setSquawk, setFlaps, resetForm]);
+  }, [
+    aircraftId,
+    speedInput,
+    altitudeInput,
+    headingInput,
+    vsInput,
+    squawkInput,
+    flapsInput,
+    flapsMaxPosition,
+    isInNavMode,
+    setSpeed,
+    setAltitude,
+    setHeading,
+    setVS,
+    setSquawk,
+    setFlaps,
+    resetForm,
+  ]);
 
-  const hasAnyInput = speedInput || altitudeInput || headingInput || vsInput || squawkInput || flapsInput;
+  const hasAnyInput =
+    speedInput ||
+    altitudeInput ||
+    headingInput ||
+    vsInput ||
+    squawkInput ||
+    flapsInput;
 
   return (
     <div className="mt-6 space-y-4">
@@ -162,8 +219,8 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
               Aircraft is in NAV mode
             </p>
             <p className="mt-1 font-mono text-[10px] text-amber-200/80">
-              Setting a heading will switch the autopilot from NAV mode to HDG mode.
-              The aircraft will stop following its flight plan.
+              Setting a heading will switch the autopilot from NAV mode to HDG
+              mode. The aircraft will stop following its flight plan.
             </p>
           </div>
           <div className="flex gap-2">
@@ -236,7 +293,9 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
             step={1}
           />
           {flapsError && (
-            <p className="px-1 font-mono text-[9px] text-red-400">{flapsError}</p>
+            <p className="px-1 font-mono text-[9px] text-red-400">
+              {flapsError}
+            </p>
           )}
         </div>
 
@@ -253,7 +312,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       <button
         onClick={handleSetAll}
         disabled={isLoading || !hasAnyInput}
-        className="w-full rounded-xl bg-cyan-600 py-3 font-mono text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full rounded-xl bg-cyan-600 py-3 font-mono text-xs font-bold tracking-wider text-white uppercase transition-colors hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
         SET
       </button>
@@ -291,7 +350,9 @@ function ControlRow({
   placeholder,
 }: ControlRowProps) {
   // For percentage, display is 0-100 but stored value is 0-1
-  const displayValue = isPercentage ? String(Math.round(parseFloat(value || "0") * 100)) : value;
+  const displayValue = isPercentage
+    ? String(Math.round(parseFloat(value || "0") * 100))
+    : value;
 
   const handlePercentageChange = (displayVal: string) => {
     const num = parseInt(displayVal, 10);
@@ -346,9 +407,13 @@ function ControlRow({
       <input
         type={isText ? "text" : "number"}
         value={isPercentage ? displayValue : value}
-        onChange={(e) => isPercentage ? handlePercentageChange(e.target.value) : onChange(e.target.value)}
+        onChange={(e) =>
+          isPercentage
+            ? handlePercentageChange(e.target.value)
+            : onChange(e.target.value)
+        }
         placeholder={placeholder}
-        className="w-20 flex-1 rounded-lg border border-white/20 bg-black/60 px-2 py-1.5 text-center font-mono text-base font-bold text-white outline-none transition-colors focus:border-cyan-500/50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="w-20 flex-1 [appearance:textfield] rounded-lg border border-white/20 bg-black/60 px-2 py-1.5 text-center font-mono text-base font-bold text-white transition-colors outline-none focus:border-cyan-500/50 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
 
       {!isText && (
@@ -361,7 +426,9 @@ function ControlRow({
       )}
 
       {unit && (
-        <span className="w-8 font-mono text-[9px] font-bold text-white/40">{unit}</span>
+        <span className="w-8 font-mono text-[9px] font-bold text-white/40">
+          {unit}
+        </span>
       )}
     </div>
   );

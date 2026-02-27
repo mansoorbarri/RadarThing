@@ -11,8 +11,6 @@
 import type * as activeTrackers from "../activeTrackers.js";
 import type * as aircraftImages from "../aircraftImages.js";
 import type * as airportCharts from "../airportCharts.js";
-import type * as challenges from "../challenges.js";
-import type * as contributorRewards from "../contributorRewards.js";
 import type * as crons from "../crons.js";
 import type * as flights from "../flights.js";
 import type * as lib_airlineCodes from "../lib/airlineCodes.js";
@@ -30,8 +28,6 @@ declare const fullApi: ApiFromModules<{
   activeTrackers: typeof activeTrackers;
   aircraftImages: typeof aircraftImages;
   airportCharts: typeof airportCharts;
-  challenges: typeof challenges;
-  contributorRewards: typeof contributorRewards;
   crons: typeof crons;
   flights: typeof flights;
   "lib/airlineCodes": typeof lib_airlineCodes;

@@ -3,7 +3,7 @@
 import { Plane } from "lucide-react";
 
 export function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse bg-white/10 rounded ${className}`} />;
+  return <div className={`animate-pulse rounded bg-white/10 ${className}`} />;
 }
 
 export function ImageCardSkeleton() {
@@ -16,9 +16,9 @@ export function ImageCardSkeleton() {
           <Skeleton className="h-6 w-12 rounded-md" />
           <Skeleton className="h-6 w-16 rounded-md" />
         </div>
-        <Skeleton className="h-3 w-32 mb-2" />
-        <Skeleton className="h-3 w-48 mb-1" />
-        <Skeleton className="h-3 w-24 mb-3" />
+        <Skeleton className="mb-2 h-3 w-32" />
+        <Skeleton className="mb-1 h-3 w-48" />
+        <Skeleton className="mb-3 h-3 w-24" />
         <div className="flex gap-2">
           <Skeleton className="h-9 flex-1 rounded-lg" />
           <Skeleton className="h-9 flex-1 rounded-lg" />
@@ -50,7 +50,7 @@ export function AdminSkeleton() {
             <Plane className="h-4 w-4 text-cyan-400" />
             <span className="font-mono text-sm text-cyan-400">ADMIN PANEL</span>
           </div>
-          <Skeleton className="h-9 w-64 mt-2" />
+          <Skeleton className="mt-2 h-9 w-64" />
         </div>
 
         {/* Main Tabs Skeleton */}

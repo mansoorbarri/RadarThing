@@ -145,7 +145,9 @@ export function AirportFIDPanel({
       <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
         <div className="flex items-center gap-2">
           <Plane className="h-4 w-4 text-cyan-400" />
-          <span className="font-mono text-sm text-cyan-400">{icao} Flights</span>
+          <span className="font-mono text-sm text-cyan-400">
+            {icao} Flights
+          </span>
         </div>
         <button
           onClick={onClose}

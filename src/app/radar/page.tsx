@@ -45,7 +45,14 @@ import { AtcPlayer } from "~/components/atc/AtcPlayer";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { WhatsNew } from "~/components/ui/WhatsNew";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
-import { UpgradeIcon, FlightsIcon, FilterIcon, DiscordIcon, InstallIcon, LeaderboardIcon } from "~/utils/dockIcons";
+import {
+  UpgradeIcon,
+  FlightsIcon,
+  FilterIcon,
+  DiscordIcon,
+  InstallIcon,
+  LeaderboardIcon,
+} from "~/utils/dockIcons";
 import { RotateCcw } from "lucide-react";
 
 const DynamicMapComponent = dynamic(() => import("~/components/map"), {
@@ -60,7 +67,8 @@ export default function ATCPage() {
   const searchParams = useSearchParams();
   const isMobile = useMobileDetection();
 
-  const { aircrafts, isLoading, connectionStatus, onlineAirports } = useAircraftStream();
+  const { aircrafts, isLoading, connectionStatus, onlineAirports } =
+    useAircraftStream();
   const { airports, fetchAirports } = useAirportData();
 
   // Fetch airports when online ATC data arrives so markers can render
@@ -94,33 +102,41 @@ export default function ATCPage() {
 
   // Check if callsign param is a full flight number (e.g., EK213) vs just a prefix (e.g., EK)
   const callsignParam = searchParams.get("callsign");
-  const isFullFlightNumberParam = callsignParam && /^[A-Z]+\d+.*$/i.test(callsignParam.trim());
+  const isFullFlightNumberParam =
+    callsignParam && /^[A-Z]+\d+.*$/i.test(callsignParam.trim());
 
   // Handle replay param from dashboard
   const replayParam = searchParams.get("replay");
   const replayFlightQuery = useQuery(
     api.flights.getById,
-    replayParam ? { id: replayParam as Id<"flights"> } : "skip"
+    replayParam ? { id: replayParam as Id<"flights"> } : "skip",
   );
 
   // State for full flight number filter (can be cleared with Escape)
-  const [fullFlightFilter, setFullFlightFilter] = useState<string | null>(() => {
-    if (isFullFlightNumberParam && callsignParam) {
-      return callsignParam.trim().toUpperCase();
-    }
-    return null;
-  });
+  const [fullFlightFilter, setFullFlightFilter] = useState<string | null>(
+    () => {
+      if (isFullFlightNumberParam && callsignParam) {
+        return callsignParam.trim().toUpperCase();
+      }
+      return null;
+    },
+  );
 
-  const [selectedCallsigns, setSelectedCallsigns] = useState<Set<string>>(() => {
-    // If it's a full flight number, don't use prefix filtering
-    if (isFullFlightNumberParam) return new Set();
+  const [selectedCallsigns, setSelectedCallsigns] = useState<Set<string>>(
+    () => {
+      // If it's a full flight number, don't use prefix filtering
+      if (isFullFlightNumberParam) return new Set();
 
-    if (callsignParam) {
-      const prefixes = callsignParam.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
-      return new Set(prefixes);
-    }
-    return new Set();
-  });
+      if (callsignParam) {
+        const prefixes = callsignParam
+          .split(",")
+          .map((s) => s.trim().toUpperCase())
+          .filter(Boolean);
+        return new Set(prefixes);
+      }
+      return new Set();
+    },
+  );
 
   // Track if we've already auto-selected from URL param
   const [autoSelectedFromUrl, setAutoSelectedFromUrl] = useState(false);
@@ -169,7 +185,6 @@ export default function ATCPage() {
   >(null);
   const resetMapViewRef = useRef<(() => void) | null>(null);
 
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
 
@@ -181,7 +196,9 @@ export default function ATCPage() {
       params.delete("callsign");
     }
 
-    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+    const newUrl = params.toString()
+      ? `?${params.toString()}`
+      : window.location.pathname;
     window.history.replaceState(null, "", newUrl);
   }, [selectedCallsigns, fullFlightFilter]);
 
@@ -190,14 +207,19 @@ export default function ATCPage() {
     if (replayFlightQuery && !replayFlight) {
       setReplayFlight(replayFlightQuery);
       // Set history path to zoom the map to the flight route
-      if (replayFlightQuery.routeData && replayFlightQuery.routeData.length > 0) {
+      if (
+        replayFlightQuery.routeData &&
+        replayFlightQuery.routeData.length > 0
+      ) {
         setHistoryPath(replayFlightQuery.routeData);
         setIsViewingHistory(true);
       }
       // Clear the replay param from URL after loading
       const params = new URLSearchParams(window.location.search);
       params.delete("replay");
-      const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+      const newUrl = params.toString()
+        ? `?${params.toString()}`
+        : window.location.pathname;
       window.history.replaceState(null, "", newUrl);
     }
   }, [replayFlightQuery, replayFlight]);
@@ -208,7 +230,7 @@ export default function ATCPage() {
       return aircrafts.filter(
         (ac) =>
           ac.callsign?.toUpperCase() === fullFlightFilter ||
-          ac.flightNo?.toUpperCase() === fullFlightFilter
+          ac.flightNo?.toUpperCase() === fullFlightFilter,
       );
     }
 
@@ -226,12 +248,15 @@ export default function ATCPage() {
   // Memoize selected aircraft IDs to avoid recalculating on every render
   const selectedAircraftIds = useMemo(
     () => selectedAircrafts.map((ac) => ac.callsign || ac.id),
-    [selectedAircrafts]
+    [selectedAircrafts],
   );
 
   const onlineAtcForSelected = useMemo(
-    () => selectedAirport ? onlineAirports.find((a) => a.icao === selectedAirport.icao) : undefined,
-    [onlineAirports, selectedAirport]
+    () =>
+      selectedAirport
+        ? onlineAirports.find((a) => a.icao === selectedAirport.icao)
+        : undefined,
+    [onlineAirports, selectedAirport],
   );
 
   const handleToggleCallsign = useCallback((prefix: string) => {
@@ -306,12 +331,13 @@ export default function ATCPage() {
   const followParam = searchParams.get("follow") === "true";
 
   useEffect(() => {
-    if (!fullFlightFilter || autoSelectedFromUrl || aircrafts.length === 0) return;
+    if (!fullFlightFilter || autoSelectedFromUrl || aircrafts.length === 0)
+      return;
 
     const matchedAircraft = aircrafts.find(
       (ac) =>
         ac.callsign?.toUpperCase() === fullFlightFilter ||
-        ac.flightNo?.toUpperCase() === fullFlightFilter
+        ac.flightNo?.toUpperCase() === fullFlightFilter,
     );
 
     if (matchedAircraft) {
@@ -327,7 +353,10 @@ export default function ATCPage() {
   // Escape key to clear filters, F key to toggle follow mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && (fullFlightFilter || selectedCallsigns.size > 0)) {
+      if (
+        e.key === "Escape" &&
+        (fullFlightFilter || selectedCallsigns.size > 0)
+      ) {
         setFullFlightFilter(null);
         setSelectedCallsigns(new Set());
         setSelectedAircrafts([]);
@@ -412,11 +441,17 @@ export default function ATCPage() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-black">
-      <header className={`absolute top-0 right-0 left-0 z-[10010] flex items-center justify-between ${isMobile ? 'h-14 px-3 pt-1' : 'h-20 px-6 pt-5'}`}>
+      <header
+        className={`absolute top-0 right-0 left-0 z-[10010] flex items-center justify-between ${isMobile ? "h-14 px-3 pt-1" : "h-20 px-6 pt-5"}`}
+      >
         <div className="flex items-center gap-2">
           {!isMobile && (
             <Image
-              src={(isDarkLayerMode || isLoading) ? "/logo-white.svg" : "/logo-black.svg"}
+              src={
+                isDarkLayerMode || isLoading
+                  ? "/logo-white.svg"
+                  : "/logo-black.svg"
+              }
               alt="RadarThing"
               width={130}
               height={40}
@@ -450,14 +485,16 @@ export default function ATCPage() {
                       (ac) =>
                         ac.callsign === search.id ||
                         ac.flightNo === search.id ||
-                        ac.id === search.id
+                        ac.id === search.id,
                     );
                     if (aircraft) {
                       setSelectedAircrafts([aircraft]);
                       drawFlightPlanOnMapRef.current?.(aircraft, true);
                     }
                   } else {
-                    const airport = airports.find((ap) => ap.icao === search.id);
+                    const airport = airports.find(
+                      (ap) => ap.icao === search.id,
+                    );
                     if (airport) {
                       setSelectedAirport(airport);
                     }
@@ -474,8 +511,18 @@ export default function ATCPage() {
               onClick={() => setShowMobileSearch(true)}
               className="pointer-events-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-black/60 backdrop-blur-md"
             >
-              <svg className="h-4 w-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg
+                className="h-4 w-4 text-cyan-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
             </button>
           )}
@@ -534,7 +581,9 @@ export default function ATCPage() {
           </div>
         )}
 
-        <div className={`pointer-events-auto flex items-center ${isMobile ? 'gap-2' : 'gap-4'}`}>
+        <div
+          className={`pointer-events-auto flex items-center ${isMobile ? "gap-2" : "gap-4"}`}
+        >
           <ConnectionStatusIndicator
             status={connectionStatus}
             isMobile={isMobile}
@@ -556,7 +605,7 @@ export default function ATCPage() {
             }}
           />
           {/* Bottom sheet */}
-          <div className="fixed inset-x-0 bottom-0 z-[10020] rounded-t-2xl border-t border-white/10 bg-[#0a1219] px-4 pb-8 pt-3 animate-in slide-in-from-bottom duration-200">
+          <div className="animate-in slide-in-from-bottom fixed inset-x-0 bottom-0 z-[10020] rounded-t-2xl border-t border-white/10 bg-[#0a1219] px-4 pt-3 pb-8 duration-200">
             {/* Drag handle */}
             <div className="mb-4 flex justify-center">
               <div className="h-1 w-10 rounded-full bg-white/20" />
@@ -573,70 +622,81 @@ export default function ATCPage() {
             />
 
             {/* Results */}
-            {searchTerm && (searchResults.aircrafts.length > 0 || searchResults.airports.length > 0) && (
-              <div className="mt-3 max-h-[50vh] overflow-y-auto rounded-xl border border-white/10 bg-black/40">
-                {searchResults.aircrafts.length > 0 && (
-                  <>
-                    <div className="bg-cyan-950/30 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-cyan-400 border-b border-white/10">
-                      Aircrafts
-                    </div>
-                    {searchResults.aircrafts.map((aircraft, index) => (
-                      <div
-                        key={aircraft.callsign || aircraft.flightNo || `ac-${index}`}
-                        onClick={() => {
-                          setSelectedAircrafts([aircraft]);
-                          drawFlightPlanOnMapRef.current?.(aircraft, true);
-                          addAircraftSearch(aircraft);
-                          setSearchTerm("");
-                          setShowMobileSearch(false);
-                        }}
-                        className="border-b border-white/5 px-4 py-3 active:bg-white/10 last:border-b-0"
-                      >
-                        <div className="font-medium text-white">
-                          {aircraft.callsign || aircraft.flightNo || "N/A"}
-                        </div>
-                        <div className="mt-0.5 text-[12px] text-white/50">
-                          {aircraft.type} • {aircraft.departure} → {aircraft.arrival || "UNK"}
-                        </div>
+            {searchTerm &&
+              (searchResults.aircrafts.length > 0 ||
+                searchResults.airports.length > 0) && (
+                <div className="mt-3 max-h-[50vh] overflow-y-auto rounded-xl border border-white/10 bg-black/40">
+                  {searchResults.aircrafts.length > 0 && (
+                    <>
+                      <div className="border-b border-white/10 bg-cyan-950/30 px-4 py-2 text-[11px] font-semibold tracking-wider text-cyan-400 uppercase">
+                        Aircrafts
                       </div>
-                    ))}
-                  </>
-                )}
-                {searchResults.airports.length > 0 && (
-                  <>
-                    <div className="bg-cyan-950/30 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-cyan-400 border-b border-white/10">
-                      Airports
-                    </div>
-                    {searchResults.airports.map((airport) => (
-                      <div
-                        key={`ap-${airport.icao}`}
-                        onClick={() => {
-                          setSelectedAirport(airport);
-                          addAirportSearch(airport);
-                          setSearchTerm("");
-                          setShowMobileSearch(false);
-                        }}
-                        className="border-b border-white/5 px-4 py-3 active:bg-white/10 last:border-b-0"
-                      >
-                        <div className="font-medium text-white">{airport.icao}</div>
-                        <div className="mt-0.5 text-[12px] text-white/50">{airport.name}</div>
+                      {searchResults.aircrafts.map((aircraft, index) => (
+                        <div
+                          key={
+                            aircraft.callsign ||
+                            aircraft.flightNo ||
+                            `ac-${index}`
+                          }
+                          onClick={() => {
+                            setSelectedAircrafts([aircraft]);
+                            drawFlightPlanOnMapRef.current?.(aircraft, true);
+                            addAircraftSearch(aircraft);
+                            setSearchTerm("");
+                            setShowMobileSearch(false);
+                          }}
+                          className="border-b border-white/5 px-4 py-3 last:border-b-0 active:bg-white/10"
+                        >
+                          <div className="font-medium text-white">
+                            {aircraft.callsign || aircraft.flightNo || "N/A"}
+                          </div>
+                          <div className="mt-0.5 text-[12px] text-white/50">
+                            {aircraft.type} • {aircraft.departure} →{" "}
+                            {aircraft.arrival || "UNK"}
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                  {searchResults.airports.length > 0 && (
+                    <>
+                      <div className="border-b border-white/10 bg-cyan-950/30 px-4 py-2 text-[11px] font-semibold tracking-wider text-cyan-400 uppercase">
+                        Airports
                       </div>
-                    ))}
-                  </>
-                )}
-              </div>
-            )}
+                      {searchResults.airports.map((airport) => (
+                        <div
+                          key={`ap-${airport.icao}`}
+                          onClick={() => {
+                            setSelectedAirport(airport);
+                            addAirportSearch(airport);
+                            setSearchTerm("");
+                            setShowMobileSearch(false);
+                          }}
+                          className="border-b border-white/5 px-4 py-3 last:border-b-0 active:bg-white/10"
+                        >
+                          <div className="font-medium text-white">
+                            {airport.icao}
+                          </div>
+                          <div className="mt-0.5 text-[12px] text-white/50">
+                            {airport.name}
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
 
             {/* Recent searches - shown when no search term */}
             {!searchTerm && recentSearches.length > 0 && (
               <div className="mt-3 max-h-[50vh] overflow-y-auto rounded-xl border border-white/10 bg-black/40">
-                <div className="flex items-center justify-between bg-cyan-950/30 px-4 py-2 border-b border-white/10">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-cyan-400">
+                <div className="flex items-center justify-between border-b border-white/10 bg-cyan-950/30 px-4 py-2">
+                  <div className="text-[11px] font-semibold tracking-wider text-cyan-400 uppercase">
                     Recent Searches
                   </div>
                   <button
                     onClick={clearRecentSearches}
-                    className="text-[10px] text-cyan-400/60 hover:text-cyan-400 transition-colors"
+                    className="text-[10px] text-cyan-400/60 transition-colors hover:text-cyan-400"
                   >
                     Clear
                   </button>
@@ -650,21 +710,23 @@ export default function ATCPage() {
                           (ac) =>
                             ac.callsign === search.id ||
                             ac.flightNo === search.id ||
-                            ac.id === search.id
+                            ac.id === search.id,
                         );
                         if (aircraft) {
                           setSelectedAircrafts([aircraft]);
                           drawFlightPlanOnMapRef.current?.(aircraft, true);
                         }
                       } else {
-                        const airport = airports.find((ap) => ap.icao === search.id);
+                        const airport = airports.find(
+                          (ap) => ap.icao === search.id,
+                        );
                         if (airport) {
                           setSelectedAirport(airport);
                         }
                       }
                       setShowMobileSearch(false);
                     }}
-                    className="border-b border-white/5 px-4 py-3 active:bg-white/10 last:border-b-0"
+                    className="border-b border-white/5 px-4 py-3 last:border-b-0 active:bg-white/10"
                   >
                     <div className="flex items-center gap-2">
                       <div className="text-[14px]">
@@ -687,9 +749,13 @@ export default function ATCPage() {
             )}
 
             {/* Empty state */}
-            {searchTerm && searchResults.aircrafts.length === 0 && searchResults.airports.length === 0 && (
-              <div className="mt-6 text-center text-sm text-white/30">No results found</div>
-            )}
+            {searchTerm &&
+              searchResults.aircrafts.length === 0 &&
+              searchResults.airports.length === 0 && (
+                <div className="mt-6 text-center text-sm text-white/30">
+                  No results found
+                </div>
+              )}
           </div>
         </>
       )}
@@ -757,9 +823,7 @@ export default function ATCPage() {
         <ControlDock
           side="right"
           bottomAction={{
-            icon: (
-              <RotateCcw size={18} strokeWidth={1.8} />
-            ),
+            icon: <RotateCcw size={18} strokeWidth={1.8} />,
             label: "Reset map view",
             onClick: () => resetMapViewRef.current?.(),
           }}
@@ -836,10 +900,16 @@ export default function ATCPage() {
       )}
 
       {selectedAirport && (
-        <div className={`animate-fade-in-up fixed left-1/2 z-[10012] -translate-x-1/2 ${isMobile ? 'bottom-3' : 'bottom-6'}`}>
-          <div className={`flex items-center rounded-2xl border border-white/10 bg-black/80 backdrop-blur-xl ${isMobile ? 'gap-2 px-3 py-2' : 'gap-4 px-5 py-3'}`}>
+        <div
+          className={`animate-fade-in-up fixed left-1/2 z-[10012] -translate-x-1/2 ${isMobile ? "bottom-3" : "bottom-6"}`}
+        >
+          <div
+            className={`flex items-center rounded-2xl border border-white/10 bg-black/80 backdrop-blur-xl ${isMobile ? "gap-2 px-3 py-2" : "gap-4 px-5 py-3"}`}
+          >
             <div>
-              <div className={`font-mono text-cyan-300 ${isMobile ? 'text-[10px]' : 'text-xs'}`}>
+              <div
+                className={`font-mono text-cyan-300 ${isMobile ? "text-[10px]" : "text-xs"}`}
+              >
                 {selectedAirport.icao}
               </div>
               {!isMobile && (
@@ -849,19 +919,20 @@ export default function ATCPage() {
               )}
             </div>
 
-            {!isMobile && (isProUser ? (
-              <button
-                onClick={() => setShowTaxiChart(true)}
-                className="cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-[10px] text-cyan-300"
-              >
-                Charts
-              </button>
-            ) : (
-              <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5">
-                <span className="text-[10px] text-white/60">Charts</span>
-                <ProBadge source="radar_airport_charts_badge" />
-              </div>
-            ))}
+            {!isMobile &&
+              (isProUser ? (
+                <button
+                  onClick={() => setShowTaxiChart(true)}
+                  className="cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-[10px] text-cyan-300"
+                >
+                  Charts
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5">
+                  <span className="text-[10px] text-white/60">Charts</span>
+                  <ProBadge source="radar_airport_charts_badge" />
+                </div>
+              ))}
 
             <button
               onClick={() => setShowAirportFID(!showAirportFID)}
@@ -869,9 +940,9 @@ export default function ATCPage() {
                 showAirportFID
                   ? "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
                   : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
-              } ${isMobile ? 'px-2 py-1 text-[9px]' : ''}`}
+              } ${isMobile ? "px-2 py-1 text-[9px]" : ""}`}
             >
-              {isMobile ? 'FID' : 'Flights'}
+              {isMobile ? "FID" : "Flights"}
             </button>
 
             <button
@@ -884,9 +955,13 @@ export default function ATCPage() {
                   : onlineAtcForSelected
                     ? "border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20"
                     : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
-              } ${isMobile ? 'px-2 py-1 text-[9px]' : ''}`}
+              } ${isMobile ? "px-2 py-1 text-[9px]" : ""}`}
             >
-              {isMobile ? '📻' : onlineAtcForSelected ? 'Live ATC' : 'ATC Audio'}
+              {isMobile
+                ? "📻"
+                : onlineAtcForSelected
+                  ? "Live ATC"
+                  : "ATC Audio"}
             </button>
 
             <button
@@ -896,9 +971,9 @@ export default function ATCPage() {
                 setShowAirportFID(false);
                 setChartOverlayActive(false);
               }}
-              className={`cursor-pointer rounded-lg border border-white/10 bg-white/5 text-white/60 ${isMobile ? 'px-2 py-1 text-[9px]' : 'px-3 py-1.5 text-[10px]'}`}
+              className={`cursor-pointer rounded-lg border border-white/10 bg-white/5 text-white/60 ${isMobile ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
             >
-              {isMobile ? '×' : 'Unselect'}
+              {isMobile ? "×" : "Unselect"}
             </button>
           </div>
         </div>
@@ -912,8 +987,9 @@ export default function ATCPage() {
         />
       )}
 
-      {showAirportFID && selectedAirport && (
-        isMobile ? (
+      {showAirportFID &&
+        selectedAirport &&
+        (isMobile ? (
           <MobileSwipeSheet onClose={() => setShowAirportFID(false)}>
             <AirportFIDPanel
               icao={selectedAirport.icao}
@@ -943,11 +1019,10 @@ export default function ATCPage() {
             onClose={() => setShowAirportFID(false)}
             isMobile={false}
           />
-        )
-      )}
+        ))}
 
-      {selectedAircrafts.length > 0 && (
-        isMobile ? (
+      {selectedAircrafts.length > 0 &&
+        (isMobile ? (
           <MobileSwipeSheet onClose={() => setSelectedAircrafts([])}>
             {selectedAircrafts.length === 1 ? (
               <Sidebar
@@ -970,11 +1045,14 @@ export default function ATCPage() {
                 onRemoveAircraft={(aircraft) => {
                   const aircraftId = aircraft.callsign || aircraft.id;
                   const newSelection = selectedAircrafts.filter(
-                    (ac) => (ac.callsign || ac.id) !== aircraftId
+                    (ac) => (ac.callsign || ac.id) !== aircraftId,
                   );
                   setSelectedAircrafts(newSelection);
                   if (newSelection.length > 0) {
-                    drawMultipleFlightPlansOnMapRef.current?.(newSelection, false);
+                    drawMultipleFlightPlansOnMapRef.current?.(
+                      newSelection,
+                      false,
+                    );
                   }
                 }}
                 onClose={() => setSelectedAircrafts([])}
@@ -991,7 +1069,7 @@ export default function ATCPage() {
             {/* Collapse/Expand toggle button */}
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="absolute -left-3 top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-slate-900 text-slate-400 shadow-lg transition-colors hover:bg-slate-800 hover:text-white"
+              className="absolute top-1/2 -left-3 z-10 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-slate-900 text-slate-400 shadow-lg transition-colors hover:bg-slate-800 hover:text-white"
               title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               <svg
@@ -1013,50 +1091,55 @@ export default function ATCPage() {
             {isSidebarCollapsed ? (
               <div className="flex h-full flex-col items-center py-6">
                 <div className="mb-4 h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
-                <div className="writing-vertical font-mono text-[10px] font-bold tracking-wider text-cyan-400 uppercase" style={{ writingMode: "vertical-rl" }}>
+                <div
+                  className="writing-vertical font-mono text-[10px] font-bold tracking-wider text-cyan-400 uppercase"
+                  style={{ writingMode: "vertical-rl" }}
+                >
                   {selectedAircrafts.length === 1
-                    ? selectedAircrafts[0]?.flightNo || selectedAircrafts[0]?.callsign || "N/A"
+                    ? selectedAircrafts[0]?.flightNo ||
+                      selectedAircrafts[0]?.callsign ||
+                      "N/A"
                     : `${selectedAircrafts.length} SELECTED`}
                 </div>
               </div>
+            ) : /* Expanded state - full sidebar content */
+            selectedAircrafts.length === 1 ? (
+              <Sidebar
+                aircraft={selectedAircrafts[0]!}
+                onWaypointClick={undefined}
+                onHistoryClick={(flight) => {
+                  setReplayFlight(flight);
+                  setHistoryPath(flight.routeData || null);
+                  setIsViewingHistory(true);
+                }}
+                onAirportClick={handleAirportSelectByIcao}
+                isMobile={isMobile}
+                onClose={() => setSelectedAircrafts([])}
+                isFollowMode={isFollowMode}
+                onToggleFollow={() => setIsFollowMode((prev) => !prev)}
+              />
             ) : (
-              /* Expanded state - full sidebar content */
-              selectedAircrafts.length === 1 ? (
-                <Sidebar
-                  aircraft={selectedAircrafts[0]!}
-                  onWaypointClick={undefined}
-                  onHistoryClick={(flight) => {
-                    setReplayFlight(flight);
-                    setHistoryPath(flight.routeData || null);
-                    setIsViewingHistory(true);
-                  }}
-                  onAirportClick={handleAirportSelectByIcao}
-                  isMobile={isMobile}
-                  onClose={() => setSelectedAircrafts([])}
-                  isFollowMode={isFollowMode}
-                  onToggleFollow={() => setIsFollowMode((prev) => !prev)}
-                />
-              ) : (
-                <MultiAircraftSidebar
-                  aircrafts={selectedAircrafts}
-                  onRemoveAircraft={(aircraft) => {
-                    const aircraftId = aircraft.callsign || aircraft.id;
-                    const newSelection = selectedAircrafts.filter(
-                      (ac) => (ac.callsign || ac.id) !== aircraftId
+              <MultiAircraftSidebar
+                aircrafts={selectedAircrafts}
+                onRemoveAircraft={(aircraft) => {
+                  const aircraftId = aircraft.callsign || aircraft.id;
+                  const newSelection = selectedAircrafts.filter(
+                    (ac) => (ac.callsign || ac.id) !== aircraftId,
+                  );
+                  setSelectedAircrafts(newSelection);
+                  if (newSelection.length > 0) {
+                    drawMultipleFlightPlansOnMapRef.current?.(
+                      newSelection,
+                      false,
                     );
-                    setSelectedAircrafts(newSelection);
-                    if (newSelection.length > 0) {
-                      drawMultipleFlightPlansOnMapRef.current?.(newSelection, false);
-                    }
-                  }}
-                  onClose={() => setSelectedAircrafts([])}
-                  isMobile={isMobile}
-                />
-              )
+                  }
+                }}
+                onClose={() => setSelectedAircrafts([])}
+                isMobile={isMobile}
+              />
             )}
           </aside>
-        )
-      )}
+        ))}
 
       {showTaxiChart && selectedAirport?.icao && (
         <TaxiChartViewer
@@ -1102,25 +1185,40 @@ export default function ATCPage() {
 function MapSkeleton() {
   // Scattered aircraft positions (percentage-based)
   const dots = [
-    { x: 15, y: 25 }, { x: 22, y: 35 }, { x: 18, y: 48 },
-    { x: 30, y: 20 }, { x: 35, y: 42 }, { x: 28, y: 58 },
-    { x: 45, y: 28 }, { x: 52, y: 38 }, { x: 48, y: 52 },
-    { x: 58, y: 22 }, { x: 65, y: 45 }, { x: 62, y: 60 },
-    { x: 72, y: 30 }, { x: 78, y: 48 }, { x: 75, y: 65 },
-    { x: 85, y: 35 }, { x: 88, y: 55 }, { x: 82, y: 42 },
-    { x: 40, y: 68 }, { x: 55, y: 72 }, { x: 25, y: 70 },
+    { x: 15, y: 25 },
+    { x: 22, y: 35 },
+    { x: 18, y: 48 },
+    { x: 30, y: 20 },
+    { x: 35, y: 42 },
+    { x: 28, y: 58 },
+    { x: 45, y: 28 },
+    { x: 52, y: 38 },
+    { x: 48, y: 52 },
+    { x: 58, y: 22 },
+    { x: 65, y: 45 },
+    { x: 62, y: 60 },
+    { x: 72, y: 30 },
+    { x: 78, y: 48 },
+    { x: 75, y: 65 },
+    { x: 85, y: 35 },
+    { x: 88, y: 55 },
+    { x: 82, y: 42 },
+    { x: 40, y: 68 },
+    { x: 55, y: 72 },
+    { x: 25, y: 70 },
   ];
 
   return (
-    <div className="relative h-full w-full bg-[#0a1219] overflow-hidden">
+    <div className="relative h-full w-full overflow-hidden bg-[#0a1219]">
       {/* World map background */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/world-outline.svg"
         alt=""
-        className="absolute w-full h-full object-cover opacity-[0.06]"
+        className="absolute h-full w-full object-cover opacity-[0.06]"
         style={{
-          filter: 'invert(65%) sepia(70%) saturate(400%) hue-rotate(140deg) brightness(95%)'
+          filter:
+            "invert(65%) sepia(70%) saturate(400%) hue-rotate(140deg) brightness(95%)",
         }}
       />
 
@@ -1128,7 +1226,7 @@ function MapSkeleton() {
       {dots.map((dot, i) => (
         <div
           key={i}
-          className="absolute h-1 w-1 rounded-full bg-cyan-400 animate-pulse"
+          className="absolute h-1 w-1 animate-pulse rounded-full bg-cyan-400"
           style={{
             left: `${dot.x}%`,
             top: `${dot.y}%`,

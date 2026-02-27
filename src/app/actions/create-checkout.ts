@@ -16,7 +16,9 @@ export async function createCheckoutSession() {
   const email = user.emailAddresses[0]?.emailAddress;
 
   // Get existing user from Convex
-  const dbUser = await convex.query(api.users.getByClerkId, { clerkId: userId });
+  const dbUser = await convex.query(api.users.getByClerkId, {
+    clerkId: userId,
+  });
   let stripeCustomerId = dbUser?.stripeCustomerId;
 
   // Create Stripe customer if user doesn't have one

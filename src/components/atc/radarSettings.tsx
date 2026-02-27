@@ -54,7 +54,10 @@ export const RadarSettings = ({
           checked={showPrecipitation}
           onChange={(v) => {
             setShowPrecipitation(v);
-            Analytics.weatherLayerToggled({ layer: "precipitation", enabled: v });
+            Analytics.weatherLayerToggled({
+              layer: "precipitation",
+              enabled: v,
+            });
           }}
         />
 
@@ -138,7 +141,9 @@ export const RadarSettings = ({
           >
             <Shield className="h-4 w-4" />
             <span>Admin Panel</span>
-            <span className="ml-auto text-[10px] text-cyan-500 uppercase">ADMIN</span>
+            <span className="ml-auto text-[10px] text-cyan-500 uppercase">
+              ADMIN
+            </span>
           </button>
         )}
       </div>

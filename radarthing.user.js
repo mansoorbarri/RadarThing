@@ -307,7 +307,9 @@
       for (const chart of list) {
         if (!chart || !chart.chartName || !chart.chartUrl) continue;
         byType[type].push({
-          id: chart.id || `${chart.icao || ""}-${type}-${chart.chartName}-${chart.chartUrl}`,
+          id:
+            chart.id ||
+            `${chart.icao || ""}-${type}-${chart.chartName}-${chart.chartUrl}`,
           icao: (chart.icao || "").toUpperCase(),
           chartType: type,
           chartName: chart.chartName,
@@ -362,7 +364,9 @@
     for (const chart of charts) {
       if (!chart || !chart.chartType || !byType[chart.chartType]) continue;
       byType[chart.chartType].push({
-        id: chart.id || `${chart.icao}-${chart.chartType}-${chart.chartName}-${chart.chartUrl}`,
+        id:
+          chart.id ||
+          `${chart.icao}-${chart.chartType}-${chart.chartName}-${chart.chartUrl}`,
         icao: chart.icao,
         chartType: chart.chartType,
         chartName: chart.chartName,
@@ -390,7 +394,9 @@
     const charts = chartsState.chartsByType[chartsState.currentType] || [];
     if (!charts.length) return null;
     if (!chartsState.selectedChartId) return charts[0];
-    return charts.find((c) => c.id === chartsState.selectedChartId) || charts[0];
+    return (
+      charts.find((c) => c.id === chartsState.selectedChartId) || charts[0]
+    );
   }
 
   function selectFirstNonEmptyType() {
@@ -470,17 +476,26 @@
     }
 
     if (panel.offsetHeight > window.innerHeight - margin * 2) {
-      panel.style.maxHeight = Math.max(120, window.innerHeight - margin * 2) + "px";
+      panel.style.maxHeight =
+        Math.max(120, window.innerHeight - margin * 2) + "px";
       panel.style.height = "auto";
     }
 
     const currentLeft = parseInt(panel.style.left, 10);
     const currentTop = parseInt(panel.style.top, 10);
-    const left = Number.isFinite(currentLeft) ? currentLeft : CHARTS_DEFAULT_LEFT;
+    const left = Number.isFinite(currentLeft)
+      ? currentLeft
+      : CHARTS_DEFAULT_LEFT;
     const top = Number.isFinite(currentTop) ? currentTop : CHARTS_DEFAULT_TOP;
 
-    const maxLeft = Math.max(margin, window.innerWidth - panel.offsetWidth - margin);
-    const maxTop = Math.max(margin, window.innerHeight - panel.offsetHeight - margin);
+    const maxLeft = Math.max(
+      margin,
+      window.innerWidth - panel.offsetWidth - margin,
+    );
+    const maxTop = Math.max(
+      margin,
+      window.innerHeight - panel.offsetHeight - margin,
+    );
     panel.style.left = Math.min(Math.max(left, margin), maxLeft) + "px";
     panel.style.top = Math.min(Math.max(top, margin), maxTop) + "px";
   }
@@ -510,7 +525,9 @@
 
     const horizontalPadding = 28;
     const imageWidth = Math.max(1, panel.clientWidth - horizontalPadding);
-    const naturalHeight = Math.round((img.naturalHeight / img.naturalWidth) * imageWidth);
+    const naturalHeight = Math.round(
+      (img.naturalHeight / img.naturalWidth) * imageWidth,
+    );
     let maxPreviewHeight = Math.max(
       0,
       window.innerHeight - panel.offsetTop - 16 - nonPreviewHeight,
@@ -525,26 +542,38 @@
     const appliedHeight = Math.min(naturalHeight, maxPreviewHeight);
 
     preview.style.height = `${appliedHeight}px`;
-    preview.style.overflowY = naturalHeight > maxPreviewHeight ? "auto" : "hidden";
+    preview.style.overflowY =
+      naturalHeight > maxPreviewHeight ? "auto" : "hidden";
     panel.style.height = "auto";
   }
 
   function saveChartsIcao(icao) {
-    try { localStorage.setItem(CHARTS_ICAO_KEY, icao); } catch (_) {}
+    try {
+      localStorage.setItem(CHARTS_ICAO_KEY, icao);
+    } catch (_) {}
   }
 
   function loadChartsIcao() {
-    try { return localStorage.getItem(CHARTS_ICAO_KEY) || ""; } catch (_) { return ""; }
+    try {
+      return localStorage.getItem(CHARTS_ICAO_KEY) || "";
+    } catch (_) {
+      return "";
+    }
   }
 
   function makeChartsDraggable(panel, handle) {
-    let dragging = false, sx, sy, sl, st;
+    let dragging = false,
+      sx,
+      sy,
+      sl,
+      st;
     handle.style.cursor = "grab";
 
     handle.addEventListener("mousedown", (e) => {
       if (e.target.closest("button") || e.target.closest("input")) return;
       dragging = true;
-      sx = e.clientX; sy = e.clientY;
+      sx = e.clientX;
+      sy = e.clientY;
       sl = parseInt(panel.style.left) || 0;
       st = parseInt(panel.style.top) || 0;
       handle.style.cursor = "grabbing";
@@ -553,8 +582,8 @@
 
     document.addEventListener("mousemove", (e) => {
       if (!dragging) return;
-      panel.style.left = (sl + e.clientX - sx) + "px";
-      panel.style.top = (st + e.clientY - sy) + "px";
+      panel.style.left = sl + e.clientX - sx + "px";
+      panel.style.top = st + e.clientY - sy + "px";
       clampChartsPanelToViewport(panel);
     });
 
@@ -569,7 +598,12 @@
 
   function makeChartsResizable(panel) {
     const handles = panel.querySelectorAll(".gc-resize-handle");
-    let resizing = false, startX, startY, startW, startH, resizeType;
+    let resizing = false,
+      startX,
+      startY,
+      startW,
+      startH,
+      resizeType;
 
     handles.forEach((handle) => {
       handle.addEventListener("mousedown", (e) => {
@@ -579,7 +613,8 @@
         startW = panel.offsetWidth;
         startH = panel.offsetHeight;
         if (handle.classList.contains("gc-resize-right")) resizeType = "right";
-        else if (handle.classList.contains("gc-resize-bottom")) resizeType = "bottom";
+        else if (handle.classList.contains("gc-resize-bottom"))
+          resizeType = "bottom";
         else resizeType = "corner";
         e.preventDefault();
         e.stopPropagation();
@@ -641,7 +676,8 @@
       typeTabs.appendChild(tab);
     }
 
-    const currentCharts = chartsState.chartsByType[chartsState.currentType] || [];
+    const currentCharts =
+      chartsState.chartsByType[chartsState.currentType] || [];
     chartList.innerHTML = "";
 
     if (currentCharts.length === 0) {
@@ -703,7 +739,10 @@
     if (!input || !status) return;
 
     const icao = input.value.trim().toUpperCase();
-    if (!icao) { status.textContent = "Enter an ICAO code."; return; }
+    if (!icao) {
+      status.textContent = "Enter an ICAO code.";
+      return;
+    }
 
     status.textContent = "Loading...";
     try {
@@ -718,7 +757,9 @@
           ? `${total} chart(s) loaded from cache.`
           : `${total} chart(s) loaded from API.`;
       } else {
-        status.textContent = fromCache ? "No charts found in cache." : "No charts found.";
+        status.textContent = fromCache
+          ? "No charts found in cache."
+          : "No charts found.";
       }
       renderChartsContent();
     } catch (err) {
@@ -752,7 +793,10 @@
       panel.style.display = "flex";
       const input = document.getElementById("gc-icao-input");
       const lastIcao = chartsState.currentIcao || loadChartsIcao();
-      if (input) { input.value = lastIcao; input.focus(); }
+      if (input) {
+        input.value = lastIcao;
+        input.focus();
+      }
       if (lastIcao && !chartsState.currentIcao) {
         chartsState.currentIcao = lastIcao;
         chartsSearch();
@@ -782,25 +826,35 @@
     const preview = panel?.querySelector(".gc-preview");
     if (!preview) return;
 
-    let panning = false, sx, sy;
+    let panning = false,
+      sx,
+      sy;
 
-    preview.addEventListener("wheel", (e) => {
-      const img = preview.querySelector(".gc-image-wrap img");
-      if (!img) return;
-      e.preventDefault();
-      const factor = e.deltaY > 0 ? 0.85 : 1.18;
-      chartsState.zoom.scale = Math.max(1, Math.min(10, chartsState.zoom.scale * factor));
-      if (chartsState.zoom.scale <= 1.01) {
-        chartsState.zoom = { scale: 1, panX: 0, panY: 0 };
-      }
-      applyZoom(img);
-      const wrap = preview.querySelector(".gc-image-wrap");
-      if (wrap) wrap.style.cursor = chartsState.zoom.scale > 1 ? "grab" : "";
-    }, { passive: false });
+    preview.addEventListener(
+      "wheel",
+      (e) => {
+        const img = preview.querySelector(".gc-image-wrap img");
+        if (!img) return;
+        e.preventDefault();
+        const factor = e.deltaY > 0 ? 0.85 : 1.18;
+        chartsState.zoom.scale = Math.max(
+          1,
+          Math.min(10, chartsState.zoom.scale * factor),
+        );
+        if (chartsState.zoom.scale <= 1.01) {
+          chartsState.zoom = { scale: 1, panX: 0, panY: 0 };
+        }
+        applyZoom(img);
+        const wrap = preview.querySelector(".gc-image-wrap");
+        if (wrap) wrap.style.cursor = chartsState.zoom.scale > 1 ? "grab" : "";
+      },
+      { passive: false },
+    );
 
     preview.addEventListener("mousedown", (e) => {
       const wrap = preview.querySelector(".gc-image-wrap");
-      if (!wrap || !wrap.contains(e.target) || chartsState.zoom.scale <= 1) return;
+      if (!wrap || !wrap.contains(e.target) || chartsState.zoom.scale <= 1)
+        return;
       panning = true;
       sx = e.clientX - chartsState.zoom.panX;
       sy = e.clientY - chartsState.zoom.panY;
@@ -1572,7 +1626,8 @@
     if (keybindMode === "flight") {
       toggleKey = e.key.toLowerCase();
       localStorage.setItem(STORAGE_KEY, toggleKey);
-      document.getElementById(KEYBIND_BTN_ID).textContent = toggleKey.toUpperCase();
+      document.getElementById(KEYBIND_BTN_ID).textContent =
+        toggleKey.toUpperCase();
       keybindMode = null;
       showToast("Toggle key updated");
       return;

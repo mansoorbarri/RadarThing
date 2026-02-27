@@ -58,7 +58,10 @@ interface MapComponentProps {
   aircrafts: PositionUpdate[];
   airports: Airport[];
   onlineAirports?: OnlineAirport[];
-  onAircraftSelect: (aircraft: PositionUpdate | null, ctrlKey?: boolean) => void;
+  onAircraftSelect: (
+    aircraft: PositionUpdate | null,
+    ctrlKey?: boolean,
+  ) => void;
   onAirportSelect?: (airport: Airport) => void;
   selectedAircraftIds?: string[];
   selectedAirport?: Airport;
@@ -103,29 +106,31 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const [isHeadingMode, setIsHeadingMode] = useState(false);
   const [isRadarMode, setIsRadarMode] = useState(() =>
-    getBooleanCookie("map_radar_mode", false)
+    getBooleanCookie("map_radar_mode", false),
   );
   const [isOSMMode, setIsOSMMode] = useState(() =>
-    getBooleanCookie("map_osm_mode", false)
+    getBooleanCookie("map_osm_mode", false),
   );
   const [isOpenAIPEnabled, setIsOpenAIPEnabled] = useState(() =>
-    getBooleanCookie("map_openaip", false)
+    getBooleanCookie("map_openaip", false),
   );
 
   const [showPrecipitation, setShowPrecipitation] = useState(() =>
-    getBooleanCookie("weather_precipitation", false)
+    getBooleanCookie("weather_precipitation", false),
   );
   const [showAirmets, setShowAirmets] = useState(() =>
-    getBooleanCookie("weather_airmets", false)
+    getBooleanCookie("weather_airmets", false),
   );
   const [showSigmets, setShowSigmets] = useState(() =>
-    getBooleanCookie("weather_sigmets", false)
+    getBooleanCookie("weather_sigmets", false),
   );
   const [showConflicts, setShowConflicts] = useState(() =>
-    getBooleanCookie("traffic_conflicts", false)
+    getBooleanCookie("traffic_conflicts", false),
   );
   const [showTags, setShowTags] = useState(true);
-  const [conflictAlerts, setConflictAlerts] = useState<ConflictAlertSummary[]>([]);
+  const [conflictAlerts, setConflictAlerts] = useState<ConflictAlertSummary[]>(
+    [],
+  );
   const lastConflictSnapshotRef = useRef<string>("");
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -290,7 +295,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
       }
       if (e.key === "u" || e.key === "U") {
         const activeElement = document.activeElement;
-        const isInputFocused = activeElement instanceof HTMLInputElement ||
+        const isInputFocused =
+          activeElement instanceof HTMLInputElement ||
           activeElement instanceof HTMLTextAreaElement ||
           activeElement?.getAttribute("contenteditable") === "true";
         if (!isInputFocused) {
@@ -323,7 +329,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
     isMobile,
   });
 
-  const { drawFlightPlan, drawMultipleFlightPlans, currentSelectedAircraftRef, clearHistoryPolyline } = useFlightPlanDrawing({
+  const {
+    drawFlightPlan,
+    drawMultipleFlightPlans,
+    currentSelectedAircraftRef,
+    clearHistoryPolyline,
+  } = useFlightPlanDrawing({
     mapInstance: mapRefs.mapInstance,
     flightPlanLayerGroup: mapRefs.flightPlanLayerGroup,
     historyLayerGroup: mapRefs.historyLayerGroup,
@@ -433,14 +444,21 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const { atis } = useAtisOverlay(icaoInput || selectedAirport?.icao);
 
   // Fetch NOTAMs when we have an ICAO (PRO users fetch from API, free users only see cache)
-  const { notamData } = useNotamOverlay(icaoInput || selectedAirport?.icao, isProUser);
+  const { notamData } = useNotamOverlay(
+    icaoInput || selectedAirport?.icao,
+    isProUser,
+  );
 
   // Track previous historyPath to detect flight changes
   const prevHistoryPathRef = useRef<[number, number][] | null>(null);
 
   // Zoom to flight path when it changes (works for both replay and static history)
   useEffect(() => {
-    if (!mapRefs.mapInstance.current || !historyPath || historyPath.length < 2) {
+    if (
+      !mapRefs.mapInstance.current ||
+      !historyPath ||
+      historyPath.length < 2
+    ) {
       return;
     }
 
@@ -488,7 +506,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
         mapRefs.historyLayerGroup.current.addLayer(historyPolyline);
       }
     }
-  }, [historyPath, isRadarMode, replayState, mapRefs.mapInstance, mapRefs.historyLayerGroup]);
+  }, [
+    historyPath,
+    isRadarMode,
+    replayState,
+    mapRefs.mapInstance,
+    mapRefs.historyLayerGroup,
+  ]);
 
   // Follow mode - center map on followed aircraft
   useEffect(() => {
@@ -503,7 +527,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
       animate: true,
       duration: 0.3,
     });
-  }, [followAircraft?.lat, followAircraft?.lon, followAircraft, mapRefs.mapInstance]);
+  }, [
+    followAircraft?.lat,
+    followAircraft?.lon,
+    followAircraft,
+    mapRefs.mapInstance,
+  ]);
 
   // Render flight replay animation
   useEffect(() => {
@@ -517,7 +546,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return;
     }
 
-    const { currentPosition, currentHeading, traversedPath, remainingPath } = replayState;
+    const { currentPosition, currentHeading, traversedPath, remainingPath } =
+      replayState;
 
     // Clear previous layers
     mapRefs.replayLayerGroup.current.clearLayers();
@@ -559,13 +589,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
       zIndexOffset: 1000,
     });
     mapRefs.replayLayerGroup.current.addLayer(replayMarker);
-
   }, [replayState, isRadarMode, mapRefs.mapInstance, mapRefs.replayLayerGroup]);
 
   return (
     <>
       <MapGlobalStyles />
-      <div id="map-container" style={{ height: "100%", width: "100%", background: "#0a0a0a" }} />
+      <div
+        id="map-container"
+        style={{ height: "100%", width: "100%", background: "#0a0a0a" }}
+      />
 
       {isSettingsOpen && (
         <div className="animate-in fade-in zoom-in-95 absolute top-[180px] left-[70px] z-[10020] w-[320px] duration-200">
@@ -621,17 +653,23 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 <SeverityStat
                   label="HIGH"
                   tone="text-red-300 border-red-400/30 bg-red-500/10"
-                  count={conflictAlerts.filter((a) => a.severity === "high").length}
+                  count={
+                    conflictAlerts.filter((a) => a.severity === "high").length
+                  }
                 />
                 <SeverityStat
                   label="MED"
                   tone="text-amber-300 border-amber-400/30 bg-amber-500/10"
-                  count={conflictAlerts.filter((a) => a.severity === "medium").length}
+                  count={
+                    conflictAlerts.filter((a) => a.severity === "medium").length
+                  }
                 />
                 <SeverityStat
                   label="LOW"
                   tone="text-yellow-200 border-yellow-300/30 bg-yellow-500/10"
-                  count={conflictAlerts.filter((a) => a.severity === "low").length}
+                  count={
+                    conflictAlerts.filter((a) => a.severity === "low").length
+                  }
                 />
               </div>
 
@@ -642,14 +680,20 @@ const MapComponent: React.FC<MapComponentProps> = ({
                   </div>
                 ) : (
                   conflictAlerts.slice(0, 5).map((alert) => (
-                    <div key={alert.id} className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 font-mono text-[11px]">
+                    <div
+                      key={alert.id}
+                      className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 font-mono text-[11px]"
+                    >
                       <div className="flex items-center justify-between text-white/85">
                         <span>{alert.callsignA}</span>
                         <span className="text-white/35">×</span>
                         <span>{alert.callsignB}</span>
                       </div>
                       <div className="mt-1 flex items-center justify-between text-[10px] text-white/50">
-                        <span>{alert.horizontalSeparationNm.toFixed(1)}nm / {Math.round(alert.verticalSeparationFt)}ft</span>
+                        <span>
+                          {alert.horizontalSeparationNm.toFixed(1)}nm /{" "}
+                          {Math.round(alert.verticalSeparationFt)}ft
+                        </span>
                         <span>T-{alert.timeToCpaMinutes.toFixed(1)}m</span>
                       </div>
                     </div>
@@ -691,7 +735,9 @@ function SeverityStat({
   tone: string;
 }) {
   return (
-    <div className={`rounded-lg border px-2 py-1.5 text-center font-mono ${tone}`}>
+    <div
+      className={`rounded-lg border px-2 py-1.5 text-center font-mono ${tone}`}
+    >
       <p className="text-[9px] tracking-[0.18em] uppercase">{label}</p>
       <p className="text-sm font-bold">{count}</p>
     </div>

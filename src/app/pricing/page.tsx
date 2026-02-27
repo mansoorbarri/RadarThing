@@ -27,22 +27,25 @@ export default function PricingPage() {
     }
   }, [isLoaded, checkingStatus]);
 
-  const handleUpgrade = useCallback(async (source: string) => {
-    if (!isSignedIn) return;
+  const handleUpgrade = useCallback(
+    async (source: string) => {
+      if (!isSignedIn) return;
 
-    Analytics.upgradeButtonClicked({ source, feature: "pro_plan" });
-    Analytics.checkoutStarted({ source });
-    try {
-      setLoading(true);
-      const url = await createCheckoutSession();
-      if (url) window.location.href = url;
-    } catch (err) {
-      console.error(err);
-      alert("Failed to create checkout session");
-    } finally {
-      setLoading(false);
-    }
-  }, [isSignedIn]);
+      Analytics.upgradeButtonClicked({ source, feature: "pro_plan" });
+      Analytics.checkoutStarted({ source });
+      try {
+        setLoading(true);
+        const url = await createCheckoutSession();
+        if (url) window.location.href = url;
+      } catch (err) {
+        console.error(err);
+        alert("Failed to create checkout session");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [isSignedIn],
+  );
 
   useEffect(() => {
     if (!isLoaded || checkingStatus || !isSignedIn) return;
@@ -74,7 +77,7 @@ export default function PricingPage() {
     return (
       <div className="relative min-h-screen overflow-hidden bg-[#03070d] text-white">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-24 top-20 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
+          <div className="absolute top-20 -left-24 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
           <div className="absolute -right-28 bottom-10 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
         </div>
         <Header router={router} showAuth={true} />
@@ -90,7 +93,8 @@ export default function PricingPage() {
               You&apos;re flying with PRO
             </h1>
             <p className="mb-8 text-slate-300">
-              Weather intel, charts, and full analytics are unlocked on your account.
+              Weather intel, charts, and full analytics are unlocked on your
+              account.
             </p>
             <button
               onClick={handleManageSubscription}
@@ -116,10 +120,10 @@ export default function PricingPage() {
             backgroundSize: "48px 48px",
           }}
         />
-        <div className="absolute left-1/2 top-[-260px] h-[720px] w-[720px] -translate-x-1/2 rounded-full border border-cyan-400/15" />
-        <div className="absolute left-1/2 top-[-220px] h-[620px] w-[620px] -translate-x-1/2 rounded-full border border-cyan-400/10" />
-        <div className="absolute left-1/2 top-[-170px] h-[520px] w-[520px] -translate-x-1/2 rounded-full border border-cyan-400/10" />
-        <div className="absolute -left-28 top-28 h-80 w-80 rounded-full bg-cyan-500/12 blur-3xl" />
+        <div className="absolute top-[-260px] left-1/2 h-[720px] w-[720px] -translate-x-1/2 rounded-full border border-cyan-400/15" />
+        <div className="absolute top-[-220px] left-1/2 h-[620px] w-[620px] -translate-x-1/2 rounded-full border border-cyan-400/10" />
+        <div className="absolute top-[-170px] left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full border border-cyan-400/10" />
+        <div className="absolute top-28 -left-28 h-80 w-80 rounded-full bg-cyan-500/12 blur-3xl" />
         <div className="absolute right-[-120px] bottom-[-60px] h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
       </div>
 
@@ -138,14 +142,27 @@ export default function PricingPage() {
               Fly with full situational awareness
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-300 md:text-lg">
-              Upgrade to RadarThing PRO for advanced weather intelligence, airport charts,
-              and deep flight analytics built for serious GeoFS pilots.
+              Upgrade to RadarThing PRO for advanced weather intelligence,
+              airport charts, and deep flight analytics built for serious GeoFS
+              pilots.
             </p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              <SignalCard title="Aviation Weather" value="Live" subtitle="NOTAMs, AIRMETs, SIGMETs, D-ATIS" />
-              <SignalCard title="Flight History" value="Full" subtitle="Complete route timeline + replay context" />
-              <SignalCard title="Charts Access" value="Global" subtitle="Taxi, SID, STAR, approach procedures" />
+              <SignalCard
+                title="Aviation Weather"
+                value="Live"
+                subtitle="NOTAMs, AIRMETs, SIGMETs, D-ATIS"
+              />
+              <SignalCard
+                title="Flight History"
+                value="Full"
+                subtitle="Complete route timeline + replay context"
+              />
+              <SignalCard
+                title="Charts Access"
+                value="Global"
+                subtitle="Taxi, SID, STAR, approach procedures"
+              />
             </div>
 
             <div className="mt-10 space-y-6">
@@ -197,7 +214,10 @@ export default function PricingPage() {
               </p>
 
               {!isSignedIn && (
-                <SignInButton mode="modal" forceRedirectUrl="/pricing?checkout=1">
+                <SignInButton
+                  mode="modal"
+                  forceRedirectUrl="/pricing?checkout=1"
+                >
                   <button
                     onClick={() =>
                       Analytics.upgradeButtonClicked({
@@ -264,7 +284,9 @@ function SignalCard({
 }) {
   return (
     <div className="rounded-2xl border border-white/12 bg-white/[0.04] p-4 backdrop-blur-xl">
-      <p className="font-mono text-[10px] tracking-wider text-slate-400 uppercase">{title}</p>
+      <p className="font-mono text-[10px] tracking-wider text-slate-400 uppercase">
+        {title}
+      </p>
       <p className="mt-2 text-2xl font-bold text-white">{value}</p>
       <p className="mt-1 text-xs leading-relaxed text-slate-400">{subtitle}</p>
     </div>
@@ -286,7 +308,10 @@ function FeatureSection({
       <p className="mb-4 text-sm text-slate-300">{description}</p>
       <ul className="grid gap-2 sm:grid-cols-2">
         {features.map((feature) => (
-          <li key={feature} className="flex items-center gap-2 text-sm text-slate-200">
+          <li
+            key={feature}
+            className="flex items-center gap-2 text-sm text-slate-200"
+          >
             <Check className="h-4 w-4 shrink-0 text-cyan-300" />
             {feature}
           </li>
@@ -306,7 +331,10 @@ function Header({
   return (
     <header className="relative z-10 border-b border-white/10 bg-black/35 backdrop-blur-xl">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
-        <button onClick={() => router.push("/radar")} className="cursor-pointer">
+        <button
+          onClick={() => router.push("/radar")}
+          className="cursor-pointer"
+        >
           <Image
             src="/logo-white.svg"
             alt="RadarThing"

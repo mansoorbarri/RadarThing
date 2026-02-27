@@ -11,13 +11,14 @@ const ALLOWED_ORIGINS = [
 function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
   return ALLOWED_ORIGINS.some(
-    (allowed) => origin === allowed || origin.endsWith(".geo-fs.com")
+    (allowed) => origin === allowed || origin.endsWith(".geo-fs.com"),
   );
 }
 
 function corsHeaders(origin: string | null) {
   return {
-    "Access-Control-Allow-Origin": origin && isAllowedOrigin(origin) ? origin : "",
+    "Access-Control-Allow-Origin":
+      origin && isAllowedOrigin(origin) ? origin : "",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "X-Requested-With",
     "Access-Control-Max-Age": "86400",
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
   if (requestedWith !== "GeoFS-Charts") {
     return NextResponse.json(
       { error: "Forbidden" },
-      { status: 403, headers: corsHeaders(origin) }
+      { status: 403, headers: corsHeaders(origin) },
     );
   }
 
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
   if (!icao || !/^[A-Z]{4}$/.test(icao)) {
     return NextResponse.json(
       { error: "Invalid ICAO code" },
-      { status: 400, headers: corsHeaders(origin) }
+      { status: 400, headers: corsHeaders(origin) },
     );
   }
 
@@ -65,15 +66,12 @@ export async function GET(request: NextRequest) {
       chartUrl: c.chartUrl,
     }));
 
-    return NextResponse.json(
-      { charts },
-      { headers: corsHeaders(origin) }
-    );
+    return NextResponse.json({ charts }, { headers: corsHeaders(origin) });
   } catch (error) {
     console.error("Userscript charts fetch failed:", error);
     return NextResponse.json(
       { error: "Failed to fetch charts" },
-      { status: 500, headers: corsHeaders(origin) }
+      { status: 500, headers: corsHeaders(origin) },
     );
   }
 }

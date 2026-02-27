@@ -49,13 +49,13 @@ export function ProManagementTab() {
     <div className="space-y-4">
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
         <input
           type="text"
           placeholder="Search by email, clerkId, or ID..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50 focus:bg-white/[0.07]"
+          className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus:bg-white/[0.07]"
         />
       </div>
 
@@ -98,7 +98,7 @@ export function ProManagementTab() {
               <Switch
                 checked={user.role === "PRO"}
                 onCheckedChange={() => handleToggle(user._id, user.role)}
-                className="ml-4 shrink-0 h-5 w-10 data-[state=checked]:bg-yellow-500 data-[state=unchecked]:bg-white/20"
+                className="ml-4 h-5 w-10 shrink-0 data-[state=checked]:bg-yellow-500 data-[state=unchecked]:bg-white/20"
               />
             )}
           </div>

@@ -7,7 +7,15 @@ const compat = new FlatCompat({
 
 export default tseslint.config(
   {
-    ignores: [".next", "userscript.js", "radarthing.user.js", "seabus.js", "jth.js", "sse", "next-env.d.ts"],
+    ignores: [
+      ".next",
+      "userscript.js",
+      "radarthing.user.js",
+      "seabus.js",
+      "jth.js",
+      "sse",
+      "next-env.d.ts",
+    ],
   },
   ...compat.extends("next/core-web-vitals"),
   {

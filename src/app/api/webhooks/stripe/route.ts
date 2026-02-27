@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      process.env.STRIPE_WEBHOOK_SECRET!,
     );
   } catch (err) {
     console.error("Webhook signature verification failed:", err);
@@ -119,7 +119,7 @@ export async function POST(req: Request) {
     const result = await syncStripeSubscription(customerId);
     console.log(
       `[Stripe Webhook] ${event.type} - Customer ${customerId} synced:`,
-      result
+      result,
     );
 
     return NextResponse.json({ received: true });

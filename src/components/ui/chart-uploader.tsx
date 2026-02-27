@@ -79,7 +79,10 @@ function deriveChartName(fileName: string): string {
 }
 
 export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
-  function ChartUploader({ onUploadComplete, onError, onFileSelected, icao }, ref) {
+  function ChartUploader(
+    { onUploadComplete, onError, onFileSelected, icao },
+    ref,
+  ) {
     const [files, setFiles] = useState<FileEntry[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [localError, setLocalError] = useState<string | null>(null);
@@ -116,7 +119,7 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
         // Defer parent state update to avoid setState-during-render
         setTimeout(() => onFileSelected?.(true), 0);
       },
-      [onFileSelected]
+      [onFileSelected],
     );
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -137,12 +140,12 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
           return next;
         });
       },
-      [onFileSelected]
+      [onFileSelected],
     );
 
     const updateChartName = useCallback((id: string, chartName: string) => {
       setFiles((prev) =>
-        prev.map((f) => (f.id === id ? { ...f, chartName } : f))
+        prev.map((f) => (f.id === id ? { ...f, chartName } : f)),
       );
     }, []);
 
@@ -167,7 +170,6 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
       setIsUploading(true);
       setLocalError(null);
 
-
       try {
         // Rename all files and upload in a single batch
         const renamedFiles = files.map((entry) => {
@@ -180,7 +182,7 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
 
         if (!uploadResults || uploadResults.length === 0) {
           setIsUploading(false);
-    
+
           return [];
         }
 
@@ -191,7 +193,7 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
         }));
 
         setIsUploading(false);
-  
+
         onUploadComplete(results);
         return results;
       } catch (error) {
@@ -199,7 +201,7 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
         setLocalError(humanError);
         onError(humanError);
         setIsUploading(false);
-  
+
         return [];
       }
     }, [files, icao, startUpload, onError, onUploadComplete]);
@@ -212,7 +214,7 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
         fileCount: () => files.length,
         reset: resetState,
       }),
-      [triggerUpload, files.length, resetState]
+      [triggerUpload, files.length, resetState],
     );
 
     return (
@@ -338,5 +340,5 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
         )}
       </div>
     );
-  }
+  },
 );

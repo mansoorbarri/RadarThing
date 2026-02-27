@@ -106,7 +106,10 @@ function AirlineRow({
   const logoUrl = getAirlineLogoFromFlightNumber(prefix);
 
   return (
-    <li className="animate-fade-in-up" style={{ animationDelay: `${100 + index * 30}ms` }}>
+    <li
+      className="animate-fade-in-up"
+      style={{ animationDelay: `${100 + index * 30}ms` }}
+    >
       <button
         onClick={() => onToggle(prefix)}
         className={`flex w-full cursor-pointer items-center gap-5 px-6 py-4 transition-all duration-150 ${

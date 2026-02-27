@@ -9,7 +9,9 @@ export interface OnlineAirport {
 }
 
 export const useAircraftStream = () => {
-  const [aircrafts, setAircrafts] = useState<PositionUpdate[]>(activeAircraft.getAll());
+  const [aircrafts, setAircrafts] = useState<PositionUpdate[]>(
+    activeAircraft.getAll(),
+  );
   const [onlineAirports, setOnlineAirports] = useState<OnlineAirport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

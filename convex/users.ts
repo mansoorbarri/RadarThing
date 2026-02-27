@@ -30,7 +30,7 @@ export const getByStripeCustomerId = query({
     return await ctx.db
       .query("users")
       .withIndex("by_stripeCustomerId", (q) =>
-        q.eq("stripeCustomerId", args.stripeCustomerId)
+        q.eq("stripeCustomerId", args.stripeCustomerId),
       )
       .first();
   },
@@ -151,7 +151,7 @@ export const update = mutation({
     const { id, ...updates } = args;
     // Filter out undefined values
     const filteredUpdates = Object.fromEntries(
-      Object.entries(updates).filter(([_, v]) => v !== undefined)
+      Object.entries(updates).filter(([_, v]) => v !== undefined),
     );
     await ctx.db.patch(id, filteredUpdates);
   },
@@ -179,7 +179,7 @@ export const updateByClerkId = mutation({
     if (!user) return null;
 
     const filteredUpdates = Object.fromEntries(
-      Object.entries(updates).filter(([_, v]) => v !== undefined)
+      Object.entries(updates).filter(([_, v]) => v !== undefined),
     );
     await ctx.db.patch(user._id, filteredUpdates);
     return user._id;
@@ -197,14 +197,14 @@ export const updateByStripeCustomerId = mutation({
     const user = await ctx.db
       .query("users")
       .withIndex("by_stripeCustomerId", (q) =>
-        q.eq("stripeCustomerId", stripeCustomerId)
+        q.eq("stripeCustomerId", stripeCustomerId),
       )
       .first();
 
     if (!user) return null;
 
     const filteredUpdates = Object.fromEntries(
-      Object.entries(updates).filter(([_, v]) => v !== undefined)
+      Object.entries(updates).filter(([_, v]) => v !== undefined),
     );
     await ctx.db.patch(user._id, filteredUpdates);
     return user._id;
@@ -269,10 +269,7 @@ export const getFreeUserUploadCounts = query({
     const freeUsers = await ctx.db
       .query("users")
       .filter((q) =>
-        q.and(
-          q.eq(q.field("role"), "FREE"),
-          q.eq(q.field("isDeleted"), false)
-        )
+        q.and(q.eq(q.field("role"), "FREE"), q.eq(q.field("isDeleted"), false)),
       )
       .collect();
 
@@ -280,16 +277,12 @@ export const getFreeUserUploadCounts = query({
       freeUsers.map(async (user) => {
         const aircraftImages = await ctx.db
           .query("aircraftImages")
-          .withIndex("by_uploadedBy", (q) =>
-            q.eq("uploadedBy", user.clerkId)
-          )
+          .withIndex("by_uploadedBy", (q) => q.eq("uploadedBy", user.clerkId))
           .collect();
 
         const airportCharts = await ctx.db
           .query("airportCharts")
-          .withIndex("by_uploadedBy", (q) =>
-            q.eq("uploadedBy", user.clerkId)
-          )
+          .withIndex("by_uploadedBy", (q) => q.eq("uploadedBy", user.clerkId))
           .collect();
 
         return {
@@ -300,7 +293,7 @@ export const getFreeUserUploadCounts = query({
           airportCharts: airportCharts.length,
           total: aircraftImages.length + airportCharts.length,
         };
-      })
+      }),
     );
 
     return results.filter((r) => r.total > 0);

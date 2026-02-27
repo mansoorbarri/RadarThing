@@ -12,9 +12,12 @@ export function useTileCacheWorker() {
       .register("/tile-cache-sw.js")
       .then((registration) => {
         // Trim cache periodically (every 5 minutes)
-        const interval = setInterval(() => {
-          registration.active?.postMessage("trim-cache");
-        }, 5 * 60 * 1000);
+        const interval = setInterval(
+          () => {
+            registration.active?.postMessage("trim-cache");
+          },
+          5 * 60 * 1000,
+        );
 
         return () => clearInterval(interval);
       })

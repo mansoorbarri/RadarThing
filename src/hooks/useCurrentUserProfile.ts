@@ -11,7 +11,7 @@ export function useCurrentUserProfile() {
   // Real-time query - auto-updates when user data changes in Convex
   const dbUser = useQuery(
     api.users.getByClerkId,
-    clerkId ? { clerkId } : "skip"
+    clerkId ? { clerkId } : "skip",
   );
 
   // Loading state: Clerk not loaded OR (user exists but Convex query still pending)

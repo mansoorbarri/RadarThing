@@ -36,8 +36,10 @@ export function ConflictModal({
             {pendingImage.airlineIata}/{pendingImage.airlineIcao}
           </span>{" "}
           +{" "}
-          <span className="font-mono text-white">{pendingImage.aircraftType}</span>.
-          Choose which image to keep. The other will be permanently deleted.
+          <span className="font-mono text-white">
+            {pendingImage.aircraftType}
+          </span>
+          . Choose which image to keep. The other will be permanently deleted.
         </p>
 
         <div className="mb-6 grid gap-4 sm:grid-cols-2">
@@ -51,12 +53,12 @@ export function ConflictModal({
                 className="object-cover"
                 unoptimized
               />
-              <div className="absolute left-2 top-2 rounded-md bg-yellow-500/80 px-2 py-1 text-xs font-bold text-black">
+              <div className="absolute top-2 left-2 rounded-md bg-yellow-500/80 px-2 py-1 text-xs font-bold text-black">
                 NEW (PENDING)
               </div>
             </div>
             <div className="p-4">
-              <div className="mb-2 flex items-center gap-2 flex-wrap">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">
                   {pendingImage.airlineIata}
                 </span>
@@ -96,12 +98,12 @@ export function ConflictModal({
                 className="object-cover"
                 unoptimized
               />
-              <div className="absolute left-2 top-2 rounded-md bg-emerald-500/80 px-2 py-1 text-xs font-bold text-black">
+              <div className="absolute top-2 left-2 rounded-md bg-emerald-500/80 px-2 py-1 text-xs font-bold text-black">
                 CURRENT (APPROVED)
               </div>
             </div>
             <div className="p-4">
-              <div className="mb-2 flex items-center gap-2 flex-wrap">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">
                   {existingImage.airlineIata}
                 </span>
@@ -119,7 +121,10 @@ export function ConflictModal({
                 </span>
               </p>
               <p className="text-xs text-slate-600">
-                Approved {existingImage.approvedAt ? new Date(existingImage.approvedAt).toLocaleDateString() : "N/A"}
+                Approved{" "}
+                {existingImage.approvedAt
+                  ? new Date(existingImage.approvedAt).toLocaleDateString()
+                  : "N/A"}
               </p>
               <button
                 onClick={onKeepExisting}

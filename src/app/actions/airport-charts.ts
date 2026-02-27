@@ -16,7 +16,7 @@ async function sendChartNotificationEmail(
   uploadedBy: string,
   status: "approved" | "rejected",
   chartDetails: { icao: string; chartType: string; chartName: string },
-  reason?: string
+  reason?: string,
 ) {
   if (!resend) return;
 
@@ -134,7 +134,7 @@ async function getCurrentUserId(): Promise<string | null> {
 // Get approved charts for an airport
 export async function getApprovedChartsForAirport(
   icao: string,
-  chartType?: ChartType
+  chartType?: ChartType,
 ): Promise<AirportChartRecord[]> {
   try {
     const charts = await convex.query(api.airportCharts.getChartsForAirport, {
@@ -149,7 +149,9 @@ export async function getApprovedChartsForAirport(
 }
 
 // Get all approved charts
-export async function getApprovedAirportCharts(): Promise<AirportChartRecord[]> {
+export async function getApprovedAirportCharts(): Promise<
+  AirportChartRecord[]
+> {
   try {
     const charts = await convex.query(api.airportCharts.getApproved, {});
     return charts.map(toAirportChartRecord);
@@ -181,11 +183,17 @@ export async function validateChartUploadEligibility(data: {
 }): Promise<{ canUpload: boolean; error?: string }> {
   const userId = await getCurrentUserId();
   if (!userId) {
-    return { canUpload: false, error: "You must be signed in to upload charts" };
+    return {
+      canUpload: false,
+      error: "You must be signed in to upload charts",
+    };
   }
 
   if (!data.icao || data.icao.length < 3 || data.icao.length > 4) {
-    return { canUpload: false, error: "Valid ICAO code required (3-4 characters)" };
+    return {
+      canUpload: false,
+      error: "Valid ICAO code required (3-4 characters)",
+    };
   }
 
   if (!data.chartType) {
@@ -193,7 +201,10 @@ export async function validateChartUploadEligibility(data: {
   }
 
   if (!data.chartName || data.chartName.length < 3) {
-    return { canUpload: false, error: "Chart name is required (at least 3 characters)" };
+    return {
+      canUpload: false,
+      error: "Chart name is required (at least 3 characters)",
+    };
   }
 
   try {
@@ -204,13 +215,14 @@ export async function validateChartUploadEligibility(data: {
         chartType: data.chartType,
         chartName: data.chartName,
         uploadedBy: userId,
-      }
+      },
     );
 
     if (eligibility.pendingByUserExists) {
       return {
         canUpload: false,
-        error: "You already have a pending chart with this name for this airport",
+        error:
+          "You already have a pending chart with this name for this airport",
       };
     }
 
@@ -243,7 +255,7 @@ export async function createAirportChart(data: {
         chartType: data.chartType,
         chartName: data.chartName,
         uploadedBy: userId,
-      }
+      },
     );
 
     if (eligibility.pendingByUserExists) {
@@ -256,7 +268,8 @@ export async function createAirportChart(data: {
       }
       return {
         success: false,
-        error: "You already have a pending chart with this name for this airport",
+        error:
+          "You already have a pending chart with this name for this airport",
       };
     }
 
@@ -303,7 +316,7 @@ export async function createAirportChart(data: {
 
 // Approve airport chart (ADMIN only)
 export async function approveAirportChart(
-  id: string
+  id: string,
 ): Promise<{ success: boolean; error?: string }> {
   const admin = await isAdminUser();
   if (!admin) {
@@ -349,7 +362,7 @@ export async function approveAirportChart(
 // Reject airport chart (ADMIN only)
 export async function rejectAirportChart(
   id: string,
-  reason: string
+  reason: string,
 ): Promise<{ success: boolean; error?: string }> {
   const admin = await isAdminUser();
   if (!admin) {
@@ -386,7 +399,7 @@ export async function rejectAirportChart(
           chartType: chart.chartType,
           chartName: chart.chartName,
         },
-        reason
+        reason,
       );
     }
 
@@ -405,7 +418,7 @@ export async function rejectAirportChart(
 
 // Delete airport chart (ADMIN only)
 export async function deleteAirportChart(
-  id: string
+  id: string,
 ): Promise<{ success: boolean; error?: string }> {
   const admin = await isAdminUser();
   if (!admin) {
@@ -447,11 +460,14 @@ export async function updateAirportChart(
   id: string,
   newIcao: string,
   newChartType: ChartType,
-  newChartName: string
+  newChartName: string,
 ): Promise<{ success: boolean; error?: string }> {
   const admin = await isAdminUser();
   if (!admin) {
-    return { success: false, error: "Only ADMIN users can update chart details" };
+    return {
+      success: false,
+      error: "Only ADMIN users can update chart details",
+    };
   }
 
   // Validate inputs
@@ -463,7 +479,10 @@ export async function updateAirportChart(
   }
 
   if (chartName.length < 3) {
-    return { success: false, error: "Chart name must be at least 3 characters" };
+    return {
+      success: false,
+      error: "Chart name must be at least 3 characters",
+    };
   }
 
   try {
@@ -485,7 +504,9 @@ export async function updateAirportChart(
       try {
         const extension = result.imageKey.split(".").pop() || "png";
         // Sanitize chart name for filename (remove special chars, replace spaces)
-        const sanitizedName = chartName.replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
+        const sanitizedName = chartName
+          .replace(/[^a-zA-Z0-9]/g, "-")
+          .replace(/-+/g, "-");
         const newFileName = `${icao}-${newChartType}-${sanitizedName}.${extension}`;
 
         await utapi.renameFiles({
@@ -509,7 +530,7 @@ export async function updateAirportChart(
 
 // Bulk approve charts (ADMIN only)
 export async function bulkApproveAirportCharts(
-  ids: string[]
+  ids: string[],
 ): Promise<{ success: boolean; approved: number; failed: number }> {
   const admin = await isAdminUser();
   if (!admin) {
@@ -526,8 +547,8 @@ export async function bulkApproveAirportCharts(
       ids.map((id) =>
         convex.query(api.airportCharts.getById, {
           id: id as Id<"airportCharts">,
-        })
-      )
+        }),
+      ),
     );
 
     const results = await convex.mutation(api.airportCharts.bulkApprove, {
@@ -547,7 +568,7 @@ export async function bulkApproveAirportCharts(
             icao: chart.icao,
             chartType: chart.chartType,
             chartName: chart.chartName,
-          })
+          }),
         );
       }
     }
@@ -570,7 +591,7 @@ export async function bulkApproveAirportCharts(
 // Bulk reject charts (ADMIN only)
 export async function bulkRejectAirportCharts(
   ids: string[],
-  reason: string
+  reason: string,
 ): Promise<{ success: boolean; rejected: number; failed: number }> {
   const admin = await isAdminUser();
   if (!admin) {
@@ -595,11 +616,16 @@ export async function bulkRejectAirportCharts(
           deletePromises.push(
             utapi.deleteFiles(result.imageKey).catch((e) => {
               console.error("Failed to delete file from UploadThing:", e);
-            }) as Promise<void>
+            }) as Promise<void>,
           );
         }
 
-        if (result.uploadedBy && result.icao && result.chartType && result.chartName) {
+        if (
+          result.uploadedBy &&
+          result.icao &&
+          result.chartType &&
+          result.chartName
+        ) {
           emailPromises.push(
             sendChartNotificationEmail(
               result.uploadedBy,
@@ -609,8 +635,8 @@ export async function bulkRejectAirportCharts(
                 chartType: result.chartType,
                 chartName: result.chartName,
               },
-              reason
-            )
+              reason,
+            ),
           );
         }
       }
@@ -633,7 +659,7 @@ export async function bulkRejectAirportCharts(
 
 // Get user info by Clerk IDs (ADMIN only)
 export async function getChartUserInfoByIds(
-  userIds: string[]
+  userIds: string[],
 ): Promise<Record<string, { email: string; name: string | null }>> {
   const admin = await isAdminUser();
   if (!admin) return {};

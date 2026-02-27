@@ -36,7 +36,9 @@ function setCachedUser(googleId: string, user: User | null): void {
  * @param googleId - The Google ID to look up, or undefined/null to skip
  * @returns The user object if found, null if not found, undefined if loading
  */
-export function useUserByGoogleId(googleId: string | undefined | null): User | null | undefined {
+export function useUserByGoogleId(
+  googleId: string | undefined | null,
+): User | null | undefined {
   // Track whether we've already cached a result from Convex
   const hasCachedRef = useRef(false);
 
@@ -50,12 +52,17 @@ export function useUserByGoogleId(googleId: string | undefined | null): User | n
 
   const convexResult = useQuery(
     api.users.getByGoogleId,
-    shouldQuery && googleId ? { googleId } : "skip"
+    shouldQuery && googleId ? { googleId } : "skip",
   );
 
   // Update cache when Convex returns a result
   useEffect(() => {
-    if (googleId && shouldQuery && convexResult !== undefined && !hasCachedRef.current) {
+    if (
+      googleId &&
+      shouldQuery &&
+      convexResult !== undefined &&
+      !hasCachedRef.current
+    ) {
       setCachedUser(googleId, convexResult);
       hasCachedRef.current = true;
     }

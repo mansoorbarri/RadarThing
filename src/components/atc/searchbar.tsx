@@ -35,8 +35,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
 
-  const showRecentSearches = isFocused && !searchTerm && recentSearches.length > 0;
-  const showSearchResults = searchTerm && (searchResults.aircrafts.length > 0 || searchResults.airports.length > 0);
+  const showRecentSearches =
+    isFocused && !searchTerm && recentSearches.length > 0;
+  const showSearchResults =
+    searchTerm &&
+    (searchResults.aircrafts.length > 0 || searchResults.airports.length > 0);
 
   return (
     <div className={`flex flex-col ${isMobile ? "w-full" : "items-start"}`}>
@@ -49,72 +52,77 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         onBlur={() => setTimeout(() => setIsFocused(false), 200)}
         autoFocus={isMobile}
         className={`rounded-lg border border-cyan-400/30 bg-black/80 px-4 py-2.5 text-[14px] text-cyan-400 placeholder-cyan-500/50 transition-all duration-200 outline-none ${
-          isMobile ? "w-full" : "ml-5 mt-1 w-[280px]"
+          isMobile ? "w-full" : "mt-1 ml-5 w-[280px]"
         } ${
           showSearchResults || showRecentSearches ? "mb-2" : ""
         } hover:border-cyan-400/60 focus:border-cyan-400 focus:shadow-[0_0_12px_rgba(0,255,255,0.3)]`}
       />
 
-      {searchTerm && (searchResults.aircrafts.length > 0 || searchResults.airports.length > 0) && (
-        <div
-          className={`overflow-y-auto rounded-lg border border-cyan-400/20 bg-black/90 ${
-            isMobile ? "max-h-[70vh] w-full" : "ml-5 max-h-[300px] w-[280px]"
-          }`}
-        >
-          {searchResults.aircrafts.length > 0 && (
-            <>
-              <div className="bg-cyan-950/50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-cyan-400 border-b border-cyan-400/20">
-                Aircrafts
-              </div>
-              {searchResults.aircrafts.map((aircraft, index) => (
-                <div
-                  key={aircraft.callsign || aircraft.flightNo || `ac-${index}`}
-                  onClick={() => {
-                    onSelectAircraft(aircraft);
-                    setSearchTerm("");
-                  }}
-                  className={`cursor-pointer border-b border-cyan-400/10 px-4 py-3 text-[14px] text-cyan-100 transition-colors duration-150 last:border-b-0 active:bg-cyan-400/20 ${
-                    isMobile ? "" : "hover:bg-cyan-400/10"
-                  }`}
-                >
-                  <div className="font-semibold text-cyan-300">
-                    {aircraft.callsign || aircraft.flightNo || "N/A"}
-                  </div>
-                  <div className="mt-1 text-[12px] text-cyan-200/60">
-                    {aircraft.type} • {aircraft.departure} → {aircraft.arrival || "UNK"}
-                  </div>
+      {searchTerm &&
+        (searchResults.aircrafts.length > 0 ||
+          searchResults.airports.length > 0) && (
+          <div
+            className={`overflow-y-auto rounded-lg border border-cyan-400/20 bg-black/90 ${
+              isMobile ? "max-h-[70vh] w-full" : "ml-5 max-h-[300px] w-[280px]"
+            }`}
+          >
+            {searchResults.aircrafts.length > 0 && (
+              <>
+                <div className="border-b border-cyan-400/20 bg-cyan-950/50 px-4 py-2 text-[11px] font-semibold tracking-wider text-cyan-400 uppercase">
+                  Aircrafts
                 </div>
-              ))}
-            </>
-          )}
-          {searchResults.airports.length > 0 && (
-            <>
-              <div className="bg-cyan-950/50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-cyan-400 border-b border-cyan-400/20">
-                Airports
-              </div>
-              {searchResults.airports.map((airport) => (
-                <div
-                  key={`ap-${airport.icao}`}
-                  onClick={() => {
-                    onSelectAirport(airport);
-                    setSearchTerm("");
-                  }}
-                  className={`cursor-pointer border-b border-cyan-400/10 px-4 py-3 text-[14px] text-cyan-100 transition-colors duration-150 last:border-b-0 active:bg-cyan-400/20 ${
-                    isMobile ? "" : "hover:bg-cyan-400/10"
-                  }`}
-                >
-                  <div className="font-semibold text-cyan-300">
-                    {airport.icao}
+                {searchResults.aircrafts.map((aircraft, index) => (
+                  <div
+                    key={
+                      aircraft.callsign || aircraft.flightNo || `ac-${index}`
+                    }
+                    onClick={() => {
+                      onSelectAircraft(aircraft);
+                      setSearchTerm("");
+                    }}
+                    className={`cursor-pointer border-b border-cyan-400/10 px-4 py-3 text-[14px] text-cyan-100 transition-colors duration-150 last:border-b-0 active:bg-cyan-400/20 ${
+                      isMobile ? "" : "hover:bg-cyan-400/10"
+                    }`}
+                  >
+                    <div className="font-semibold text-cyan-300">
+                      {aircraft.callsign || aircraft.flightNo || "N/A"}
+                    </div>
+                    <div className="mt-1 text-[12px] text-cyan-200/60">
+                      {aircraft.type} • {aircraft.departure} →{" "}
+                      {aircraft.arrival || "UNK"}
+                    </div>
                   </div>
-                  <div className="mt-1 text-[12px] text-cyan-200/60">
-                    {airport.name}
-                  </div>
+                ))}
+              </>
+            )}
+            {searchResults.airports.length > 0 && (
+              <>
+                <div className="border-b border-cyan-400/20 bg-cyan-950/50 px-4 py-2 text-[11px] font-semibold tracking-wider text-cyan-400 uppercase">
+                  Airports
                 </div>
-              ))}
-            </>
-          )}
-        </div>
-      )}
+                {searchResults.airports.map((airport) => (
+                  <div
+                    key={`ap-${airport.icao}`}
+                    onClick={() => {
+                      onSelectAirport(airport);
+                      setSearchTerm("");
+                    }}
+                    className={`cursor-pointer border-b border-cyan-400/10 px-4 py-3 text-[14px] text-cyan-100 transition-colors duration-150 last:border-b-0 active:bg-cyan-400/20 ${
+                      isMobile ? "" : "hover:bg-cyan-400/10"
+                    }`}
+                  >
+                    <div className="font-semibold text-cyan-300">
+                      {airport.icao}
+                    </div>
+                    <div className="mt-1 text-[12px] text-cyan-200/60">
+                      {airport.name}
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
 
       {showRecentSearches && onSelectRecentSearch && (
         <div
@@ -122,14 +130,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             isMobile ? "max-h-[70vh] w-full" : "ml-5 max-h-[300px] w-[280px]"
           }`}
         >
-          <div className="flex items-center justify-between bg-cyan-950/50 px-4 py-2 border-b border-cyan-400/20">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-cyan-400">
+          <div className="flex items-center justify-between border-b border-cyan-400/20 bg-cyan-950/50 px-4 py-2">
+            <div className="text-[11px] font-semibold tracking-wider text-cyan-400 uppercase">
               Recent Searches
             </div>
             {onClearRecentSearches && (
               <button
                 onClick={onClearRecentSearches}
-                className="text-[10px] text-cyan-400/60 hover:text-cyan-400 transition-colors"
+                className="text-[10px] text-cyan-400/60 transition-colors hover:text-cyan-400"
               >
                 Clear
               </button>

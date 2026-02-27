@@ -31,7 +31,9 @@ export function organizeChartsByType(charts: AirportChart[]): ChartsByType {
 /**
  * Get chart counts by type
  */
-export function getChartCounts(charts: AirportChart[]): Record<ChartType, number> {
+export function getChartCounts(
+  charts: AirportChart[],
+): Record<ChartType, number> {
   const organized = organizeChartsByType(charts);
   return {
     TAXI: organized.TAXI.length,

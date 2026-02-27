@@ -100,7 +100,10 @@ export function splitPathAtAntimeridian(
 
       current.push([crossLat, boundary]);
       segments.push(current);
-      current = [[crossLat, -boundary], [lat2, lon2]];
+      current = [
+        [crossLat, -boundary],
+        [lat2, lon2],
+      ];
     } else {
       current.push([lat2, lon2]);
     }

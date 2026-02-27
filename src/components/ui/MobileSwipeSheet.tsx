@@ -37,15 +37,18 @@ export const MobileSwipeSheet = ({
     setIsDragging(true);
   }, []);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDragging) return;
-    const touch = e.touches[0];
-    if (!touch) return;
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!isDragging) return;
+      const touch = e.touches[0];
+      if (!touch) return;
 
-    currentYRef.current = touch.clientY;
-    const delta = startYRef.current - currentYRef.current;
-    setDragOffset(delta);
-  }, [isDragging]);
+      currentYRef.current = touch.clientY;
+      const delta = startYRef.current - currentYRef.current;
+      setDragOffset(delta);
+    },
+    [isDragging],
+  );
 
   const handleTouchEnd = useCallback(() => {
     if (!isDragging) return;
@@ -112,14 +115,12 @@ export const MobileSwipeSheet = ({
       onTouchEnd={handleTouchEnd}
     >
       {/* Drag handle */}
-      <div className="flex items-center justify-center pt-3 pb-1 touch-none">
+      <div className="flex touch-none items-center justify-center pt-3 pb-1">
         <div className="h-1.5 w-12 rounded-full bg-white/30" />
       </div>
 
       {/* Content */}
-      <div className="h-[calc(100%-24px)] overflow-hidden">
-        {children}
-      </div>
+      <div className="h-[calc(100%-24px)] overflow-hidden">{children}</div>
     </div>
   );
 };

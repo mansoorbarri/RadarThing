@@ -22,15 +22,26 @@ export function FIDSPanel({ aircrafts, onTrack }: Props) {
 
       {/* Column headers */}
       <div className="grid shrink-0 grid-cols-[minmax(0,3fr)_minmax(0,3fr)_4rem_5.25rem] items-center gap-2 border-b border-white/10 px-4 py-1.5">
-        <span className="font-mono text-[9px] tracking-wider text-white/30 uppercase">Flight</span>
-        <span className="font-mono text-[9px] tracking-wider text-white/30 uppercase">Route</span>
-        <span className="font-mono text-[9px] tracking-wider text-white/30 uppercase">Aircraft</span>
+        <span className="font-mono text-[9px] tracking-wider text-white/30 uppercase">
+          Flight
+        </span>
+        <span className="font-mono text-[9px] tracking-wider text-white/30 uppercase">
+          Route
+        </span>
+        <span className="font-mono text-[9px] tracking-wider text-white/30 uppercase">
+          Aircraft
+        </span>
         <span />
       </div>
 
       <div className="custom-scrollbar flex-1 overflow-y-auto">
         {aircrafts.map((ac, index) => (
-          <FIDSRow key={ac.id ?? ac.callsign} aircraft={ac} onTrack={onTrack} index={index} />
+          <FIDSRow
+            key={ac.id ?? ac.callsign}
+            aircraft={ac}
+            onTrack={onTrack}
+            index={index}
+          />
         ))}
       </div>
     </div>
@@ -55,11 +66,13 @@ function FIDSRow({
         <div className="truncate font-mono font-bold text-cyan-300">
           {aircraft.flightNo || aircraft.callsign || "—"}
         </div>
-        {aircraft.flightNo && aircraft.callsign && aircraft.flightNo !== aircraft.callsign && (
-          <div className="truncate font-mono text-[10px] text-white/30">
-            {aircraft.callsign}
-          </div>
-        )}
+        {aircraft.flightNo &&
+          aircraft.callsign &&
+          aircraft.flightNo !== aircraft.callsign && (
+            <div className="truncate font-mono text-[10px] text-white/30">
+              {aircraft.callsign}
+            </div>
+          )}
       </div>
 
       <div className="min-w-0 truncate font-mono text-slate-400">

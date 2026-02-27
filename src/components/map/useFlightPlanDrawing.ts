@@ -58,7 +58,7 @@ export const useFlightPlanDrawing = ({
 
       // Update the selected IDs ref
       currentSelectedIdsRef.current = new Set(
-        aircrafts.map((ac) => ac.callsign || ac.id)
+        aircrafts.map((ac) => ac.callsign || ac.id),
       );
 
       // Draw flight path for each aircraft
@@ -114,7 +114,7 @@ export const useFlightPlanDrawing = ({
             if (waypoints.length > 0) {
               const activeWaypointIndex = findActiveWaypointIndex(
                 aircraft,
-                waypoints
+                waypoints,
               );
 
               // Collect valid waypoints and their raw coordinates
@@ -134,8 +134,7 @@ export const useFlightPlanDrawing = ({
               if (coords.length >= 2) {
                 const midLon =
                   (coords[0]![1] + coords[coords.length - 1]![1]) / 2;
-                const shift =
-                  Math.round((aircraft.lon - midLon) / 360) * 360;
+                const shift = Math.round((aircraft.lon - midLon) / 360) * 360;
                 if (shift !== 0) {
                   for (const c of coords) c[1] += shift;
                 }
@@ -215,7 +214,7 @@ export const useFlightPlanDrawing = ({
           lastAircraft.callsign || lastAircraft.id;
       }
     },
-    [isRadarMode, mapInstance, flightPlanLayerGroup, historyLayerGroup]
+    [isRadarMode, mapInstance, flightPlanLayerGroup, historyLayerGroup],
   );
 
   // Legacy single aircraft drawing (for backwards compatibility)
@@ -223,7 +222,7 @@ export const useFlightPlanDrawing = ({
     (aircraft: PositionUpdate, shouldZoom = false) => {
       drawMultipleFlightPlans([aircraft], shouldZoom);
     },
-    [drawMultipleFlightPlans]
+    [drawMultipleFlightPlans],
   );
 
   const clearHistoryPolyline = useCallback(() => {

@@ -95,13 +95,19 @@ export const MapGlobalStyles = () => (
 
     @keyframes radar-selected-pulse {
       0% {
-        box-shadow: 0 0 12px rgba(74, 222, 128, 0.9), 0 0 20px rgba(74, 222, 128, 0.6);
+        box-shadow:
+          0 0 12px rgba(74, 222, 128, 0.9),
+          0 0 20px rgba(74, 222, 128, 0.6);
       }
       50% {
-        box-shadow: 0 0 18px rgba(74, 222, 128, 1), 0 0 30px rgba(74, 222, 128, 0.8);
+        box-shadow:
+          0 0 18px rgba(74, 222, 128, 1),
+          0 0 30px rgba(74, 222, 128, 0.8);
       }
       100% {
-        box-shadow: 0 0 12px rgba(74, 222, 128, 0.9), 0 0 20px rgba(74, 222, 128, 0.6);
+        box-shadow:
+          0 0 12px rgba(74, 222, 128, 0.9),
+          0 0 20px rgba(74, 222, 128, 0.6);
       }
     }
 

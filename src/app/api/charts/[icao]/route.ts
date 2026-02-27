@@ -5,12 +5,20 @@ import { organizeChartsByType } from "~/services/airportChartsService";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "../../../../../convex/_generated/api";
 
-const VALID_CHART_TYPES: ChartType[] = ["TAXI", "SID", "STAR", "APPROACH", "GENERAL"];
+const VALID_CHART_TYPES: ChartType[] = [
+  "TAXI",
+  "SID",
+  "STAR",
+  "APPROACH",
+  "GENERAL",
+];
 
 export async function GET(request: NextRequest, context: any) {
   const { icao } = await context.params;
   const searchParams = request.nextUrl.searchParams;
-  const chartType = searchParams.get("type")?.toUpperCase() as ChartType | undefined;
+  const chartType = searchParams.get("type")?.toUpperCase() as
+    | ChartType
+    | undefined;
 
   const isProUser = await isPro();
 
@@ -21,8 +29,10 @@ export async function GET(request: NextRequest, context: any) {
   // Validate chart type if provided
   if (chartType && !VALID_CHART_TYPES.includes(chartType)) {
     return NextResponse.json(
-      { error: `Invalid chart type. Must be one of: ${VALID_CHART_TYPES.join(", ")}` },
-      { status: 400 }
+      {
+        error: `Invalid chart type. Must be one of: ${VALID_CHART_TYPES.join(", ")}`,
+      },
+      { status: 400 },
     );
   }
 
@@ -60,7 +70,7 @@ export async function GET(request: NextRequest, context: any) {
     console.error("Failed to fetch charts:", error);
     return NextResponse.json(
       { error: "Failed to fetch charts" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

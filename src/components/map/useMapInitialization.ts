@@ -80,7 +80,9 @@ export const useMapInitialization = ({
 
   const resetMapView = useCallback(() => {
     if (!mapInstance.current) return;
-    mapInstance.current.setView(DEFAULT_CENTER, DEFAULT_ZOOM, { animate: true });
+    mapInstance.current.setView(DEFAULT_CENTER, DEFAULT_ZOOM, {
+      animate: true,
+    });
     setCookie("map_zoom", String(DEFAULT_ZOOM));
     setCookie("map_center_lat", String(DEFAULT_CENTER[0]));
     setCookie("map_center_lng", String(DEFAULT_CENTER[1]));
@@ -95,7 +97,9 @@ export const useMapInitialization = ({
     const savedLng = parseFloat(getCookie("map_center_lng") ?? "");
 
     const initialCenter: [number, number] =
-      !isNaN(savedLat) && !isNaN(savedLng) ? [savedLat, savedLng] : DEFAULT_CENTER;
+      !isNaN(savedLat) && !isNaN(savedLng)
+        ? [savedLat, savedLng]
+        : DEFAULT_CENTER;
     const initialZoom = !isNaN(savedZoom) ? savedZoom : DEFAULT_ZOOM;
 
     const map = L.map(mapContainerId, {
@@ -107,10 +111,12 @@ export const useMapInitialization = ({
       zoomSnap: 0.25,
       zoomDelta: 0.25,
       // No maxBounds on mobile for unlimited panning, desktop has soft bounds
-      ...(isMobile ? {} : {
-        maxBounds: L.latLngBounds(L.latLng(-85, -540), L.latLng(85, 540)),
-        maxBoundsViscosity: 1.0,
-      }),
+      ...(isMobile
+        ? {}
+        : {
+            maxBounds: L.latLngBounds(L.latLng(-85, -540), L.latLng(85, 540)),
+            maxBoundsViscosity: 1.0,
+          }),
       attributionControl: false,
       zoomControl: !isMobile,
     }).setView(initialCenter, initialZoom);
@@ -126,8 +132,8 @@ export const useMapInitialization = ({
 
     // Shared tile loading optimizations
     const tileLoadingOptions = {
-      keepBuffer: 6,           // Buffer more tiles around viewport (default: 2)
-      updateWhenIdle: false,   // Update tiles while panning, not after
+      keepBuffer: 6, // Buffer more tiles around viewport (default: 2)
+      updateWhenIdle: false, // Update tiles while panning, not after
       updateWhenZooming: true, // Start loading tiles during zoom animation
     };
 
@@ -144,7 +150,7 @@ export const useMapInitialization = ({
     satelliteHybridLayer.current = L.tileLayer(
       "https://mt{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
       {
-        subdomains: "0123",    // Use mt0-mt3 for parallel loading
+        subdomains: "0123", // Use mt0-mt3 for parallel loading
         maxZoom: 18,
         minZoom: 0,
         ...tileLoadingOptions,
@@ -278,7 +284,18 @@ export const useMapInitialization = ({
     map.addControl(settingsControl);
     settingsControlInstanceRef.current = settingsControl;
     setSettingsControlRef.current = settingsControl;
-  }, [isMobile, canUseRadarMode, setIsRadarMode, setRadarControlRef, setIsOSMMode, setOSMControlRef, setIsOpenAIPEnabled, setOpenAIPControlRef, setIsSettingsOpen, setSettingsControlRef]);
+  }, [
+    isMobile,
+    canUseRadarMode,
+    setIsRadarMode,
+    setRadarControlRef,
+    setIsOSMMode,
+    setOSMControlRef,
+    setIsOpenAIPEnabled,
+    setOpenAIPControlRef,
+    setIsSettingsOpen,
+    setSettingsControlRef,
+  ]);
 
   return {
     mapInstance,

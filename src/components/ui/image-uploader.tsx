@@ -51,7 +51,7 @@ async function compressImage(file: File): Promise<File> {
           resolve(compressedFile);
         },
         "image/jpeg",
-        JPEG_QUALITY
+        JPEG_QUALITY,
       );
     };
     img.onerror = () => reject(new Error("Failed to load image"));
@@ -80,15 +80,27 @@ function getHumanReadableError(error: Error | string): string {
   const message = typeof error === "string" ? error : error.message;
   const lowerMessage = message.toLowerCase();
 
-  if (lowerMessage.includes("filesize") || lowerMessage.includes("file size") || lowerMessage.includes("too large") || lowerMessage.includes("size limit")) {
+  if (
+    lowerMessage.includes("filesize") ||
+    lowerMessage.includes("file size") ||
+    lowerMessage.includes("too large") ||
+    lowerMessage.includes("size limit")
+  ) {
     return "File is too large. Maximum size is 512KB. Please choose a smaller image.";
   }
 
-  if (lowerMessage.includes("file type") || lowerMessage.includes("filetype") || lowerMessage.includes("invalid type")) {
+  if (
+    lowerMessage.includes("file type") ||
+    lowerMessage.includes("filetype") ||
+    lowerMessage.includes("invalid type")
+  ) {
     return "Invalid file type. Please upload a JPG, PNG, GIF, or WebP image.";
   }
 
-  if (lowerMessage.includes("unauthorized") || lowerMessage.includes("not authenticated")) {
+  if (
+    lowerMessage.includes("unauthorized") ||
+    lowerMessage.includes("not authenticated")
+  ) {
     return "You must be signed in to upload images.";
   }
 
@@ -101,11 +113,25 @@ function getHumanReadableError(error: Error | string): string {
   }
 
   // Return original message if no match, but clean it up
-  return message.replace(/([A-Z])/g, " $1").trim() || "Upload failed. Please try again.";
+  return (
+    message.replace(/([A-Z])/g, " $1").trim() ||
+    "Upload failed. Please try again."
+  );
 }
 
 export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
-  function ImageUploader({ onUploadComplete, onError, onFileSelected, airlineIata, airlineIcao, aircraftType, externalUploadTrigger = false }, ref) {
+  function ImageUploader(
+    {
+      onUploadComplete,
+      onError,
+      onFileSelected,
+      airlineIata,
+      airlineIcao,
+      aircraftType,
+      externalUploadTrigger = false,
+    },
+    ref,
+  ) {
     const [file, setFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -140,44 +166,48 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
       onFileSelected?.(false);
     }, [onFileSelected]);
 
-    const onDrop = useCallback(async (acceptedFiles: File[]) => {
-      setLocalError(null);
-      const selectedFile = acceptedFiles[0];
+    const onDrop = useCallback(
+      async (acceptedFiles: File[]) => {
+        setLocalError(null);
+        const selectedFile = acceptedFiles[0];
 
-      if (!selectedFile) return;
+        if (!selectedFile) return;
 
-      setIsCompressing(true);
+        setIsCompressing(true);
 
-      try {
-        // Compress the image
-        const compressedFile = await compressImage(selectedFile);
+        try {
+          // Compress the image
+          const compressedFile = await compressImage(selectedFile);
 
-        // Check if compressed file is still too large
-        if (compressedFile.size > MAX_FILE_SIZE) {
-          const errorMsg = "Image is still too large after compression. Please choose a smaller image.";
+          // Check if compressed file is still too large
+          if (compressedFile.size > MAX_FILE_SIZE) {
+            const errorMsg =
+              "Image is still too large after compression. Please choose a smaller image.";
+            setLocalError(errorMsg);
+            onError(errorMsg);
+            setIsCompressing(false);
+            return;
+          }
+
+          setFile(compressedFile);
+          onFileSelected?.(true);
+
+          // Create preview from compressed file
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setPreview(e.target?.result as string);
+          };
+          reader.readAsDataURL(compressedFile);
+        } catch (err) {
+          const errorMsg = "Failed to process image. Please try another file.";
           setLocalError(errorMsg);
           onError(errorMsg);
+        } finally {
           setIsCompressing(false);
-          return;
         }
-
-        setFile(compressedFile);
-        onFileSelected?.(true);
-
-        // Create preview from compressed file
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setPreview(e.target?.result as string);
-        };
-        reader.readAsDataURL(compressedFile);
-      } catch (err) {
-        const errorMsg = "Failed to process image. Please try another file.";
-        setLocalError(errorMsg);
-        onError(errorMsg);
-      } finally {
-        setIsCompressing(false);
-      }
-    }, [onError, onFileSelected]);
+      },
+      [onError, onFileSelected],
+    );
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
       onDrop,
@@ -191,7 +221,8 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
 
       // Require both airline codes and aircraft type before upload
       if (!airlineIata || !airlineIcao || !aircraftType) {
-        const errorMsg = "Please fill in both Airline codes (IATA and ICAO) and Aircraft Type before uploading.";
+        const errorMsg =
+          "Please fill in both Airline codes (IATA and ICAO) and Aircraft Type before uploading.";
         setLocalError(errorMsg);
         onError(errorMsg);
         return false;
@@ -203,7 +234,7 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
 
       try {
         // Rename file to IATA-ICAO-aircraftType format (e.g., EK-UAE-A380.jpg)
-        const extension = file.name.split('.').pop() || 'png';
+        const extension = file.name.split(".").pop() || "png";
         const newFileName = `${airlineIata}-${airlineIcao}-${aircraftType}.${extension}`;
         const renamedFile = new File([file], newFileName, { type: file.type });
 
@@ -219,11 +250,15 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
     }, [file, airlineIata, airlineIcao, aircraftType, startUpload, onError]);
 
     // Expose methods to parent
-    useImperativeHandle(ref, () => ({
-      triggerUpload,
-      hasFile: () => !!file,
-      reset: resetState,
-    }), [triggerUpload, file, resetState]);
+    useImperativeHandle(
+      ref,
+      () => ({
+        triggerUpload,
+        hasFile: () => !!file,
+        reset: resetState,
+      }),
+      [triggerUpload, file, resetState],
+    );
 
     const handleRemove = () => {
       resetState();
@@ -235,11 +270,7 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
         <div className="space-y-3">
           <div className="relative overflow-hidden rounded-lg border border-white/10">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={preview}
-              alt="Preview"
-              className="w-full object-cover"
-            />
+            <img src={preview} alt="Preview" className="w-full object-cover" />
             {!isUploading && (
               <button
                 type="button"
@@ -275,8 +306,12 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
       return (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-cyan-500/50 bg-cyan-500/10 p-8">
           <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
-          <span className="mt-3 font-medium text-white">Compressing image...</span>
-          <span className="mt-1 text-sm text-slate-400">This will only take a moment</span>
+          <span className="mt-3 font-medium text-white">
+            Compressing image...
+          </span>
+          <span className="mt-1 text-sm text-slate-400">
+            This will only take a moment
+          </span>
         </div>
       );
     }
@@ -302,8 +337,12 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
           <input {...getInputProps()} />
 
           <div className="flex flex-col items-center gap-3">
-            <div className={`rounded-full p-3 ${isDragActive ? "bg-cyan-500/20" : "bg-white/5"}`}>
-              <ImageIcon className={`h-8 w-8 ${isDragActive ? "text-cyan-400" : "text-slate-400"}`} />
+            <div
+              className={`rounded-full p-3 ${isDragActive ? "bg-cyan-500/20" : "bg-white/5"}`}
+            >
+              <ImageIcon
+                className={`h-8 w-8 ${isDragActive ? "text-cyan-400" : "text-slate-400"}`}
+              />
             </div>
 
             <div>
@@ -311,7 +350,8 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
                 {isDragActive ? "Drop image here" : "Drag & drop an image"}
               </p>
               <p className="mt-1 text-sm text-slate-400">
-                or <span className="text-cyan-400 underline">click to browse</span>
+                or{" "}
+                <span className="text-cyan-400 underline">click to browse</span>
               </p>
             </div>
 
@@ -322,5 +362,5 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
         </div>
       </div>
     );
-  }
+  },
 );

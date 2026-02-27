@@ -52,7 +52,9 @@ function setCachedAirports(airports: Airport[]) {
 
 export const useAirportData = () => {
   const [airports, setAirports] = useState<Airport[]>([]);
-  const [airportFetchError, setAirportFetchError] = useState<string | null>(null);
+  const [airportFetchError, setAirportFetchError] = useState<string | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const hasFetchedRef = useRef(false);
   const isFetchingRef = useRef(false);
@@ -142,7 +144,9 @@ export const useAirportData = () => {
         }
       }
 
-      console.log(`Loaded ${airportArray.length} airports from OurAirports API`);
+      console.log(
+        `Loaded ${airportArray.length} airports from OurAirports API`,
+      );
       setAirports(airportArray);
       setCachedAirports(airportArray);
       setAirportFetchError(null);

@@ -23,7 +23,7 @@ export function MostTrackedPanel({ flights, onTrack }: Props) {
   if (dismissed || visibleFlights.length === 0) return null;
 
   return (
-    <div className="animate-slide-in-left fixed left-6 top-1/2 z-[10011] w-[280px] -translate-y-1/2 rounded-2xl border border-white/10 bg-black/90 backdrop-blur-xl">
+    <div className="animate-slide-in-left fixed top-1/2 left-6 z-[10011] w-[280px] -translate-y-1/2 rounded-2xl border border-white/10 bg-black/90 backdrop-blur-xl">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <div className="flex items-center gap-2">

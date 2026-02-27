@@ -43,7 +43,11 @@ export async function isAdmin() {
 
 // Combined query to get both pro and admin status with a single DB call
 // This avoids the duplicate queries in useProStatus hook
-export async function getProAndAdminStatus(): Promise<{ isPro: boolean; isAdmin: boolean; isSuperAdmin: boolean }> {
+export async function getProAndAdminStatus(): Promise<{
+  isPro: boolean;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
+}> {
   const user = await getUserByEmail();
   if (!user) return { isPro: false, isAdmin: false, isSuperAdmin: false };
 
@@ -52,12 +56,18 @@ export async function getProAndAdminStatus(): Promise<{ isPro: boolean; isAdmin:
 
   // Fallback: env-based super admin
   const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
-  const isSuperAdminUser = Boolean(superAdminGoogleId && user.googleId === superAdminGoogleId);
+  const isSuperAdminUser = Boolean(
+    superAdminGoogleId && user.googleId === superAdminGoogleId,
+  );
 
   const isAdminUser = isRoleAdmin || isSuperAdminUser;
   const isProUser = user.role === "PRO" || isAdminUser;
 
-  return { isPro: isProUser, isAdmin: isAdminUser, isSuperAdmin: isRoleAdmin || isSuperAdminUser };
+  return {
+    isPro: isProUser,
+    isAdmin: isAdminUser,
+    isSuperAdmin: isRoleAdmin || isSuperAdminUser,
+  };
 }
 
 // Check if the current logged-in user is the env-based super admin
@@ -70,7 +80,9 @@ export async function isSuperAdminUser(): Promise<boolean> {
 
 // Check for env-based super admin (break-glass access)
 // This is separate from role-based admin - it's for emergency access via env var
-export async function checkIsSuperAdmin(googleId: string | null | undefined): Promise<boolean> {
+export async function checkIsSuperAdmin(
+  googleId: string | null | undefined,
+): Promise<boolean> {
   await Promise.resolve();
   if (!googleId) return false;
   const superAdminGoogleId = env.ADMIN_GOOGLE_ID;

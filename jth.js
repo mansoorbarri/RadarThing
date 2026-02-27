@@ -90,13 +90,19 @@
     const finalCallsign = getPlayerCallsign();
 
     return {
-      id: geofs?.userRecord?.googleid || geofs?.userRecord?.callsign || finalCallsign,
+      id:
+        geofs?.userRecord?.googleid ||
+        geofs?.userRecord?.callsign ||
+        finalCallsign,
       googleId: geofs?.userRecord?.googleid || null,
       // callsign: geofs?.userRecord?.callsign || finalCallsign,
       type: getAircraftName(),
       lat: snap.lat,
       lon: snap.lon,
-      alt: typeof snap.altAGL === "number" ? snap.altAGL : Math.round(snap.altMSL || 0),
+      alt:
+        typeof snap.altAGL === "number"
+          ? snap.altAGL
+          : Math.round(snap.altMSL || 0),
       altMSL: Math.round(snap.altMSL || 0),
       heading: Math.round(snap.heading || 0),
       speed: Math.round(snap.speed || 0),
@@ -125,7 +131,7 @@
           JSON.stringify({
             type: "hello",
             role: "player",
-          })
+          }),
         );
       };
 
@@ -155,7 +161,7 @@
       JSON.stringify({
         type: "position_update",
         payload: buildPayload(snap),
-      })
+      }),
     );
   }, SEND_INTERVAL_MS);
 
@@ -180,7 +186,7 @@
               text: "Flight info required",
               color: "#f87171",
             },
-      })
+      }),
     );
   });
 

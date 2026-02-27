@@ -6,7 +6,7 @@ const chartTypeValidator = v.union(
   v.literal("SID"),
   v.literal("STAR"),
   v.literal("APPROACH"),
-  v.literal("GENERAL")
+  v.literal("GENERAL"),
 );
 
 // Get approved charts for an airport, optionally filtered by type
@@ -23,7 +23,10 @@ export const getChartsForAirport = query({
       charts = await ctx.db
         .query("airportCharts")
         .withIndex("by_icao_type_approved", (q) =>
-          q.eq("icao", icao).eq("chartType", args.chartType!).eq("isApproved", true)
+          q
+            .eq("icao", icao)
+            .eq("chartType", args.chartType!)
+            .eq("isApproved", true),
         )
         .collect();
     } else {
@@ -47,7 +50,6 @@ export const getChartsForAirport = query({
       approvedBy: chart.approvedBy ?? null,
       approvedAt: chart.approvedAt ?? null,
       createdAt: chart._creationTime,
-
     }));
   },
 });
@@ -76,7 +78,6 @@ export const getPending = query({
       approvedBy: chart.approvedBy ?? null,
       approvedAt: chart.approvedAt ?? null,
       createdAt: chart._creationTime,
-
     }));
   },
 });
@@ -113,7 +114,6 @@ export const getApproved = query({
         approvedBy: chart.approvedBy ?? null,
         approvedAt: chart.approvedAt ?? null,
         createdAt: chart._creationTime,
-  
       }));
   },
 });
@@ -138,7 +138,6 @@ export const getById = query({
       approvedBy: chart.approvedBy ?? null,
       approvedAt: chart.approvedAt ?? null,
       createdAt: chart._creationTime,
-
     };
   },
 });
@@ -184,7 +183,6 @@ export const create = mutation({
       approvedBy: chart.approvedBy ?? null,
       approvedAt: chart.approvedAt ?? null,
       createdAt: chart._creationTime,
-
     };
   },
 });
@@ -343,8 +341,8 @@ export const checkUploadEligibility = query({
           q.eq(q.field("icao"), icao),
           q.eq(q.field("chartType"), args.chartType),
           q.eq(q.field("chartName"), args.chartName),
-          q.eq(q.field("isApproved"), false)
-        )
+          q.eq(q.field("isApproved"), false),
+        ),
       )
       .first();
 

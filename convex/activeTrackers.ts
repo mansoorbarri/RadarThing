@@ -8,7 +8,9 @@ export const startTracking = mutation({
   },
   handler: async (ctx, args) => {
     const callsigns = Array.from(
-      new Set(args.callsigns.map((callsign) => callsign.trim()).filter(Boolean)),
+      new Set(
+        args.callsigns.map((callsign) => callsign.trim()).filter(Boolean),
+      ),
     );
 
     // Replace any existing tracking entries for this user with the current selection.

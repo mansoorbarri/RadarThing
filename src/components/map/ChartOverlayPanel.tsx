@@ -1,7 +1,18 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { TransformWrapper, TransformComponent, useControls, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
+import {
+  TransformWrapper,
+  TransformComponent,
+  useControls,
+  type ReactZoomPanPinchRef,
+} from "react-zoom-pan-pinch";
 import { useAirportCharts } from "~/hooks/useAirportCharts";
 import type { ChartType } from "~/types/airportCharts";
 import { X, RotateCcw } from "lucide-react";
@@ -16,7 +27,8 @@ function getStoredWidth(): number {
   const stored = localStorage.getItem(CHART_PANEL_WIDTH_KEY);
   if (!stored) return DEFAULT_PANEL_WIDTH;
   const parsed = Number(stored);
-  if (isNaN(parsed) || parsed < MIN_PANEL_WIDTH || parsed > MAX_PANEL_WIDTH) return DEFAULT_PANEL_WIDTH;
+  if (isNaN(parsed) || parsed < MIN_PANEL_WIDTH || parsed > MAX_PANEL_WIDTH)
+    return DEFAULT_PANEL_WIDTH;
   return parsed;
 }
 
@@ -44,7 +56,7 @@ function ResetButton({ onReset }: { onReset?: () => void }) {
         resetTransform();
         onReset?.();
       }}
-      className="absolute bottom-4 right-4 z-10 flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-300 backdrop-blur-sm hover:bg-slate-800"
+      className="absolute right-4 bottom-4 z-10 flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-300 backdrop-blur-sm hover:bg-slate-800"
     >
       <RotateCcw className="h-3 w-3" />
       Reset
@@ -64,7 +76,10 @@ function ZoomableChartImage({
   const cachedState = transformCache.get(chartUrl);
 
   const handleTransformed = useCallback(
-    (_ref: ReactZoomPanPinchRef, state: { scale: number; positionX: number; positionY: number }) => {
+    (
+      _ref: ReactZoomPanPinchRef,
+      state: { scale: number; positionX: number; positionY: number },
+    ) => {
       if (hasInitialized.current) {
         transformCache.set(chartUrl, {
           scale: state.scale,
@@ -110,7 +125,7 @@ function ZoomableChartImage({
             <img
               src={chartUrl}
               alt={chartName}
-              className="object-contain select-none invert"
+              className="object-contain invert select-none"
               onLoad={handleImageLoad}
             />
           </TransformComponent>
@@ -133,37 +148,43 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
   const [panelWidth, setPanelWidth] = useState(getStoredWidth);
   const isResizing = useRef(false);
 
-  const handleResizeStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    isResizing.current = true;
-    const startX = e.clientX;
-    const startWidth = panelWidth;
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      isResizing.current = true;
+      const startX = e.clientX;
+      const startWidth = panelWidth;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing.current) return;
-      const delta = startX - e.clientX;
-      const newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, startWidth + delta));
-      setPanelWidth(newWidth);
-    };
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!isResizing.current) return;
+        const delta = startX - e.clientX;
+        const newWidth = Math.min(
+          MAX_PANEL_WIDTH,
+          Math.max(MIN_PANEL_WIDTH, startWidth + delta),
+        );
+        setPanelWidth(newWidth);
+      };
 
-    const handleMouseUp = () => {
-      isResizing.current = false;
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-      // Persist on release
-      setPanelWidth((w) => {
-        localStorage.setItem(CHART_PANEL_WIDTH_KEY, String(w));
-        return w;
-      });
-    };
+      const handleMouseUp = () => {
+        isResizing.current = false;
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        // Persist on release
+        setPanelWidth((w) => {
+          localStorage.setItem(CHART_PANEL_WIDTH_KEY, String(w));
+          return w;
+        });
+      };
 
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-  }, [panelWidth]);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    },
+    [panelWidth],
+  );
 
   const [selectedType, setSelectedType] = useState<ChartType>("TAXI");
   const [selectedChartIndex, setSelectedChartIndex] = useState(0);
@@ -299,7 +320,9 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
             ) : isPdf ? (
               pdfError ? (
                 <div className="flex h-full flex-col items-center justify-center gap-3 p-4">
-                  <span className="text-xs text-white/40">PDF preview unavailable</span>
+                  <span className="text-xs text-white/40">
+                    PDF preview unavailable
+                  </span>
                   <a
                     href={selectedChart.chartUrl}
                     target="_blank"

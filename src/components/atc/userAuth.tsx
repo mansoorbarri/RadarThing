@@ -52,7 +52,7 @@ export const UserAuth = () => {
         </button>
 
         {open && (
-          <div className="absolute right-0 top-full mt-2 w-44 rounded-xl border border-cyan-400/30 bg-black/90 p-1.5 shadow-[0_0_15px_rgba(0,255,255,0.1)] backdrop-blur-xl z-50">
+          <div className="absolute top-full right-0 z-50 mt-2 w-44 rounded-xl border border-cyan-400/30 bg-black/90 p-1.5 shadow-[0_0_15px_rgba(0,255,255,0.1)] backdrop-blur-xl">
             <Link
               href="/dashboard"
               onClick={() => setOpen(false)}

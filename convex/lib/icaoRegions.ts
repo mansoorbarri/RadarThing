@@ -24,10 +24,7 @@ export function getRegionForICAO(icao: string): string | null {
   return prefixToRegion[prefix] ?? null;
 }
 
-export function icaoMatchesPrefixes(
-  icao: string,
-  prefixes: string[],
-): boolean {
+export function icaoMatchesPrefixes(icao: string, prefixes: string[]): boolean {
   if (!icao || icao.length === 0) return false;
   const upper = icao.toUpperCase();
   return prefixes.some((p) => upper.startsWith(p.toUpperCase()));

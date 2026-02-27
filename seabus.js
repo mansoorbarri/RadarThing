@@ -17,10 +17,7 @@
   };
 
   function getAircraftName() {
-    return (
-      geofs?.aircraft?.instance?.aircraftRecord?.name ||
-      "Unknown"
-    );
+    return geofs?.aircraft?.instance?.aircraftRecord?.name || "Unknown";
   }
 
   function getPlayerCallsign() {
@@ -30,15 +27,13 @@
   function calculateAGL() {
     try {
       const altMSL = geofs.animation.values.altitude;
-      const ground =
-        geofs.animation.values.groundElevationFeet;
+      const ground = geofs.animation.values.groundElevationFeet;
       const aircraft = geofs.aircraft.instance;
 
       if (aircraft?.collisionPoints?.length >= 2) {
         const z =
-          aircraft.collisionPoints[
-            aircraft.collisionPoints.length - 2
-          ].worldPosition[2] * 3.2808399;
+          aircraft.collisionPoints[aircraft.collisionPoints.length - 2]
+            .worldPosition[2] * 3.2808399;
 
         return Math.round(altMSL - ground + z);
       }
@@ -47,8 +42,7 @@
   }
 
   function checkTakeoff() {
-    const onGround =
-      geofs.aircraft.instance.groundContact ?? true;
+    const onGround = geofs.aircraft.instance.groundContact ?? true;
     if (wasOnGround && !onGround) {
       takeoffTimeUTC = new Date().toISOString();
     }
@@ -68,10 +62,8 @@
       lon: lla[1],
       altMSL,
       altAGL,
-      heading:
-        geofs.animation.values.heading360 || 0,
-      speed:
-        geofs.animation.values.kias || 0,
+      heading: geofs.animation.values.heading360 || 0,
+      speed: geofs.animation.values.kias || 0,
     };
   }
 
@@ -80,11 +72,7 @@
 
     let flightPlan = [];
     try {
-      if (
-        geofs.flightPlan &&
-        typeof geofs.flightPlan.export ===
-          "function"
-      ) {
+      if (geofs.flightPlan && typeof geofs.flightPlan.export === "function") {
         flightPlan = geofs.flightPlan.export();
       }
     } catch {}
@@ -110,9 +98,7 @@
       takeoffTime: takeoffTimeUTC,
       squawk: flightInfo.squawk,
       flightPlan: flightPlan,
-      nextWaypoint:
-        geofs.flightPlan?.trackedWaypoint
-          ?.ident || null,
+      nextWaypoint: geofs.flightPlan?.trackedWaypoint?.ident || null,
       userId: userId,
     };
   }
@@ -126,7 +112,7 @@
           JSON.stringify({
             type: "hello",
             role: "player",
-          })
+          }),
         );
       };
 
@@ -156,7 +142,7 @@
       JSON.stringify({
         type: "position_update",
         payload: buildPayload(snap),
-      })
+      }),
     );
   }, SEND_INTERVAL_MS);
 
@@ -180,7 +166,7 @@
               text: "Flight info required",
               color: "#f87171",
             },
-      })
+      }),
     );
   });
 

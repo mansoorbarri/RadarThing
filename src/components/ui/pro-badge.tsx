@@ -28,7 +28,7 @@ export function ProBadge({
         Analytics.upgradeButtonClicked({ source });
         router.push("/pricing");
       }}
-      className={`cursor-pointer rounded bg-yellow-500/20 font-mono font-bold tracking-wider text-yellow-400 transition-all hover:bg-yellow-500/30 hover:scale-105 ${sizeClasses[size]} ${className}`}
+      className={`cursor-pointer rounded bg-yellow-500/20 font-mono font-bold tracking-wider text-yellow-400 transition-all hover:scale-105 hover:bg-yellow-500/30 ${sizeClasses[size]} ${className}`}
     >
       PRO
     </button>

@@ -33,7 +33,7 @@ function haversineDistance(
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number
+  lon2: number,
 ): number {
   const R = 3440.065; // Earth's radius in nautical miles
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -72,7 +72,7 @@ function calculateHeading(
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number
+  lon2: number,
 ): number {
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const lat1Rad = (lat1 * Math.PI) / 180;
@@ -92,7 +92,7 @@ function calculateHeading(
 function interpolatePosition(
   p1: [number, number],
   p2: [number, number],
-  t: number
+  t: number,
 ): [number, number] {
   const lon1 = p1[1];
   let lon2 = p2[1];
@@ -117,10 +117,7 @@ export function useFlightReplay(flight: FlightData | null) {
   const lastTimestampRef = useRef<number | null>(null);
 
   // Memoize route data to prevent recreation on every render
-  const routeData = useMemo(
-    () => flight?.routeData || [],
-    [flight?.routeData]
-  );
+  const routeData = useMemo(() => flight?.routeData || [], [flight?.routeData]);
 
   // Calculate total duration
   const totalDuration = useMemo(() => {
@@ -150,19 +147,17 @@ export function useFlightReplay(flight: FlightData | null) {
 
     const currentProgress = Math.min(
       1,
-      totalDuration > 0 ? elapsedTime / totalDuration : 0
+      totalDuration > 0 ? elapsedTime / totalDuration : 0,
     );
 
     // Calculate which segment we're on
     const timePerSegment = totalDuration / (routeData.length - 1);
     const currentSegmentIndex = Math.min(
       Math.floor(elapsedTime / timePerSegment),
-      routeData.length - 2
+      routeData.length - 2,
     );
     const segmentProgress =
-      timePerSegment > 0
-        ? (elapsedTime % timePerSegment) / timePerSegment
-        : 0;
+      timePerSegment > 0 ? (elapsedTime % timePerSegment) / timePerSegment : 0;
 
     // Get current interpolated position
     const p1 = routeData[currentSegmentIndex]!;

@@ -14,8 +14,12 @@ const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 async function sendImageNotificationEmail(
   uploadedBy: string,
   status: "approved" | "rejected",
-  imageDetails: { airlineIata: string; airlineIcao: string; aircraftType: string },
-  reason?: string
+  imageDetails: {
+    airlineIata: string;
+    airlineIcao: string;
+    aircraftType: string;
+  },
+  reason?: string,
 ) {
   if (!resend) return;
 
@@ -25,18 +29,20 @@ async function sendImageNotificationEmail(
     const email = user.emailAddresses[0]?.emailAddress;
     if (!email) return;
 
-    const subject = status === "approved"
-      ? "Your aircraft image has been approved!"
-      : "Your aircraft image was not approved";
+    const subject =
+      status === "approved"
+        ? "Your aircraft image has been approved!"
+        : "Your aircraft image was not approved";
 
     const statusText = status === "approved" ? "approved" : "rejected";
     const statusColor = status === "approved" ? "#10b981" : "#ef4444";
 
-    const reasonHtml = status === "rejected" && reason
-      ? `<div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 12px; margin: 16px 0;">
+    const reasonHtml =
+      status === "rejected" && reason
+        ? `<div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 12px; margin: 16px 0;">
           <p style="margin: 0; color: #991b1b;"><strong>Reason:</strong> ${reason}</p>
         </div>`
-      : "";
+        : "";
 
     await resend.emails.send({
       from: "RadarThing <noreply@radarthing.com>",
@@ -51,9 +57,11 @@ async function sendImageNotificationEmail(
             <p style="margin: 4px 0;"><strong>Aircraft:</strong> ${imageDetails.aircraftType}</p>
           </div>
           ${reasonHtml}
-          ${status === "approved"
-            ? "<p>Thank you for contributing to RadarThing!</p>"
-            : "<p>Feel free to submit another image that better meets our guidelines.</p>"}
+          ${
+            status === "approved"
+              ? "<p>Thank you for contributing to RadarThing!</p>"
+              : "<p>Feel free to submit another image that better meets our guidelines.</p>"
+          }
         </div>
       `,
     });
@@ -150,7 +158,7 @@ async function getCurrentUserId(): Promise<string | null> {
 // airlineCode can be either IATA (2-letter) or ICAO (3-letter)
 export async function getAircraftImage(
   airlineCode: string,
-  aircraftType: string
+  aircraftType: string,
 ): Promise<AircraftImage | null> {
   try {
     const image = await convex.query(api.aircraftImages.getApprovedImage, {
@@ -213,12 +221,18 @@ export async function validateUploadEligibility(data: {
 }): Promise<{ canUpload: boolean; error?: string }> {
   const userId = await getCurrentUserId();
   if (!userId) {
-    return { canUpload: false, error: "You must be signed in to upload images" };
+    return {
+      canUpload: false,
+      error: "You must be signed in to upload images",
+    };
   }
 
   // Validate both airline codes are provided
   if (!data.airlineIata || !data.airlineIcao) {
-    return { canUpload: false, error: "Both IATA and ICAO airline codes are required" };
+    return {
+      canUpload: false,
+      error: "Both IATA and ICAO airline codes are required",
+    };
   }
 
   // Validate aircraft type
@@ -235,7 +249,10 @@ export async function validateUploadEligibility(data: {
     return { canUpload: false, error: "IATA code must be 1-2 characters" };
   }
   if (icao.length !== 3) {
-    return { canUpload: false, error: "ICAO code must be exactly 3 characters" };
+    return {
+      canUpload: false,
+      error: "ICAO code must be exactly 3 characters",
+    };
   }
 
   try {
@@ -247,13 +264,14 @@ export async function validateUploadEligibility(data: {
         airlineIcao: icao,
         aircraftType: aircraftType,
         uploadedBy: userId,
-      }
+      },
     );
 
     if (eligibility.approvedExists) {
       return {
         canUpload: false,
-        error: "An approved image already exists for this airline + aircraft combination",
+        error:
+          "An approved image already exists for this airline + aircraft combination",
       };
     }
 
@@ -303,7 +321,7 @@ export async function createAircraftImage(data: {
         airlineIcao: data.airlineIcao,
         aircraftType: data.aircraftType,
         uploadedBy: userId,
-      }
+      },
     );
 
     if (eligibility.approvedExists) {
@@ -312,7 +330,10 @@ export async function createAircraftImage(data: {
         try {
           await utapi.deleteFiles(data.imageKey);
         } catch (e) {
-          console.error("Failed to delete duplicate image from UploadThing:", e);
+          console.error(
+            "Failed to delete duplicate image from UploadThing:",
+            e,
+          );
         }
       }
       return {
@@ -328,7 +349,10 @@ export async function createAircraftImage(data: {
         try {
           await utapi.deleteFiles(data.imageKey);
         } catch (e) {
-          console.error("Failed to delete duplicate image from UploadThing:", e);
+          console.error(
+            "Failed to delete duplicate image from UploadThing:",
+            e,
+          );
         }
       }
       return {
@@ -385,9 +409,7 @@ export async function createAircraftImage(data: {
 }
 
 // Check if approving an image would cause a conflict with existing approved image
-export async function checkApprovalConflict(
-  id: string
-): Promise<{
+export async function checkApprovalConflict(id: string): Promise<{
   hasConflict: boolean;
   pendingImage?: AircraftImage;
   existingImage?: AircraftImage;
@@ -395,7 +417,10 @@ export async function checkApprovalConflict(
 }> {
   const admin = await isAdminUser();
   if (!admin) {
-    return { hasConflict: false, error: "Only ADMIN users can check conflicts" };
+    return {
+      hasConflict: false,
+      error: "Only ADMIN users can check conflicts",
+    };
   }
 
   try {
@@ -416,7 +441,7 @@ export async function checkApprovalConflict(
         airlineIcao: pendingImage.airlineIcao,
         aircraftType: pendingImage.aircraftType,
         excludeId: id as Id<"aircraftImages">,
-      }
+      },
     );
 
     if (existingApproved) {
@@ -437,7 +462,7 @@ export async function checkApprovalConflict(
 // Resolve image conflict - admin chooses which image to keep
 export async function resolveImageConflict(
   keepImageId: string,
-  removeImageId: string
+  removeImageId: string,
 ): Promise<{ success: boolean; error?: string }> {
   const admin = await isAdminUser();
   if (!admin) {
@@ -474,11 +499,16 @@ export async function resolveImageConflict(
 
     // Send rejection email to the uploader of the removed image (only if it was pending)
     if (!removeImage.isApproved) {
-      await sendImageNotificationEmail(removeImage.uploadedBy, "rejected", {
-        airlineIata: removeImage.airlineIata,
-        airlineIcao: removeImage.airlineIcao,
-        aircraftType: removeImage.aircraftType,
-      }, "Another image was chosen for this airline + aircraft combination");
+      await sendImageNotificationEmail(
+        removeImage.uploadedBy,
+        "rejected",
+        {
+          airlineIata: removeImage.airlineIata,
+          airlineIcao: removeImage.airlineIcao,
+          aircraftType: removeImage.aircraftType,
+        },
+        "Another image was chosen for this airline + aircraft combination",
+      );
     }
 
     // Delete the image to remove from DB
@@ -519,7 +549,7 @@ export async function resolveImageConflict(
 
 // Approve image (ADMIN only) - returns hasConflict if there's an existing approved image
 export async function approveAircraftImage(
-  id: string
+  id: string,
 ): Promise<{ success: boolean; error?: string; hasConflict?: boolean }> {
   const admin = await isAdminUser();
   if (!admin) {
@@ -549,7 +579,7 @@ export async function approveAircraftImage(
         airlineIcao: imageToApprove.airlineIcao,
         aircraftType: imageToApprove.aircraftType,
         excludeId: id as Id<"aircraftImages">,
-      }
+      },
     );
 
     // If there's an existing approved image, return conflict flag
@@ -589,7 +619,7 @@ export async function approveAircraftImage(
 // Reject/delete pending image (ADMIN only)
 export async function rejectAircraftImage(
   id: string,
-  reason: string
+  reason: string,
 ): Promise<{ success: boolean; error?: string }> {
   const admin = await isAdminUser();
   if (!admin) {
@@ -619,11 +649,16 @@ export async function rejectAircraftImage(
     }
 
     // Send rejection notification email before deleting
-    await sendImageNotificationEmail(image.uploadedBy, "rejected", {
-      airlineIata: image.airlineIata,
-      airlineIcao: image.airlineIcao,
-      aircraftType: image.aircraftType,
-    }, reason);
+    await sendImageNotificationEmail(
+      image.uploadedBy,
+      "rejected",
+      {
+        airlineIata: image.airlineIata,
+        airlineIcao: image.airlineIcao,
+        aircraftType: image.aircraftType,
+      },
+      reason,
+    );
 
     await convex.mutation(api.aircraftImages.remove, {
       id: id as Id<"aircraftImages">,
@@ -640,7 +675,7 @@ export async function rejectAircraftImage(
 
 // Delete approved image (ADMIN only)
 export async function deleteAircraftImage(
-  id: string
+  id: string,
 ): Promise<{ success: boolean; error?: string }> {
   const admin = await isAdminUser();
   if (!admin) {
@@ -680,7 +715,7 @@ export async function deleteAircraftImage(
 
 // Get user info by Clerk IDs (ADMIN only)
 export async function getUserInfoByIds(
-  userIds: string[]
+  userIds: string[],
 ): Promise<Record<string, { email: string; name: string | null }>> {
   const admin = await isAdminUser();
   if (!admin) return {};
@@ -696,7 +731,9 @@ export async function getUserInfoByIds(
       const user = await client.users.getUser(userId);
       result[userId] = {
         email: user.emailAddresses[0]?.emailAddress ?? "Unknown",
-        name: user.firstName ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}` : null,
+        name: user.firstName
+          ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}`
+          : null,
       };
     } catch {
       result[userId] = { email: "Unknown", name: null };
@@ -708,7 +745,7 @@ export async function getUserInfoByIds(
 
 // Bulk approve images (ADMIN only) - uses batch mutation for efficiency
 export async function bulkApproveAircraftImages(
-  ids: string[]
+  ids: string[],
 ): Promise<{ success: boolean; approved: number; failed: number }> {
   const admin = await isAdminUser();
   if (!admin) {
@@ -723,7 +760,11 @@ export async function bulkApproveAircraftImages(
   try {
     // Get image details before approval (for notifications)
     const images = await Promise.all(
-      ids.map(id => convex.query(api.aircraftImages.getById, { id: id as Id<"aircraftImages"> }))
+      ids.map((id) =>
+        convex.query(api.aircraftImages.getById, {
+          id: id as Id<"aircraftImages">,
+        }),
+      ),
     );
 
     // Single batch mutation for all approvals
@@ -745,9 +786,9 @@ export async function bulkApproveAircraftImages(
         // Delete old image from UploadThing if replaced
         if (result.existingImageKey) {
           deletePromises.push(
-            utapi.deleteFiles(result.existingImageKey).catch(e => {
+            utapi.deleteFiles(result.existingImageKey).catch((e) => {
               console.error("Failed to delete old image from UploadThing:", e);
-            }) as Promise<void>
+            }) as Promise<void>,
           );
         }
 
@@ -755,28 +796,34 @@ export async function bulkApproveAircraftImages(
         if (image) {
           // Remove from missingImageNotifications table (handles both IATA and ICAO in one call)
           cleanupPromises.push(
-            convex.mutation(api.missingImageNotifications.removeByCodes, {
-              airlineIata: image.airlineIata,
-              airlineIcao: image.airlineIcao,
-              aircraftType: image.aircraftType,
-            }).then(() => undefined)
+            convex
+              .mutation(api.missingImageNotifications.removeByCodes, {
+                airlineIata: image.airlineIata,
+                airlineIcao: image.airlineIcao,
+                aircraftType: image.aircraftType,
+              })
+              .then(() => undefined),
           );
           emailPromises.push(
             sendImageNotificationEmail(image.uploadedBy, "approved", {
               airlineIata: image.airlineIata,
               airlineIcao: image.airlineIcao,
               aircraftType: image.aircraftType,
-            })
+            }),
           );
         }
       }
     }
 
     // Execute all side effects in parallel
-    await Promise.all([...deletePromises, ...cleanupPromises, ...emailPromises]);
+    await Promise.all([
+      ...deletePromises,
+      ...cleanupPromises,
+      ...emailPromises,
+    ]);
 
-    const approved = results.filter(r => r?.success).length;
-    const failed = results.filter(r => !r?.success).length;
+    const approved = results.filter((r) => r?.success).length;
+    const failed = results.filter((r) => !r?.success).length;
 
     revalidatePath("/aircraft-images");
     revalidatePath("/admin");
@@ -793,11 +840,14 @@ export async function updateAircraftImageCodes(
   id: string,
   newIata: string,
   newIcao: string,
-  newAircraftType: string
+  newAircraftType: string,
 ): Promise<{ success: boolean; error?: string }> {
   const admin = await isAdminUser();
   if (!admin) {
-    return { success: false, error: "Only ADMIN users can update image details" };
+    return {
+      success: false,
+      error: "Only ADMIN users can update image details",
+    };
   }
 
   // Validate details
@@ -834,7 +884,8 @@ export async function updateAircraftImageCodes(
       try {
         // Extract the extension from the current filename
         const keyParts = result.imageKey.split("_");
-        const filename = keyParts.length > 1 ? keyParts.slice(1).join("_") : result.imageKey;
+        const filename =
+          keyParts.length > 1 ? keyParts.slice(1).join("_") : result.imageKey;
         const extension = filename.split(".").pop() || "jpg";
 
         const newFileName = `${iata}-${icao}-${result.aircraftType}.${extension}`;
@@ -861,7 +912,7 @@ export async function updateAircraftImageCodes(
 // Bulk reject images (ADMIN only) - uses batch mutation for efficiency
 export async function bulkRejectAircraftImages(
   ids: string[],
-  reason: string
+  reason: string,
 ): Promise<{ success: boolean; rejected: number; failed: number }> {
   const admin = await isAdminUser();
   if (!admin) {
@@ -887,20 +938,30 @@ export async function bulkRejectAircraftImages(
         // Delete from UploadThing
         if (result.imageKey) {
           deletePromises.push(
-            utapi.deleteFiles(result.imageKey).catch(e => {
+            utapi.deleteFiles(result.imageKey).catch((e) => {
               console.error("Failed to delete image from UploadThing:", e);
-            }) as Promise<void>
+            }) as Promise<void>,
           );
         }
 
         // Send rejection email
-        if (result.uploadedBy && result.airlineIata && result.airlineIcao && result.aircraftType) {
+        if (
+          result.uploadedBy &&
+          result.airlineIata &&
+          result.airlineIcao &&
+          result.aircraftType
+        ) {
           emailPromises.push(
-            sendImageNotificationEmail(result.uploadedBy, "rejected", {
-              airlineIata: result.airlineIata,
-              airlineIcao: result.airlineIcao,
-              aircraftType: result.aircraftType,
-            }, reason)
+            sendImageNotificationEmail(
+              result.uploadedBy,
+              "rejected",
+              {
+                airlineIata: result.airlineIata,
+                airlineIcao: result.airlineIcao,
+                aircraftType: result.aircraftType,
+              },
+              reason,
+            ),
           );
         }
       }
@@ -909,8 +970,8 @@ export async function bulkRejectAircraftImages(
     // Execute all side effects in parallel
     await Promise.all([...deletePromises, ...emailPromises]);
 
-    const rejected = results.filter(r => r.success).length;
-    const failed = results.filter(r => !r.success).length;
+    const rejected = results.filter((r) => r.success).length;
+    const failed = results.filter((r) => !r.success).length;
 
     revalidatePath("/aircraft-images");
     revalidatePath("/admin");

@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     const hasActiveItem =
       Array.isArray(data.items) &&
       data.items.some(
-        (item: any) => item.status === "active" && item.plan?.slug === "pro"
+        (item: any) => item.status === "active" && item.plan?.slug === "pro",
       );
 
     if (!userId && !email) {

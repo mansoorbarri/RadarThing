@@ -63,7 +63,7 @@ const CloseIcon = ({
 const getFlightPhase = (
   altAGL: number,
   vspeed: number,
-  flightPlan?: string
+  flightPlan?: string,
 ) => {
   if (altAGL < 100) return "GND";
   if (vspeed > 200) return "CLB";
@@ -89,7 +89,11 @@ interface AircraftCardProps {
   onRemove: () => void;
 }
 
-const AircraftCard = ({ aircraft, colorIndex, onRemove }: AircraftCardProps) => {
+const AircraftCard = ({
+  aircraft,
+  colorIndex,
+  onRemove,
+}: AircraftCardProps) => {
   const color = FLIGHT_PATH_COLORS[colorIndex % FLIGHT_PATH_COLORS.length]!;
   const airlineLogo = getAirlineLogoFromFlightNumber(aircraft.flightNo);
 
@@ -107,23 +111,33 @@ const AircraftCard = ({ aircraft, colorIndex, onRemove }: AircraftCardProps) => 
       phase: getFlightPhase(
         Number(aircraft.alt ?? 0),
         Number(aircraft.vspeed ?? 0),
-        aircraft.flightPlan
+        aircraft.flightPlan,
       ),
     };
-  }, [aircraft.alt, aircraft.altMSL, aircraft.speed, aircraft.heading, aircraft.vspeed, aircraft.flightPlan]);
+  }, [
+    aircraft.alt,
+    aircraft.altMSL,
+    aircraft.speed,
+    aircraft.heading,
+    aircraft.vspeed,
+    aircraft.flightPlan,
+  ]);
 
   return (
-    <div className="animate-fade-in-up relative rounded-xl border border-white/10 bg-black/60 p-3 backdrop-blur-sm" style={{ animationDelay: `${colorIndex * 60}ms` }}>
+    <div
+      className="animate-fade-in-up relative rounded-xl border border-white/10 bg-black/60 p-3 backdrop-blur-sm"
+      style={{ animationDelay: `${colorIndex * 60}ms` }}
+    >
       {/* Color indicator strip */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+        className="absolute top-0 bottom-0 left-0 w-1 rounded-l-xl"
         style={{ backgroundColor: color }}
       />
 
       {/* Remove button */}
       <button
         onClick={onRemove}
-        className="absolute right-2 top-2 p-1 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+        className="absolute top-2 right-2 cursor-pointer rounded-full p-1 transition-colors hover:bg-white/10"
       >
         <CloseIcon size={14} className="text-white/40 hover:text-white/80" />
       </button>
@@ -148,19 +162,19 @@ const AircraftCard = ({ aircraft, colorIndex, onRemove }: AircraftCardProps) => 
         </div>
 
         {/* Flight info */}
-        <div className="flex-1 min-w-0 pr-4">
+        <div className="min-w-0 flex-1 pr-4">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-sm font-bold text-white truncate">
+            <span className="truncate font-mono text-sm font-bold text-white">
               {aircraft.flightNo || aircraft.callsign || "N/A"}
             </span>
             <span
-              className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold"
+              className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold"
               style={{ backgroundColor: `${color}30`, color }}
             >
               {displayValues.phase}
             </span>
           </div>
-          <div className="font-mono text-[10px] text-white/50 truncate">
+          <div className="truncate font-mono text-[10px] text-white/50">
             {aircraft.type || "Unknown"}
           </div>
           <div className="mt-1 font-mono text-[10px] text-white/40">
@@ -170,7 +184,7 @@ const AircraftCard = ({ aircraft, colorIndex, onRemove }: AircraftCardProps) => 
       </div>
 
       {/* Stats row */}
-      <div className="mt-2 pl-2 flex gap-4 font-mono text-[10px]">
+      <div className="mt-2 flex gap-4 pl-2 font-mono text-[10px]">
         <div>
           <span className="text-white/40">ALT </span>
           <span className="text-white/80">{displayValues.altitude}</span>
@@ -200,9 +214,9 @@ export const MultiAircraftSidebar = ({
   isMobile: boolean;
 }) => {
   return (
-    <div className="flex h-full flex-col text-white bg-[#050f14]/90">
+    <div className="flex h-full flex-col bg-[#050f14]/90 text-white">
       {/* Header */}
-      <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10">
+      <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
           <span className="font-mono text-[11px] font-bold tracking-wider text-cyan-400 uppercase">
@@ -211,14 +225,14 @@ export const MultiAircraftSidebar = ({
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+          className="cursor-pointer rounded-lg p-1.5 transition-colors hover:bg-white/10"
         >
           <CloseIcon size={16} className="text-white/60" />
         </button>
       </div>
 
       {/* Aircraft cards */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+      <div className="custom-scrollbar flex-1 space-y-2 overflow-y-auto p-3">
         {aircrafts.map((aircraft, index) => (
           <AircraftCard
             key={aircraft.callsign || aircraft.id}
@@ -230,8 +244,8 @@ export const MultiAircraftSidebar = ({
       </div>
 
       {/* Footer hint */}
-      <div className="shrink-0 px-4 py-2 border-t border-white/10">
-        <p className="font-mono text-[9px] text-white/30 text-center">
+      <div className="shrink-0 border-t border-white/10 px-4 py-2">
+        <p className="text-center font-mono text-[9px] text-white/30">
           CTRL+Click to add/remove aircraft
         </p>
       </div>

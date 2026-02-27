@@ -24,7 +24,12 @@ interface ControlDockProps {
   rightOffset?: number;
 }
 
-export function ControlDock({ items, side = "left", bottomAction, rightOffset }: ControlDockProps) {
+export function ControlDock({
+  items,
+  side = "left",
+  bottomAction,
+  rightOffset,
+}: ControlDockProps) {
   const [open, setOpen] = useState(false);
 
   const isRight = side === "right";

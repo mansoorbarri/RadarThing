@@ -27,6 +27,10 @@ export function getBooleanCookie(name: string, defaultValue: boolean): boolean {
   return value === "true";
 }
 
-export function setBooleanCookie(name: string, value: boolean, days = 365): void {
+export function setBooleanCookie(
+  name: string,
+  value: boolean,
+  days = 365,
+): void {
   setCookie(name, value.toString(), days);
 }

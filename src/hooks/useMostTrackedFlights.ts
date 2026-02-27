@@ -27,8 +27,7 @@ export function useMostTrackedFlights(aircrafts: PositionUpdate[]) {
         aircraft:
           aircrafts.find(
             (ac) =>
-              ac.callsign === entry.callsign ||
-              ac.flightNo === entry.callsign,
+              ac.callsign === entry.callsign || ac.flightNo === entry.callsign,
           ) ?? null,
       }));
   }, [mostTracked, aircrafts]);
