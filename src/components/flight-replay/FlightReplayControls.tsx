@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { type FlightData, useFlightReplay } from "~/hooks/useFlightReplay";
 import { Analytics } from "~/lib/analytics";
+import { useProStatus } from "~/hooks/useProStatus";
+import { FlightCardDialog } from "~/components/flight-card/FlightCardDialog";
+import type { FlightCardData } from "~/components/flight-card/FlightCard";
 
 // Inline SVG icons
 const PlayIcon = ({ className = "" }: { className?: string }) => (
@@ -65,6 +68,23 @@ const ShareIcon = ({ className = "" }: { className?: string }) => (
   </svg>
 );
 
+const CameraIcon = ({ className = "" }: { className?: string }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+    <circle cx="12" cy="13" r="3" />
+  </svg>
+);
+
 const ReplayIcon = ({ className = "" }: { className?: string }) => (
   <svg
     width="16"
@@ -114,6 +134,8 @@ export function FlightReplayControls({
   isMobile = false,
 }: FlightReplayControlsProps) {
   const replay = useFlightReplay(flight);
+  const { isProUser } = useProStatus();
+  const [cardFlight, setCardFlight] = useState<FlightCardData | null>(null);
 
   // Use ref to store onStateChange to avoid triggering effect
   const onStateChangeRef = useRef(onStateChange);
@@ -248,6 +270,30 @@ export function FlightReplayControls({
               <ShareIcon />
             </button>
             <button
+              onClick={() => {
+                if (!isProUser) {
+                  Analytics.proFeatureBlocked({ feature: "flight_card" });
+                  window.location.href = "/pricing";
+                  return;
+                }
+                setCardFlight({
+                  callsign: flight.callsign,
+                  aircraftType: flight.aircraftType,
+                  depICAO: flight.depICAO,
+                  arrICAO: flight.arrICAO,
+                  startTime: flight.startTime,
+                  endTime: flight.endTime,
+                  maxAltitude: flight.maxAltitude,
+                  maxSpeed: flight.maxSpeed,
+                  routeData: flight.routeData,
+                });
+              }}
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-colors hover:border-cyan-500/30 hover:bg-cyan-500/20 hover:text-cyan-400"
+              title="Generate flight card"
+            >
+              <CameraIcon />
+            </button>
+            <button
               onClick={handleClose}
               className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
             >
@@ -303,6 +349,13 @@ export function FlightReplayControls({
           </div>
         </div>
       </div>
+
+      {cardFlight && (
+        <FlightCardDialog
+          data={cardFlight}
+          onClose={() => setCardFlight(null)}
+        />
+      )}
     </div>
   );
 }

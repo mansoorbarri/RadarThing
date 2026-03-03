@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "shareable-flight-cards",
+    date: "2026-03-03",
+    title: "Shareable Flight Cards",
+    description:
+      "PRO users can now generate beautiful flight summary card images from their flight history. Perfect for sharing your flights on Discord and social media.",
+    type: "new",
+  },
+  {
     id: "live-atc-indicator",
     date: "2025-02-25",
     title: "Live ATC on the radar",

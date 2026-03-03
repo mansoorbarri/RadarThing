@@ -338,6 +338,38 @@ export const Analytics = {
     track("whats_new_toast_clicked", props);
   },
 
+  // ===== FLIGHT CARD EVENTS =====
+  flightCardOpened: (props: {
+    callsign?: string;
+    aircraftType?: string;
+    depICAO?: string;
+    arrICAO?: string;
+    hasRoute: boolean;
+    source: string;
+  }) => {
+    track("flight_card_opened", props);
+  },
+
+  flightCardDownloaded: (props: {
+    callsign?: string;
+    aircraftType?: string;
+    depICAO?: string;
+    arrICAO?: string;
+    hasRoute: boolean;
+  }) => {
+    track("flight_card_downloaded", props);
+  },
+
+  flightCardCopied: (props: {
+    callsign?: string;
+    aircraftType?: string;
+    depICAO?: string;
+    arrICAO?: string;
+    hasRoute: boolean;
+  }) => {
+    track("flight_card_copied", props);
+  },
+
   // ===== GENERIC EVENT =====
   track: (eventName: string, properties?: Record<string, unknown>) => {
     track(eventName, properties);

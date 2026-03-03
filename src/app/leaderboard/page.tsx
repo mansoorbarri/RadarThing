@@ -6,7 +6,15 @@ import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Image from "next/image";
-import { ArrowLeft, Plane, Navigation, Clock, Trophy, ChevronDown, Flame } from "lucide-react";
+import {
+  ArrowLeft,
+  Plane,
+  Navigation,
+  Clock,
+  Trophy,
+  ChevronDown,
+  Flame,
+} from "lucide-react";
 import { Analytics } from "~/lib/analytics";
 
 type SortKey = "flights" | "distance" | "time" | "streak";
@@ -45,7 +53,10 @@ export default function LeaderboardPage() {
   const currentUserEntry = sorted?.find((p) => p.clerkId === user?.id) ?? null;
 
   const scrollToCurrentUser = () => {
-    currentUserRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    currentUserRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
   };
 
   return (
@@ -57,7 +68,12 @@ export default function LeaderboardPage() {
             onClick={() => router.push("/radar")}
             className="cursor-pointer"
           >
-            <Image src="/logo-white.svg" alt="RadarThing" width={100} height={30} />
+            <Image
+              src="/logo-white.svg"
+              alt="RadarThing"
+              width={100}
+              height={30}
+            />
           </button>
           <button
             onClick={() => router.push("/radar")}
@@ -76,8 +92,12 @@ export default function LeaderboardPage() {
             <Trophy className="h-4 w-4 text-amber-400 sm:h-5 sm:w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white sm:text-2xl">Leaderboard</h1>
-            <p className="text-xs text-slate-500 sm:text-sm">Top pilots on RadarThing</p>
+            <h1 className="text-xl font-bold text-white sm:text-2xl">
+              Leaderboard
+            </h1>
+            <p className="text-xs text-slate-500 sm:text-sm">
+              Top pilots on RadarThing
+            </p>
           </div>
         </div>
 
@@ -91,15 +111,20 @@ export default function LeaderboardPage() {
               {currentUserRank}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[10px] text-slate-500 font-mono uppercase tracking-wider sm:text-xs">Your Position</div>
+              <div className="font-mono text-[10px] tracking-wider text-slate-500 uppercase sm:text-xs">
+                Your Position
+              </div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-white truncate sm:text-sm">
-                  {currentUserEntry.discordUsername ?? currentUserEntry.callsign}
+                <span className="truncate font-mono text-xs font-bold text-white sm:text-sm">
+                  {currentUserEntry.discordUsername ??
+                    currentUserEntry.callsign}
                 </span>
                 {currentUserEntry.currentStreak > 0 && (
                   <div className="flex shrink-0 items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 sm:px-2">
                     <Flame className="h-3 w-3 text-amber-400" />
-                    <span className="font-mono text-[10px] font-bold text-amber-400 sm:text-xs">{currentUserEntry.currentStreak}d</span>
+                    <span className="font-mono text-[10px] font-bold text-amber-400 sm:text-xs">
+                      {currentUserEntry.currentStreak}d
+                    </span>
                   </div>
                 )}
               </div>
@@ -107,14 +132,27 @@ export default function LeaderboardPage() {
             {/* Mobile: show active sort stat */}
             <div className="flex shrink-0 items-center gap-3 text-right sm:hidden">
               <div>
-                <div className="text-[10px] text-slate-600 font-mono uppercase">
-                  {sortBy === "flights" ? "Flights" : sortBy === "distance" ? "Dist" : sortBy === "time" ? "Time" : "Streak"}
+                <div className="font-mono text-[10px] text-slate-600 uppercase">
+                  {sortBy === "flights"
+                    ? "Flights"
+                    : sortBy === "distance"
+                      ? "Dist"
+                      : sortBy === "time"
+                        ? "Time"
+                        : "Streak"}
                 </div>
-                <div className={`font-mono text-sm font-bold ${sortBy === "streak" ? "text-amber-400" : "text-white"}`}>
-                  {sortBy === "flights" ? currentUserEntry.totalFlights
-                    : sortBy === "distance" ? currentUserEntry.totalDistanceNm.toLocaleString()
-                    : sortBy === "time" ? formatFlightTime(currentUserEntry.totalFlightTimeMs)
-                    : currentUserEntry.currentStreak > 0 ? `${currentUserEntry.currentStreak}d` : "—"}
+                <div
+                  className={`font-mono text-sm font-bold ${sortBy === "streak" ? "text-amber-400" : "text-white"}`}
+                >
+                  {sortBy === "flights"
+                    ? currentUserEntry.totalFlights
+                    : sortBy === "distance"
+                      ? currentUserEntry.totalDistanceNm.toLocaleString()
+                      : sortBy === "time"
+                        ? formatFlightTime(currentUserEntry.totalFlightTimeMs)
+                        : currentUserEntry.currentStreak > 0
+                          ? `${currentUserEntry.currentStreak}d`
+                          : "—"}
                 </div>
               </div>
               <ChevronDown className="h-4 w-4 text-cyan-400/60" />
@@ -122,20 +160,38 @@ export default function LeaderboardPage() {
             {/* Desktop: show all stats */}
             <div className="hidden shrink-0 items-center gap-4 text-right sm:flex">
               <div>
-                <div className="text-[10px] text-slate-600 font-mono uppercase">Flights</div>
-                <div className="font-mono text-sm font-bold text-white">{currentUserEntry.totalFlights}</div>
+                <div className="font-mono text-[10px] text-slate-600 uppercase">
+                  Flights
+                </div>
+                <div className="font-mono text-sm font-bold text-white">
+                  {currentUserEntry.totalFlights}
+                </div>
               </div>
               <div>
-                <div className="text-[10px] text-slate-600 font-mono uppercase">Distance</div>
-                <div className="font-mono text-sm font-bold text-white">{currentUserEntry.totalDistanceNm.toLocaleString()}</div>
+                <div className="font-mono text-[10px] text-slate-600 uppercase">
+                  Distance
+                </div>
+                <div className="font-mono text-sm font-bold text-white">
+                  {currentUserEntry.totalDistanceNm.toLocaleString()}
+                </div>
               </div>
               <div>
-                <div className="text-[10px] text-slate-600 font-mono uppercase">Time</div>
-                <div className="font-mono text-sm font-bold text-white">{formatFlightTime(currentUserEntry.totalFlightTimeMs)}</div>
+                <div className="font-mono text-[10px] text-slate-600 uppercase">
+                  Time
+                </div>
+                <div className="font-mono text-sm font-bold text-white">
+                  {formatFlightTime(currentUserEntry.totalFlightTimeMs)}
+                </div>
               </div>
               <div>
-                <div className="text-[10px] text-slate-600 font-mono uppercase">Streak</div>
-                <div className="font-mono text-sm font-bold text-amber-400">{currentUserEntry.currentStreak > 0 ? `${currentUserEntry.currentStreak}d` : "—"}</div>
+                <div className="font-mono text-[10px] text-slate-600 uppercase">
+                  Streak
+                </div>
+                <div className="font-mono text-sm font-bold text-amber-400">
+                  {currentUserEntry.currentStreak > 0
+                    ? `${currentUserEntry.currentStreak}d`
+                    : "—"}
+                </div>
               </div>
               <ChevronDown className="h-4 w-4 text-cyan-400/60" />
             </div>
@@ -143,18 +199,22 @@ export default function LeaderboardPage() {
         )}
 
         {/* Sort Tabs */}
-        <div className="mb-6 -mx-4 px-4 overflow-x-auto sm:mx-0 sm:px-0">
-          <div className="flex gap-1 rounded-xl border border-white/10 bg-white/5 p-1 w-fit">
-            {([
+        <div className="-mx-4 mb-6 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <div className="flex w-fit gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
+            {[
               { key: "flights" as SortKey, label: "Flights", icon: Plane },
-              { key: "distance" as SortKey, label: "Distance", icon: Navigation },
+              {
+                key: "distance" as SortKey,
+                label: "Distance",
+                icon: Navigation,
+              },
               { key: "time" as SortKey, label: "Time", icon: Clock },
               { key: "streak" as SortKey, label: "Streak", icon: Flame },
-            ]).map(({ key, label, icon: Icon }) => (
+            ].map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
                 onClick={() => setSortBy(key)}
-                className={`flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:px-4 sm:py-2 sm:text-sm ${
+                className={`flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all sm:px-4 sm:py-2 sm:text-sm ${
                   sortBy === key
                     ? "bg-white/10 text-white"
                     : "text-slate-500 hover:text-slate-300"
@@ -173,7 +233,9 @@ export default function LeaderboardPage() {
         ) : sorted.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
             <Plane className="mx-auto mb-4 h-12 w-12 text-slate-600" />
-            <h3 className="mb-2 text-xl font-semibold text-white">No Pilots Yet</h3>
+            <h3 className="mb-2 text-xl font-semibold text-white">
+              No Pilots Yet
+            </h3>
             <p className="text-slate-400">
               Be the first to record a flight and claim the top spot!
             </p>
@@ -183,25 +245,31 @@ export default function LeaderboardPage() {
             {/* Column Headers */}
             <div className="flex items-center gap-3 px-3 pb-3 sm:gap-4 sm:px-4">
               <div className="w-8 shrink-0 sm:w-9" />
-              <div className="min-w-0 flex-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+              <div className="min-w-0 flex-1 font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
                 Pilot
               </div>
               {/* Mobile: show active sort column */}
-              <div className="w-12 shrink-0 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600 sm:hidden">
-                {sortBy === "flights" ? "Flights" : sortBy === "distance" ? "Dist" : sortBy === "time" ? "Time" : "Streak"}
+              <div className="w-12 shrink-0 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase sm:hidden">
+                {sortBy === "flights"
+                  ? "Flights"
+                  : sortBy === "distance"
+                    ? "Dist"
+                    : sortBy === "time"
+                      ? "Time"
+                      : "Streak"}
               </div>
               {/* Desktop: show all columns */}
               <div className="hidden shrink-0 items-center gap-6 sm:flex">
-                <div className="w-12 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+                <div className="w-12 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
                   Flights
                 </div>
-                <div className="w-16 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+                <div className="w-16 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
                   Distance
                 </div>
-                <div className="w-14 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+                <div className="w-14 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
                   Time
                 </div>
-                <div className="w-12 text-right font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+                <div className="w-12 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
                   Streak
                 </div>
               </div>
@@ -268,13 +336,20 @@ export default function LeaderboardPage() {
                     <div className="w-12 shrink-0 text-right sm:hidden">
                       <div
                         className={`font-mono text-xs font-bold ${
-                          sortBy === "streak" ? "text-amber-400" : "text-cyan-400"
+                          sortBy === "streak"
+                            ? "text-amber-400"
+                            : "text-cyan-400"
                         }`}
                       >
-                        {sortBy === "flights" ? pilot.totalFlights
-                          : sortBy === "distance" ? pilot.totalDistanceNm.toLocaleString()
-                          : sortBy === "time" ? formatFlightTime(pilot.totalFlightTimeMs)
-                          : pilot.currentStreak > 0 ? `${pilot.currentStreak}d` : "—"}
+                        {sortBy === "flights"
+                          ? pilot.totalFlights
+                          : sortBy === "distance"
+                            ? pilot.totalDistanceNm.toLocaleString()
+                            : sortBy === "time"
+                              ? formatFlightTime(pilot.totalFlightTimeMs)
+                              : pilot.currentStreak > 0
+                                ? `${pilot.currentStreak}d`
+                                : "—"}
                       </div>
                     </div>
 
@@ -303,10 +378,14 @@ export default function LeaderboardPage() {
                       </div>
                       <div
                         className={`w-12 text-right font-mono text-sm font-bold ${
-                          sortBy === "streak" ? "text-cyan-400" : "text-amber-400"
+                          sortBy === "streak"
+                            ? "text-cyan-400"
+                            : "text-amber-400"
                         }`}
                       >
-                        {pilot.currentStreak > 0 ? `${pilot.currentStreak}d` : "—"}
+                        {pilot.currentStreak > 0
+                          ? `${pilot.currentStreak}d`
+                          : "—"}
                       </div>
                     </div>
                   </button>

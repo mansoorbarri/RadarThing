@@ -34,6 +34,8 @@ export const getHistoryByGoogleId = query({
         aircraftType: flight.aircraftType,
         callsign: flight.callsign,
         duration: flight.duration,
+        maxAltitude: flight.maxAltitude,
+        maxSpeed: flight.maxSpeed,
         routeData: flight.routeData,
       }));
   },
@@ -224,6 +226,8 @@ export const getById = query({
       aircraftType: flight.aircraftType,
       callsign: flight.callsign,
       duration: flight.duration,
+      maxAltitude: flight.maxAltitude,
+      maxSpeed: flight.maxSpeed,
       routeData: flight.routeData,
     };
   },
@@ -476,6 +480,8 @@ export const getStatsByClerkId = query({
         arrICAO: f.arrICAO,
         startTime: f.startTime,
         endTime: f.endTime,
+        maxAltitude: f.maxAltitude,
+        maxSpeed: f.maxSpeed,
         routeData: f.routeData,
       }));
 
@@ -713,6 +719,8 @@ export const getStatsById = query({
       arrICAO: f.arrICAO,
       startTime: f.startTime,
       endTime: f.endTime,
+      maxAltitude: f.maxAltitude,
+      maxSpeed: f.maxSpeed,
       routeData: f.routeData,
     }));
 

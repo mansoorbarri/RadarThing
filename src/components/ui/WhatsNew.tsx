@@ -144,7 +144,7 @@ export function WhatsNew({ isMobile }: { isMobile: boolean }) {
             <h3 className="text-[13px] font-semibold tracking-wide text-slate-300 uppercase">
               What&apos;s New
             </h3>
-            <span className="rounded-full bg-slate-800/80 px-2 py-0.5 text-[10px] font-medium tabular-nums text-slate-500">
+            <span className="rounded-full bg-slate-800/80 px-2 py-0.5 text-[10px] font-medium text-slate-500 tabular-nums">
               {changelog.length} {changelog.length === 1 ? "update" : "updates"}
             </span>
           </div>
@@ -161,11 +161,11 @@ export function WhatsNew({ isMobile }: { isMobile: boolean }) {
                 <div className="pl-3">
                   <div className="mb-1.5 flex items-center gap-2">
                     <span
-                      className={`shrink-0 rounded-md px-1.5 py-px text-[10px] font-semibold uppercase tracking-wider ${typeBadge[entry.type].cls}`}
+                      className={`shrink-0 rounded-md px-1.5 py-px text-[10px] font-semibold tracking-wider uppercase ${typeBadge[entry.type].cls}`}
                     >
                       {typeBadge[entry.type].label}
                     </span>
-                    <span className="text-[11px] tabular-nums text-slate-600">
+                    <span className="text-[11px] text-slate-600 tabular-nums">
                       {entry.date}
                     </span>
                   </div>

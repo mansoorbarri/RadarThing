@@ -35,7 +35,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
-
+import { FlightCardDialog } from "~/components/flight-card/FlightCardDialog";
+import type { FlightCardData } from "~/components/flight-card/FlightCard";
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -72,6 +73,7 @@ export default function DashboardPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [flightsExpanded, setFlightsExpanded] = useState(false);
   const [discordLoading, setDiscordLoading] = useState(false);
+  const [cardFlight, setCardFlight] = useState<FlightCardData | null>(null);
   const updateDiscordUsername = useMutation(api.users.updateDiscordUsername);
 
   useEffect(() => {
@@ -597,6 +599,34 @@ export default function DashboardPage() {
                                 <Share2 className="h-3.5 w-3.5" />
                               </button>
                               <button
+                                onClick={() => {
+                                  if (!isPro) {
+                                    Analytics.proFeatureBlocked({
+                                      feature: "flight_card",
+                                    });
+                                    router.push("/pricing");
+                                    return;
+                                  }
+                                  setCardFlight({
+                                    callsign: flight.callsign,
+                                    discordUsername:
+                                      dbUser?.discordUsername ?? undefined,
+                                    aircraftType: flight.aircraftType,
+                                    depICAO: flight.depICAO,
+                                    arrICAO: flight.arrICAO,
+                                    startTime: flight.startTime,
+                                    endTime: flight.endTime,
+                                    maxAltitude: flight.maxAltitude,
+                                    maxSpeed: flight.maxSpeed,
+                                    routeData: flight.routeData,
+                                  });
+                                }}
+                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/40 opacity-0 transition-all group-hover:opacity-100 hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400"
+                                title="Generate flight card"
+                              >
+                                <Camera className="h-3.5 w-3.5" />
+                              </button>
+                              <button
                                 onClick={() =>
                                   router.push(`/radar?replay=${flight.id}`)
                                 }
@@ -773,6 +803,13 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      {cardFlight && (
+        <FlightCardDialog
+          data={cardFlight}
+          onClose={() => setCardFlight(null)}
+        />
+      )}
     </div>
   );
 }

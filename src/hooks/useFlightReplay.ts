@@ -9,6 +9,8 @@ export interface FlightData {
   aircraftType?: string;
   callsign?: string;
   duration?: number;
+  maxAltitude?: number;
+  maxSpeed?: number;
   routeData?: [number, number][];
 }
 
