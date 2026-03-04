@@ -12,6 +12,7 @@ import {
   updateAircraftImageCodes,
   checkApprovalConflict,
   resolveImageConflict,
+  getUserInfoByIds,
   type AircraftImage,
 } from "~/app/actions/aircraft-images";
 import {
@@ -39,16 +40,26 @@ interface ImageType {
   airlineIcao: string;
   aircraftType: string;
   discordUsername?: string | null;
+  uploadedBy?: string;
 }
 
-function matchesImageSearch(image: ImageType, query: string) {
+function matchesImageSearch(
+  image: ImageType,
+  query: string,
+  userInfo?: Record<string, { email: string; name: string | null }>,
+) {
   if (!query.trim()) return true;
   const q = query.toLowerCase();
+  const uploaderEmail = image.uploadedBy
+    ? userInfo?.[image.uploadedBy]?.email
+    : undefined;
   return (
     image.airlineIata?.toLowerCase().includes(q) ||
     image.airlineIcao?.toLowerCase().includes(q) ||
     image.aircraftType?.toLowerCase().includes(q) ||
-    image.discordUsername?.toLowerCase().includes(q)
+    image.discordUsername?.toLowerCase().includes(q) ||
+    image.uploadedBy?.toLowerCase().includes(q) ||
+    uploaderEmail?.toLowerCase().includes(q)
   );
 }
 
@@ -205,6 +216,9 @@ export function AircraftImagesTab() {
   const pendingImages = useMemo(() => pendingQuery ?? [], [pendingQuery]);
   const approvedImages = useMemo(() => approvedQuery ?? [], [approvedQuery]);
 
+  const [userInfo, setUserInfo] = useState<
+    Record<string, { email: string; name: string | null }>
+  >({});
   const [imageSubTab, setImageSubTab] = useState<ImageSubTab>("pending");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -238,12 +252,24 @@ export function AircraftImagesTab() {
     [pendingImages, approvedImages],
   );
 
+  useEffect(() => {
+    const allUserIds = allImages
+      .map((img) => img.uploadedBy)
+      .filter((id): id is string => Boolean(id));
+    const uniqueUserIds = [...new Set(allUserIds)];
+    if (uniqueUserIds.length > 0) {
+      getUserInfoByIds(uniqueUserIds)
+        .then(setUserInfo)
+        .catch((e) => console.error("Failed to fetch user info:", e));
+    }
+  }, [allImages]);
+
   const uniqueImageAirlines = useMemo(() => {
     const airlinesMap = new Map<string, { iata: string; icao: string }>();
     allImages.forEach((img) => {
       const key = img.airlineIata || img.airlineIcao;
       if (!key) return;
-      if (!matchesImageSearch(img, imageSearchQuery)) return;
+      if (!matchesImageSearch(img, imageSearchQuery, userInfo)) return;
       if (imageAircraftFilter && img.aircraftType !== imageAircraftFilter)
         return;
       if (!airlinesMap.has(key)) {
@@ -256,13 +282,13 @@ export function AircraftImagesTab() {
     return Array.from(airlinesMap.values()).sort((a, b) =>
       (a.icao || a.iata).localeCompare(b.icao || b.iata),
     );
-  }, [allImages, imageSearchQuery, imageAircraftFilter]);
+  }, [allImages, imageSearchQuery, imageAircraftFilter, userInfo]);
 
   const uniqueImageAircraftTypes = useMemo(() => {
     const types = new Set<string>();
     allImages.forEach((img) => {
       if (!img.aircraftType) return;
-      if (!matchesImageSearch(img, imageSearchQuery)) return;
+      if (!matchesImageSearch(img, imageSearchQuery, userInfo)) return;
       if (
         imageAirlineFilter &&
         img.airlineIata !== imageAirlineFilter &&
@@ -272,7 +298,7 @@ export function AircraftImagesTab() {
       types.add(img.aircraftType);
     });
     return Array.from(types).sort();
-  }, [allImages, imageSearchQuery, imageAirlineFilter]);
+  }, [allImages, imageSearchQuery, imageAirlineFilter, userInfo]);
 
   useEffect(() => {
     if (
@@ -308,7 +334,7 @@ export function AircraftImagesTab() {
           return false;
         if (imageAircraftFilter && image.aircraftType !== imageAircraftFilter)
           return false;
-        if (!matchesImageSearch(image, imageSearchQuery)) return false;
+        if (!matchesImageSearch(image, imageSearchQuery, userInfo)) return false;
         return true;
       })
       .sort((a, b) => {
@@ -635,7 +661,7 @@ export function AircraftImagesTab() {
             type="text"
             value={imageSearchQuery}
             onChange={(e) => setImageSearchQuery(e.target.value)}
-            placeholder="Search by airline, aircraft type, discord username..."
+            placeholder="Search by airline, aircraft, email, user ID..."
             className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
           />
         </div>

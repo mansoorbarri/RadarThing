@@ -44,15 +44,25 @@ interface ChartType2 {
   icao: string;
   chartName: string;
   chartType: string;
+  uploadedBy?: string | null;
 }
 
-function matchesChartSearch(chart: ChartType2, query: string) {
+function matchesChartSearch(
+  chart: ChartType2,
+  query: string,
+  userInfo?: Record<string, { email: string; name: string | null }>,
+) {
   if (!query.trim()) return true;
   const q = query.toLowerCase();
+  const uploaderEmail = chart.uploadedBy
+    ? userInfo?.[chart.uploadedBy]?.email
+    : undefined;
   return (
     chart.icao?.toLowerCase().includes(q) ||
     chart.chartName?.toLowerCase().includes(q) ||
-    chart.chartType?.toLowerCase().includes(q)
+    chart.chartType?.toLowerCase().includes(q) ||
+    chart.uploadedBy?.toLowerCase().includes(q) ||
+    uploaderEmail?.toLowerCase().includes(q)
   );
 }
 
@@ -236,12 +246,12 @@ export function AirportChartsTab() {
     const icaos = new Set<string>();
     allCharts.forEach((chart) => {
       if (!chart.icao) return;
-      if (!matchesChartSearch(chart, searchQuery)) return;
+      if (!matchesChartSearch(chart, searchQuery, userInfo)) return;
       if (typeFilter && chart.chartType !== typeFilter) return;
       icaos.add(chart.icao);
     });
     return Array.from(icaos).sort();
-  }, [allCharts, searchQuery, typeFilter]);
+  }, [allCharts, searchQuery, typeFilter, userInfo]);
 
   useEffect(() => {
     if (icaoFilter && !uniqueIcaos.includes(icaoFilter)) {
@@ -256,7 +266,7 @@ export function AirportChartsTab() {
       .filter((chart) => {
         if (icaoFilter && chart.icao !== icaoFilter) return false;
         if (typeFilter && chart.chartType !== typeFilter) return false;
-        if (!matchesChartSearch(chart, searchQuery)) return false;
+        if (!matchesChartSearch(chart, searchQuery, userInfo)) return false;
         return true;
       })
       .sort((a, b) => {
@@ -513,7 +523,7 @@ export function AirportChartsTab() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by ICAO, chart name, type..."
+            placeholder="Search by ICAO, chart name, type, email, user ID..."
             className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
           />
         </div>
