@@ -9,6 +9,7 @@ import {
   deleteAirportChart,
   bulkApproveAirportCharts,
   bulkRejectAirportCharts,
+  getChartUserInfoByIds,
   updateAirportChart,
 } from "~/app/actions/airport-charts";
 import {
@@ -209,21 +210,12 @@ function EditableChartDetails({
 export function AirportChartsTab() {
   const pendingQuery = useQuery(api.airportCharts.getPending);
   const approvedQuery = useQuery(api.airportCharts.getApproved);
-  const allUsers = useQuery(api.users.getAll);
   const pendingCharts = useMemo(() => pendingQuery ?? [], [pendingQuery]);
   const approvedCharts = useMemo(() => approvedQuery ?? [], [approvedQuery]);
 
-  // Build a lookup map from clerkId → { email, name }
-  const userInfo = useMemo(() => {
-    const map: Record<string, { email: string; name: string | null }> = {};
-    if (allUsers) {
-      for (const user of allUsers) {
-        map[user.clerkId] = { email: user.email, name: null };
-      }
-    }
-    return map;
-  }, [allUsers]);
-
+  const [userInfo, setUserInfo] = useState<
+    Record<string, { email: string; name: string | null }>
+  >({});
   const [chartSubTab, setChartSubTab] = useState<ChartSubTab>("pending");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -296,6 +288,22 @@ export function AirportChartsTab() {
 
   const filteredPendingCharts = filterCharts(pendingCharts);
   const filteredApprovedCharts = filterCharts(approvedCharts);
+
+  // Fetch user info (email) from Clerk for all uploaders/approvers
+  useEffect(() => {
+    const allUserIds = [...pendingCharts, ...approvedCharts]
+      .flatMap((chart) => [chart.uploadedBy, chart.approvedBy])
+      .filter((id): id is string => Boolean(id));
+    const newIds = [...new Set(allUserIds)].filter((id) => !(id in userInfo));
+    if (newIds.length > 0) {
+      getChartUserInfoByIds(newIds)
+        .then((info) =>
+          setUserInfo((prev) => ({ ...prev, ...info })),
+        )
+        .catch((e) => console.error("Failed to fetch user info:", e));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingCharts, approvedCharts]);
 
   async function handleApprove(id: string) {
     setActionLoading(id);

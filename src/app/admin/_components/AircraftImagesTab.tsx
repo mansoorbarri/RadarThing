@@ -12,6 +12,7 @@ import {
   updateAircraftImageCodes,
   checkApprovalConflict,
   resolveImageConflict,
+  getUserInfoByIds,
   type AircraftImage,
 } from "~/app/actions/aircraft-images";
 import {
@@ -212,21 +213,12 @@ function EditableCodes({
 export function AircraftImagesTab() {
   const pendingQuery = useQuery(api.aircraftImages.getPending);
   const approvedQuery = useQuery(api.aircraftImages.getApproved);
-  const allUsers = useQuery(api.users.getAll);
   const pendingImages = useMemo(() => pendingQuery ?? [], [pendingQuery]);
   const approvedImages = useMemo(() => approvedQuery ?? [], [approvedQuery]);
 
-  // Build a lookup map from clerkId → { email, name }
-  const userInfo = useMemo(() => {
-    const map: Record<string, { email: string; name: string | null }> = {};
-    if (allUsers) {
-      for (const user of allUsers) {
-        map[user.clerkId] = { email: user.email, name: null };
-      }
-    }
-    return map;
-  }, [allUsers]);
-
+  const [userInfo, setUserInfo] = useState<
+    Record<string, { email: string; name: string | null }>
+  >({});
   const [imageSubTab, setImageSubTab] = useState<ImageSubTab>("pending");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -259,6 +251,22 @@ export function AircraftImagesTab() {
     () => [...pendingImages, ...approvedImages],
     [pendingImages, approvedImages],
   );
+
+  // Fetch user info (email) from Clerk for all uploaders
+  useEffect(() => {
+    const allUserIds = allImages
+      .map((img) => img.uploadedBy)
+      .filter((id): id is string => Boolean(id));
+    const newIds = [...new Set(allUserIds)].filter((id) => !(id in userInfo));
+    if (newIds.length > 0) {
+      getUserInfoByIds(newIds)
+        .then((info) =>
+          setUserInfo((prev) => ({ ...prev, ...info })),
+        )
+        .catch((e) => console.error("Failed to fetch user info:", e));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allImages]);
 
   const uniqueImageAirlines = useMemo(() => {
     const airlinesMap = new Map<string, { iata: string; icao: string }>();
