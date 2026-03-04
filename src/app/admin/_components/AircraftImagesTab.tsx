@@ -12,7 +12,6 @@ import {
   updateAircraftImageCodes,
   checkApprovalConflict,
   resolveImageConflict,
-  getUserInfoByIds,
   type AircraftImage,
 } from "~/app/actions/aircraft-images";
 import {
@@ -213,12 +212,21 @@ function EditableCodes({
 export function AircraftImagesTab() {
   const pendingQuery = useQuery(api.aircraftImages.getPending);
   const approvedQuery = useQuery(api.aircraftImages.getApproved);
+  const allUsers = useQuery(api.users.getAll);
   const pendingImages = useMemo(() => pendingQuery ?? [], [pendingQuery]);
   const approvedImages = useMemo(() => approvedQuery ?? [], [approvedQuery]);
 
-  const [userInfo, setUserInfo] = useState<
-    Record<string, { email: string; name: string | null }>
-  >({});
+  // Build a lookup map from clerkId → { email, name }
+  const userInfo = useMemo(() => {
+    const map: Record<string, { email: string; name: string | null }> = {};
+    if (allUsers) {
+      for (const user of allUsers) {
+        map[user.clerkId] = { email: user.email, name: null };
+      }
+    }
+    return map;
+  }, [allUsers]);
+
   const [imageSubTab, setImageSubTab] = useState<ImageSubTab>("pending");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -251,18 +259,6 @@ export function AircraftImagesTab() {
     () => [...pendingImages, ...approvedImages],
     [pendingImages, approvedImages],
   );
-
-  useEffect(() => {
-    const allUserIds = allImages
-      .map((img) => img.uploadedBy)
-      .filter((id): id is string => Boolean(id));
-    const uniqueUserIds = [...new Set(allUserIds)];
-    if (uniqueUserIds.length > 0) {
-      getUserInfoByIds(uniqueUserIds)
-        .then(setUserInfo)
-        .catch((e) => console.error("Failed to fetch user info:", e));
-    }
-  }, [allImages]);
 
   const uniqueImageAirlines = useMemo(() => {
     const airlinesMap = new Map<string, { iata: string; icao: string }>();

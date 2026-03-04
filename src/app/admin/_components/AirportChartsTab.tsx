@@ -9,7 +9,6 @@ import {
   deleteAirportChart,
   bulkApproveAirportCharts,
   bulkRejectAirportCharts,
-  getChartUserInfoByIds,
   updateAirportChart,
 } from "~/app/actions/airport-charts";
 import {
@@ -210,12 +209,21 @@ function EditableChartDetails({
 export function AirportChartsTab() {
   const pendingQuery = useQuery(api.airportCharts.getPending);
   const approvedQuery = useQuery(api.airportCharts.getApproved);
+  const allUsers = useQuery(api.users.getAll);
   const pendingCharts = useMemo(() => pendingQuery ?? [], [pendingQuery]);
   const approvedCharts = useMemo(() => approvedQuery ?? [], [approvedQuery]);
 
-  const [userInfo, setUserInfo] = useState<
-    Record<string, { email: string; name: string | null }>
-  >({});
+  // Build a lookup map from clerkId → { email, name }
+  const userInfo = useMemo(() => {
+    const map: Record<string, { email: string; name: string | null }> = {};
+    if (allUsers) {
+      for (const user of allUsers) {
+        map[user.clerkId] = { email: user.email, name: null };
+      }
+    }
+    return map;
+  }, [allUsers]);
+
   const [chartSubTab, setChartSubTab] = useState<ChartSubTab>("pending");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -288,18 +296,6 @@ export function AirportChartsTab() {
 
   const filteredPendingCharts = filterCharts(pendingCharts);
   const filteredApprovedCharts = filterCharts(approvedCharts);
-
-  useEffect(() => {
-    const allUserIds = [...pendingCharts, ...approvedCharts]
-      .flatMap((chart) => [chart.uploadedBy, chart.approvedBy])
-      .filter(Boolean) as string[];
-    const uniqueUserIds = [...new Set(allUserIds)];
-    if (uniqueUserIds.length > 0) {
-      getChartUserInfoByIds(uniqueUserIds)
-        .then(setUserInfo)
-        .catch((e) => console.error("Failed to fetch user info:", e));
-    }
-  }, [pendingCharts, approvedCharts]);
 
   async function handleApprove(id: string) {
     setActionLoading(id);
