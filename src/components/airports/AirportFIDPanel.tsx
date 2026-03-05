@@ -64,8 +64,8 @@ function FlightRow({
       className="flex w-full cursor-pointer items-center gap-3 border-b border-white/5 px-4 py-2.5 text-left transition-colors hover:bg-white/5"
     >
       {/* Airline logo */}
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/60">
-        {logo ? (
+      {logo && (
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/60">
           <Image
             src={logo}
             alt=""
@@ -74,10 +74,8 @@ function FlightRow({
             className="rounded object-contain"
             unoptimized
           />
-        ) : (
-          <Plane size={14} className="text-white/30" />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Route, flight number & pilot */}
       <div className="min-w-0 flex-1">
