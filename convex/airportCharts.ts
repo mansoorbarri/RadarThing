@@ -6,7 +6,6 @@ const chartTypeValidator = v.union(
   v.literal("SID"),
   v.literal("STAR"),
   v.literal("APPROACH"),
-  v.literal("GENERAL"),
 );
 
 // Get approved charts for an airport, optionally filtered by type

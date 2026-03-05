@@ -13,7 +13,6 @@ export function organizeChartsByType(charts: AirportChart[]): ChartsByType {
     SID: [],
     STAR: [],
     APPROACH: [],
-    GENERAL: [],
   };
 
   for (const chart of charts) {
@@ -40,7 +39,6 @@ export function getChartCounts(
     SID: organized.SID.length,
     STAR: organized.STAR.length,
     APPROACH: organized.APPROACH.length,
-    GENERAL: organized.GENERAL.length,
   };
 }
 

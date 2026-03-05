@@ -90,7 +90,7 @@ export default defineSchema({
     note: v.optional(v.string()), // Optional note/description
   }).index("by_airline_aircraft", ["airlineCode", "aircraftType"]),
 
-  // Airport charts (SIDs, STARs, approaches, taxi, general)
+  // Airport charts (SIDs, STARs, approaches, taxi)
   airportCharts: defineTable({
     icao: v.string(),
     chartType: v.union(
@@ -98,7 +98,6 @@ export default defineSchema({
       v.literal("SID"),
       v.literal("STAR"),
       v.literal("APPROACH"),
-      v.literal("GENERAL"),
     ),
     chartName: v.string(),
     chartUrl: v.string(),

@@ -5,13 +5,7 @@ import { organizeChartsByType } from "~/services/airportChartsService";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "../../../../../convex/_generated/api";
 
-const VALID_CHART_TYPES: ChartType[] = [
-  "TAXI",
-  "SID",
-  "STAR",
-  "APPROACH",
-  "GENERAL",
-];
+const VALID_CHART_TYPES: ChartType[] = ["TAXI", "SID", "STAR", "APPROACH"];
 
 export async function GET(request: NextRequest, context: any) {
   const { icao } = await context.params;

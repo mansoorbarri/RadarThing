@@ -43,7 +43,6 @@ function createEmptyChartsByType(): ChartsByType {
     SID: [],
     STAR: [],
     APPROACH: [],
-    GENERAL: [],
   };
 }
 
@@ -55,7 +54,7 @@ export function useAirportCharts(icao?: string) {
   // Initialize from cache if available
   const cachedState = icao ? getViewerState(icao) : undefined;
   const [selectedType, setSelectedTypeInternal] = useState<ChartType>(
-    cachedState?.selectedType ?? "GENERAL",
+    cachedState?.selectedType ?? "TAXI",
   );
   const [selectedChartIndex, setSelectedChartIndexInternal] = useState(
     cachedState?.selectedChartIndex ?? 0,
@@ -83,7 +82,7 @@ export function useAirportCharts(icao?: string) {
       if (icao) {
         const current = getViewerState(icao);
         setViewerState(icao, {
-          selectedType: current?.selectedType ?? "GENERAL",
+          selectedType: current?.selectedType ?? "TAXI",
           selectedChartIndex: index,
         });
       }
@@ -189,7 +188,7 @@ export function useAirportCharts(icao?: string) {
   // Auto-select first type with charts if current type is empty
   useEffect(() => {
     if (!charts || charts[selectedType].length > 0) return;
-    const types: ChartType[] = ["TAXI", "SID", "STAR", "APPROACH", "GENERAL"];
+    const types: ChartType[] = ["TAXI", "SID", "STAR", "APPROACH"];
     const firstWithCharts = types.find((t) => charts[t].length > 0);
     if (firstWithCharts) {
       setSelectedType(firstWithCharts);
@@ -207,9 +206,8 @@ export function useAirportCharts(icao?: string) {
         SID: charts.SID.length,
         STAR: charts.STAR.length,
         APPROACH: charts.APPROACH.length,
-        GENERAL: charts.GENERAL.length,
       }
-    : { TAXI: 0, SID: 0, STAR: 0, APPROACH: 0, GENERAL: 0 };
+    : { TAXI: 0, SID: 0, STAR: 0, APPROACH: 0 };
 
   const totalCharts = Object.values(chartCounts).reduce((a, b) => a + b, 0);
 

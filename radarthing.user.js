@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RadarThing
 // @namespace    http://tampermonkey.net/
-// @version      1.4.5
+// @version      1.4.6
 // @description  Always loads the latest GeoFS ATC Radar script from GitHub
 // @Author       xyzmani
 // @icon         https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/public/favicon.ico
@@ -62,7 +62,7 @@
   const CHARTS_SIZE_KEY = "geofs-charts-size";
   const CHARTS_ICAO_KEY = "geofs-charts-icao";
   const CHARTS_CACHE_KEY = "geofs-airport-charts-v1";
-  const CHART_TYPES = ["GENERAL", "TAXI", "SID", "STAR", "APPROACH"];
+  const CHART_TYPES = ["TAXI", "SID", "STAR", "APPROACH"];
   const CHARTS_DEFAULT_TOP = 60;
   const CHARTS_DEFAULT_LEFT = 16;
   const CHARTS_DEFAULT_WIDTH = 370;
@@ -70,8 +70,8 @@
 
   const chartsState = {
     currentIcao: "",
-    chartsByType: { GENERAL: [], TAXI: [], SID: [], STAR: [], APPROACH: [] },
-    currentType: "GENERAL",
+    chartsByType: { TAXI: [], SID: [], STAR: [], APPROACH: [] },
+    currentType: "TAXI",
     selectedChartId: null,
     invertColors: true,
     zoom: { scale: 1, panX: 0, panY: 0 },
@@ -278,7 +278,7 @@
   // ==========================================
 
   function createEmptyChartsByType() {
-    return { GENERAL: [], TAXI: [], SID: [], STAR: [], APPROACH: [] };
+    return { TAXI: [], SID: [], STAR: [], APPROACH: [] };
   }
 
   function loadChartsCacheStorage() {
@@ -407,7 +407,7 @@
         return;
       }
     }
-    chartsState.currentType = "GENERAL";
+    chartsState.currentType = "TAXI";
     chartsState.selectedChartId = null;
   }
 

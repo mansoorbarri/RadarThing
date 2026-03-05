@@ -37,7 +37,6 @@ const CHART_TYPES: { key: ChartType; label: string }[] = [
   { key: "SID", label: "SID" },
   { key: "STAR", label: "STAR" },
   { key: "APPROACH", label: "APP" },
-  { key: "GENERAL", label: "GEN" },
 ];
 
 // Cache for transform state (zoom/pan) per chart URL
@@ -196,7 +195,6 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
       SID: charts.SID,
       STAR: charts.STAR,
       APPROACH: charts.APPROACH,
-      GENERAL: charts.GENERAL,
     };
   }, [charts]);
 

@@ -37,7 +37,6 @@ const CHART_TYPES: { value: ChartType; label: string }[] = [
   { value: "SID", label: "SID" },
   { value: "STAR", label: "STAR" },
   { value: "APPROACH", label: "Approach" },
-  { value: "GENERAL", label: "General" },
 ];
 
 interface ChartType2 {

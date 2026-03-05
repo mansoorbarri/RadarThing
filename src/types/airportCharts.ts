@@ -1,4 +1,4 @@
-export type ChartType = "TAXI" | "SID" | "STAR" | "APPROACH" | "GENERAL";
+export type ChartType = "TAXI" | "SID" | "STAR" | "APPROACH";
 export type ChartSource = "COMMUNITY";
 
 export interface AirportChart {
@@ -21,5 +21,4 @@ export interface ChartsByType {
   SID: AirportChart[];
   STAR: AirportChart[];
   APPROACH: AirportChart[];
-  GENERAL: AirportChart[];
 }

@@ -39,7 +39,6 @@ function setTransformState(chartUrl: string, state: TransformState) {
 }
 
 const CHART_TYPES: { type: ChartType; label: string }[] = [
-  { type: "GENERAL", label: "General" },
   { type: "TAXI", label: "Ground" },
   { type: "SID", label: "SID" },
   { type: "STAR", label: "STAR" },

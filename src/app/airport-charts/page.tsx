@@ -41,7 +41,6 @@ function setCookie(name: string, value: string, days = 365) {
 }
 
 const CHART_TYPES: { value: ChartType; label: string }[] = [
-  { value: "GENERAL", label: "General" },
   { value: "TAXI", label: "Ground / Airport Diagram" },
   { value: "SID", label: "SID (Departure)" },
   { value: "STAR", label: "STAR (Arrival)" },
@@ -78,7 +77,7 @@ export default function AirportChartsPage() {
   const [typeFilter, setTypeFilter] = useState<ChartType | "">("");
   const [formData, setFormData] = useState({
     icao: "",
-    chartType: "GENERAL" as ChartType,
+    chartType: "TAXI" as ChartType,
     discordUsername: "",
   });
 
@@ -222,7 +221,7 @@ export default function AirportChartsPage() {
       uploaderRef.current?.reset();
       setFormData((prev) => ({
         icao: "",
-        chartType: "GENERAL" as ChartType,
+        chartType: "TAXI" as ChartType,
         discordUsername: prev.discordUsername,
       }));
     }, 1500);
@@ -472,7 +471,7 @@ export default function AirportChartsPage() {
                 uploaderRef.current?.reset();
                 setFormData((prev) => ({
                   icao: "",
-                  chartType: "GENERAL" as ChartType,
+                  chartType: "TAXI" as ChartType,
                   discordUsername: prev.discordUsername,
                 }));
               }}
