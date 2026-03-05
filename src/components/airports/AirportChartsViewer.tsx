@@ -536,9 +536,22 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
                   No {selectedType.toLowerCase()} charts available
                 </div>
                 <div className="max-w-sm text-xs text-slate-400">
-                  {totalCharts === 0
-                    ? `This airport does not currently have any charts in RadarThing.`
-                    : `Try selecting a different chart type above.`}
+                  {totalCharts === 0 ? (
+                    <>
+                      This airport does not currently have any charts. Message{" "}
+                      <a
+                        href="https://discord.com/users/1203599506730651650"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-cyan-400 underline decoration-cyan-400/30 hover:text-cyan-300"
+                      >
+                        xyzmani
+                      </a>{" "}
+                      on Discord to request them!
+                    </>
+                  ) : (
+                    `Try selecting a different chart type above.`
+                  )}
                 </div>
               </div>
             ) : isPdfChart ? (

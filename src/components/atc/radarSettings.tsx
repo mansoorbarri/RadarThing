@@ -4,7 +4,7 @@ import React from "react";
 import { Switch } from "~/components/ui/switch";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { useRouter } from "next/navigation";
-import { Plane, Shield, Map } from "lucide-react";
+import { Plane, Shield } from "lucide-react";
 import { Analytics } from "~/lib/analytics";
 
 interface RadarSettingsProps {
@@ -124,14 +124,6 @@ export const RadarSettings = ({
         >
           <Plane className="h-4 w-4 text-cyan-400" />
           <span>Upload Aircraft Images</span>
-        </button>
-
-        <button
-          onClick={() => router.push("/airport-charts")}
-          className="flex w-full cursor-pointer items-center gap-2 rounded-md bg-white/5 px-3 py-2 text-left text-sm text-white transition-colors hover:bg-white/10"
-        >
-          <Map className="h-4 w-4 text-cyan-400" />
-          <span>Upload Airport Charts</span>
         </button>
 
         {isADMIN && (

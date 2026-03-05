@@ -23,18 +23,6 @@ export function AdminHeader() {
         </button>
         <div className="flex items-center gap-4">
           <button
-            onClick={() => router.push("/aircraft-images")}
-            className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
-          >
-            Aircraft Images
-          </button>
-          <button
-            onClick={() => router.push("/airport-charts")}
-            className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
-          >
-            Airport Charts
-          </button>
-          <button
             onClick={() => router.push("/radar")}
             className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
           >

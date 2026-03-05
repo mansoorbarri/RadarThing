@@ -18,11 +18,13 @@ import {
   Loader2,
   CheckCircle2,
   ExternalLink,
+  ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
 import type { ChartType } from "~/types/airportCharts";
+import { useProStatus } from "~/hooks/useProStatus";
 
 // Cookie helpers - shared with aircraft-images
 function getCookie(name: string): string {
@@ -66,6 +68,7 @@ function matchesSearch(
 export default function AirportChartsPage() {
   const router = useRouter();
   const { isSignedIn, isLoaded } = useUser();
+  const { isAdminUser, isLoading: isProLoading } = useProStatus();
 
   const chartsQuery = useQuery(api.airportCharts.getApproved);
   const charts = useMemo(() => chartsQuery ?? [], [chartsQuery]);
@@ -263,8 +266,28 @@ export default function AirportChartsPage() {
 
   const isProcessing = submitStage !== "idle" && submitStage !== "success";
 
-  if (!isLoaded || loading) {
+  if (!isLoaded || loading || isProLoading) {
     return <GallerySkeleton />;
+  }
+
+  if (!isAdminUser) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-black text-white">
+        <div className="flex max-w-md flex-col items-center rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
+          <ShieldAlert className="mb-4 h-12 w-12 text-red-400" />
+          <h2 className="mb-2 text-xl font-bold">Admin Access Required</h2>
+          <p className="mb-6 text-slate-400">
+            This page is restricted to administrators only.
+          </p>
+          <button
+            onClick={() => router.push("/radar")}
+            className="cursor-pointer rounded-lg bg-cyan-500/20 px-6 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-cyan-500/30"
+          >
+            Back to Radar
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const canUpload = isSignedIn;

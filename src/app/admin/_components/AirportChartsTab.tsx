@@ -4,11 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import {
-  approveAirportChart,
-  rejectAirportChart,
   deleteAirportChart,
-  bulkApproveAirportCharts,
-  bulkRejectAirportCharts,
   getChartUserInfoByIds,
   updateAirportChart,
 } from "~/app/actions/airport-charts";
@@ -17,7 +13,6 @@ import {
   Check,
   X,
   Map,
-  Clock,
   CheckCircle,
   Search,
   CheckSquare,
@@ -26,11 +21,8 @@ import {
   Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
-import { RejectModal } from "./RejectModal";
 import { ConfirmModal } from "./ConfirmModal";
 import type { ChartType } from "~/types/airportCharts";
-
-type ChartSubTab = "pending" | "approved";
 
 const CHART_TYPES: { value: ChartType; label: string }[] = [
   { value: "TAXI", label: "Taxi" },
@@ -207,24 +199,16 @@ function EditableChartDetails({
 }
 
 export function AirportChartsTab() {
-  const pendingQuery = useQuery(api.airportCharts.getPending);
   const approvedQuery = useQuery(api.airportCharts.getApproved);
-  const pendingCharts = useMemo(() => pendingQuery ?? [], [pendingQuery]);
   const approvedCharts = useMemo(() => approvedQuery ?? [], [approvedQuery]);
 
   const [userInfo, setUserInfo] = useState<
     Record<string, { email: string; name: string | null }>
   >({});
-  const [chartSubTab, setChartSubTab] = useState<ChartSubTab>("pending");
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [bulkLoading, setBulkLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [icaoFilter, setIcaoFilter] = useState<string>("");
   const [typeFilter, setTypeFilter] = useState<ChartType | "">("");
   const [selectedCharts, setSelectedCharts] = useState<Set<string>>(new Set());
-  const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
-  const [rejectTargetIds, setRejectTargetIds] = useState<string[]>([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [deleteTargetInfo, setDeleteTargetInfo] = useState<{
@@ -236,21 +220,16 @@ export function AirportChartsTab() {
   const [bulkDeleteTargetIds, setBulkDeleteTargetIds] = useState<string[]>([]);
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
 
-  const allCharts = useMemo(
-    () => [...pendingCharts, ...approvedCharts],
-    [pendingCharts, approvedCharts],
-  );
-
   const uniqueIcaos = useMemo(() => {
     const icaos = new Set<string>();
-    allCharts.forEach((chart) => {
+    approvedCharts.forEach((chart) => {
       if (!chart.icao) return;
       if (!matchesChartSearch(chart, searchQuery, userInfo)) return;
       if (typeFilter && chart.chartType !== typeFilter) return;
       icaos.add(chart.icao);
     });
     return Array.from(icaos).sort();
-  }, [allCharts, searchQuery, typeFilter, userInfo]);
+  }, [approvedCharts, searchQuery, typeFilter, userInfo]);
 
   useEffect(() => {
     if (icaoFilter && !uniqueIcaos.includes(icaoFilter)) {
@@ -260,8 +239,8 @@ export function AirportChartsTab() {
 
   const hasActiveFilters = searchQuery || icaoFilter || typeFilter;
 
-  const filterCharts = (charts: typeof pendingCharts) => {
-    return charts
+  const filteredCharts = useMemo(() => {
+    return approvedCharts
       .filter((chart) => {
         if (icaoFilter && chart.icao !== icaoFilter) return false;
         if (typeFilter && chart.chartType !== typeFilter) return false;
@@ -277,7 +256,7 @@ export function AirportChartsTab() {
         if (typeCompare !== 0) return typeCompare;
         return (a.chartName || "").localeCompare(b.chartName || "");
       });
-  };
+  }, [approvedCharts, searchQuery, icaoFilter, typeFilter, userInfo]);
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -285,92 +264,19 @@ export function AirportChartsTab() {
     setTypeFilter("");
   };
 
-  const filteredPendingCharts = filterCharts(pendingCharts);
-  const filteredApprovedCharts = filterCharts(approvedCharts);
-
-  // Fetch user info (email) from Clerk for all uploaders/approvers
+  // Fetch user info
   useEffect(() => {
-    const allUserIds = [...pendingCharts, ...approvedCharts]
+    const allUserIds = approvedCharts
       .flatMap((chart) => [chart.uploadedBy, chart.approvedBy])
       .filter((id): id is string => Boolean(id));
     const newIds = [...new Set(allUserIds)].filter((id) => !(id in userInfo));
     if (newIds.length > 0) {
       getChartUserInfoByIds(newIds)
-        .then((info) =>
-          setUserInfo((prev) => ({ ...prev, ...info })),
-        )
+        .then((info) => setUserInfo((prev) => ({ ...prev, ...info })))
         .catch((e) => console.error("Failed to fetch user info:", e));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingCharts, approvedCharts]);
-
-  async function handleApprove(id: string) {
-    setActionLoading(id);
-    const result = await approveAirportChart(id);
-    if (result.success) {
-      setSelectedCharts((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-      toast.success("Chart approved");
-    } else {
-      toast.error(result.error || "Failed to approve chart");
-    }
-    setActionLoading(null);
-  }
-
-  function openRejectModal(ids: string[]) {
-    setRejectTargetIds(ids);
-    setRejectReason("");
-    setRejectModalOpen(true);
-  }
-
-  async function handleRejectConfirm() {
-    if (!rejectReason.trim()) {
-      toast.error("Please provide a reason for rejection");
-      return;
-    }
-    setRejectModalOpen(false);
-
-    if (rejectTargetIds.length === 1 && rejectTargetIds[0]) {
-      const targetId = rejectTargetIds[0];
-      setActionLoading(targetId);
-      const result = await rejectAirportChart(targetId, rejectReason);
-      if (result.success) {
-        setSelectedCharts((prev) => {
-          const next = new Set(prev);
-          next.delete(targetId);
-          return next;
-        });
-        toast.success("Chart rejected");
-      } else {
-        toast.error(result.error || "Failed to reject chart");
-      }
-      setActionLoading(null);
-    } else if (rejectTargetIds.length > 1) {
-      setBulkLoading(true);
-      const result = await bulkRejectAirportCharts(
-        rejectTargetIds,
-        rejectReason,
-      );
-      if (result.rejected > 0) {
-        setSelectedCharts(new Set());
-        if (result.failed > 0) {
-          toast.warning(
-            `Rejected ${result.rejected} charts, ${result.failed} failed`,
-          );
-        } else {
-          toast.success(`Rejected ${result.rejected} charts`);
-        }
-      } else if (result.failed > 0) {
-        toast.error(`Failed to reject ${result.failed} charts`);
-      }
-      setBulkLoading(false);
-    }
-    setRejectTargetIds([]);
-    setRejectReason("");
-  }
+  }, [approvedCharts]);
 
   function openDeleteModal(id: string, icao: string, chartName: string) {
     setDeleteTargetId(id);
@@ -393,12 +299,6 @@ export function AirportChartsTab() {
     setDeleteTargetInfo(null);
   }
 
-  function handleDeleteCancel() {
-    setDeleteModalOpen(false);
-    setDeleteTargetId(null);
-    setDeleteTargetInfo(null);
-  }
-
   function toggleSelect(id: string) {
     setSelectedCharts((prev) => {
       const next = new Set(prev);
@@ -409,41 +309,11 @@ export function AirportChartsTab() {
   }
 
   function selectAllVisible() {
-    const charts =
-      chartSubTab === "pending"
-        ? filteredPendingCharts
-        : filteredApprovedCharts;
-    setSelectedCharts(new Set(charts.map((c) => c.id)));
+    setSelectedCharts(new Set(filteredCharts.map((c) => c.id)));
   }
 
   function clearSelection() {
     setSelectedCharts(new Set());
-  }
-
-  async function handleBulkApprove() {
-    const ids = Array.from(selectedCharts);
-    if (ids.length === 0) return;
-    setBulkLoading(true);
-    const result = await bulkApproveAirportCharts(ids);
-    if (result.approved > 0) {
-      setSelectedCharts(new Set());
-      if (result.failed > 0) {
-        toast.warning(
-          `Approved ${result.approved} charts, ${result.failed} failed`,
-        );
-      } else {
-        toast.success(`Approved ${result.approved} charts`);
-      }
-    } else if (result.failed > 0) {
-      toast.error(`Failed to approve ${result.failed} charts`);
-    }
-    setBulkLoading(false);
-  }
-
-  function handleBulkReject() {
-    const ids = Array.from(selectedCharts);
-    if (ids.length === 0) return;
-    openRejectModal(ids);
   }
 
   function handleBulkDelete() {
@@ -480,34 +350,29 @@ export function AirportChartsTab() {
 
   return (
     <>
-      <RejectModal
-        isOpen={rejectModalOpen}
-        targetCount={rejectTargetIds.length}
-        reason={rejectReason}
-        onReasonChange={setRejectReason}
-        onConfirm={handleRejectConfirm}
-        onCancel={() => setRejectModalOpen(false)}
-      />
-
       <ConfirmModal
         isOpen={deleteModalOpen}
-        title="Delete Approved Chart"
+        title="Delete Chart"
         message={
           deleteTargetInfo
             ? `Are you sure you want to delete "${deleteTargetInfo.chartName}" for ${deleteTargetInfo.icao}? This action cannot be undone.`
-            : "Are you sure you want to delete this approved chart?"
+            : "Are you sure you want to delete this chart?"
         }
         confirmLabel="Delete"
         variant="danger"
         isLoading={deleteLoading}
         onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
+        onCancel={() => {
+          setDeleteModalOpen(false);
+          setDeleteTargetId(null);
+          setDeleteTargetInfo(null);
+        }}
       />
 
       <ConfirmModal
         isOpen={bulkDeleteModalOpen}
-        title="Delete Approved Charts"
-        message={`Are you sure you want to delete ${bulkDeleteTargetIds.length} approved chart(s)? This action cannot be undone.`}
+        title="Delete Charts"
+        message={`Are you sure you want to delete ${bulkDeleteTargetIds.length} chart(s)? This action cannot be undone.`}
         confirmLabel="Delete All"
         variant="danger"
         isLoading={bulkDeleteLoading}
@@ -579,83 +444,30 @@ export function AirportChartsTab() {
           >
             Clear
           </button>
-          {chartSubTab === "pending" ? (
-            <>
-              <button
-                onClick={handleBulkApprove}
-                disabled={bulkLoading}
-                className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-500/20 px-4 py-1.5 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
-              >
-                <Check className="h-4 w-4" />
-                Approve All
-              </button>
-              <button
-                onClick={handleBulkReject}
-                disabled={bulkLoading}
-                className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
-              >
-                <X className="h-4 w-4" />
-                Reject All
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={handleBulkDelete}
-              disabled={bulkLoading}
-              className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete All
-            </button>
-          )}
+          <button
+            onClick={handleBulkDelete}
+            disabled={bulkDeleteLoading}
+            className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete All
+          </button>
         </div>
       )}
 
-      {/* Sub Tabs */}
-      <div className="mb-6 flex items-center gap-2">
-        <button
-          onClick={() => setChartSubTab("pending")}
-          className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-mono text-sm transition-all ${
-            chartSubTab === "pending"
-              ? "bg-yellow-500/20 text-yellow-400"
-              : "bg-white/5 text-slate-400 hover:bg-white/10"
-          }`}
-        >
-          <Clock className="h-4 w-4" />
-          Pending ({filteredPendingCharts.length}
-          {hasActiveFilters &&
-          filteredPendingCharts.length !== pendingCharts.length
-            ? `/${pendingCharts.length}`
+      {/* Charts Header */}
+      <div className="mb-4 flex items-center gap-2">
+        <span className="font-mono text-sm text-slate-400">
+          {filteredCharts.length} chart{filteredCharts.length !== 1 ? "s" : ""}
+          {hasActiveFilters && filteredCharts.length !== approvedCharts.length
+            ? ` / ${approvedCharts.length} total`
             : ""}
-          )
-        </button>
-        <button
-          onClick={() => setChartSubTab("approved")}
-          className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-mono text-sm transition-all ${
-            chartSubTab === "approved"
-              ? "bg-emerald-500/20 text-emerald-400"
-              : "bg-white/5 text-slate-400 hover:bg-white/10"
-          }`}
-        >
-          <CheckCircle className="h-4 w-4" />
-          Approved ({filteredApprovedCharts.length}
-          {hasActiveFilters &&
-          filteredApprovedCharts.length !== approvedCharts.length
-            ? `/${approvedCharts.length}`
-            : ""}
-          )
-        </button>
+        </span>
 
-        {((chartSubTab === "pending" && filteredPendingCharts.length > 0) ||
-          (chartSubTab === "approved" &&
-            filteredApprovedCharts.length > 0)) && (
+        {filteredCharts.length > 0 && (
           <button
             onClick={() => {
-              const currentCharts =
-                chartSubTab === "pending"
-                  ? filteredPendingCharts
-                  : filteredApprovedCharts;
-              if (selectedCharts.size === currentCharts.length) {
+              if (selectedCharts.size === filteredCharts.length) {
                 clearSelection();
               } else {
                 selectAllVisible();
@@ -663,11 +475,7 @@ export function AirportChartsTab() {
             }}
             className="ml-auto flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-white/10"
           >
-            {selectedCharts.size ===
-            (chartSubTab === "pending"
-              ? filteredPendingCharts
-              : filteredApprovedCharts
-            ).length ? (
+            {selectedCharts.size === filteredCharts.length ? (
               <>
                 <CheckSquare className="h-4 w-4" />
                 Deselect All
@@ -682,211 +490,85 @@ export function AirportChartsTab() {
         )}
       </div>
 
-      {/* Pending Charts */}
-      {chartSubTab === "pending" && (
-        <>
-          {filteredPendingCharts.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-              <Clock className="mx-auto mb-4 h-12 w-12 text-slate-600" />
-              <h3 className="mb-2 text-xl font-semibold text-white">
-                {hasActiveFilters ? "No Matching Charts" : "No Pending Charts"}
-              </h3>
-              <p className="text-slate-400">
-                {hasActiveFilters
-                  ? "Try adjusting your search or filters"
-                  : "All submissions have been reviewed"}
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredPendingCharts.map((chart) => (
-                <div
-                  key={chart.id}
-                  className={`group overflow-hidden rounded-2xl border bg-black/40 backdrop-blur-xl transition-all ${
+      {/* Charts Grid */}
+      {filteredCharts.length === 0 ? (
+        <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
+          <Map className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+          <h3 className="mb-2 text-xl font-semibold text-white">
+            {hasActiveFilters ? "No Matching Charts" : "No Charts Yet"}
+          </h3>
+          <p className="text-slate-400">
+            {hasActiveFilters
+              ? "Try adjusting your search or filters"
+              : "Upload some charts to get started"}
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredCharts.map((chart) => (
+            <div
+              key={chart.id}
+              className={`group overflow-hidden rounded-2xl border bg-black/40 backdrop-blur-xl transition-all ${
+                selectedCharts.has(chart.id)
+                  ? "border-cyan-500"
+                  : "border-white/10 hover:border-cyan-500/30"
+              }`}
+            >
+              <div className="relative aspect-[4/3] overflow-hidden bg-slate-900/50">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={chart.chartUrl}
+                  alt={chart.chartName}
+                  className="h-full w-full object-cover"
+                />
+                <button
+                  onClick={() => toggleSelect(chart.id)}
+                  className={`absolute top-2 left-2 cursor-pointer rounded-lg p-1.5 transition-all ${
                     selectedCharts.has(chart.id)
-                      ? "border-cyan-500"
-                      : "border-yellow-500/30"
+                      ? "bg-cyan-500 text-white"
+                      : "bg-black/60 text-white opacity-0 group-hover:opacity-100"
                   }`}
                 >
-                  <div className="relative aspect-[4/3] overflow-hidden bg-slate-900/50">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={chart.chartUrl}
-                      alt={chart.chartName}
-                      className="h-full w-full object-cover"
-                    />
-                    <div className="absolute top-2 left-2 rounded-md bg-yellow-500/80 px-2 py-1 text-xs font-bold text-black">
-                      PENDING
-                    </div>
-                    <button
-                      onClick={() => toggleSelect(chart.id)}
-                      className={`absolute top-2 right-2 cursor-pointer rounded-lg p-1.5 transition-all ${
-                        selectedCharts.has(chart.id)
-                          ? "bg-cyan-500 text-white"
-                          : "bg-black/60 text-white opacity-0 group-hover:opacity-100"
-                      }`}
-                    >
-                      {selectedCharts.has(chart.id) ? (
-                        <CheckSquare className="h-5 w-5" />
-                      ) : (
-                        <Square className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-                  <div className="p-4">
+                  {selectedCharts.has(chart.id) ? (
+                    <CheckSquare className="h-5 w-5" />
+                  ) : (
+                    <Square className="h-5 w-5" />
+                  )}
+                </button>
+                <button
+                  onClick={() =>
+                    openDeleteModal(chart.id, chart.icao, chart.chartName)
+                  }
+                  className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 p-2 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500"
+                >
+                  <Trash2 className="h-4 w-4 text-white" />
+                </button>
+              </div>
+              <div className="p-4">
+                <div className="flex items-start gap-2">
+                  <div className="flex-1">
                     <EditableChartDetails
                       chartId={chart.id}
                       initialIcao={chart.icao}
                       initialChartType={chart.chartType as ChartType}
                       initialChartName={chart.chartName}
                     />
-                    <p className="mt-2 text-xs text-slate-500">
-                      Uploaded by:{" "}
-                      <span className="text-cyan-400">
-                        {chart.discordUsername ?? chart.uploadedBy ?? "Unknown"}
-                      </span>
-                    </p>
-                    <p className="mb-3 text-xs text-slate-600">
-                      {new Date(chart.createdAt).toLocaleDateString()}
-                    </p>
-                    <a
-                      href={chart.chartUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mb-3 flex items-center gap-1 text-xs text-cyan-400 hover:underline"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      View Chart
-                    </a>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleApprove(chart.id)}
-                        disabled={actionLoading === chart.id}
-                        className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-lg bg-emerald-500/20 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
-                      >
-                        <Check className="h-4 w-4" />
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => openRejectModal([chart.id])}
-                        disabled={actionLoading === chart.id}
-                        className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-lg bg-red-500/20 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
-                      >
-                        <X className="h-4 w-4" />
-                        Reject
-                      </button>
-                    </div>
                   </div>
+                  <CheckCircle className="mt-1 h-4 w-4 flex-shrink-0 text-emerald-400" />
                 </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Approved Charts */}
-      {chartSubTab === "approved" && (
-        <>
-          {filteredApprovedCharts.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-              <Map className="mx-auto mb-4 h-12 w-12 text-slate-600" />
-              <h3 className="mb-2 text-xl font-semibold text-white">
-                {hasActiveFilters ? "No Matching Charts" : "No Approved Charts"}
-              </h3>
-              <p className="text-slate-400">
-                {hasActiveFilters
-                  ? "Try adjusting your search or filters"
-                  : "Approve some pending charts to see them here"}
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredApprovedCharts.map((chart) => (
-                <div
-                  key={chart.id}
-                  className={`group overflow-hidden rounded-2xl border bg-black/40 backdrop-blur-xl transition-all ${
-                    selectedCharts.has(chart.id)
-                      ? "border-cyan-500"
-                      : "border-white/10 hover:border-cyan-500/30"
-                  }`}
+                <a
+                  href={chart.chartUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 flex items-center gap-1 text-xs text-cyan-400 hover:underline"
                 >
-                  <div className="relative aspect-[4/3] overflow-hidden bg-slate-900/50">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={chart.chartUrl}
-                      alt={chart.chartName}
-                      className="h-full w-full object-cover"
-                    />
-                    <button
-                      onClick={() => toggleSelect(chart.id)}
-                      className={`absolute top-2 left-2 cursor-pointer rounded-lg p-1.5 transition-all ${
-                        selectedCharts.has(chart.id)
-                          ? "bg-cyan-500 text-white"
-                          : "bg-black/60 text-white opacity-0 group-hover:opacity-100"
-                      }`}
-                    >
-                      {selectedCharts.has(chart.id) ? (
-                        <CheckSquare className="h-5 w-5" />
-                      ) : (
-                        <Square className="h-5 w-5" />
-                      )}
-                    </button>
-                    <button
-                      onClick={() =>
-                        openDeleteModal(chart.id, chart.icao, chart.chartName)
-                      }
-                      className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 p-2 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500"
-                    >
-                      <Trash2 className="h-4 w-4 text-white" />
-                    </button>
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-start gap-2">
-                      <div className="flex-1">
-                        <EditableChartDetails
-                          chartId={chart.id}
-                          initialIcao={chart.icao}
-                          initialChartType={chart.chartType as ChartType}
-                          initialChartName={chart.chartName}
-                        />
-                      </div>
-                      <CheckCircle className="mt-1 h-4 w-4 flex-shrink-0 text-emerald-400" />
-                    </div>
-                    <p className="mt-2 text-xs text-slate-500">
-                      Uploaded by:{" "}
-                      <span className="text-cyan-400">
-                        {chart.discordUsername ?? chart.uploadedBy ?? "Unknown"}
-                      </span>
-                    </p>
-                    {chart.approvedBy && (
-                      <p className="mt-1 text-xs text-slate-500">
-                        Approved by:{" "}
-                        <span className="text-emerald-400">
-                          {userInfo[chart.approvedBy]?.email || "Unknown"}
-                        </span>
-                        {chart.approvedAt && (
-                          <span className="text-slate-600">
-                            {" "}
-                            on {new Date(chart.approvedAt).toLocaleDateString()}
-                          </span>
-                        )}
-                      </p>
-                    )}
-                    <a
-                      href={chart.chartUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 flex items-center gap-1 text-xs text-cyan-400 hover:underline"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      View Chart
-                    </a>
-                  </div>
-                </div>
-              ))}
+                  <ExternalLink className="h-3 w-3" />
+                  View Chart
+                </a>
+              </div>
             </div>
-          )}
-        </>
+          ))}
+        </div>
       )}
     </>
   );

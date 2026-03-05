@@ -260,8 +260,19 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
           </div>
         </div>
       ) : !hasCharts ? (
-        <div className="flex flex-1 items-center justify-center">
-          <span className="text-xs text-white/40">No charts available</span>
+        <div className="flex flex-1 items-center justify-center px-4">
+          <span className="text-center text-xs text-white/40">
+            No charts available. Message{" "}
+            <a
+              href="https://discord.com/users/1203599506730651650"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-cyan-400 underline decoration-cyan-400/30 hover:text-cyan-300"
+            >
+              xyzmani
+            </a>{" "}
+            on Discord to request them!
+          </span>
         </div>
       ) : (
         <>
