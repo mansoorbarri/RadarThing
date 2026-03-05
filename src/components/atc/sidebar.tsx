@@ -698,7 +698,7 @@ export const Sidebar = ({
                     {aircraftPhoto ? "Tracking" : "Active Radar Lock"}
                   </span>
                 </div>
-                <h1 className="mb-1 truncate font-mono text-4xl leading-none font-black tracking-tighter text-white uppercase drop-shadow-lg">
+                <h1 className={`mb-1 truncate font-mono leading-none font-black tracking-tighter text-white uppercase drop-shadow-lg ${isMobile ? "text-2xl" : "text-4xl"}`}>
                   {aircraft.flightNo || aircraft.callsign || "N/A"}
                 </h1>
                 <p className="truncate font-mono text-[11px] font-black tracking-[0.15em] text-slate-300 uppercase">

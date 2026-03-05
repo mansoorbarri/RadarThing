@@ -115,12 +115,12 @@ export const MobileSwipeSheet = ({
       onTouchEnd={handleTouchEnd}
     >
       {/* Drag handle */}
-      <div className="flex touch-none items-center justify-center pt-3 pb-1">
+      <div className="flex touch-none items-center justify-center pt-3 pb-2">
         <div className="h-1.5 w-12 rounded-full bg-white/30" />
       </div>
 
       {/* Content */}
-      <div className="h-[calc(100%-24px)] overflow-hidden">{children}</div>
+      <div className="h-[calc(100%-28px)] overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]">{children}</div>
     </div>
   );
 };

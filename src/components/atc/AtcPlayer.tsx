@@ -12,7 +12,7 @@ interface AtcPlayerProps {
 export function AtcPlayer({ icao, onClose, onlineAtc }: AtcPlayerProps) {
   if (onlineAtc) {
     return (
-      <div className="animate-scale-in fixed bottom-24 left-1/2 z-[10013] w-[320px] -translate-x-1/2 rounded-2xl border border-green-500/20 bg-black/90 p-4 backdrop-blur-xl">
+      <div className="animate-scale-in fixed bottom-24 left-1/2 z-[10013] w-[calc(100vw-2rem)] max-w-[320px] -translate-x-1/2 rounded-2xl border border-green-500/20 bg-black/90 p-4 backdrop-blur-xl">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -71,7 +71,7 @@ export function AtcPlayer({ icao, onClose, onlineAtc }: AtcPlayerProps) {
   };
 
   return (
-    <div className="animate-scale-in fixed bottom-24 left-1/2 z-[10013] w-[320px] -translate-x-1/2 rounded-2xl border border-white/10 bg-black/90 p-4 backdrop-blur-xl">
+    <div className="animate-scale-in fixed bottom-24 left-1/2 z-[10013] w-[calc(100vw-2rem)] max-w-[320px] -translate-x-1/2 rounded-2xl border border-white/10 bg-black/90 p-4 backdrop-blur-xl">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">

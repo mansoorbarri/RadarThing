@@ -303,50 +303,73 @@ export function FlightReplayControls({
         </div>
 
         {/* Controls */}
-        <div className={`flex items-center ${isMobile ? "gap-2" : "gap-4"}`}>
-          {/* Play/Pause Button */}
-          <button
-            onClick={handleTogglePlay}
-            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-amber-500 text-black transition-colors hover:bg-amber-400"
-          >
-            {replay.isPlaying ? <PauseIcon /> : <PlayIcon />}
-          </button>
+        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center gap-4"}`}>
+          <div className={`flex items-center ${isMobile ? "gap-2" : "gap-4"}`}>
+            {/* Play/Pause Button */}
+            <button
+              onClick={handleTogglePlay}
+              className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-amber-500 text-black transition-colors hover:bg-amber-400"
+            >
+              {replay.isPlaying ? <PauseIcon /> : <PlayIcon />}
+            </button>
 
-          {/* Progress Section */}
-          <div className="flex flex-1 flex-col gap-1">
-            {/* Progress bar */}
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.001"
-              value={replay.progress}
-              onChange={handleProgressChange}
-              className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-amber-500 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500"
-            />
-            {/* Time display */}
-            <div className="flex justify-between font-mono text-[10px] text-white/50">
-              <span>{formatTime(replay.elapsedTime)}</span>
-              <span>{formatTime(replay.totalDuration)}</span>
+            {/* Progress Section */}
+            <div className="flex flex-1 flex-col gap-1">
+              {/* Progress bar */}
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.001"
+                value={replay.progress}
+                onChange={handleProgressChange}
+                className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-amber-500 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500"
+              />
+              {/* Time display */}
+              <div className="flex justify-between font-mono text-[10px] text-white/50">
+                <span>{formatTime(replay.elapsedTime)}</span>
+                <span>{formatTime(replay.totalDuration)}</span>
+              </div>
             </div>
+
+            {/* Speed selector - inline on desktop */}
+            {!isMobile && (
+              <div className="flex shrink-0 items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
+                {replay.speedOptions.map((speedOption) => (
+                  <button
+                    key={speedOption}
+                    onClick={() => handleSpeedChange(speedOption)}
+                    className={`cursor-pointer rounded-md px-2 py-1 font-mono text-[10px] font-bold transition-colors ${
+                      replay.speed === speedOption
+                        ? "bg-amber-500 text-black"
+                        : "text-white/60 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {speedOption}x
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Speed selector */}
-          <div className="flex shrink-0 items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
-            {replay.speedOptions.map((speedOption) => (
-              <button
-                key={speedOption}
-                onClick={() => handleSpeedChange(speedOption)}
-                className={`cursor-pointer rounded-md px-2 py-1 font-mono text-[10px] font-bold transition-colors ${
-                  replay.speed === speedOption
-                    ? "bg-amber-500 text-black"
-                    : "text-white/60 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                {speedOption}x
-              </button>
-            ))}
-          </div>
+          {/* Speed selector - full-width row on mobile */}
+          {isMobile && (
+            <div className="flex items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
+              {replay.speedOptions.map((speedOption) => (
+                <button
+                  key={speedOption}
+                  onClick={() => handleSpeedChange(speedOption)}
+                  className={`flex-1 cursor-pointer rounded-md py-1.5 font-mono text-[10px] font-bold transition-colors ${
+                    replay.speed === speedOption
+                      ? "bg-amber-500 text-black"
+                      : "text-white/60 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  {speedOption}x
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

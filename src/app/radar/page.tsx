@@ -509,7 +509,7 @@ export default function ATCPage() {
           {isMapLoaded && isMobile && !showMobileSearch && (
             <button
               onClick={() => setShowMobileSearch(true)}
-              className="pointer-events-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-black/60 backdrop-blur-md"
+              className="pointer-events-auto flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-black/60 backdrop-blur-md"
             >
               <svg
                 className="h-4 w-4 text-cyan-400"
@@ -605,7 +605,7 @@ export default function ATCPage() {
             }}
           />
           {/* Bottom sheet */}
-          <div className="animate-in slide-in-from-bottom fixed inset-x-0 bottom-0 z-[10020] rounded-t-2xl border-t border-white/10 bg-[#0a1219] px-4 pt-3 pb-8 duration-200">
+          <div className="animate-in slide-in-from-bottom fixed inset-x-0 bottom-0 z-[10020] rounded-t-2xl border-t border-white/10 bg-[#0a1219] px-4 pt-3 pb-8 duration-200" style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }}>
             {/* Drag handle */}
             <div className="mb-4 flex justify-center">
               <div className="h-1 w-10 rounded-full bg-white/20" />
@@ -795,7 +795,7 @@ export default function ATCPage() {
 
       {/* Right panels - hidden on mobile */}
       {!isMobile && activeRightPanel === "fids" && (
-        <aside className="animate-slide-in-right fixed inset-y-0 right-0 z-[10012] w-[420px] border-l border-white/10 bg-black/80 backdrop-blur-xl">
+        <aside className="animate-slide-in-right fixed inset-y-0 right-0 z-[10012] w-full max-w-[420px] border-l border-white/10 bg-black/80 backdrop-blur-xl">
           <FIDSPanel
             aircrafts={aircrafts}
             onTrack={(ac) => {
@@ -808,7 +808,7 @@ export default function ATCPage() {
       )}
 
       {!isMobile && activeRightPanel === "filter" && (
-        <aside className="animate-slide-in-right fixed inset-y-0 right-0 z-[10013] w-[360px] border-l border-white/10 bg-black/80 backdrop-blur-xl">
+        <aside className="animate-slide-in-right fixed inset-y-0 right-0 z-[10013] w-full max-w-[360px] border-l border-white/10 bg-black/80 backdrop-blur-xl">
           <CallsignFilter
             aircrafts={aircrafts}
             selectedCallsigns={selectedCallsigns}
@@ -818,10 +818,11 @@ export default function ATCPage() {
         </aside>
       )}
 
-      {/* Control dock - hidden on mobile and when chart side panel is open */}
-      {!isMobile && !(chartOverlayActive && selectedAirport?.icao) && (
+      {/* Control dock - compact on mobile, hidden when chart side panel is open */}
+      {!(chartOverlayActive && selectedAirport?.icao) && (
         <ControlDock
           side="right"
+          isMobile={isMobile}
           bottomAction={{
             icon: <RotateCcw size={18} strokeWidth={1.8} />,
             label: "Reset map view",
@@ -904,7 +905,7 @@ export default function ATCPage() {
           className={`animate-fade-in-up fixed left-1/2 z-[10012] -translate-x-1/2 ${isMobile ? "bottom-3" : "bottom-6"}`}
         >
           <div
-            className={`flex items-center rounded-2xl border border-white/10 bg-black/80 backdrop-blur-xl ${isMobile ? "gap-2 px-3 py-2" : "gap-4 px-5 py-3"}`}
+            className={`flex items-center rounded-2xl border border-white/10 bg-black/80 backdrop-blur-xl ${isMobile ? "max-w-[calc(100vw-2rem)] gap-1.5 px-2.5 py-2" : "gap-4 px-5 py-3"}`}
           >
             <div>
               <div
@@ -919,50 +920,47 @@ export default function ATCPage() {
               )}
             </div>
 
-            {!isMobile &&
-              (isProUser ? (
-                <button
-                  onClick={() => setShowTaxiChart(true)}
-                  className="cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-[10px] text-cyan-300"
-                >
-                  Charts
-                </button>
-              ) : (
-                <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5">
-                  <span className="text-[10px] text-white/60">Charts</span>
-                  <ProBadge source="radar_airport_charts_badge" />
-                </div>
-              ))}
+            {isProUser ? (
+              <button
+                onClick={() => setShowTaxiChart(true)}
+                className={`cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 ${isMobile ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
+              >
+                Charts
+              </button>
+            ) : (
+              <div className={`flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 ${isMobile ? "px-2 py-1" : "px-3 py-1.5"}`}>
+                <span className={`text-white/60 ${isMobile ? "text-[9px]" : "text-[10px]"}`}>Charts</span>
+                <ProBadge source="radar_airport_charts_badge" />
+              </div>
+            )}
 
             <button
               onClick={() => setShowAirportFID(!showAirportFID)}
-              className={`cursor-pointer rounded-lg border px-3 py-1.5 text-[10px] transition-colors ${
+              className={`cursor-pointer rounded-lg border transition-colors ${
                 showAirportFID
                   ? "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
                   : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
-              } ${isMobile ? "px-2 py-1 text-[9px]" : ""}`}
+              } ${isMobile ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
             >
-              {isMobile ? "FID" : "Flights"}
+              {isMobile ? "FIDs" : "Flights"}
             </button>
 
-            <button
-              onClick={() => setShowAtcPlayer(!showAtcPlayer)}
-              className={`cursor-pointer rounded-lg border px-3 py-1.5 text-[10px] transition-colors ${
-                showAtcPlayer
-                  ? onlineAtcForSelected
-                    ? "border-green-500/50 bg-green-500/20 text-green-300"
-                    : "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
-                  : onlineAtcForSelected
-                    ? "border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20"
-                    : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
-              } ${isMobile ? "px-2 py-1 text-[9px]" : ""}`}
-            >
-              {isMobile
-                ? "📻"
-                : onlineAtcForSelected
-                  ? "Live ATC"
-                  : "ATC Audio"}
-            </button>
+            {!isMobile && (
+              <button
+                onClick={() => setShowAtcPlayer(!showAtcPlayer)}
+                className={`cursor-pointer rounded-lg border px-3 py-1.5 text-[10px] transition-colors ${
+                  showAtcPlayer
+                    ? onlineAtcForSelected
+                      ? "border-green-500/50 bg-green-500/20 text-green-300"
+                      : "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
+                    : onlineAtcForSelected
+                      ? "border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20"
+                      : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
+                }`}
+              >
+                {onlineAtcForSelected ? "Live ATC" : "ATC Audio"}
+              </button>
+            )}
 
             <button
               onClick={() => {
@@ -1063,7 +1061,7 @@ export default function ATCPage() {
         ) : (
           <aside
             className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10014] border-l border-white/10 bg-black/90 backdrop-blur-xl transition-[width] duration-300 ease-in-out ${
-              isSidebarCollapsed ? "w-12" : "w-[400px]"
+              isSidebarCollapsed ? "w-12" : "w-full max-w-[400px]"
             }`}
           >
             {/* Collapse/Expand toggle button */}
