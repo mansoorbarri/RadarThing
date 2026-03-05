@@ -592,27 +592,7 @@ export default function AirportChartsPage() {
                 />
               </div>
 
-              {/* Success Animation */}
-              {submitStage === "success" && (
-                <div className="relative flex flex-col items-center justify-center overflow-hidden py-6">
-                  <div className="relative z-10">
-                    <div className="absolute inset-0 animate-ping rounded-full border-2 border-cyan-400/50" />
-                    <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/40">
-                      <Map className="h-8 w-8 text-white" />
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                    <span className="font-semibold text-emerald-400">
-                      Submitted for Review!
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Your charts are now in the queue
-                  </p>
-                </div>
-              )}
+              {/* Success overlay is rendered outside the form */}
 
               <button
                 type="submit"
@@ -628,6 +608,68 @@ export default function AirportChartsPage() {
                 {getButtonContent()}
               </button>
             </form>
+
+            {/* Success Overlay — covers entire modal */}
+            {submitStage === "success" && (
+              <div className="absolute inset-0 z-50 flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-[#0a0f14]">
+                {/* Subtle grid pattern background */}
+                <div className="pointer-events-none absolute inset-0 opacity-[0.04]"
+                  style={{ backgroundImage: "linear-gradient(rgba(34,211,238,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.5) 1px, transparent 1px)", backgroundSize: "32px 32px" }}
+                />
+
+                {/* Expanding location pulse */}
+                <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                  <div className="absolute -inset-10 animate-[mapPulse_1.5s_ease-out_forwards] rounded-full border border-cyan-400/30 opacity-0" />
+                  <div className="absolute -inset-16 animate-[mapPulse_1.5s_ease-out_0.2s_forwards] rounded-full border border-cyan-400/15 opacity-0" />
+                  <div className="absolute -inset-24 animate-[mapPulse_1.5s_ease-out_0.4s_forwards] rounded-full border border-cyan-400/[0.07] opacity-0" />
+                </div>
+
+                {/* Center content */}
+                <div className="relative z-10 flex flex-col items-center animate-[fadeInUp_0.5s_ease-out_forwards]"
+                  style={{ opacity: 0 }}>
+                  {/* Map pin drop effect */}
+                  <div className="relative mb-5">
+                    <div className="absolute -bottom-1 left-1/2 h-2 w-10 -translate-x-1/2 animate-[pinShadow_0.4s_ease-out_forwards] rounded-full bg-cyan-400/20 blur-sm" style={{ opacity: 0 }} />
+                    <div className="relative flex h-20 w-20 animate-[pinDrop_0.4s_cubic-bezier(0.34,1.56,0.64,1)_forwards] items-center justify-center rounded-full border border-cyan-500/30 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 shadow-[0_0_40px_rgba(34,211,238,0.15)]"
+                      style={{ transform: "translateY(-20px)", opacity: 0 }}>
+                      <Map className="h-9 w-9 text-cyan-400" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                    <span className="text-lg font-semibold text-emerald-400">
+                      Submitted for Review!
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-sm text-slate-500">
+                    Your charts are now in the queue
+                  </p>
+                </div>
+
+                <style jsx>{`
+                  @keyframes mapPulse {
+                    0% { transform: scale(0.5); opacity: 0; }
+                    30% { opacity: 1; }
+                    100% { transform: scale(1); opacity: 0; }
+                  }
+                  @keyframes pinDrop {
+                    0% { transform: translateY(-20px); opacity: 0; }
+                    60% { transform: translateY(2px); opacity: 1; }
+                    100% { transform: translateY(0); opacity: 1; }
+                  }
+                  @keyframes pinShadow {
+                    0% { transform: translateX(-50%) scale(0.3); opacity: 0; }
+                    60% { transform: translateX(-50%) scale(1.1); opacity: 0.3; }
+                    100% { transform: translateX(-50%) scale(1); opacity: 0.2; }
+                  }
+                  @keyframes fadeInUp {
+                    0% { transform: translateY(12px); opacity: 0; }
+                    100% { transform: translateY(0); opacity: 1; }
+                  }
+                `}</style>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -692,83 +692,7 @@ export default function AircraftImagesPage() {
                 />
               </div>
 
-              {/* Success Animation Overlay - Aviation Themed */}
-              {submitStage === "success" && (
-                <div className="relative flex flex-col items-center justify-center overflow-hidden py-6">
-                  {/* Animated plane flying across */}
-                  <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute top-1/2 left-0 -translate-y-1/2 animate-[fly_1.5s_ease-out_forwards]">
-                      <Plane className="h-6 w-6 rotate-[-30deg] text-cyan-400" />
-                    </div>
-                  </div>
-
-                  {/* Contrail effect */}
-                  <div className="absolute top-1/2 left-0 h-0.5 w-full -translate-y-1/2 overflow-hidden">
-                    <div className="h-full w-0 animate-[trail_1.5s_ease-out_forwards] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
-                  </div>
-
-                  {/* Main success icon with radar ping effect */}
-                  <div className="relative z-10">
-                    <div className="absolute inset-0 animate-[radar_1s_ease-out_forwards] rounded-full border-2 border-cyan-400/50" />
-                    <div className="absolute inset-0 animate-[radar_1s_ease-out_0.3s_forwards] rounded-full border-2 border-cyan-400/30" />
-                    <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/40">
-                      <Plane className="h-8 w-8 text-white" />
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                    <span className="font-semibold text-emerald-400">
-                      Cleared for Review!
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Your image is now in the queue
-                  </p>
-
-                  {/* Custom keyframes via style tag */}
-                  <style jsx>{`
-                    @keyframes fly {
-                      0% {
-                        transform: translateX(-20px) translateY(-50%)
-                          rotate(-30deg);
-                        opacity: 0;
-                      }
-                      20% {
-                        opacity: 1;
-                      }
-                      100% {
-                        transform: translateX(calc(100vw + 20px))
-                          translateY(-50%) rotate(-30deg);
-                        opacity: 0;
-                      }
-                    }
-                    @keyframes trail {
-                      0% {
-                        width: 0;
-                        opacity: 0;
-                      }
-                      20% {
-                        opacity: 1;
-                      }
-                      100% {
-                        width: 100%;
-                        opacity: 0;
-                      }
-                    }
-                    @keyframes radar {
-                      0% {
-                        transform: scale(1);
-                        opacity: 1;
-                      }
-                      100% {
-                        transform: scale(2.5);
-                        opacity: 0;
-                      }
-                    }
-                  `}</style>
-                </div>
-              )}
+              {/* Success overlay is rendered outside the form */}
 
               <button
                 type="submit"
@@ -784,6 +708,84 @@ export default function AircraftImagesPage() {
                 {getButtonContent()}
               </button>
             </form>
+
+            {/* Success Overlay — covers entire modal */}
+            {submitStage === "success" && (
+              <div className="absolute inset-0 z-50 flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-[#0a0f14]">
+                {/* Radar sweep glow */}
+                <div className="pointer-events-none absolute inset-0">
+                  <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 animate-[radarSweep_2s_linear_infinite] rounded-full opacity-30"
+                    style={{ background: "conic-gradient(from 0deg, transparent 0deg, rgba(34,211,238,0.4) 40deg, transparent 80deg)" }}
+                  />
+                </div>
+
+                {/* Concentric radar rings */}
+                <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                  <div className="absolute -inset-12 rounded-full border border-cyan-500/10" />
+                  <div className="absolute -inset-20 rounded-full border border-cyan-500/[0.06]" />
+                  <div className="absolute -inset-28 rounded-full border border-cyan-500/[0.03]" />
+                </div>
+
+                {/* Animated plane flyover */}
+                <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                  <div className="absolute top-[38%] animate-[planePass_1.8s_cubic-bezier(0.4,0,0.2,1)_0.2s_forwards]"
+                    style={{ left: "-40px", opacity: 0 }}>
+                    <Plane className="h-5 w-5 -rotate-12 text-cyan-400/70" />
+                  </div>
+                  {/* Contrail */}
+                  <div className="absolute top-[38%] mt-2.5 h-px w-0 animate-[contrail_1.8s_cubic-bezier(0.4,0,0.2,1)_0.2s_forwards] bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent" />
+                </div>
+
+                {/* Center content */}
+                <div className="relative z-10 flex flex-col items-center animate-[fadeInUp_0.5s_ease-out_forwards]"
+                  style={{ opacity: 0 }}>
+                  {/* Ping rings */}
+                  <div className="relative mb-5">
+                    <div className="absolute inset-0 animate-[ping_1.2s_ease-out_forwards] rounded-full border-2 border-cyan-400/40" />
+                    <div className="absolute inset-0 animate-[ping_1.2s_ease-out_0.25s_forwards] rounded-full border border-cyan-400/20" />
+                    <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-cyan-500/30 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 shadow-[0_0_40px_rgba(34,211,238,0.15)]">
+                      <Plane className="h-9 w-9 text-cyan-400" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                    <span className="text-lg font-semibold text-emerald-400">
+                      Cleared for Review!
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-sm text-slate-500">
+                    Your image is now in the queue
+                  </p>
+                </div>
+
+                <style jsx>{`
+                  @keyframes radarSweep {
+                    from { transform: translate(-50%, -50%) rotate(0deg); }
+                    to { transform: translate(-50%, -50%) rotate(360deg); }
+                  }
+                  @keyframes planePass {
+                    0% { transform: translateX(0); opacity: 0; }
+                    10% { opacity: 0.7; }
+                    90% { opacity: 0.7; }
+                    100% { transform: translateX(calc(100vw + 80px)); opacity: 0; }
+                  }
+                  @keyframes contrail {
+                    0% { width: 0; opacity: 0; }
+                    10% { opacity: 0.5; }
+                    100% { width: 100%; opacity: 0; }
+                  }
+                  @keyframes ping {
+                    0% { transform: scale(1); opacity: 1; }
+                    100% { transform: scale(2.8); opacity: 0; }
+                  }
+                  @keyframes fadeInUp {
+                    0% { transform: translateY(12px); opacity: 0; }
+                    100% { transform: translateY(0); opacity: 1; }
+                  }
+                `}</style>
+              </div>
+            )}
           </div>
         </div>
       )}
