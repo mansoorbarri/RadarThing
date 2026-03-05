@@ -15,7 +15,6 @@ import type * as crons from "../crons.js";
 import type * as flights from "../flights.js";
 import type * as lib_airlineCodes from "../lib/airlineCodes.js";
 import type * as lib_icaoRegions from "../lib/icaoRegions.js";
-import type * as missingImageNotifications from "../missingImageNotifications.js";
 import type * as users from "../users.js";
 
 import type {
@@ -32,7 +31,6 @@ declare const fullApi: ApiFromModules<{
   flights: typeof flights;
   "lib/airlineCodes": typeof lib_airlineCodes;
   "lib/icaoRegions": typeof lib_icaoRegions;
-  missingImageNotifications: typeof missingImageNotifications;
   users: typeof users;
 }>;
 

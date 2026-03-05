@@ -5,16 +5,15 @@ import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { getProAndAdminStatus } from "~/app/actions/is-pro";
-import { Plane, Bell, ImageIcon, Map, Crown } from "lucide-react";
+import { Plane, ImageIcon, Map, Crown } from "lucide-react";
 
 import { AdminHeader } from "./_components/AdminHeader";
 import { AdminAccessDenied } from "./_components/AdminAccessDenied";
 import { AdminSkeleton } from "./_components/skeletons";
 import { AircraftImagesTab } from "./_components/AircraftImagesTab";
-import { MissingNotificationsTab } from "./_components/MissingNotificationsTab";
 import { AirportChartsTab } from "./_components/AirportChartsTab";
 import { ProManagementTab } from "./_components/ProManagementTab";
-type MainTab = "images" | "charts" | "notifications" | "pro";
+type MainTab = "images" | "charts" | "pro";
 
 export default function AdminPage() {
   const { isSignedIn, isLoaded } = useUser();
@@ -26,17 +25,13 @@ export default function AdminPage() {
   // Queries for counts in tab badges
   const pendingQuery = useQuery(api.aircraftImages.getPending);
   const pendingChartsQuery = useQuery(api.airportCharts.getPending);
-  const notificationsQuery = useQuery(api.missingImageNotifications.getAll);
-
   const pendingCount = pendingQuery?.length ?? 0;
   const pendingChartsCount = pendingChartsQuery?.length ?? 0;
-  const notificationsCount = notificationsQuery?.length ?? 0;
 
   const loading =
     !adminCheckDone ||
     pendingQuery === undefined ||
-    pendingChartsQuery === undefined ||
-    notificationsQuery === undefined;
+    pendingChartsQuery === undefined;
 
   // Check admin status
   useEffect(() => {
@@ -108,20 +103,6 @@ export default function AdminPage() {
               </span>
             )}
           </button>
-          <button
-            onClick={() => setMainTab("notifications")}
-            className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-all ${
-              mainTab === "notifications"
-                ? "bg-cyan-500/20 text-cyan-400"
-                : "bg-white/5 text-slate-400 hover:bg-white/10"
-            }`}
-          >
-            <Bell className="h-4 w-4" />
-            Missing Notifications
-            <span className="ml-1 rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-400">
-              {notificationsCount}
-            </span>
-          </button>
           {isSuperAdmin && (
             <button
               onClick={() => setMainTab("pro")}
@@ -139,7 +120,6 @@ export default function AdminPage() {
 
         {mainTab === "images" && <AircraftImagesTab />}
         {mainTab === "charts" && <AirportChartsTab />}
-        {mainTab === "notifications" && <MissingNotificationsTab />}
         {mainTab === "pro" && <ProManagementTab />}
       </main>
     </div>

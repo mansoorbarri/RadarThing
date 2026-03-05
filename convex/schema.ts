@@ -82,14 +82,6 @@ export default defineSchema({
       "isApproved",
     ]),
 
-  // Track missing aircraft images for admin review
-  missingImageNotifications: defineTable({
-    airlineCode: v.string(), // IATA or ICAO code
-    aircraftType: v.string(), // Normalized type (e.g., "B777", "A320")
-    discordMessageId: v.optional(v.string()), // Deprecated - kept for existing records
-    note: v.optional(v.string()), // Optional note/description
-  }).index("by_airline_aircraft", ["airlineCode", "aircraftType"]),
-
   // Airport charts (SIDs, STARs, approaches, taxi)
   airportCharts: defineTable({
     icao: v.string(),

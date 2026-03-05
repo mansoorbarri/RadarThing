@@ -378,12 +378,6 @@ export async function createAircraftImage(data: {
         id: image.id as Id<"aircraftImages">,
         approvedBy: userId,
       });
-      // Remove from missingImageNotifications table (handles both IATA and ICAO in one call)
-      await convex.mutation(api.missingImageNotifications.removeByCodes, {
-        airlineIata: data.airlineIata,
-        airlineIcao: data.airlineIcao,
-        aircraftType: data.aircraftType,
-      });
       // Refetch the approved image
       const approvedImage = await convex.query(api.aircraftImages.getById, {
         id: image.id as Id<"aircraftImages">,
@@ -523,13 +517,6 @@ export async function resolveImageConflict(
         approvedBy: userId,
       });
 
-      // Remove from missingImageNotifications table (handles both IATA and ICAO in one call)
-      await convex.mutation(api.missingImageNotifications.removeByCodes, {
-        airlineIata: keepImage.airlineIata,
-        airlineIcao: keepImage.airlineIcao,
-        aircraftType: keepImage.aircraftType,
-      });
-
       // Send approval email
       await sendImageNotificationEmail(keepImage.uploadedBy, "approved", {
         airlineIata: keepImage.airlineIata,
@@ -591,13 +578,6 @@ export async function approveAircraftImage(
     await convex.mutation(api.aircraftImages.approve, {
       id: id as Id<"aircraftImages">,
       approvedBy: userId,
-    });
-
-    // Remove from missingImageNotifications table (handles both IATA and ICAO in one call)
-    await convex.mutation(api.missingImageNotifications.removeByCodes, {
-      airlineIata: imageToApprove.airlineIata,
-      airlineIcao: imageToApprove.airlineIcao,
-      aircraftType: imageToApprove.aircraftType,
     });
 
     // Send approval notification email
@@ -773,9 +753,8 @@ export async function bulkApproveAircraftImages(
       approvedBy: userId,
     });
 
-    // Delete old images from UploadThing, clean up notifications, and send emails
+    // Delete old images from UploadThing and send emails
     const deletePromises: Promise<void>[] = [];
-    const cleanupPromises: Promise<void>[] = [];
     const emailPromises: Promise<void>[] = [];
 
     for (let i = 0; i < results.length; i++) {
@@ -792,18 +771,8 @@ export async function bulkApproveAircraftImages(
           );
         }
 
-        // Clean up notifications and send email
+        // Send approval email
         if (image) {
-          // Remove from missingImageNotifications table (handles both IATA and ICAO in one call)
-          cleanupPromises.push(
-            convex
-              .mutation(api.missingImageNotifications.removeByCodes, {
-                airlineIata: image.airlineIata,
-                airlineIcao: image.airlineIcao,
-                aircraftType: image.aircraftType,
-              })
-              .then(() => undefined),
-          );
           emailPromises.push(
             sendImageNotificationEmail(image.uploadedBy, "approved", {
               airlineIata: image.airlineIata,
@@ -816,11 +785,7 @@ export async function bulkApproveAircraftImages(
     }
 
     // Execute all side effects in parallel
-    await Promise.all([
-      ...deletePromises,
-      ...cleanupPromises,
-      ...emailPromises,
-    ]);
+    await Promise.all([...deletePromises, ...emailPromises]);
 
     const approved = results.filter((r) => r?.success).length;
     const failed = results.filter((r) => !r?.success).length;
