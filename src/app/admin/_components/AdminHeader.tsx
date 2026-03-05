@@ -26,7 +26,13 @@ export function AdminHeader() {
             onClick={() => router.push("/aircraft-images")}
             className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
           >
-            Public Gallery
+            Aircraft Images
+          </button>
+          <button
+            onClick={() => router.push("/airport-charts")}
+            className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
+          >
+            Airport Charts
           </button>
           <button
             onClick={() => router.push("/radar")}

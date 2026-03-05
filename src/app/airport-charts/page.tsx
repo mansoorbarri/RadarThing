@@ -286,6 +286,18 @@ export default function AirportChartsPage() {
           </button>
           <div className="flex items-center gap-4">
             <button
+              onClick={() => router.push("/aircraft-images")}
+              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
+            >
+              Aircraft Images
+            </button>
+            <button
+              onClick={() => router.push("/admin")}
+              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
+            >
+              Admin
+            </button>
+            <button
               onClick={() => router.push("/radar")}
               className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
             >
