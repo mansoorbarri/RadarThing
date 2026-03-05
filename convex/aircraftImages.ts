@@ -473,6 +473,7 @@ export const updateCodes = mutation({
   },
 });
 
+
 // Find existing approved image for airline + aircraft (to delete when approving new one)
 export const findExistingApproved = query({
   args: {

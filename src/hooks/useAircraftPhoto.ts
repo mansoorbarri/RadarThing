@@ -34,11 +34,15 @@ function setCachedImage(key: string, data: AircraftPhotoData | null): void {
 }
 
 // Extract airline code from flight number/callsign
-// Supports both IATA (2-letter, e.g., "EK90" -> "EK") and ICAO (3-letter, e.g., "UAE90" -> "UAE")
+// Supports IATA (2-letter, e.g., "EK90" -> "EK"), ICAO (3-letter, e.g., "UAE90" -> "UAE"),
+// and N-numbers (e.g., "N489IF" -> "N") for general aviation aircraft
 function extractAirlineCode(flightNo: string | undefined): string | null {
   if (!flightNo) return null;
+  const trimmed = flightNo.trim().toUpperCase();
+  // Detect N-numbers (US GA registration: N followed by digits, optionally ending with letters)
+  if (/^N\d/.test(trimmed)) return "N";
   const regex = /^([A-Z]{2,3})/;
-  const match = regex.exec(flightNo.trim().toUpperCase());
+  const match = regex.exec(trimmed);
   return match?.[1] ?? null;
 }
 
