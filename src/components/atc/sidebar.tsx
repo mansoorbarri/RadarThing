@@ -243,6 +243,7 @@ export const Sidebar = ({
 }) => {
   const [tab, setTab] = useState<"info" | "history">("info");
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Real-time flight history query
@@ -605,6 +606,11 @@ export const Sidebar = ({
     setImageLoaded(false);
   }, [aircraftPhoto?.imageUrl]);
 
+  // Reset logo error when aircraft changes
+  useEffect(() => {
+    setLogoError(false);
+  }, [airlineLogo]);
+
   return (
     <div
       ref={containerRef}
@@ -673,7 +679,7 @@ export const Sidebar = ({
                     </p>
                   ))}
               </div>
-              {airlineLogo && (
+              {airlineLogo && !logoError && (
                 <div className="relative shrink-0">
                   <Image
                     src={airlineLogo}
@@ -682,6 +688,7 @@ export const Sidebar = ({
                     height={64}
                     className="rounded-2xl border border-white/20 bg-black/80 object-contain p-2 shadow-xl backdrop-blur-sm"
                     unoptimized
+                    onError={() => setLogoError(true)}
                   />
                 </div>
               )}
