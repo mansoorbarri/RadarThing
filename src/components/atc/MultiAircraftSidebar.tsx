@@ -16,6 +16,28 @@ const FLIGHT_PATH_COLORS = [
   "#22b8cf", // cyan
 ];
 
+const PlaneIcon = ({
+  size = 24,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M16 10h4a2 2 0 0 1 0 4h-4l-4 7h-3l2 -7h-4l-2 2h-3l2 -4l-2 -4h3l2 2h4l-2 -7h3z" />
+  </svg>
+);
+
 const CloseIcon = ({
   size = 24,
   className = "",
@@ -121,9 +143,9 @@ const AircraftCard = ({
       </button>
 
       <div className="flex items-start gap-3 pl-2">
-        {/* Airline logo */}
-        {airlineLogo && (
-          <div className="shrink-0">
+        {/* Airline logo or plane icon */}
+        <div className="shrink-0">
+          {airlineLogo ? (
             <Image
               src={airlineLogo}
               alt="Airline"
@@ -132,8 +154,12 @@ const AircraftCard = ({
               className="rounded-lg border border-white/10 bg-black/50 object-contain p-1"
               unoptimized
             />
-          </div>
-        )}
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-black/50 text-white/30">
+              <PlaneIcon size={18} />
+            </div>
+          )}
+        </div>
 
         {/* Flight info */}
         <div className="min-w-0 flex-1 pr-4">

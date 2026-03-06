@@ -34,6 +34,28 @@ const PlaneInflightIcon = ({
   </svg>
 );
 
+const PlaneIcon = ({
+  size = 24,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M16 10h4a2 2 0 0 1 0 4h-4l-4 7h-3l2 -7h-4l-2 2h-3l2 -4l-2 -4h3l2 2h4l-2 -7h3z" />
+  </svg>
+);
+
 const HistoryIcon = ({
   size = 24,
   className = "",
@@ -243,7 +265,6 @@ export const Sidebar = ({
 }) => {
   const [tab, setTab] = useState<"info" | "history">("info");
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [logoError, setLogoError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Real-time flight history query
@@ -606,11 +627,6 @@ export const Sidebar = ({
     setImageLoaded(false);
   }, [aircraftPhoto?.imageUrl]);
 
-  // Reset logo error when aircraft changes
-  useEffect(() => {
-    setLogoError(false);
-  }, [airlineLogo]);
-
   return (
     <div
       ref={containerRef}
@@ -641,6 +657,31 @@ export const Sidebar = ({
               {/* Dark gradient overlay for text readability */}
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#050f14] via-[#050f14]/80 to-black/40" />
             </>
+          )}
+
+          {!aircraftPhoto && (
+            <div
+              className={`${isMobile ? "mx-4 mt-3 mb-2 p-3" : "mx-6 mt-4 mb-3 p-3.5"} relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-sky-500/5 to-black/40`}
+            >
+              <div className="pointer-events-none absolute -top-5 -right-4 text-cyan-300/15">
+                <PlaneIcon size={72} />
+              </div>
+              <div className="relative">
+                <p className="font-mono text-[10px] font-black tracking-[0.18em] text-cyan-300/90 uppercase">
+                  No Aircraft Image
+                </p>
+                <p className="mt-0.5 max-w-[280px] font-mono text-[10px] leading-relaxed text-white/60">
+                  Help the community identify this aircraft by uploading a
+                  photo.
+                </p>
+                <Link
+                  href="/aircraft-images"
+                  className="mt-2 inline-flex rounded-lg border border-cyan-400/40 bg-cyan-500/20 px-3 py-1.5 font-mono text-[10px] font-black tracking-wide text-cyan-200 transition-colors hover:bg-cyan-500/30"
+                >
+                  Upload at /aircraft-images
+                </Link>
+              </div>
+            </div>
           )}
 
           {/* Flight Info Overlay */}
@@ -679,8 +720,8 @@ export const Sidebar = ({
                     </p>
                   ))}
               </div>
-              {airlineLogo && !logoError && (
-                <div className="relative shrink-0">
+              <div className="relative shrink-0">
+                {airlineLogo ? (
                   <Image
                     src={airlineLogo}
                     alt="Airline Logo"
@@ -688,10 +729,13 @@ export const Sidebar = ({
                     height={64}
                     className="rounded-2xl border border-white/20 bg-black/80 object-contain p-2 shadow-xl backdrop-blur-sm"
                     unoptimized
-                    onError={() => setLogoError(true)}
                   />
-                </div>
-              )}
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-black/50 text-white/20 backdrop-blur-sm">
+                    <PlaneIcon size={32} />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
