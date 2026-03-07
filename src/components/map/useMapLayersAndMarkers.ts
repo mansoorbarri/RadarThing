@@ -799,7 +799,16 @@ export const useMapLayersAndMarkers = ({
 
         // Bind hover tooltip for online ATC airports
         if (isOnline && onlineEntry) {
-          marker.bindTooltip(`ATC Online — ${onlineEntry.user}`, {
+          const tooltipText =
+            onlineEntry.controllers.length === 1
+              ? `ATC Online — ${onlineEntry.controllers[0]!.user}`
+              : onlineEntry.controllers
+                  .map(
+                    (c) =>
+                      `${c.position.charAt(0).toUpperCase() + c.position.slice(1)}: ${c.user}`,
+                  )
+                  .join(" | ");
+          marker.bindTooltip(tooltipText, {
             direction: "top",
             offset: [0, -10],
             opacity: 0.95,

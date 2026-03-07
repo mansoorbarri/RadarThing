@@ -3,6 +3,39 @@
 import { Radio, X, ExternalLink, Headphones } from "lucide-react";
 import { type OnlineAirport } from "~/hooks/useAircraftStream";
 
+const POSITION_LABELS: Record<string, string> = {
+  control: "Control",
+  tower: "Tower",
+  ground: "Ground",
+  delivery: "Delivery",
+};
+
+const POSITIONS_ORDER = ["control", "tower", "ground", "delivery"] as const;
+
+function getCoveredPositions(
+  position: string,
+  allControllers: readonly { position: string }[],
+): string[] {
+  const posIdx = POSITIONS_ORDER.indexOf(
+    position as (typeof POSITIONS_ORDER)[number],
+  );
+  if (posIdx === -1) return [position];
+
+  const takenPositions = new Set(allControllers.map((c) => c.position));
+  const covered: string[] = [];
+
+  for (let i = posIdx; i < POSITIONS_ORDER.length; i++) {
+    const pos = POSITIONS_ORDER[i]!;
+    if (i === posIdx || !takenPositions.has(pos)) {
+      covered.push(pos);
+    } else {
+      break;
+    }
+  }
+
+  return covered;
+}
+
 interface AtcPlayerProps {
   icao: string;
   onClose: () => void;
@@ -17,7 +50,9 @@ export function AtcPlayer({ icao, onClose, onlineAtc }: AtcPlayerProps) {
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Radio className="h-4 w-4 text-green-400" />
-            <span className="font-mono text-sm text-green-400">{icao} ATC</span>
+            <span className="font-mono text-sm text-green-400">
+              {icao} ATC
+            </span>
           </div>
           <button
             onClick={onClose}
@@ -28,18 +63,45 @@ export function AtcPlayer({ icao, onClose, onlineAtc }: AtcPlayerProps) {
         </div>
 
         {/* Content */}
-        <div className="mb-4 flex flex-col items-center rounded-xl bg-gradient-to-b from-green-500/10 to-transparent py-6">
+        <div className="mb-4 flex flex-col items-center rounded-xl bg-gradient-to-b from-green-500/10 to-transparent py-4">
           <div className="relative mb-3">
-            <Radio className="h-10 w-10 text-green-400" />
+            <Radio className="h-8 w-8 text-green-400" />
             <span className="absolute -top-1 -right-1 flex h-3 w-3">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
               <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500" />
             </span>
           </div>
-          <p className="mb-1 text-sm font-medium text-white">Live ATC Online</p>
-          <p className="text-xs text-green-300/80">
-            Controller: {onlineAtc.user}
-          </p>
+          <p className="mb-2 text-sm font-medium text-white">Live ATC Online</p>
+
+          {/* Controllers list */}
+          <div className="w-full space-y-1.5 px-4">
+            {onlineAtc.controllers.map((controller) => {
+              const covered = getCoveredPositions(
+                controller.position,
+                onlineAtc.controllers,
+              );
+              const label =
+                covered.length === POSITIONS_ORDER.length
+                  ? "All Positions"
+                  : covered
+                      .map((p) => POSITION_LABELS[p] ?? p)
+                      .join(" + ");
+
+              return (
+                <div
+                  key={controller.discordUserId ?? controller.user}
+                  className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-1.5"
+                >
+                  <span className="text-xs text-green-300/80">
+                    {controller.user}
+                  </span>
+                  <span className="text-[10px] font-medium text-green-400/60">
+                    {label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Actions */}

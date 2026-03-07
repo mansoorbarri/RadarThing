@@ -1,11 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { type PositionUpdate, activeAircraft } from "~/lib/aircraft-store";
 
+export interface OnlineAirportController {
+  user: string;
+  discordUserId: string | null;
+  position: "control" | "tower" | "ground" | "delivery";
+  activatedAt: number;
+}
+
 export interface OnlineAirport {
   icao: string;
-  user: string;
   discordInvite: string;
-  activatedAt: number;
+  controllers: OnlineAirportController[];
 }
 
 export const useAircraftStream = () => {
