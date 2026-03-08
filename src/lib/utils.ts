@@ -44,6 +44,14 @@ export function normalizeAircraftType(type: string | undefined): string | null {
   const beechMatch = /BE\d{2}/.exec(cleaned);
   if (beechMatch) return beechMatch[0];
 
+  // McDonnell Douglas: "MD-11", "MD-80", "MD-90" -> "MD11", "MD80", "MD90"
+  const mdMatch = /MD-?(\d{2,3})/.exec(cleaned);
+  if (mdMatch) return `MD${mdMatch[1]}`;
+
+  // Douglas: "DC-10", "DC-8", "DC-9" -> "DC10", "DC8", "DC9"
+  const dcMatch = /DC-?(\d{1,2})/.exec(cleaned);
+  if (dcMatch) return `DC${dcMatch[1]}`;
+
   const firstWord = cleaned.split(/[\s-]/)[0];
   return firstWord || null;
 }
