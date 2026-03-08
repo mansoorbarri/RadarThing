@@ -3,6 +3,8 @@
 import React, { useMemo } from "react";
 import Image from "next/image";
 import { type PositionUpdate } from "~/lib/aircraft-store";
+import { useUnitPreferences } from "~/hooks/useUnitPreferences";
+import { formatSpeed, formatAltitude, speedSuffix } from "~/lib/units";
 
 // Flight path colors matching useFlightPlanDrawing.ts
 const FLIGHT_PATH_COLORS = [
@@ -96,17 +98,15 @@ const AircraftCard = ({
 }: AircraftCardProps) => {
   const color = FLIGHT_PATH_COLORS[colorIndex % FLIGHT_PATH_COLORS.length]!;
   const airlineLogo = getAirlineLogoFromFlightNumber(aircraft.flightNo);
+  const { speedUnit, altitudeUnit } = useUnitPreferences();
 
   const displayValues = useMemo(() => {
     const altMSL = Number(aircraft.altMSL ?? aircraft.alt ?? 0);
-    const mslVal =
-      altMSL >= 18000
-        ? `FL${Math.round(altMSL / 100)}`
-        : `${Math.round(altMSL).toLocaleString()}`;
+    const speedKts = Number(aircraft.speed ?? 0);
 
     return {
-      altitude: mslVal,
-      speed: String(Math.round(Number(aircraft.speed ?? 0))),
+      altitude: formatAltitude(altMSL, altitudeUnit),
+      speed: formatSpeed(speedKts, speedUnit, altMSL),
       heading: `${Math.round(Number(aircraft.heading ?? 0))}°`,
       phase: getFlightPhase(
         Number(aircraft.alt ?? 0),
@@ -121,6 +121,8 @@ const AircraftCard = ({
     aircraft.heading,
     aircraft.vspeed,
     aircraft.flightPlan,
+    speedUnit,
+    altitudeUnit,
   ]);
 
   return (
@@ -191,7 +193,7 @@ const AircraftCard = ({
         </div>
         <div>
           <span className="text-white/40">SPD </span>
-          <span className="text-white/80">{displayValues.speed}kt</span>
+          <span className="text-white/80">{displayValues.speed}{speedSuffix(speedUnit)}</span>
         </div>
         <div>
           <span className="text-white/40">HDG </span>

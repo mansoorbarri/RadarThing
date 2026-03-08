@@ -1,5 +1,6 @@
 import L from "leaflet";
 import { type PositionUpdate } from "~/lib/aircraft-store";
+import { formatSpeed, formatAltitude, speedSuffix, type UnitPreferences, DEFAULT_UNIT_PREFERENCES } from "~/lib/units";
 
 const EMERGENCY_SQUAWKS = new Set(["7700", "7600", "7500"]);
 
@@ -65,6 +66,7 @@ export const getAircraftDivIcon = (
   selectedAircraftId: string | null,
   showTags = true,
   isMobile = false,
+  unitPrefs: UnitPreferences = DEFAULT_UNIT_PREFERENCES,
 ) => {
   const iconUrl = "https://i.ibb.co/6cNhyMMj/1.png";
   const planeSize = isMobile ? 24 : 28;
@@ -83,9 +85,10 @@ export const getAircraftDivIcon = (
   const isOnGround = altAGL < 100;
   const displayAlt = isOnGround
     ? `${altAGL.toFixed(0)}`
-    : altMSL >= 18000
-      ? `FL${Math.round(altMSL / 100)}`
-      : `${Math.round(altAGL / 100) * 100}`;
+    : formatAltitude(altMSL, unitPrefs.altitudeUnit);
+  const displaySpeed = isOnGround
+    ? `${aircraft.speed.toFixed(0)}kt`
+    : `${formatSpeed(aircraft.speed, unitPrefs.speedUnit, altMSL)}${speedSuffix(unitPrefs.speedUnit)}`;
 
   const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
 
@@ -140,7 +143,7 @@ export const getAircraftDivIcon = (
         ${isEmergency ? `<span class="text-red-500 animate-pulse">!</span>` : ""}
       </div>
       <div class="opacity-80">
-        ${displayAlt} ${aircraft.speed.toFixed(0)}kt
+        ${displayAlt} ${displaySpeed}
       </div>
       ${callsignDisplay ? `<div class="opacity-60" style="font-size: ${isMobile ? "8px" : "10px"}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${callsignDisplay}</div>` : ""}
     </div>
@@ -167,6 +170,7 @@ export const getRadarAircraftDivIcon = (
   selectedAircraftId: string | null,
   showTags = true,
   isMobile = false,
+  unitPrefs: UnitPreferences = DEFAULT_UNIT_PREFERENCES,
 ) => {
   const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
 
@@ -206,9 +210,10 @@ export const getRadarAircraftDivIcon = (
   const isOnGround = altAGL < 100;
   const displayAlt = isOnGround
     ? `${altAGL.toFixed(0)}`
-    : altMSL >= 18000
-      ? `FL${Math.round(altMSL / 100)}`
-      : `${Math.round(altAGL / 100) * 100}`;
+    : formatAltitude(altMSL, unitPrefs.altitudeUnit);
+  const displaySpeed = isOnGround
+    ? `${aircraft.speed.toFixed(0)}kt`
+    : `${formatSpeed(aircraft.speed, unitPrefs.speedUnit, altMSL)}${speedSuffix(unitPrefs.speedUnit)}`;
 
   // Color scheme: selected = bright green, emergency = red, normal = cyan
   const dotColor = isEmergency
@@ -287,7 +292,7 @@ export const getRadarAircraftDivIcon = (
         ${aircraft.flightNo || aircraft.callsign || "N/A"}${isEmergency ? " !" : ""}
       </div>
       <div class="opacity-85">
-        ${displayAlt} ${aircraft.speed.toFixed(0)}kt
+        ${displayAlt} ${displaySpeed}
       </div>
       ${callsignDisplay ? `<div class="opacity-60" style="font-size: ${isMobile ? "8px" : "10px"}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${callsignDisplay}</div>` : ""}
     </div>

@@ -46,14 +46,16 @@ import { ProBadge } from "~/components/ui/pro-badge";
 import { WhatsNew } from "~/components/ui/WhatsNew";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
 import {
-  UpgradeIcon,
   FlightsIcon,
   FilterIcon,
   DiscordIcon,
   InstallIcon,
   LeaderboardIcon,
+  UploadIcon,
+  AdminIcon,
 } from "~/utils/dockIcons";
 import { RotateCcw } from "lucide-react";
+import { UnitPreferencesProvider } from "~/hooks/useUnitPreferences";
 
 const DynamicMapComponent = dynamic(() => import("~/components/map"), {
   ssr: false,
@@ -78,7 +80,7 @@ export default function ATCPage() {
     }
   }, [onlineAirports, fetchAirports]);
 
-  const { isProUser, isLoading: proLoading } = useProStatus();
+  const { isProUser, isAdminUser, isLoading: proLoading } = useProStatus();
 
   const [selectedAircrafts, setSelectedAircrafts] = useState<PositionUpdate[]>(
     [],
@@ -440,6 +442,7 @@ export default function ATCPage() {
   }
 
   return (
+    <UnitPreferencesProvider>
     <div className="relative h-screen w-screen overflow-hidden bg-black">
       <header
         className={`absolute top-0 right-0 left-0 z-[10010] flex items-center justify-between ${isMobile ? "h-14 px-3 pt-1" : "h-20 px-6 pt-5"}`}
@@ -863,18 +866,12 @@ export default function ATCPage() {
               },
             },
             {
-              id: "pricing",
-              label: isProUser ? "Subscription" : "Upgrade",
-              icon: UpgradeIcon,
+              id: "upload",
+              label: "Upload",
+              icon: UploadIcon,
               active: false,
               onClick: () => {
-                Analytics.upgradeButtonClicked({
-                  source: isProUser
-                    ? "radar_control_dock_pricing_pro_user"
-                    : "radar_control_dock_upgrade",
-                  feature: isProUser ? "manage_subscription" : "pro_plan",
-                });
-                router.push("/pricing");
+                router.push("/aircraft-images");
               },
             },
             // External links (furthest from toggle)
@@ -896,6 +893,20 @@ export default function ATCPage() {
                 window.open("https://discord.gg/pbQF4txdRC", "_blank");
               },
             },
+            // Admin (only visible to admins)
+            ...(isAdminUser
+              ? [
+                  {
+                    id: "admin",
+                    label: "Admin",
+                    icon: AdminIcon,
+                    active: false,
+                    onClick: () => {
+                      router.push("/admin");
+                    },
+                  },
+                ]
+              : []),
           ]}
         />
       )}
@@ -1177,6 +1188,7 @@ export default function ATCPage() {
         />
       )}
     </div>
+    </UnitPreferencesProvider>
   );
 }
 

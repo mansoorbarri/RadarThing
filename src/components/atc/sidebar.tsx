@@ -112,6 +112,8 @@ import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
 import { AircraftControlPanel } from "./AircraftControlPanel";
 import Link from "next/link";
 import { Analytics } from "~/lib/analytics";
+import { useUnitPreferences } from "~/hooks/useUnitPreferences";
+import { formatSpeed, formatAltitude, speedLabel, altitudeLabel } from "~/lib/units";
 
 const getFlightPhase = (
   altAGL: number,
@@ -269,6 +271,7 @@ export const Sidebar = ({
 
   // Real-time flight history query
   const { isProUser } = useProStatus();
+  const { speedUnit, altitudeUnit } = useUnitPreferences();
   const googleId = aircraft.googleId;
   const shouldFetchHistory = tab === "history" && googleId && isProUser;
   const historyQuery = useQuery(
@@ -288,14 +291,11 @@ export const Sidebar = ({
   // Calculate display values using useMemo instead of DOM manipulation
   const displayValues = useMemo(() => {
     const altMSL = Number(aircraft.altMSL ?? aircraft.alt ?? 0);
-    const mslVal =
-      altMSL >= 18000
-        ? `FL${Math.round(altMSL / 100)}`
-        : `${Math.round(altMSL).toLocaleString()}`;
+    const speedKts = Number(aircraft.speed ?? 0);
 
     return {
-      altitude: mslVal,
-      speed: String(Math.round(Number(aircraft.speed ?? 0))),
+      altitude: formatAltitude(altMSL, altitudeUnit),
+      speed: formatSpeed(speedKts, speedUnit, altMSL),
       vspeed: String(Math.round(Number(aircraft.vspeed ?? 0))),
       heading: `${Math.round(Number(aircraft.heading ?? 0))}°`,
       altAGL: String(Math.round(Number(aircraft.alt ?? 0))),
@@ -308,6 +308,8 @@ export const Sidebar = ({
     aircraft.vspeed,
     aircraft.heading,
     aircraft.squawk,
+    speedUnit,
+    altitudeUnit,
   ]);
 
   const currentFlightPhase = useMemo(
@@ -818,7 +820,7 @@ export const Sidebar = ({
                 {displayValues.altitude}
               </span>
               <span className="mt-0.5 font-mono text-[8px] font-black tracking-widest text-cyan-400/80 uppercase">
-                FT MSL
+                {altitudeLabel(altitudeUnit)}
               </span>
             </div>
             <div className="z-10 flex scale-105 flex-col items-center rounded-xl border border-white/10 bg-white/10 p-3.5 shadow-lg">
@@ -835,7 +837,7 @@ export const Sidebar = ({
                 {displayValues.speed}
               </span>
               <span className="mt-0.5 font-mono text-[8px] font-black tracking-widest text-cyan-400/80 uppercase">
-                KNOTS GS
+                {speedLabel(speedUnit)}
               </span>
             </div>
           </div>

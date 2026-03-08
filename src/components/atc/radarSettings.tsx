@@ -3,13 +3,12 @@
 import React from "react";
 import { Switch } from "~/components/ui/switch";
 import { ProBadge } from "~/components/ui/pro-badge";
-import { useRouter } from "next/navigation";
-import { Plane, Shield } from "lucide-react";
 import { Analytics } from "~/lib/analytics";
+import { useUnitPreferences } from "~/hooks/useUnitPreferences";
+import type { SpeedUnit, AltitudeUnit } from "~/lib/units";
 
 interface RadarSettingsProps {
   isPRO: boolean;
-  isADMIN: boolean;
 
   showPrecipitation: boolean;
   setShowPrecipitation: (v: boolean) => void;
@@ -26,7 +25,6 @@ interface RadarSettingsProps {
 
 export const RadarSettings = ({
   isPRO,
-  isADMIN,
   showPrecipitation,
   setShowPrecipitation,
   showAirmets,
@@ -36,7 +34,8 @@ export const RadarSettings = ({
   showConflicts,
   setShowConflicts,
 }: RadarSettingsProps) => {
-  const router = useRouter();
+  const { speedUnit, altitudeUnit, setSpeedUnit, setAltitudeUnit } =
+    useUnitPreferences();
 
   return (
     <div className="flex flex-col gap-4 rounded-md border border-cyan-400/30 bg-black/90 p-4 font-mono text-cyan-400 shadow-xl backdrop-blur-md">
@@ -115,29 +114,29 @@ export const RadarSettings = ({
 
       <div className="space-y-3 border-t border-white/10 pt-4">
         <span className="text-[11px] tracking-widest text-cyan-300 uppercase">
-          COMMUNITY UPLOADS
+          DISPLAY UNITS
         </span>
 
-        <button
-          onClick={() => router.push("/aircraft-images")}
-          className="flex w-full cursor-pointer items-center gap-2 rounded-md bg-white/5 px-3 py-2 text-left text-sm text-white transition-colors hover:bg-white/10"
-        >
-          <Plane className="h-4 w-4 text-cyan-400" />
-          <span>Upload Aircraft Images</span>
-        </button>
+        <UnitSelector<SpeedUnit>
+          label="Speed"
+          value={speedUnit}
+          onChange={setSpeedUnit}
+          options={[
+            { value: "kts", label: "Knots" },
+            { value: "mach", label: "Mach" },
+          ]}
+        />
 
-        {isADMIN && (
-          <button
-            onClick={() => router.push("/admin")}
-            className="flex w-full cursor-pointer items-center gap-2 rounded-md bg-cyan-500/10 px-3 py-2 text-left text-sm text-cyan-400 transition-colors hover:bg-cyan-500/20"
-          >
-            <Shield className="h-4 w-4" />
-            <span>Admin Panel</span>
-            <span className="ml-auto text-[10px] text-cyan-500 uppercase">
-              ADMIN
-            </span>
-          </button>
-        )}
+        <UnitSelector<AltitudeUnit>
+          label="Altitude"
+          value={altitudeUnit}
+          onChange={setAltitudeUnit}
+          options={[
+            { value: "auto", label: "Auto" },
+            { value: "feet", label: "Feet" },
+            { value: "fl", label: "FL" },
+          ]}
+        />
       </div>
     </div>
   );
@@ -173,6 +172,39 @@ function SettingsToggle({
         onCheckedChange={onChange}
         className="data-[state=checked]:bg-cyan-500 data-[state=unchecked]:bg-gray-600"
       />
+    </div>
+  );
+}
+
+function UnitSelector<T extends string>({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: string }[];
+}) {
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span>{label}</span>
+      <div className="flex gap-1 rounded-lg border border-white/10 bg-white/5 p-0.5">
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => onChange(opt.value)}
+            className={`cursor-pointer rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors ${
+              value === opt.value
+                ? "bg-cyan-500 text-black"
+                : "text-white/60 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

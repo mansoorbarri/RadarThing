@@ -10,6 +10,7 @@ import {
   AirportIcon,
   RadarAirportIcon,
 } from "./MapIcons";
+import { useUnitPreferences } from "~/hooks/useUnitPreferences";
 
 // Track active animations to cancel them when new position arrives
 const activeAnimations = new Map<L.Marker, number>();
@@ -349,6 +350,8 @@ export const useMapLayersAndMarkers = ({
   mapReady,
   isMobile,
 }: UseMapLayersAndMarkersProps) => {
+  const { speedUnit, altitudeUnit } = useUnitPreferences();
+
   // Track existing markers by aircraft ID for smooth updates
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const conflictLayerRef = useRef<L.LayerGroup | null>(null);
@@ -498,14 +501,16 @@ export const useMapLayersAndMarkers = ({
       // The icon will be highlighted if this aircraft's ID is in the set
       const isSelected = selectedIdsSet.has(id);
       const selectedIdForIcon = isSelected ? id : null;
+      const unitPrefs = { speedUnit, altitudeUnit };
       const icon = isRadarMode
         ? getRadarAircraftDivIcon(
             aircraft,
             selectedIdForIcon,
             showTags,
             isMobile,
+            unitPrefs,
           )
-        : getAircraftDivIcon(aircraft, selectedIdForIcon, showTags, isMobile);
+        : getAircraftDivIcon(aircraft, selectedIdForIcon, showTags, isMobile, unitPrefs);
 
       const existingMarker = existingMarkers.get(id);
 
@@ -574,6 +579,8 @@ export const useMapLayersAndMarkers = ({
     showTags,
     mapReady,
     isMobile,
+    speedUnit,
+    altitudeUnit,
   ]);
 
   useEffect(() => {
