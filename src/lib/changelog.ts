@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "display-units-customizer",
+    date: "2026-03-08",
+    title: "Display Units Customizer",
+    description:
+      "Choose your preferred units in Radar Configuration. Switch speed between knots and Mach, and altitude between feet, flight levels, or auto. Upload Aircraft Images has also moved to the dock for easier access.",
+    type: "new",
+  },
+  {
     id: "shareable-flight-cards",
     date: "2026-03-03",
     title: "Shareable Flight Cards",
