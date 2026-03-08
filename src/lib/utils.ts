@@ -52,6 +52,22 @@ export function normalizeAircraftType(type: string | undefined): string | null {
   const dcMatch = /DC-?(\d{1,2})/.exec(cleaned);
   if (dcMatch) return `DC${dcMatch[1]}`;
 
+  // Military: Sukhoi "SU-35", "SU-27", "SU-57" -> "SU35", "SU27", "SU57"
+  const suMatch = /SU-?(\d{2,3})/.exec(cleaned);
+  if (suMatch) return `SU${suMatch[1]}`;
+
+  // Military: Mikoyan "MIG-29", "MIG-21", "MIG-31" -> "MIG29", "MIG21", "MIG31"
+  const migMatch = /MIG-?(\d{2})/.exec(cleaned);
+  if (migMatch) return `MIG${migMatch[1]}`;
+
+  // Military: Tupolev "TU-95", "TU-160", "TU-22" -> "TU95", "TU160", "TU22"
+  const tuMatch = /TU-?(\d{2,3})/.exec(cleaned);
+  if (tuMatch) return `TU${tuMatch[1]}`;
+
+  // Military: US designations "F-16", "F-22", "F-35", "B-2", "B-52", "C-17", "KC-135", "AH-64", "UH-60"
+  const milMatch = /\b(KC|AH|UH|CH|MH|HH|[FBTCA])-?(\d{1,3})\b/.exec(cleaned);
+  if (milMatch) return `${milMatch[1]}${milMatch[2]}`;
+
   const firstWord = cleaned.split(/[\s-]/)[0];
   return firstWord || null;
 }
