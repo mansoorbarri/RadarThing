@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RadarThing
 // @namespace    http://tampermonkey.net/
-// @version      1.4.7
+// @version      1.4.8
 // @description  Always loads the latest GeoFS ATC Radar script from GitHub
 // @Author       xyzmani
 // @icon         https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/public/favicon.ico
@@ -48,7 +48,7 @@
   let lastSyncedPlan = "";
 
   let radarPrefs = JSON.parse(
-    localStorage.getItem(RADAR_PREFS_KEY) || '{"jth":true,"seabus":true}',
+    localStorage.getItem(RADAR_PREFS_KEY) || '{"jth":false,"seabus":true}',
   );
   window.__radarPrefs = radarPrefs;
 
