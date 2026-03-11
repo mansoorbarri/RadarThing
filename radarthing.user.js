@@ -9,7 +9,6 @@
 // @match        https://*/geofs.php*
 // @require      https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/userscript.js
 // @require      https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/seabus.js
-// @require      https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/jth.js
 // @grant        none
 // ==/UserScript==
 
@@ -39,7 +38,6 @@
   const RADAR_SETTINGS_HEADER_ID = "atc-radar-settings-header";
   const RADAR_SETTINGS_BODY_ID = "atc-radar-settings-body";
   const RADAR_SETTINGS_ARROW_ID = "atc-radar-settings-arrow";
-  const JTH_TOGGLE_ID = "atc-toggle-jth";
   const SEABUS_TOGGLE_ID = "atc-toggle-seabus";
   const CHARTS_BTN_ID = "atc-charts-btn";
 
@@ -48,7 +46,7 @@
   let lastSyncedPlan = "";
 
   let radarPrefs = JSON.parse(
-    localStorage.getItem(RADAR_PREFS_KEY) || '{"jth":true,"seabus":true}',
+    localStorage.getItem(RADAR_PREFS_KEY) || '{"seabus":true}',
   );
   window.__radarPrefs = radarPrefs;
 
@@ -1036,7 +1034,6 @@
           margin-top:8px;
           padding:0 2px;
         ">
-          ${buildToggleRow("JTH Radar", JTH_TOGGLE_ID, radarPrefs.jth)}
           ${buildToggleRow("Seabus Radar", SEABUS_TOGGLE_ID, radarPrefs.seabus)}
         </div>
       </div>
@@ -1095,7 +1092,6 @@
       };
     }
 
-    setupToggle(JTH_TOGGLE_ID, "jth");
     setupToggle(SEABUS_TOGGLE_ID, "seabus");
 
     document.getElementById(SAVE_BTN_ID).onclick = async () => {
