@@ -23,6 +23,7 @@ interface ChartUploaderProps {
   onError: (error: string) => void;
   onFileSelected?: (hasFiles: boolean) => void;
   icao?: string;
+  disabled?: boolean;
 }
 
 export interface ChartUploaderRef {
@@ -80,7 +81,7 @@ function deriveChartName(fileName: string): string {
 
 export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
   function ChartUploader(
-    { onUploadComplete, onError, onFileSelected, icao },
+    { onUploadComplete, onError, onFileSelected, icao, disabled},
     ref,
   ) {
     const [files, setFiles] = useState<FileEntry[]>([]);
@@ -296,7 +297,7 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
         )}
 
         {/* Dropzone */}
-        {!isUploading && (
+        {!isUploading && !disabled && (
           <div
             {...getRootProps()}
             className={`cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-all ${

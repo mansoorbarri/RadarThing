@@ -327,6 +327,7 @@ function ChartUploadModal({ onClose }: { onClose: () => void }) {
             <ChartUploader
               ref={uploaderRef}
               icao={formData.icao}
+              disabled={isProcessing || submitStage === "success"}
               onUploadComplete={() => {
                 // handled via triggerUpload return value
               }}
