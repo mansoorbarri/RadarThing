@@ -175,9 +175,7 @@ export default function AirportChartsPage() {
     const results = await uploaderRef.current?.triggerUpload();
 
     if (!results || results.length === 0) {
-      if (submitStage !== "idle") {
-        setSubmitStage("idle");
-      }
+      setSubmitStage("idle");
       return;
     }
 

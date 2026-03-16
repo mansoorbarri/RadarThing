@@ -182,8 +182,10 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
         const uploadResults = await startUpload(renamedFiles);
 
         if (!uploadResults || uploadResults.length === 0) {
+          const errorMsg = "Upload failed. Please try again.";
+          setLocalError(errorMsg);
+          onError(errorMsg);
           setIsUploading(false);
-
           return [];
         }
 
