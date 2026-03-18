@@ -9,6 +9,7 @@
     "cf": "cloudflared tunnel run dev-tunnel",
     "stripe": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",
     "dev": "next dev --turbo",
+    "dev:all": "concurrently -n next,convex -c blue,magenta \"bun run dev:next\" \"bunx convex dev\"",
     "dev:next": "next dev --turbo",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
