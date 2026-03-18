@@ -154,6 +154,13 @@ async function getCurrentUserId(): Promise<string | null> {
   return userId;
 }
 
+function normalizeAircraftTypeInput(aircraftType: string): string {
+  const cleaned = aircraftType.trim().toUpperCase();
+  const atrMatch = /\bATR?[\s-]?(\d{2})\b/.exec(cleaned);
+  if (atrMatch) return `ATR${atrMatch[1]}`;
+  return cleaned;
+}
+
 // Get approved image for display (used by the hook)
 // airlineCode can be either IATA (2-letter) or ICAO (3-letter)
 export async function getAircraftImage(
@@ -163,7 +170,7 @@ export async function getAircraftImage(
   try {
     const image = await convex.query(api.aircraftImages.getApprovedImage, {
       airlineCode,
-      aircraftType,
+      aircraftType: normalizeAircraftTypeInput(aircraftType),
     });
     if (!image) return null;
     return toAircraftImage(image);
@@ -243,7 +250,7 @@ export async function validateUploadEligibility(data: {
   // Validate code lengths
   const iata = data.airlineIata.trim().toUpperCase();
   const icao = data.airlineIcao.trim().toUpperCase();
-  const aircraftType = data.aircraftType.trim().toUpperCase();
+  const aircraftType = normalizeAircraftTypeInput(data.aircraftType);
 
   if (iata.length < 1 || iata.length > 2) {
     return { canUpload: false, error: "IATA code must be 1-2 characters" };
@@ -262,7 +269,7 @@ export async function validateUploadEligibility(data: {
       {
         airlineIata: iata,
         airlineIcao: icao,
-        aircraftType: aircraftType,
+        aircraftType,
         uploadedBy: userId,
       },
     );
@@ -313,13 +320,15 @@ export async function createAircraftImage(data: {
   }
 
   try {
+    const aircraftType = normalizeAircraftTypeInput(data.aircraftType);
+
     // Check eligibility in a single query (combines checkApprovedExists and checkPendingByUser)
     const eligibility = await convex.query(
       api.aircraftImages.checkUploadEligibility,
       {
         airlineIata: data.airlineIata,
         airlineIcao: data.airlineIcao,
-        aircraftType: data.aircraftType,
+        aircraftType,
         uploadedBy: userId,
       },
     );
@@ -364,7 +373,7 @@ export async function createAircraftImage(data: {
     const image = await convex.mutation(api.aircraftImages.create, {
       airlineIata: data.airlineIata,
       airlineIcao: data.airlineIcao,
-      aircraftType: data.aircraftType,
+      aircraftType,
       imageUrl: data.imageUrl,
       imageKey: data.imageKey,
       discordUsername: data.discordUsername,
@@ -818,7 +827,7 @@ export async function updateAircraftImageCodes(
   // Validate details
   const iata = newIata.trim().toUpperCase();
   const icao = newIcao.trim().toUpperCase();
-  const aircraftType = newAircraftType.trim().toUpperCase();
+  const aircraftType = normalizeAircraftTypeInput(newAircraftType);
 
   if (iata.length < 1 || iata.length > 2) {
     return { success: false, error: "IATA code must be 1-2 characters" };

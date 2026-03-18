@@ -21,6 +21,10 @@ export function normalizeAircraftType(type: string | undefined): string | null {
   const embraerMatch = /E\d{3}|ERJ\d{3}|CRJ\d{3}/.exec(cleaned);
   if (embraerMatch) return embraerMatch[0];
 
+  // ATR aliases: "ATR 72-600", "ATR72", "ATR-42", "AT72" -> "ATR72", "ATR42"
+  const atrMatch = /\bATR?[\s-]?(\d{2})\b/.exec(cleaned);
+  if (atrMatch) return `ATR${atrMatch[1]}`;
+
   // GA: Piper "PA-28", "PA-44", etc. -> "PA28", "PA44"
   const piperMatch = /PA-?(\d{2,3})/.exec(cleaned);
   if (piperMatch) return `PA${piperMatch[1]}`;

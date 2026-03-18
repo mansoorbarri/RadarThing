@@ -1,6 +1,13 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+function normalizeAircraftTypeKey(aircraftType: string): string {
+  const cleaned = aircraftType.trim().toUpperCase();
+  const atrMatch = /\bATR?[\s-]?(\d{2})\b/.exec(cleaned);
+  if (atrMatch) return `ATR${atrMatch[1]}`;
+  return cleaned;
+}
+
 // Get approved image for a specific airline + aircraft type
 // Accepts either IATA (2-letter) or ICAO (3-letter) code
 export const getApprovedImage = query({
@@ -10,7 +17,7 @@ export const getApprovedImage = query({
   },
   handler: async (ctx, args) => {
     const code = args.airlineCode.toUpperCase();
-    const aircraftType = args.aircraftType.toUpperCase();
+    const aircraftType = normalizeAircraftTypeKey(args.aircraftType);
 
     // Try IATA lookup first (2-letter codes)
     let image = await ctx.db
@@ -185,7 +192,7 @@ export const checkApprovedExists = query({
     aircraftType: v.string(),
   },
   handler: async (ctx, args) => {
-    const aircraftType = args.aircraftType.toUpperCase();
+    const aircraftType = normalizeAircraftTypeKey(args.aircraftType);
     const iata = args.airlineIata.toUpperCase();
     const icao = args.airlineIcao.toUpperCase();
 
@@ -214,7 +221,7 @@ export const checkPendingByUser = query({
     uploadedBy: v.string(),
   },
   handler: async (ctx, args) => {
-    const aircraftType = args.aircraftType.toUpperCase();
+    const aircraftType = normalizeAircraftTypeKey(args.aircraftType);
     const iata = args.airlineIata.toUpperCase();
     const icao = args.airlineIcao.toUpperCase();
 
@@ -251,7 +258,7 @@ export const create = mutation({
     const id = await ctx.db.insert("aircraftImages", {
       airlineIata: args.airlineIata.toUpperCase(),
       airlineIcao: args.airlineIcao.toUpperCase(),
-      aircraftType: args.aircraftType.toUpperCase(),
+      aircraftType: normalizeAircraftTypeKey(args.aircraftType),
       imageUrl: args.imageUrl,
       imageKey: args.imageKey,
       discordUsername: args.discordUsername,
@@ -405,7 +412,7 @@ export const checkUploadEligibility = query({
     uploadedBy: v.string(),
   },
   handler: async (ctx, args) => {
-    const aircraftType = args.aircraftType.toUpperCase();
+    const aircraftType = normalizeAircraftTypeKey(args.aircraftType);
     const iata = args.airlineIata.toUpperCase();
     const icao = args.airlineIcao.toUpperCase();
 
@@ -457,7 +464,7 @@ export const updateCodes = mutation({
     await ctx.db.patch(args.id, {
       airlineIata: args.airlineIata.toUpperCase(),
       airlineIcao: args.airlineIcao.toUpperCase(),
-      aircraftType: args.aircraftType.toUpperCase(),
+      aircraftType: normalizeAircraftTypeKey(args.aircraftType),
     });
 
     const updated = await ctx.db.get(args.id);
@@ -483,7 +490,7 @@ export const findExistingApproved = query({
     excludeId: v.optional(v.id("aircraftImages")),
   },
   handler: async (ctx, args) => {
-    const aircraftType = args.aircraftType.toUpperCase();
+    const aircraftType = normalizeAircraftTypeKey(args.aircraftType);
     const iata = args.airlineIata.toUpperCase();
     const icao = args.airlineIcao.toUpperCase();
 
@@ -532,7 +539,7 @@ export const findExistingApprovedFull = query({
     excludeId: v.optional(v.id("aircraftImages")),
   },
   handler: async (ctx, args) => {
-    const aircraftType = args.aircraftType.toUpperCase();
+    const aircraftType = normalizeAircraftTypeKey(args.aircraftType);
     const iata = args.airlineIata.toUpperCase();
     const icao = args.airlineIcao.toUpperCase();
 
