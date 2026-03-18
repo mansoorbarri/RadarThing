@@ -12,7 +12,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-03-18",
     title: "Contribution Leaderboard",
     description:
-      "The leaderboard now includes a Contributions tab so you can rank community uploaders by total submissions, aircraft images, and airport charts.",
+      "The leaderboard now includes a Contribution tab so you can rank users by approved aircraft image contributions.",
     type: "new",
   },
   {

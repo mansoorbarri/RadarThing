@@ -41,6 +41,7 @@ export default defineSchema({
     totalFlights: v.number(),
     totalFlightTimeMs: v.number(),
     totalDistanceNm: v.number(),
+    approvedAircraftImages: v.optional(v.number()),
     streakAtLastFlight: v.number(),
     longestStreak: v.number(),
     lastFlightDate: v.optional(v.string()), // YYYY-MM-DD UTC

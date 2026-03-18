@@ -1,6 +1,36 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+async function incrementApprovedAircraftImages(ctx: any, uploadedBy: string) {
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_clerkId", (q: any) => q.eq("clerkId", uploadedBy))
+    .first();
+  if (!user) return;
+
+  const stats = await ctx.db
+    .query("userStats")
+    .withIndex("by_userId", (q: any) => q.eq("userId", user._id))
+    .first();
+
+  if (stats) {
+    await ctx.db.patch(stats._id, {
+      approvedAircraftImages: (stats.approvedAircraftImages ?? 0) + 1,
+    });
+    return;
+  }
+
+  await ctx.db.insert("userStats", {
+    userId: user._id,
+    totalFlights: 0,
+    totalFlightTimeMs: 0,
+    totalDistanceNm: 0,
+    approvedAircraftImages: 1,
+    streakAtLastFlight: 0,
+    longestStreak: 0,
+  });
+}
+
 function normalizeAircraftTypeKey(aircraftType: string): string {
   const cleaned = aircraftType.trim().toUpperCase();
   const atrMatch = /\bATR?[\s-]?(\d{2})\b/.exec(cleaned);
@@ -294,11 +324,16 @@ export const approve = mutation({
     approvedBy: v.string(),
   },
   handler: async (ctx, args) => {
+    const image = await ctx.db.get(args.id);
+    if (!image || image.isApproved) return;
+
     await ctx.db.patch(args.id, {
       isApproved: true,
       approvedBy: args.approvedBy,
       approvedAt: Date.now(),
     });
+
+    await incrementApprovedAircraftImages(ctx, image.uploadedBy);
   },
 });
 
@@ -351,6 +386,10 @@ export const bulkApprove = mutation({
       }
 
       // Approve the new image
+      if (!image.isApproved) {
+        await incrementApprovedAircraftImages(ctx, image.uploadedBy);
+      }
+
       await ctx.db.patch(id, {
         isApproved: true,
         approvedBy: args.approvedBy,

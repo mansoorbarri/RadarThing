@@ -39,7 +39,6 @@ export default function LeaderboardPage() {
   const router = useRouter();
   const { user } = useUser();
   const leaderboard = useQuery(api.flights.getLeaderboard);
-  const contributionLeaderboard = useQuery(api.users.getFreeUserUploadCounts);
   const [sortBy, setSortBy] = useState<SortKey>("flights");
 
   const currentUserRef = useRef<HTMLButtonElement>(null);
@@ -48,81 +47,13 @@ export default function LeaderboardPage() {
     Analytics.leaderboardViewed();
   }, []);
 
-  const mergedEntries =
-    leaderboard && contributionLeaderboard
-      ? [
-          ...new Map(
-            [
-              ...leaderboard.map((pilot) => [
-                pilot.clerkId,
-                {
-                  userId: pilot.userId,
-                  clerkId: pilot.clerkId,
-                  callsign: pilot.callsign,
-                  role: pilot.role,
-                  discordUsername: pilot.discordUsername,
-                  totalFlights: pilot.totalFlights,
-                  totalFlightTimeMs: pilot.totalFlightTimeMs,
-                  totalDistanceNm: pilot.totalDistanceNm,
-                  currentStreak: pilot.currentStreak,
-                  aircraftImages: 0,
-                  airportCharts: 0,
-                  totalContributions: 0,
-                },
-              ]),
-              ...contributionLeaderboard.map((contributor) => [
-                contributor.clerkId,
-                {
-                  userId: contributor.userId,
-                  clerkId: contributor.clerkId,
-                  callsign: contributor.displayName,
-                  role: contributor.role,
-                  discordUsername: contributor.discordUsername,
-                  totalFlights: 0,
-                  totalFlightTimeMs: 0,
-                  totalDistanceNm: 0,
-                  currentStreak: 0,
-                  aircraftImages: contributor.aircraftImages,
-                  airportCharts: contributor.airportCharts,
-                  totalContributions: contributor.total,
-                },
-              ]),
-            ].map(([clerkId, entry]) => {
-              const pilot = leaderboard.find((item) => item.clerkId === clerkId);
-              const contributor = contributionLeaderboard.find(
-                (item) => item.clerkId === clerkId,
-              );
-
-              return [
-                clerkId,
-                {
-                  userId: pilot?.userId ?? contributor!.userId,
-                  clerkId,
-                  callsign: pilot?.callsign ?? contributor!.displayName,
-                  role: pilot?.role ?? contributor!.role,
-                  discordUsername:
-                    pilot?.discordUsername ?? contributor?.discordUsername ?? null,
-                  totalFlights: pilot?.totalFlights ?? 0,
-                  totalFlightTimeMs: pilot?.totalFlightTimeMs ?? 0,
-                  totalDistanceNm: pilot?.totalDistanceNm ?? 0,
-                  currentStreak: pilot?.currentStreak ?? 0,
-                  aircraftImages: contributor?.aircraftImages ?? 0,
-                  airportCharts: contributor?.airportCharts ?? 0,
-                  totalContributions: contributor?.total ?? 0,
-                },
-              ];
-            }),
-          ).values(),
-        ]
-      : null;
-
-  const sorted = mergedEntries
-    ? [...mergedEntries].sort((a, b) => {
+  const sorted = leaderboard
+    ? [...leaderboard].sort((a, b) => {
         if (sortBy === "flights") return b.totalFlights - a.totalFlights;
         if (sortBy === "distance") return b.totalDistanceNm - a.totalDistanceNm;
         if (sortBy === "streak") return b.currentStreak - a.currentStreak;
         if (sortBy === "contribution") {
-          return b.totalContributions - a.totalContributions;
+          return b.approvedAircraftImages - a.approvedAircraftImages;
         }
         return b.totalFlightTimeMs - a.totalFlightTimeMs;
       })
@@ -175,7 +106,7 @@ export default function LeaderboardPage() {
               Leaderboard
             </h1>
             <p className="text-xs text-slate-500 sm:text-sm">
-              Top pilots and community contributors on RadarThing
+              Top pilots and approved aircraft image contributors on RadarThing
             </p>
           </div>
         </div>
@@ -214,7 +145,7 @@ export default function LeaderboardPage() {
                 <div
                   title={
                     sortBy === "contribution"
-                      ? `${currentUserEntry.aircraftImages} Images + ${currentUserEntry.airportCharts} Charts`
+                      ? `${currentUserEntry.approvedAircraftImages} approved aircraft images`
                       : undefined
                   }
                   className={`font-mono text-sm font-bold ${
@@ -235,7 +166,7 @@ export default function LeaderboardPage() {
                           ? currentUserEntry.currentStreak > 0
                             ? `${currentUserEntry.currentStreak}d`
                             : "—"
-                          : currentUserEntry.totalContributions}
+                          : currentUserEntry.approvedAircraftImages}
                 </div>
               </div>
               <ChevronDown className="h-4 w-4 text-cyan-400/60" />
@@ -261,7 +192,7 @@ export default function LeaderboardPage() {
                 <div className="font-mono text-[10px] text-slate-600 uppercase">
                   Time
                 </div>
-                <div className="font-mono text-sm font-bold text-white">
+                <div className="whitespace-nowrap font-mono text-sm font-bold text-white">
                   {formatFlightTime(currentUserEntry.totalFlightTimeMs)}
                 </div>
               </div>
@@ -280,10 +211,10 @@ export default function LeaderboardPage() {
                   Uploads
                 </div>
                 <div
-                  title={`${currentUserEntry.aircraftImages} Images + ${currentUserEntry.airportCharts} Charts`}
+                  title={`${currentUserEntry.approvedAircraftImages} approved aircraft images`}
                   className="font-mono text-sm font-bold text-emerald-400"
                 >
-                  {currentUserEntry.totalContributions}
+                  {currentUserEntry.approvedAircraftImages}
                 </div>
               </div>
               <ChevronDown className="h-4 w-4 text-cyan-400/60" />
@@ -333,7 +264,7 @@ export default function LeaderboardPage() {
               No Pilots Yet
             </h3>
             <p className="text-slate-400">
-              Be the first to record a flight or upload a contribution.
+              Be the first to record a flight or get an aircraft image approved.
             </p>
           </div>
         ) : (
@@ -424,7 +355,7 @@ export default function LeaderboardPage() {
                       <div
                         title={
                           sortBy === "contribution"
-                            ? `${entry.aircraftImages} Images + ${entry.airportCharts} Charts`
+                            ? `${entry.approvedAircraftImages} approved aircraft images`
                             : undefined
                         }
                         className={`font-mono text-xs font-bold ${
@@ -445,7 +376,7 @@ export default function LeaderboardPage() {
                                 ? entry.currentStreak > 0
                                   ? `${entry.currentStreak}d`
                                   : "—"
-                                : entry.totalContributions}
+                                : entry.approvedAircraftImages}
                       </div>
                     </div>
 
@@ -465,7 +396,7 @@ export default function LeaderboardPage() {
                         {entry.totalDistanceNm.toLocaleString()}
                       </div>
                       <div
-                        className={`w-14 text-right font-mono text-sm font-bold ${
+                        className={`w-14 whitespace-nowrap text-right font-mono text-sm font-bold ${
                           sortBy === "time" ? "text-cyan-400" : "text-white"
                         }`}
                       >
@@ -481,14 +412,14 @@ export default function LeaderboardPage() {
                         {entry.currentStreak > 0 ? `${entry.currentStreak}d` : "—"}
                       </div>
                       <div
-                        title={`${entry.aircraftImages} Images + ${entry.airportCharts} Charts`}
+                        title={`${entry.approvedAircraftImages} approved aircraft images`}
                         className={`w-14 text-right font-mono text-sm font-bold ${
                           sortBy === "contribution"
                             ? "text-emerald-400"
                             : "text-white"
                         }`}
                       >
-                        {entry.totalContributions}
+                        {entry.approvedAircraftImages}
                       </div>
                     </div>
                   </button>

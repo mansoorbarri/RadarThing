@@ -145,6 +145,7 @@ export const create = mutation({
         totalFlights: 1,
         totalFlightTimeMs: flightTimeMs,
         totalDistanceNm: distanceNm,
+        approvedAircraftImages: 0,
         streakAtLastFlight: 1,
         longestStreak: 1,
         lastFlightDate: flightDate,
@@ -274,6 +275,7 @@ export const backfillUserStatsPage = mutation({
         totalFlights: 0,
         totalFlightTimeMs: 0,
         totalDistanceNm: 0,
+        approvedAircraftImages: 0,
         streakAtLastFlight: 0,
         longestStreak: 0,
       });
@@ -289,6 +291,7 @@ export const backfillUserStatsPage = mutation({
         totalFlights: 0,
         totalFlightTimeMs: 0,
         totalDistanceNm: 0,
+        approvedAircraftImages: stats.approvedAircraftImages ?? 0,
         streakAtLastFlight: 0,
         longestStreak: 0,
         lastFlightDate: undefined,
@@ -300,6 +303,7 @@ export const backfillUserStatsPage = mutation({
         totalFlights: 0,
         totalFlightTimeMs: 0,
         totalDistanceNm: 0,
+        approvedAircraftImages: stats.approvedAircraftImages ?? 0,
         streakAtLastFlight: 0,
         longestStreak: 0,
         lastFlightDate: undefined,
@@ -610,17 +614,21 @@ export const getLeaderboard = query({
 
     for (const user of users) {
       const userStats = statsByUserId.get(user._id);
-      if (!userStats || userStats.totalFlights <= 0) continue;
+      const approvedAircraftImages = userStats?.approvedAircraftImages ?? 0;
+      if (!userStats || (userStats.totalFlights <= 0 && approvedAircraftImages <= 0)) {
+        continue;
+      }
 
       leaderboard.push({
         userId: user._id,
         clerkId: user.clerkId,
-        callsign: userStats.lastFlightCallsign ?? "Unknown",
+        callsign: userStats.lastFlightCallsign ?? user.discordUsername ?? "Unknown",
         role: user.role,
         discordUsername: user.discordUsername ?? null,
         totalFlights: userStats.totalFlights,
         totalFlightTimeMs: Math.round(userStats.totalFlightTimeMs),
         totalDistanceNm: Math.round(userStats.totalDistanceNm),
+        approvedAircraftImages,
         currentStreak: deriveVisibleCurrentStreak(
           userStats.lastFlightDate,
           userStats.streakAtLastFlight,

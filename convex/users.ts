@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 
 // Get user by Clerk ID
@@ -270,32 +271,13 @@ export const getFreeUserUploadCounts = query({
       .query("users")
       .filter((q) => q.eq(q.field("isDeleted"), false))
       .collect();
+    const stats = await ctx.db.query("userStats").collect();
+    const statsByUserId = new Map(stats.map((entry) => [entry.userId, entry]));
 
-    const results = await Promise.all(
-      users.map(async (user) => {
-        const aircraftImages = await ctx.db
-          .query("aircraftImages")
-          .filter((q) =>
-            user.discordUsername
-              ? q.or(
-                  q.eq(q.field("uploadedBy"), user.clerkId),
-                  q.eq(q.field("discordUsername"), user.discordUsername),
-                )
-              : q.eq(q.field("uploadedBy"), user.clerkId),
-          )
-          .collect();
-
-        const airportCharts = await ctx.db
-          .query("airportCharts")
-          .filter((q) =>
-            user.discordUsername
-              ? q.or(
-                  q.eq(q.field("uploadedBy"), user.clerkId),
-                  q.eq(q.field("discordUsername"), user.discordUsername),
-                )
-              : q.eq(q.field("uploadedBy"), user.clerkId),
-          )
-          .collect();
+    return users
+      .map((user) => {
+        const userStats = statsByUserId.get(user._id);
+        const aircraftImages = userStats?.approvedAircraftImages ?? 0;
 
         return {
           userId: user._id,
@@ -303,18 +285,16 @@ export const getFreeUserUploadCounts = query({
           role: user.role,
           discordUsername: user.discordUsername ?? null,
           displayName: user.discordUsername ?? `User ${user.clerkId.slice(0, 6)}`,
-          aircraftImages: aircraftImages.length,
-          airportCharts: airportCharts.length,
-          total: aircraftImages.length + airportCharts.length,
+          aircraftImages,
+          airportCharts: 0,
+          total: aircraftImages,
         };
-      }),
-    );
-
-    return results.filter((r) => r.total > 0);
+      })
+      .filter((entry) => entry.total > 0);
   },
 });
 
-// Get total approved uploads count (aircraft images + airport charts) for a user
+// Get total approved aircraft image uploads count for a user
 export const getTotalApprovedUploads = query({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
@@ -331,48 +311,85 @@ export const getTotalApprovedUploads = query({
       };
     }
 
-    // Count approved aircraft images
-    const aircraftImages = await ctx.db
-      .query("aircraftImages")
-      .filter((q) =>
-        user.discordUsername
-          ? q.and(
-              q.eq(q.field("isApproved"), true),
-              q.or(
-                q.eq(q.field("uploadedBy"), args.clerkId),
-                q.eq(q.field("discordUsername"), user.discordUsername),
-              ),
-            )
-          : q.and(
-              q.eq(q.field("isApproved"), true),
-              q.eq(q.field("uploadedBy"), args.clerkId),
-            ),
-      )
-      .collect();
+    const stats = await ctx.db
+      .query("userStats")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
 
-    // Count approved airport charts
-    const airportCharts = await ctx.db
-      .query("airportCharts")
-      .filter((q) =>
-        user.discordUsername
-          ? q.and(
-              q.eq(q.field("isApproved"), true),
-              q.or(
-                q.eq(q.field("uploadedBy"), args.clerkId),
-                q.eq(q.field("discordUsername"), user.discordUsername),
-              ),
-            )
-          : q.and(
-              q.eq(q.field("isApproved"), true),
-              q.eq(q.field("uploadedBy"), args.clerkId),
-            ),
-      )
-      .collect();
+    const aircraftImages = stats?.approvedAircraftImages ?? 0;
 
     return {
-      aircraftImages: aircraftImages.length,
-      airportCharts: airportCharts.length,
-      total: aircraftImages.length + airportCharts.length,
+      aircraftImages,
+      airportCharts: 0,
+      total: aircraftImages,
+    };
+  },
+});
+
+// One-time backfill for approved aircraft image contribution counts
+export const backfillApprovedAircraftImageStats = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const users = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("isDeleted"), false))
+      .collect();
+    const stats = await ctx.db.query("userStats").collect();
+    const statsByUserId = new Map(stats.map((entry) => [entry.userId, entry]));
+    const usersByClerkId = new Map(users.map((user) => [user.clerkId, user]));
+    const usersByDiscordUsername = new Map(
+      users
+        .filter((user) => user.discordUsername)
+        .map((user) => [user.discordUsername!, user]),
+    );
+
+    const approvedImages = await ctx.db
+      .query("aircraftImages")
+      .withIndex("by_isApproved", (q) => q.eq("isApproved", true))
+      .collect();
+
+    const approvedCountsByUserId = new Map<Id<"users">, number>();
+
+    for (const image of approvedImages) {
+      const matchedUser =
+        usersByClerkId.get(image.uploadedBy) ??
+        (image.discordUsername
+          ? usersByDiscordUsername.get(image.discordUsername)
+          : undefined);
+
+      if (!matchedUser) continue;
+
+      approvedCountsByUserId.set(
+        matchedUser._id,
+        (approvedCountsByUserId.get(matchedUser._id) ?? 0) + 1,
+      );
+    }
+
+    for (const user of users) {
+      const statsEntry = statsByUserId.get(user._id);
+      const approvedAircraftImages = approvedCountsByUserId.get(user._id) ?? 0;
+
+      if (statsEntry) {
+        await ctx.db.patch(statsEntry._id, {
+          approvedAircraftImages,
+        });
+        continue;
+      }
+
+      await ctx.db.insert("userStats", {
+        userId: user._id,
+        totalFlights: 0,
+        totalFlightTimeMs: 0,
+        totalDistanceNm: 0,
+        approvedAircraftImages,
+        streakAtLastFlight: 0,
+        longestStreak: 0,
+      });
+    }
+
+    return {
+      usersUpdated: users.length,
+      approvedImagesCounted: approvedImages.length,
     };
   },
 });
