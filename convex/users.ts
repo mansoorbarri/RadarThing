@@ -275,12 +275,26 @@ export const getFreeUserUploadCounts = query({
       users.map(async (user) => {
         const aircraftImages = await ctx.db
           .query("aircraftImages")
-          .withIndex("by_uploadedBy", (q) => q.eq("uploadedBy", user.clerkId))
+          .filter((q) =>
+            user.discordUsername
+              ? q.or(
+                  q.eq(q.field("uploadedBy"), user.clerkId),
+                  q.eq(q.field("discordUsername"), user.discordUsername),
+                )
+              : q.eq(q.field("uploadedBy"), user.clerkId),
+          )
           .collect();
 
         const airportCharts = await ctx.db
           .query("airportCharts")
-          .withIndex("by_uploadedBy", (q) => q.eq("uploadedBy", user.clerkId))
+          .filter((q) =>
+            user.discordUsername
+              ? q.or(
+                  q.eq(q.field("uploadedBy"), user.clerkId),
+                  q.eq(q.field("discordUsername"), user.discordUsername),
+                )
+              : q.eq(q.field("uploadedBy"), user.clerkId),
+          )
           .collect();
 
         return {
@@ -304,18 +318,55 @@ export const getFreeUserUploadCounts = query({
 export const getTotalApprovedUploads = query({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+
+    if (!user) {
+      return {
+        aircraftImages: 0,
+        airportCharts: 0,
+        total: 0,
+      };
+    }
+
     // Count approved aircraft images
     const aircraftImages = await ctx.db
       .query("aircraftImages")
-      .withIndex("by_uploadedBy", (q) => q.eq("uploadedBy", args.clerkId))
-      .filter((q) => q.eq(q.field("isApproved"), true))
+      .filter((q) =>
+        user.discordUsername
+          ? q.and(
+              q.eq(q.field("isApproved"), true),
+              q.or(
+                q.eq(q.field("uploadedBy"), args.clerkId),
+                q.eq(q.field("discordUsername"), user.discordUsername),
+              ),
+            )
+          : q.and(
+              q.eq(q.field("isApproved"), true),
+              q.eq(q.field("uploadedBy"), args.clerkId),
+            ),
+      )
       .collect();
 
     // Count approved airport charts
     const airportCharts = await ctx.db
       .query("airportCharts")
-      .withIndex("by_uploadedBy", (q) => q.eq("uploadedBy", args.clerkId))
-      .filter((q) => q.eq(q.field("isApproved"), true))
+      .filter((q) =>
+        user.discordUsername
+          ? q.and(
+              q.eq(q.field("isApproved"), true),
+              q.or(
+                q.eq(q.field("uploadedBy"), args.clerkId),
+                q.eq(q.field("discordUsername"), user.discordUsername),
+              ),
+            )
+          : q.and(
+              q.eq(q.field("isApproved"), true),
+              q.eq(q.field("uploadedBy"), args.clerkId),
+            ),
+      )
       .collect();
 
     return {
