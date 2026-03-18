@@ -4,15 +4,9 @@ import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import { X, Plane } from "lucide-react";
 import { type PositionUpdate } from "~/lib/aircraft-store";
+import { getAirlineLogoUrl } from "~/lib/airline-logos";
 import { calculateDistance } from "~/lib/map-utils";
 import { normalizeAircraftType } from "~/lib/utils";
-
-function getAirlineLogoUrl(flightNo?: string): string | null {
-  const match = flightNo?.match(/^([A-Z]{2,3})/);
-  const code = match?.[1]?.toLowerCase() ?? null;
-  if (!code) return null;
-  return `https://content.airhex.com/content/logos/airlines_${code}_200_200_s.png?theme=dark`;
-}
 
 function formatEta(
   ac: PositionUpdate,
@@ -57,6 +51,7 @@ function FlightRow({
 }) {
   const logo = getAirlineLogoUrl(ac.flightNo);
   const eta = isArrival ? formatEta(ac, airportLat, airportLon) : null;
+  const [logoError, setLogoError] = useState(false);
 
   return (
     <button
@@ -65,7 +60,7 @@ function FlightRow({
     >
       {/* Airline logo */}
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/60">
-        {logo ? (
+        {logo && !logoError ? (
           <Image
             src={logo}
             alt=""
@@ -73,6 +68,7 @@ function FlightRow({
             height={24}
             className="rounded object-contain"
             unoptimized
+            onError={() => setLogoError(true)}
           />
         ) : (
           <Plane size={14} className="text-white/30" />

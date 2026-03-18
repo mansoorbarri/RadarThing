@@ -108,6 +108,22 @@ export default defineSchema({
     .index("by_isApproved", ["isApproved"])
     .index("by_uploadedBy", ["uploadedBy"]),
 
+  airlineLogos: defineTable({
+    airlineIata: v.string(),
+    airlineIcao: v.string(),
+    slug: v.string(),
+    sourceAsset: v.string(),
+    sourceUrl: v.string(),
+    contentType: v.optional(v.string()),
+    cachedUrl: v.optional(v.string()),
+    imageKey: v.optional(v.string()),
+    lastFetchedAt: v.number(),
+    lastCachedAt: v.optional(v.number()),
+  })
+    .index("by_airlineIata", ["airlineIata"])
+    .index("by_airlineIcao", ["airlineIcao"])
+    .index("by_slug", ["slug"]),
+
   // Track contributor reward winners (first to 100 uploads)
   // Track which flights users are currently watching
   activeTrackers: defineTable({

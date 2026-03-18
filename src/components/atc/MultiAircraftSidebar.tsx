@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import { type PositionUpdate } from "~/lib/aircraft-store";
+import { getAirlineLogoUrl } from "~/lib/airline-logos";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
 import { formatSpeed, formatAltitude, speedSuffix } from "~/lib/units";
 
@@ -74,17 +75,6 @@ const getFlightPhase = (
   return "---";
 };
 
-const extractAirlineFromFlightNumber = (flightNo?: string): string | null => {
-  const match = flightNo?.match(/^([A-Z]{2,3})/);
-  return match?.[1]?.toLowerCase() ?? null;
-};
-
-const getAirlineLogoFromFlightNumber = (flightNo?: string): string | null => {
-  const code = extractAirlineFromFlightNumber(flightNo);
-  if (!code) return null;
-  return `https://content.airhex.com/content/logos/airlines_${code}_200_200_s.png?theme=dark`;
-};
-
 interface AircraftCardProps {
   aircraft: PositionUpdate & { altMSL?: number };
   colorIndex: number;
@@ -97,8 +87,9 @@ const AircraftCard = ({
   onRemove,
 }: AircraftCardProps) => {
   const color = FLIGHT_PATH_COLORS[colorIndex % FLIGHT_PATH_COLORS.length]!;
-  const airlineLogo = getAirlineLogoFromFlightNumber(aircraft.flightNo);
+  const airlineLogo = getAirlineLogoUrl(aircraft.flightNo);
   const { speedUnit, altitudeUnit } = useUnitPreferences();
+  const [logoError, setLogoError] = useState(false);
 
   const displayValues = useMemo(() => {
     const altMSL = Number(aircraft.altMSL ?? aircraft.alt ?? 0);
@@ -147,7 +138,7 @@ const AircraftCard = ({
       <div className="flex items-start gap-3 pl-2">
         {/* Airline logo or plane icon */}
         <div className="shrink-0">
-          {airlineLogo ? (
+          {airlineLogo && !logoError ? (
             <Image
               src={airlineLogo}
               alt="Airline"
@@ -155,6 +146,7 @@ const AircraftCard = ({
               height={36}
               className="rounded-lg border border-white/10 bg-black/50 object-contain p-1"
               unoptimized
+              onError={() => setLogoError(true)}
             />
           ) : (
             <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-black/50 text-white/30">

@@ -112,6 +112,7 @@ import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
 import { AircraftControlPanel } from "./AircraftControlPanel";
 import Link from "next/link";
 import { Analytics } from "~/lib/analytics";
+import { getAirlineLogoUrl } from "~/lib/airline-logos";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
 import { formatSpeed, formatAltitude, speedLabel, altitudeLabel } from "~/lib/units";
 
@@ -126,17 +127,6 @@ const getFlightPhase = (
     return flightPlan && altAGL < 5000 ? "landing" : "descending";
   if (altAGL > 5000) return "cruising";
   return "unknown";
-};
-
-const extractAirlineFromFlightNumber = (flightNo?: string): string | null => {
-  const match = flightNo?.match(/^([A-Z]{2,3})/);
-  return match?.[1]?.toLowerCase() ?? null;
-};
-
-const getAirlineLogoFromFlightNumber = (flightNo?: string): string | null => {
-  const code = extractAirlineFromFlightNumber(flightNo);
-  if (!code) return null;
-  return `https://content.airhex.com/content/logos/airlines_${code}_200_200_s.png?theme=dark`;
 };
 
 const EARTH_RADIUS_NM = 3440.065;
@@ -267,6 +257,7 @@ export const Sidebar = ({
 }) => {
   const [tab, setTab] = useState<"info" | "history">("info");
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Real-time flight history query
@@ -604,7 +595,7 @@ export const Sidebar = ({
     </div>
   );
 
-  const airlineLogo = getAirlineLogoFromFlightNumber(aircraft.flightNo);
+  const airlineLogo = getAirlineLogoUrl(aircraft.flightNo);
   const { photo: aircraftPhoto } = useAircraftPhoto(
     aircraft.flightNo || aircraft.callsign,
     aircraft.type,
@@ -628,6 +619,10 @@ export const Sidebar = ({
   useEffect(() => {
     setImageLoaded(false);
   }, [aircraftPhoto?.imageUrl]);
+
+  useEffect(() => {
+    setLogoError(false);
+  }, [airlineLogo]);
 
   return (
     <div
@@ -723,7 +718,7 @@ export const Sidebar = ({
                   ))}
               </div>
               <div className="relative shrink-0">
-                {airlineLogo ? (
+                {airlineLogo && !logoError ? (
                   <Image
                     src={airlineLogo}
                     alt="Airline Logo"
@@ -731,6 +726,7 @@ export const Sidebar = ({
                     height={64}
                     className="rounded-2xl border border-white/20 bg-black/80 object-contain p-2 shadow-xl backdrop-blur-sm"
                     unoptimized
+                    onError={() => setLogoError(true)}
                   />
                 ) : (
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-black/50 text-white/20 backdrop-blur-sm">

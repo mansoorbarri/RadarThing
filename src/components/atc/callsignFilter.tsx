@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import { type PositionUpdate } from "~/lib/aircraft-store";
+import { getAirlineLogoUrl } from "~/lib/airline-logos";
 
 interface CallsignFilterProps {
   aircrafts: PositionUpdate[];
@@ -10,14 +11,6 @@ interface CallsignFilterProps {
   onToggleCallsign: (prefix: string) => void;
   onClearFilters: () => void;
 }
-
-const getAirlineLogoFromFlightNumber = (flightNo?: string): string | null => {
-  if (!flightNo) return null;
-  const match = /^[A-Z]{2,3}/.exec(flightNo.trim().toUpperCase());
-  if (!match) return null;
-  const code = match[0];
-  return `https://content.airhex.com/content/logos/airlines_${code}_200_200_s.png?theme=dark`;
-};
 
 export function CallsignFilter({
   aircrafts,
@@ -103,7 +96,7 @@ function AirlineRow({
   index: number;
 }) {
   const [logoError, setLogoError] = useState(false);
-  const logoUrl = getAirlineLogoFromFlightNumber(prefix);
+  const logoUrl = getAirlineLogoUrl(prefix);
 
   return (
     <li
