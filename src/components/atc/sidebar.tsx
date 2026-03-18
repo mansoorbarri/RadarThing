@@ -717,8 +717,8 @@ export const Sidebar = ({
                     </p>
                   ))}
               </div>
-              <div className="relative shrink-0">
-                {airlineLogo && !logoError ? (
+              {airlineLogo && !logoError && (
+                <div className="relative shrink-0">
                   <Image
                     src={airlineLogo}
                     alt="Airline Logo"
@@ -728,12 +728,8 @@ export const Sidebar = ({
                     unoptimized
                     onError={() => setLogoError(true)}
                   />
-                ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-black/50 text-white/20 backdrop-blur-sm">
-                    <PlaneIcon size={32} />
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

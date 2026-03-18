@@ -137,8 +137,8 @@ const AircraftCard = ({
 
       <div className="flex items-start gap-3 pl-2">
         {/* Airline logo or plane icon */}
-        <div className="shrink-0">
-          {airlineLogo && !logoError ? (
+        {airlineLogo && !logoError && (
+          <div className="shrink-0">
             <Image
               src={airlineLogo}
               alt="Airline"
@@ -148,12 +148,8 @@ const AircraftCard = ({
               unoptimized
               onError={() => setLogoError(true)}
             />
-          ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-black/50 text-white/30">
-              <PlaneIcon size={18} />
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Flight info */}
         <div className="min-w-0 flex-1 pr-4">

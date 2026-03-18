@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Image from "next/image";
+import { Plane } from "lucide-react";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { getAirlineLogoUrl } from "~/lib/airline-logos";
 
@@ -112,8 +113,8 @@ function AirlineRow({
         }`}
       >
         {/* Logo */}
-        <div className="flex h-10 w-10 items-center justify-center">
-          {logoUrl && !logoError ? (
+        {logoUrl && !logoError ? (
+          <div className="flex h-10 w-10 items-center justify-center">
             <Image
               src={logoUrl}
               alt={prefix}
@@ -123,12 +124,10 @@ function AirlineRow({
               unoptimized
               onError={() => setLogoError(true)}
             />
-          ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded bg-white/5 font-mono text-sm text-slate-400">
-              {prefix}
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <Plane className="h-4 w-4 shrink-0 text-slate-500" />
+        )}
 
         {/* Airline info */}
         <div className="flex flex-col items-start">
