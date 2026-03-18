@@ -618,7 +618,6 @@ export default function AirportChartsPage() {
                   }}
                   onFileSelected={setHasSelectedFiles}
                   onError={(err) => {
-                    setError(err);
                     toast.error(err);
                     setSubmitStage("idle");
                   }}

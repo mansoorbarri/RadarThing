@@ -333,7 +333,6 @@ function ChartUploadModal({ onClose }: { onClose: () => void }) {
               }}
               onFileSelected={setHasSelectedFiles}
               onError={(err) => {
-                setError(err);
                 toast.error(err);
                 setSubmitStage("idle");
               }}
