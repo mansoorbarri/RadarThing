@@ -1,23 +1,24 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
 import Image from "next/image";
 import {
   ArrowLeft,
-  Plane,
-  Navigation,
-  Clock,
-  Trophy,
   ChevronDown,
+  Clock,
   Flame,
+  Navigation,
+  Plane,
+  Trophy,
+  Upload,
 } from "lucide-react";
+import { api } from "../../../convex/_generated/api";
 import { Analytics } from "~/lib/analytics";
 
-type SortKey = "flights" | "distance" | "time" | "streak";
+type SortKey = "flights" | "distance" | "time" | "streak" | "contribution";
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -26,10 +27,19 @@ function formatFlightTime(ms: number): string {
   return `${hours}h ${minutes}m`;
 }
 
+function getActiveSortLabel(sortBy: SortKey): string {
+  if (sortBy === "distance") return "Dist";
+  if (sortBy === "time") return "Time";
+  if (sortBy === "streak") return "Streak";
+  if (sortBy === "contribution") return "Uploads";
+  return "Flights";
+}
+
 export default function LeaderboardPage() {
   const router = useRouter();
   const { user } = useUser();
   const leaderboard = useQuery(api.flights.getLeaderboard);
+  const contributionLeaderboard = useQuery(api.users.getFreeUserUploadCounts);
   const [sortBy, setSortBy] = useState<SortKey>("flights");
 
   const currentUserRef = useRef<HTMLButtonElement>(null);
@@ -38,19 +48,90 @@ export default function LeaderboardPage() {
     Analytics.leaderboardViewed();
   }, []);
 
-  const sorted = leaderboard
-    ? [...leaderboard].sort((a, b) => {
+  const mergedEntries =
+    leaderboard && contributionLeaderboard
+      ? [
+          ...new Map(
+            [
+              ...leaderboard.map((pilot) => [
+                pilot.clerkId,
+                {
+                  userId: pilot.userId,
+                  clerkId: pilot.clerkId,
+                  callsign: pilot.callsign,
+                  role: pilot.role,
+                  discordUsername: pilot.discordUsername,
+                  totalFlights: pilot.totalFlights,
+                  totalFlightTimeMs: pilot.totalFlightTimeMs,
+                  totalDistanceNm: pilot.totalDistanceNm,
+                  currentStreak: pilot.currentStreak,
+                  aircraftImages: 0,
+                  airportCharts: 0,
+                  totalContributions: 0,
+                },
+              ]),
+              ...contributionLeaderboard.map((contributor) => [
+                contributor.clerkId,
+                {
+                  userId: contributor.userId,
+                  clerkId: contributor.clerkId,
+                  callsign: contributor.displayName,
+                  role: contributor.role,
+                  discordUsername: contributor.discordUsername,
+                  totalFlights: 0,
+                  totalFlightTimeMs: 0,
+                  totalDistanceNm: 0,
+                  currentStreak: 0,
+                  aircraftImages: contributor.aircraftImages,
+                  airportCharts: contributor.airportCharts,
+                  totalContributions: contributor.total,
+                },
+              ]),
+            ].map(([clerkId, entry]) => {
+              const pilot = leaderboard.find((item) => item.clerkId === clerkId);
+              const contributor = contributionLeaderboard.find(
+                (item) => item.clerkId === clerkId,
+              );
+
+              return [
+                clerkId,
+                {
+                  userId: pilot?.userId ?? contributor!.userId,
+                  clerkId,
+                  callsign: pilot?.callsign ?? contributor!.displayName,
+                  role: pilot?.role ?? contributor!.role,
+                  discordUsername:
+                    pilot?.discordUsername ?? contributor?.discordUsername ?? null,
+                  totalFlights: pilot?.totalFlights ?? 0,
+                  totalFlightTimeMs: pilot?.totalFlightTimeMs ?? 0,
+                  totalDistanceNm: pilot?.totalDistanceNm ?? 0,
+                  currentStreak: pilot?.currentStreak ?? 0,
+                  aircraftImages: contributor?.aircraftImages ?? 0,
+                  airportCharts: contributor?.airportCharts ?? 0,
+                  totalContributions: contributor?.total ?? 0,
+                },
+              ];
+            }),
+          ).values(),
+        ]
+      : null;
+
+  const sorted = mergedEntries
+    ? [...mergedEntries].sort((a, b) => {
         if (sortBy === "flights") return b.totalFlights - a.totalFlights;
         if (sortBy === "distance") return b.totalDistanceNm - a.totalDistanceNm;
         if (sortBy === "streak") return b.currentStreak - a.currentStreak;
+        if (sortBy === "contribution") {
+          return b.totalContributions - a.totalContributions;
+        }
         return b.totalFlightTimeMs - a.totalFlightTimeMs;
       })
     : null;
 
   const currentUserRank = sorted
-    ? sorted.findIndex((p) => p.clerkId === user?.id) + 1
+    ? sorted.findIndex((entry) => entry.clerkId === user?.id) + 1
     : 0;
-  const currentUserEntry = sorted?.find((p) => p.clerkId === user?.id) ?? null;
+  const currentUserEntry = sorted?.find((entry) => entry.clerkId === user?.id) ?? null;
 
   const scrollToCurrentUser = () => {
     currentUserRef.current?.scrollIntoView({
@@ -61,7 +142,6 @@ export default function LeaderboardPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
-      {/* Header */}
       <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
           <button
@@ -86,7 +166,6 @@ export default function LeaderboardPage() {
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
-        {/* Title */}
         <div className="mb-6 flex items-center gap-3 sm:mb-8">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-amber-500/50 bg-amber-500/10 sm:h-12 sm:w-12">
             <Trophy className="h-4 w-4 text-amber-400 sm:h-5 sm:w-5" />
@@ -96,12 +175,11 @@ export default function LeaderboardPage() {
               Leaderboard
             </h1>
             <p className="text-xs text-slate-500 sm:text-sm">
-              Top pilots on RadarThing
+              Top pilots and community contributors on RadarThing
             </p>
           </div>
         </div>
 
-        {/* Your Position */}
         {currentUserEntry && currentUserRank > 0 && (
           <button
             onClick={scrollToCurrentUser}
@@ -116,10 +194,9 @@ export default function LeaderboardPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="truncate font-mono text-xs font-bold text-white sm:text-sm">
-                  {currentUserEntry.discordUsername ??
-                    currentUserEntry.callsign}
+                  {currentUserEntry.discordUsername ?? currentUserEntry.callsign}
                 </span>
-                {currentUserEntry.currentStreak > 0 && (
+                {currentUserEntry.currentStreak > 0 && sortBy === "streak" && (
                   <div className="flex shrink-0 items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 sm:px-2">
                     <Flame className="h-3 w-3 text-amber-400" />
                     <span className="font-mono text-[10px] font-bold text-amber-400 sm:text-xs">
@@ -129,20 +206,24 @@ export default function LeaderboardPage() {
                 )}
               </div>
             </div>
-            {/* Mobile: show active sort stat */}
             <div className="flex shrink-0 items-center gap-3 text-right sm:hidden">
               <div>
                 <div className="font-mono text-[10px] text-slate-600 uppercase">
-                  {sortBy === "flights"
-                    ? "Flights"
-                    : sortBy === "distance"
-                      ? "Dist"
-                      : sortBy === "time"
-                        ? "Time"
-                        : "Streak"}
+                  {getActiveSortLabel(sortBy)}
                 </div>
                 <div
-                  className={`font-mono text-sm font-bold ${sortBy === "streak" ? "text-amber-400" : "text-white"}`}
+                  title={
+                    sortBy === "contribution"
+                      ? `${currentUserEntry.aircraftImages} Images + ${currentUserEntry.airportCharts} Charts`
+                      : undefined
+                  }
+                  className={`font-mono text-sm font-bold ${
+                    sortBy === "streak"
+                      ? "text-amber-400"
+                      : sortBy === "contribution"
+                        ? "text-emerald-400"
+                        : "text-white"
+                  }`}
                 >
                   {sortBy === "flights"
                     ? currentUserEntry.totalFlights
@@ -150,14 +231,15 @@ export default function LeaderboardPage() {
                       ? currentUserEntry.totalDistanceNm.toLocaleString()
                       : sortBy === "time"
                         ? formatFlightTime(currentUserEntry.totalFlightTimeMs)
-                        : currentUserEntry.currentStreak > 0
-                          ? `${currentUserEntry.currentStreak}d`
-                          : "—"}
+                        : sortBy === "streak"
+                          ? currentUserEntry.currentStreak > 0
+                            ? `${currentUserEntry.currentStreak}d`
+                            : "—"
+                          : currentUserEntry.totalContributions}
                 </div>
               </div>
               <ChevronDown className="h-4 w-4 text-cyan-400/60" />
             </div>
-            {/* Desktop: show all stats */}
             <div className="hidden shrink-0 items-center gap-4 text-right sm:flex">
               <div>
                 <div className="font-mono text-[10px] text-slate-600 uppercase">
@@ -193,12 +275,22 @@ export default function LeaderboardPage() {
                     : "—"}
                 </div>
               </div>
+              <div>
+                <div className="font-mono text-[10px] text-slate-600 uppercase">
+                  Uploads
+                </div>
+                <div
+                  title={`${currentUserEntry.aircraftImages} Images + ${currentUserEntry.airportCharts} Charts`}
+                  className="font-mono text-sm font-bold text-emerald-400"
+                >
+                  {currentUserEntry.totalContributions}
+                </div>
+              </div>
               <ChevronDown className="h-4 w-4 text-cyan-400/60" />
             </div>
           </button>
         )}
 
-        {/* Sort Tabs */}
         <div className="-mx-4 mb-6 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <div className="flex w-fit gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
             {[
@@ -210,6 +302,11 @@ export default function LeaderboardPage() {
               },
               { key: "time" as SortKey, label: "Time", icon: Clock },
               { key: "streak" as SortKey, label: "Streak", icon: Flame },
+              {
+                key: "contribution" as SortKey,
+                label: "Contribution",
+                icon: Upload,
+              },
             ].map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
@@ -227,7 +324,6 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
-        {/* Leaderboard List */}
         {sorted === null ? (
           <LeaderboardSkeleton />
         ) : sorted.length === 0 ? (
@@ -237,28 +333,19 @@ export default function LeaderboardPage() {
               No Pilots Yet
             </h3>
             <p className="text-slate-400">
-              Be the first to record a flight and claim the top spot!
+              Be the first to record a flight or upload a contribution.
             </p>
           </div>
         ) : (
           <div>
-            {/* Column Headers */}
             <div className="flex items-center gap-3 px-3 pb-3 sm:gap-4 sm:px-4">
               <div className="w-8 shrink-0 sm:w-9" />
               <div className="min-w-0 flex-1 font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
                 Pilot
               </div>
-              {/* Mobile: show active sort column */}
-              <div className="w-12 shrink-0 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase sm:hidden">
-                {sortBy === "flights"
-                  ? "Flights"
-                  : sortBy === "distance"
-                    ? "Dist"
-                    : sortBy === "time"
-                      ? "Time"
-                      : "Streak"}
+              <div className="w-14 shrink-0 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase sm:hidden">
+                {getActiveSortLabel(sortBy)}
               </div>
-              {/* Desktop: show all columns */}
               <div className="hidden shrink-0 items-center gap-6 sm:flex">
                 <div className="w-12 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
                   Flights
@@ -272,14 +359,17 @@ export default function LeaderboardPage() {
                 <div className="w-12 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
                   Streak
                 </div>
+                <div className="w-14 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                  Uploads
+                </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              {sorted.map((pilot, i) => {
+              {sorted.map((entry, i) => {
                 const rank = i + 1;
                 const isTop3 = rank <= 3;
-                const isCurrentUser = user?.id === pilot.clerkId;
+                const isCurrentUser = user?.id === entry.clerkId;
                 const medalColor =
                   rank === 1
                     ? "text-amber-400 border-amber-500/40 bg-amber-500/10"
@@ -291,9 +381,9 @@ export default function LeaderboardPage() {
 
                 return (
                   <button
-                    key={pilot.userId}
+                    key={entry.userId}
                     ref={isCurrentUser ? currentUserRef : undefined}
-                    onClick={() => router.push(`/pilot/${pilot.userId}`)}
+                    onClick={() => router.push(`/pilot/${entry.userId}`)}
                     className={`flex w-full cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition-all hover:border-cyan-500/30 hover:bg-white/10 sm:gap-4 sm:p-4 ${
                       isCurrentUser
                         ? "border-cyan-500/40 bg-cyan-500/[0.08] ring-1 ring-cyan-500/20"
@@ -302,7 +392,6 @@ export default function LeaderboardPage() {
                           : "border-white/5 bg-white/[0.02]"
                     }`}
                   >
-                    {/* Rank */}
                     <div
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border font-mono text-xs font-bold sm:h-9 sm:w-9 sm:text-sm ${
                         isTop3
@@ -313,18 +402,17 @@ export default function LeaderboardPage() {
                       {rank}
                     </div>
 
-                    {/* Pilot Name + Badge */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 sm:gap-2">
                         <span className="truncate font-mono text-xs font-bold text-white sm:text-sm">
-                          {pilot.discordUsername ?? pilot.callsign}
+                          {entry.discordUsername ?? entry.callsign}
                         </span>
                         {isCurrentUser && (
                           <span className="shrink-0 rounded bg-cyan-500/20 px-1 py-0.5 font-mono text-[8px] font-bold text-cyan-400 sm:px-1.5 sm:text-[9px]">
                             YOU
                           </span>
                         )}
-                        {(pilot.role === "PRO" || pilot.role === "ADMIN") && (
+                        {(entry.role === "PRO" || entry.role === "ADMIN") && (
                           <span className="shrink-0 rounded bg-emerald-500/20 px-1 py-0.5 font-mono text-[8px] font-bold text-emerald-400 sm:px-1.5 sm:text-[9px]">
                             PRO
                           </span>
@@ -332,49 +420,56 @@ export default function LeaderboardPage() {
                       </div>
                     </div>
 
-                    {/* Mobile: show active sort stat */}
-                    <div className="w-12 shrink-0 text-right sm:hidden">
+                    <div className="w-14 shrink-0 text-right sm:hidden">
                       <div
+                        title={
+                          sortBy === "contribution"
+                            ? `${entry.aircraftImages} Images + ${entry.airportCharts} Charts`
+                            : undefined
+                        }
                         className={`font-mono text-xs font-bold ${
                           sortBy === "streak"
                             ? "text-amber-400"
-                            : "text-cyan-400"
+                            : sortBy === "contribution"
+                              ? "text-emerald-400"
+                              : "text-cyan-400"
                         }`}
                       >
                         {sortBy === "flights"
-                          ? pilot.totalFlights
+                          ? entry.totalFlights
                           : sortBy === "distance"
-                            ? pilot.totalDistanceNm.toLocaleString()
+                            ? entry.totalDistanceNm.toLocaleString()
                             : sortBy === "time"
-                              ? formatFlightTime(pilot.totalFlightTimeMs)
-                              : pilot.currentStreak > 0
-                                ? `${pilot.currentStreak}d`
-                                : "—"}
+                              ? formatFlightTime(entry.totalFlightTimeMs)
+                              : sortBy === "streak"
+                                ? entry.currentStreak > 0
+                                  ? `${entry.currentStreak}d`
+                                  : "—"
+                                : entry.totalContributions}
                       </div>
                     </div>
 
-                    {/* Desktop: show all stats */}
                     <div className="hidden shrink-0 items-center gap-6 sm:flex">
                       <div
                         className={`w-12 text-right font-mono text-sm font-bold ${
                           sortBy === "flights" ? "text-cyan-400" : "text-white"
                         }`}
                       >
-                        {pilot.totalFlights}
+                        {entry.totalFlights}
                       </div>
                       <div
                         className={`w-16 text-right font-mono text-sm font-bold ${
                           sortBy === "distance" ? "text-cyan-400" : "text-white"
                         }`}
                       >
-                        {pilot.totalDistanceNm.toLocaleString()}
+                        {entry.totalDistanceNm.toLocaleString()}
                       </div>
                       <div
                         className={`w-14 text-right font-mono text-sm font-bold ${
                           sortBy === "time" ? "text-cyan-400" : "text-white"
                         }`}
                       >
-                        {formatFlightTime(pilot.totalFlightTimeMs)}
+                        {formatFlightTime(entry.totalFlightTimeMs)}
                       </div>
                       <div
                         className={`w-12 text-right font-mono text-sm font-bold ${
@@ -383,9 +478,17 @@ export default function LeaderboardPage() {
                             : "text-amber-400"
                         }`}
                       >
-                        {pilot.currentStreak > 0
-                          ? `${pilot.currentStreak}d`
-                          : "—"}
+                        {entry.currentStreak > 0 ? `${entry.currentStreak}d` : "—"}
+                      </div>
+                      <div
+                        title={`${entry.aircraftImages} Images + ${entry.airportCharts} Charts`}
+                        className={`w-14 text-right font-mono text-sm font-bold ${
+                          sortBy === "contribution"
+                            ? "text-emerald-400"
+                            : "text-white"
+                        }`}
+                      >
+                        {entry.totalContributions}
                       </div>
                     </div>
                   </button>
@@ -411,14 +514,13 @@ function LeaderboardSkeleton() {
           <div className="flex-1">
             <div className="h-4 w-20 animate-pulse rounded bg-white/10 sm:w-28" />
           </div>
-          {/* Mobile: single stat */}
-          <div className="h-4 w-12 animate-pulse rounded bg-white/10 sm:hidden" />
-          {/* Desktop: all stats */}
+          <div className="h-4 w-14 animate-pulse rounded bg-white/10 sm:hidden" />
           <div className="hidden items-center gap-6 sm:flex">
             <div className="h-4 w-12 animate-pulse rounded bg-white/10" />
             <div className="h-4 w-16 animate-pulse rounded bg-white/10" />
             <div className="h-4 w-14 animate-pulse rounded bg-white/10" />
             <div className="h-4 w-12 animate-pulse rounded bg-white/10" />
+            <div className="h-4 w-14 animate-pulse rounded bg-white/10" />
           </div>
         </div>
       ))}

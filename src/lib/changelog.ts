@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "leaderboard-contributions-tab",
+    date: "2026-03-18",
+    title: "Contribution Leaderboard",
+    description:
+      "The leaderboard now includes a Contributions tab so you can rank community uploaders by total submissions, aircraft images, and airport charts.",
+    type: "new",
+  },
+  {
     id: "display-units-customizer",
     date: "2026-03-08",
     title: "Display Units Customizer",

@@ -262,19 +262,17 @@ export const getAll = query({
   },
 });
 
-// Get upload counts for all FREE users (aircraft images + airport charts)
+// Get upload counts for all active users (aircraft images + airport charts)
 export const getFreeUserUploadCounts = query({
   args: {},
   handler: async (ctx) => {
-    const freeUsers = await ctx.db
+    const users = await ctx.db
       .query("users")
-      .filter((q) =>
-        q.and(q.eq(q.field("role"), "FREE"), q.eq(q.field("isDeleted"), false)),
-      )
+      .filter((q) => q.eq(q.field("isDeleted"), false))
       .collect();
 
     const results = await Promise.all(
-      freeUsers.map(async (user) => {
+      users.map(async (user) => {
         const aircraftImages = await ctx.db
           .query("aircraftImages")
           .withIndex("by_uploadedBy", (q) => q.eq("uploadedBy", user.clerkId))
@@ -288,7 +286,9 @@ export const getFreeUserUploadCounts = query({
         return {
           userId: user._id,
           clerkId: user.clerkId,
-          email: user.email,
+          role: user.role,
+          discordUsername: user.discordUsername ?? null,
+          displayName: user.discordUsername ?? `User ${user.clerkId.slice(0, 6)}`,
           aircraftImages: aircraftImages.length,
           airportCharts: airportCharts.length,
           total: aircraftImages.length + airportCharts.length,
