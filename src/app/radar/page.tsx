@@ -27,6 +27,7 @@ import { useRecentSearches } from "~/hooks/useRecentSearches";
 import { useActiveTracker } from "~/hooks/useActiveTracker";
 import { useMostTrackedFlights } from "~/hooks/useMostTrackedFlights";
 import { Analytics } from "~/lib/analytics";
+import { normalizeCallsign } from "~/lib/utils";
 
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
 import { SearchBar } from "~/components/atc/searchbar";
@@ -104,8 +105,12 @@ export default function ATCPage() {
 
   // Check if callsign param is a full flight number (e.g., EK213) vs just a prefix (e.g., EK)
   const callsignParam = searchParams.get("callsign");
+  const normalizedCallsignParam = callsignParam
+    ? normalizeCallsign(callsignParam)
+    : null;
   const isFullFlightNumberParam =
-    callsignParam && /^[A-Z]+\d+.*$/i.test(callsignParam.trim());
+    normalizedCallsignParam &&
+    /^[A-Z]+\d+.*$/i.test(normalizedCallsignParam);
 
   // Handle replay param from dashboard
   const replayParam = searchParams.get("replay");
@@ -117,8 +122,8 @@ export default function ATCPage() {
   // State for full flight number filter (can be cleared with Escape)
   const [fullFlightFilter, setFullFlightFilter] = useState<string | null>(
     () => {
-      if (isFullFlightNumberParam && callsignParam) {
-        return callsignParam.trim().toUpperCase();
+      if (isFullFlightNumberParam && normalizedCallsignParam) {
+        return normalizedCallsignParam;
       }
       return null;
     },
@@ -132,7 +137,7 @@ export default function ATCPage() {
       if (callsignParam) {
         const prefixes = callsignParam
           .split(",")
-          .map((s) => s.trim().toUpperCase())
+          .map((s) => normalizeCallsign(s))
           .filter(Boolean);
         return new Set(prefixes);
       }

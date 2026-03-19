@@ -10,6 +10,7 @@ import React, {
 
 import { toast } from "sonner";
 import { useUserByGoogleId } from "~/hooks/useUserByGoogleId";
+import { normalizeCallsign } from "~/lib/utils";
 // Inline SVG icons to avoid bundling entire react-icons library (~7.8MB)
 const PlaneInflightIcon = ({
   size = 24,
@@ -749,7 +750,9 @@ export const Sidebar = ({
             {(aircraft.callsign || aircraft.flightNo) && (
               <button
                 onClick={() => {
-                  const identifier = aircraft.flightNo || aircraft.callsign;
+                  const identifier = normalizeCallsign(
+                    aircraft.flightNo || aircraft.callsign,
+                  );
                   const url = `${window.location.origin}/radar?callsign=${identifier}&follow=true`;
                   navigator.clipboard.writeText(url).then(() => {
                     toast.success("Live tracking link copied to clipboard");

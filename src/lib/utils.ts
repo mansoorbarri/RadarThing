@@ -4,6 +4,13 @@ export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
 }
 
+export function normalizeCallsign(callsign: string | undefined): string {
+  return String(callsign || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "");
+}
+
 /** Normalize aircraft type (e.g., "Boeing 777-300ER" -> "B777", "Airbus A350-900" -> "A350") */
 export function normalizeAircraftType(type: string | undefined): string | null {
   if (!type) return null;
