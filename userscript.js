@@ -10,6 +10,25 @@
   let wasOnGround = true;
   let takeoffTimeUTC = "";
 
+  function sanitizeCallsign(value) {
+    return String(value || "")
+      .toUpperCase()
+      .replace(/\s+/g, "");
+  }
+
+  function sanitizeSquawk(value) {
+    return String(value || "")
+      .replace(/\D+/g, "")
+      .slice(0, 4);
+  }
+
+  function getUserIdentifier() {
+    return (
+      geofs?.userRecord?.googleid ||
+      sanitizeCallsign(geofs?.userRecord?.callsign)
+    );
+  }
+
   // ==========================================
   // AUTOPILOT FOLLOW
   // ==========================================
@@ -196,14 +215,14 @@
         case "setSquawk":
           // Update the squawk in flight info
           if (info) {
-            info.sqk = String(cmd.value);
+            info.sqk = sanitizeSquawk(cmd.value);
             window.dispatchEvent(
               new CustomEvent("atc-data-sync", { detail: info }),
             );
             // Also update the squawk input field in the UI
             window.dispatchEvent(
               new CustomEvent("atc-squawk-update", {
-                detail: { squawk: String(cmd.value) },
+                detail: { squawk: info.sqk },
               }),
             );
           }
@@ -275,7 +294,7 @@
   async function pollCommands() {
     if (!geofs?.userRecord) return;
 
-    const id = geofs.userRecord.googleid || geofs.userRecord.callsign;
+    const id = getUserIdentifier();
     if (!id) return;
 
     try {
@@ -309,7 +328,11 @@
 
   window.addEventListener("atc-data-sync", (e) => {
     const wasActive = info.active;
-    info = e.detail;
+    info = {
+      ...e.detail,
+      flt: sanitizeCallsign(e.detail?.flt),
+      sqk: sanitizeSquawk(e.detail?.sqk),
+    };
     broadcastStatus();
 
     // If flight was active and is now cleared, end the flight immediately
@@ -326,7 +349,7 @@
       return;
     }
 
-    const id = geofs.userRecord.googleid || geofs.userRecord.callsign;
+    const id = getUserIdentifier();
     if (!id) {
       console.warn("[RadarThing] Cannot end flight - no id");
       return;
@@ -397,9 +420,9 @@
     const altAGL = calculateAGL();
 
     const payload = {
-      id: geofs.userRecord.googleid || geofs.userRecord.callsign,
+      id: getUserIdentifier(),
       googleId: geofs.userRecord.googleid || null,
-      callsign: geofs.userRecord.callsign,
+      callsign: sanitizeCallsign(geofs.userRecord.callsign),
       type: inst.aircraftRecord.name || "Unknown",
       lat: lla[0],
       lon: lla[1],
@@ -407,11 +430,11 @@
       altMSL: Math.round(altMSL),
       heading: Math.round(geofs.animation.values.heading360 || 0),
       speed: Math.round(geofs.animation.values.kias || 0),
-      flightNo: info.flt,
+      flightNo: sanitizeCallsign(info.flt),
       departure: info.dep,
       arrival: info.arr,
       takeoffTime: takeoffTimeUTC,
-      squawk: info.sqk,
+      squawk: sanitizeSquawk(info.sqk),
       flightPlan: geofs.flightPlan?.export ? geofs.flightPlan.export() : [],
       nextWaypoint: geofs.flightPlan?.trackedWaypoint?.ident || null,
       vspeed: Math.floor(geofs.animation?.values?.verticalSpeed || 0),

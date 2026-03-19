@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RadarThing
 // @namespace    http://tampermonkey.net/
-// @version      1.5.0
+// @version      1.5.1
 // @description  Always loads the latest GeoFS ATC Radar script from GitHub
 // @Author       xyzmani
 // @icon         https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/public/favicon.ico
@@ -94,6 +94,18 @@
     return /^[A-Z]{4}$/.test(str);
   }
 
+  function sanitizeFlightCallsign(value) {
+    return String(value || "")
+      .toUpperCase()
+      .replace(/\s+/g, "");
+  }
+
+  function sanitizeSquawk(value) {
+    return String(value || "")
+      .replace(/\D+/g, "")
+      .slice(0, 4);
+  }
+
   function syncFlightPlan() {
     try {
       const g = window.geofs;
@@ -151,7 +163,7 @@
   }
 
   function validateSquawk(squawk) {
-    const rgx = /^[0-7]{4}$/;
+    const rgx = /^\d{4}$/;
     return squawk.length === 0 || rgx.test(squawk);
   }
 
@@ -1111,9 +1123,21 @@
     [DEP_INPUT_ID, ARR_INPUT_ID, FLT_INPUT_ID, SQK_INPUT_ID].forEach((id) => {
       const el = document.getElementById(id);
       el.addEventListener("input", () => {
+        if (id === FLT_INPUT_ID) {
+          el.value = sanitizeFlightCallsign(el.value);
+          return;
+        }
+
+        if (id === SQK_INPUT_ID) {
+          el.value = sanitizeSquawk(el.value);
+          return;
+        }
+
         el.value = el.value.toUpperCase();
       });
     });
+
+    document.getElementById(SQK_INPUT_ID).maxLength = 4;
 
     document.getElementById(KEYBIND_BTN_ID).onclick = () => {
       keybindMode = "flight";
@@ -1148,8 +1172,13 @@
     document.getElementById(SAVE_BTN_ID).onclick = async () => {
       const dep = document.getElementById(DEP_INPUT_ID).value.trim();
       const arr = document.getElementById(ARR_INPUT_ID).value.trim();
-      const flt = document.getElementById(FLT_INPUT_ID).value.trim();
-      const sqk = document.getElementById(SQK_INPUT_ID).value.trim();
+      const flt = sanitizeFlightCallsign(
+        document.getElementById(FLT_INPUT_ID).value,
+      );
+      const sqk = sanitizeSquawk(document.getElementById(SQK_INPUT_ID).value);
+
+      document.getElementById(FLT_INPUT_ID).value = flt;
+      document.getElementById(SQK_INPUT_ID).value = sqk;
 
       if (!dep || !arr || !flt) {
         showToast("Required fields missing", true);
@@ -1890,7 +1919,7 @@
   window.addEventListener("atc-squawk-update", (e) => {
     const sqkEl = document.getElementById(SQK_INPUT_ID);
     if (sqkEl && e.detail.squawk) {
-      sqkEl.value = e.detail.squawk;
+      sqkEl.value = sanitizeSquawk(e.detail.squawk);
     }
   });
 
