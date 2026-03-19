@@ -47,6 +47,7 @@
   const FOLLOW_STATUS_ID = "atc-follow-status";
   const FOLLOW_LIST_ID = "atc-follow-list";
   const FOLLOW_SEARCH_ID = "atc-follow-search";
+  const AF_INPUT_ID = "atc-afInput";
 
   let flightUI;
   let keybindMode = null;
@@ -1059,6 +1060,9 @@
         ">
           ${buildToggleRow("JTH Radar", JTH_TOGGLE_ID, radarPrefs.jth)}
           ${buildToggleRow("Seabus Radar", SEABUS_TOGGLE_ID, radarPrefs.seabus)}
+          <div style="margin-top:6px;">
+            ${buildInputRow("AF", AF_INPUT_ID, "USAF")}
+          </div>
         </div>
       </div>
 
@@ -1176,9 +1180,11 @@
         document.getElementById(FLT_INPUT_ID).value,
       );
       const sqk = sanitizeSquawk(document.getElementById(SQK_INPUT_ID).value);
+      const af = document.getElementById(AF_INPUT_ID).value.trim().toUpperCase();
 
       document.getElementById(FLT_INPUT_ID).value = flt;
       document.getElementById(SQK_INPUT_ID).value = sqk;
+      document.getElementById(AF_INPUT_ID).value = af;
 
       if (!dep || !arr || !flt) {
         showToast("Required fields missing", true);
@@ -1199,14 +1205,14 @@
 
       window.dispatchEvent(
         new CustomEvent("atc-data-sync", {
-          detail: { dep, arr, flt, sqk, active: true },
+          detail: { dep, arr, flt, sqk, af, active: true },
         }),
       );
       showToast("Flight info saved");
     };
 
     document.getElementById(CLEAR_BTN_ID).onclick = () => {
-      [DEP_INPUT_ID, ARR_INPUT_ID, FLT_INPUT_ID, SQK_INPUT_ID].forEach(
+      [DEP_INPUT_ID, ARR_INPUT_ID, FLT_INPUT_ID, SQK_INPUT_ID, AF_INPUT_ID].forEach(
         (id) => (document.getElementById(id).value = ""),
       );
       window.dispatchEvent(

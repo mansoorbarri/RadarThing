@@ -6,7 +6,7 @@
   const SEND_INTERVAL_MS = 5000;
   const COMMAND_POLL_INTERVAL_MS = 2000;
 
-  let info = { active: false, dep: "", arr: "", flt: "", sqk: "" };
+  let info = { active: false, dep: "", arr: "", flt: "", sqk: "", af: "" };
   let wasOnGround = true;
   let takeoffTimeUTC = "";
 
@@ -435,6 +435,7 @@
       arrival: info.arr,
       takeoffTime: takeoffTimeUTC,
       squawk: sanitizeSquawk(info.sqk),
+      af: info.af || "",
       flightPlan: geofs.flightPlan?.export ? geofs.flightPlan.export() : [],
       nextWaypoint: geofs.flightPlan?.trackedWaypoint?.ident || null,
       vspeed: Math.floor(geofs.animation?.values?.verticalSpeed || 0),

@@ -597,6 +597,7 @@ export const Sidebar = ({
   const { photo: aircraftPhoto } = useAircraftPhoto(
     aircraft.flightNo || aircraft.callsign,
     aircraft.type,
+    aircraft.af,
   );
 
   // Check if this is the user's own aircraft or if user has special control privileges

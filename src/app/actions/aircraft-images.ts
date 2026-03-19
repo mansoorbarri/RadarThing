@@ -225,6 +225,7 @@ export async function validateUploadEligibility(data: {
   airlineIata: string;
   airlineIcao: string;
   aircraftType: string;
+  isMilitary?: boolean;
 }): Promise<{ canUpload: boolean; error?: string }> {
   const userId = await getCurrentUserId();
   if (!userId) {
@@ -234,32 +235,47 @@ export async function validateUploadEligibility(data: {
     };
   }
 
-  // Validate both airline codes are provided
-  if (!data.airlineIata || !data.airlineIcao) {
-    return {
-      canUpload: false,
-      error: "Both IATA and ICAO airline codes are required",
-    };
-  }
-
   // Validate aircraft type
   if (!data.aircraftType) {
     return { canUpload: false, error: "Aircraft type is required" };
   }
 
-  // Validate code lengths
-  const iata = data.airlineIata.trim().toUpperCase();
-  const icao = data.airlineIcao.trim().toUpperCase();
   const aircraftType = normalizeAircraftTypeInput(data.aircraftType);
 
-  if (iata.length < 1 || iata.length > 2) {
-    return { canUpload: false, error: "IATA code must be 1-2 characters" };
-  }
-  if (icao.length < 3 || icao.length > 4) {
-    return {
-      canUpload: false,
-      error: "ICAO code must be 3-4 characters",
-    };
+  let iata: string;
+  let icao: string;
+
+  if (data.isMilitary) {
+    // Military: only AF name (stored as ICAO) is required
+    if (!data.airlineIcao) {
+      return {
+        canUpload: false,
+        error: "Air force name is required (e.g., USAF, PAF)",
+      };
+    }
+    iata = "MIL";
+    icao = data.airlineIcao.trim().toUpperCase();
+  } else {
+    // Commercial: both IATA and ICAO are required
+    if (!data.airlineIata || !data.airlineIcao) {
+      return {
+        canUpload: false,
+        error: "Both IATA and ICAO airline codes are required",
+      };
+    }
+
+    iata = data.airlineIata.trim().toUpperCase();
+    icao = data.airlineIcao.trim().toUpperCase();
+
+    if (iata.length < 1 || iata.length > 2) {
+      return { canUpload: false, error: "IATA code must be 1-2 characters" };
+    }
+    if (icao.length < 3 || icao.length > 4) {
+      return {
+        canUpload: false,
+        error: "ICAO code must be 3-4 characters",
+      };
+    }
   }
 
   try {
@@ -305,29 +321,38 @@ export async function createAircraftImage(data: {
   imageUrl: string;
   imageKey?: string;
   discordUsername?: string;
+  isMilitary?: boolean;
 }): Promise<{ success: boolean; error?: string; image?: AircraftImage }> {
   const userId = await getCurrentUserId();
   if (!userId) {
     return { success: false, error: "You must be signed in to upload images" };
   }
 
-  // Validate both airline codes are provided
-  if (!data.airlineIata || !data.airlineIcao) {
-    return {
-      success: false,
-      error: "Both IATA and ICAO airline codes are required",
-    };
+  // Validate codes based on military flag
+  if (data.isMilitary) {
+    if (!data.airlineIcao) {
+      return { success: false, error: "Air force name is required" };
+    }
+  } else {
+    if (!data.airlineIata || !data.airlineIcao) {
+      return {
+        success: false,
+        error: "Both IATA and ICAO airline codes are required",
+      };
+    }
   }
 
   try {
     const aircraftType = normalizeAircraftTypeInput(data.aircraftType);
+    const airlineIata = data.isMilitary ? "MIL" : data.airlineIata;
+    const airlineIcao = data.airlineIcao;
 
     // Check eligibility in a single query (combines checkApprovedExists and checkPendingByUser)
     const eligibility = await convex.query(
       api.aircraftImages.checkUploadEligibility,
       {
-        airlineIata: data.airlineIata,
-        airlineIcao: data.airlineIcao,
+        airlineIata,
+        airlineIcao,
         aircraftType,
         uploadedBy: userId,
       },
@@ -371,12 +396,13 @@ export async function createAircraftImage(data: {
     }
 
     const image = await convex.mutation(api.aircraftImages.create, {
-      airlineIata: data.airlineIata,
-      airlineIcao: data.airlineIcao,
+      airlineIata,
+      airlineIcao,
       aircraftType,
       imageUrl: data.imageUrl,
       imageKey: data.imageKey,
       discordUsername: data.discordUsername,
+      isMilitary: data.isMilitary || undefined,
       uploadedBy: userId,
     });
 

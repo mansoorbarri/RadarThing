@@ -50,12 +50,13 @@ export default defineSchema({
   }).index("by_userId", ["userId"]),
 
   aircraftImages: defineTable({
-    airlineIata: v.string(), // 2-letter IATA code (e.g., "EK")
-    airlineIcao: v.string(), // 3-letter ICAO code (e.g., "UAE")
+    airlineIata: v.string(), // 2-letter IATA code (e.g., "EK") or "MIL" for military
+    airlineIcao: v.string(), // 3-letter ICAO code (e.g., "UAE") or AF name (e.g., "USAF")
     aircraftType: v.string(),
     imageUrl: v.string(),
     imageKey: v.optional(v.string()), // UploadThing file key for deletion
     discordUsername: v.optional(v.string()),
+    isMilitary: v.optional(v.boolean()), // true for military aircraft (AF name stored in airlineIcao)
     isApproved: v.boolean(),
     uploadedBy: v.string(), // Clerk user ID
     approvedBy: v.optional(v.string()), // Clerk user ID

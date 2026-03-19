@@ -54,12 +54,14 @@ export interface AircraftPhotoData {
 export const useAircraftPhoto = (
   callsign: string | undefined,
   aircraftType: string | undefined,
+  af?: string,
 ) => {
   const [photo, setPhoto] = useState<AircraftPhotoData | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const airlineCode = extractAirlineCode(callsign);
+    // For military aircraft, use the AF name directly as the airline code
+    const airlineCode = af ? af.trim().toUpperCase() : extractAirlineCode(callsign);
     const normalizedType = normalizeAircraftType(aircraftType);
 
     if (!airlineCode || !normalizedType) {
@@ -102,7 +104,7 @@ export const useAircraftPhoto = (
     };
 
     fetchPhoto();
-  }, [callsign, aircraftType]);
+  }, [callsign, aircraftType, af]);
 
   return { photo, loading };
 };

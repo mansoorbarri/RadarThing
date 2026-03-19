@@ -62,6 +62,7 @@ export default function AircraftImagesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [airlineFilter, setAirlineFilter] = useState("");
   const [aircraftFilter, setAircraftFilter] = useState("");
+  const [isMilitary, setIsMilitary] = useState(false);
   const [formData, setFormData] = useState({
     airlineIata: "",
     airlineIcao: "",
@@ -199,10 +200,18 @@ export default function AircraftImagesPage() {
       setError("Please select an image first");
       return;
     }
-    if (!formData.airlineIata || !formData.airlineIcao) {
-      toast.error("Both IATA and ICAO airline codes are required");
-      setError("Both IATA and ICAO airline codes are required");
-      return;
+    if (isMilitary) {
+      if (!formData.airlineIcao) {
+        toast.error("Air force name is required (e.g., USAF, PAF)");
+        setError("Air force name is required (e.g., USAF, PAF)");
+        return;
+      }
+    } else {
+      if (!formData.airlineIata || !formData.airlineIcao) {
+        toast.error("Both IATA and ICAO airline codes are required");
+        setError("Both IATA and ICAO airline codes are required");
+        return;
+      }
     }
     if (!formData.aircraftType) {
       toast.error("Aircraft type is required");
@@ -213,9 +222,11 @@ export default function AircraftImagesPage() {
     setError(null);
     uploadedDataRef.current = null;
 
+    const effectiveIata = isMilitary ? "MIL" : formData.airlineIata;
+
     // Track upload start
     Analytics.imageUploadStarted({
-      airlineIata: formData.airlineIata,
+      airlineIata: effectiveIata,
       airlineIcao: formData.airlineIcao,
       aircraftType: formData.aircraftType,
     });
@@ -223,9 +234,10 @@ export default function AircraftImagesPage() {
     // Stage 1: Validating
     setSubmitStage("validating");
     const validation = await validateUploadEligibility({
-      airlineIata: formData.airlineIata,
+      airlineIata: effectiveIata,
       airlineIcao: formData.airlineIcao,
       aircraftType: formData.aircraftType,
+      isMilitary,
     });
 
     if (!validation.canUpload) {
@@ -252,18 +264,19 @@ export default function AircraftImagesPage() {
     // Stage 3: Submitting
     setSubmitStage("submitting");
     const result = await createAircraftImage({
-      airlineIata: formData.airlineIata,
+      airlineIata: effectiveIata,
       airlineIcao: formData.airlineIcao,
       aircraftType: formData.aircraftType,
       imageUrl,
       imageKey,
       discordUsername: formData.discordUsername || undefined,
+      isMilitary,
     });
 
     if (result.success) {
       // Track upload completion
       Analytics.imageUploadCompleted({
-        airlineIata: formData.airlineIata,
+        airlineIata: effectiveIata,
         airlineIcao: formData.airlineIcao,
         aircraftType: formData.aircraftType,
       });
@@ -284,6 +297,7 @@ export default function AircraftImagesPage() {
         setHasSelectedFile(false);
         uploadedDataRef.current = null;
         uploaderRef.current?.reset();
+        setIsMilitary(false);
         // Keep Discord username when resetting form
         setFormData((prev) => ({
           airlineIata: "",
@@ -596,74 +610,143 @@ export default function AircraftImagesPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="mb-2 block font-mono text-xs text-slate-400">
-                    IATA CODE *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.airlineIata}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        airlineIata: e.target.value.toUpperCase(),
-                      })
-                    }
-                    placeholder="e.g., EK"
-                    maxLength={2}
-                    required
-                    disabled={isProcessing}
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+              <label className="flex cursor-pointer items-center gap-3">
+                <div
+                  className={`relative h-5 w-9 rounded-full transition-colors ${isMilitary ? "bg-cyan-500/40" : "bg-white/12"}`}
+                  onClick={() => {
+                    setIsMilitary(!isMilitary);
+                    setFormData((prev) => ({
+                      ...prev,
+                      airlineIata: "",
+                      airlineIcao: "",
+                    }));
+                  }}
+                >
+                  <div
+                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-slate-200 transition-[left] ${isMilitary ? "left-[18px]" : "left-0.5"}`}
                   />
                 </div>
+                <span className="font-mono text-xs text-slate-400">
+                  MILITARY AIRCRAFT
+                </span>
+              </label>
 
-                <div>
-                  <label className="mb-2 block font-mono text-xs text-slate-400">
-                    ICAO CODE *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.airlineIcao}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        airlineIcao: e.target.value.toUpperCase(),
-                      })
-                    }
-                    placeholder="e.g., UAE or USAF"
-                    maxLength={4}
-                    required
-                    disabled={isProcessing}
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
-                  />
-                </div>
+              {isMilitary ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="mb-2 block font-mono text-xs text-slate-400">
+                      AIR FORCE *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.airlineIcao}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          airlineIcao: e.target.value.toUpperCase(),
+                        })
+                      }
+                      placeholder="e.g., USAF"
+                      maxLength={10}
+                      required
+                      disabled={isProcessing}
+                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                    />
+                  </div>
 
-                <div>
-                  <label className="mb-2 block font-mono text-xs text-slate-400">
-                    AIRCRAFT *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.aircraftType}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        aircraftType: e.target.value.toUpperCase(),
-                      })
-                    }
-                    placeholder="B777"
-                    maxLength={10}
-                    required
-                    disabled={isProcessing}
-                    title="Use base model only (e.g., B777, A350) — not variants"
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
-                  />
+                  <div>
+                    <label className="mb-2 block font-mono text-xs text-slate-400">
+                      AIRCRAFT *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.aircraftType}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          aircraftType: e.target.value.toUpperCase(),
+                        })
+                      }
+                      placeholder="F16"
+                      maxLength={10}
+                      required
+                      disabled={isProcessing}
+                      title="Use base model only (e.g., F16, C130)"
+                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="mb-2 block font-mono text-xs text-slate-400">
+                      IATA CODE *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.airlineIata}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          airlineIata: e.target.value.toUpperCase(),
+                        })
+                      }
+                      placeholder="e.g., EK"
+                      maxLength={2}
+                      required
+                      disabled={isProcessing}
+                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block font-mono text-xs text-slate-400">
+                      ICAO CODE *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.airlineIcao}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          airlineIcao: e.target.value.toUpperCase(),
+                        })
+                      }
+                      placeholder="e.g., UAE"
+                      maxLength={4}
+                      required
+                      disabled={isProcessing}
+                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block font-mono text-xs text-slate-400">
+                      AIRCRAFT *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.aircraftType}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          aircraftType: e.target.value.toUpperCase(),
+                        })
+                      }
+                      placeholder="B777"
+                      maxLength={10}
+                      required
+                      disabled={isProcessing}
+                      title="Use base model only (e.g., B777, A350) — not variants"
+                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+              )}
               <p className="text-xs text-slate-500">
-                Aircraft should be base model only, not the varient. Like: B777.
-                Not: B77W.
+                {isMilitary
+                  ? "Enter the air force name (e.g., USAF, PAF, RAF) and aircraft model."
+                  : "Aircraft should be base model only, not the varient. Like: B777. Not: B77W."}
               </p>
 
               <div>
@@ -691,7 +774,7 @@ export default function AircraftImagesPage() {
                 </label>
                 <ImageUploader
                   ref={uploaderRef}
-                  airlineIata={formData.airlineIata}
+                  airlineIata={isMilitary ? "MIL" : formData.airlineIata}
                   airlineIcao={formData.airlineIcao}
                   aircraftType={formData.aircraftType}
                   externalUploadTrigger={true}

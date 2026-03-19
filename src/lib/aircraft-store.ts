@@ -14,6 +14,7 @@ export interface PositionUpdate {
   arrival: string;
   takeoffTime: string;
   squawk: string;
+  af: string;
   flightPlan: string;
   vspeed: string;
   nextWaypoint: string;

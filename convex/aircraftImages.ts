@@ -282,6 +282,7 @@ export const create = mutation({
     imageUrl: v.string(),
     imageKey: v.optional(v.string()),
     discordUsername: v.optional(v.string()),
+    isMilitary: v.optional(v.boolean()),
     uploadedBy: v.string(),
   },
   handler: async (ctx, args) => {
@@ -292,6 +293,7 @@ export const create = mutation({
       imageUrl: args.imageUrl,
       imageKey: args.imageKey,
       discordUsername: args.discordUsername,
+      isMilitary: args.isMilitary,
       isApproved: false,
       uploadedBy: args.uploadedBy,
     });
