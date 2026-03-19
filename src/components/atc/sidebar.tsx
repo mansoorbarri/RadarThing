@@ -112,7 +112,6 @@ import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
 import { AircraftControlPanel } from "./AircraftControlPanel";
 import Link from "next/link";
 import { Analytics } from "~/lib/analytics";
-import { getAirlineLogoUrl } from "~/lib/airline-logos";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
 import { formatSpeed, formatAltitude, speedLabel, altitudeLabel } from "~/lib/units";
 
@@ -257,7 +256,6 @@ export const Sidebar = ({
 }) => {
   const [tab, setTab] = useState<"info" | "history">("info");
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [logoError, setLogoError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Real-time flight history query
@@ -595,7 +593,6 @@ export const Sidebar = ({
     </div>
   );
 
-  const airlineLogo = getAirlineLogoUrl(aircraft.flightNo);
   const { photo: aircraftPhoto } = useAircraftPhoto(
     aircraft.flightNo || aircraft.callsign,
     aircraft.type,
@@ -619,10 +616,6 @@ export const Sidebar = ({
   useEffect(() => {
     setImageLoaded(false);
   }, [aircraftPhoto?.imageUrl]);
-
-  useEffect(() => {
-    setLogoError(false);
-  }, [airlineLogo]);
 
   return (
     <div
@@ -685,10 +678,8 @@ export const Sidebar = ({
           <div
             className={`relative z-10 ${isMobile ? "p-4 pb-2" : "p-6 pb-4"} ${aircraftPhoto ? "pt-32" : ""}`}
           >
-            <div
-              className={`${isMobile ? "mb-3" : "mb-5"} flex items-end justify-between`}
-            >
-              <div className="min-w-0 flex-1 pr-4">
+            <div className={`${isMobile ? "mb-3" : "mb-5"}`}>
+              <div className="min-w-0">
                 <div className="mb-1.5 flex items-center gap-2">
                   <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
                   <span className="font-mono text-[10px] font-black tracking-[0.2em] text-cyan-400 uppercase">
@@ -717,19 +708,6 @@ export const Sidebar = ({
                     </p>
                   ))}
               </div>
-              {airlineLogo && !logoError && (
-                <div className="relative shrink-0">
-                  <Image
-                    src={airlineLogo}
-                    alt="Airline Logo"
-                    width={64}
-                    height={64}
-                    className="rounded-2xl border border-white/20 bg-black/80 object-contain p-2 shadow-xl backdrop-blur-sm"
-                    unoptimized
-                    onError={() => setLogoError(true)}
-                  />
-                </div>
-              )}
             </div>
           </div>
         </div>

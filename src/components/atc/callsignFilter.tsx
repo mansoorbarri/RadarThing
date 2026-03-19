@@ -1,10 +1,7 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import Image from "next/image";
-import { Plane } from "lucide-react";
+import React, { useMemo } from "react";
 import { type PositionUpdate } from "~/lib/aircraft-store";
-import { getAirlineLogoUrl } from "~/lib/airline-logos";
 
 interface CallsignFilterProps {
   aircrafts: PositionUpdate[];
@@ -96,9 +93,6 @@ function AirlineRow({
   onToggle: (prefix: string) => void;
   index: number;
 }) {
-  const [logoError, setLogoError] = useState(false);
-  const logoUrl = getAirlineLogoUrl(prefix);
-
   return (
     <li
       className="animate-fade-in-up"
@@ -112,23 +106,6 @@ function AirlineRow({
             : "text-slate-200 hover:bg-white/5"
         }`}
       >
-        {/* Logo */}
-        {logoUrl && !logoError ? (
-          <div className="flex h-10 w-10 items-center justify-center">
-            <Image
-              src={logoUrl}
-              alt={prefix}
-              width={40}
-              height={40}
-              className="rounded bg-black/40 object-contain select-none"
-              unoptimized
-              onError={() => setLogoError(true)}
-            />
-          </div>
-        ) : (
-          <Plane className="h-4 w-4 shrink-0 text-slate-500" />
-        )}
-
         {/* Airline info */}
         <div className="flex flex-col items-start">
           <span className="font-mono text-lg leading-tight">{prefix}</span>

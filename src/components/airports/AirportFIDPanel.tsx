@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import Image from "next/image";
 import { X, Plane } from "lucide-react";
 import { type PositionUpdate } from "~/lib/aircraft-store";
-import { getAirlineLogoUrl } from "~/lib/airline-logos";
 import { calculateDistance } from "~/lib/map-utils";
 import { normalizeAircraftType } from "~/lib/utils";
 
@@ -49,30 +47,13 @@ function FlightRow({
   airportLon: number;
   onTrack: (ac: PositionUpdate) => void;
 }) {
-  const logo = getAirlineLogoUrl(ac.flightNo);
   const eta = isArrival ? formatEta(ac, airportLat, airportLon) : null;
-  const [logoError, setLogoError] = useState(false);
 
   return (
     <button
       onClick={() => onTrack(ac)}
       className="flex w-full cursor-pointer items-center gap-3 border-b border-white/5 px-4 py-2.5 text-left transition-colors hover:bg-white/5"
     >
-      {/* Airline logo */}
-      {logo && !logoError && (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/60">
-          <Image
-            src={logo}
-            alt=""
-            width={24}
-            height={24}
-            className="rounded object-contain"
-            unoptimized
-            onError={() => setLogoError(true)}
-          />
-        </div>
-      )}
-
       {/* Route, flight number & pilot */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">

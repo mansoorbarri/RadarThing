@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import Image from "next/image";
+import React, { useMemo } from "react";
 import { type PositionUpdate } from "~/lib/aircraft-store";
-import { getAirlineLogoUrl } from "~/lib/airline-logos";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
 import { formatSpeed, formatAltitude, speedSuffix } from "~/lib/units";
 
@@ -87,9 +85,7 @@ const AircraftCard = ({
   onRemove,
 }: AircraftCardProps) => {
   const color = FLIGHT_PATH_COLORS[colorIndex % FLIGHT_PATH_COLORS.length]!;
-  const airlineLogo = getAirlineLogoUrl(aircraft.flightNo);
   const { speedUnit, altitudeUnit } = useUnitPreferences();
-  const [logoError, setLogoError] = useState(false);
 
   const displayValues = useMemo(() => {
     const altMSL = Number(aircraft.altMSL ?? aircraft.alt ?? 0);
@@ -136,21 +132,6 @@ const AircraftCard = ({
       </button>
 
       <div className="flex items-start gap-3 pl-2">
-        {/* Airline logo or plane icon */}
-        {airlineLogo && !logoError && (
-          <div className="shrink-0">
-            <Image
-              src={airlineLogo}
-              alt="Airline"
-              width={36}
-              height={36}
-              className="rounded-lg border border-white/10 bg-black/50 object-contain p-1"
-              unoptimized
-              onError={() => setLogoError(true)}
-            />
-          </div>
-        )}
-
         {/* Flight info */}
         <div className="min-w-0 flex-1 pr-4">
           <div className="flex items-center gap-2">
