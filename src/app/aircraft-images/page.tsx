@@ -631,8 +631,8 @@ export default function AircraftImagesPage() {
                         airlineIcao: e.target.value.toUpperCase(),
                       })
                     }
-                    placeholder="e.g., UAE"
-                    maxLength={3}
+                    placeholder="e.g., UAE or USAF"
+                    maxLength={4}
                     required
                     disabled={isProcessing}
                     className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"

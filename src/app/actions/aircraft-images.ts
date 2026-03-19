@@ -255,10 +255,10 @@ export async function validateUploadEligibility(data: {
   if (iata.length < 1 || iata.length > 2) {
     return { canUpload: false, error: "IATA code must be 1-2 characters" };
   }
-  if (icao.length !== 3) {
+  if (icao.length < 3 || icao.length > 4) {
     return {
       canUpload: false,
-      error: "ICAO code must be exactly 3 characters",
+      error: "ICAO code must be 3-4 characters",
     };
   }
 
@@ -832,8 +832,8 @@ export async function updateAircraftImageCodes(
   if (iata.length < 1 || iata.length > 2) {
     return { success: false, error: "IATA code must be 1-2 characters" };
   }
-  if (icao.length !== 3) {
-    return { success: false, error: "ICAO code must be exactly 3 characters" };
+  if (icao.length < 3 || icao.length > 4) {
+    return { success: false, error: "ICAO code must be 3-4 characters" };
   }
   if (!aircraftType) {
     return { success: false, error: "Aircraft type is required" };
