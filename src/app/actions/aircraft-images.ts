@@ -78,6 +78,7 @@ export interface AircraftImage {
   imageUrl: string;
   imageKey: string | null;
   discordUsername: string | null;
+  isMilitary: boolean;
   isApproved: boolean;
   uploadedBy: string;
   approvedBy: string | null;
@@ -95,6 +96,7 @@ function toAircraftImage(img: {
   imageUrl: string;
   imageKey: string | null;
   discordUsername: string | null;
+  isMilitary?: boolean;
   isApproved: boolean;
   uploadedBy: string;
   approvedBy: string | null;
@@ -110,6 +112,7 @@ function toAircraftImage(img: {
     imageUrl: img.imageUrl,
     imageKey: img.imageKey,
     discordUsername: img.discordUsername,
+    isMilitary: img.isMilitary ?? false,
     isApproved: img.isApproved,
     uploadedBy: img.uploadedBy,
     approvedBy: img.approvedBy,

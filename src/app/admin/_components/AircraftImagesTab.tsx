@@ -40,6 +40,7 @@ interface ImageType {
   airlineIcao: string;
   aircraftType: string;
   discordUsername?: string | null;
+  isMilitary?: boolean;
   uploadedBy?: string;
 }
 
@@ -68,12 +69,14 @@ function EditableCodes({
   initialIata,
   initialIcao,
   initialAircraftType,
+  isMilitary,
   onSaveSuccess,
 }: {
   imageId: string;
   initialIata: string;
   initialIcao: string;
   initialAircraftType: string;
+  isMilitary?: boolean;
   onSaveSuccess?: () => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -134,26 +137,29 @@ function EditableCodes({
   if (isEditing) {
     return (
       <div className="flex flex-wrap items-center gap-2">
-        <input
-          type="text"
-          value={iata}
-          onChange={(e) => setIata(e.target.value.toUpperCase())}
-          onKeyDown={handleKeyDown}
-          placeholder="IATA"
-          maxLength={2}
-          className="w-14 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400"
-          disabled={isSaving}
-          autoFocus
-        />
+        {!isMilitary && (
+          <input
+            type="text"
+            value={iata}
+            onChange={(e) => setIata(e.target.value.toUpperCase())}
+            onKeyDown={handleKeyDown}
+            placeholder="IATA"
+            maxLength={2}
+            className="w-14 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400"
+            disabled={isSaving}
+            autoFocus
+          />
+        )}
         <input
           type="text"
           value={icao}
           onChange={(e) => setIcao(e.target.value.toUpperCase())}
           onKeyDown={handleKeyDown}
-          placeholder="ICAO"
-          maxLength={4}
-          className="w-16 rounded-md border border-blue-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-blue-400 outline-none focus:border-blue-400"
+          placeholder={isMilitary ? "AF Name" : "ICAO"}
+          maxLength={isMilitary ? 10 : 4}
+          className={`rounded-md border bg-black/60 px-2 py-1 font-mono text-sm outline-none ${isMilitary ? "w-20 border-amber-500/50 text-amber-400 focus:border-amber-400" : "w-16 border-blue-500/50 text-blue-400 focus:border-blue-400"}`}
           disabled={isSaving}
+          autoFocus={isMilitary}
         />
         <input
           type="text"
@@ -184,15 +190,23 @@ function EditableCodes({
 
   return (
     <div className="group/codes flex flex-wrap items-center gap-2">
-      {initialIata && (
-        <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">
-          {initialIata}
-        </span>
-      )}
-      {initialIcao && (
-        <span className="rounded-md bg-blue-500/20 px-2 py-1 font-mono text-sm font-bold text-blue-400">
+      {isMilitary ? (
+        <span className="rounded-md bg-amber-500/20 px-2 py-1 font-mono text-sm font-bold text-amber-400">
           {initialIcao}
         </span>
+      ) : (
+        <>
+          {initialIata && (
+            <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">
+              {initialIata}
+            </span>
+          )}
+          {initialIcao && (
+            <span className="rounded-md bg-blue-500/20 px-2 py-1 font-mono text-sm font-bold text-blue-400">
+              {initialIcao}
+            </span>
+          )}
+        </>
       )}
       {initialAircraftType && (
         <span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">
@@ -858,8 +872,15 @@ export function AircraftImagesTab() {
                       className="object-cover"
                       unoptimized
                     />
-                    <div className="absolute top-2 left-2 rounded-md bg-yellow-500/80 px-2 py-1 text-xs font-bold text-black">
-                      PENDING
+                    <div className="absolute top-2 left-2 flex gap-1">
+                      <span className="rounded-md bg-yellow-500/80 px-2 py-1 text-xs font-bold text-black">
+                        PENDING
+                      </span>
+                      {image.isMilitary && (
+                        <span className="rounded-md bg-amber-600/80 px-2 py-1 text-xs font-bold text-white">
+                          MIL
+                        </span>
+                      )}
                     </div>
                     <button
                       onClick={() => toggleSelect(image.id)}
@@ -879,6 +900,7 @@ export function AircraftImagesTab() {
                         initialIata={image.airlineIata || ""}
                         initialIcao={image.airlineIcao || ""}
                         initialAircraftType={image.aircraftType || ""}
+                        isMilitary={image.isMilitary}
                       />
                     </div>
                     <p className="mb-1 text-xs text-slate-500">
@@ -987,6 +1009,7 @@ export function AircraftImagesTab() {
                         initialIata={image.airlineIata || ""}
                         initialIcao={image.airlineIcao || ""}
                         initialAircraftType={image.aircraftType || ""}
+                        isMilitary={image.isMilitary}
                       />
                       <CheckCircle className="ml-auto h-4 w-4 text-emerald-400" />
                     </div>
