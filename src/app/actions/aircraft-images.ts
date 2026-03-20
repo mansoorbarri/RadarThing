@@ -104,6 +104,8 @@ function toAircraftImage(img: {
   createdAt: number;
   updatedAt: number;
 }): AircraftImage {
+  const isMilitary = (img.isMilitary ?? false) || img.airlineIata === "MIL";
+
   return {
     id: img.id,
     airlineIata: img.airlineIata,
@@ -112,7 +114,7 @@ function toAircraftImage(img: {
     imageUrl: img.imageUrl,
     imageKey: img.imageKey,
     discordUsername: img.discordUsername,
-    isMilitary: img.isMilitary ?? false,
+    isMilitary,
     isApproved: img.isApproved,
     uploadedBy: img.uploadedBy,
     approvedBy: img.approvedBy,
@@ -855,17 +857,19 @@ export async function updateAircraftImageCodes(
   }
 
   // Validate details
-  const iata = isMilitary ? "MIL" : newIata.trim().toUpperCase();
+  const effectiveIsMilitary =
+    Boolean(isMilitary) || newIata.trim().toUpperCase() === "MIL";
+  const iata = effectiveIsMilitary ? "MIL" : newIata.trim().toUpperCase();
   const icao = newIcao.trim().toUpperCase();
   const aircraftType = normalizeAircraftTypeInput(newAircraftType);
 
-  if (!isMilitary && (iata.length < 1 || iata.length > 2)) {
+  if (!effectiveIsMilitary && (iata.length < 1 || iata.length > 2)) {
     return { success: false, error: "IATA code must be 1-2 characters" };
   }
-  if (isMilitary && !icao) {
+  if (effectiveIsMilitary && !icao) {
     return { success: false, error: "Air force name is required" };
   }
-  if (!isMilitary && (icao.length < 3 || icao.length > 4)) {
+  if (!effectiveIsMilitary && (icao.length < 3 || icao.length > 4)) {
     return { success: false, error: "ICAO code must be 3-4 characters" };
   }
   if (!aircraftType) {

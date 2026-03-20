@@ -80,6 +80,7 @@ function EditableCodes({
   onSaveSuccess?: () => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const effectiveIsMilitary = isMilitary || initialIata === "MIL";
   const [iata, setIata] = useState(initialIata);
   const [icao, setIcao] = useState(initialIcao);
   const [aircraftType, setAircraftType] = useState(initialAircraftType);
@@ -108,7 +109,7 @@ function EditableCodes({
       iata,
       icao,
       aircraftType,
-      isMilitary,
+      effectiveIsMilitary,
     );
     setIsSaving(false);
     if (result.success) {
@@ -138,7 +139,7 @@ function EditableCodes({
   if (isEditing) {
     return (
       <div className="flex flex-wrap items-center gap-2">
-        {!isMilitary && (
+        {!effectiveIsMilitary && (
           <input
             type="text"
             value={iata}
@@ -156,11 +157,11 @@ function EditableCodes({
           value={icao}
           onChange={(e) => setIcao(e.target.value.toUpperCase())}
           onKeyDown={handleKeyDown}
-          placeholder={isMilitary ? "AF Name" : "ICAO"}
-          maxLength={isMilitary ? 10 : 4}
-          className={`rounded-md border bg-black/60 px-2 py-1 font-mono text-sm outline-none ${isMilitary ? "w-20 border-amber-500/50 text-amber-400 focus:border-amber-400" : "w-16 border-blue-500/50 text-blue-400 focus:border-blue-400"}`}
+          placeholder={effectiveIsMilitary ? "AF Name" : "ICAO"}
+          maxLength={effectiveIsMilitary ? 10 : 4}
+          className={`rounded-md border bg-black/60 px-2 py-1 font-mono text-sm outline-none ${effectiveIsMilitary ? "w-20 border-amber-500/50 text-amber-400 focus:border-amber-400" : "w-16 border-blue-500/50 text-blue-400 focus:border-blue-400"}`}
           disabled={isSaving}
-          autoFocus={isMilitary}
+          autoFocus={effectiveIsMilitary}
         />
         <input
           type="text"
@@ -191,7 +192,7 @@ function EditableCodes({
 
   return (
     <div className="group/codes flex flex-wrap items-center gap-2">
-      {isMilitary ? (
+      {effectiveIsMilitary ? (
         <span className="rounded-md bg-amber-500/20 px-2 py-1 font-mono text-sm font-bold text-amber-400">
           {initialIcao}
         </span>

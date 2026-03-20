@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "aircraft-class-icons",
+    date: "2026-03-20",
+    title: "Aircraft Class Icons",
+    description:
+      "Live aircraft on the radar now use different marker silhouettes for classes like light, regional, heavy, super, business, and military traffic.",
+    type: "improvement",
+  },
+  {
     id: "leaderboard-contributions-tab",
     date: "2026-03-18",
     title: "Contribution Leaderboard",

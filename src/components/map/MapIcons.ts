@@ -3,6 +3,62 @@ import { type PositionUpdate } from "~/lib/aircraft-store";
 import { formatSpeed, formatAltitude, speedSuffix, type UnitPreferences, DEFAULT_UNIT_PREFERENCES } from "~/lib/units";
 
 const EMERGENCY_SQUAWKS = new Set(["7700", "7600", "7500"]);
+const DEFAULT_AIRCRAFT_ICON = "/icons/e195.svg";
+
+function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
+  const type = aircraftClass?.trim().toLowerCase() ?? "";
+  const af = airForce?.trim().toLowerCase() ?? "";
+
+  if (af) return "/icons/c130.svg";
+  if (!type) return DEFAULT_AIRCRAFT_ICON;
+  if (
+    type.includes("military") ||
+    type.includes("fighter") ||
+    type.includes("cargo") ||
+    type.includes("tanker")
+  ) {
+    return "/icons/c130.svg";
+  }
+  if (type.includes("super")) return "/icons/md11.svg";
+  if (type.includes("heavy")) return "/icons/md11.svg";
+  if (
+    type.includes("business") ||
+    type.includes("biz") ||
+    type.includes("corporate") ||
+    type.includes("executive")
+  ) {
+    return "/icons/glf5.svg";
+  }
+  if (
+    type.includes("light") ||
+    type.includes("prop") ||
+    type.includes("ga") ||
+    type.includes("general aviation")
+  ) {
+    return "/icons/cessna.svg";
+  }
+  if (
+    type.includes("regional") ||
+    type.includes("commuter") ||
+    type.includes("medium")
+  ) {
+    return "/icons/crjx.svg";
+  }
+
+  return DEFAULT_AIRCRAFT_ICON;
+}
+
+function getAircraftIconFilter(isEmergency: boolean, isSelected: boolean) {
+  if (isEmergency) {
+    return "brightness(0) saturate(100%) invert(41%) sepia(96%) saturate(2084%) hue-rotate(338deg) brightness(98%) contrast(93%) drop-shadow(0 0 8px rgba(239,68,68,0.9))";
+  }
+
+  if (isSelected) {
+    return "brightness(0) saturate(100%) invert(79%) sepia(44%) saturate(1177%) hue-rotate(152deg) brightness(98%) contrast(90%) drop-shadow(0 0 8px rgba(34,211,238,0.8))";
+  }
+
+  return "brightness(0) saturate(100%) invert(80%) sepia(20%) saturate(742%) hue-rotate(152deg) brightness(90%) contrast(95%) drop-shadow(0 0 6px rgba(34,211,238,0.45))";
+}
 
 export const WaypointIcon = L.divIcon({
   html: `
@@ -68,7 +124,7 @@ export const getAircraftDivIcon = (
   isMobile = false,
   unitPrefs: UnitPreferences = DEFAULT_UNIT_PREFERENCES,
 ) => {
-  const iconUrl = "https://i.ibb.co/6cNhyMMj/1.png";
+  const iconUrl = getAircraftIconUrl(aircraft.type, aircraft.af);
   const planeSize = isMobile ? 24 : 28;
   const tagHeight = isMobile ? 38 : 52;
   const tagWidth = isMobile ? 85 : 115;
@@ -106,14 +162,8 @@ export const getAircraftDivIcon = (
     transform:rotate(${aircraft.heading || 0}deg);
     transform-origin: 50% 50%;
     z-index: 2;
-    ${
-      isEmergency
-        ? `
-        filter: brightness(1.4) saturate(1.6);
-        animation: pulse 1s infinite alternate;
-      `
-        : ""
-    }
+    filter: ${getAircraftIconFilter(Boolean(isEmergency), Boolean(isCurrentAircraftSelected))};
+    ${isEmergency ? "animation: pulse 1s infinite alternate;" : ""}
   `;
 
   const tagStyle = `
@@ -340,7 +390,7 @@ export const RadarAirportIcon = L.divIcon({
 
 // Replay aircraft icon with heading rotation
 export const getReplayAircraftIcon = (heading: number) => {
-  const iconUrl = "https://i.ibb.co/6cNhyMMj/1.png";
+  const iconUrl = DEFAULT_AIRCRAFT_ICON;
   const planeSize = 36;
 
   return L.divIcon({
@@ -353,7 +403,7 @@ export const getReplayAircraftIcon = (heading: number) => {
             height: ${planeSize}px;
             transform: rotate(${heading}deg);
             transform-origin: 50% 50%;
-            filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.8)) brightness(1.1);
+            filter: brightness(0) saturate(100%) invert(73%) sepia(73%) saturate(1374%) hue-rotate(342deg) brightness(101%) contrast(95%) drop-shadow(0 0 8px rgba(245, 158, 11, 0.8));
           "
         />
         <div style="
