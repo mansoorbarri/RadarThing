@@ -844,6 +844,7 @@ export async function updateAircraftImageCodes(
   newIata: string,
   newIcao: string,
   newAircraftType: string,
+  isMilitary?: boolean,
 ): Promise<{ success: boolean; error?: string }> {
   const admin = await isAdminUser();
   if (!admin) {
@@ -854,14 +855,17 @@ export async function updateAircraftImageCodes(
   }
 
   // Validate details
-  const iata = newIata.trim().toUpperCase();
+  const iata = isMilitary ? "MIL" : newIata.trim().toUpperCase();
   const icao = newIcao.trim().toUpperCase();
   const aircraftType = normalizeAircraftTypeInput(newAircraftType);
 
-  if (iata.length < 1 || iata.length > 2) {
+  if (!isMilitary && (iata.length < 1 || iata.length > 2)) {
     return { success: false, error: "IATA code must be 1-2 characters" };
   }
-  if (icao.length < 3 || icao.length > 4) {
+  if (isMilitary && !icao) {
+    return { success: false, error: "Air force name is required" };
+  }
+  if (!isMilitary && (icao.length < 3 || icao.length > 4)) {
     return { success: false, error: "ICAO code must be 3-4 characters" };
   }
   if (!aircraftType) {

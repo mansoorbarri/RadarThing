@@ -108,6 +108,7 @@ function EditableCodes({
       iata,
       icao,
       aircraftType,
+      isMilitary,
     );
     setIsSaving(false);
     if (result.success) {
