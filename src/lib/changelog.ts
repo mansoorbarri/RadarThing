@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "military-helicopter-icons",
+    date: "2026-03-21",
+    title: "Military and Helicopter Icons",
+    description:
+      "Military aircraft now use the A6 marker silhouette on the radar, and helicopters use the A7 silhouette.",
+    type: "improvement",
+  },
+  {
     id: "aircraft-class-icons",
     date: "2026-03-20",
     title: "Aircraft Class Icons",

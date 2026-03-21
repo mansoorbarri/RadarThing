@@ -5,18 +5,36 @@ import { formatSpeed, formatAltitude, speedSuffix, type UnitPreferences, DEFAULT
 const EMERGENCY_SQUAWKS = new Set(["7700", "7600", "7500"]);
 const DEFAULT_AIRCRAFT_ICON = "/icons/e195.svg";
 
+function isHelicopterType(type: string) {
+  return (
+    type.includes("helicopter") ||
+    type.includes("heli") ||
+    type.includes("rotor") ||
+    type.includes("rotary") ||
+    /\b(ah|uh|ch|mh|hh)-?\d{1,3}\b/.test(type)
+  );
+}
+
 function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
   const type = aircraftClass?.trim().toLowerCase() ?? "";
   const af = airForce?.trim().toLowerCase() ?? "";
 
-  if (af) return "/icons/c130.svg";
+  if (isHelicopterType(type)) return "/icons/a7.svg";
+  if (af) return "/icons/a6.svg";
   if (!type) return DEFAULT_AIRCRAFT_ICON;
   if (
     type.includes("military") ||
     type.includes("fighter") ||
-    type.includes("cargo") ||
-    type.includes("tanker")
+    type.includes("bomber") ||
+    type.includes("attack") ||
+    type.includes("interceptor") ||
+    type.includes("recon") ||
+    type.includes("surveillance") ||
+    type.includes("patrol")
   ) {
+    return "/icons/a6.svg";
+  }
+  if (type.includes("cargo") || type.includes("tanker")) {
     return "/icons/c130.svg";
   }
   if (type.includes("super")) return "/icons/md11.svg";
