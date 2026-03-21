@@ -68,14 +68,14 @@ function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
 
 function getAircraftIconFilter(isEmergency: boolean, isSelected: boolean) {
   if (isEmergency) {
-    return "brightness(0) saturate(100%) invert(41%) sepia(96%) saturate(2084%) hue-rotate(338deg) brightness(98%) contrast(93%) drop-shadow(0 0 8px rgba(239,68,68,0.9))";
+    return "brightness(0) saturate(100%) invert(41%) sepia(96%) saturate(2084%) hue-rotate(338deg) brightness(102%) contrast(102%) drop-shadow(0 1px 2px rgba(15,23,42,0.95)) drop-shadow(0 0 6px rgba(239,68,68,0.5))";
   }
 
   if (isSelected) {
-    return "brightness(0) saturate(100%) invert(79%) sepia(44%) saturate(1177%) hue-rotate(152deg) brightness(98%) contrast(90%) drop-shadow(0 0 8px rgba(34,211,238,0.8))";
+    return "brightness(0) saturate(100%) invert(86%) sepia(60%) saturate(1670%) hue-rotate(346deg) brightness(104%) contrast(105%) drop-shadow(0 1px 2px rgba(15,23,42,0.98)) drop-shadow(0 0 6px rgba(250,204,21,0.45))";
   }
 
-  return "brightness(0) saturate(100%) invert(80%) sepia(20%) saturate(742%) hue-rotate(152deg) brightness(90%) contrast(95%) drop-shadow(0 0 6px rgba(34,211,238,0.45))";
+  return "brightness(0) saturate(100%) invert(83%) sepia(77%) saturate(1238%) hue-rotate(353deg) brightness(103%) contrast(103%) drop-shadow(0 1px 2px rgba(15,23,42,0.98)) drop-shadow(0 0 4px rgba(250,204,21,0.35))";
 }
 
 export const WaypointIcon = L.divIcon({
