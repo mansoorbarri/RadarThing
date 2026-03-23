@@ -43,3 +43,6 @@ When adding new features, make sure to add PostHog hooks **IF** it makes sense. 
 
 ### What's New Notifications
 When a new user-facing feature is added, add an entry to the top of the `changelog` array in `src/lib/changelog.ts`. This automatically triggers a toast notification and shows an unread dot on the megaphone icon in the radar header (`src/components/ui/WhatsNew.tsx`) for all users on their next visit.
+
+### SSE Stream
+this project using a SSE stream to get the flight details. this is located at @../radar-sse/. 
