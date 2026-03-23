@@ -34,23 +34,52 @@ function getFlightQueryParams(aircraft: PositionUpdate) {
   return params;
 }
 
+function getAircraftPathKey(aircraft: PositionUpdate | null) {
+  if (!aircraft) return null;
+
+  return [
+    aircraft.id || "",
+    aircraft.flightNo || "",
+    aircraft.callsign || "",
+    aircraft.googleId || "",
+  ].join("|");
+}
+
 export function useActiveFlightPath(aircraft: PositionUpdate | null) {
-  const [flightPath, setFlightPath] = useState<[number, number][] | null>(null);
+  const aircraftPathKey = getAircraftPathKey(aircraft);
+  const [activePathState, setActivePathState] = useState<{
+    aircraftPathKey: string | null;
+    flightPath: [number, number][] | null;
+  }>({
+    aircraftPathKey: null,
+    flightPath: null,
+  });
 
   useEffect(() => {
     if (!aircraft) {
-      setFlightPath(null);
+      setActivePathState({
+        aircraftPathKey: null,
+        flightPath: null,
+      });
       return;
     }
 
     const params = getFlightQueryParams(aircraft);
     if (params.size === 0) {
-      setFlightPath(null);
+      setActivePathState({
+        aircraftPathKey,
+        flightPath: null,
+      });
       return;
     }
 
     let isMounted = true;
     let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    setActivePathState({
+      aircraftPathKey,
+      flightPath: null,
+    });
 
     const fetchPath = async () => {
       try {
@@ -63,7 +92,10 @@ export function useActiveFlightPath(aircraft: PositionUpdate | null) {
 
         if (!response.ok) {
           if (response.status === 404 && isMounted) {
-            setFlightPath(null);
+            setActivePathState({
+              aircraftPathKey,
+              flightPath: null,
+            });
           }
           return;
         }
@@ -77,7 +109,10 @@ export function useActiveFlightPath(aircraft: PositionUpdate | null) {
           : [];
 
         if (isMounted) {
-          setFlightPath(nextPath.length >= 2 ? nextPath : null);
+          setActivePathState({
+            aircraftPathKey,
+            flightPath: nextPath.length >= 2 ? nextPath : null,
+          });
         }
       } catch {
         // Ignore fetch failures and keep the most recent known path.
@@ -95,7 +130,12 @@ export function useActiveFlightPath(aircraft: PositionUpdate | null) {
         clearInterval(intervalId);
       }
     };
-  }, [aircraft]);
+  }, [aircraft, aircraftPathKey]);
 
-  return { flightPath };
+  return {
+    flightPath:
+      activePathState.aircraftPathKey === aircraftPathKey
+        ? activePathState.flightPath
+        : null,
+  };
 }
