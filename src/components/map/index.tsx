@@ -501,7 +501,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           weight: isRadarMode ? 2 : 4,
           opacity: isRadarMode ? 0.7 : 0.8,
           smoothFactor: 1,
-          dashArray: isRadarMode ? "5, 5" : "",
+          dashArray: "",
         });
         mapRefs.historyLayerGroup.current.addLayer(historyPolyline);
       }
