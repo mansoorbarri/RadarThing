@@ -17,6 +17,7 @@ export const env = createEnv({
     ADMIN_GOOGLE_ID: z.string().optional(),
     RESEND_API_KEY: z.string(),
     AVIAPAGES_API_KEY: z.string().optional(),
+    BOT_API_SECRET: z.string(),
   },
 
   /**
@@ -63,6 +64,7 @@ export const env = createEnv({
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     AVIAPAGES_API_KEY: process.env.AVIAPAGES_API_KEY,
+    BOT_API_SECRET: process.env.BOT_API_SECRET,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

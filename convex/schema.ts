@@ -12,11 +12,13 @@ export default defineSchema({
     stripeCustomerId: v.optional(v.string()),
     stripeSubscriptionId: v.optional(v.string()),
     discordUsername: v.optional(v.string()),
+    discordUsernameLower: v.optional(v.string()),
   })
     .index("by_clerkId", ["clerkId"])
     .index("by_email", ["email"])
     .index("by_googleId", ["googleId"])
-    .index("by_stripeCustomerId", ["stripeCustomerId"]),
+    .index("by_stripeCustomerId", ["stripeCustomerId"])
+    .index("by_discordUsernameLower", ["discordUsernameLower"]),
 
   flights: defineTable({
     userId: v.id("users"),
@@ -119,4 +121,32 @@ export default defineSchema({
     .index("by_clerkId", ["clerkId"])
     .index("by_callsign", ["callsign"])
     .index("by_lastSeen", ["lastSeen"]),
+
+  waypointReminders: defineTable({
+    userId: v.id("users"),
+    googleId: v.string(),
+    discordUsername: v.string(),
+    discordUserId: v.string(),
+    callsign: v.string(),
+    waypointIdent: v.string(),
+    intervalSeconds: v.number(),
+    durationSeconds: v.number(),
+    status: v.union(
+      v.literal("armed"),
+      v.literal("active"),
+      v.literal("completed"),
+      v.literal("cancelled"),
+      v.literal("failed"),
+    ),
+    createdAt: v.number(),
+    triggeredAt: v.optional(v.number()),
+    expiresAt: v.optional(v.number()),
+    lastSentAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+    failureReason: v.optional(v.string()),
+  })
+    .index("by_status", ["status"])
+    .index("by_userId", ["userId"])
+    .index("by_googleId_status", ["googleId", "status"])
+    .index("by_createdAt", ["createdAt"]),
 });

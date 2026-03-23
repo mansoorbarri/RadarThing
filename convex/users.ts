@@ -2,6 +2,10 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 
+function normalizeDiscordUsername(value: string): string {
+  return value.trim().toLowerCase();
+}
+
 // Get user by Clerk ID
 export const getByClerkId = query({
   args: { clerkId: v.string() },
@@ -45,6 +49,32 @@ export const getByEmail = query({
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
+  },
+});
+
+// Get user by Discord username
+export const getByDiscordUsername = query({
+  args: { discordUsername: v.string() },
+  handler: async (ctx, args) => {
+    const normalized = normalizeDiscordUsername(args.discordUsername);
+
+    const indexedUser = await ctx.db
+      .query("users")
+      .withIndex("by_discordUsernameLower", (q) =>
+        q.eq("discordUsernameLower", normalized),
+      )
+      .first();
+
+    if (indexedUser) return indexedUser;
+
+    const users = await ctx.db.query("users").collect();
+    return (
+      users.find(
+        (user) =>
+          user.discordUsername &&
+          normalizeDiscordUsername(user.discordUsername) === normalized,
+      ) ?? null
+    );
   },
 });
 
@@ -245,8 +275,13 @@ export const updateDiscordUsername = mutation({
 
     if (!user) return null;
 
+    const discordUsername = args.discordUsername?.trim();
+
     await ctx.db.patch(user._id, {
-      discordUsername: args.discordUsername,
+      discordUsername,
+      discordUsernameLower: discordUsername
+        ? normalizeDiscordUsername(discordUsername)
+        : undefined,
     });
     return user._id;
   },

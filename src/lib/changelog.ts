@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "discord-waypoint-reminders",
+    date: "2026-03-23",
+    title: "Discord Waypoint Reminders",
+    description:
+      "You can now use the Discord bot to schedule waypoint reminders for your live flight and get pinged on your chosen interval after the trigger point.",
+    type: "new",
+  },
+  {
     id: "live-flight-paths",
     date: "2026-03-23",
     title: "Mid-Flight Route Viewing",
