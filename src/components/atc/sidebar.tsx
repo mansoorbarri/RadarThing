@@ -234,6 +234,7 @@ export interface HistoryFlight {
   callsign?: string;
   duration?: number;
   routeData?: [number, number][];
+  isLive?: boolean;
 }
 
 export const Sidebar = ({
@@ -277,6 +278,34 @@ export const Sidebar = ({
   }, [historyQuery]);
   const loadingHistory = shouldFetchHistory && historyQuery === undefined;
   const canAccessHistory = isProUser;
+  const currentFlightHistory = useMemo<HistoryFlight | null>(() => {
+    const liveRoute = aircraft.flightPath;
+    if (!liveRoute || liveRoute.length < 2) return null;
+
+    const parsedTakeoff = Date.parse(aircraft.takeoffTime || "");
+    const startTime = Number.isFinite(parsedTakeoff) ? parsedTakeoff : aircraft.ts;
+
+    return {
+      id: `live:${aircraft.callsign || aircraft.id}`,
+      depICAO: aircraft.departure || "---",
+      arrICAO: aircraft.arrival || "---",
+      startTime,
+      aircraftType: aircraft.type,
+      callsign: aircraft.flightNo || aircraft.callsign,
+      routeData: liveRoute,
+      isLive: true,
+    };
+  }, [
+    aircraft.arrival,
+    aircraft.callsign,
+    aircraft.departure,
+    aircraft.flightNo,
+    aircraft.flightPath,
+    aircraft.id,
+    aircraft.takeoffTime,
+    aircraft.ts,
+    aircraft.type,
+  ]);
 
   // Calculate display values using useMemo instead of DOM manipulation
   const displayValues = useMemo(() => {
@@ -511,6 +540,37 @@ export const Sidebar = ({
 
   const renderHistoryContent = () => (
     <div className="space-y-3">
+      {currentFlightHistory && (
+        <div
+          onClick={() => onHistoryClick?.(currentFlightHistory)}
+          className="animate-fade-in-up group relative cursor-pointer overflow-hidden rounded-2xl border border-cyan-400/20 bg-cyan-500/10 p-4 shadow-lg transition-all hover:border-cyan-400/40"
+        >
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="font-mono text-sm font-black text-white group-hover:text-cyan-300">
+              {currentFlightHistory.depICAO} → {currentFlightHistory.arrICAO}
+            </span>
+            <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-0.5 font-mono text-[9px] font-black tracking-widest text-cyan-300 uppercase">
+              Live
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {currentFlightHistory.callsign && (
+              <span className="font-mono text-[10px] text-cyan-300/80">
+                {currentFlightHistory.callsign}
+              </span>
+            )}
+            {currentFlightHistory.aircraftType && (
+              <span className="font-mono text-[10px] text-white/40">
+                {currentFlightHistory.aircraftType}
+              </span>
+            )}
+          </div>
+          <p className="mt-2 font-mono text-[10px] text-white/50">
+            Open the route flown so far.
+          </p>
+        </div>
+      )}
+
       {loadingHistory ? (
         <div className="flex flex-col items-center justify-center py-20 opacity-60">
           <div className="mb-4 h-6 w-6 animate-spin rounded-full border-2 border-cyan-400" />
@@ -544,7 +604,7 @@ export const Sidebar = ({
         </div>
       ) : history.length === 0 ? (
         <div className="py-20 text-center font-mono text-[10px] tracking-widest text-white/40 uppercase">
-          No Records
+          {currentFlightHistory ? "No Past Records" : "No Records"}
         </div>
       ) : (
         history.map((f, histIdx) => (

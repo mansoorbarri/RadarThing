@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "live-flight-paths",
+    date: "2026-03-23",
+    title: "Mid-Flight Route Viewing",
+    description:
+      "Selected flights can now expose the route flown so far before landing, so you no longer have to wait for a flight to end to inspect its track.",
+    type: "improvement",
+  },
+  {
     id: "military-helicopter-icons",
     date: "2026-03-21",
     title: "Military and Helicopter Icons",

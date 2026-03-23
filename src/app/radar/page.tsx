@@ -15,12 +15,14 @@ import { api } from "../../../convex/_generated/api";
 import { type Id } from "../../../convex/_generated/dataModel";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
+import { activeAircraft } from "~/lib/aircraft-store";
 import { useMobileDetection } from "~/hooks/useMobileDetection";
 import { useAircraftStream } from "~/hooks/useAircraftStream";
 import { useAirportData } from "~/hooks/useAirportData";
 import { useAircraftSearch } from "~/hooks/useAircraftSearch";
 import { useUtcTime } from "~/hooks/useUtcTime";
 import { useTimer } from "~/hooks/useTimer";
+import { useActiveFlightPath } from "~/hooks/useActiveFlightPath";
 // useAirportCharts hook moved into AirportChartsViewer component
 import { useProStatus } from "~/hooks/useProStatus";
 import { useRecentSearches } from "~/hooks/useRecentSearches";
@@ -169,6 +171,11 @@ export default function ATCPage() {
     aircrafts,
     airports,
     fetchAirports,
+  );
+
+  const selectedAircraft = selectedAircrafts.length === 1 ? selectedAircrafts[0]! : null;
+  const { flightPath: activeFlightPath } = useActiveFlightPath(
+    !isViewingHistory ? selectedAircraft : null,
   );
 
   const {
@@ -333,6 +340,13 @@ export default function ATCPage() {
       drawMultipleFlightPlansOnMapRef.current(updatedSelection, false);
     }
   }, [aircrafts, isViewingHistory, selectedAircrafts]);
+
+  useEffect(() => {
+    if (!selectedAircraft || !activeFlightPath || isViewingHistory) return;
+
+    const aircraftId = selectedAircraft.callsign || selectedAircraft.id;
+    activeAircraft.mergeFlightPath(aircraftId, activeFlightPath);
+  }, [activeFlightPath, isViewingHistory, selectedAircraft]);
 
   // Auto-select aircraft from URL param if it's a full flight number
   const followParam = searchParams.get("follow") === "true";

@@ -122,6 +122,22 @@ class AircraftStore {
     }
   }
 
+  mergeFlightPath(id: string, flightPath: [number, number][]) {
+    const existing = this.store.get(id);
+    if (!existing || flightPath.length === 0) return;
+
+    const currentPath = this.flightPaths.get(id) || [];
+    if (flightPath.length <= currentPath.length) return;
+
+    const nextPath = flightPath.map(([lat, lon]) => [lat, lon] as [number, number]);
+    this.flightPaths.set(id, nextPath);
+    this.store.set(id, {
+      ...existing,
+      flightPath: nextPath,
+    });
+    this.notifySubscribers();
+  }
+
   getAll() {
     return Array.from(this.store.values());
   }
