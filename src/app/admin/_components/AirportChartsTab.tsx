@@ -19,6 +19,8 @@ import {
   Square,
   ExternalLink,
   Pencil,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmModal } from "./ConfirmModal";
@@ -30,6 +32,7 @@ const CHART_TYPES: { value: ChartType; label: string }[] = [
   { value: "STAR", label: "STAR" },
   { value: "APPROACH", label: "Approach" },
 ];
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 interface ChartType2 {
   icao: string;
@@ -208,6 +211,9 @@ export function AirportChartsTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [icaoFilter, setIcaoFilter] = useState<string>("");
   const [typeFilter, setTypeFilter] = useState<ChartType | "">("");
+  const [pageSize, setPageSize] =
+    useState<(typeof PAGE_SIZE_OPTIONS)[number]>(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedCharts, setSelectedCharts] = useState<Set<string>>(new Set());
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
@@ -257,6 +263,27 @@ export function AirportChartsTab() {
         return (a.chartName || "").localeCompare(b.chartName || "");
       });
   }, [approvedCharts, searchQuery, icaoFilter, typeFilter, userInfo]);
+  const totalPages = Math.max(1, Math.ceil(filteredCharts.length / pageSize));
+  const paginatedCharts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredCharts.slice(start, start + pageSize);
+  }, [currentPage, filteredCharts, pageSize]);
+  const currentPageSelectionCount = paginatedCharts.filter((chart) =>
+    selectedCharts.has(chart.id),
+  ).length;
+  const pageStart =
+    filteredCharts.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const pageEnd = Math.min(currentPage * pageSize, filteredCharts.length);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, icaoFilter, typeFilter, pageSize]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -309,7 +336,11 @@ export function AirportChartsTab() {
   }
 
   function selectAllVisible() {
-    setSelectedCharts(new Set(filteredCharts.map((c) => c.id)));
+    setSelectedCharts((prev) => {
+      const next = new Set(prev);
+      paginatedCharts.forEach((chart) => next.add(chart.id));
+      return next;
+    });
   }
 
   function clearSelection() {
@@ -431,6 +462,30 @@ export function AirportChartsTab() {
         </div>
       </div>
 
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-slate-400">
+          {filteredCharts.length === 0
+            ? "No charts to display"
+            : `Showing ${pageStart}-${pageEnd} of ${filteredCharts.length} chart${filteredCharts.length !== 1 ? "s" : ""}${hasActiveFilters && filteredCharts.length !== approvedCharts.length ? ` (${approvedCharts.length} total)` : ""}`}
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-slate-500">Per page</span>
+          <select
+            value={pageSize}
+            onChange={(e) =>
+              setPageSize(Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
+            }
+            className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+          >
+            {PAGE_SIZE_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Bulk Action Bar */}
       {selectedCharts.size > 0 && (
         <div className="mb-4 flex items-center gap-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
@@ -458,32 +513,37 @@ export function AirportChartsTab() {
       {/* Charts Header */}
       <div className="mb-4 flex items-center gap-2">
         <span className="font-mono text-sm text-slate-400">
-          {filteredCharts.length} chart{filteredCharts.length !== 1 ? "s" : ""}
-          {hasActiveFilters && filteredCharts.length !== approvedCharts.length
-            ? ` / ${approvedCharts.length} total`
-            : ""}
+          Page {currentPage} of {totalPages}
         </span>
 
         {filteredCharts.length > 0 && (
           <button
             onClick={() => {
-              if (selectedCharts.size === filteredCharts.length) {
-                clearSelection();
+              const allVisibleSelected =
+                paginatedCharts.length > 0 &&
+                paginatedCharts.every((chart) => selectedCharts.has(chart.id));
+              if (allVisibleSelected) {
+                setSelectedCharts((prev) => {
+                  const next = new Set(prev);
+                  paginatedCharts.forEach((chart) => next.delete(chart.id));
+                  return next;
+                });
               } else {
                 selectAllVisible();
               }
             }}
             className="ml-auto flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-white/10"
           >
-            {selectedCharts.size === filteredCharts.length ? (
+            {currentPageSelectionCount === paginatedCharts.length &&
+            paginatedCharts.length > 0 ? (
               <>
                 <CheckSquare className="h-4 w-4" />
-                Deselect All
+                Deselect Page
               </>
             ) : (
               <>
                 <Square className="h-4 w-4" />
-                Select All
+                Select Page
               </>
             )}
           </button>
@@ -505,7 +565,7 @@ export function AirportChartsTab() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredCharts.map((chart) => (
+          {paginatedCharts.map((chart) => (
             <div
               key={chart.id}
               className={`group overflow-hidden rounded-2xl border bg-black/40 backdrop-blur-xl transition-all ${
@@ -568,6 +628,34 @@ export function AirportChartsTab() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {filteredCharts.length > 0 && totalPages > 1 && (
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-slate-500">
+            Page {currentPage} of {totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage === 1}
+              className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all hover:border-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </button>
+            <button
+              onClick={() =>
+                setCurrentPage((page) => Math.min(totalPages, page + 1))
+              }
+              disabled={currentPage === totalPages}
+              className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all hover:border-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       )}
     </>
