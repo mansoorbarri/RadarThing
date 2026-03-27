@@ -26,6 +26,8 @@ import {
   CheckSquare,
   Square,
   Pencil,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
@@ -34,6 +36,7 @@ import { ConflictModal } from "./ConflictModal";
 import { ConfirmModal } from "./ConfirmModal";
 
 type ImageSubTab = "pending" | "approved";
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 interface ImageType {
   airlineIata: string;
@@ -241,6 +244,9 @@ export function AircraftImagesTab() {
   const [imageSearchQuery, setImageSearchQuery] = useState("");
   const [imageAirlineFilter, setImageAirlineFilter] = useState<string>("");
   const [imageAircraftFilter, setImageAircraftFilter] = useState<string>("");
+  const [pageSize, setPageSize] =
+    useState<(typeof PAGE_SIZE_OPTIONS)[number]>(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -374,6 +380,35 @@ export function AircraftImagesTab() {
 
   const filteredPendingImages = filterImages(pendingImages);
   const filteredApprovedImages = filterImages(approvedImages);
+  const currentTabImages =
+    imageSubTab === "pending" ? filteredPendingImages : filteredApprovedImages;
+  const totalPages = Math.max(1, Math.ceil(currentTabImages.length / pageSize));
+  const paginatedCurrentTabImages = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return currentTabImages.slice(start, start + pageSize);
+  }, [currentPage, currentTabImages, pageSize]);
+  const currentPageSelectionCount = paginatedCurrentTabImages.filter((image) =>
+    selectedImages.has(image.id),
+  ).length;
+  const pageStart =
+    currentTabImages.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const pageEnd = Math.min(currentPage * pageSize, currentTabImages.length);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    imageSubTab,
+    imageSearchQuery,
+    imageAirlineFilter,
+    imageAircraftFilter,
+    pageSize,
+  ]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   async function handleApprove(id: string) {
     setActionLoading(id);
@@ -551,11 +586,11 @@ export function AircraftImagesTab() {
   }
 
   function selectAllVisible() {
-    const images =
-      imageSubTab === "pending"
-        ? filteredPendingImages
-        : filteredApprovedImages;
-    setSelectedImages(new Set(images.map((img) => img.id)));
+    setSelectedImages((prev) => {
+      const next = new Set(prev);
+      paginatedCurrentTabImages.forEach((img) => next.add(img.id));
+      return next;
+    });
   }
 
   function clearSelection() {
@@ -726,6 +761,30 @@ export function AircraftImagesTab() {
         </div>
       </div>
 
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-slate-400">
+          {currentTabImages.length === 0
+            ? "No images to display"
+            : `Showing ${pageStart}-${pageEnd} of ${currentTabImages.length} ${imageSubTab} images`}
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-slate-500">Per page</span>
+          <select
+            value={pageSize}
+            onChange={(e) =>
+              setPageSize(Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
+            }
+            className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+          >
+            {PAGE_SIZE_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Bulk Action Bar */}
       {selectedImages.size > 0 && (
         <div className="mb-4 flex items-center gap-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
@@ -812,30 +871,32 @@ export function AircraftImagesTab() {
           <button
             onClick={() => {
               const currentImages =
-                imageSubTab === "pending"
-                  ? filteredPendingImages
-                  : filteredApprovedImages;
-              if (selectedImages.size === currentImages.length) {
-                clearSelection();
+                paginatedCurrentTabImages;
+              const allVisibleSelected =
+                currentImages.length > 0 &&
+                currentImages.every((image) => selectedImages.has(image.id));
+              if (allVisibleSelected) {
+                setSelectedImages((prev) => {
+                  const next = new Set(prev);
+                  currentImages.forEach((image) => next.delete(image.id));
+                  return next;
+                });
               } else {
                 selectAllVisible();
               }
             }}
             className="ml-auto flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-white/10"
           >
-            {selectedImages.size ===
-            (imageSubTab === "pending"
-              ? filteredPendingImages
-              : filteredApprovedImages
-            ).length ? (
+            {currentPageSelectionCount === paginatedCurrentTabImages.length &&
+            paginatedCurrentTabImages.length > 0 ? (
               <>
                 <CheckSquare className="h-4 w-4" />
-                Deselect All
+                Deselect Page
               </>
             ) : (
               <>
                 <Square className="h-4 w-4" />
-                Select All
+                Select Page
               </>
             )}
           </button>
@@ -861,7 +922,7 @@ export function AircraftImagesTab() {
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredPendingImages.map((image) => (
+              {paginatedCurrentTabImages.map((image) => (
                 <div
                   key={image.id}
                   className={`group overflow-hidden rounded-2xl border bg-black/40 backdrop-blur-xl transition-all ${selectedImages.has(image.id) ? "border-cyan-500" : "border-yellow-500/30"}`}
@@ -959,7 +1020,7 @@ export function AircraftImagesTab() {
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredApprovedImages.map((image) => (
+              {paginatedCurrentTabImages.map((image) => (
                 <div
                   key={image.id}
                   className={`group overflow-hidden rounded-2xl border bg-black/40 backdrop-blur-xl transition-all ${
@@ -1033,6 +1094,34 @@ export function AircraftImagesTab() {
             </div>
           )}
         </>
+      )}
+
+      {currentTabImages.length > 0 && totalPages > 1 && (
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-slate-500">
+            Page {currentPage} of {totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage === 1}
+              className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all hover:border-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </button>
+            <button
+              onClick={() =>
+                setCurrentPage((page) => Math.min(totalPages, page + 1))
+              }
+              disabled={currentPage === totalPages}
+              className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all hover:border-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       )}
     </>
   );

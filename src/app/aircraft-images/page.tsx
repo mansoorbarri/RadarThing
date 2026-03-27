@@ -36,6 +36,8 @@ import {
   Search,
   Loader2,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
@@ -48,6 +50,8 @@ type SubmitStage =
   | "uploading"
   | "submitting"
   | "success";
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 export default function AircraftImagesPage() {
   const router = useRouter();
@@ -62,6 +66,9 @@ export default function AircraftImagesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [airlineFilter, setAirlineFilter] = useState("");
   const [aircraftFilter, setAircraftFilter] = useState("");
+  const [pageSize, setPageSize] =
+    useState<(typeof PAGE_SIZE_OPTIONS)[number]>(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isMilitary, setIsMilitary] = useState(false);
   const [formData, setFormData] = useState({
     airlineIata: "",
@@ -184,6 +191,24 @@ export default function AircraftImagesPage() {
         return (a.aircraftType || "").localeCompare(b.aircraftType || "");
       });
   }, [images, searchQuery, airlineFilter, aircraftFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredImages.length / pageSize));
+  const paginatedImages = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredImages.slice(start, start + pageSize);
+  }, [currentPage, filteredImages, pageSize]);
+  const pageStart = filteredImages.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const pageEnd = Math.min(currentPage * pageSize, filteredImages.length);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, airlineFilter, aircraftFilter, pageSize]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   // Handle upload complete callback from ImageUploader
   const handleUploadComplete = (url: string, key: string) => {
@@ -494,12 +519,30 @@ export default function AircraftImagesPage() {
           </div>
         </div>
 
-        {/* Results count */}
-        {(searchQuery || airlineFilter || aircraftFilter) && (
-          <p className="mb-4 text-sm text-slate-400">
-            Showing {filteredImages.length} of {images.length} images
+        {/* Results and pagination controls */}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-slate-400">
+            {searchQuery || airlineFilter || aircraftFilter
+              ? `Showing ${pageStart}-${pageEnd} of ${filteredImages.length} filtered images (${images.length} total)`
+              : `Showing ${pageStart}-${pageEnd} of ${filteredImages.length} images`}
           </p>
-        )}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-500">Per page</span>
+            <select
+              value={pageSize}
+              onChange={(e) =>
+                setPageSize(Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
+              }
+              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+            >
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         {filteredImages.length === 0 && images.length > 0 ? (
           <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
@@ -522,47 +565,79 @@ export default function AircraftImagesPage() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredImages.map((image) => (
-              <div
-                key={image.id}
-                className="group overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl transition-all hover:border-cyan-500/30"
-              >
-                <div className="relative aspect-video">
-                  <Image
-                    src={image.imageUrl}
-                    alt={`${image.airlineIata || image.airlineIcao} ${image.aircraftType}`}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                </div>
-                <div className="p-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {image.airlineIata && (
-                      <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">
-                        {image.airlineIata}
-                      </span>
-                    )}
-                    {image.airlineIcao && (
-                      <span className="rounded-md bg-blue-500/20 px-2 py-1 font-mono text-sm font-bold text-blue-400">
-                        {image.airlineIcao}
-                      </span>
-                    )}
-                    <span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">
-                      {image.aircraftType}
-                    </span>
-                    <Check className="ml-auto h-4 w-4 text-emerald-400" />
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {paginatedImages.map((image) => (
+                <div
+                  key={image.id}
+                  className="group overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl transition-all hover:border-cyan-500/30"
+                >
+                  <div className="relative aspect-video">
+                    <Image
+                      src={image.imageUrl}
+                      alt={`${image.airlineIata || image.airlineIcao} ${image.aircraftType}`}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
                   </div>
-                  {image.discordUsername && (
-                    <p className="mt-2 text-xs text-slate-500">
-                      Discord: {image.discordUsername}
-                    </p>
-                  )}
+                  <div className="p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {image.airlineIata && (
+                        <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">
+                          {image.airlineIata}
+                        </span>
+                      )}
+                      {image.airlineIcao && (
+                        <span className="rounded-md bg-blue-500/20 px-2 py-1 font-mono text-sm font-bold text-blue-400">
+                          {image.airlineIcao}
+                        </span>
+                      )}
+                      <span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">
+                        {image.aircraftType}
+                      </span>
+                      <Check className="ml-auto h-4 w-4 text-emerald-400" />
+                    </div>
+                    {image.discordUsername && (
+                      <p className="mt-2 text-xs text-slate-500">
+                        Discord: {image.discordUsername}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div
+                className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <p className="text-sm text-slate-500">
+                  Page {currentPage} of {totalPages}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                    disabled={currentPage === 1}
+                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all hover:border-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((page) => Math.min(totalPages, page + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all hover:border-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </main>
 
