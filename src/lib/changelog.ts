@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "heading-mode-keybind",
+    date: "2026-03-28",
+    title: "Heading Mode Keybind",
+    description:
+      "You can now press T on the radar to enter Heading Mode without clicking the map control.",
+    type: "improvement",
+  },
+  {
     id: "discord-waypoint-reminders",
     date: "2026-03-23",
     title: "Discord Waypoint Reminders",

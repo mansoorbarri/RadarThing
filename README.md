@@ -13,7 +13,7 @@ This project is a complete reimagining of the original [GeoFS Radar](https://git
 3. Enter your departure/arrival airports (ICAO codes), callsign, and squawk code
 4. Click **Save** — you're now visible on the radar
 
-> Press **W** to toggle the settings popup. Clear the fields and save to go invisible.
+> Press **W** to toggle the settings popup. Press **T** to start Heading Mode. Clear the fields and save to go invisible.
 
 ---
 

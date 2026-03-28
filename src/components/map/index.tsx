@@ -286,6 +286,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      const activeElement = document.activeElement;
+      const isInputFocused =
+        activeElement instanceof HTMLInputElement ||
+        activeElement instanceof HTMLTextAreaElement ||
+        activeElement?.getAttribute("contenteditable") === "true";
+
       if (e.key === "Escape") {
         handleMapClick({
           originalEvent: {
@@ -294,14 +300,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
         } as unknown as L.LeafletMouseEvent);
       }
       if (e.key === "u" || e.key === "U") {
-        const activeElement = document.activeElement;
-        const isInputFocused =
-          activeElement instanceof HTMLInputElement ||
-          activeElement instanceof HTMLTextAreaElement ||
-          activeElement?.getAttribute("contenteditable") === "true";
         if (!isInputFocused) {
           setShowTags((prev) => !prev);
         }
+      }
+      if ((e.key === "t" || e.key === "T") && !isInputFocused) {
+        setIsHeadingMode(true);
       }
     };
 
