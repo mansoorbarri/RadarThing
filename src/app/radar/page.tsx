@@ -85,6 +85,14 @@ export default function ATCPage() {
 
   const { isProUser, isAdminUser, isLoading: proLoading } = useProStatus();
 
+  const handleCalibrationMapClick = useCallback((lat: number, lon: number) => {
+    window.dispatchEvent(
+      new CustomEvent("radarthing-chart-calibration-map-click", {
+        detail: { lat, lon },
+      }),
+    );
+  }, []);
+
   const [selectedAircrafts, setSelectedAircrafts] = useState<PositionUpdate[]>(
     [],
   );
@@ -816,13 +824,7 @@ export default function ATCPage() {
               setResetMapView={(fn) => {
                 resetMapViewRef.current = fn;
               }}
-              onBackgroundMapClick={(lat, lon) => {
-                window.dispatchEvent(
-                  new CustomEvent("radarthing-chart-calibration-map-click", {
-                    detail: { lat, lon },
-                  }),
-                );
-              }}
+              onBackgroundMapClick={handleCalibrationMapClick}
             />
           )}
         </main>
