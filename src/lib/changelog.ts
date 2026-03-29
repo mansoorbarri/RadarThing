@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "sidebar-nav-waypoint-controls",
+    date: "2026-03-29",
+    title: "Sidebar NAV and Waypoint Controls",
+    description:
+      "Your own aircraft sidebar now lets you switch between NAV and HDG mode, and NAV mode can retarget a specific waypoint from the active flight plan.",
+    type: "improvement",
+  },
+  {
     id: "heading-mode-keybind",
     date: "2026-03-28",
     title: "Heading Mode Keybind",

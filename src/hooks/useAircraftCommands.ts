@@ -9,7 +9,9 @@ export type CommandType =
   | "setVS"
   | "setSquawk"
   | "setFlaps"
+  | "enableNav"
   | "disableNav"
+  | "setWaypoint"
   | "toggleAutopilot";
 
 interface Command {
@@ -117,6 +119,24 @@ export function useAircraftCommands() {
     [sendCommand],
   );
 
+  const enableNav = useCallback(
+    (targetId: string) =>
+      sendCommand({
+        targetId,
+        command: { type: "enableNav", value: true },
+      }),
+    [sendCommand],
+  );
+
+  const setWaypoint = useCallback(
+    (targetId: string, waypointIdent: string) =>
+      sendCommand({
+        targetId,
+        command: { type: "setWaypoint", value: waypointIdent },
+      }),
+    [sendCommand],
+  );
+
   const toggleAutopilot = useCallback(
     (targetId: string, enabled: boolean) =>
       sendCommand({
@@ -134,7 +154,9 @@ export function useAircraftCommands() {
     setVS,
     setSquawk,
     setFlaps,
+    enableNav,
     disableNav,
+    setWaypoint,
     toggleAutopilot,
     isLoading,
     error,

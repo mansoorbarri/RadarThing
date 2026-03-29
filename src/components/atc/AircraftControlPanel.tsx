@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useAircraftCommands } from "~/hooks/useAircraftCommands";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { Analytics } from "~/lib/analytics";
@@ -10,8 +10,6 @@ interface AircraftControlPanelProps {
   aircraft: PositionUpdate & { altMSL?: number };
 }
 
-type PendingAction = "setAll";
-
 export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   const {
     setSpeed,
@@ -20,6 +18,9 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     setVS,
     setSquawk,
     setFlaps,
+    enableNav,
+    disableNav,
+    setWaypoint,
     isLoading,
   } = useAircraftCommands();
 
@@ -30,17 +31,79 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   const [squawkInput, setSquawkInput] = useState("");
   const [flapsInput, setFlapsInput] = useState("");
   const [flapsError, setFlapsError] = useState("");
-  const [showNavWarning, setShowNavWarning] = useState(false);
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(
-    null,
+  const [modeInput, setModeInput] = useState<"nav" | "hdg">(
+    aircraft.navMode ? "nav" : "hdg",
   );
+  const [waypointInput, setWaypointInput] = useState("0");
 
   const aircraftId = aircraft.id;
   const flapsMaxPosition = aircraft.flapsMaxPosition ?? 0;
-  // Check navMode - but note this may be stale (updates every 5 seconds)
-  const isInNavMode = aircraft.navMode === true;
+  const currentWaypointIdent = aircraft.nextWaypoint ?? "";
+
+  const flightPlanWaypoints = useMemo(() => {
+    if (!aircraft.flightPlan) return [];
+
+    try {
+      const parsed = JSON.parse(aircraft.flightPlan) as {
+        ident?: unknown;
+        type?: unknown;
+      }[];
+
+      if (!Array.isArray(parsed)) return [];
+
+      return parsed
+        .map((waypoint, index) => {
+          const ident =
+            typeof waypoint?.ident === "string" ? waypoint.ident.trim() : "";
+          if (!ident) return null;
+
+          const type =
+            typeof waypoint?.type === "string" ? waypoint.type.trim() : "";
+
+          return {
+            value: String(index),
+            ident,
+            label: ident,
+            type: type || "WPT",
+            index,
+          };
+        })
+        .filter((waypoint): waypoint is NonNullable<typeof waypoint> => {
+          return waypoint !== null;
+        });
+    } catch {
+      return [];
+    }
+  }, [aircraft.flightPlan]);
+
+  useEffect(() => {
+    setModeInput(aircraft.navMode ? "nav" : "hdg");
+  }, [aircraft.id, aircraft.navMode]);
+
+  useEffect(() => {
+    if (currentWaypointIdent) {
+      setWaypointInput(currentWaypointIdent);
+      const matchingWaypoint = flightPlanWaypoints.find(
+        (waypoint) => waypoint.ident === currentWaypointIdent,
+      );
+      if (matchingWaypoint) {
+        setWaypointInput(matchingWaypoint.value);
+      }
+      return;
+    }
+
+    if (flightPlanWaypoints.length > 0) {
+      setWaypointInput(flightPlanWaypoints[0]!.value);
+    }
+  }, [aircraft.id, currentWaypointIdent, flightPlanWaypoints]);
 
   const resetForm = useCallback(() => {
+    const currentWaypointValue =
+      flightPlanWaypoints.find((waypoint) => waypoint.ident === currentWaypointIdent)
+        ?.value ||
+      flightPlanWaypoints[0]?.value ||
+      "0";
+
     setSpeedInput("");
     setAltitudeInput("");
     setHeadingInput("");
@@ -48,77 +111,9 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     setSquawkInput("");
     setFlapsInput("");
     setFlapsError("");
-  }, []);
-
-  // User confirms they want to switch from NAV to HDG mode
-  const handleConfirmHeadingChange = useCallback(() => {
-    const speed = parseInt(speedInput, 10);
-    const altitude = parseInt(altitudeInput, 10);
-    const headingValue = parseInt(headingInput, 10);
-    const vs = parseInt(vsInput, 10);
-    const flaps = parseInt(flapsInput, 10);
-
-    const controlsSet: string[] = [];
-
-    if (!isNaN(speed) && speed >= 0) {
-      setSpeed(aircraftId, speed);
-      controlsSet.push("speed");
-    }
-    if (!isNaN(altitude) && altitude >= 0) {
-      setAltitude(aircraftId, altitude);
-      controlsSet.push("altitude");
-    }
-    if (!isNaN(headingValue) && headingValue >= 0 && headingValue <= 360) {
-      setHeading(aircraftId, headingValue);
-      controlsSet.push("heading");
-    }
-    if (!isNaN(vs)) {
-      setVS(aircraftId, vs);
-      controlsSet.push("vs");
-    }
-    if (/^[0-7]{4}$/.test(squawkInput)) {
-      setSquawk(aircraftId, squawkInput);
-      controlsSet.push("squawk");
-    }
-    if (
-      !isNaN(flaps) &&
-      flaps >= 0 &&
-      (flapsMaxPosition === 0 || flaps <= flapsMaxPosition)
-    ) {
-      setFlaps(aircraftId, flaps);
-      controlsSet.push("flaps");
-    }
-
-    if (controlsSet.length > 0) {
-      Analytics.controlSetAll({ callsign: aircraftId, controls: controlsSet });
-      toast.success(`Controls sent: ${controlsSet.join(", ").toUpperCase()}`);
-    }
-
-    resetForm();
-    setShowNavWarning(false);
-    setPendingAction(null);
-  }, [
-    aircraftId,
-    headingInput,
-    speedInput,
-    altitudeInput,
-    vsInput,
-    squawkInput,
-    flapsInput,
-    flapsMaxPosition,
-    setHeading,
-    setSpeed,
-    setAltitude,
-    setVS,
-    setSquawk,
-    setFlaps,
-    resetForm,
-  ]);
-
-  const handleCancelWarning = useCallback(() => {
-    setShowNavWarning(false);
-    setPendingAction(null);
-  }, []);
+    setModeInput(aircraft.navMode ? "nav" : "hdg");
+    setWaypointInput(currentWaypointValue);
+  }, [aircraft.navMode, currentWaypointIdent, flightPlanWaypoints]);
 
   const handleSetAll = useCallback(() => {
     const speed = parseInt(speedInput, 10);
@@ -126,18 +121,52 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     const heading = parseInt(headingInput, 10);
     const vs = parseInt(vsInput, 10);
     const flaps = parseInt(flapsInput, 10);
-
-    const hasHeadingToSet = !isNaN(heading) && heading >= 0 && heading <= 360;
-
-    // If in NAV mode and heading is being set, show warning first
-    if (isInNavMode && hasHeadingToSet) {
-      setPendingAction("setAll");
-      setShowNavWarning(true);
-      return;
-    }
+    const hasHeadingToSet =
+      modeInput === "hdg" && !isNaN(heading) && heading >= 0 && heading <= 360;
+    const hasModeChanged =
+      (aircraft.navMode === true ? "nav" : "hdg") !== modeInput;
+    const selectedWaypoint = flightPlanWaypoints.find(
+      (waypoint) => waypoint.value === waypointInput,
+    );
+    const hasWaypointChanged =
+      modeInput === "nav" &&
+      selectedWaypoint !== undefined &&
+      selectedWaypoint.ident !== currentWaypointIdent;
 
     // Track which controls are being set
     const controlsSet: string[] = [];
+
+    if (modeInput === "nav") {
+      if (flightPlanWaypoints.length === 0) {
+        toast.error("No flight plan waypoints available for NAV mode");
+        return;
+      }
+
+      if (!waypointInput) {
+        toast.error("Choose a waypoint for NAV mode");
+        return;
+      }
+
+      if (!selectedWaypoint) {
+        toast.error("Selected waypoint is invalid");
+        return;
+      }
+    }
+
+    if (modeInput === "nav" && hasWaypointChanged) {
+      setWaypoint(aircraftId, selectedWaypoint.ident);
+      controlsSet.push("waypoint");
+    }
+
+    if (modeInput === "nav" && (hasModeChanged || hasWaypointChanged)) {
+      enableNav(aircraftId);
+      controlsSet.push("nav");
+    }
+
+    if (modeInput === "hdg" && hasModeChanged) {
+      disableNav(aircraftId);
+      controlsSet.push("hdg");
+    }
 
     // Execute all commands
     if (!isNaN(speed) && speed >= 0) {
@@ -183,13 +212,20 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     squawkInput,
     flapsInput,
     flapsMaxPosition,
-    isInNavMode,
+    modeInput,
+    waypointInput,
+    aircraft.navMode,
+    currentWaypointIdent,
+    flightPlanWaypoints,
     setSpeed,
     setAltitude,
     setHeading,
     setVS,
     setSquawk,
     setFlaps,
+    enableNav,
+    disableNav,
+    setWaypoint,
     resetForm,
   ]);
 
@@ -199,7 +235,11 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     headingInput ||
     vsInput ||
     squawkInput ||
-    flapsInput;
+    flapsInput ||
+    modeInput !== (aircraft.navMode ? "nav" : "hdg") ||
+    (modeInput === "nav" &&
+      flightPlanWaypoints.find((waypoint) => waypoint.value === waypointInput)
+        ?.ident !== currentWaypointIdent);
 
   return (
     <div className="mt-6 space-y-4">
@@ -211,36 +251,43 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
         <div className="h-[1px] flex-1 bg-white/20" />
       </div>
 
-      {/* NAV Mode Warning Modal */}
-      {showNavWarning && (
-        <div className="rounded-xl border border-amber-500/50 bg-amber-950/50 p-3">
-          <div className="mb-3">
-            <p className="font-mono text-xs font-bold text-amber-300">
-              Aircraft is in NAV mode
-            </p>
-            <p className="mt-1 font-mono text-[10px] text-amber-200/80">
-              Setting a heading will switch the autopilot from NAV mode to HDG
-              mode. The aircraft will stop following its flight plan.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleConfirmHeadingChange}
-              className="flex-1 rounded-lg bg-amber-600 py-2 font-mono text-xs font-bold text-white transition-colors hover:bg-amber-500"
-            >
-              Switch to HDG
-            </button>
-            <button
-              onClick={handleCancelWarning}
-              className="flex-1 rounded-lg border border-white/20 bg-black/40 py-2 font-mono text-xs font-bold text-white transition-colors hover:bg-black/60"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="space-y-3">
+        <div className="space-y-1">
+          <p className="px-1 font-mono text-[9px] font-black tracking-[0.2em] text-white/40 uppercase">
+            Autopilot Mode
+          </p>
+          <StyledSelect
+            value={modeInput}
+            onChange={(event) =>
+              setModeInput(event.target.value as "nav" | "hdg")
+            }
+          >
+            <option value="nav">NAV</option>
+            <option value="hdg">HDG</option>
+          </StyledSelect>
+        </div>
+
+        {modeInput === "nav" && (
+          <div className="space-y-1">
+            <p className="px-1 font-mono text-[9px] font-black tracking-[0.2em] text-white/40 uppercase">
+              Waypoint
+            </p>
+            <StyledSelect
+              value={waypointInput}
+              onChange={(event) => setWaypointInput(event.target.value)}
+            >
+              {flightPlanWaypoints.map((waypoint) => (
+                <option
+                  key={`${waypoint.index}-${waypoint.value}`}
+                  value={waypoint.value}
+                >
+                  {waypoint.label} [{waypoint.type}]
+                </option>
+              ))}
+            </StyledSelect>
+          </div>
+        )}
+
         <ControlRow
           label="SPD"
           unit="KTS"
@@ -260,14 +307,16 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
           step={100}
         />
 
-        <ControlRow
-          label="HDG"
-          unit="DEG"
-          value={headingInput}
-          onChange={setHeadingInput}
-          min={0}
-          max={360}
-        />
+        {modeInput === "hdg" && (
+          <ControlRow
+            label="HDG"
+            unit="DEG"
+            value={headingInput}
+            onChange={setHeadingInput}
+            min={0}
+            max={360}
+          />
+        )}
 
         <ControlRow
           label="V/S"
@@ -318,8 +367,41 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       </button>
 
       <p className="px-1 font-mono text-[9px] text-white/30">
-        Commands sent to GeoFS. Ensure autopilot is engaged.
+        Commands sent to GeoFS. NAV can target any waypoint in the active flight
+        plan.
       </p>
+    </div>
+  );
+}
+
+interface StyledSelectProps
+  extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  children: React.ReactNode;
+}
+
+function StyledSelect({ children, className, ...props }: StyledSelectProps) {
+  return (
+    <div className="relative">
+      <select
+        {...props}
+        className={`h-10 w-full appearance-none rounded-xl border border-white/10 bg-black/40 px-3 pr-10 font-mono text-xs font-bold text-white outline-none transition-colors hover:bg-black/60 focus:border-cyan-500/50 ${className ?? ""}`}
+      >
+        {children}
+      </select>
+      <div className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-center text-cyan-300">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </div>
     </div>
   );
 }

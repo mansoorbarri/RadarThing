@@ -247,12 +247,61 @@
           }
           break;
 
+        case "enableNav":
+          if (typeof geofs.autopilot.setMode === "function") {
+            geofs.autopilot.setMode("NAV");
+          }
+          break;
+
         case "disableNav":
           // Switch to heading mode using the proper GeoFS API
           if (typeof geofs.autopilot.setMode === "function") {
             geofs.autopilot.setMode("HDG");
           }
           break;
+
+        case "setWaypoint": {
+          const waypointIdent = String(cmd.value || "").trim().toUpperCase();
+          const flightPlan = geofs.flightPlan;
+          const route = flightPlan?.waypointArray || [];
+
+          if (!waypointIdent || !Array.isArray(route) || route.length === 0) {
+            console.warn("[RadarThing] setWaypoint - no usable flight plan");
+            break;
+          }
+
+          const waypointIndex = route.findIndex((waypoint) => {
+            const ident =
+              waypoint?.ident || waypoint?.name || waypoint?.id || waypoint?.icao;
+            return String(ident || "").trim().toUpperCase() === waypointIdent;
+          });
+
+          if (waypointIndex < 0) {
+            console.warn(
+              `[RadarThing] setWaypoint - waypoint ${waypointIdent} not found`,
+            );
+            break;
+          }
+
+          const waypoint = route[waypointIndex];
+
+          if (typeof flightPlan.selectWaypoint === "function") {
+            flightPlan.selectWaypoint(waypointIndex);
+          } else {
+            console.warn(
+              "[RadarThing] setWaypoint - selectWaypoint is not available",
+            );
+
+            if ("trackedWaypoint" in flightPlan) {
+              flightPlan.trackedWaypoint = waypoint;
+            }
+
+            if (typeof geofs.autopilot.setMode === "function") {
+              geofs.autopilot.setMode("NAV");
+            }
+          }
+          break;
+        }
 
         case "toggleAutopilot":
           if (cmd.value && typeof geofs.autopilot.turnOn === "function") {
