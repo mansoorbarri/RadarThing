@@ -1,6 +1,13 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+const chartCalibrationPointValidator = v.object({
+  x: v.number(),
+  y: v.number(),
+  lat: v.number(),
+  lon: v.number(),
+});
+
 export default defineSchema({
   users: defineTable({
     clerkId: v.string(),
@@ -97,6 +104,11 @@ export default defineSchema({
     ),
     chartName: v.string(),
     chartUrl: v.string(),
+    chartCalibration: v.optional(
+      v.object({
+        points: v.array(chartCalibrationPointValidator),
+      }),
+    ),
     imageKey: v.optional(v.string()), // UploadThing key for deletion
     source: v.literal("COMMUNITY"),
     isApproved: v.boolean(),

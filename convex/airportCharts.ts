@@ -8,6 +8,17 @@ const chartTypeValidator = v.union(
   v.literal("APPROACH"),
 );
 
+const chartCalibrationPointValidator = v.object({
+  x: v.number(),
+  y: v.number(),
+  lat: v.number(),
+  lon: v.number(),
+});
+
+const chartCalibrationValidator = v.object({
+  points: v.array(chartCalibrationPointValidator),
+});
+
 // Get approved charts for an airport, optionally filtered by type
 export const getChartsForAirport = query({
   args: {
@@ -42,6 +53,7 @@ export const getChartsForAirport = query({
       chartType: chart.chartType,
       chartName: chart.chartName,
       chartUrl: chart.chartUrl,
+      chartCalibration: chart.chartCalibration ?? null,
       imageKey: chart.imageKey ?? null,
       source: chart.source,
       isApproved: chart.isApproved,
@@ -69,6 +81,7 @@ export const getPending = query({
       chartType: chart.chartType,
       chartName: chart.chartName,
       chartUrl: chart.chartUrl,
+      chartCalibration: chart.chartCalibration ?? null,
       imageKey: chart.imageKey ?? null,
       source: chart.source,
       isApproved: chart.isApproved,
@@ -105,6 +118,7 @@ export const getApproved = query({
         chartType: chart.chartType,
         chartName: chart.chartName,
         chartUrl: chart.chartUrl,
+        chartCalibration: chart.chartCalibration ?? null,
         imageKey: chart.imageKey ?? null,
         source: chart.source,
         isApproved: chart.isApproved,
@@ -130,6 +144,7 @@ export const getById = query({
       chartType: chart.chartType,
       chartName: chart.chartName,
       chartUrl: chart.chartUrl,
+      chartCalibration: chart.chartCalibration ?? null,
       imageKey: chart.imageKey ?? null,
       source: chart.source,
       isApproved: chart.isApproved,
@@ -148,6 +163,7 @@ export const create = mutation({
     chartType: chartTypeValidator,
     chartName: v.string(),
     chartUrl: v.string(),
+    chartCalibration: v.optional(chartCalibrationValidator),
     imageKey: v.optional(v.string()),
     uploadedBy: v.optional(v.string()),
     discordUsername: v.optional(v.string()),
@@ -159,6 +175,7 @@ export const create = mutation({
       chartType: args.chartType,
       chartName: args.chartName,
       chartUrl: args.chartUrl,
+      chartCalibration: args.chartCalibration,
       imageKey: args.imageKey,
       source: "COMMUNITY",
       isApproved: args.isApproved ?? false,
@@ -175,6 +192,7 @@ export const create = mutation({
       chartType: chart.chartType,
       chartName: chart.chartName,
       chartUrl: chart.chartUrl,
+      chartCalibration: chart.chartCalibration ?? null,
       imageKey: chart.imageKey ?? null,
       source: chart.source,
       isApproved: chart.isApproved,
@@ -224,7 +242,31 @@ export const update = mutation({
       icao: args.icao.toUpperCase(),
       chartType: args.chartType,
       chartName: args.chartName,
+      chartCalibration: chart.chartCalibration ?? null,
       imageKey: chart.imageKey ?? null,
+    };
+  },
+});
+
+export const updateCalibration = mutation({
+  args: {
+    id: v.id("airportCharts"),
+    chartCalibration: v.optional(v.union(chartCalibrationValidator, v.null())),
+  },
+  handler: async (ctx, args) => {
+    const chart = await ctx.db.get(args.id);
+    if (!chart) return null;
+
+    await ctx.db.patch(args.id, {
+      chartCalibration: args.chartCalibration ?? undefined,
+    });
+
+    const updated = await ctx.db.get(args.id);
+    if (!updated) return null;
+
+    return {
+      id: updated._id,
+      chartCalibration: updated.chartCalibration ?? null,
     };
   },
 });

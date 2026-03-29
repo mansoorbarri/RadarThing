@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
       chartType: c.chartType,
       chartName: c.chartName,
       chartUrl: c.chartUrl,
+      chartCalibration: c.chartCalibration ?? null,
     }));
 
     return NextResponse.json({ charts }, { headers: corsHeaders(origin) });

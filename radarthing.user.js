@@ -85,6 +85,7 @@
     selectedChartId: null,
     invertColors: true,
     zoom: { scale: 1, panX: 0, panY: 0 },
+    ownship: null,
   };
   const chartsUi = {
     panel: null,
@@ -94,7 +95,10 @@
     preview: null,
     invertToggle: null,
     previewWrap: null,
+    previewStage: null,
     previewImg: null,
+    ownshipMarker: null,
+    ownshipStatus: null,
     previewChartId: null,
     heightFrame: 0,
   };
@@ -405,6 +409,7 @@
         chartType: chart.chartType,
         chartName: chart.chartName,
         chartUrl: chart.chartUrl,
+        chartCalibration: chart.chartCalibration || null,
       });
     }
 
@@ -555,7 +560,10 @@
 
   function resetChartsPreviewRefs() {
     chartsUi.previewWrap = null;
+    chartsUi.previewStage = null;
     chartsUi.previewImg = null;
+    chartsUi.ownshipMarker = null;
+    chartsUi.ownshipStatus = null;
     chartsUi.previewChartId = null;
   }
 
@@ -564,7 +572,8 @@
     const preview = chartsUi.preview || panel?.querySelector(".gc-preview");
     if (!panel || !preview) return;
 
-    const img = chartsUi.previewImg || preview.querySelector(".gc-image-wrap img");
+    const img =
+      chartsUi.previewImg || preview.querySelector(".gc-chart-stage img");
     if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) {
       preview.style.height = "0px";
       preview.style.overflowY = "hidden";
@@ -612,6 +621,104 @@
 
   function getPreviewCursor() {
     return chartsState.zoom.scale > 1 ? "grab" : "";
+  }
+
+  function solveLinear3x3(rows, values) {
+    const [[a1, b1, c1], [a2, b2, c2], [a3, b3, c3]] = rows;
+    const [d1, d2, d3] = values;
+    const det =
+      a1 * (b2 * c3 - b3 * c2) -
+      b1 * (a2 * c3 - a3 * c2) +
+      c1 * (a2 * b3 - a3 * b2);
+
+    if (Math.abs(det) < 1e-10) return null;
+
+    const detX =
+      d1 * (b2 * c3 - b3 * c2) -
+      b1 * (d2 * c3 - d3 * c2) +
+      c1 * (d2 * b3 - d3 * b2);
+    const detY =
+      a1 * (d2 * c3 - d3 * c2) -
+      d1 * (a2 * c3 - a3 * c2) +
+      c1 * (a2 * d3 - a3 * d2);
+    const detZ =
+      a1 * (b2 * d3 - b3 * d2) -
+      b1 * (a2 * d3 - a3 * d2) +
+      d1 * (a2 * b3 - a3 * b2);
+
+    return [detX / det, detY / det, detZ / det];
+  }
+
+  function projectOwnshipToChart(chart, ownship) {
+    const points = chart?.chartCalibration?.points;
+    if (!points || points.length < 3 || !ownship) return null;
+
+    const basis = points.slice(0, 3).map((point) => [point.lon, point.lat, 1]);
+    const xCoefficients = solveLinear3x3(
+      basis,
+      points.slice(0, 3).map((point) => point.x),
+    );
+    const yCoefficients = solveLinear3x3(
+      basis,
+      points.slice(0, 3).map((point) => point.y),
+    );
+
+    if (!xCoefficients || !yCoefficients) return null;
+
+    const x =
+      xCoefficients[0] * ownship.lon +
+      xCoefficients[1] * ownship.lat +
+      xCoefficients[2];
+    const y =
+      yCoefficients[0] * ownship.lon +
+      yCoefficients[1] * ownship.lat +
+      yCoefficients[2];
+
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+
+    return {
+      x,
+      y,
+      inBounds: x >= 0 && x <= 1 && y >= 0 && y <= 1,
+    };
+  }
+
+  function updateOwnshipOverlay(sel) {
+    if (!chartsUi.ownshipStatus) return;
+
+    const calibrationPoints = sel?.chartCalibration?.points || [];
+    if (!sel) {
+      chartsUi.ownshipStatus.textContent = "";
+      if (chartsUi.ownshipMarker) chartsUi.ownshipMarker.style.display = "none";
+      return;
+    }
+
+    if (calibrationPoints.length < 3) {
+      chartsUi.ownshipStatus.textContent =
+        "Ownship unavailable: chart not calibrated.";
+      if (chartsUi.ownshipMarker) chartsUi.ownshipMarker.style.display = "none";
+      return;
+    }
+
+    const projected = projectOwnshipToChart(sel, chartsState.ownship);
+    if (!projected) {
+      chartsUi.ownshipStatus.textContent =
+        "Ownship waiting for GeoFS position.";
+      if (chartsUi.ownshipMarker) chartsUi.ownshipMarker.style.display = "none";
+      return;
+    }
+
+    chartsUi.ownshipStatus.textContent = projected.inBounds
+      ? "Ownship calibrated."
+      : "Ownship is outside chart bounds.";
+
+    if (!chartsUi.ownshipMarker) return;
+
+    chartsUi.ownshipMarker.style.display = "block";
+    chartsUi.ownshipMarker.style.left = `${projected.x * 100}%`;
+    chartsUi.ownshipMarker.style.top = `${projected.y * 100}%`;
+    chartsUi.ownshipMarker.style.transform = `translate(-50%, -50%) rotate(${Math.round(chartsState.ownship?.heading || 0)}deg)`;
+    chartsUi.ownshipMarker.style.opacity = projected.inBounds ? "1" : "0.45";
   }
 
   function saveChartsIcao(icao) {
@@ -765,18 +872,27 @@
       resetChartsZoom();
       preview.innerHTML = `
         <div class="gc-image-wrap">
-          <img
-            src="${sel.chartUrl}"
-            alt="${sel.chartName}"
-            draggable="false"
-            loading="eager"
-            decoding="async"
-            fetchpriority="low"
-          >
+          <div class="gc-chart-stage">
+            <img
+              src="${sel.chartUrl}"
+              alt="${sel.chartName}"
+              draggable="false"
+              loading="eager"
+              decoding="async"
+              fetchpriority="low"
+            >
+            <div class="gc-ownship-marker" aria-hidden="true">
+              <div class="gc-ownship-arrow"></div>
+            </div>
+          </div>
+          <div class="gc-ownship-status"></div>
         </div>
       `;
       chartsUi.previewWrap = preview.querySelector(".gc-image-wrap");
+      chartsUi.previewStage = preview.querySelector(".gc-chart-stage");
       chartsUi.previewImg = preview.querySelector("img");
+      chartsUi.ownshipMarker = preview.querySelector(".gc-ownship-marker");
+      chartsUi.ownshipStatus = preview.querySelector(".gc-ownship-status");
       chartsUi.previewChartId = sel.id;
 
       if (chartsUi.previewWrap) {
@@ -793,9 +909,12 @@
           requestChartsViewerHeightSync,
         );
         if (typeof chartsUi.previewImg.decode === "function") {
-          chartsUi.previewImg.decode().catch(() => {}).finally(() => {
-            requestChartsViewerHeightSync();
-          });
+          chartsUi.previewImg
+            .decode()
+            .catch(() => {})
+            .finally(() => {
+              requestChartsViewerHeightSync();
+            });
         } else if (chartsUi.previewImg.complete) {
           requestChartsViewerHeightSync();
         }
@@ -807,11 +926,12 @@
         "inverted",
         chartsState.invertColors,
       );
-      applyZoom(chartsUi.previewImg);
+      applyZoom();
     }
     if (chartsUi.previewWrap) {
       chartsUi.previewWrap.style.cursor = getPreviewCursor();
     }
+    updateOwnshipOverlay(sel);
   }
 
   function renderChartsContent() {
@@ -960,16 +1080,17 @@
   // AIRPORT CHARTS — Zoom & Pan
   // ==========================================
 
-  function applyZoom(img) {
+  function applyZoom() {
+    const stage = chartsUi.previewStage;
+    if (!stage) return;
     const { scale, panX, panY } = chartsState.zoom;
-    img.style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${scale})`;
-    img.style.transformOrigin = "center center";
+    stage.style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${scale})`;
+    stage.style.transformOrigin = "center center";
   }
 
   function setupChartZoomHandlers() {
     const panel = chartsUi.panel || document.getElementById(CHARTS_PANEL_ID);
-    const preview =
-      chartsUi.preview || panel?.querySelector(".gc-preview");
+    const preview = chartsUi.preview || panel?.querySelector(".gc-preview");
     if (!preview) return;
 
     let panning = false,
@@ -979,7 +1100,7 @@
 
     const flushPan = () => {
       frame = 0;
-      if (chartsUi.previewImg) applyZoom(chartsUi.previewImg);
+      applyZoom();
     };
 
     preview.addEventListener(
@@ -992,10 +1113,7 @@
 
         const previousScale = chartsState.zoom.scale;
         const factor = e.deltaY > 0 ? 0.85 : 1.18;
-        const nextScale = Math.max(
-          1,
-          Math.min(10, previousScale * factor),
-        );
+        const nextScale = Math.max(1, Math.min(10, previousScale * factor));
         if (nextScale <= 1.01) {
           resetChartsZoom();
         } else {
@@ -1010,7 +1128,7 @@
           chartsState.zoom.panX = e.clientX - centerX - localX * nextScale;
           chartsState.zoom.panY = e.clientY - centerY - localY * nextScale;
         }
-        applyZoom(img);
+        applyZoom();
         wrap.style.cursor = getPreviewCursor();
       },
       { passive: false },
@@ -1049,8 +1167,7 @@
       const wrap = chartsUi.previewWrap;
       if (!wrap || !wrap.contains(e.target)) return;
       resetChartsZoom();
-      const img = wrap.querySelector("img");
-      if (img) applyZoom(img);
+      applyZoom();
       wrap.style.cursor = "";
     });
   }
@@ -1326,7 +1443,10 @@
         document.getElementById(FLT_INPUT_ID).value,
       );
       const sqk = sanitizeSquawk(document.getElementById(SQK_INPUT_ID).value);
-      const af = document.getElementById(AF_INPUT_ID).value.trim().toUpperCase();
+      const af = document
+        .getElementById(AF_INPUT_ID)
+        .value.trim()
+        .toUpperCase();
 
       document.getElementById(FLT_INPUT_ID).value = flt;
       document.getElementById(SQK_INPUT_ID).value = sqk;
@@ -1358,9 +1478,13 @@
     };
 
     document.getElementById(CLEAR_BTN_ID).onclick = () => {
-      [DEP_INPUT_ID, ARR_INPUT_ID, FLT_INPUT_ID, SQK_INPUT_ID, AF_INPUT_ID].forEach(
-        (id) => (document.getElementById(id).value = ""),
-      );
+      [
+        DEP_INPUT_ID,
+        ARR_INPUT_ID,
+        FLT_INPUT_ID,
+        SQK_INPUT_ID,
+        AF_INPUT_ID,
+      ].forEach((id) => (document.getElementById(id).value = ""));
       window.dispatchEvent(
         new CustomEvent("atc-data-sync", { detail: { active: false } }),
       );
@@ -1428,31 +1552,39 @@
 
     function fetchAircraftList() {
       const es = new EventSource("https://sse.radarthing.com/api/stream");
-      const timeout = setTimeout(() => { es.close(); }, 6000);
+      const timeout = setTimeout(() => {
+        es.close();
+      }, 6000);
       es.onmessage = (event) => {
         clearTimeout(timeout);
         es.close();
         try {
           const data = JSON.parse(event.data);
           cachedAircraftList = (data.aircraft || []).filter((ac) => {
-            const myId = geofs?.userRecord?.googleid || geofs?.userRecord?.callsign;
+            const myId =
+              geofs?.userRecord?.googleid || geofs?.userRecord?.callsign;
             return ac.googleId && ac.id !== myId && ac.callsign !== myId;
           });
           renderFollowList("");
         } catch (_) {}
       };
-      es.onerror = () => { clearTimeout(timeout); es.close(); };
+      es.onerror = () => {
+        clearTimeout(timeout);
+        es.close();
+      };
     }
 
     function renderFollowList(query) {
       const q = (query || "").toUpperCase();
-      const filtered = cachedAircraftList.filter((ac) => {
-        if (!q) return true;
-        return (
-          (ac.flightNo || "").toUpperCase().includes(q) ||
-          (ac.callsign || "").toUpperCase().includes(q)
-        );
-      }).slice(0, 15);
+      const filtered = cachedAircraftList
+        .filter((ac) => {
+          if (!q) return true;
+          return (
+            (ac.flightNo || "").toUpperCase().includes(q) ||
+            (ac.callsign || "").toUpperCase().includes(q)
+          );
+        })
+        .slice(0, 15);
 
       if (filtered.length === 0) {
         followList.innerHTML = `<div style="padding:8px;text-align:center;font-size:10px;color:rgba(255,255,255,0.25);">
@@ -1461,11 +1593,12 @@
         return;
       }
 
-      followList.innerHTML = filtered.map((ac) => {
-        const key = ac.callsign || ac.id;
-        const label = ac.flightNo || ac.callsign || key;
-        const sub = `${ac.type || "?"} · ${ac.departure || "?"}→${ac.arrival || "?"}`;
-        return `<div data-follow-id="${key}" style="
+      followList.innerHTML = filtered
+        .map((ac) => {
+          const key = ac.callsign || ac.id;
+          const label = ac.flightNo || ac.callsign || key;
+          const sub = `${ac.type || "?"} · ${ac.departure || "?"}→${ac.arrival || "?"}`;
+          return `<div data-follow-id="${key}" style="
           padding:6px 8px;
           margin-bottom:2px;
           border-radius:6px;
@@ -1478,19 +1611,24 @@
           <div style="font-size:11px;font-weight:700;color:#e5e7eb;">${label}</div>
           <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:1px;">${sub} · ${ac.speed || 0} kts · FL${Math.round((ac.altMSL || 0) / 100)}</div>
         </div>`;
-      }).join("");
+        })
+        .join("");
 
       followList.querySelectorAll("[data-follow-id]").forEach((el) => {
         el.onclick = () => {
           const targetId = el.getAttribute("data-follow-id");
           window.dispatchEvent(
-            new CustomEvent("radarthing-follow-start", { detail: { targetId } }),
+            new CustomEvent("radarthing-follow-start", {
+              detail: { targetId },
+            }),
           );
           followOpen = false;
           followSearch.style.display = "none";
           followList.style.display = "none";
           followSearch.value = "";
-          showToast("Following " + (el.querySelector("div").textContent || targetId));
+          showToast(
+            "Following " + (el.querySelector("div").textContent || targetId),
+          );
         };
       });
     }
@@ -1852,6 +1990,13 @@
         position: relative;
       }
 
+      .gc-chart-stage {
+        position: relative;
+        width: 100%;
+        will-change: transform;
+        transition: transform 0.08s ease-out;
+      }
+
       .gc-image-wrap img {
         width: 100%;
         height: auto;
@@ -1859,13 +2004,56 @@
         border-radius: 6px;
         border: 1px solid rgba(255, 255, 255, 0.06);
         background: #000000;
-        transition: transform 0.08s ease-out;
         user-select: none;
-        will-change: transform;
       }
 
       .gc-image-wrap img.inverted {
         filter: invert(1) hue-rotate(180deg) contrast(1.05) saturate(0.95);
+      }
+
+      .gc-ownship-marker {
+        position: absolute;
+        left: 0;
+        top: 0;
+        z-index: 2;
+        width: 24px;
+        height: 24px;
+        display: none;
+        pointer-events: none;
+      }
+
+      .gc-ownship-arrow {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 0;
+        height: 0;
+        transform: translate(-50%, -50%);
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 16px solid #22d3ee;
+        filter:
+          drop-shadow(0 0 10px rgba(34, 211, 238, 0.45))
+          drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
+      }
+
+      .gc-ownship-arrow::after {
+        content: '';
+        position: absolute;
+        left: -3px;
+        top: 5px;
+        width: 0;
+        height: 0;
+        border-left: 3px solid transparent;
+        border-right: 3px solid transparent;
+        border-bottom: 7px solid rgba(1, 11, 16, 0.95);
+      }
+
+      .gc-ownship-status {
+        margin-top: 8px;
+        min-height: 16px;
+        font-size: 0.7rem;
+        color: rgba(255, 255, 255, 0.45);
       }
 
       .gc-resize-handle {
@@ -2014,6 +2202,27 @@
   // ==========================================
   // EVENT LISTENERS
   // ==========================================
+
+  window.addEventListener("radarthing-ownship-update", (e) => {
+    const nextOwnship = e.detail;
+    if (
+      !nextOwnship ||
+      !Number.isFinite(nextOwnship.lat) ||
+      !Number.isFinite(nextOwnship.lon)
+    ) {
+      return;
+    }
+
+    chartsState.ownship = {
+      lat: Number(nextOwnship.lat),
+      lon: Number(nextOwnship.lon),
+      heading: Number(nextOwnship.heading) || 0,
+      speed: Number(nextOwnship.speed) || 0,
+      updatedAt: Number(nextOwnship.updatedAt) || Date.now(),
+    };
+
+    updateOwnshipOverlay(getSelectedChart());
+  });
 
   window.addEventListener("keydown", (e) => {
     if (keybindMode === "flight") {

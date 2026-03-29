@@ -21,10 +21,12 @@ import {
   Pencil,
   ChevronLeft,
   ChevronRight,
+  Crosshair,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmModal } from "./ConfirmModal";
-import type { ChartType } from "~/types/airportCharts";
+import { ChartCalibrationModal } from "./ChartCalibrationModal";
+import type { AirportChart, ChartType } from "~/types/airportCharts";
 
 const CHART_TYPES: { value: ChartType; label: string }[] = [
   { value: "TAXI", label: "Taxi" },
@@ -225,6 +227,9 @@ export function AirportChartsTab() {
   const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
   const [bulkDeleteTargetIds, setBulkDeleteTargetIds] = useState<string[]>([]);
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
+  const [calibrationChart, setCalibrationChart] = useState<AirportChart | null>(
+    null,
+  );
 
   const uniqueIcaos = useMemo(() => {
     const icaos = new Set<string>();
@@ -414,6 +419,12 @@ export function AirportChartsTab() {
         }}
       />
 
+      <ChartCalibrationModal
+        chart={calibrationChart}
+        isOpen={Boolean(calibrationChart)}
+        onClose={() => setCalibrationChart(null)}
+      />
+
       {/* Search and Filters */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1">
@@ -473,7 +484,9 @@ export function AirportChartsTab() {
           <select
             value={pageSize}
             onChange={(e) =>
-              setPageSize(Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
+              setPageSize(
+                Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number],
+              )
             }
             className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
           >
@@ -616,15 +629,30 @@ export function AirportChartsTab() {
                   </div>
                   <CheckCircle className="mt-1 h-4 w-4 flex-shrink-0 text-emerald-400" />
                 </div>
-                <a
-                  href={chart.chartUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 flex items-center gap-1 text-xs text-cyan-400 hover:underline"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  View Chart
-                </a>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={() => setCalibrationChart(chart)}
+                    className={`inline-flex cursor-pointer items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                      (chart.chartCalibration?.points?.length ?? 0) >= 3
+                        ? "bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
+                        : "bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25"
+                    }`}
+                  >
+                    <Crosshair className="h-3.5 w-3.5" />
+                    {(chart.chartCalibration?.points?.length ?? 0) >= 3
+                      ? "Calibrated"
+                      : "Calibrate"}
+                  </button>
+                  <a
+                    href={chart.chartUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-cyan-400 hover:underline"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    View Chart
+                  </a>
+                </div>
               </div>
             </div>
           ))}

@@ -5,6 +5,8 @@
   const API_BASE = "https://sse.radarthing.com";
   const SEND_INTERVAL_MS = 5000;
   const COMMAND_POLL_INTERVAL_MS = 2000;
+  const OWN_SHIP_EVENT = "radarthing-ownship-update";
+  const OWN_SHIP_BROADCAST_INTERVAL_MS = 250;
 
   let info = { active: false, dep: "", arr: "", flt: "", sqk: "", af: "" };
   let wasOnGround = true;
@@ -26,6 +28,31 @@
     return (
       geofs?.userRecord?.googleid ||
       sanitizeCallsign(geofs?.userRecord?.callsign)
+    );
+  }
+
+  function broadcastOwnship() {
+    const inst = geofs?.aircraft?.instance;
+    if (!inst) return;
+
+    const lla = inst.llaLocation || [];
+    const lat = Number(lla[0]);
+    const lon = Number(lla[1]);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+    window.dispatchEvent(
+      new CustomEvent(OWN_SHIP_EVENT, {
+        detail: {
+          id: getUserIdentifier(),
+          lat,
+          lon,
+          altMeters: Number(lla[2]) || 0,
+          heading: Math.round(geofs?.animation?.values?.heading360 || 0),
+          speed: Math.round(geofs?.animation?.values?.kias || 0),
+          updatedAt: Date.now(),
+        },
+      }),
     );
   }
 
@@ -453,4 +480,8 @@
       body: JSON.stringify(payload),
     }).catch(() => {});
   }, SEND_INTERVAL_MS);
+
+  setInterval(() => {
+    broadcastOwnship();
+  }, OWN_SHIP_BROADCAST_INTERVAL_MS);
 })();

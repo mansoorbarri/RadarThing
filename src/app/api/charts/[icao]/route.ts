@@ -43,6 +43,7 @@ export async function GET(request: NextRequest, context: any) {
       chartType: c.chartType as ChartType,
       chartName: c.chartName,
       chartUrl: c.chartUrl,
+      chartCalibration: c.chartCalibration ?? null,
       imageKey: c.imageKey,
       source: c.source as "COMMUNITY",
       isApproved: c.isApproved,
