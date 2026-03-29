@@ -101,7 +101,7 @@ function ZoomableChartImage({
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
   const hasInitialized = useRef(false);
   const cachedState = transformCache.get(chartUrl);
-  const chartSurfaceRef = useRef<HTMLDivElement | null>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
 
   const handleTransformed = useCallback(
     (
@@ -131,7 +131,7 @@ function ZoomableChartImage({
   }, [chartUrl]);
 
   const handleChartClick = useCallback(
-    (event: React.MouseEvent<HTMLDivElement>) => {
+    (event: React.MouseEvent<HTMLImageElement>) => {
       if (!isCalibrating || !onChartPointPick) return;
       const rect = event.currentTarget.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
@@ -165,19 +165,17 @@ function ZoomableChartImage({
             wrapperClass="!w-full !h-full"
             contentClass="flex h-full w-full items-center justify-center"
           >
-            <div
-              ref={chartSurfaceRef}
-              className={`relative inline-block ${
-                isCalibrating ? "cursor-crosshair" : ""
-              }`}
-              onClick={handleChartClick}
-            >
+            <div className="relative inline-block">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
+                ref={imageRef}
                 src={chartUrl}
                 alt={chartName}
-                className="object-contain invert select-none"
+                className={`object-contain invert select-none ${
+                  isCalibrating ? "cursor-crosshair" : ""
+                }`}
                 onLoad={handleImageLoad}
+                onClick={handleChartClick}
               />
               {calibrationPoints?.map((point, index) => (
                 <div
