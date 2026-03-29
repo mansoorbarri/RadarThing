@@ -14,8 +14,9 @@ import {
   type ReactZoomPanPinchRef,
 } from "react-zoom-pan-pinch";
 import { useAirportCharts } from "~/hooks/useAirportCharts";
-import type { ChartType } from "~/types/airportCharts";
-import { X, RotateCcw } from "lucide-react";
+import { updateAirportChartCalibration } from "~/app/actions/airport-charts";
+import type { ChartCalibrationPoint, ChartType } from "~/types/airportCharts";
+import { X, RotateCcw, Crosshair, Save } from "lucide-react";
 
 const CHART_PANEL_WIDTH_KEY = "chart_panel_width";
 const DEFAULT_PANEL_WIDTH = 520;
@@ -39,12 +40,12 @@ const CHART_TYPES: { key: ChartType; label: string }[] = [
   { key: "APPROACH", label: "APP" },
 ];
 
+// Cache for transform state (zoom/pan) per chart URL
 interface TransformState {
   scale: number;
   positionX: number;
   positionY: number;
 }
-
 const transformCache = new Map<string, TransformState>();
 
 function ResetButton({ onReset }: { onReset?: () => void }) {
@@ -63,16 +64,44 @@ function ResetButton({ onReset }: { onReset?: () => void }) {
   );
 }
 
+function defaultCalibrationPoints(): ChartCalibrationPoint[] {
+  return [
+    { x: 0.2, y: 0.2, lat: Number.NaN, lon: Number.NaN },
+    { x: 0.8, y: 0.2, lat: Number.NaN, lon: Number.NaN },
+    { x: 0.5, y: 0.8, lat: Number.NaN, lon: Number.NaN },
+  ];
+}
+
+function normalizeCalibrationPoints(
+  points: ChartCalibrationPoint[] | null | undefined,
+) {
+  if (!points?.length) return defaultCalibrationPoints();
+  const safePoints = points.slice(0, 3).map((point) => ({ ...point }));
+  while (safePoints.length < 3) {
+    safePoints.push(defaultCalibrationPoints()[safePoints.length]!);
+  }
+  return safePoints;
+}
+
 function ZoomableChartImage({
   chartUrl,
   chartName,
+  calibrationPoints,
+  selectedCalibrationPoint,
+  isCalibrating,
+  onChartPointPick,
 }: {
   chartUrl: string;
   chartName: string;
+  calibrationPoints?: ChartCalibrationPoint[];
+  selectedCalibrationPoint?: number;
+  isCalibrating?: boolean;
+  onChartPointPick?: (x: number, y: number) => void;
 }) {
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
   const hasInitialized = useRef(false);
   const cachedState = transformCache.get(chartUrl);
+  const chartSurfaceRef = useRef<HTMLDivElement | null>(null);
 
   const handleTransformed = useCallback(
     (
@@ -101,6 +130,22 @@ function ZoomableChartImage({
     transformCache.delete(chartUrl);
   }, [chartUrl]);
 
+  const handleChartClick = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (!isCalibrating || !onChartPointPick) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      const x = (event.clientX - rect.left) / rect.width;
+      const y = (event.clientY - rect.top) / rect.height;
+      onChartPointPick(
+        Math.max(0, Math.min(1, x)),
+        Math.max(0, Math.min(1, y)),
+      );
+    },
+    [isCalibrating, onChartPointPick],
+  );
+
   return (
     <div className="relative h-full w-full">
       <TransformWrapper
@@ -120,13 +165,37 @@ function ZoomableChartImage({
             wrapperClass="!w-full !h-full"
             contentClass="flex h-full w-full items-center justify-center"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={chartUrl}
-              alt={chartName}
-              className="object-contain invert select-none"
-              onLoad={handleImageLoad}
-            />
+            <div
+              ref={chartSurfaceRef}
+              className={`relative inline-block ${
+                isCalibrating ? "cursor-crosshair" : ""
+              }`}
+              onClick={handleChartClick}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={chartUrl}
+                alt={chartName}
+                className="object-contain invert select-none"
+                onLoad={handleImageLoad}
+              />
+              {calibrationPoints?.map((point, index) => (
+                <div
+                  key={`${chartUrl}-calibration-${index}`}
+                  className={`pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 px-1.5 py-0.5 text-[10px] font-bold ${
+                    selectedCalibrationPoint === index
+                      ? "border-cyan-300 bg-cyan-400 text-slate-950"
+                      : "border-white/80 bg-slate-950/90 text-white"
+                  }`}
+                  style={{
+                    left: `${point.x * 100}%`,
+                    top: `${point.y * 100}%`,
+                  }}
+                >
+                  {String.fromCharCode(65 + index)}
+                </div>
+              ))}
+            </div>
           </TransformComponent>
         </>
       </TransformWrapper>
@@ -137,11 +206,24 @@ function ZoomableChartImage({
 interface ChartSidePanelProps {
   icao: string;
   onClose: () => void;
+  isAdminUser?: boolean;
 }
 
-export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
-  const { charts, loading } = useAirportCharts(icao);
+export function ChartSidePanel({
+  icao,
+  onClose,
+  isAdminUser = false,
+}: ChartSidePanelProps) {
+  const { charts, loading, refetch } = useAirportCharts(icao);
   const [pdfError, setPdfError] = useState(false);
+  const [isCalibrating, setIsCalibrating] = useState(false);
+  const [selectedCalibrationPoint, setSelectedCalibrationPoint] = useState(0);
+  const [calibrationPoints, setCalibrationPoints] = useState<
+    ChartCalibrationPoint[]
+  >(defaultCalibrationPoints);
+  const [isSavingCalibration, setIsSavingCalibration] = useState(false);
+
+  // Resizable width
   const [panelWidth, setPanelWidth] = useState(getStoredWidth);
   const isResizing = useRef(false);
 
@@ -152,9 +234,9 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
       const startX = e.clientX;
       const startWidth = panelWidth;
 
-      const handleMouseMove = (event: MouseEvent) => {
+      const handleMouseMove = (e: MouseEvent) => {
         if (!isResizing.current) return;
-        const delta = startX - event.clientX;
+        const delta = startX - e.clientX;
         const newWidth = Math.min(
           MAX_PANEL_WIDTH,
           Math.max(MIN_PANEL_WIDTH, startWidth + delta),
@@ -168,9 +250,10 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
         document.removeEventListener("mouseup", handleMouseUp);
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
-        setPanelWidth((width) => {
-          localStorage.setItem(CHART_PANEL_WIDTH_KEY, String(width));
-          return width;
+        // Persist on release
+        setPanelWidth((w) => {
+          localStorage.setItem(CHART_PANEL_WIDTH_KEY, String(w));
+          return w;
         });
       };
 
@@ -201,9 +284,10 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
 
   const availableTabs = useMemo(() => {
     if (!chartsByType) return [];
-    return CHART_TYPES.filter((tab) => chartsByType[tab.key].length > 0);
+    return CHART_TYPES.filter((t) => chartsByType[t.key].length > 0);
   }, [chartsByType]);
 
+  // Auto-select first available tab if current has no charts
   useEffect(() => {
     if (!chartsByType) return;
     if (chartsByType[selectedType].length === 0 && availableTabs.length > 0) {
@@ -212,14 +296,91 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
     }
   }, [chartsByType, selectedType, availableTabs]);
 
+  // Reset PDF error when chart changes
   useEffect(() => {
     setPdfError(false);
   }, [selectedChart?.chartUrl]);
+
+  useEffect(() => {
+    setIsCalibrating(false);
+    setSelectedCalibrationPoint(0);
+    setCalibrationPoints(
+      normalizeCalibrationPoints(selectedChart?.chartCalibration?.points),
+    );
+  }, [selectedChart?.id]);
+
+  useEffect(() => {
+    if (!isCalibrating) return;
+
+    const handleMapClick = (event: Event) => {
+      const customEvent = event as CustomEvent<{ lat: number; lon: number }>;
+      const lat = customEvent.detail?.lat;
+      const lon = customEvent.detail?.lon;
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+      setCalibrationPoints((current) =>
+        current.map((point, index) =>
+          index === selectedCalibrationPoint ? { ...point, lat, lon } : point,
+        ),
+      );
+    };
+
+    window.addEventListener(
+      "radarthing-chart-calibration-map-click",
+      handleMapClick as EventListener,
+    );
+    return () => {
+      window.removeEventListener(
+        "radarthing-chart-calibration-map-click",
+        handleMapClick as EventListener,
+      );
+    };
+  }, [isCalibrating, selectedCalibrationPoint]);
 
   const handleTypeChange = (type: ChartType) => {
     setSelectedType(type);
     setSelectedChartIndex(0);
   };
+
+  const handleChartPointPick = useCallback(
+    (x: number, y: number) => {
+      if (!isCalibrating) return;
+      setCalibrationPoints((current) =>
+        current.map((point, index) =>
+          index === selectedCalibrationPoint ? { ...point, x, y } : point,
+        ),
+      );
+    },
+    [isCalibrating, selectedCalibrationPoint],
+  );
+
+  const canSaveCalibration = useMemo(
+    () =>
+      calibrationPoints.every(
+        (point) =>
+          Number.isFinite(point.x) &&
+          Number.isFinite(point.y) &&
+          Number.isFinite(point.lat) &&
+          Number.isFinite(point.lon),
+      ),
+    [calibrationPoints],
+  );
+
+  const handleSaveCalibration = useCallback(async () => {
+    if (!selectedChart?.id) return;
+    setIsSavingCalibration(true);
+    const result = await updateAirportChartCalibration(selectedChart.id, {
+      points: calibrationPoints,
+    });
+    setIsSavingCalibration(false);
+
+    if (!result.success) {
+      return;
+    }
+
+    setIsCalibrating(false);
+    await refetch();
+  }, [calibrationPoints, refetch, selectedChart?.id]);
 
   const hasCharts = availableTabs.length > 0;
 
@@ -228,11 +389,12 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
       className="animate-slide-in-right fixed inset-y-0 right-0 z-[10012] flex flex-col border-l border-white/10 bg-black/90 backdrop-blur-xl"
       style={{ width: panelWidth }}
     >
+      {/* Resize handle */}
       <div
         onMouseDown={handleResizeStart}
         className="absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize transition-colors hover:bg-cyan-500/30"
       />
-
+      {/* Header */}
       <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-white">Charts</span>
@@ -270,7 +432,9 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
         </div>
       ) : (
         <>
+          {/* Controls */}
           <div className="shrink-0 border-b border-white/10 px-4 py-3">
+            {/* Chart type tabs */}
             <div className="mb-2 flex gap-1">
               {availableTabs.map((tab) => (
                 <button
@@ -290,14 +454,15 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
               ))}
             </div>
 
+            {/* Chart selector */}
             {currentCharts.length > 1 && (
               <select
                 value={selectedChartIndex}
                 onChange={(e) => setSelectedChartIndex(Number(e.target.value))}
                 className="w-full cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-white/80 outline-none focus:border-cyan-500/30"
               >
-                {currentCharts.map((chart, index) => (
-                  <option key={index} value={index} className="bg-[#0a1219]">
+                {currentCharts.map((chart, i) => (
+                  <option key={i} value={i} className="bg-[#0a1219]">
                     {chart.chartName}
                   </option>
                 ))}
@@ -309,8 +474,76 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
                 {currentCharts[0]!.chartName}
               </div>
             )}
+
+            {isAdminUser && selectedChart && !isPdf && (
+              <div className="mt-3 rounded-lg border border-white/10 bg-white/5 p-2.5">
+                <div className="mb-2 flex items-center justify-between">
+                  <button
+                    onClick={() => setIsCalibrating((prev) => !prev)}
+                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                      isCalibrating
+                        ? "bg-cyan-500/20 text-cyan-300"
+                        : "bg-white/5 text-white/70 hover:bg-white/10"
+                    }`}
+                  >
+                    <Crosshair className="h-3.5 w-3.5" />
+                    {isCalibrating ? "Cancel Calibration" : "Calibrate"}
+                  </button>
+                  <button
+                    onClick={handleSaveCalibration}
+                    disabled={
+                      !isCalibrating ||
+                      !canSaveCalibration ||
+                      isSavingCalibration
+                    }
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-emerald-500/20 px-2.5 py-1 text-[11px] font-medium text-emerald-300 transition-colors hover:bg-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    Save
+                  </button>
+                </div>
+
+                {isCalibrating && (
+                  <>
+                    <div className="mb-2 text-[10px] text-white/50">
+                      Pick A/B/C, click the chart, then click the real radar
+                      map.
+                    </div>
+                    <div className="mb-2 flex gap-1">
+                      {calibrationPoints.map((point, index) => (
+                        <button
+                          key={`calibration-point-${index}`}
+                          onClick={() => setSelectedCalibrationPoint(index)}
+                          className={`cursor-pointer rounded-md px-2 py-1 text-[10px] font-semibold transition-colors ${
+                            selectedCalibrationPoint === index
+                              ? "bg-cyan-500/20 text-cyan-300"
+                              : "bg-white/5 text-white/60 hover:bg-white/10"
+                          }`}
+                        >
+                          {String.fromCharCode(65 + index)}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="space-y-1 text-[10px] text-white/45">
+                      {calibrationPoints.map((point, index) => (
+                        <div key={`calibration-summary-${index}`}>
+                          {String.fromCharCode(65 + index)}: x{" "}
+                          {point.x.toFixed(3)} y {point.y.toFixed(3)}
+                          {" | "}
+                          {Number.isFinite(point.lat) &&
+                          Number.isFinite(point.lon)
+                            ? `${point.lat.toFixed(6)}, ${point.lon.toFixed(6)}`
+                            : "waiting for map click"}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
+          {/* Chart content */}
           <div className="relative min-h-0 flex-1 overflow-hidden bg-black">
             {!selectedChart ? (
               <div className="flex h-full items-center justify-center">
@@ -344,6 +577,10 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
                 key={selectedChart.chartUrl}
                 chartUrl={selectedChart.chartUrl}
                 chartName={selectedChart.chartName}
+                calibrationPoints={isAdminUser ? calibrationPoints : undefined}
+                selectedCalibrationPoint={selectedCalibrationPoint}
+                isCalibrating={isCalibrating}
+                onChartPointPick={handleChartPointPick}
               />
             )}
           </div>

@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  TransformComponent,
-  TransformWrapper,
-  useControls,
-  type ReactZoomPanPinchRef,
-} from "react-zoom-pan-pinch";
+import L from "leaflet";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Crosshair,
@@ -23,11 +18,6 @@ import type {
   ChartCalibration,
   ChartCalibrationPoint,
 } from "~/types/airportCharts";
-import type {
-  CircleMarker,
-  LeafletMouseEvent,
-  Map as LeafletMap,
-} from "leaflet";
 
 const POINT_LABELS = ["A", "B", "C"] as const;
 
@@ -130,34 +120,15 @@ interface ChartCalibrationModalProps {
   onClose: () => void;
 }
 
-function ModalResetButton({ onReset }: { onReset?: () => void }) {
-  const { resetTransform } = useControls();
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        resetTransform();
-        onReset?.();
-      }}
-      className="absolute right-4 bottom-4 z-10 flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-slate-950/85 px-3 py-2 text-xs font-medium text-white/75 backdrop-blur-sm transition-colors hover:bg-slate-900 hover:text-white"
-    >
-      <RotateCcw className="h-3.5 w-3.5" />
-      Reset View
-    </button>
-  );
-}
-
 export function ChartCalibrationModal({
   chart,
   isOpen,
   onClose,
 }: ChartCalibrationModalProps) {
   const imageRef = useRef<HTMLImageElement>(null);
-  const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<LeafletMap | null>(null);
-  const selectionMarkerRef = useRef<CircleMarker | null>(null);
-  const leafletRef = useRef<typeof import("leaflet") | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const selectionMarkerRef = useRef<L.CircleMarker | null>(null);
   const selectedPointRef = useRef(0);
   const [selectedPoint, setSelectedPoint] = useState(0);
   const [points, setPoints] = useState<ChartCalibrationPoint[]>(defaultPoints);
@@ -178,9 +149,6 @@ export function ChartCalibrationModal({
       })),
     );
     setSelectedPoint(0);
-    window.setTimeout(() => {
-      transformRef.current?.resetTransform();
-    }, 0);
   }, [chart, isOpen]);
 
   useEffect(() => {
@@ -255,8 +223,7 @@ export function ChartCalibrationModal({
 
   function syncMapMarker(lat: number, lon: number) {
     const map = mapRef.current;
-    const L = leafletRef.current;
-    if (!map || !L || !Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    if (!map || !Number.isFinite(lat) || !Number.isFinite(lon)) return;
 
     if (!selectionMarkerRef.current) {
       selectionMarkerRef.current = L.circleMarker([lat, lon], {
@@ -287,51 +254,37 @@ export function ChartCalibrationModal({
 
   useEffect(() => {
     if (!isOpen || !mapContainerRef.current || mapRef.current) return;
-    let cancelled = false;
-    let cleanup: (() => void) | undefined;
 
-    void import("leaflet").then((L) => {
-      if (cancelled || !mapContainerRef.current || mapRef.current) return;
+    const map = L.map(mapContainerRef.current, {
+      zoomControl: true,
+      attributionControl: false,
+      minZoom: 2,
+      maxZoom: 18,
+    }).setView([20, 0], 3);
 
-      leafletRef.current = L;
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+    }).addTo(map);
 
-      const map = L.map(mapContainerRef.current, {
-        zoomControl: true,
-        attributionControl: false,
-        minZoom: 2,
-        maxZoom: 18,
-      }).setView([20, 0], 3);
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-      }).addTo(map);
-
-      map.on("click", (event: LeafletMouseEvent) => {
-        const { lat, lng: lon } = event.latlng;
-        const pointIndex = selectedPointRef.current;
-        updatePoint(pointIndex, { lat, lon });
-        syncDraftCoordinate(pointIndex, lat, lon);
-        syncMapMarker(lat, lon);
-      });
-
-      mapRef.current = map;
-
-      const resizeTimer = window.setTimeout(() => {
-        map.invalidateSize();
-      }, 100);
-
-      cleanup = () => {
-        window.clearTimeout(resizeTimer);
-        map.remove();
-        mapRef.current = null;
-        selectionMarkerRef.current = null;
-        leafletRef.current = null;
-      };
+    map.on("click", (event: L.LeafletMouseEvent) => {
+      const { lat, lng: lon } = event.latlng;
+      const pointIndex = selectedPointRef.current;
+      updatePoint(pointIndex, { lat, lon });
+      syncDraftCoordinate(pointIndex, lat, lon);
+      syncMapMarker(lat, lon);
     });
 
+    mapRef.current = map;
+
+    const resizeTimer = window.setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+
     return () => {
-      cancelled = true;
-      cleanup?.();
+      window.clearTimeout(resizeTimer);
+      map.remove();
+      mapRef.current = null;
+      selectionMarkerRef.current = null;
     };
   }, [isOpen]);
 
@@ -437,54 +390,34 @@ export function ChartCalibrationModal({
         <div className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-h-0 overflow-auto bg-black/30 p-6">
             <div className="relative mx-auto max-w-4xl overflow-hidden rounded-xl border border-white/10 bg-black">
-              <TransformWrapper
-                ref={transformRef}
-                minScale={0.75}
-                maxScale={12}
-                centerOnInit
-                limitToBounds={false}
-                wheel={{ step: 0.15 }}
-                doubleClick={{ disabled: true }}
-              >
-                <>
-                  <ModalResetButton />
-                  <TransformComponent
-                    wrapperClass="!h-[70vh] !w-full"
-                    contentClass="relative"
-                  >
-                    <div className="relative inline-block">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        ref={imageRef}
-                        src={chart.chartUrl}
-                        alt={chart.chartName}
-                        className="block w-full cursor-crosshair select-none"
-                        onClick={handleImageClick}
-                        draggable={false}
-                      />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                ref={imageRef}
+                src={chart.chartUrl}
+                alt={chart.chartName}
+                className="block w-full cursor-crosshair select-none"
+                onClick={handleImageClick}
+                draggable={false}
+              />
 
-                      {points.map((point, index) => (
-                        <button
-                          key={POINT_LABELS[index]}
-                          type="button"
-                          onClick={() => setSelectedPoint(index)}
-                          className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 px-2 py-1 text-xs font-bold transition-all ${
-                            selectedPoint === index
-                              ? "border-cyan-300 bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/30"
-                              : "border-white/80 bg-slate-950/90 text-white"
-                          }`}
-                          style={{
-                            left: `${point.x * 100}%`,
-                            top: `${point.y * 100}%`,
-                          }}
-                        >
-                          {POINT_LABELS[index]}
-                        </button>
-                      ))}
-                    </div>
-                  </TransformComponent>
-                </>
-              </TransformWrapper>
+              {points.map((point, index) => (
+                <button
+                  key={POINT_LABELS[index]}
+                  type="button"
+                  onClick={() => setSelectedPoint(index)}
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 px-2 py-1 text-xs font-bold transition-all ${
+                    selectedPoint === index
+                      ? "border-cyan-300 bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/30"
+                      : "border-white/80 bg-slate-950/90 text-white"
+                  }`}
+                  style={{
+                    left: `${point.x * 100}%`,
+                    top: `${point.y * 100}%`,
+                  }}
+                >
+                  {POINT_LABELS[index]}
+                </button>
+              ))}
             </div>
           </div>
 

@@ -77,6 +77,7 @@ interface MapComponentProps {
   replayState?: ReplayState | null;
   followAircraft?: PositionUpdate;
   setResetMapView?: (func: () => void) => void;
+  onBackgroundMapClick?: (lat: number, lon: number) => void;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -95,6 +96,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   replayState,
   followAircraft,
   setResetMapView,
+  onBackgroundMapClick,
 }) => {
   const isMobile = useMobileDetection();
   const { isProUser, isLoading: proLoading } = useProStatus();
@@ -269,6 +271,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
         return;
       }
 
+      onBackgroundMapClick?.(e.latlng.lat, e.latlng.lng);
+
       mapRefs.flightPlanLayerGroup.current?.clearLayers();
       mapRefs.historyLayerGroup.current?.clearLayers();
       clearHistoryPolylineRef.current?.();
@@ -281,7 +285,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     },
     // These refs are stable and don't need to trigger re-renders
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [onBackgroundMapClick],
   );
 
   useEffect(() => {
