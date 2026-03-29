@@ -14,9 +14,8 @@ import {
   type ReactZoomPanPinchRef,
 } from "react-zoom-pan-pinch";
 import { useAirportCharts } from "~/hooks/useAirportCharts";
-import { updateAirportChartCalibration } from "~/app/actions/airport-charts";
-import type { ChartCalibrationPoint, ChartType } from "~/types/airportCharts";
-import { X, RotateCcw, Crosshair, Save } from "lucide-react";
+import type { ChartType } from "~/types/airportCharts";
+import { X, RotateCcw } from "lucide-react";
 
 const CHART_PANEL_WIDTH_KEY = "chart_panel_width";
 const DEFAULT_PANEL_WIDTH = 520;
@@ -64,44 +63,16 @@ function ResetButton({ onReset }: { onReset?: () => void }) {
   );
 }
 
-function defaultCalibrationPoints(): ChartCalibrationPoint[] {
-  return [
-    { x: 0.2, y: 0.2, lat: Number.NaN, lon: Number.NaN },
-    { x: 0.8, y: 0.2, lat: Number.NaN, lon: Number.NaN },
-    { x: 0.5, y: 0.8, lat: Number.NaN, lon: Number.NaN },
-  ];
-}
-
-function normalizeCalibrationPoints(
-  points: ChartCalibrationPoint[] | null | undefined,
-) {
-  if (!points?.length) return defaultCalibrationPoints();
-  const safePoints = points.slice(0, 3).map((point) => ({ ...point }));
-  while (safePoints.length < 3) {
-    safePoints.push(defaultCalibrationPoints()[safePoints.length]!);
-  }
-  return safePoints;
-}
-
 function ZoomableChartImage({
   chartUrl,
   chartName,
-  calibrationPoints,
-  selectedCalibrationPoint,
-  isCalibrating,
-  onChartPointPick,
 }: {
   chartUrl: string;
   chartName: string;
-  calibrationPoints?: ChartCalibrationPoint[];
-  selectedCalibrationPoint?: number;
-  isCalibrating?: boolean;
-  onChartPointPick?: (x: number, y: number) => void;
 }) {
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
   const hasInitialized = useRef(false);
   const cachedState = transformCache.get(chartUrl);
-  const imageRef = useRef<HTMLImageElement | null>(null);
 
   const handleTransformed = useCallback(
     (
@@ -130,22 +101,6 @@ function ZoomableChartImage({
     transformCache.delete(chartUrl);
   }, [chartUrl]);
 
-  const handleChartClick = useCallback(
-    (event: React.MouseEvent<HTMLImageElement>) => {
-      if (!isCalibrating || !onChartPointPick) return;
-      const rect = event.currentTarget.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-
-      const x = (event.clientX - rect.left) / rect.width;
-      const y = (event.clientY - rect.top) / rect.height;
-      onChartPointPick(
-        Math.max(0, Math.min(1, x)),
-        Math.max(0, Math.min(1, y)),
-      );
-    },
-    [isCalibrating, onChartPointPick],
-  );
-
   return (
     <div className="relative h-full w-full">
       <TransformWrapper
@@ -165,35 +120,13 @@ function ZoomableChartImage({
             wrapperClass="!w-full !h-full"
             contentClass="flex h-full w-full items-center justify-center"
           >
-            <div className="relative inline-block">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                ref={imageRef}
-                src={chartUrl}
-                alt={chartName}
-                className={`object-contain invert select-none ${
-                  isCalibrating ? "cursor-crosshair" : ""
-                }`}
-                onLoad={handleImageLoad}
-                onClick={handleChartClick}
-              />
-              {calibrationPoints?.map((point, index) => (
-                <div
-                  key={`${chartUrl}-calibration-${index}`}
-                  className={`pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 px-1.5 py-0.5 text-[10px] font-bold ${
-                    selectedCalibrationPoint === index
-                      ? "border-cyan-300 bg-cyan-400 text-slate-950"
-                      : "border-white/80 bg-slate-950/90 text-white"
-                  }`}
-                  style={{
-                    left: `${point.x * 100}%`,
-                    top: `${point.y * 100}%`,
-                  }}
-                >
-                  {String.fromCharCode(65 + index)}
-                </div>
-              ))}
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={chartUrl}
+              alt={chartName}
+              className="object-contain invert select-none"
+              onLoad={handleImageLoad}
+            />
           </TransformComponent>
         </>
       </TransformWrapper>
@@ -204,22 +137,11 @@ function ZoomableChartImage({
 interface ChartSidePanelProps {
   icao: string;
   onClose: () => void;
-  isAdminUser?: boolean;
 }
 
-export function ChartSidePanel({
-  icao,
-  onClose,
-  isAdminUser = false,
-}: ChartSidePanelProps) {
-  const { charts, loading, refetch } = useAirportCharts(icao);
+export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
+  const { charts, loading } = useAirportCharts(icao);
   const [pdfError, setPdfError] = useState(false);
-  const [isCalibrating, setIsCalibrating] = useState(false);
-  const [selectedCalibrationPoint, setSelectedCalibrationPoint] = useState(0);
-  const [calibrationPoints, setCalibrationPoints] = useState<
-    ChartCalibrationPoint[]
-  >(defaultCalibrationPoints);
-  const [isSavingCalibration, setIsSavingCalibration] = useState(false);
 
   // Resizable width
   const [panelWidth, setPanelWidth] = useState(getStoredWidth);
@@ -299,86 +221,10 @@ export function ChartSidePanel({
     setPdfError(false);
   }, [selectedChart?.chartUrl]);
 
-  useEffect(() => {
-    setIsCalibrating(false);
-    setSelectedCalibrationPoint(0);
-    setCalibrationPoints(
-      normalizeCalibrationPoints(selectedChart?.chartCalibration?.points),
-    );
-  }, [selectedChart?.id]);
-
-  useEffect(() => {
-    if (!isCalibrating) return;
-
-    const handleMapClick = (event: Event) => {
-      const customEvent = event as CustomEvent<{ lat: number; lon: number }>;
-      const lat = customEvent.detail?.lat;
-      const lon = customEvent.detail?.lon;
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-
-      setCalibrationPoints((current) =>
-        current.map((point, index) =>
-          index === selectedCalibrationPoint ? { ...point, lat, lon } : point,
-        ),
-      );
-    };
-
-    window.addEventListener(
-      "radarthing-chart-calibration-map-click",
-      handleMapClick as EventListener,
-    );
-    return () => {
-      window.removeEventListener(
-        "radarthing-chart-calibration-map-click",
-        handleMapClick as EventListener,
-      );
-    };
-  }, [isCalibrating, selectedCalibrationPoint]);
-
   const handleTypeChange = (type: ChartType) => {
     setSelectedType(type);
     setSelectedChartIndex(0);
   };
-
-  const handleChartPointPick = useCallback(
-    (x: number, y: number) => {
-      if (!isCalibrating) return;
-      setCalibrationPoints((current) =>
-        current.map((point, index) =>
-          index === selectedCalibrationPoint ? { ...point, x, y } : point,
-        ),
-      );
-    },
-    [isCalibrating, selectedCalibrationPoint],
-  );
-
-  const canSaveCalibration = useMemo(
-    () =>
-      calibrationPoints.every(
-        (point) =>
-          Number.isFinite(point.x) &&
-          Number.isFinite(point.y) &&
-          Number.isFinite(point.lat) &&
-          Number.isFinite(point.lon),
-      ),
-    [calibrationPoints],
-  );
-
-  const handleSaveCalibration = useCallback(async () => {
-    if (!selectedChart?.id) return;
-    setIsSavingCalibration(true);
-    const result = await updateAirportChartCalibration(selectedChart.id, {
-      points: calibrationPoints,
-    });
-    setIsSavingCalibration(false);
-
-    if (!result.success) {
-      return;
-    }
-
-    setIsCalibrating(false);
-    await refetch();
-  }, [calibrationPoints, refetch, selectedChart?.id]);
 
   const hasCharts = availableTabs.length > 0;
 
@@ -472,73 +318,6 @@ export function ChartSidePanel({
                 {currentCharts[0]!.chartName}
               </div>
             )}
-
-            {isAdminUser && selectedChart && !isPdf && (
-              <div className="mt-3 rounded-lg border border-white/10 bg-white/5 p-2.5">
-                <div className="mb-2 flex items-center justify-between">
-                  <button
-                    onClick={() => setIsCalibrating((prev) => !prev)}
-                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                      isCalibrating
-                        ? "bg-cyan-500/20 text-cyan-300"
-                        : "bg-white/5 text-white/70 hover:bg-white/10"
-                    }`}
-                  >
-                    <Crosshair className="h-3.5 w-3.5" />
-                    {isCalibrating ? "Cancel Calibration" : "Calibrate"}
-                  </button>
-                  <button
-                    onClick={handleSaveCalibration}
-                    disabled={
-                      !isCalibrating ||
-                      !canSaveCalibration ||
-                      isSavingCalibration
-                    }
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-emerald-500/20 px-2.5 py-1 text-[11px] font-medium text-emerald-300 transition-colors hover:bg-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <Save className="h-3.5 w-3.5" />
-                    Save
-                  </button>
-                </div>
-
-                {isCalibrating && (
-                  <>
-                    <div className="mb-2 text-[10px] text-white/50">
-                      Pick A/B/C, click the chart, then click the real radar
-                      map.
-                    </div>
-                    <div className="mb-2 flex gap-1">
-                      {calibrationPoints.map((point, index) => (
-                        <button
-                          key={`calibration-point-${index}`}
-                          onClick={() => setSelectedCalibrationPoint(index)}
-                          className={`cursor-pointer rounded-md px-2 py-1 text-[10px] font-semibold transition-colors ${
-                            selectedCalibrationPoint === index
-                              ? "bg-cyan-500/20 text-cyan-300"
-                              : "bg-white/5 text-white/60 hover:bg-white/10"
-                          }`}
-                        >
-                          {String.fromCharCode(65 + index)}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="space-y-1 text-[10px] text-white/45">
-                      {calibrationPoints.map((point, index) => (
-                        <div key={`calibration-summary-${index}`}>
-                          {String.fromCharCode(65 + index)}: x{" "}
-                          {point.x.toFixed(3)} y {point.y.toFixed(3)}
-                          {" | "}
-                          {Number.isFinite(point.lat) &&
-                          Number.isFinite(point.lon)
-                            ? `${point.lat.toFixed(6)}, ${point.lon.toFixed(6)}`
-                            : "waiting for map click"}
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Chart content */}
@@ -575,10 +354,6 @@ export function ChartSidePanel({
                 key={selectedChart.chartUrl}
                 chartUrl={selectedChart.chartUrl}
                 chartName={selectedChart.chartName}
-                calibrationPoints={isAdminUser ? calibrationPoints : undefined}
-                selectedCalibrationPoint={selectedCalibrationPoint}
-                isCalibrating={isCalibrating}
-                onChartPointPick={handleChartPointPick}
               />
             )}
           </div>

@@ -7,12 +7,7 @@ import { Resend } from "resend";
 import { convex, api } from "~/server/convex";
 import { env } from "~/env";
 import type { Id } from "../../../convex/_generated/dataModel";
-import type {
-  ChartCalibration,
-  ChartCalibrationPoint,
-  ChartType,
-  ChartSource,
-} from "~/types/airportCharts";
+import type { ChartType, ChartSource } from "~/types/airportCharts";
 
 const utapi = new UTApi();
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
@@ -79,7 +74,6 @@ export interface AirportChartRecord {
   chartType: ChartType;
   chartName: string;
   chartUrl: string;
-  chartCalibration: ChartCalibration | null;
   imageKey: string | null;
   source: ChartSource;
   isApproved: boolean;
@@ -95,7 +89,6 @@ function toAirportChartRecord(chart: {
   chartType: string;
   chartName: string;
   chartUrl: string;
-  chartCalibration?: ChartCalibration | null;
   imageKey: string | null;
   source: string;
   isApproved: boolean;
@@ -110,7 +103,6 @@ function toAirportChartRecord(chart: {
     chartType: chart.chartType as ChartType,
     chartName: chart.chartName,
     chartUrl: chart.chartUrl,
-    chartCalibration: chart.chartCalibration ?? null,
     imageKey: chart.imageKey,
     source: chart.source as ChartSource,
     isApproved: chart.isApproved,
@@ -247,7 +239,6 @@ export async function createAirportChart(data: {
   chartType: ChartType;
   chartName: string;
   chartUrl: string;
-  chartCalibration?: ChartCalibration | null;
   imageKey?: string;
   discordUsername?: string;
 }): Promise<{ success: boolean; error?: string; chart?: AirportChartRecord }> {
@@ -287,7 +278,6 @@ export async function createAirportChart(data: {
       chartType: data.chartType,
       chartName: data.chartName,
       chartUrl: data.chartUrl,
-      chartCalibration: data.chartCalibration ?? undefined,
       imageKey: data.imageKey,
       uploadedBy: userId,
       discordUsername: data.discordUsername,
@@ -535,92 +525,6 @@ export async function updateAirportChart(
   } catch (error) {
     console.error("Error updating airport chart:", error);
     return { success: false, error: "Failed to update chart" };
-  }
-}
-
-function sanitizeCalibrationPoint(
-  point: ChartCalibrationPoint,
-): ChartCalibrationPoint {
-  return {
-    x: Number(point.x),
-    y: Number(point.y),
-    lat: Number(point.lat),
-    lon: Number(point.lon),
-  };
-}
-
-function validateChartCalibration(
-  calibration: ChartCalibration | null,
-): string | null {
-  if (!calibration) return null;
-  if (!Array.isArray(calibration.points) || calibration.points.length < 3) {
-    return "Chart calibration requires at least 3 points";
-  }
-
-  for (const point of calibration.points) {
-    if (
-      !Number.isFinite(point.x) ||
-      !Number.isFinite(point.y) ||
-      !Number.isFinite(point.lat) ||
-      !Number.isFinite(point.lon)
-    ) {
-      return "Calibration points must contain valid numeric values";
-    }
-    if (point.x < 0 || point.x > 1 || point.y < 0 || point.y > 1) {
-      return "Calibration point positions must be between 0 and 1";
-    }
-    if (
-      point.lat < -90 ||
-      point.lat > 90 ||
-      point.lon < -180 ||
-      point.lon > 180
-    ) {
-      return "Calibration coordinates are out of range";
-    }
-  }
-
-  return null;
-}
-
-export async function updateAirportChartCalibration(
-  id: string,
-  chartCalibration: ChartCalibration | null,
-): Promise<{ success: boolean; error?: string }> {
-  const admin = await isAdminUser();
-  if (!admin) {
-    return {
-      success: false,
-      error: "Only ADMIN users can update chart calibration",
-    };
-  }
-
-  const normalizedCalibration = chartCalibration
-    ? {
-        points: chartCalibration.points.map(sanitizeCalibrationPoint),
-      }
-    : null;
-
-  const validationError = validateChartCalibration(normalizedCalibration);
-  if (validationError) {
-    return { success: false, error: validationError };
-  }
-
-  try {
-    const result = await convex.mutation(api.airportCharts.updateCalibration, {
-      id: id as Id<"airportCharts">,
-      chartCalibration: normalizedCalibration ?? null,
-    });
-
-    if (!result) {
-      return { success: false, error: "Chart not found" };
-    }
-
-    revalidatePath("/airport-charts");
-    revalidatePath("/admin");
-    return { success: true };
-  } catch (error) {
-    console.error("Error updating airport chart calibration:", error);
-    return { success: false, error: "Failed to update chart calibration" };
   }
 }
 
