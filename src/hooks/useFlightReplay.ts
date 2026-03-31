@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { unwrapPath } from "~/lib/map-utils";
 
 export interface FlightData {
   id: string;
@@ -90,24 +91,16 @@ function calculateHeading(
   return heading;
 }
 
-// Interpolate between two points (handles antimeridian crossings)
+// Interpolate between two points on an already-unwrapped path.
 function interpolatePosition(
   p1: [number, number],
   p2: [number, number],
   t: number,
 ): [number, number] {
   const lon1 = p1[1];
-  let lon2 = p2[1];
-  // If the longitude difference > 180°, the shortest path crosses the antimeridian
-  if (Math.abs(lon2 - lon1) > 180) {
-    if (lon2 > lon1) lon2 -= 360;
-    else lon2 += 360;
-  }
-  let lon = lon1 + (lon2 - lon1) * t;
-  // Normalize back to [-180, 180]
-  if (lon > 180) lon -= 360;
-  if (lon < -180) lon += 360;
-  return [p1[0] + (p2[0] - p1[0]) * t, lon];
+  const lon2 = p2[1];
+
+  return [p1[0] + (p2[0] - p1[0]) * t, lon1 + (lon2 - lon1) * t];
 }
 
 export function useFlightReplay(flight: FlightData | null) {
@@ -118,8 +111,12 @@ export function useFlightReplay(flight: FlightData | null) {
   const animationFrameRef = useRef<number | null>(null);
   const lastTimestampRef = useRef<number | null>(null);
 
-  // Memoize route data to prevent recreation on every render
-  const routeData = useMemo(() => flight?.routeData || [], [flight?.routeData]);
+  // Keep replay coordinates on a continuous longitude timeline so the marker
+  // does not jump world copies mid-flight when crossing the antimeridian.
+  const routeData = useMemo(
+    () => unwrapPath(flight?.routeData || []),
+    [flight?.routeData],
+  );
 
   // Calculate total duration
   const totalDuration = useMemo(() => {
