@@ -71,6 +71,37 @@ export function unwrapPath(path: [number, number][]): [number, number][] {
 }
 
 /**
+ * Shift an already-unwrapped path onto the world copy nearest a reference
+ * longitude so Leaflet can keep the whole route visually continuous.
+ */
+export function shiftPathToReferenceLongitude(
+  path: [number, number][],
+  referenceLon?: number,
+): [number, number][] {
+  if (path.length === 0 || referenceLon === undefined) return path;
+
+  const lons = path.map(([, lon]) => lon);
+  const minLon = Math.min(...lons);
+  const maxLon = Math.max(...lons);
+  const centerLon = (minLon + maxLon) / 2;
+  const shift = Math.round((referenceLon - centerLon) / 360) * 360;
+
+  if (shift === 0) return path;
+
+  return path.map(([lat, lon]) => [lat, lon + shift] as [number, number]);
+}
+
+/**
+ * Prepare a path for display on a single Leaflet world copy.
+ */
+export function preparePathForWorldCopy(
+  path: [number, number][],
+  referenceLon?: number,
+): [number, number][] {
+  return shiftPathToReferenceLongitude(unwrapPath(path), referenceLon);
+}
+
+/**
  * Split a path into segments at antimeridian (±180°) crossings.
  * Each segment stays within the standard [-180, 180] longitude range,
  * so Leaflet draws polylines correctly without stretching across the map.

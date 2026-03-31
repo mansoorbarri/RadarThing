@@ -6,7 +6,7 @@ import "leaflet/dist/leaflet.css";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type OnlineAirport } from "~/hooks/useAircraftStream";
-import { splitPathAtAntimeridian } from "~/lib/map-utils";
+import { preparePathForWorldCopy } from "~/lib/map-utils";
 import { useMobileDetection } from "~/hooks/useMobileDetection";
 import { useProStatus } from "~/hooks/useProStatus";
 import { getBooleanCookie, setBooleanCookie } from "~/lib/cookies";
@@ -455,6 +455,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   // Track previous historyPath to detect flight changes
   const prevHistoryPathRef = useRef<[number, number][] | null>(null);
+  const replayReferenceLon = replayState?.currentPosition?.[1];
 
   // Zoom to flight path when it changes (works for both replay and static history)
   useEffect(() => {
@@ -469,13 +470,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
     // Only zoom if the path actually changed (new flight selected)
     if (prevHistoryPathRef.current !== historyPath) {
       prevHistoryPathRef.current = historyPath;
-      const bounds = L.latLngBounds(historyPath);
+      const displayPath = preparePathForWorldCopy(historyPath, replayReferenceLon);
+      const bounds = L.latLngBounds(displayPath);
       mapRefs.mapInstance.current.fitBounds(bounds, {
         padding: [50, 50],
         maxZoom: 10,
       });
     }
-  }, [historyPath, mapRefs.mapInstance]);
+  }, [historyPath, mapRefs.mapInstance, replayReferenceLon]);
 
   // Render historic flight path from Flight Log (only when NOT in replay mode)
   useEffect(() => {
@@ -497,23 +499,26 @@ const MapComponent: React.FC<MapComponentProps> = ({
     // Clear existing layers before drawing the historic path
     mapRefs.historyLayerGroup.current.clearLayers();
 
-    // Draw the historic path (split at antimeridian for trans-Pacific flights)
-    for (const segment of splitPathAtAntimeridian(historyPath)) {
-      if (segment.length >= 2) {
-        const historyPolyline = L.polyline(segment, {
-          color: isRadarMode ? "#00ff00" : "#00ff00",
-          weight: isRadarMode ? 2 : 4,
-          opacity: isRadarMode ? 0.7 : 0.8,
-          smoothFactor: 1,
-          dashArray: "",
-        });
-        mapRefs.historyLayerGroup.current.addLayer(historyPolyline);
-      }
+    const displayHistoryPath = preparePathForWorldCopy(
+      historyPath,
+      replayReferenceLon,
+    );
+
+    if (displayHistoryPath.length >= 2) {
+      const historyPolyline = L.polyline(displayHistoryPath, {
+        color: isRadarMode ? "#00ff00" : "#00ff00",
+        weight: isRadarMode ? 2 : 4,
+        opacity: isRadarMode ? 0.7 : 0.8,
+        smoothFactor: 1,
+        dashArray: "",
+      });
+      mapRefs.historyLayerGroup.current.addLayer(historyPolyline);
     }
   }, [
     historyPath,
     isRadarMode,
     replayState,
+    replayReferenceLon,
     mapRefs.mapInstance,
     mapRefs.historyLayerGroup,
   ]);
@@ -556,39 +561,43 @@ const MapComponent: React.FC<MapComponentProps> = ({
     // Clear previous layers
     mapRefs.replayLayerGroup.current.clearLayers();
 
+    const displayTraversedPath = preparePathForWorldCopy(
+      traversedPath,
+      currentPosition[1],
+    );
+    const displayRemainingPath = preparePathForWorldCopy(
+      remainingPath,
+      currentPosition[1],
+    );
+
     // Draw traversed path (solid amber line)
-    if (traversedPath.length >= 2) {
-      for (const segment of splitPathAtAntimeridian(traversedPath)) {
-        if (segment.length >= 2) {
-          const traversedPolyline = L.polyline(segment, {
-            color: "#f59e0b", // amber-500
-            weight: isRadarMode ? 2 : 4,
-            opacity: isRadarMode ? 0.8 : 0.9,
-            smoothFactor: 1,
-          });
-          mapRefs.replayLayerGroup.current.addLayer(traversedPolyline);
-        }
-      }
+    if (displayTraversedPath.length >= 2) {
+      const traversedPolyline = L.polyline(displayTraversedPath, {
+        color: "#f59e0b", // amber-500
+        weight: isRadarMode ? 2 : 4,
+        opacity: isRadarMode ? 0.8 : 0.9,
+        smoothFactor: 1,
+      });
+      mapRefs.replayLayerGroup.current.addLayer(traversedPolyline);
     }
 
     // Draw remaining path (dashed, faded)
-    if (remainingPath.length >= 2) {
-      for (const segment of splitPathAtAntimeridian(remainingPath)) {
-        if (segment.length >= 2) {
-          const remainingPolyline = L.polyline(segment, {
-            color: "#f59e0b", // amber-500
-            weight: isRadarMode ? 1 : 2,
-            opacity: isRadarMode ? 0.3 : 0.4,
-            smoothFactor: 1,
-            dashArray: "8, 8",
-          });
-          mapRefs.replayLayerGroup.current.addLayer(remainingPolyline);
-        }
-      }
+    if (displayRemainingPath.length >= 2) {
+      const remainingPolyline = L.polyline(displayRemainingPath, {
+        color: "#f59e0b", // amber-500
+        weight: isRadarMode ? 1 : 2,
+        opacity: isRadarMode ? 0.3 : 0.4,
+        smoothFactor: 1,
+        dashArray: "8, 8",
+      });
+      mapRefs.replayLayerGroup.current.addLayer(remainingPolyline);
     }
 
+    const displayCurrentPosition =
+      displayTraversedPath[displayTraversedPath.length - 1] ?? currentPosition;
+
     // Draw replay aircraft marker at current position
-    const replayMarker = L.marker(currentPosition, {
+    const replayMarker = L.marker(displayCurrentPosition, {
       icon: getReplayAircraftIcon(currentHeading),
       zIndexOffset: 1000,
     });

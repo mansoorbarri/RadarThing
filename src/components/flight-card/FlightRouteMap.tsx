@@ -1,3 +1,5 @@
+import { preparePathForWorldCopy } from "~/lib/map-utils";
+
 interface FlightRouteMapProps {
   routeData: [number, number][];
   depICAO?: string;
@@ -15,16 +17,7 @@ export function FlightRouteMap({
 }: FlightRouteMapProps) {
   if (routeData.length < 2) return null;
 
-  // Detect antimeridian crossing and shift longitudes if needed
-  const lons = routeData.map((p) => p[1]);
-  const needsShift = lons.some(
-    (lon, i) => i > 0 && Math.abs(lon - lons[i - 1]!) > 180,
-  );
-
-  const adjustedPoints = routeData.map(
-    ([lat, lon]) =>
-      [lat, needsShift && lon < 0 ? lon + 360 : lon] as [number, number],
-  );
+  const adjustedPoints = preparePathForWorldCopy(routeData);
 
   // Calculate bounding box with padding
   const lats = adjustedPoints.map((p) => p[0]);
