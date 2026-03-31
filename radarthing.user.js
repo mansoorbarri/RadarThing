@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      1.5.2
 // @description  Always loads the latest GeoFS ATC Radar script from GitHub
-// @Author       xyzmani
+// @author       xyzmani
 // @icon         https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/public/favicon.ico
 // @match        http://*/geofs.php*
 // @match        https://*/geofs.php*
