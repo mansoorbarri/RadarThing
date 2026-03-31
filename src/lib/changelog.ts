@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "free-us-airport-charts",
+    date: "2026-03-31",
+    title: "US Airport Charts Are Now Free",
+    description:
+      "Airport charts for US airports are now available to every user on the radar without a PRO subscription.",
+    type: "improvement",
+  },
+  {
     id: "sidebar-nav-waypoint-controls",
     date: "2026-03-29",
     title: "Sidebar NAV and Waypoint Controls",

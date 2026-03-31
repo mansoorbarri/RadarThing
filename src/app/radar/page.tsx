@@ -29,6 +29,7 @@ import { useRecentSearches } from "~/hooks/useRecentSearches";
 import { useActiveTracker } from "~/hooks/useActiveTracker";
 import { useMostTrackedFlights } from "~/hooks/useMostTrackedFlights";
 import { Analytics } from "~/lib/analytics";
+import { isFreeChartIcao } from "~/lib/chartAccess";
 import { normalizeCallsign } from "~/lib/utils";
 
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
@@ -89,6 +90,9 @@ export default function ATCPage() {
     [],
   );
   const [selectedAirport, setSelectedAirport] = useState<any>(undefined);
+  const canAccessSelectedAirportCharts =
+    Boolean(selectedAirport?.icao) &&
+    (isProUser || isFreeChartIcao(selectedAirport?.icao));
 
   const [historyPath, setHistoryPath] = useState<[number, number][] | null>(
     null,
@@ -950,7 +954,7 @@ export default function ATCPage() {
               )}
             </div>
 
-            {isProUser ? (
+            {canAccessSelectedAirportCharts ? (
               <button
                 onClick={() => setShowTaxiChart(true)}
                 className={`cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 ${isMobile ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}

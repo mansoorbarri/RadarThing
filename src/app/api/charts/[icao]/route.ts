@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isPro } from "~/app/actions/is-pro";
 import type { ChartType, AirportChart } from "~/types/airportCharts";
 import { organizeChartsByType } from "~/services/airportChartsService";
+import { isFreeChartIcao } from "~/lib/chartAccess";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "../../../../../convex/_generated/api";
 
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest, context: any) {
 
   const isProUser = await isPro();
 
-  if (!isProUser) {
+  if (!isProUser && !isFreeChartIcao(icao)) {
     return NextResponse.json({ error: "PRO required" }, { status: 403 });
   }
 
