@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import type { Doc, Id } from "./_generated/dataModel";
+import type { Doc } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 
 type ReminderStatus = Doc<"waypointReminders">["status"];
@@ -67,7 +67,7 @@ export const markTriggered = mutation({
   },
   handler: async (ctx, args) => {
     const reminder = await ctx.db.get(args.id);
-    if (!reminder || reminder.status !== "armed") return null;
+    if (reminder?.status !== "armed") return null;
 
     await ctx.db.patch(args.id, {
       status: "active",
@@ -133,7 +133,7 @@ export const cancelForUser = mutation({
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .collect();
 
-    const normalizedCallsign = args.callsign
+    const normalizedCallsign = args.callsign?.trim()
       ? normalizeIdent(args.callsign)
       : null;
     const now = Date.now();

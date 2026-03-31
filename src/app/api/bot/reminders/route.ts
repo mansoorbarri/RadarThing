@@ -25,6 +25,14 @@ function badRequest(error: string) {
   return NextResponse.json({ error }, { status: 400 });
 }
 
+function getString(
+  body: Record<string, unknown>,
+  key: string,
+): string | undefined {
+  const value = body[key];
+  return typeof value === "string" ? value.trim() : undefined;
+}
+
 export async function POST(request: Request) {
   if (!isAuthorized(request)) return unauthorized();
 
@@ -37,7 +45,7 @@ export async function POST(request: Request) {
 
   switch (action) {
     case "lookupUser": {
-      const discordUsername = String(body.discordUsername ?? "").trim();
+      const discordUsername = getString(body, "discordUsername");
       if (!discordUsername) return badRequest("Missing discordUsername");
 
       const user = await convex.query(api.users.getByDiscordUsername, {
@@ -59,12 +67,13 @@ export async function POST(request: Request) {
     }
 
     case "createReminder": {
-      const userId = body.userId as Id<"users"> | undefined;
-      const googleId = String(body.googleId ?? "").trim();
-      const discordUsername = String(body.discordUsername ?? "").trim();
-      const discordUserId = String(body.discordUserId ?? "").trim();
-      const callsign = String(body.callsign ?? "").trim();
-      const waypointIdent = String(body.waypointIdent ?? "").trim();
+      const userIdValue = getString(body, "userId");
+      const userId = userIdValue as Id<"users"> | undefined;
+      const googleId = getString(body, "googleId");
+      const discordUsername = getString(body, "discordUsername");
+      const discordUserId = getString(body, "discordUserId");
+      const callsign = getString(body, "callsign");
+      const waypointIdent = getString(body, "waypointIdent");
       const intervalSeconds = Number(body.intervalSeconds);
       const durationSeconds = Number(body.durationSeconds);
 
@@ -101,7 +110,8 @@ export async function POST(request: Request) {
     }
 
     case "markTriggered": {
-      const id = body.id as Id<"waypointReminders"> | undefined;
+      const idValue = getString(body, "id");
+      const id = idValue as Id<"waypointReminders"> | undefined;
       const triggeredAt = Number(body.triggeredAt);
       if (!id || !Number.isFinite(triggeredAt)) {
         return badRequest("Missing or invalid trigger payload");
@@ -115,7 +125,8 @@ export async function POST(request: Request) {
     }
 
     case "markSent": {
-      const id = body.id as Id<"waypointReminders"> | undefined;
+      const idValue = getString(body, "id");
+      const id = idValue as Id<"waypointReminders"> | undefined;
       const sentAt = Number(body.sentAt);
       if (!id || !Number.isFinite(sentAt)) {
         return badRequest("Missing or invalid sent payload");
@@ -131,10 +142,10 @@ export async function POST(request: Request) {
     case "markCompleted":
     case "markCancelled":
     case "markFailed": {
-      const id = body.id as Id<"waypointReminders"> | undefined;
+      const idValue = getString(body, "id");
+      const id = idValue as Id<"waypointReminders"> | undefined;
       const completedAt = Number(body.completedAt);
-      const failureReason =
-        typeof body.failureReason === "string" ? body.failureReason : undefined;
+      const failureReason = getString(body, "failureReason");
 
       if (!id || !Number.isFinite(completedAt)) {
         return badRequest("Missing or invalid completion payload");

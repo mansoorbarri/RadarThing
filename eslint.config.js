@@ -15,6 +15,7 @@ export default tseslint.config(
       "jth.js",
       "sse",
       "next-env.d.ts",
+      "convex/_generated",
     ],
   },
   ...compat.extends("next/core-web-vitals"),
