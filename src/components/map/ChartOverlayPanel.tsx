@@ -14,8 +14,14 @@ import {
   type ReactZoomPanPinchRef,
 } from "react-zoom-pan-pinch";
 import { useAirportCharts } from "~/hooks/useAirportCharts";
+import {
+  getChartRotation,
+  getNextChartRotation,
+  getRotatedFrameTransform,
+  setChartRotation as persistChartRotation,
+} from "~/lib/chartRotation";
 import type { ChartType } from "~/types/airportCharts";
-import { X, RotateCcw } from "lucide-react";
+import { X, RotateCcw, RotateCw } from "lucide-react";
 
 const CHART_PANEL_WIDTH_KEY = "chart_panel_width";
 const DEFAULT_PANEL_WIDTH = 520;
@@ -47,28 +53,47 @@ interface TransformState {
 }
 const transformCache = new Map<string, TransformState>();
 
-function ResetButton({ onReset }: { onReset?: () => void }) {
+function ChartControls({
+  onReset,
+  onRotate,
+}: {
+  onReset?: () => void;
+  onRotate?: () => void;
+}) {
   const { resetTransform } = useControls();
   return (
-    <button
-      onClick={() => {
-        resetTransform();
-        onReset?.();
-      }}
-      className="absolute right-4 bottom-4 z-10 flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-300 backdrop-blur-sm hover:bg-slate-800"
-    >
-      <RotateCcw className="h-3 w-3" />
-      Reset
-    </button>
+    <div className="absolute right-4 bottom-4 z-10 flex items-center gap-2">
+      <button
+        onClick={onRotate}
+        className="flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-300 backdrop-blur-sm hover:bg-slate-800"
+      >
+        <RotateCw className="h-3 w-3" />
+        Rotate
+      </button>
+      <button
+        onClick={() => {
+          resetTransform();
+          onReset?.();
+        }}
+        className="flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-300 backdrop-blur-sm hover:bg-slate-800"
+      >
+        <RotateCcw className="h-3 w-3" />
+        Reset
+      </button>
+    </div>
   );
 }
 
 function ZoomableChartImage({
   chartUrl,
   chartName,
+  rotation,
+  onRotate,
 }: {
   chartUrl: string;
   chartName: string;
+  rotation: number;
+  onRotate: () => void;
 }) {
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
   const hasInitialized = useRef(false);
@@ -115,7 +140,7 @@ function ZoomableChartImage({
         onTransformed={handleTransformed}
       >
         <>
-          <ResetButton onReset={handleReset} />
+          <ChartControls onReset={handleReset} onRotate={onRotate} />
           <TransformComponent
             wrapperClass="!w-full !h-full"
             contentClass="flex h-full w-full items-center justify-center"
@@ -124,8 +149,9 @@ function ZoomableChartImage({
             <img
               src={chartUrl}
               alt={chartName}
-              className="object-contain invert select-none"
+              className="max-h-full max-w-full object-contain invert select-none"
               onLoad={handleImageLoad}
+              style={{ transform: `rotate(${rotation}deg)` }}
             />
           </TransformComponent>
         </>
@@ -142,6 +168,9 @@ interface ChartSidePanelProps {
 export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
   const { charts, loading } = useAirportCharts(icao);
   const [pdfError, setPdfError] = useState(false);
+  const [chartRotation, setChartRotation] = useState(0);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
   // Resizable width
   const [panelWidth, setPanelWidth] = useState(getStoredWidth);
@@ -221,12 +250,48 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
     setPdfError(false);
   }, [selectedChart?.chartUrl]);
 
+  useEffect(() => {
+    if (!selectedChart?.chartUrl) {
+      setChartRotation(0);
+      return;
+    }
+
+    setChartRotation(getChartRotation(selectedChart.chartUrl));
+  }, [selectedChart?.chartUrl]);
+
+  useEffect(() => {
+    const container = chartContainerRef.current;
+    if (!container) return;
+
+    const updateSize = () => {
+      setContainerSize({
+        width: container.clientWidth,
+        height: container.clientHeight,
+      });
+    };
+
+    updateSize();
+
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, []);
+
   const handleTypeChange = (type: ChartType) => {
     setSelectedType(type);
     setSelectedChartIndex(0);
   };
 
   const hasCharts = availableTabs.length > 0;
+
+  const handleRotateChart = useCallback(() => {
+    if (!selectedChart?.chartUrl) return;
+
+    const nextRotation = getNextChartRotation(chartRotation);
+    setChartRotation(nextRotation);
+    persistChartRotation(selectedChart.chartUrl, nextRotation);
+  }, [chartRotation, selectedChart?.chartUrl]);
 
   return (
     <aside
@@ -321,7 +386,10 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
           </div>
 
           {/* Chart content */}
-          <div className="relative min-h-0 flex-1 overflow-hidden bg-black">
+          <div
+            ref={chartContainerRef}
+            className="relative min-h-0 flex-1 overflow-hidden bg-black"
+          >
             {!selectedChart ? (
               <div className="flex h-full items-center justify-center">
                 <span className="text-xs text-white/40">Select a chart</span>
@@ -342,18 +410,39 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
                   </a>
                 </div>
               ) : (
-                <iframe
-                  src={selectedChart.chartUrl}
-                  className="h-full w-full border-0 invert"
-                  title={selectedChart.chartName}
-                  onError={() => setPdfError(true)}
-                />
+                <>
+                  <div className="absolute right-4 bottom-4 z-10">
+                    <button
+                      onClick={handleRotateChart}
+                      className="flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-300 backdrop-blur-sm hover:bg-slate-800"
+                    >
+                      <RotateCw className="h-3 w-3" />
+                      Rotate
+                    </button>
+                  </div>
+                  <iframe
+                    src={selectedChart.chartUrl}
+                    className="h-full w-full border-0 invert transition-transform duration-200"
+                    title={selectedChart.chartName}
+                    onError={() => setPdfError(true)}
+                    style={{
+                      transform: getRotatedFrameTransform(
+                        chartRotation,
+                        containerSize.width,
+                        containerSize.height,
+                      ),
+                      transformOrigin: "center center",
+                    }}
+                  />
+                </>
               )
             ) : (
               <ZoomableChartImage
                 key={selectedChart.chartUrl}
                 chartUrl={selectedChart.chartUrl}
                 chartName={selectedChart.chartName}
+                rotation={chartRotation}
+                onRotate={handleRotateChart}
               />
             )}
           </div>

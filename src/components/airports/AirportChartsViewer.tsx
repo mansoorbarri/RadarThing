@@ -13,8 +13,21 @@ import type {
   ChartsByType,
 } from "~/types/airportCharts";
 import { useAirportCharts } from "~/hooks/useAirportCharts";
+import {
+  getChartRotation,
+  getNextChartRotation,
+  getRotatedFrameTransform,
+  setChartRotation as persistChartRotation,
+} from "~/lib/chartRotation";
 import { cn } from "~/lib/utils";
-import { ChevronLeft, ChevronRight, RotateCcw, Search, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  RotateCw,
+  Search,
+  X,
+} from "lucide-react";
 
 interface Props {
   icao: string;
@@ -289,19 +302,34 @@ function ChartSidebar({
 }
 
 // Reset button component that uses the transform controls
-function ResetButton({ onReset }: { onReset?: () => void }) {
+function ChartControls({
+  onReset,
+  onRotate,
+}: {
+  onReset?: () => void;
+  onRotate?: () => void;
+}) {
   const { resetTransform } = useControls();
   return (
-    <button
-      onClick={() => {
-        resetTransform();
-        onReset?.();
-      }}
-      className="absolute right-4 bottom-4 z-10 flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-300 backdrop-blur-sm hover:bg-slate-800"
-    >
-      <RotateCcw className="h-3 w-3" />
-      Reset
-    </button>
+    <div className="absolute right-4 bottom-4 z-10 flex items-center gap-2">
+      <button
+        onClick={onRotate}
+        className="flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-300 backdrop-blur-sm hover:bg-slate-800"
+      >
+        <RotateCw className="h-3 w-3" />
+        Rotate
+      </button>
+      <button
+        onClick={() => {
+          resetTransform();
+          onReset?.();
+        }}
+        className="flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-300 backdrop-blur-sm hover:bg-slate-800"
+      >
+        <RotateCcw className="h-3 w-3" />
+        Reset
+      </button>
+    </div>
   );
 }
 
@@ -310,10 +338,14 @@ function ChartImage({
   chartUrl,
   chartName,
   isInverted,
+  rotation,
+  onRotate,
 }: {
   chartUrl: string;
   chartName: string;
   isInverted: boolean;
+  rotation: number;
+  onRotate: () => void;
 }) {
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
   const hasInitialized = useRef(false);
@@ -362,7 +394,7 @@ function ChartImage({
       onTransformed={handleTransformed}
     >
       <>
-        <ResetButton onReset={handleReset} />
+        <ChartControls onReset={handleReset} onRotate={onRotate} />
         <TransformComponent
           wrapperClass="!w-full !h-full"
           contentClass="flex h-full w-full items-center justify-center"
@@ -371,8 +403,12 @@ function ChartImage({
           <img
             src={chartUrl}
             alt={chartName}
-            className={cn("object-contain select-none", isInverted && "invert")}
+            className={cn(
+              "max-h-full max-w-full object-contain select-none",
+              isInverted && "invert",
+            )}
             onLoad={handleImageLoad}
+            style={{ transform: `rotate(${rotation}deg)` }}
           />
         </TransformComponent>
       </>
@@ -385,6 +421,8 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
   const [pdfError, setPdfError] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isInverted, setIsInverted] = useState(true);
+  const [chartRotation, setChartRotation] = useState(0);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
   const {
     charts,
@@ -421,6 +459,42 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
   useEffect(() => {
     setPdfError(false);
   }, [selectedChart?.chartUrl]);
+
+  useEffect(() => {
+    if (!selectedChart?.chartUrl) {
+      setChartRotation(0);
+      return;
+    }
+
+    setChartRotation(getChartRotation(selectedChart.chartUrl));
+  }, [selectedChart?.chartUrl]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateSize = () => {
+      setContainerSize({
+        width: container.clientWidth,
+        height: container.clientHeight,
+      });
+    };
+
+    updateSize();
+
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, []);
+
+  const handleRotateChart = useCallback(() => {
+    if (!selectedChart?.chartUrl) return;
+
+    const nextRotation = getNextChartRotation(chartRotation);
+    setChartRotation(nextRotation);
+    persistChartRotation(selectedChart.chartUrl, nextRotation);
+  }, [chartRotation, selectedChart?.chartUrl]);
 
   const isPdfChart = selectedChart && isPdf(selectedChart.chartUrl);
 
@@ -505,7 +579,7 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
               <button
                 onClick={() => setIsInverted((prev) => !prev)}
                 className={cn(
-                  "absolute right-4 bottom-14 z-10 cursor-pointer rounded-md border px-3 py-1.5 text-xs transition-colors",
+                  "absolute right-4 bottom-16 z-10 cursor-pointer rounded-md border px-3 py-1.5 text-xs transition-colors",
                   isInverted
                     ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20"
                     : "border-white/10 bg-slate-900/90 text-slate-300 hover:bg-slate-800",
@@ -574,15 +648,34 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
                   </a>
                 </div>
               ) : (
-                <iframe
-                  src={selectedChart.chartUrl}
-                  className={cn(
-                    "h-full w-full border-0",
-                    isInverted && "invert",
-                  )}
-                  title={selectedChart.chartName}
-                  onError={() => setPdfError(true)}
-                />
+                <>
+                  <div className="absolute right-4 bottom-4 z-10">
+                    <button
+                      onClick={handleRotateChart}
+                      className="flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-slate-300 backdrop-blur-sm hover:bg-slate-800"
+                    >
+                      <RotateCw className="h-3 w-3" />
+                      Rotate
+                    </button>
+                  </div>
+                  <iframe
+                    src={selectedChart.chartUrl}
+                    className={cn(
+                      "h-full w-full border-0 transition-transform duration-200",
+                      isInverted && "invert",
+                    )}
+                    title={selectedChart.chartName}
+                    onError={() => setPdfError(true)}
+                    style={{
+                      transform: getRotatedFrameTransform(
+                        chartRotation,
+                        containerSize.width,
+                        containerSize.height,
+                      ),
+                      transformOrigin: "center center",
+                    }}
+                  />
+                </>
               )
             ) : (
               <ChartImage
@@ -590,6 +683,8 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
                 chartUrl={selectedChart.chartUrl}
                 chartName={selectedChart.chartName}
                 isInverted={isInverted}
+                rotation={chartRotation}
+                onRotate={handleRotateChart}
               />
             )}
           </div>
