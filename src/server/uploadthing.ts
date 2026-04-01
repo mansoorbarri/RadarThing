@@ -17,7 +17,7 @@ export const ourFileRouter = {
     }),
 
   airportChartUploader: f({
-    "image/png": { maxFileSize: "2MB", maxFileCount: 20 },
+    "image/png": { maxFileSize: "3MB", maxFileCount: 20 },
   })
     .middleware(async () => {
       const { userId } = await auth();

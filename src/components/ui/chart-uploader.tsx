@@ -43,7 +43,7 @@ function getHumanReadableError(error: Error | string): string {
     lowerMessage.includes("too large") ||
     lowerMessage.includes("size limit")
   ) {
-    return "File is too large. Maximum size is 2MB.";
+    return "File is too large. Maximum size is 3MB.";
   }
 
   if (
@@ -336,7 +336,7 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
               </div>
 
               <p className="text-xs text-slate-500">
-                PNG only (max 2MB each, up to 20 files)
+                PNG only (max 3MB each, up to 20 files)
               </p>
             </div>
           </div>
