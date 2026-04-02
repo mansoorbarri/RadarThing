@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "replay-hides-live-traffic",
+    date: "2026-04-02",
+    title: "Cleaner Flight Replays",
+    description:
+      "Live traffic is now hidden while you replay a flight, so the route playback stays isolated from current radar traffic.",
+    type: "fix",
+  },
+  {
     id: "free-us-airport-charts",
     date: "2026-03-31",
     title: "US Airport Charts Are Now Free",

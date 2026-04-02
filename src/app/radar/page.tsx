@@ -263,6 +263,10 @@ export default function ATCPage() {
     });
   }, [aircrafts, selectedCallsigns, fullFlightFilter]);
 
+  const isReplayActive = isViewingHistory || replayFlight !== null;
+  const visibleAircrafts = isReplayActive ? [] : filteredAircrafts;
+  const visibleLiveAircrafts = isReplayActive ? [] : aircrafts;
+
   // Memoize selected aircraft IDs to avoid recalculating on every render
   const selectedAircraftIds = useMemo(
     () => selectedAircrafts.map((ac) => ac.callsign || ac.id),
@@ -351,6 +355,14 @@ export default function ATCPage() {
     const aircraftId = selectedAircraft.callsign || selectedAircraft.id;
     activeAircraft.mergeFlightPath(aircraftId, activeFlightPath);
   }, [activeFlightPath, isViewingHistory, selectedAircraft]);
+
+  useEffect(() => {
+    if (!isReplayActive) return;
+
+    setSelectedAircrafts([]);
+    setIsFollowMode(false);
+    setActiveRightPanel(null);
+  }, [isReplayActive]);
 
   // Auto-select aircraft from URL param if it's a full flight number
   const followParam = searchParams.get("follow") === "true";
@@ -791,7 +803,7 @@ export default function ATCPage() {
           <MapSkeleton />
         ) : (
           <DynamicMapComponent
-            aircrafts={filteredAircrafts}
+            aircrafts={visibleAircrafts}
             airports={airports}
             onlineAirports={onlineAirports}
             selectedAirport={selectedAirport}
@@ -823,7 +835,7 @@ export default function ATCPage() {
       {!isMobile && activeRightPanel === "fids" && (
         <aside className="animate-slide-in-right fixed inset-y-0 right-0 z-[10012] w-full max-w-[420px] border-l border-white/10 bg-black/80 backdrop-blur-xl">
           <FIDSPanel
-            aircrafts={aircrafts}
+            aircrafts={visibleLiveAircrafts}
             onTrack={(ac) => {
               setSelectedAircrafts([ac]);
               setActiveRightPanel(null);
@@ -836,7 +848,7 @@ export default function ATCPage() {
       {!isMobile && activeRightPanel === "filter" && (
         <aside className="animate-slide-in-right fixed inset-y-0 right-0 z-[10013] w-full max-w-[360px] border-l border-white/10 bg-black/80 backdrop-blur-xl">
           <CallsignFilter
-            aircrafts={aircrafts}
+            aircrafts={visibleLiveAircrafts}
             selectedCallsigns={selectedCallsigns}
             onToggleCallsign={handleToggleCallsign}
             onClearFilters={handleClearFilters}
@@ -1027,7 +1039,7 @@ export default function ATCPage() {
               icao={selectedAirport.icao}
               airportLat={selectedAirport.lat}
               airportLon={selectedAirport.lon}
-              aircrafts={aircrafts}
+              aircrafts={visibleLiveAircrafts}
               onTrack={(ac) => {
                 setSelectedAircrafts([ac]);
                 setShowAirportFID(false);
@@ -1042,7 +1054,7 @@ export default function ATCPage() {
             icao={selectedAirport.icao}
             airportLat={selectedAirport.lat}
             airportLon={selectedAirport.lon}
-            aircrafts={aircrafts}
+            aircrafts={visibleLiveAircrafts}
             onTrack={(ac) => {
               setSelectedAircrafts([ac]);
               setShowAirportFID(false);
@@ -1053,7 +1065,7 @@ export default function ATCPage() {
           />
         ))}
 
-      {selectedAircrafts.length > 0 &&
+      {!isReplayActive && selectedAircrafts.length > 0 &&
         (isMobile ? (
           <MobileSwipeSheet onClose={() => setSelectedAircrafts([])}>
             {selectedAircrafts.length === 1 ? (
@@ -1206,7 +1218,7 @@ export default function ATCPage() {
       {/* Most Tracked Flights - desktop only, hidden when airport selected */}
       {!isMobile && !selectedAirport && (
         <MostTrackedPanel
-          flights={mostTrackedFlights}
+          flights={isReplayActive ? [] : mostTrackedFlights}
           onTrack={(ac) => handleAircraftSelect(ac)}
         />
       )}
