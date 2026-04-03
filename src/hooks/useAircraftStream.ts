@@ -24,6 +24,10 @@ export const useAircraftStream = () => {
   const [connectionStatus, setConnectionStatus] = useState<
     "connecting" | "connected" | "disconnected"
   >("connecting");
+  const [lastMessageAt, setLastMessageAt] = useState<number | null>(null);
+  const [lastMessageAgeSeconds, setLastMessageAgeSeconds] = useState<
+    number | null
+  >(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -49,7 +53,8 @@ export const useAircraftStream = () => {
 
     es.onmessage = (event) => {
       try {
-        lastMessageTime.current = Date.now();
+        const receivedAt = Date.now();
+        lastMessageTime.current = receivedAt;
         const data = JSON.parse(event.data);
 
         // Handle full vs delta updates
@@ -90,7 +95,14 @@ export const useAircraftStream = () => {
         setOnlineAirports(data.onlineAirports || []);
         setIsLoading(false);
         setError(null);
-      } catch {}
+        setLastMessageAt(receivedAt);
+        setLastMessageAgeSeconds(0);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Unknown stream parse error";
+        console.error("Failed to process aircraft stream payload:", message);
+        setError(`Stream payload error: ${message}`);
+      }
     };
 
     es.onerror = () => {
@@ -117,13 +129,32 @@ export const useAircraftStream = () => {
   const startWatchdog = useCallback(() => {
     if (watchdogIntervalRef.current) clearInterval(watchdogIntervalRef.current);
     watchdogIntervalRef.current = setInterval(() => {
-      if (Date.now() - lastMessageTime.current > 30000) {
+      const elapsedMs = Date.now() - lastMessageTime.current;
+      if (elapsedMs > 30000) {
         setConnectionStatus("disconnected");
+        setError(
+          `No stream data received for ${Math.floor(elapsedMs / 1000)}s. Reconnecting...`,
+        );
         if (eventSourceRef.current) eventSourceRef.current.close();
         scheduleReconnect();
       }
     }, 10000);
   }, [scheduleReconnect]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!lastMessageAt) {
+        setLastMessageAgeSeconds(null);
+        return;
+      }
+
+      setLastMessageAgeSeconds(
+        Math.max(0, Math.floor((Date.now() - lastMessageAt) / 1000)),
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [lastMessageAt]);
 
   useEffect(() => {
     connectToStream();
@@ -136,5 +167,13 @@ export const useAircraftStream = () => {
     };
   }, [connectToStream]);
 
-  return { aircrafts, isLoading, error, connectionStatus, onlineAirports };
+  return {
+    aircrafts,
+    isLoading,
+    error,
+    connectionStatus,
+    onlineAirports,
+    lastMessageAt,
+    lastMessageAgeSeconds,
+  };
 };

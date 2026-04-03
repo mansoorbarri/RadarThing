@@ -73,8 +73,14 @@ export default function ATCPage() {
   const searchParams = useSearchParams();
   const isMobile = useMobileDetection();
 
-  const { aircrafts, isLoading, connectionStatus, onlineAirports } =
-    useAircraftStream();
+  const {
+    aircrafts,
+    isLoading,
+    connectionStatus,
+    onlineAirports,
+    error: streamError,
+    lastMessageAgeSeconds,
+  } = useAircraftStream();
   const { airports, fetchAirports } = useAirportData();
 
   // Fetch airports when online ATC data arrives so markers can render
@@ -625,6 +631,13 @@ export default function ATCPage() {
           <ConnectionStatusIndicator
             status={connectionStatus}
             isMobile={isMobile}
+            isStale={
+              connectionStatus === "connected" &&
+              lastMessageAgeSeconds !== null &&
+              lastMessageAgeSeconds >= 15
+            }
+            lastMessageAgeSeconds={lastMessageAgeSeconds}
+            error={streamError}
           />
           <WhatsNew isMobile={isMobile} />
           <UserAuth />
