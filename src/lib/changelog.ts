@@ -12,7 +12,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-03",
     title: "Controller IDENT Requests",
     description:
-      "Controllers can now request IDENT from the aircraft control panel, and pilots can confirm it in the userscript to make their target pulse on the radar for easier identification.",
+      "Update your userscript for the new pilot IDENT UI.",
     type: "new",
   },
   {
