@@ -17,6 +17,8 @@ export const env = createEnv({
     ADMIN_GOOGLE_ID: z.string().optional(),
     RESEND_API_KEY: z.string(),
     AVIAPAGES_API_KEY: z.string().optional(),
+    AVWX_TOKEN: z.string(),
+    OPENWEATHERMAP_API_KEY: z.string(),
     BOT_API_SECRET: z.string(),
   },
 
@@ -29,8 +31,6 @@ export const env = createEnv({
     NEXT_PUBLIC_URL: z.string(),
     NEXT_PUBLIC_CONVEX_URL: z.string().url(),
     NEXT_PUBLIC_OPENAIP_API_KEY: z.string(),
-    NEXT_PUBLIC_AVWX_TOKEN: z.string(),
-    NEXT_PUBLIC_OPENWEATHERMAP_API_KEY: z.string(),
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string(),
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string(),
     NEXT_PUBLIC_POSTHOG_KEY: z.string(),
@@ -46,9 +46,6 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
     NEXT_PUBLIC_OPENAIP_API_KEY: process.env.NEXT_PUBLIC_OPENAIP_API_KEY,
-    NEXT_PUBLIC_AVWX_TOKEN: process.env.NEXT_PUBLIC_AVWX_TOKEN,
-    NEXT_PUBLIC_OPENWEATHERMAP_API_KEY:
-      process.env.NEXT_PUBLIC_OPENWEATHERMAP_API_KEY,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
@@ -64,6 +61,8 @@ export const env = createEnv({
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     AVIAPAGES_API_KEY: process.env.AVIAPAGES_API_KEY,
+    AVWX_TOKEN: process.env.AVWX_TOKEN,
+    OPENWEATHERMAP_API_KEY: process.env.OPENWEATHERMAP_API_KEY,
     BOT_API_SECRET: process.env.BOT_API_SECRET,
   },
   /**

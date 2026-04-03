@@ -23,11 +23,7 @@ export const useMetarOverlay = (
     }
     const fetchMetar = async () => {
       try {
-        const res = await fetch(`https://avwx.rest/api/metar/${icao}`, {
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_AVWX_TOKEN}`,
-          },
-        });
+        const res = await fetch(`/api/weather/metar?icao=${icao}`);
         if (!res.ok) throw new Error("Failed to fetch METAR");
         const data = await res.json();
         setMetar(data);

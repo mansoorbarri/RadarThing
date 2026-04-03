@@ -20,8 +20,7 @@ export const useAtisOverlay = (icao: string | undefined) => {
     const fetchAtis = async () => {
       setLoading(true);
       try {
-        // Using atis.info - free D-ATIS API with good airport coverage
-        const res = await fetch(`https://atis.info/api/${icao}`);
+        const res = await fetch(`/api/weather/atis?icao=${icao}`);
         if (!res.ok) {
           setAtis(null);
           return;

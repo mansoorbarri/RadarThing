@@ -29,7 +29,7 @@ export const useWeatherOverlayLayer = ({
     if (showPrecipitation) {
       if (!precipLayerRef.current) {
         precipLayerRef.current = L.tileLayer(
-          `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${process.env.NEXT_PUBLIC_OPENWEATHERMAP_API_KEY}`,
+          "/api/weather/precipitation/{z}/{x}/{y}",
           {
             opacity: 0.8,
             zIndex: 200,
