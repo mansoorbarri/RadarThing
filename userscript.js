@@ -5,10 +5,13 @@
   const API_BASE = "https://sse.radarthing.com";
   const SEND_INTERVAL_MS = 5000;
   const COMMAND_POLL_INTERVAL_MS = 2000;
+  const DEFAULT_IDENT_DURATION_SECONDS = 15;
 
   let info = { active: false, dep: "", arr: "", flt: "", sqk: "", af: "" };
   let wasOnGround = true;
   let takeoffTimeUTC = "";
+  let identActiveUntil = 0;
+  let identExpiryTimer = null;
 
   function sanitizeCallsign(value) {
     return String(value || "")
@@ -28,6 +31,96 @@
       sanitizeCallsign(geofs?.userRecord?.callsign)
     );
   }
+
+  function isIdentActive() {
+    return identActiveUntil > Date.now();
+  }
+
+  function showIdentToast(message, isError = false) {
+    const toast = document.createElement("div");
+    toast.textContent = message;
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      z-index: 1000002;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #fff;
+      background: ${isError ? "rgba(239,68,68,0.92)" : "rgba(245,158,11,0.92)"};
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.38);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    `;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => {
+      toast.style.opacity = "1";
+    });
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      setTimeout(() => toast.remove(), 250);
+    }, 2400);
+  }
+
+  function broadcastIdentUpdate(active) {
+    window.dispatchEvent(
+      new CustomEvent("radarthing-ident-update", {
+        detail: {
+          active,
+          identUntil: active ? identActiveUntil : null,
+        },
+      }),
+    );
+  }
+
+  function scheduleIdentExpiry() {
+    if (identExpiryTimer) {
+      clearTimeout(identExpiryTimer);
+      identExpiryTimer = null;
+    }
+
+    if (!isIdentActive()) {
+      identActiveUntil = 0;
+      broadcastIdentUpdate(false);
+      return;
+    }
+
+    identExpiryTimer = setTimeout(() => {
+      identActiveUntil = 0;
+      broadcastIdentUpdate(false);
+    }, Math.max(250, identActiveUntil - Date.now() + 50));
+  }
+
+  function activateIdent(durationSeconds) {
+    const durationMs = Math.max(
+      5000,
+      Number(durationSeconds || DEFAULT_IDENT_DURATION_SECONDS) * 1000,
+    );
+    identActiveUntil = Date.now() + durationMs;
+    showIdentToast("IDENT ACTIVE");
+    broadcastIdentUpdate(true);
+    scheduleIdentExpiry();
+  }
+
+  function requestIdent(durationSeconds) {
+    const requestedSeconds = Math.max(
+      5,
+      Number(durationSeconds || DEFAULT_IDENT_DURATION_SECONDS),
+    );
+    showIdentToast("ATC requested IDENT");
+    window.dispatchEvent(
+      new CustomEvent("radarthing-ident-requested", {
+        detail: { durationSeconds: requestedSeconds },
+      }),
+    );
+  }
+
+  window.addEventListener("radarthing-ident-confirm", (e) => {
+    activateIdent(Number(e.detail?.durationSeconds) || DEFAULT_IDENT_DURATION_SECONDS);
+  });
 
   // ==========================================
   // AUTOPILOT FOLLOW
@@ -314,6 +407,10 @@
           }
           break;
 
+        case "requestIdent":
+          requestIdent(Number(cmd.value) || DEFAULT_IDENT_DURATION_SECONDS);
+          break;
+
         default:
           console.warn("[RadarThing] Unknown command type:", cmd.type);
       }
@@ -494,6 +591,8 @@
         geofs.animation?.values?.flapsSteps ||
         controls?.flaps?.maxPosition ||
         0,
+      identActive: isIdentActive(),
+      identUntil: isIdentActive() ? identActiveUntil : null,
     };
 
     fetch(`${API_BASE}/api/atc/position`, {

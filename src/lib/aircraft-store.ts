@@ -21,6 +21,8 @@ export interface PositionUpdate {
   navMode?: boolean;
   flapsPosition?: number;
   flapsMaxPosition?: number;
+  identActive?: boolean;
+  identUntil?: number | null;
   ts: number;
   lastSeen: number;
   flightPath?: [number, number][];

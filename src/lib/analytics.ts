@@ -316,6 +316,10 @@ export const Analytics = {
     track("control_set_all", props);
   },
 
+  identRequested: (props: { callsign?: string; durationSeconds?: number }) => {
+    track("ident_requested", props);
+  },
+
   // ===== MOST TRACKED EVENTS =====
   mostTrackedFlightClicked: (props: {
     callsign: string;

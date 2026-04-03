@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RadarThing
 // @namespace    http://tampermonkey.net/
-// @version      1.5.2
+// @version      1.5.4
 // @description  Always loads the latest GeoFS ATC Radar script from GitHub
 // @author       xyzmani
 // @icon         https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/public/favicon.ico
@@ -48,6 +48,8 @@
   const FOLLOW_LIST_ID = "atc-follow-list";
   const FOLLOW_SEARCH_ID = "atc-follow-search";
   const AF_INPUT_ID = "atc-afInput";
+  const IDENT_BTN_ID = "atc-ident-btn";
+  const IDENT_REQUEST_WINDOW_MS = 60000;
 
   let flightUI;
   let keybindMode = null;
@@ -56,6 +58,9 @@
   let followActive = false;
   let followLeaderInfo = null;
   let cachedAircraftList = [];
+  let identRequestUntil = 0;
+  let identRequestDurationSeconds = 15;
+  let identActiveUntil = 0;
 
   let radarPrefs = JSON.parse(
     localStorage.getItem(RADAR_PREFS_KEY) || '{"jth":false,"seabus":true}',
@@ -117,6 +122,48 @@
     return String(value || "")
       .replace(/\D+/g, "")
       .slice(0, 4);
+  }
+
+  function updateIdentUI() {
+    const buttonEl = document.getElementById(IDENT_BTN_ID);
+    if (!buttonEl) return;
+
+    const now = Date.now();
+    const pendingRequest = identRequestUntil > now;
+    const identActive = identActiveUntil > now;
+
+    buttonEl.disabled = false;
+    buttonEl.style.cursor = "pointer";
+
+    if (identActive) {
+      const remaining = Math.max(1, Math.ceil((identActiveUntil - now) / 1000));
+      buttonEl.textContent = `ACTIVE ${remaining}s`;
+      buttonEl.style.borderColor = "rgba(251,191,36,0.45)";
+      buttonEl.style.background =
+        "linear-gradient(135deg, rgba(251,191,36,0.32), rgba(245,158,11,0.18))";
+      buttonEl.style.color = "#fef3c7";
+      return;
+    }
+
+    if (pendingRequest) {
+      const remaining = Math.max(
+        1,
+        Math.ceil((identRequestUntil - now) / 1000),
+      );
+      buttonEl.textContent = "CONFIRM";
+      buttonEl.style.borderColor = "rgba(251,191,36,0.45)";
+      buttonEl.style.background =
+        "linear-gradient(135deg, rgba(251,191,36,0.28), rgba(245,158,11,0.14))";
+      buttonEl.style.color = "#fef3c7";
+      buttonEl.title = `ATC requested IDENT. Confirm within ${remaining}s.`;
+      return;
+    }
+
+    buttonEl.textContent = "IDENT";
+    buttonEl.style.borderColor = "rgba(251,191,36,0.3)";
+    buttonEl.style.background = "rgba(251,191,36,0.1)";
+    buttonEl.style.color = "#fcd34d";
+    buttonEl.title = "Press if ATC asks you to IDENT.";
   }
 
   function syncFlightPlan() {
@@ -1265,6 +1312,21 @@
           cursor:pointer;
           transition:background 0.15s;
         ">Airport Charts</button>
+        <button id="${IDENT_BTN_ID}" style="
+          width:100%;
+          height:30px;
+          margin-top:8px;
+          border-radius:10px;
+          border:1px solid rgba(251,191,36,0.3);
+          background:rgba(251,191,36,0.1);
+          color:#fcd34d;
+          font-size:9px;
+          font-weight:700;
+          letter-spacing:0.12em;
+          text-transform:uppercase;
+          cursor:pointer;
+          transition:background 0.15s, border-color 0.15s, color 0.15s;
+        " title="Press if ATC asks you to IDENT.">IDENT</button>
       </div>
     `;
 
@@ -1365,6 +1427,18 @@
         new CustomEvent("atc-data-sync", { detail: { active: false } }),
       );
       showToast("Flight info cleared");
+    };
+
+    document.getElementById(IDENT_BTN_ID).onclick = () => {
+      const durationSeconds =
+        identRequestUntil > Date.now() ? identRequestDurationSeconds : 15;
+      window.dispatchEvent(
+        new CustomEvent("radarthing-ident-confirm", {
+          detail: { durationSeconds },
+        }),
+      );
+      identRequestUntil = 0;
+      updateIdentUI();
     };
 
     document.getElementById(CHARTS_BTN_ID).onclick = toggleChartsPanel;
@@ -1530,6 +1604,8 @@
       followLeaderInfo = e.detail?.leader || null;
       renderFollowStatus();
     });
+
+    updateIdentUI();
   }
 
   // ==========================================
@@ -2078,6 +2154,24 @@
     }
   });
 
+  window.addEventListener("radarthing-ident-requested", (e) => {
+    identRequestDurationSeconds =
+      Math.max(5, Number(e.detail?.durationSeconds) || 15);
+    identRequestUntil = Date.now() + IDENT_REQUEST_WINDOW_MS;
+    updateIdentUI();
+  });
+
+  window.addEventListener("radarthing-ident-update", (e) => {
+    identActiveUntil =
+      e.detail?.active && Number(e.detail?.identUntil) > Date.now()
+        ? Number(e.detail.identUntil)
+        : 0;
+    if (identActiveUntil > 0) {
+      identRequestUntil = 0;
+    }
+    updateIdentUI();
+  });
+
   // ==========================================
   // INIT
   // ==========================================
@@ -2087,4 +2181,5 @@
   createChartsPanel();
   setupChartZoomHandlers();
   setInterval(syncFlightPlan, 3000);
+  setInterval(updateIdentUI, 1000);
 })();

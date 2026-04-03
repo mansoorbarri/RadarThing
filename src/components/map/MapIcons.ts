@@ -165,6 +165,9 @@ export const getAircraftDivIcon = (
     : `${formatSpeed(aircraft.speed, unitPrefs.speedUnit, altMSL)}${speedSuffix(unitPrefs.speedUnit)}`;
 
   const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
+  const isIdentActive =
+    aircraft.identActive ||
+    (typeof aircraft.identUntil === "number" && aircraft.identUntil > Date.now());
 
   const isCurrentAircraftSelected =
     selectedAircraftId &&
@@ -183,6 +186,20 @@ export const getAircraftDivIcon = (
     filter: ${getAircraftIconFilter(Boolean(isEmergency), Boolean(isCurrentAircraftSelected))};
     ${isEmergency ? "animation: pulse 1s infinite alternate;" : ""}
   `;
+
+  const identStyle = isIdentActive
+    ? `
+    position: absolute;
+    top: ${(totalHeight - planeSize) / 2 - 4}px;
+    left: -4px;
+    width: ${planeSize + 8}px;
+    height: ${planeSize + 8}px;
+    border-radius: 9999px;
+    border: 2px solid rgba(251, 191, 36, 0.95);
+    animation: radar-ident-pulse 1s ease-in-out infinite;
+    z-index: 1;
+  `
+    : "";
 
   const tagStyle = `
     position: absolute;
@@ -220,6 +237,7 @@ export const getAircraftDivIcon = (
   return L.divIcon({
     html: `
       <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px; pointer-events: auto; cursor: pointer;">
+        ${isIdentActive ? `<div style="${identStyle} pointer-events: none;"></div>` : ""}
         <img src="${iconUrl}" style="${planeStyle} pointer-events: none;" />
         <div style="${tagStyle} pointer-events: none;">
           ${detailContent}
@@ -241,6 +259,9 @@ export const getRadarAircraftDivIcon = (
   unitPrefs: UnitPreferences = DEFAULT_UNIT_PREFERENCES,
 ) => {
   const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
+  const isIdentActive =
+    aircraft.identActive ||
+    (typeof aircraft.identUntil === "number" && aircraft.identUntil > Date.now());
 
   const isCurrentAircraftSelected =
     selectedAircraftId &&
@@ -286,11 +307,15 @@ export const getRadarAircraftDivIcon = (
   // Color scheme: selected = bright green, emergency = red, normal = cyan
   const dotColor = isEmergency
     ? "#ef4444"
+    : isIdentActive
+      ? "#fbbf24"
     : isCurrentAircraftSelected
       ? "#4ade80"
       : "#22d3ee";
   const glowColor = isEmergency
     ? "rgba(239,68,68,0.8)"
+    : isIdentActive
+      ? "rgba(251,191,36,0.95)"
     : isCurrentAircraftSelected
       ? "rgba(74,222,128,0.9)"
       : "rgba(0,255,255,0.5)";
@@ -306,6 +331,19 @@ export const getRadarAircraftDivIcon = (
     box-shadow: 0 0 ${isCurrentAircraftSelected ? "8px" : "4px"} ${glowColor}${isCurrentAircraftSelected ? `, 0 0 14px ${glowColor}` : ""};
     ${isCurrentAircraftSelected ? "animation: radar-selected-pulse 1.5s ease-in-out infinite;" : ""}
   `;
+
+  const identRingStyle = isIdentActive
+    ? `
+    position: absolute;
+    top: ${(totalHeight - dotSize) / 2 - 6}px;
+    left: -6px;
+    width: ${dotSize + 12}px;
+    height: ${dotSize + 12}px;
+    border-radius: 9999px;
+    border: 2px solid rgba(251, 191, 36, 0.95);
+    animation: radar-ident-pulse 1s ease-in-out infinite;
+  `
+    : "";
 
   // Selection ring around selected aircraft
   const selectionRingStyle = isCurrentAircraftSelected
@@ -369,6 +407,7 @@ export const getRadarAircraftDivIcon = (
   return L.divIcon({
     html: `
       <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px; pointer-events: auto; cursor: pointer;">
+        ${isIdentActive ? `<div style="${identRingStyle} pointer-events: none;"></div>` : ""}
         ${isCurrentAircraftSelected ? `<div style="${selectionRingStyle} pointer-events: none;"></div>` : ""}
         <div style="${dotStyle} pointer-events: none;"></div>
         <div style="${headingLineStyle} pointer-events: none;"></div>

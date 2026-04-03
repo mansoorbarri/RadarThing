@@ -8,9 +8,13 @@ import { toast } from "sonner";
 
 interface AircraftControlPanelProps {
   aircraft: PositionUpdate & { altMSL?: number };
+  identOnly?: boolean;
 }
 
-export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
+export function AircraftControlPanel({
+  aircraft,
+  identOnly = false,
+}: AircraftControlPanelProps) {
   const {
     setSpeed,
     setAltitude,
@@ -21,6 +25,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     enableNav,
     disableNav,
     setWaypoint,
+    requestIdent,
     isLoading,
   } = useAircraftCommands();
 
@@ -252,6 +257,8 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       </div>
 
       <div className="space-y-3">
+        {!identOnly && (
+          <>
         <div className="space-y-1">
           <p className="px-1 font-mono text-[9px] font-black tracking-[0.2em] text-white/40 uppercase">
             Autopilot Mode
@@ -356,19 +363,39 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
           isText
           placeholder="0000"
         />
+          </>
+        )}
       </div>
 
+      {!identOnly && (
+        <button
+          onClick={handleSetAll}
+          disabled={isLoading || !hasAnyInput}
+          className="w-full rounded-xl bg-cyan-600 py-3 font-mono text-xs font-bold tracking-wider text-white uppercase transition-colors hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          SET
+        </button>
+      )}
+
       <button
-        onClick={handleSetAll}
-        disabled={isLoading || !hasAnyInput}
-        className="w-full rounded-xl bg-cyan-600 py-3 font-mono text-xs font-bold tracking-wider text-white uppercase transition-colors hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={() => {
+          void requestIdent(aircraftId, 15);
+          Analytics.identRequested({
+            callsign: aircraft.callsign || aircraftId,
+            durationSeconds: 15,
+          });
+          toast.success("IDENT request sent");
+        }}
+        disabled={isLoading}
+        className="w-full rounded-xl border border-amber-400/30 bg-amber-500/10 py-3 font-mono text-xs font-bold tracking-wider text-amber-300 uppercase transition-colors hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        SET
+        REQUEST IDENT
       </button>
 
       <p className="px-1 font-mono text-[9px] text-white/30">
-        Commands sent to GeoFS. NAV can target any waypoint in the active flight
-        plan.
+        {identOnly
+          ? "Ask the pilot to confirm IDENT in the userscript so their target pulses on the radar."
+          : "Commands sent to GeoFS. NAV can target any waypoint in the active flight plan."}
       </p>
     </div>
   );

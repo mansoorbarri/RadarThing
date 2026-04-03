@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "controller-ident-requests",
+    date: "2026-04-03",
+    title: "Controller IDENT Requests",
+    description:
+      "Controllers can now request IDENT from the aircraft control panel, and pilots can confirm it in the userscript to make their target pulse on the radar for easier identification.",
+    type: "new",
+  },
+  {
     id: "replay-hides-live-traffic",
     date: "2026-04-02",
     title: "Cleaner Flight Replays",

@@ -12,7 +12,8 @@ export type CommandType =
   | "enableNav"
   | "disableNav"
   | "setWaypoint"
-  | "toggleAutopilot";
+  | "toggleAutopilot"
+  | "requestIdent";
 
 interface Command {
   type: CommandType;
@@ -146,6 +147,15 @@ export function useAircraftCommands() {
     [sendCommand],
   );
 
+  const requestIdent = useCallback(
+    (targetId: string, durationSeconds = 15) =>
+      sendCommand({
+        targetId,
+        command: { type: "requestIdent", value: durationSeconds },
+      }),
+    [sendCommand],
+  );
+
   return {
     sendCommand,
     setSpeed,
@@ -158,6 +168,7 @@ export function useAircraftCommands() {
     disableNav,
     setWaypoint,
     toggleAutopilot,
+    requestIdent,
     isLoading,
     error,
   };
