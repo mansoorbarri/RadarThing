@@ -6,17 +6,104 @@ import { type PositionUpdate } from "~/lib/aircraft-store";
 import { calculateDistance } from "~/lib/map-utils";
 import { normalizeAircraftType } from "~/lib/utils";
 
-function formatEta(
+const toRadians = (value: number) => (value * Math.PI) / 180;
+
+const normalizeHeading = (heading: number) => {
+  const normalized = heading % 360;
+  return normalized < 0 ? normalized + 360 : normalized;
+};
+
+function calculateBearing(
+  fromLat: number,
+  fromLon: number,
+  toLat: number,
+  toLon: number,
+) {
+  const fromLatRad = toRadians(fromLat);
+  const toLatRad = toRadians(toLat);
+  const deltaLonRad = toRadians(toLon - fromLon);
+
+  const y = Math.sin(deltaLonRad) * Math.cos(toLatRad);
+  const x =
+    Math.cos(fromLatRad) * Math.sin(toLatRad) -
+    Math.sin(fromLatRad) * Math.cos(toLatRad) * Math.cos(deltaLonRad);
+
+  return normalizeHeading((Math.atan2(y, x) * 180) / Math.PI);
+}
+
+function headingDelta(a: number, b: number) {
+  const delta = Math.abs(normalizeHeading(a) - normalizeHeading(b));
+  return delta > 180 ? 360 - delta : delta;
+}
+
+function getArrivalEtaMinutes(
   ac: PositionUpdate,
   airportLat: number,
   airportLon: number,
-): string | null {
-  if (ac.speed < 30) return null;
+): number | null {
+  const speed = Number(ac.speed);
+  const heading = Number(ac.heading);
+  const altitude = Number(ac.alt);
+  const verticalSpeed = Number(ac.vspeed);
+
+  if (
+    !Number.isFinite(speed) ||
+    !Number.isFinite(heading) ||
+    !Number.isFinite(altitude) ||
+    speed < 80 ||
+    altitude < 75
+  ) {
+    return null;
+  }
+
   const distanceKm = calculateDistance(ac.lat, ac.lon, airportLat, airportLon);
   const distanceNm = distanceKm * 0.539957;
-  const minutesRemaining = Math.round((distanceNm / ac.speed) * 60);
-  if (minutesRemaining < 1) return "<1m";
+  if (!Number.isFinite(distanceNm) || distanceNm < 0.3 || distanceNm >= 400) {
+    return null;
+  }
+
+  const bearingToAirport = calculateBearing(
+    ac.lat,
+    ac.lon,
+    airportLat,
+    airportLon,
+  );
+  const delta = headingDelta(heading, bearingToAirport);
+
+  // Ignore aircraft that are clearly not inbound to the airport.
+  if (delta > 100) {
+    return null;
+  }
+
+  const closingSpeed = speed * Math.cos(toRadians(delta));
+  if (closingSpeed < 70) {
+    return null;
+  }
+
+  // Account for route extension and vectoring instead of using a pure
+  // straight-line estimate.
+  const turnPenalty =
+    distanceNm < 10
+      ? delta / 120
+      : distanceNm < 40
+        ? delta / 200
+        : delta / 300;
+  const routeFactor =
+    1 +
+    turnPenalty +
+    (distanceNm > 120 ? 0.08 : distanceNm > 40 ? 0.05 : 0.02) +
+    (Number.isFinite(verticalSpeed) && verticalSpeed > 500 ? 0.06 : 0);
+
+  const adjustedDistanceNm = distanceNm * routeFactor;
+  const minutesRemaining = Math.round((adjustedDistanceNm / closingSpeed) * 60);
+
   if (minutesRemaining >= 600) return null;
+  return minutesRemaining;
+}
+
+function formatEta(minutesRemaining: number | null): string | null {
+  if (minutesRemaining === null) return null;
+  if (minutesRemaining < 1) return "<1m";
   const hours = Math.floor(minutesRemaining / 60);
   const mins = minutesRemaining % 60;
   return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
@@ -47,7 +134,9 @@ function FlightRow({
   airportLon: number;
   onTrack: (ac: PositionUpdate) => void;
 }) {
-  const eta = isArrival ? formatEta(ac, airportLat, airportLon) : null;
+  const eta = isArrival
+    ? formatEta(getArrivalEtaMinutes(ac, airportLat, airportLon))
+    : null;
 
   return (
     <button
@@ -103,12 +192,41 @@ export function AirportFIDPanel({
   const [activeTab, setActiveTab] = useState<Tab>("departures");
 
   const arrivals = useMemo(
-    () => aircrafts.filter((ac) => ac.arrival === icao),
-    [aircrafts, icao],
+    () =>
+      aircrafts
+        .filter((ac) => ac.arrival === icao)
+        .sort((a, b) => {
+          const etaA = getArrivalEtaMinutes(a, airportLat, airportLon);
+          const etaB = getArrivalEtaMinutes(b, airportLat, airportLon);
+
+          if (etaA === null && etaB === null) {
+            return (b.speed || 0) - (a.speed || 0);
+          }
+          if (etaA === null) return 1;
+          if (etaB === null) return -1;
+          return etaA - etaB;
+        }),
+    [aircrafts, airportLat, airportLon, icao],
   );
 
   const departures = useMemo(
-    () => aircrafts.filter((ac) => ac.departure === icao),
+    () =>
+      aircrafts
+        .filter((ac) => ac.departure === icao)
+        .sort((a, b) => {
+          const altitudeA = Number(a.alt);
+          const altitudeB = Number(b.alt);
+          const speedA = Number(a.speed);
+          const speedB = Number(b.speed);
+          const isAirborneA = Number.isFinite(altitudeA) && altitudeA > 75;
+          const isAirborneB = Number.isFinite(altitudeB) && altitudeB > 75;
+
+          if (isAirborneA !== isAirborneB) {
+            return isAirborneA ? -1 : 1;
+          }
+
+          return (speedB || 0) - (speedA || 0);
+        }),
     [aircrafts, icao],
   );
 
