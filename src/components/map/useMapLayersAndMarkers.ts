@@ -171,10 +171,19 @@ export interface ConflictAlertSummary {
 
 const NM_PER_DEG_LAT = 60;
 const LOOKAHEAD_MINUTES = 6;
+const TERMINAL_LOOKAHEAD_MINUTES = 3;
 const MAX_INITIAL_DISTANCE_NM = 30;
 const HORIZONTAL_THRESHOLD_NM = 3;
 const VERTICAL_THRESHOLD_FT = 1200;
 const MAX_DISPLAYED_CONFLICTS = 40;
+const SURFACE_ALTITUDE_FT = 150;
+const SURFACE_SPEED_KTS = 70;
+const TERMINAL_ALTITUDE_FT = 1800;
+const TERMINAL_SPEED_KTS = 180;
+const TERMINAL_HORIZONTAL_THRESHOLD_NM = 1.5;
+const TERMINAL_VERTICAL_THRESHOLD_FT = 700;
+const SAME_FLOW_HEADING_DELTA_DEG = 18;
+const SAME_FLOW_RELATIVE_SPEED_NM_PER_MIN = 2;
 
 function toFiniteNumber(value: unknown, fallback = 0): number {
   const n = Number(value);
@@ -194,6 +203,70 @@ function getVelocityVectorNmPerMinute(aircraft: PositionUpdate) {
     east: speedNmPerMinute * Math.sin(headingRad),
     north: speedNmPerMinute * Math.cos(headingRad),
   };
+}
+
+function getAltitudeAglFt(aircraft: PositionUpdate) {
+  return Math.max(0, toFiniteNumber(aircraft.alt, 0));
+}
+
+function getVerticalTrend(aircraft: PositionUpdate) {
+  const verticalSpeed = toFiniteNumber(aircraft.vspeed, 0);
+  if (verticalSpeed >= 400) return "climb";
+  if (verticalSpeed <= -400) return "descent";
+  return "level";
+}
+
+function getHeadingDeltaDegrees(aircraftA: PositionUpdate, aircraftB: PositionUpdate) {
+  const delta = Math.abs(
+    toFiniteNumber(aircraftA.heading, 0) - toFiniteNumber(aircraftB.heading, 0),
+  );
+  return delta > 180 ? 360 - delta : delta;
+}
+
+function isSurfaceTraffic(aircraft: PositionUpdate) {
+  return (
+    getAltitudeAglFt(aircraft) <= SURFACE_ALTITUDE_FT &&
+    toFiniteNumber(aircraft.speed, 0) <= SURFACE_SPEED_KTS
+  );
+}
+
+function isTerminalTraffic(aircraft: PositionUpdate) {
+  return (
+    getAltitudeAglFt(aircraft) <= TERMINAL_ALTITUDE_FT ||
+    toFiniteNumber(aircraft.speed, 0) <= TERMINAL_SPEED_KTS
+  );
+}
+
+function isSameFlowPair(aircraftA: PositionUpdate, aircraftB: PositionUpdate) {
+  const headingDelta = getHeadingDeltaDegrees(aircraftA, aircraftB);
+  if (headingDelta > SAME_FLOW_HEADING_DELTA_DEG) return false;
+
+  const trendA = getVerticalTrend(aircraftA);
+  const trendB = getVerticalTrend(aircraftB);
+  if (trendA !== trendB) return false;
+
+  const nextWaypointA = aircraftA.nextWaypoint?.trim().toUpperCase();
+  const nextWaypointB = aircraftB.nextWaypoint?.trim().toUpperCase();
+  if (nextWaypointA && nextWaypointB && nextWaypointA === nextWaypointB) {
+    return true;
+  }
+
+  const sameArrival =
+    aircraftA.arrival &&
+    aircraftB.arrival &&
+    aircraftA.arrival === aircraftB.arrival &&
+    trendA === "descent";
+  const sameDeparture =
+    aircraftA.departure &&
+    aircraftB.departure &&
+    aircraftA.departure === aircraftB.departure &&
+    trendA === "climb";
+
+  return Boolean(
+    (aircraftA.navMode && aircraftB.navMode && (sameArrival || sameDeparture)) ||
+      sameArrival ||
+      sameDeparture,
+  );
 }
 
 function getRelativeOffsetNm(
@@ -239,6 +312,7 @@ function detectConflicts(aircrafts: PositionUpdate[]): ConflictAlert[] {
   for (let i = 0; i < aircrafts.length; i++) {
     const aircraftA = aircrafts[i];
     if (!aircraftA) continue;
+    if (isSurfaceTraffic(aircraftA)) continue;
 
     const velocityA = getVelocityVectorNmPerMinute(aircraftA);
     const altitudeA = toFiniteNumber(aircraftA.altMSL ?? aircraftA.alt, 0);
@@ -247,6 +321,7 @@ function detectConflicts(aircrafts: PositionUpdate[]): ConflictAlert[] {
     for (let j = i + 1; j < aircrafts.length; j++) {
       const aircraftB = aircrafts[j];
       if (!aircraftB) continue;
+      if (isSurfaceTraffic(aircraftB)) continue;
 
       const offset = getRelativeOffsetNm(aircraftA, aircraftB);
       const currentHorizontalNm = Math.hypot(offset.east, offset.north);
@@ -261,6 +336,21 @@ function detectConflicts(aircrafts: PositionUpdate[]): ConflictAlert[] {
       const relativeVelocitySquared =
         relativeVelocityEast * relativeVelocityEast +
         relativeVelocityNorth * relativeVelocityNorth;
+      const relativeSpeedNmPerMinute = Math.sqrt(relativeVelocitySquared);
+      const sameFlowPair = isSameFlowPair(aircraftA, aircraftB);
+      const terminalPair =
+        isTerminalTraffic(aircraftA) || isTerminalTraffic(aircraftB);
+      const lookaheadMinutes = terminalPair
+        ? TERMINAL_LOOKAHEAD_MINUTES
+        : LOOKAHEAD_MINUTES;
+
+      if (
+        sameFlowPair &&
+        relativeSpeedNmPerMinute <= SAME_FLOW_RELATIVE_SPEED_NM_PER_MIN &&
+        currentHorizontalNm > TERMINAL_HORIZONTAL_THRESHOLD_NM
+      ) {
+        continue;
+      }
 
       let timeToCpa = 0;
       if (relativeVelocitySquared > 1e-8) {
@@ -270,13 +360,16 @@ function detectConflicts(aircrafts: PositionUpdate[]): ConflictAlert[] {
             offset.north * relativeVelocityNorth
           ) / relativeVelocitySquared;
       }
-      timeToCpa = Math.min(Math.max(timeToCpa, 0), LOOKAHEAD_MINUTES);
+      timeToCpa = Math.min(Math.max(timeToCpa, 0), lookaheadMinutes);
 
       const cpaEast = offset.east + relativeVelocityEast * timeToCpa;
       const cpaNorth = offset.north + relativeVelocityNorth * timeToCpa;
       const horizontalSeparationNm = Math.hypot(cpaEast, cpaNorth);
+      const horizontalThresholdNm = terminalPair
+        ? TERMINAL_HORIZONTAL_THRESHOLD_NM
+        : HORIZONTAL_THRESHOLD_NM;
 
-      if (horizontalSeparationNm > HORIZONTAL_THRESHOLD_NM) {
+      if (horizontalSeparationNm > horizontalThresholdNm) {
         continue;
       }
 
@@ -285,8 +378,11 @@ function detectConflicts(aircrafts: PositionUpdate[]): ConflictAlert[] {
       const verticalSeparationFt = Math.abs(
         altitudeB + vSpeedB * timeToCpa - (altitudeA + vSpeedA * timeToCpa),
       );
+      const verticalThresholdFt = terminalPair
+        ? TERMINAL_VERTICAL_THRESHOLD_FT
+        : VERTICAL_THRESHOLD_FT;
 
-      if (verticalSeparationFt > VERTICAL_THRESHOLD_FT) {
+      if (verticalSeparationFt > verticalThresholdFt) {
         continue;
       }
 
