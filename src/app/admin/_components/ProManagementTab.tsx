@@ -25,6 +25,7 @@ export function ProManagementTab() {
     if (!search) return true;
     return (
       user.email.toLowerCase().includes(searchLower) ||
+      user.discordUsername?.toLowerCase().includes(searchLower) ||
       user.clerkId.toLowerCase().includes(searchLower) ||
       user._id.toLowerCase().includes(searchLower)
     );
@@ -52,7 +53,7 @@ export function ProManagementTab() {
         <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
         <input
           type="text"
-          placeholder="Search by email, clerkId, or ID..."
+          placeholder="Search by email, Discord username, clerkId, or ID..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus:bg-white/[0.07]"
@@ -92,6 +93,11 @@ export function ProManagementTab() {
               <p className="mt-0.5 truncate font-mono text-xs text-slate-500">
                 {user.clerkId.slice(0, 16)}...
               </p>
+              {user.discordUsername && (
+                <p className="mt-1 truncate text-xs text-cyan-400">
+                  Discord: {user.discordUsername}
+                </p>
+              )}
             </div>
 
             {user.role !== "ADMIN" && (
