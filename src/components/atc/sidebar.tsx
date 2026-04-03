@@ -953,10 +953,7 @@ export const Sidebar = ({
                   <MiniStat label="AGL" value={displayValues.altAGL} />
                 </div>
 
-                <AircraftControlPanel
-                  aircraft={aircraft}
-                  identOnly={!isOwnAircraft}
-                />
+                {isOwnAircraft && <AircraftControlPanel aircraft={aircraft} />}
                 {renderFlightPlan()}
               </div>
             ) : (
@@ -1056,10 +1053,7 @@ export const Sidebar = ({
                     />
                   </div>
                   {isOwnAircraft && (
-                    <AircraftControlPanel
-                      aircraft={aircraft}
-                      identOnly={!isOwnAircraft}
-                    />
+                    <AircraftControlPanel aircraft={aircraft} />
                   )}
                   {renderFlightPlan()}
                 </div>
