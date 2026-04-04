@@ -4,6 +4,18 @@ import { formatSpeed, formatAltitude, speedSuffix, type UnitPreferences, DEFAULT
 
 const EMERGENCY_SQUAWKS = new Set(["7700", "7600", "7500"]);
 const DEFAULT_AIRCRAFT_ICON = "/icons/e195.svg";
+const MILITARY_AF_CODES = new Set([
+  "usaf",
+  "raf",
+  "rnzaf",
+  "rmaf",
+  "paf",
+  "iaf",
+  "luftwaffe",
+  "usn",
+  "usmc",
+  "rafac",
+]);
 
 function isHelicopterType(type: string) {
   return (
@@ -15,12 +27,30 @@ function isHelicopterType(type: string) {
   );
 }
 
+function isMilitaryAirForce(airForce: string) {
+  if (!airForce) return false;
+
+  if (MILITARY_AF_CODES.has(airForce)) return true;
+
+  return (
+    /\bair\s*force\b/.test(airForce) ||
+    /\bnavy\b/.test(airForce) ||
+    /\barmy\b/.test(airForce) ||
+    /\bmarines?\b/.test(airForce) ||
+    /\bcoast\s*guard\b/.test(airForce) ||
+    /\bguardia\b/.test(airForce) ||
+    /\bdefen[cs]e\b/.test(airForce) ||
+    /\bmil(?:itary)?\b/.test(airForce) ||
+    /^[a-z]{2,6}af$/.test(airForce)
+  );
+}
+
 function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
   const type = aircraftClass?.trim().toLowerCase() ?? "";
   const af = airForce?.trim().toLowerCase() ?? "";
 
   if (isHelicopterType(type)) return "/icons/a7.svg";
-  if (af) return "/icons/a6.svg";
+  if (isMilitaryAirForce(af)) return "/icons/a6.svg";
   if (!type) return DEFAULT_AIRCRAFT_ICON;
   if (
     type.includes("military") ||
