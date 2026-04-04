@@ -1,12 +1,17 @@
 // hooks/useMobileDetection.ts
 import { useState, useEffect } from "react";
 
-export const useMobileDetection = (breakpoint = 768) => {
+export const useMobileDetection = (breakpoint = 1024) => {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < breakpoint);
+      const isNarrow = window.innerWidth < breakpoint;
+      const isTablet =
+        window.innerWidth < 1400 &&
+        (navigator.maxTouchPoints > 1 ||
+          window.matchMedia("(pointer: coarse)").matches);
+      setIsMobile(isNarrow || isTablet);
     };
 
     checkMobile(); // Initial check
