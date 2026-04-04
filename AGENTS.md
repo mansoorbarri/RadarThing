@@ -27,6 +27,9 @@ bunx convex dev       # Run after any changes in convex/ folder
 ```
 Notify me to run deploy command when there are changes in the Convex folder.
 
+## Other Parts of the project 
+This app uses a SSE stream to get the flight data. The SSE code is in ../radar-sse.
+
 ## Design Guidelines
 
 - Always create dark websites unless explicitly specified
@@ -45,4 +48,4 @@ When adding new features, make sure to add PostHog hooks **IF** it makes sense. 
 When a new user-facing feature is added, add an entry to the top of the `changelog` array in `src/lib/changelog.ts`. This automatically triggers a toast notification and shows an unread dot on the megaphone icon in the radar header (`src/components/ui/WhatsNew.tsx`) for all users on their next visit.
 
 ### SSE Stream
-this project using a SSE stream to get the flight details. this is located at @../radar-sse/. 
+this project using a SSE stream to get the flight details. this is located at @../radar-sse/.
