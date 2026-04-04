@@ -75,10 +75,47 @@ export function normalizeAircraftType(type: string | undefined): string | null {
   const tuMatch = /TU-?(\d{2,3})/.exec(cleaned);
   if (tuMatch) return `TU${tuMatch[1]}`;
 
-  // Military: US designations "F-16", "F-22", "F-35", "B-2", "B-52", "C-17", "KC-135", "AH-64", "UH-60"
+  // Military: US designations "F-16", "F-22", "F-35", "F-35B", "B-2", "B-52", "C-17", "KC-135", "AH-64", "UH-60"
   const milMatch = /\b(KC|AH|UH|CH|MH|HH|[FBTCA])-?(\d{1,3})\b/.exec(cleaned);
   if (milMatch) return `${milMatch[1]}${milMatch[2]}`;
 
+  // Military suffix variants should normalize to the base airframe for lookup
+  // while still allowing callers to try the full variant separately.
+  const milVariantMatch =
+    /\b(KC|AH|UH|CH|MH|HH|[FBTCA])-?(\d{1,3})([A-Z])\b/.exec(cleaned);
+  if (milVariantMatch) return `${milVariantMatch[1]}${milVariantMatch[2]}`;
+
   const firstWord = cleaned.split(/[\s-]/)[0];
   return firstWord || null;
+}
+
+export function getAircraftTypeLookupCandidates(
+  type: string | undefined,
+): string[] {
+  if (!type) return [];
+
+  const cleaned = type.trim().toUpperCase();
+  if (!cleaned) return [];
+
+  const candidates = new Set<string>();
+  const normalized = normalizeAircraftType(type);
+
+  if (normalized) {
+    candidates.add(normalized);
+  }
+
+  // Preserve military suffix variants such as F-35B when available,
+  // while still trying the base model first (F35).
+  const militaryVariantMatch =
+    /\b(KC|AH|UH|CH|MH|HH|[FBTCA])-?(\d{1,3})([A-Z])\b/.exec(cleaned);
+  if (militaryVariantMatch) {
+    candidates.add(
+      `${militaryVariantMatch[1]}${militaryVariantMatch[2]}`,
+    );
+    candidates.add(
+      `${militaryVariantMatch[1]}${militaryVariantMatch[2]}${militaryVariantMatch[3]}`,
+    );
+  }
+
+  return Array.from(candidates);
 }

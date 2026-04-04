@@ -3,7 +3,7 @@ import {
   getAircraftImage,
   type AircraftImage,
 } from "~/app/actions/aircraft-images";
-import { normalizeAircraftType } from "~/lib/utils";
+import { getAircraftTypeLookupCandidates } from "~/lib/utils";
 
 // In-memory cache for aircraft photos (persists across component instances)
 // Cache entry can be null (no image found) or AircraftPhotoData
@@ -13,16 +13,26 @@ interface CacheEntry {
 }
 
 const imageCache = new Map<string, CacheEntry>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const HIT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const MISS_CACHE_TTL = 30 * 1000; // 30 seconds
 
-function getCacheKey(airlineCode: string, aircraftType: string): string {
-  return `${airlineCode}:${aircraftType}`;
+function getCacheKey(
+  callsign: string | undefined,
+  aircraftType: string | undefined,
+  af?: string,
+): string {
+  return [
+    af?.trim().toUpperCase() ?? "",
+    callsign?.trim().toUpperCase() ?? "",
+    aircraftType?.trim().toUpperCase() ?? "",
+  ].join(":");
 }
 
 function getCachedImage(key: string): AircraftPhotoData | null | undefined {
   const entry = imageCache.get(key);
   if (!entry) return undefined; // Not in cache
-  if (Date.now() - entry.timestamp > CACHE_TTL) {
+  const ttl = entry.data ? HIT_CACHE_TTL : MISS_CACHE_TTL;
+  if (Date.now() - entry.timestamp > ttl) {
     imageCache.delete(key);
     return undefined; // Expired
   }
@@ -46,6 +56,32 @@ function extractAirlineCode(flightNo: string | undefined): string | null {
   return match?.[1] ?? null;
 }
 
+function getAirlineCodeCandidates(
+  callsign: string | undefined,
+  af?: string,
+): string[] {
+  const candidates = new Set<string>();
+  const trimmedAf = af?.trim().toUpperCase();
+  const trimmedCallsign = callsign?.trim().toUpperCase();
+
+  if (trimmedAf) {
+    candidates.add(trimmedAf);
+  }
+
+  const extracted = extractAirlineCode(callsign);
+  if (extracted) {
+    candidates.add(extracted);
+  }
+
+  // Military identifiers can come through as bare alpha flight numbers
+  // like "USAF" even when `af` is blank, so try the raw token too.
+  if (trimmedCallsign && /^[A-Z]{2,10}$/.test(trimmedCallsign)) {
+    candidates.add(trimmedCallsign);
+  }
+
+  return Array.from(candidates);
+}
+
 export interface AircraftPhotoData {
   imageUrl: string;
   discordUsername: string | null;
@@ -60,50 +96,91 @@ export const useAircraftPhoto = (
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // For military aircraft, use the AF name directly as the airline code
-    const airlineCode = af ? af.trim().toUpperCase() : extractAirlineCode(callsign);
-    const normalizedType = normalizeAircraftType(aircraftType);
+    const airlineCodes = getAirlineCodeCandidates(callsign, af);
+    const aircraftTypes = getAircraftTypeLookupCandidates(aircraftType);
+    let isCancelled = false;
+    let retryTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    if (!airlineCode || !normalizedType) {
+    if (airlineCodes.length === 0 || aircraftTypes.length === 0) {
       setPhoto(null);
       return;
     }
 
-    const cacheKey = getCacheKey(airlineCode, normalizedType);
+    const cacheKey = getCacheKey(callsign, aircraftType, af);
+
+    const scheduleRetry = () => {
+      if (retryTimeout || isCancelled) return;
+
+      retryTimeout = setTimeout(() => {
+        retryTimeout = null;
+        imageCache.delete(cacheKey);
+        void fetchPhoto();
+      }, MISS_CACHE_TTL);
+    };
+
+    const applyPhoto = (nextPhoto: AircraftPhotoData | null) => {
+      if (isCancelled) return;
+      setPhoto(nextPhoto);
+    };
 
     // Check cache first
     const cached = getCachedImage(cacheKey);
     if (cached !== undefined) {
       // Cache hit (can be null if no image exists)
-      setPhoto(cached);
-      return;
+      applyPhoto(cached);
+      if (cached === null) {
+        scheduleRetry();
+      }
+      return () => {
+        isCancelled = true;
+        if (retryTimeout) clearTimeout(retryTimeout);
+      };
     }
 
-    const fetchPhoto = async () => {
+    async function fetchPhoto() {
+      if (isCancelled) return;
       setLoading(true);
       try {
-        const image = await getAircraftImage(airlineCode, normalizedType);
-        if (image) {
-          const photoData = {
-            imageUrl: image.imageUrl,
-            discordUsername: image.discordUsername,
-          };
-          setCachedImage(cacheKey, photoData);
-          setPhoto(photoData);
-        } else {
-          // Cache the "no image" result too to avoid repeated lookups
-          setCachedImage(cacheKey, null);
-          setPhoto(null);
+        let image: AircraftImage | null = null;
+
+        for (const airlineCode of airlineCodes) {
+          for (const aircraftTypeKey of aircraftTypes) {
+            image = await getAircraftImage(airlineCode, aircraftTypeKey);
+            if (image) break;
+          }
+          if (image) break;
         }
+
+        if (!image) {
+          setCachedImage(cacheKey, null);
+          applyPhoto(null);
+          scheduleRetry();
+          return;
+        }
+
+        const photoData = {
+          imageUrl: image.imageUrl,
+          discordUsername: image.discordUsername,
+        };
+        setCachedImage(cacheKey, photoData);
+        applyPhoto(photoData);
       } catch (err) {
         console.error("Aircraft photo fetch error:", err);
-        setPhoto(null);
+        applyPhoto(null);
+        scheduleRetry();
       } finally {
-        setLoading(false);
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
-    };
+    }
 
-    fetchPhoto();
+    void fetchPhoto();
+
+    return () => {
+      isCancelled = true;
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
   }, [callsign, aircraftType, af]);
 
   return { photo, loading };
