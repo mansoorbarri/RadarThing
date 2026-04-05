@@ -352,6 +352,56 @@ export async function updateVirtualAirline(data: {
   };
 }
 
+export async function updateManagedVirtualAirline(data: {
+  id: string;
+  name: string;
+  callsignPrefix: string;
+  website?: string;
+}): Promise<{ success: boolean; error?: string; virtualAirline?: VirtualAirline }> {
+  const { access, virtualAirline, allowed } = await canManageVirtualAirline(
+    data.id,
+  );
+
+  if (!access.clerkId || !allowed || !virtualAirline) {
+    return {
+      success: false,
+      error: "You can only manage settings for your assigned VA",
+    };
+  }
+
+  const validated = await validateVirtualAirlineInput({
+    id: data.id,
+    name: data.name,
+    callsignPrefix: data.callsignPrefix,
+    adminClerkId: virtualAirline.adminClerkId,
+    website: data.website,
+  });
+
+  if (!validated.ok) {
+    return { success: false, error: validated.error };
+  }
+
+  const updatedVirtualAirline = await convex.mutation(api.virtualAirlines.update, {
+    id: data.id as Id<"virtualAirlines">,
+    name: validated.name,
+    callsignPrefix: validated.callsignPrefix,
+    adminClerkId: virtualAirline.adminClerkId,
+    website: validated.website ?? undefined,
+    isActive: virtualAirline.isActive,
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/va-admin");
+  revalidatePath("/radar");
+
+  return {
+    success: true,
+    virtualAirline: updatedVirtualAirline
+      ? toVirtualAirline(updatedVirtualAirline)
+      : undefined,
+  };
+}
+
 export async function deleteVirtualAirline(
   id: string,
 ): Promise<{

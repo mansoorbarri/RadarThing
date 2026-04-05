@@ -24,6 +24,7 @@ import {
   createVirtualAirlineAircraftImage,
   deleteVirtualAirlineAircraftImage,
   removeVirtualAirlineMember,
+  updateManagedVirtualAirline,
 } from "~/app/actions/virtual-airlines";
 import {
   ImageUploader,
@@ -31,7 +32,13 @@ import {
 } from "~/components/ui/image-uploader";
 
 type SubmitStage = "idle" | "uploading" | "submitting" | "success";
-type Tab = "upload" | "pilots" | "fleet";
+type Tab = "settings" | "upload" | "pilots" | "fleet";
+
+interface SettingsFormState {
+  name: string;
+  callsignPrefix: string;
+  website: string;
+}
 
 function getDisplayHandle(user: {
   _id: string;
@@ -75,6 +82,12 @@ export default function VirtualAirlineAdminPage() {
 
   const [selectedVaId, setSelectedVaId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<Tab>("pilots");
+  const [settingsForm, setSettingsForm] = useState<SettingsFormState>({
+    name: "",
+    callsignPrefix: "",
+    website: "",
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [aircraftType, setAircraftType] = useState("");
   const [memberSearch, setMemberSearch] = useState("");
   const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
@@ -111,6 +124,19 @@ export default function VirtualAirlineAdminPage() {
     () => virtualAirlines.find((va) => va.id === selectedVaId) ?? null,
     [selectedVaId, virtualAirlines],
   );
+
+  useEffect(() => {
+    setSettingsForm({
+      name: selectedVirtualAirline?.name ?? "",
+      callsignPrefix: selectedVirtualAirline?.callsignPrefix ?? "",
+      website: selectedVirtualAirline?.website ?? "",
+    });
+  }, [
+    selectedVirtualAirline?.id,
+    selectedVirtualAirline?.name,
+    selectedVirtualAirline?.callsignPrefix,
+    selectedVirtualAirline?.website,
+  ]);
 
   const vaImages = useQuery(
     api.virtualAirlineAircraftImages.getByVirtualAirlineId,
@@ -275,6 +301,33 @@ export default function VirtualAirlineAdminPage() {
     toast.success("Pilot removed from VA");
   };
 
+  const handleSaveSettings = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedVirtualAirline) return;
+
+    setIsSavingSettings(true);
+    const result = await updateManagedVirtualAirline({
+      id: selectedVirtualAirline.id,
+      name: settingsForm.name,
+      callsignPrefix: settingsForm.callsignPrefix,
+      website: settingsForm.website,
+    });
+    setIsSavingSettings(false);
+
+    if (!result.success) {
+      toast.error(result.error || "Failed to update VA settings");
+      return;
+    }
+
+    setSettingsForm({
+      name: result.virtualAirline?.name ?? settingsForm.name,
+      callsignPrefix:
+        result.virtualAirline?.callsignPrefix ?? settingsForm.callsignPrefix,
+      website: result.virtualAirline?.website ?? "",
+    });
+    toast.success("VA settings updated");
+  };
+
   if (
     !isLoaded ||
     (isSignedIn &&
@@ -332,6 +385,7 @@ export default function VirtualAirlineAdminPage() {
   }
 
   const tabItems: { key: Tab; label: string; count?: number; icon: React.ReactNode }[] = [
+    { key: "settings", label: "Settings", icon: <Plane className="h-4 w-4" /> },
     { key: "pilots", label: "Pilots", count: members.length, icon: <Users className="h-4 w-4" /> },
     { key: "fleet", label: "Fleet", count: images.length, icon: <ImageIcon className="h-4 w-4" /> },
     { key: "upload", label: "Upload", icon: <Upload className="h-4 w-4" /> },
@@ -469,6 +523,117 @@ export default function VirtualAirlineAdminPage() {
             </button>
           ))}
         </div>
+
+        {/* ── Settings tab ── */}
+        {activeTab === "settings" && (
+          <div className="mx-auto max-w-2xl">
+            <form
+              onSubmit={handleSaveSettings}
+              className="rounded-2xl border border-white/10 bg-white/5 p-6"
+            >
+              <h2 className="text-lg font-semibold text-white">VA Settings</h2>
+              <p className="mt-1 text-sm text-slate-400">
+                Update the public details for this virtual airline.
+              </p>
+
+              <div className="mt-5 space-y-4">
+                <div>
+                  <label className="mb-2 block font-mono text-xs text-slate-400">
+                    VA NAME
+                  </label>
+                  <input
+                    type="text"
+                    value={settingsForm.name}
+                    onChange={(event) =>
+                      setSettingsForm((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                    placeholder="Example Virtual"
+                    disabled={isSavingSettings}
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block font-mono text-xs text-slate-400">
+                    CALLSIGN PREFIX
+                  </label>
+                  <input
+                    type="text"
+                    value={settingsForm.callsignPrefix}
+                    onChange={(event) =>
+                      setSettingsForm((current) => ({
+                        ...current,
+                        callsignPrefix: event.target.value
+                          .toUpperCase()
+                          .replace(/\s+/g, ""),
+                      }))
+                    }
+                    placeholder="RVA"
+                    maxLength={8}
+                    disabled={isSavingSettings}
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 font-mono text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                  />
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    Flights starting with this prefix get VA status.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="mb-2 block font-mono text-xs text-slate-400">
+                    WEBSITE / DISCORD
+                  </label>
+                  <input
+                    type="url"
+                    value={settingsForm.website}
+                    onChange={(event) =>
+                      setSettingsForm((current) => ({
+                        ...current,
+                        website: event.target.value,
+                      }))
+                    }
+                    placeholder="https://example.com or discord.gg/your-va"
+                    disabled={isSavingSettings}
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                  />
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    Used for the VA link in the radar sidebar.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3">
+                  <div className="text-sm font-medium text-white">
+                    Admin-controlled settings
+                  </div>
+                  <div className="mt-1 text-xs text-slate-400">
+                    Ownership, VA activation, and deletion still require a
+                    RadarThing admin in <code>/admin</code>.
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSavingSettings}
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSavingSettings ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-5 w-5" />
+                      Save Settings
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {/* ── Upload tab ── */}
         {activeTab === "upload" && (
