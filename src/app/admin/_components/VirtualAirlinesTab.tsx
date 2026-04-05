@@ -52,11 +52,16 @@ export function VirtualAirlinesTab() {
     api.virtualAirlineMembers.getByVirtualAirlineId,
     form.id ? { virtualAirlineId: form.id as Id<"virtualAirlines"> } : "skip",
   );
+  const selectedFleetImages = useQuery(
+    api.virtualAirlineAircraftImages.getByVirtualAirlineId,
+    form.id ? { virtualAirlineId: form.id as Id<"virtualAirlines"> } : "skip",
+  );
 
   const selectedAdmin = useMemo(
     () => users.find((user) => user.clerkId === form.adminClerkId) ?? null,
     [form.adminClerkId, users],
   );
+  const fleetImages = useMemo(() => selectedFleetImages ?? [], [selectedFleetImages]);
 
   const filteredUsers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -440,6 +445,66 @@ export function VirtualAirlinesTab() {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {form.id && (
+            <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+              <div className="mb-3">
+                <div className="text-sm font-medium text-white">VA Fleet</div>
+                <div className="mt-1 text-xs text-slate-400">
+                  Read-only fleet view for RadarThing admins. Uploads are still
+                  managed by the VA owner and assigned pilots in `/va-admin`.
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {fleetImages.map((image) => {
+                  const uploader =
+                    users.find((user) => user.clerkId === image.uploadedBy) ?? null;
+
+                  return (
+                    <div
+                      key={image.id}
+                      className="flex flex-col gap-3 rounded-lg border border-white/10 bg-black/30 p-3"
+                    >
+                      <div className="relative h-28 overflow-hidden rounded-lg border border-white/10 bg-black/40">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={image.imageUrl}
+                          alt={image.aircraftType}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-md bg-cyan-500/15 px-2 py-1 font-mono text-xs text-cyan-300">
+                            {image.aircraftType}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            Updated {new Date(image.updatedAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          Uploaded by:{" "}
+                          <span className="text-white">
+                            {uploader ? getDisplayHandle(uploader) : image.uploadedBy}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          RadarThing ID: {uploader?.clerkId ?? image.uploadedBy}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {fleetImages.length === 0 && (
+                  <div className="rounded-lg border border-dashed border-white/10 px-3 py-4 text-sm text-slate-500">
+                    No fleet images uploaded yet for this VA.
+                  </div>
+                )}
               </div>
             </div>
           )}
