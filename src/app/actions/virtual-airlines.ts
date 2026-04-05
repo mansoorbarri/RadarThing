@@ -25,6 +25,7 @@ export interface VirtualAirline {
   name: string;
   callsignPrefix: string;
   adminClerkId: string;
+  website: string | null;
   isActive: boolean;
   createdBy: string;
   createdAt: Date;
@@ -59,6 +60,7 @@ function toVirtualAirline(item: {
   name: string;
   callsignPrefix: string;
   adminClerkId: string;
+  website: string | null;
   isActive: boolean;
   createdBy: string;
   createdAt: number;
@@ -69,11 +71,38 @@ function toVirtualAirline(item: {
     name: item.name,
     callsignPrefix: item.callsignPrefix,
     adminClerkId: item.adminClerkId,
+    website: item.website,
     isActive: item.isActive,
     createdBy: item.createdBy,
     createdAt: new Date(item.createdAt),
     updatedAt: new Date(item.updatedAt),
   };
+}
+
+function normalizeWebsiteInput(website: string | undefined) {
+  const trimmed = website?.trim() ?? "";
+  if (!trimmed) return { ok: true as const, website: null };
+
+  const withProtocol = /^[a-z]+:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+
+  try {
+    const url = new URL(withProtocol);
+    if (!["http:", "https:"].includes(url.protocol)) {
+      return {
+        ok: false as const,
+        error: "Website must be a valid http(s) URL",
+      };
+    }
+
+    return { ok: true as const, website: url.toString() };
+  } catch {
+    return {
+      ok: false as const,
+      error: "Website must be a valid URL",
+    };
+  }
 }
 
 function toVirtualAirlineAircraftImage(item: {
@@ -157,6 +186,7 @@ async function validateVirtualAirlineInput(data: {
   name: string;
   callsignPrefix: string;
   adminClerkId: string;
+  website?: string;
 }) {
   const name = data.name.trim();
   if (name.length < 2 || name.length > 60) {
@@ -193,10 +223,16 @@ async function validateVirtualAirlineInput(data: {
     };
   }
 
+  const normalizedWebsite = normalizeWebsiteInput(data.website);
+  if (!normalizedWebsite.ok) {
+    return { ok: false as const, error: normalizedWebsite.error };
+  }
+
   return {
     ok: true as const,
     name,
     callsignPrefix,
+    website: normalizedWebsite.website,
   };
 }
 
@@ -226,6 +262,7 @@ export async function createVirtualAirline(data: {
   name: string;
   callsignPrefix: string;
   adminClerkId: string;
+  website?: string;
 }): Promise<{ success: boolean; error?: string; virtualAirline?: VirtualAirline }> {
   const access = await requireSiteAdmin();
   if (!access?.clerkId) {
@@ -241,6 +278,7 @@ export async function createVirtualAirline(data: {
     name: validated.name,
     callsignPrefix: validated.callsignPrefix,
     adminClerkId: data.adminClerkId,
+    website: validated.website ?? undefined,
     createdBy: access.clerkId,
   });
 
@@ -266,6 +304,7 @@ export async function updateVirtualAirline(data: {
   name: string;
   callsignPrefix: string;
   adminClerkId: string;
+  website?: string;
   isActive: boolean;
 }): Promise<{ success: boolean; error?: string; virtualAirline?: VirtualAirline }> {
   const access = await requireSiteAdmin();
@@ -291,6 +330,7 @@ export async function updateVirtualAirline(data: {
     name: validated.name,
     callsignPrefix: validated.callsignPrefix,
     adminClerkId: data.adminClerkId,
+    website: validated.website ?? undefined,
     isActive: data.isActive,
   });
 

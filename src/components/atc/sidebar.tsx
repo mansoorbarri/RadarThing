@@ -767,11 +767,21 @@ export const Sidebar = ({
                 <p className="truncate font-mono text-[11px] font-black tracking-[0.15em] text-slate-300 uppercase">
                   {aircraft.type || "Unknown Class"}
                 </p>
-                {virtualAirline && (
-                  <p className="mt-1 truncate font-mono text-[10px] font-bold tracking-[0.14em] text-cyan-300/80 uppercase">
-                    {virtualAirline.name} - {virtualAirline.callsignPrefix}
-                  </p>
-                )}
+                {virtualAirline &&
+                  (virtualAirline.website ? (
+                    <a
+                      href={virtualAirline.website}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 inline-flex max-w-full truncate font-mono text-[10px] font-bold tracking-[0.14em] text-cyan-300/80 uppercase transition-colors hover:text-cyan-200"
+                    >
+                      {virtualAirline.name} - {virtualAirline.callsignPrefix}
+                    </a>
+                  ) : (
+                    <p className="mt-1 truncate font-mono text-[10px] font-bold tracking-[0.14em] text-cyan-300/80 uppercase">
+                      {virtualAirline.name} - {virtualAirline.callsignPrefix}
+                    </p>
+                  ))}
                 {aircraft.callsign &&
                   (pilotUser ? (
                     <Link

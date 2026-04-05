@@ -90,6 +90,7 @@ export default defineSchema({
     name: v.string(),
     callsignPrefix: v.string(),
     adminClerkId: v.string(),
+    website: v.optional(v.string()),
     isActive: v.boolean(),
     createdBy: v.string(),
     updatedAt: v.number(),

@@ -101,6 +101,7 @@ export interface VirtualAirlinePhotoData {
   id: string;
   name: string;
   callsignPrefix: string;
+  website: string | null;
 }
 
 export const useAircraftPhoto = (
@@ -174,10 +175,11 @@ export const useAircraftPhoto = (
         );
 
         const nextVirtualAirline = vaContext.virtualAirline
-          ? {
+            ? {
               id: vaContext.virtualAirline.id,
               name: vaContext.virtualAirline.name,
               callsignPrefix: vaContext.virtualAirline.callsignPrefix,
+              website: vaContext.virtualAirline.website,
             }
           : null;
 

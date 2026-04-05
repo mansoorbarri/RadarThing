@@ -42,6 +42,7 @@ interface FormState {
   name: string;
   callsignPrefix: string;
   adminClerkId: string;
+  website: string;
   isActive: boolean;
 }
 
@@ -50,6 +51,7 @@ const INITIAL_FORM: FormState = {
   name: "",
   callsignPrefix: "",
   adminClerkId: "",
+  website: "",
   isActive: true,
 };
 
@@ -167,6 +169,7 @@ export function VirtualAirlinesTab() {
       name: virtualAirline.name,
       callsignPrefix: virtualAirline.callsignPrefix,
       adminClerkId: virtualAirline.adminClerkId,
+      website: virtualAirline.website ?? "",
       isActive: virtualAirline.isActive,
     });
 
@@ -200,12 +203,14 @@ export function VirtualAirlinesTab() {
           name: form.name,
           callsignPrefix: form.callsignPrefix,
           adminClerkId: form.adminClerkId,
+          website: form.website,
           isActive: form.isActive,
         })
       : await createVirtualAirline({
           name: form.name,
           callsignPrefix: form.callsignPrefix,
           adminClerkId: form.adminClerkId,
+          website: form.website,
         });
 
     setSubmitting(false);
@@ -223,6 +228,7 @@ export function VirtualAirlinesTab() {
         name: result.virtualAirline.name,
         callsignPrefix: result.virtualAirline.callsignPrefix,
         adminClerkId: result.virtualAirline.adminClerkId,
+        website: result.virtualAirline.website ?? "",
         isActive: result.virtualAirline.isActive,
       });
       return;
@@ -563,6 +569,28 @@ export function VirtualAirlinesTab() {
                         Flights starting with this prefix get VA status.
                       </p>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block font-mono text-xs text-slate-400">
+                      WEBSITE / DISCORD
+                    </label>
+                    <input
+                      type="url"
+                      value={form.website}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          website: event.target.value,
+                        }))
+                      }
+                      placeholder="https://example.com or discord.gg/your-va"
+                      disabled={submitting}
+                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                    />
+                    <p className="mt-1.5 text-xs text-slate-500">
+                      Used for the VA link in the radar sidebar.
+                    </p>
                   </div>
 
                   <div>

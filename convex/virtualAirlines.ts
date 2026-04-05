@@ -23,6 +23,7 @@ function toVirtualAirlineSummary(virtualAirline: Doc<"virtualAirlines">) {
     name: virtualAirline.name,
     callsignPrefix: virtualAirline.callsignPrefix,
     adminClerkId: virtualAirline.adminClerkId,
+    website: virtualAirline.website ?? null,
     isActive: virtualAirline.isActive,
     createdBy: virtualAirline.createdBy,
     createdAt: virtualAirline._creationTime,
@@ -261,6 +262,7 @@ export const create = mutation({
     name: v.string(),
     callsignPrefix: v.string(),
     adminClerkId: v.string(),
+    website: v.optional(v.string()),
     createdBy: v.string(),
   },
   handler: async (ctx, args) => {
@@ -269,6 +271,7 @@ export const create = mutation({
       name: args.name.trim(),
       callsignPrefix: normalizeCallsignPrefix(args.callsignPrefix),
       adminClerkId: args.adminClerkId,
+      website: args.website,
       isActive: true,
       createdBy: args.createdBy,
       updatedAt: now,
@@ -285,6 +288,7 @@ export const update = mutation({
     name: v.string(),
     callsignPrefix: v.string(),
     adminClerkId: v.string(),
+    website: v.optional(v.string()),
     isActive: v.boolean(),
   },
   handler: async (ctx, args) => {
@@ -292,6 +296,7 @@ export const update = mutation({
       name: args.name.trim(),
       callsignPrefix: normalizeCallsignPrefix(args.callsignPrefix),
       adminClerkId: args.adminClerkId,
+      website: args.website,
       isActive: args.isActive,
       updatedAt: Date.now(),
     });
