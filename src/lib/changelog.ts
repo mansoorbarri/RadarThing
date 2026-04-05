@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "virtual-airlines",
+    date: "2026-04-04",
+    title: "VAs are now supported!",
+    description:
+      "Message @xyzmani on Discord to register yours!",
+    type: "new",
+  },
+  {
     id: "controller-ident-requests",
     date: "2026-04-03",
     title: "Controller IDENT Requests",
