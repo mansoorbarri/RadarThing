@@ -19,6 +19,7 @@ export interface PositionUpdate {
   vspeed: string;
   nextWaypoint: string;
   navMode?: boolean;
+  speedMode?: "knots" | "mach";
   flapsPosition?: number;
   flapsMaxPosition?: number;
   identActive?: boolean;

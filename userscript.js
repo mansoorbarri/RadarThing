@@ -282,6 +282,15 @@
           }
           break;
 
+        case "setSpeedMode": {
+          const speedMode =
+            String(cmd.value || "").toLowerCase() === "mach" ? "mach" : "knots";
+          if (typeof geofs.autopilot.setSpeedMode === "function") {
+            geofs.autopilot.setSpeedMode(speedMode);
+          }
+          break;
+        }
+
         case "setAltitude":
           if (typeof geofs.autopilot.setAltitude === "function") {
             geofs.autopilot.setAltitude(Number(cmd.value));
@@ -586,6 +595,7 @@
       nextWaypoint: geofs.flightPlan?.trackedWaypoint?.ident || null,
       vspeed: Math.floor(geofs.animation?.values?.verticalSpeed || 0),
       navMode: geofs.autopilot?.mode === "NAV",
+      speedMode: geofs.autopilot?.speedMode === "mach" ? "mach" : "knots",
       flapsPosition: controls?.flaps?.position || 0,
       flapsMaxPosition:
         geofs.animation?.values?.flapsSteps ||

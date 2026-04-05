@@ -13,6 +13,7 @@ interface AircraftControlPanelProps {
 export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   const {
     setSpeed,
+    setSpeedMode,
     setAltitude,
     setHeading,
     setVS,
@@ -25,6 +26,9 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   } = useAircraftCommands();
 
   const [speedInput, setSpeedInput] = useState("");
+  const [speedModeInput, setSpeedModeInput] = useState<"knots" | "mach">(
+    aircraft.speedMode === "mach" ? "mach" : "knots",
+  );
   const [altitudeInput, setAltitudeInput] = useState("");
   const [headingInput, setHeadingInput] = useState("");
   const [vsInput, setVsInput] = useState("");
@@ -37,6 +41,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   const [waypointInput, setWaypointInput] = useState("0");
 
   const aircraftId = aircraft.id;
+  const currentSpeedMode = aircraft.speedMode === "mach" ? "mach" : "knots";
   const flapsMaxPosition = aircraft.flapsMaxPosition ?? 0;
   const currentWaypointIdent = aircraft.nextWaypoint ?? "";
 
@@ -81,6 +86,10 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   }, [aircraft.id, aircraft.navMode]);
 
   useEffect(() => {
+    setSpeedModeInput(currentSpeedMode);
+  }, [aircraft.id, currentSpeedMode]);
+
+  useEffect(() => {
     if (currentWaypointIdent) {
       setWaypointInput(currentWaypointIdent);
       const matchingWaypoint = flightPlanWaypoints.find(
@@ -105,6 +114,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       "0";
 
     setSpeedInput("");
+    setSpeedModeInput(currentSpeedMode);
     setAltitudeInput("");
     setHeadingInput("");
     setVsInput("");
@@ -113,14 +123,15 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     setFlapsError("");
     setModeInput(aircraft.navMode ? "nav" : "hdg");
     setWaypointInput(currentWaypointValue);
-  }, [aircraft.navMode, currentWaypointIdent, flightPlanWaypoints]);
+  }, [aircraft.navMode, currentSpeedMode, currentWaypointIdent, flightPlanWaypoints]);
 
-  const handleSetAll = useCallback(() => {
-    const speed = parseInt(speedInput, 10);
+  const handleSetAll = useCallback(async () => {
+    const speed = parseFloat(speedInput);
     const altitude = parseInt(altitudeInput, 10);
     const heading = parseInt(headingInput, 10);
     const vs = parseInt(vsInput, 10);
     const flaps = parseInt(flapsInput, 10);
+    const hasSpeedModeChanged = speedModeInput !== currentSpeedMode;
     const hasHeadingToSet =
       modeInput === "hdg" && !isNaN(heading) && heading >= 0 && heading <= 360;
     const hasModeChanged =
@@ -153,59 +164,69 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       }
     }
 
-    if (modeInput === "nav" && hasWaypointChanged) {
-      setWaypoint(aircraftId, selectedWaypoint.ident);
-      controlsSet.push("waypoint");
-    }
+    try {
+      if (modeInput === "nav" && hasWaypointChanged) {
+        await setWaypoint(aircraftId, selectedWaypoint.ident);
+        controlsSet.push("waypoint");
+      }
 
-    if (modeInput === "nav" && (hasModeChanged || hasWaypointChanged)) {
-      enableNav(aircraftId);
-      controlsSet.push("nav");
-    }
+      if (modeInput === "nav" && (hasModeChanged || hasWaypointChanged)) {
+        await enableNav(aircraftId);
+        controlsSet.push("nav");
+      }
 
-    if (modeInput === "hdg" && hasModeChanged) {
-      disableNav(aircraftId);
-      controlsSet.push("hdg");
-    }
+      if (modeInput === "hdg" && hasModeChanged) {
+        await disableNav(aircraftId);
+        controlsSet.push("hdg");
+      }
 
-    // Execute all commands
-    if (!isNaN(speed) && speed >= 0) {
-      setSpeed(aircraftId, speed);
-      controlsSet.push("speed");
-    }
-    if (!isNaN(altitude) && altitude >= 0) {
-      setAltitude(aircraftId, altitude);
-      controlsSet.push("altitude");
-    }
-    if (hasHeadingToSet) {
-      setHeading(aircraftId, heading);
-      controlsSet.push("heading");
-    }
-    if (!isNaN(vs)) {
-      setVS(aircraftId, vs);
-      controlsSet.push("vs");
-    }
-    if (/^[0-7]{4}$/.test(squawkInput)) {
-      setSquawk(aircraftId, squawkInput);
-      controlsSet.push("squawk");
-    }
-    if (
-      !isNaN(flaps) &&
-      flaps >= 0 &&
-      (flapsMaxPosition === 0 || flaps <= flapsMaxPosition)
-    ) {
-      setFlaps(aircraftId, flaps);
-      controlsSet.push("flaps");
-    }
+      if (hasSpeedModeChanged) {
+        await setSpeedMode(aircraftId, speedModeInput);
+        controlsSet.push("speed mode");
+      }
+      if (!isNaN(speed) && speed >= 0) {
+        await setSpeed(aircraftId, speed);
+        controlsSet.push("speed");
+      }
+      if (!isNaN(altitude) && altitude >= 0) {
+        await setAltitude(aircraftId, altitude);
+        controlsSet.push("altitude");
+      }
+      if (hasHeadingToSet) {
+        await setHeading(aircraftId, heading);
+        controlsSet.push("heading");
+      }
+      if (!isNaN(vs)) {
+        await setVS(aircraftId, vs);
+        controlsSet.push("vs");
+      }
+      if (/^[0-7]{4}$/.test(squawkInput)) {
+        await setSquawk(aircraftId, squawkInput);
+        controlsSet.push("squawk");
+      }
+      if (
+        !isNaN(flaps) &&
+        flaps >= 0 &&
+        (flapsMaxPosition === 0 || flaps <= flapsMaxPosition)
+      ) {
+        await setFlaps(aircraftId, flaps);
+        controlsSet.push("flaps");
+      }
 
-    if (controlsSet.length > 0) {
-      Analytics.controlSetAll({ callsign: aircraftId, controls: controlsSet });
-      toast.success(`Controls sent: ${controlsSet.join(", ").toUpperCase()}`);
-      resetForm();
+      if (controlsSet.length > 0) {
+        Analytics.controlSetAll({ callsign: aircraftId, controls: controlsSet });
+        toast.success(`Controls sent: ${controlsSet.join(", ").toUpperCase()}`);
+        resetForm();
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to send controls";
+      toast.error(message);
     }
   }, [
     aircraftId,
     speedInput,
+    speedModeInput,
     altitudeInput,
     headingInput,
     vsInput,
@@ -215,9 +236,11 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     modeInput,
     waypointInput,
     aircraft.navMode,
+    currentSpeedMode,
     currentWaypointIdent,
     flightPlanWaypoints,
     setSpeed,
+    setSpeedMode,
     setAltitude,
     setHeading,
     setVS,
@@ -231,6 +254,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
 
   const hasAnyInput =
     speedInput ||
+    speedModeInput !== currentSpeedMode ||
     altitudeInput ||
     headingInput ||
     vsInput ||
@@ -290,11 +314,22 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
 
         <ControlRow
           label="SPD"
-          unit="KTS"
+          unit={
+            <InlineUnitSelect
+              value={speedModeInput}
+              onChange={(event) =>
+                setSpeedModeInput(event.target.value as "knots" | "mach")
+              }
+            >
+              <option value="knots">KNOTS</option>
+              <option value="mach">MACH</option>
+            </InlineUnitSelect>
+          }
           value={speedInput}
           onChange={setSpeedInput}
           min={0}
-          max={999}
+          max={speedModeInput === "mach" ? 3 : 999}
+          step={speedModeInput === "mach" ? 0.01 : 1}
         />
 
         <ControlRow
@@ -408,7 +443,7 @@ function StyledSelect({ children, className, ...props }: StyledSelectProps) {
 
 interface ControlRowProps {
   label: string;
-  unit: string;
+  unit: React.ReactNode;
   value: string;
   onChange: (value: string) => void;
   min?: number;
@@ -452,9 +487,9 @@ function ControlRow({
       const newVal = Math.min(num + step / 100, 1);
       onChange(String(newVal));
     } else {
-      const num = parseInt(value, 10) || 0;
+      const num = parseFloat(value) || 0;
       const newVal = Math.min(num + step, max);
-      onChange(String(newVal));
+      onChange(Number.isInteger(step) ? String(newVal) : newVal.toFixed(2));
     }
   };
 
@@ -465,9 +500,9 @@ function ControlRow({
       const newVal = Math.max(num - step / 100, 0);
       onChange(String(newVal));
     } else {
-      const num = parseInt(value, 10) || 0;
+      const num = parseFloat(value) || 0;
       const newVal = Math.max(num - step, min);
-      onChange(String(newVal));
+      onChange(Number.isInteger(step) ? String(newVal) : newVal.toFixed(2));
     }
   };
 
@@ -495,6 +530,9 @@ function ControlRow({
             : onChange(e.target.value)
         }
         placeholder={placeholder}
+        min={isText ? undefined : min}
+        max={isText ? undefined : max}
+        step={isText ? undefined : step}
         className="w-20 flex-1 [appearance:textfield] rounded-lg border border-white/20 bg-black/60 px-2 py-1.5 text-center font-mono text-base font-bold text-white transition-colors outline-none focus:border-cyan-500/50 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
 
@@ -507,11 +545,44 @@ function ControlRow({
         </button>
       )}
 
-      {unit && (
+      {typeof unit === "string" && unit ? (
         <span className="w-8 font-mono text-[9px] font-bold text-white/40">
           {unit}
         </span>
-      )}
+      ) : unit ? (
+        <div className="shrink-0">{unit}</div>
+      ) : null}
+    </div>
+  );
+}
+
+function InlineUnitSelect({
+  children,
+  className,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <div className="relative">
+      <select
+        {...props}
+        className={`h-8 w-[88px] appearance-none rounded-lg border border-white/10 bg-black/40 px-2 pr-6 font-mono text-[10px] font-bold text-white outline-none transition-colors hover:bg-black/60 focus:border-cyan-500/50 ${className ?? ""}`}
+      >
+        {children}
+      </select>
+      <div className="pointer-events-none absolute inset-y-0 right-1 flex items-center text-cyan-300/80">
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </div>
     </div>
   );
 }

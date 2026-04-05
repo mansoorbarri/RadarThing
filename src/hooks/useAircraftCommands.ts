@@ -4,6 +4,7 @@ const COMMAND_API_URL = "https://sse.radarthing.com/api/command";
 
 export type CommandType =
   | "setSpeed"
+  | "setSpeedMode"
   | "setAltitude"
   | "setHeading"
   | "setVS"
@@ -62,6 +63,15 @@ export function useAircraftCommands() {
       sendCommand({
         targetId,
         command: { type: "setSpeed", value: speed },
+      }),
+    [sendCommand],
+  );
+
+  const setSpeedMode = useCallback(
+    (targetId: string, speedMode: "knots" | "mach") =>
+      sendCommand({
+        targetId,
+        command: { type: "setSpeedMode", value: speedMode },
       }),
     [sendCommand],
   );
@@ -159,6 +169,7 @@ export function useAircraftCommands() {
   return {
     sendCommand,
     setSpeed,
+    setSpeedMode,
     setAltitude,
     setHeading,
     setVS,
