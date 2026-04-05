@@ -4,13 +4,23 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser, SignInButton } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import Link from "next/link";
-import { Loader2, Trash2, Upload, CheckCircle2, Plane } from "lucide-react";
+import {
+  Loader2,
+  Trash2,
+  Upload,
+  CheckCircle2,
+  Plane,
+  Search,
+  UserPlus,
+} from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import {
+  addVirtualAirlineMember,
   createVirtualAirlineAircraftImage,
   deleteVirtualAirlineAircraftImage,
+  removeVirtualAirlineMember,
 } from "~/app/actions/virtual-airlines";
 import {
   ImageUploader,
@@ -23,6 +33,13 @@ type SubmitStage =
   | "submitting"
   | "success";
 
+function getDisplayHandle(user: {
+  discordUsername?: string | null;
+  clerkId: string;
+}) {
+  return user.discordUsername ?? user.clerkId;
+}
+
 export default function VirtualAirlineAdminPage() {
   const { isLoaded, isSignedIn, user } = useUser();
   const managedVirtualAirlines = useQuery(
@@ -32,12 +49,15 @@ export default function VirtualAirlineAdminPage() {
 
   const [selectedVaId, setSelectedVaId] = useState<string>("");
   const [aircraftType, setAircraftType] = useState("");
+  const [memberSearch, setMemberSearch] = useState("");
   const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
   const [hasSelectedFile, setHasSelectedFile] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [memberActionId, setMemberActionId] = useState<string | null>(null);
   const uploadedDataRef = useRef<{ url: string; key: string } | null>(null);
   const uploaderRef = useRef<ImageUploaderRef>(null);
+  const allUsers = useQuery(api.users.getAll);
 
   const virtualAirlines = useMemo(
     () => managedVirtualAirlines ?? [],
@@ -71,6 +91,33 @@ export default function VirtualAirlineAdminPage() {
       ? { virtualAirlineId: selectedVaId as Id<"virtualAirlines"> }
       : "skip",
   );
+  const vaMembers = useQuery(
+    api.virtualAirlineMembers.getByVirtualAirlineId,
+    selectedVaId
+      ? { virtualAirlineId: selectedVaId as Id<"virtualAirlines"> }
+      : "skip",
+  );
+  const users = useMemo(() => allUsers ?? [], [allUsers]);
+  const members = useMemo(() => vaMembers ?? [], [vaMembers]);
+  const assignableUsers = useMemo(() => {
+    if (!selectedVaId) return [];
+
+    const query = memberSearch.trim().toLowerCase();
+    const existingUserIds = new Set(members.map((member) => member.userId));
+
+    return users
+      .filter((candidate) => {
+        if (!candidate.googleId) return false;
+        if (existingUserIds.has(candidate._id)) return false;
+        if (!query) return true;
+
+        return (
+          candidate.clerkId.toLowerCase().includes(query) ||
+          candidate.discordUsername?.toLowerCase().includes(query)
+        );
+      })
+      .slice(0, 8);
+  }, [memberSearch, members, selectedVaId, users]);
 
   const isProcessing = submitStage !== "idle" && submitStage !== "success";
 
@@ -79,6 +126,7 @@ export default function VirtualAirlineAdminPage() {
     setSubmitStage("idle");
     setError(null);
     setHasSelectedFile(false);
+    setMemberSearch("");
     uploadedDataRef.current = null;
     uploaderRef.current?.reset();
   };
@@ -166,7 +214,45 @@ export default function VirtualAirlineAdminPage() {
     toast.success("VA aircraft image deleted");
   };
 
-  if (!isLoaded || (isSignedIn && managedVirtualAirlines === undefined)) {
+  const handleAddMember = async (userId: string) => {
+    if (!selectedVirtualAirline) return;
+
+    setMemberActionId(userId);
+    const result = await addVirtualAirlineMember({
+      virtualAirlineId: selectedVirtualAirline.id,
+      userId,
+    });
+    setMemberActionId(null);
+
+    if (!result.success) {
+      toast.error(result.error || "Failed to add pilot");
+      return;
+    }
+
+    setMemberSearch("");
+    toast.success("Pilot added to VA");
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    setMemberActionId(memberId);
+    const result = await removeVirtualAirlineMember(memberId);
+    setMemberActionId(null);
+
+    if (!result.success) {
+      toast.error(result.error || "Failed to remove pilot");
+      return;
+    }
+
+    toast.success("Pilot removed from VA");
+  };
+
+  if (
+    !isLoaded ||
+    (isSignedIn &&
+      (managedVirtualAirlines === undefined ||
+        allUsers === undefined ||
+        (selectedVaId && vaMembers === undefined)))
+  ) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-black text-white">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
@@ -226,12 +312,12 @@ export default function VirtualAirlineAdminPage() {
               <span className="font-mono text-sm text-cyan-400">VA ADMIN</span>
             </div>
             <h1 className="text-3xl font-bold text-white">
-              Virtual Airline Fleet Images
+              Virtual Airline Operations
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-400">
-              Upload fleet images for your VA. These images publish immediately
-              and override the community image when your VA callsign prefix is
-              used on the radar.
+              Manage your VA pilot roster and fleet images. Only assigned pilots
+              flying with your VA callsign prefix will get the VA badge and VA
+              liveries on the radar.
             </p>
           </div>
           <Link
@@ -351,61 +437,158 @@ export default function VirtualAirlineAdminPage() {
             </div>
           </form>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <div className="mb-5">
-              <h2 className="text-lg font-semibold text-white">
-                {selectedVirtualAirline?.name} Fleet
-              </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Prefix: {selectedVirtualAirline?.callsignPrefix}
-              </p>
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <div className="mb-5">
+                <h2 className="text-lg font-semibold text-white">
+                  {selectedVirtualAirline?.name} Pilots
+                </h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  Prefix: {selectedVirtualAirline?.callsignPrefix}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {members.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 p-4"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-white">
+                        {member.discordUsername ?? member.clerkId}
+                      </div>
+                      <div className="mt-1 truncate text-xs text-slate-400">
+                        RadarThing ID: {member.clerkId}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={memberActionId === member.id}
+                      onClick={() => handleRemoveMember(member.id)}
+                      className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {memberActionId === member.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                      Remove
+                    </button>
+                  </div>
+                ))}
+
+                {members.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
+                    No pilots assigned yet.
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-5">
+                <label className="mb-2 block font-mono text-xs text-slate-400">
+                  ADD PILOT
+                </label>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="text"
+                    value={memberSearch}
+                    onChange={(event) => setMemberSearch(event.target.value)}
+                    placeholder="Search by Discord or RadarThing ID"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                  />
+                </div>
+                <div className="mt-3 space-y-2">
+                  {assignableUsers.map((candidate) => (
+                    <button
+                      key={candidate._id}
+                      type="button"
+                      disabled={memberActionId === candidate._id}
+                      onClick={() => handleAddMember(candidate._id)}
+                      className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-left transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <div className="min-w-0">
+                        <div className="truncate text-sm text-white">
+                          {getDisplayHandle(candidate)}
+                        </div>
+                        <div className="mt-0.5 truncate text-xs text-slate-400">
+                          RadarThing ID: {candidate.clerkId}
+                        </div>
+                      </div>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/15 px-2 py-1 text-[10px] font-semibold uppercase text-cyan-300">
+                        <UserPlus className="h-3 w-3" />
+                        Add
+                      </span>
+                    </button>
+                  ))}
+
+                  {assignableUsers.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-white/10 px-4 py-6 text-center text-sm text-slate-500">
+                      No eligible pilots matched. Pilots need a linked Google ID
+                      before you can add them to the VA.
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-3">
-              {(vaImages ?? []).map((image) => (
-                <div
-                  key={image.id}
-                  className="flex flex-col gap-4 rounded-xl border border-white/10 bg-black/20 p-4 md:flex-row md:items-center"
-                >
-                  <div className="relative h-28 w-full overflow-hidden rounded-xl border border-white/10 bg-black/40 md:w-48">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={image.imageUrl}
-                      alt={image.aircraftType}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-md bg-cyan-500/15 px-2 py-1 font-mono text-xs text-cyan-300">
-                        {image.aircraftType}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        Updated {new Date(image.updatedAt).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={deletingId === image.id}
-                    onClick={() => handleDelete(image.id)}
-                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {deletingId === image.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
-                    Delete
-                  </button>
-                </div>
-              ))}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <div className="mb-5">
+                <h2 className="text-lg font-semibold text-white">
+                  {selectedVirtualAirline?.name} Fleet
+                </h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  Prefix: {selectedVirtualAirline?.callsignPrefix}
+                </p>
+              </div>
 
-              {(vaImages ?? []).length === 0 && (
-                <div className="rounded-xl border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
-                  No fleet images uploaded yet for this VA.
-                </div>
-              )}
+              <div className="space-y-3">
+                {(vaImages ?? []).map((image) => (
+                  <div
+                    key={image.id}
+                    className="flex flex-col gap-4 rounded-xl border border-white/10 bg-black/20 p-4 md:flex-row md:items-center"
+                  >
+                    <div className="relative h-28 w-full overflow-hidden rounded-xl border border-white/10 bg-black/40 md:w-48">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={image.imageUrl}
+                        alt={image.aircraftType}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-md bg-cyan-500/15 px-2 py-1 font-mono text-xs text-cyan-300">
+                          {image.aircraftType}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          Updated {new Date(image.updatedAt).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={deletingId === image.id}
+                      onClick={() => handleDelete(image.id)}
+                      className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {deletingId === image.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                      Delete
+                    </button>
+                  </div>
+                ))}
+
+                {(vaImages ?? []).length === 0 && (
+                  <div className="rounded-xl border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
+                    No fleet images uploaded yet for this VA.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

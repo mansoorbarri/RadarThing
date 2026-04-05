@@ -62,6 +62,30 @@ export const getByUserId = query({
   },
 });
 
+export const getById = query({
+  args: {
+    id: v.id("virtualAirlineMembers"),
+  },
+  handler: async (ctx, args) => {
+    const membership = await ctx.db.get(args.id);
+    if (!membership) return null;
+
+    const user = await ctx.db.get(membership.userId);
+
+    return {
+      id: membership._id,
+      virtualAirlineId: membership.virtualAirlineId,
+      userId: membership.userId,
+      clerkId: membership.clerkId,
+      googleId: membership.googleId,
+      addedBy: membership.addedBy,
+      createdAt: membership._creationTime,
+      email: user?.email ?? null,
+      discordUsername: user?.discordUsername ?? null,
+    };
+  },
+});
+
 export const add = mutation({
   args: {
     virtualAirlineId: v.id("virtualAirlines"),

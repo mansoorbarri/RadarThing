@@ -30,6 +30,13 @@ const INITIAL_FORM: FormState = {
   isActive: true,
 };
 
+function getDisplayHandle(user: {
+  discordUsername?: string | null;
+  clerkId: string;
+}) {
+  return user.discordUsername ?? user.clerkId;
+}
+
 export function VirtualAirlinesTab() {
   const allUsers = useQuery(api.users.getAll);
   const virtualAirlines = useQuery(api.virtualAirlines.getAll);
@@ -59,7 +66,6 @@ export function VirtualAirlinesTab() {
         if (!query) return true;
 
         return (
-          user.email.toLowerCase().includes(query) ||
           user.clerkId.toLowerCase().includes(query) ||
           user.discordUsername?.toLowerCase().includes(query)
         );
@@ -80,7 +86,6 @@ export function VirtualAirlinesTab() {
         if (!query) return true;
 
         return (
-          user.email.toLowerCase().includes(query) ||
           user.clerkId.toLowerCase().includes(query) ||
           user.discordUsername?.toLowerCase().includes(query)
         );
@@ -105,7 +110,7 @@ export function VirtualAirlinesTab() {
 
     const adminUser =
       users.find((user) => user.clerkId === virtualAirline.adminClerkId) ?? null;
-    setSearch(adminUser?.email ?? adminUser?.discordUsername ?? "");
+    setSearch(adminUser?.discordUsername ?? adminUser?.clerkId ?? "");
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -263,7 +268,7 @@ export function VirtualAirlinesTab() {
                 type="text"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search by email or Discord username"
+                placeholder="Search by Discord or RadarThing ID"
                 disabled={submitting}
                 className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
               />
@@ -272,13 +277,10 @@ export function VirtualAirlinesTab() {
               {selectedAdmin && (
                 <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-3 py-2">
                   <div className="text-sm font-medium text-white">
-                    {selectedAdmin.email}
+                    {getDisplayHandle(selectedAdmin)}
                   </div>
                   <div className="mt-1 text-xs text-cyan-300">
-                    Assigned VA admin
-                    {selectedAdmin.discordUsername
-                      ? ` - ${selectedAdmin.discordUsername}`
-                      : ""}
+                    RadarThing ID: {selectedAdmin.clerkId}
                   </div>
                 </div>
               )}
@@ -303,10 +305,10 @@ export function VirtualAirlinesTab() {
                   >
                     <div className="min-w-0">
                       <div className="truncate text-sm text-white">
-                        {user.email}
+                        {getDisplayHandle(user)}
                       </div>
                       <div className="mt-0.5 truncate text-xs text-slate-400">
-                        {user.discordUsername ?? user.clerkId}
+                        RadarThing ID: {user.clerkId}
                       </div>
                     </div>
                     {active && (
@@ -368,10 +370,10 @@ export function VirtualAirlinesTab() {
                   >
                     <div className="min-w-0">
                       <div className="truncate text-sm text-white">
-                        {member.email ?? member.clerkId}
+                        {member.discordUsername ?? member.clerkId}
                       </div>
                       <div className="mt-0.5 truncate text-xs text-slate-400">
-                        {member.discordUsername ?? member.googleId}
+                        RadarThing ID: {member.clerkId}
                       </div>
                     </div>
                     <button
@@ -403,7 +405,7 @@ export function VirtualAirlinesTab() {
                     type="text"
                     value={memberSearch}
                     onChange={(event) => setMemberSearch(event.target.value)}
-                    placeholder="Search users with linked Google IDs"
+                    placeholder="Search by Discord or RadarThing ID"
                     className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
                   />
                 </div>
@@ -418,10 +420,10 @@ export function VirtualAirlinesTab() {
                     >
                       <div className="min-w-0">
                         <div className="truncate text-sm text-white">
-                          {user.email}
+                          {getDisplayHandle(user)}
                         </div>
                         <div className="mt-0.5 truncate text-xs text-slate-400">
-                          {user.discordUsername ?? user.googleId}
+                          RadarThing ID: {user.clerkId}
                         </div>
                       </div>
                       <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/15 px-2 py-1 text-[10px] font-semibold uppercase text-cyan-300">
@@ -499,14 +501,12 @@ export function VirtualAirlinesTab() {
                         {virtualAirline.callsignPrefix}
                       </span>
                       <span className="truncate">
-                        Admin: {adminUser?.email ?? virtualAirline.adminClerkId}
+                        Admin: {adminUser?.discordUsername ?? virtualAirline.adminClerkId}
                       </span>
                     </div>
-                    {adminUser?.discordUsername && (
-                      <div className="mt-1 text-xs text-slate-500">
-                        Discord: {adminUser.discordUsername}
-                      </div>
-                    )}
+                    <div className="mt-1 text-xs text-slate-500">
+                      RadarThing ID: {adminUser?.clerkId ?? virtualAirline.adminClerkId}
+                    </div>
                   </div>
 
                   <button

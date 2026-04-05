@@ -298,8 +298,8 @@ export async function getVirtualAirlineFlightContext(
 export async function getVirtualAirlineMembers(
   virtualAirlineId: string,
 ): Promise<VirtualAirlineMember[]> {
-  const access = await requireSiteAdmin();
-  if (!access?.clerkId) return [];
+  const { allowed } = await canManageVirtualAirline(virtualAirlineId);
+  if (!allowed) return [];
 
   const members = await convex.query(api.virtualAirlineMembers.getByVirtualAirlineId, {
     virtualAirlineId: virtualAirlineId as Id<"virtualAirlines">,
@@ -312,17 +312,18 @@ export async function addVirtualAirlineMember(data: {
   virtualAirlineId: string;
   userId: string;
 }): Promise<{ success: boolean; error?: string; member?: VirtualAirlineMember }> {
-  const access = await requireSiteAdmin();
-  if (!access?.clerkId) {
-    return { success: false, error: "Only ADMIN users can assign VA pilots" };
+  const { access, virtualAirline, allowed } = await canManageVirtualAirline(
+    data.virtualAirlineId,
+  );
+  if (!access.clerkId || !allowed || !virtualAirline) {
+    return {
+      success: false,
+      error: "You can only manage pilots for your assigned VA",
+    };
   }
 
-  const virtualAirline = await convex.query(api.virtualAirlines.getById, {
-    id: data.virtualAirlineId as Id<"virtualAirlines">,
-  });
-
-  if (!virtualAirline) {
-    return { success: false, error: "VA not found" };
+  if (!virtualAirline.isActive) {
+    return { success: false, error: "This VA is currently disabled" };
   }
 
   const user = await convex.query(api.users.getAll, {});
@@ -362,6 +363,7 @@ export async function addVirtualAirlineMember(data: {
   });
 
   revalidatePath("/admin");
+  revalidatePath("/va-admin");
   revalidatePath("/radar");
 
   if (!member) {
@@ -383,12 +385,7 @@ export async function addVirtualAirlineMember(data: {
 export async function removeVirtualAirlineMember(
   id: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const access = await requireSiteAdmin();
-  if (!access?.clerkId) {
-    return { success: false, error: "Only ADMIN users can remove VA pilots" };
-  }
-
-  const member = await convex.mutation(api.virtualAirlineMembers.remove, {
+  const member = await convex.query(api.virtualAirlineMembers.getById, {
     id: id as Id<"virtualAirlineMembers">,
   });
 
@@ -396,7 +393,24 @@ export async function removeVirtualAirlineMember(
     return { success: false, error: "VA pilot not found" };
   }
 
+  const managedAccess = await canManageVirtualAirline(member.virtualAirlineId);
+  if (!managedAccess.access.clerkId || !managedAccess.allowed) {
+    return {
+      success: false,
+      error: "You can only manage pilots for your assigned VA",
+    };
+  }
+
+  const removedMember = await convex.mutation(api.virtualAirlineMembers.remove, {
+    id: id as Id<"virtualAirlineMembers">,
+  });
+
+  if (!removedMember) {
+    return { success: false, error: "VA pilot not found" };
+  }
+
   revalidatePath("/admin");
+  revalidatePath("/va-admin");
   revalidatePath("/radar");
 
   return { success: true };
