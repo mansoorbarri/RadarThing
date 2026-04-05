@@ -148,6 +148,7 @@ export const getFlightContext = query({
   args: {
     callsign: v.string(),
     aircraftType: v.optional(v.string()),
+    aircraftTypes: v.optional(v.array(v.string())),
     googleId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -219,11 +220,20 @@ export const getFlightContext = query({
     }
 
     let image = null;
-    const aircraftType = args.aircraftType?.trim()
-      ? normalizeAircraftTypeKey(args.aircraftType)
-      : null;
+    const aircraftTypes = Array.from(
+      new Set(
+        (args.aircraftTypes ?? [])
+          .map((aircraftType) => aircraftType.trim())
+          .filter(Boolean)
+          .map(normalizeAircraftTypeKey),
+      ),
+    );
 
-    if (aircraftType) {
+    if (aircraftTypes.length === 0 && args.aircraftType?.trim()) {
+      aircraftTypes.push(normalizeAircraftTypeKey(args.aircraftType));
+    }
+
+    for (const aircraftType of aircraftTypes) {
       const matchingImage = await ctx.db
         .query("virtualAirlineAircraftImages")
         .withIndex("by_virtualAirlineId_aircraftType", (q) =>
@@ -235,6 +245,7 @@ export const getFlightContext = query({
 
       if (matchingImage) {
         image = toVirtualAirlineImageSummary(matchingImage);
+        break;
       }
     }
 
@@ -303,5 +314,46 @@ export const setActive = mutation({
 
     const virtualAirline = await ctx.db.get(args.id);
     return virtualAirline ? toVirtualAirlineSummary(virtualAirline) : null;
+  },
+});
+
+export const remove = mutation({
+  args: {
+    id: v.id("virtualAirlines"),
+  },
+  handler: async (ctx, args) => {
+    const virtualAirline = await ctx.db.get(args.id);
+    if (!virtualAirline) return null;
+
+    const [members, images] = await Promise.all([
+      ctx.db
+        .query("virtualAirlineMembers")
+        .withIndex("by_virtualAirlineId", (q) =>
+          q.eq("virtualAirlineId", args.id),
+        )
+        .collect(),
+      ctx.db
+        .query("virtualAirlineAircraftImages")
+        .withIndex("by_virtualAirlineId", (q) =>
+          q.eq("virtualAirlineId", args.id),
+        )
+        .collect(),
+    ]);
+
+    await Promise.all([
+      ...members.map((member) => ctx.db.delete(member._id)),
+      ...images.map((image) => ctx.db.delete(image._id)),
+    ]);
+
+    await ctx.db.delete(args.id);
+
+    return {
+      id: virtualAirline._id,
+      imageKeys: images
+        .map((image) => image.imageKey)
+        .filter((imageKey): imageKey is string => Boolean(imageKey)),
+      memberCount: members.length,
+      imageCount: images.length,
+    };
   },
 });

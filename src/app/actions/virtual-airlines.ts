@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { UTApi } from "uploadthing/server";
 import { convex, api } from "~/server/convex";
 import { getCurrentAccessContext } from "~/server/access";
+import { getAircraftTypeLookupCandidates } from "~/lib/utils";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 const utapi = new UTApi();
@@ -311,6 +312,42 @@ export async function updateVirtualAirline(data: {
   };
 }
 
+export async function deleteVirtualAirline(
+  id: string,
+): Promise<{
+  success: boolean;
+  error?: string;
+  deletedMemberCount?: number;
+  deletedImageCount?: number;
+}> {
+  const access = await requireSiteAdmin();
+  if (!access?.clerkId) {
+    return { success: false, error: "Only ADMIN users can delete VAs" };
+  }
+
+  const removed = await convex.mutation(api.virtualAirlines.remove, {
+    id: id as Id<"virtualAirlines">,
+  });
+
+  if (!removed) {
+    return { success: false, error: "VA not found" };
+  }
+
+  if (removed.imageKeys.length > 0) {
+    await utapi.deleteFiles(removed.imageKeys).catch(() => undefined);
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/va-admin");
+  revalidatePath("/radar");
+
+  return {
+    success: true,
+    deletedMemberCount: removed.memberCount,
+    deletedImageCount: removed.imageCount,
+  };
+}
+
 export async function getVirtualAirlineFlightContext(
   callsign: string,
   aircraftType: string,
@@ -319,9 +356,11 @@ export async function getVirtualAirlineFlightContext(
   virtualAirline: VirtualAirline | null;
   image: VirtualAirlineAircraftImage | null;
 }> {
+  const aircraftTypes = getAircraftTypeLookupCandidates(aircraftType);
   const context = await convex.query(api.virtualAirlines.getFlightContext, {
     callsign,
     aircraftType: normalizeAircraftTypeInput(aircraftType),
+    aircraftTypes,
     googleId: googleId ?? undefined,
   });
 
@@ -513,6 +552,7 @@ export async function createVirtualAirlineAircraftImage(data: {
       await utapi.deleteFiles(result.replacedImageKey).catch(() => undefined);
     }
 
+    revalidatePath("/admin");
     revalidatePath("/va-admin");
     revalidatePath("/radar");
 
@@ -562,6 +602,7 @@ export async function deleteVirtualAirlineAircraftImage(
     id: id as Id<"virtualAirlineAircraftImages">,
   });
 
+  revalidatePath("/admin");
   revalidatePath("/va-admin");
   revalidatePath("/radar");
 
