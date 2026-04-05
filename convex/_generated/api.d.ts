@@ -16,6 +16,9 @@ import type * as flights from "../flights.js";
 import type * as lib_airlineCodes from "../lib/airlineCodes.js";
 import type * as lib_icaoRegions from "../lib/icaoRegions.js";
 import type * as users from "../users.js";
+import type * as virtualAirlineAircraftImages from "../virtualAirlineAircraftImages.js";
+import type * as virtualAirlineMembers from "../virtualAirlineMembers.js";
+import type * as virtualAirlines from "../virtualAirlines.js";
 import type * as waypointReminders from "../waypointReminders.js";
 
 import type {
@@ -33,6 +36,9 @@ declare const fullApi: ApiFromModules<{
   "lib/airlineCodes": typeof lib_airlineCodes;
   "lib/icaoRegions": typeof lib_icaoRegions;
   users: typeof users;
+  virtualAirlineAircraftImages: typeof virtualAirlineAircraftImages;
+  virtualAirlineMembers: typeof virtualAirlineMembers;
+  virtualAirlines: typeof virtualAirlines;
   waypointReminders: typeof waypointReminders;
 }>;
 

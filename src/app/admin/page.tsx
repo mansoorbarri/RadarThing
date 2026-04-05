@@ -15,6 +15,7 @@ import {
   ImageIcon,
   Map,
   Crown,
+  Users,
   Upload,
   X,
   Loader2,
@@ -37,8 +38,9 @@ import { AdminSkeleton } from "./_components/skeletons";
 import { AircraftImagesTab } from "./_components/AircraftImagesTab";
 import { AirportChartsTab } from "./_components/AirportChartsTab";
 import { ProManagementTab } from "./_components/ProManagementTab";
+import { VirtualAirlinesTab } from "./_components/VirtualAirlinesTab";
 
-type MainTab = "images" | "charts" | "pro";
+type MainTab = "images" | "charts" | "virtual-airlines" | "pro";
 type SubmitStage = "idle" | "validating" | "uploading" | "submitting" | "success";
 
 export default function AdminPage() {
@@ -120,6 +122,17 @@ export default function AdminPage() {
             <Map className="h-4 w-4" />
             Airport Charts
           </button>
+          <button
+            onClick={() => setMainTab("virtual-airlines")}
+            className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-all ${
+              mainTab === "virtual-airlines"
+                ? "bg-cyan-500/20 text-cyan-400"
+                : "bg-white/5 text-slate-400 hover:bg-white/10"
+            }`}
+          >
+            <Users className="h-4 w-4" />
+            Virtual Airlines
+          </button>
           {isSuperAdmin && (
             <button
               onClick={() => setMainTab("pro")}
@@ -137,6 +150,7 @@ export default function AdminPage() {
 
         {mainTab === "images" && <AircraftImagesTab />}
         {mainTab === "charts" && <AirportChartsTab />}
+        {mainTab === "virtual-airlines" && <VirtualAirlinesTab />}
         {mainTab === "pro" && <ProManagementTab />}
       </main>
 

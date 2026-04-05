@@ -86,6 +86,44 @@ export default defineSchema({
       "isApproved",
     ]),
 
+  virtualAirlines: defineTable({
+    name: v.string(),
+    callsignPrefix: v.string(),
+    adminClerkId: v.string(),
+    isActive: v.boolean(),
+    createdBy: v.string(),
+    updatedAt: v.number(),
+  })
+    .index("by_callsignPrefix", ["callsignPrefix"])
+    .index("by_adminClerkId", ["adminClerkId"])
+    .index("by_isActive", ["isActive"]),
+
+  virtualAirlineAircraftImages: defineTable({
+    virtualAirlineId: v.id("virtualAirlines"),
+    aircraftType: v.string(),
+    imageUrl: v.string(),
+    imageKey: v.optional(v.string()),
+    uploadedBy: v.string(),
+    updatedAt: v.number(),
+  })
+    .index("by_virtualAirlineId", ["virtualAirlineId"])
+    .index("by_virtualAirlineId_aircraftType", [
+      "virtualAirlineId",
+      "aircraftType",
+    ]),
+
+  virtualAirlineMembers: defineTable({
+    virtualAirlineId: v.id("virtualAirlines"),
+    userId: v.id("users"),
+    clerkId: v.string(),
+    googleId: v.string(),
+    addedBy: v.string(),
+  })
+    .index("by_virtualAirlineId", ["virtualAirlineId"])
+    .index("by_virtualAirlineId_userId", ["virtualAirlineId", "userId"])
+    .index("by_userId", ["userId"])
+    .index("by_googleId", ["googleId"]),
+
   // Airport charts (SIDs, STARs, approaches, taxi)
   airportCharts: defineTable({
     icao: v.string(),

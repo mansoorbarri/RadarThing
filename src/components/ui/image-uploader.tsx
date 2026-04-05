@@ -66,6 +66,7 @@ interface ImageUploaderProps {
   airlineIata?: string;
   airlineIcao?: string;
   aircraftType?: string;
+  fileNameBase?: string;
   externalUploadTrigger?: boolean;
 }
 
@@ -128,6 +129,7 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
       airlineIata,
       airlineIcao,
       aircraftType,
+      fileNameBase,
       externalUploadTrigger = false,
     },
     ref,
@@ -219,8 +221,13 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
     const triggerUpload = useCallback(async (): Promise<boolean> => {
       if (!file) return false;
 
-      // Require both airline codes and aircraft type before upload
-      if (!airlineIata || !airlineIcao || !aircraftType) {
+      const normalizedFileNameBase = fileNameBase?.trim();
+
+      // Require either a custom filename base or the community aircraft fields.
+      if (
+        !normalizedFileNameBase &&
+        (!airlineIata || !airlineIcao || !aircraftType)
+      ) {
         const errorMsg =
           "Please fill in both Airline codes (IATA and ICAO) and Aircraft Type before uploading.";
         setLocalError(errorMsg);
@@ -233,9 +240,10 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
       setUploadProgress(0);
 
       try {
-        // Rename file to IATA-ICAO-aircraftType format (e.g., EK-UAE-A380.jpg)
         const extension = file.name.split(".").pop() || "png";
-        const newFileName = `${airlineIata}-${airlineIcao}-${aircraftType}.${extension}`;
+        const newFileName = normalizedFileNameBase
+          ? `${normalizedFileNameBase}.${extension}`
+          : `${airlineIata}-${airlineIcao}-${aircraftType}.${extension}`;
         const renamedFile = new File([file], newFileName, { type: file.type });
 
         const result = await startUpload([renamedFile]);
@@ -247,7 +255,15 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
         setIsUploading(false);
         return false;
       }
-    }, [file, airlineIata, airlineIcao, aircraftType, startUpload, onError]);
+    }, [
+      file,
+      fileNameBase,
+      airlineIata,
+      airlineIcao,
+      aircraftType,
+      startUpload,
+      onError,
+    ]);
 
     // Expose methods to parent
     useImperativeHandle(

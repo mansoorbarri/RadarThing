@@ -3,13 +3,19 @@ import {
   getAircraftImage,
   type AircraftImage,
 } from "~/app/actions/aircraft-images";
+import { getVirtualAirlineFlightContext } from "~/app/actions/virtual-airlines";
 import { getAircraftTypeLookupCandidates } from "~/lib/utils";
 
 // In-memory cache for aircraft photos (persists across component instances)
 // Cache entry can be null (no image found) or AircraftPhotoData
 interface CacheEntry {
-  data: AircraftPhotoData | null;
+  data: CachedAircraftPhotoData | null;
   timestamp: number;
+}
+
+interface CachedAircraftPhotoData {
+  photo: AircraftPhotoData | null;
+  virtualAirline: VirtualAirlinePhotoData | null;
 }
 
 const imageCache = new Map<string, CacheEntry>();
@@ -19,19 +25,23 @@ const MISS_CACHE_TTL = 30 * 1000; // 30 seconds
 function getCacheKey(
   callsign: string | undefined,
   aircraftType: string | undefined,
+  googleId: string | undefined,
   af?: string,
 ): string {
   return [
+    googleId?.trim() ?? "",
     af?.trim().toUpperCase() ?? "",
     callsign?.trim().toUpperCase() ?? "",
     aircraftType?.trim().toUpperCase() ?? "",
   ].join(":");
 }
 
-function getCachedImage(key: string): AircraftPhotoData | null | undefined {
+function getCachedImage(
+  key: string,
+): CachedAircraftPhotoData | null | undefined {
   const entry = imageCache.get(key);
   if (!entry) return undefined; // Not in cache
-  const ttl = entry.data ? HIT_CACHE_TTL : MISS_CACHE_TTL;
+  const ttl = entry.data?.photo ? HIT_CACHE_TTL : MISS_CACHE_TTL;
   if (Date.now() - entry.timestamp > ttl) {
     imageCache.delete(key);
     return undefined; // Expired
@@ -39,7 +49,7 @@ function getCachedImage(key: string): AircraftPhotoData | null | undefined {
   return entry.data; // Can be null (meaning "no image exists")
 }
 
-function setCachedImage(key: string, data: AircraftPhotoData | null): void {
+function setCachedImage(key: string, data: CachedAircraftPhotoData | null): void {
   imageCache.set(key, { data, timestamp: Date.now() });
 }
 
@@ -87,26 +97,40 @@ export interface AircraftPhotoData {
   discordUsername: string | null;
 }
 
+export interface VirtualAirlinePhotoData {
+  id: string;
+  name: string;
+  callsignPrefix: string;
+}
+
 export const useAircraftPhoto = (
   callsign: string | undefined,
   aircraftType: string | undefined,
+  googleId?: string,
   af?: string,
 ) => {
   const [photo, setPhoto] = useState<AircraftPhotoData | null>(null);
+  const [virtualAirline, setVirtualAirline] =
+    useState<VirtualAirlinePhotoData | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    const resolvedCallsign = callsign?.trim();
     const airlineCodes = getAirlineCodeCandidates(callsign, af);
     const aircraftTypes = getAircraftTypeLookupCandidates(aircraftType);
     let isCancelled = false;
     let retryTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    if (airlineCodes.length === 0 || aircraftTypes.length === 0) {
+    if (!resolvedCallsign) {
+      setLoading(false);
       setPhoto(null);
+      setVirtualAirline(null);
       return;
     }
 
-    const cacheKey = getCacheKey(callsign, aircraftType, af);
+    const flightCallsign = resolvedCallsign;
+
+    const cacheKey = getCacheKey(callsign, aircraftType, googleId, af);
 
     const scheduleRetry = () => {
       if (retryTimeout || isCancelled) return;
@@ -118,17 +142,19 @@ export const useAircraftPhoto = (
       }, MISS_CACHE_TTL);
     };
 
-    const applyPhoto = (nextPhoto: AircraftPhotoData | null) => {
+    const applyPhotoState = (nextState: CachedAircraftPhotoData | null) => {
       if (isCancelled) return;
-      setPhoto(nextPhoto);
+      setPhoto(nextState?.photo ?? null);
+      setVirtualAirline(nextState?.virtualAirline ?? null);
     };
 
     // Check cache first
     const cached = getCachedImage(cacheKey);
     if (cached !== undefined) {
       // Cache hit (can be null if no image exists)
-      applyPhoto(cached);
-      if (cached === null) {
+      setLoading(false);
+      applyPhotoState(cached);
+      if (!cached?.photo) {
         scheduleRetry();
       }
       return () => {
@@ -141,32 +167,70 @@ export const useAircraftPhoto = (
       if (isCancelled) return;
       setLoading(true);
       try {
+        const vaContext = await getVirtualAirlineFlightContext(
+          flightCallsign,
+          aircraftType ?? "",
+          googleId,
+        );
+
+        const nextVirtualAirline = vaContext.virtualAirline
+          ? {
+              id: vaContext.virtualAirline.id,
+              name: vaContext.virtualAirline.name,
+              callsignPrefix: vaContext.virtualAirline.callsignPrefix,
+            }
+          : null;
+
+        if (vaContext.image) {
+          const nextState = {
+            photo: {
+              imageUrl: vaContext.image.imageUrl,
+              discordUsername: null,
+            },
+            virtualAirline: nextVirtualAirline,
+          };
+          setCachedImage(cacheKey, nextState);
+          applyPhotoState(nextState);
+          return;
+        }
+
         let image: AircraftImage | null = null;
 
-        for (const airlineCode of airlineCodes) {
-          for (const aircraftTypeKey of aircraftTypes) {
-            image = await getAircraftImage(airlineCode, aircraftTypeKey);
+        if (airlineCodes.length > 0 && aircraftTypes.length > 0) {
+          for (const airlineCode of airlineCodes) {
+            for (const aircraftTypeKey of aircraftTypes) {
+              image = await getAircraftImage(airlineCode, aircraftTypeKey);
+              if (image) break;
+            }
             if (image) break;
           }
-          if (image) break;
         }
 
         if (!image) {
-          setCachedImage(cacheKey, null);
-          applyPhoto(null);
+          const nextState = nextVirtualAirline
+            ? {
+                photo: null,
+                virtualAirline: nextVirtualAirline,
+              }
+            : null;
+          setCachedImage(cacheKey, nextState);
+          applyPhotoState(nextState);
           scheduleRetry();
           return;
         }
 
-        const photoData = {
-          imageUrl: image.imageUrl,
-          discordUsername: image.discordUsername,
+        const nextState = {
+          photo: {
+            imageUrl: image.imageUrl,
+            discordUsername: image.discordUsername,
+          },
+          virtualAirline: nextVirtualAirline,
         };
-        setCachedImage(cacheKey, photoData);
-        applyPhoto(photoData);
+        setCachedImage(cacheKey, nextState);
+        applyPhotoState(nextState);
       } catch (err) {
         console.error("Aircraft photo fetch error:", err);
-        applyPhoto(null);
+        applyPhotoState(null);
         scheduleRetry();
       } finally {
         if (!isCancelled) {
@@ -181,7 +245,7 @@ export const useAircraftPhoto = (
       isCancelled = true;
       if (retryTimeout) clearTimeout(retryTimeout);
     };
-  }, [callsign, aircraftType, af]);
+  }, [callsign, aircraftType, googleId, af]);
 
-  return { photo, loading };
+  return { photo, virtualAirline, loading };
 };

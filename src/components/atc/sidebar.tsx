@@ -654,9 +654,10 @@ export const Sidebar = ({
     </div>
   );
 
-  const { photo: aircraftPhoto } = useAircraftPhoto(
+  const { photo: aircraftPhoto, virtualAirline } = useAircraftPhoto(
     aircraft.flightNo || aircraft.callsign,
     aircraft.type,
+    aircraft.googleId,
     aircraft.af,
   );
 
@@ -723,15 +724,18 @@ export const Sidebar = ({
                   No Aircraft Image
                 </p>
                 <p className="mt-0.5 max-w-[280px] font-mono text-[10px] leading-relaxed text-white/60">
-                  Help the community identify this aircraft by uploading a
-                  photo.
+                  {virtualAirline
+                    ? `${virtualAirline.name} has not uploaded a fleet image for this aircraft yet.`
+                    : "Help the community identify this aircraft by uploading a photo."}
                 </p>
-                <Link
-                  href="/aircraft-images"
-                  className="mt-2 inline-flex rounded-lg border border-cyan-400/40 bg-cyan-500/20 px-3 py-1.5 font-mono text-[10px] font-black tracking-wide text-cyan-200 transition-colors hover:bg-cyan-500/30"
-                >
-                  Upload at /aircraft-images
-                </Link>
+                {!virtualAirline && (
+                  <Link
+                    href="/aircraft-images"
+                    className="mt-2 inline-flex rounded-lg border border-cyan-400/40 bg-cyan-500/20 px-3 py-1.5 font-mono text-[10px] font-black tracking-wide text-cyan-200 transition-colors hover:bg-cyan-500/30"
+                  >
+                    Upload at /aircraft-images
+                  </Link>
+                )}
               </div>
             </div>
           )}
@@ -748,12 +752,26 @@ export const Sidebar = ({
                     {aircraftPhoto ? "Tracking" : "Active Radar Lock"}
                   </span>
                 </div>
-                <h1 className={`mb-1 truncate font-mono leading-none font-black tracking-tighter text-white uppercase drop-shadow-lg ${isMobile ? "text-2xl" : "text-4xl"}`}>
-                  {aircraft.flightNo || aircraft.callsign || "N/A"}
-                </h1>
+                <div className="mb-1 flex items-center gap-2">
+                  <h1
+                    className={`truncate font-mono leading-none font-black tracking-tighter text-white uppercase drop-shadow-lg ${isMobile ? "text-2xl" : "text-4xl"}`}
+                  >
+                    {aircraft.flightNo || aircraft.callsign || "N/A"}
+                  </h1>
+                  {virtualAirline && (
+                    <span className="rounded-full border border-cyan-400/30 bg-cyan-500/15 px-2 py-1 font-mono text-[10px] font-black tracking-[0.18em] text-cyan-300 uppercase">
+                      VA
+                    </span>
+                  )}
+                </div>
                 <p className="truncate font-mono text-[11px] font-black tracking-[0.15em] text-slate-300 uppercase">
                   {aircraft.type || "Unknown Class"}
                 </p>
+                {virtualAirline && (
+                  <p className="mt-1 truncate font-mono text-[10px] font-bold tracking-[0.14em] text-cyan-300/80 uppercase">
+                    {virtualAirline.name} - {virtualAirline.callsignPrefix}
+                  </p>
+                )}
                 {aircraft.callsign &&
                   (pilotUser ? (
                     <Link
