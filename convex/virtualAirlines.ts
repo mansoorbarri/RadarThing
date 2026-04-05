@@ -159,19 +159,43 @@ export const getFlightContext = query({
       };
     }
 
-    const membership = await ctx.db
+    const directMembership = await ctx.db
       .query("virtualAirlineMembers")
       .withIndex("by_googleId", (q) => q.eq("googleId", googleId))
       .first();
+    let virtualAirlineId = directMembership?.virtualAirlineId ?? null;
 
-    if (!membership) {
-      return {
-        virtualAirline: null,
-        image: null,
-      };
+    // Treat the assigned VA owner as an implicit member so new VAs work
+    // immediately even before the roster table is populated.
+    if (!virtualAirlineId) {
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_googleId", (q) => q.eq("googleId", googleId))
+        .first();
+
+      if (!user) {
+        return {
+          virtualAirline: null,
+          image: null,
+        };
+      }
+
+      const matchingVirtualAirline = await getMatchingVirtualAirline(
+        ctx,
+        args.callsign,
+      );
+
+      if (!matchingVirtualAirline || matchingVirtualAirline.adminClerkId !== user.clerkId) {
+        return {
+          virtualAirline: null,
+          image: null,
+        };
+      }
+
+      virtualAirlineId = matchingVirtualAirline._id;
     }
 
-    const virtualAirline = await ctx.db.get(membership.virtualAirlineId);
+    const virtualAirline = await ctx.db.get(virtualAirlineId);
     if (!virtualAirline) {
       return {
         virtualAirline: null,

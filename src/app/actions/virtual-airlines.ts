@@ -199,6 +199,28 @@ async function validateVirtualAirlineInput(data: {
   };
 }
 
+async function ensureVirtualAirlineAdminMembership(data: {
+  virtualAirlineId: string;
+  adminClerkId: string;
+  addedBy: string;
+}) {
+  const adminUser = await convex.query(api.users.getByClerkId, {
+    clerkId: data.adminClerkId,
+  });
+
+  if (!adminUser?.googleId) {
+    return;
+  }
+
+  await convex.mutation(api.virtualAirlineMembers.add, {
+    virtualAirlineId: data.virtualAirlineId as Id<"virtualAirlines">,
+    userId: adminUser._id,
+    clerkId: adminUser.clerkId,
+    googleId: adminUser.googleId,
+    addedBy: data.addedBy,
+  });
+}
+
 export async function createVirtualAirline(data: {
   name: string;
   callsignPrefix: string;
@@ -223,6 +245,14 @@ export async function createVirtualAirline(data: {
 
   revalidatePath("/admin");
   revalidatePath("/va-admin");
+
+  if (virtualAirline) {
+    await ensureVirtualAirlineAdminMembership({
+      virtualAirlineId: virtualAirline.id,
+      adminClerkId: data.adminClerkId,
+      addedBy: access.clerkId,
+    });
+  }
 
   return {
     success: true,
@@ -266,6 +296,14 @@ export async function updateVirtualAirline(data: {
   revalidatePath("/admin");
   revalidatePath("/va-admin");
   revalidatePath("/radar");
+
+  if (virtualAirline) {
+    await ensureVirtualAirlineAdminMembership({
+      virtualAirlineId: virtualAirline.id,
+      adminClerkId: data.adminClerkId,
+      addedBy: access.clerkId,
+    });
+  }
 
   return {
     success: true,
