@@ -49,6 +49,7 @@ import { AtcPlayer } from "~/components/atc/AtcPlayer";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { WhatsNew } from "~/components/ui/WhatsNew";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
+import { MobileDrawer } from "~/components/ui/MobileDrawer";
 import {
   FlightsIcon,
   FilterIcon,
@@ -1113,7 +1114,7 @@ export default function ATCPage() {
 
       {!isReplayActive && selectedAircrafts.length > 0 &&
         (isPhone ? (
-          <MobileSwipeSheet onClose={() => setSelectedAircrafts([])}>
+          <MobileDrawer onClose={() => setSelectedAircrafts([])}>
             {selectedAircrafts.length === 1 ? (
               <Sidebar
                 aircraft={selectedAircrafts[0]!}
@@ -1149,7 +1150,7 @@ export default function ATCPage() {
                 isMobile={isMobile}
               />
             )}
-          </MobileSwipeSheet>
+          </MobileDrawer>
         ) : (
           <aside
             className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10014] border-l border-white/10 bg-black/90 backdrop-blur-xl transition-[width] duration-300 ease-in-out ${
