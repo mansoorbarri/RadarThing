@@ -36,8 +36,8 @@ export function ControlDock({
 
   const isRight = side === "right";
 
-  const btnSize = isMobile ? "h-10 w-10" : "h-13 w-13";
-  const itemWidth = isMobile ? "w-[120px]" : "w-[140px]";
+  const btnSize = isMobile ? "h-11 w-11" : "h-13 w-13";
+  const itemWidth = isMobile ? "w-[130px]" : "w-[140px]";
   const bottomPos = isMobile ? "bottom-3" : "bottom-6";
   const sidePos = isMobile
     ? isRight ? "right-3" : "left-3"
@@ -54,7 +54,7 @@ export function ControlDock({
       <div className="relative">
         {/* Tool buttons (absolute, so dock never moves) */}
         <div
-          className={`absolute ${isMobile ? "bottom-12" : "bottom-14"} ${
+          className={`absolute ${isMobile ? "bottom-13" : "bottom-14"} ${
             isRight ? "right-0 items-end" : "left-0 items-start"
           } flex flex-col gap-1.5 transition-all duration-200 ease-out ${
             open
@@ -65,8 +65,11 @@ export function ControlDock({
           {items.map((item) => (
             <button
               key={item.id}
-              onClick={item.onClick}
-              className={`flex ${itemWidth} cursor-pointer items-center gap-2 rounded-xl border ${isMobile ? "px-3 py-1.5 text-[11px]" : "px-4 py-2 text-xs"} backdrop-blur-md transition-all duration-150 ${
+              onClick={() => {
+                item.onClick();
+                setOpen(false);
+              }}
+              className={`flex ${itemWidth} cursor-pointer items-center gap-2 rounded-xl border ${isMobile ? "px-3 py-2 text-[11px]" : "px-4 py-2 text-xs"} backdrop-blur-md transition-all duration-150 ${
                 item.active
                   ? "border-cyan-500/40 bg-cyan-500/20 text-cyan-300"
                   : "border-white/10 bg-black/70 text-slate-400 hover:bg-black/80 hover:text-slate-200"

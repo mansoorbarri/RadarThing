@@ -16,7 +16,7 @@ import { type Id } from "../../../convex/_generated/dataModel";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { activeAircraft } from "~/lib/aircraft-store";
-import { useMobileDetection } from "~/hooks/useMobileDetection";
+import { useMobileDetection, useDeviceType } from "~/hooks/useMobileDetection";
 import { useAircraftStream } from "~/hooks/useAircraftStream";
 import { useAirportData } from "~/hooks/useAirportData";
 import { useAircraftSearch } from "~/hooks/useAircraftSearch";
@@ -72,6 +72,9 @@ export default function ATCPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isMobile = useMobileDetection();
+  const deviceType = useDeviceType();
+  const isPhone = deviceType === "phone";
+  const isTablet = deviceType === "tablet";
 
   const {
     aircrafts,
@@ -486,10 +489,10 @@ export default function ATCPage() {
     <UnitPreferencesProvider>
     <div className="relative h-screen w-screen overflow-hidden bg-black">
       <header
-        className={`absolute top-0 right-0 left-0 z-[10010] flex items-center justify-between ${isMobile ? "h-14 px-3 pt-1" : "h-20 px-6 pt-5"}`}
+        className={`absolute top-0 right-0 left-0 z-[10010] flex items-center justify-between ${isPhone ? "h-14 px-3 pt-1" : isTablet ? "h-16 px-4 pt-3" : "h-20 px-6 pt-5"}`}
       >
         <div className="flex items-center gap-2">
-          {!isMobile && (
+          {!isPhone && (
             <Image
               src={
                 isDarkLayerMode || isLoading
@@ -497,15 +500,15 @@ export default function ATCPage() {
                   : "/logo-black.svg"
               }
               alt="RadarThing"
-              width={130}
-              height={40}
+              width={isTablet ? 100 : 130}
+              height={isTablet ? 32 : 40}
               className="cursor-pointer"
               onClick={() => router.push("/radar")}
             />
           )}
 
-          {isMapLoaded && !isMobile && (
-            <div className="pointer-events-auto h-11 w-80 lg:w-96">
+          {isMapLoaded && !isPhone && (
+            <div className={`pointer-events-auto h-11 ${isTablet ? "w-64" : "w-80 lg:w-96"}`}>
               <SearchBar
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
@@ -549,8 +552,8 @@ export default function ATCPage() {
             </div>
           )}
 
-          {/* Mobile search button */}
-          {isMapLoaded && isMobile && !showMobileSearch && (
+          {/* Mobile search button — phone only */}
+          {isMapLoaded && isPhone && !showMobileSearch && (
             <button
               onClick={() => setShowMobileSearch(true)}
               className="pointer-events-auto flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-black/60 backdrop-blur-md"
@@ -572,14 +575,14 @@ export default function ATCPage() {
           )}
         </div>
 
-        {/* UTC Time - simplified on mobile */}
-        {!isMobile && (
+        {/* UTC Time — compact on phone, full on tablet/desktop */}
+        {!isPhone && (
           <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2">
             <button
               onClick={() => setShowTimerPopup(!showTimerPopup)}
-              className="cursor-pointer rounded-full border border-white/10 bg-black/40 px-4 py-1.5 backdrop-blur-md"
+              className={`cursor-pointer rounded-full border border-white/10 bg-black/40 backdrop-blur-md ${isTablet ? "px-3 py-1" : "px-4 py-1.5"}`}
             >
-              <span className="font-mono text-xl text-cyan-400">
+              <span className={`font-mono text-cyan-400 ${isTablet ? "text-base" : "text-xl"}`}>
                 {time} <span className="text-[10px] text-slate-500">UTC</span>
               </span>
               {showTimerPopup && (
@@ -628,6 +631,12 @@ export default function ATCPage() {
         <div
           className={`pointer-events-auto flex items-center ${isMobile ? "gap-2" : "gap-4"}`}
         >
+          {/* Compact UTC on phone */}
+          {isPhone && (
+            <span className="font-mono text-[11px] text-cyan-400/80">
+              {time} <span className="text-[8px] text-slate-500">Z</span>
+            </span>
+          )}
           <ConnectionStatusIndicator
             status={connectionStatus}
             isMobile={isMobile}
@@ -644,8 +653,8 @@ export default function ATCPage() {
         </div>
       </header>
 
-      {/* Mobile search - bottom sheet */}
-      {isMobile && showMobileSearch && (
+      {/* Mobile search - bottom sheet (phone only) */}
+      {isPhone && showMobileSearch && (
         <>
           {/* Backdrop */}
           <div
@@ -844,29 +853,53 @@ export default function ATCPage() {
         )}
       </main>
 
-      {/* Right panels - hidden on mobile */}
-      {!isMobile && activeRightPanel === "fids" && (
-        <aside className="animate-slide-in-right fixed inset-y-0 right-0 z-[10012] w-full max-w-[420px] border-l border-white/10 bg-black/80 backdrop-blur-xl">
-          <FIDSPanel
-            aircrafts={visibleLiveAircrafts}
-            onTrack={(ac) => {
-              setSelectedAircrafts([ac]);
-              setActiveRightPanel(null);
-              drawFlightPlanOnMapRef.current?.(ac, true);
-            }}
-          />
-        </aside>
+      {/* Right panels — phone: bottom sheet, tablet: narrower side panel, desktop: full side panel */}
+      {activeRightPanel === "fids" && (
+        isPhone ? (
+          <MobileSwipeSheet onClose={() => setActiveRightPanel(null)}>
+            <FIDSPanel
+              aircrafts={visibleLiveAircrafts}
+              onTrack={(ac) => {
+                setSelectedAircrafts([ac]);
+                setActiveRightPanel(null);
+                drawFlightPlanOnMapRef.current?.(ac, true);
+              }}
+            />
+          </MobileSwipeSheet>
+        ) : (
+          <aside className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10012] w-full border-l border-white/10 bg-black/80 backdrop-blur-xl ${isTablet ? "max-w-[340px]" : "max-w-[420px]"}`}>
+            <FIDSPanel
+              aircrafts={visibleLiveAircrafts}
+              onTrack={(ac) => {
+                setSelectedAircrafts([ac]);
+                setActiveRightPanel(null);
+                drawFlightPlanOnMapRef.current?.(ac, true);
+              }}
+            />
+          </aside>
+        )
       )}
 
-      {!isMobile && activeRightPanel === "filter" && (
-        <aside className="animate-slide-in-right fixed inset-y-0 right-0 z-[10013] w-full max-w-[360px] border-l border-white/10 bg-black/80 backdrop-blur-xl">
-          <CallsignFilter
-            aircrafts={visibleLiveAircrafts}
-            selectedCallsigns={selectedCallsigns}
-            onToggleCallsign={handleToggleCallsign}
-            onClearFilters={handleClearFilters}
-          />
-        </aside>
+      {activeRightPanel === "filter" && (
+        isPhone ? (
+          <MobileSwipeSheet onClose={() => setActiveRightPanel(null)}>
+            <CallsignFilter
+              aircrafts={visibleLiveAircrafts}
+              selectedCallsigns={selectedCallsigns}
+              onToggleCallsign={handleToggleCallsign}
+              onClearFilters={handleClearFilters}
+            />
+          </MobileSwipeSheet>
+        ) : (
+          <aside className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10013] w-full border-l border-white/10 bg-black/80 backdrop-blur-xl ${isTablet ? "max-w-[300px]" : "max-w-[360px]"}`}>
+            <CallsignFilter
+              aircrafts={visibleLiveAircrafts}
+              selectedCallsigns={selectedCallsigns}
+              onToggleCallsign={handleToggleCallsign}
+              onClearFilters={handleClearFilters}
+            />
+          </aside>
+        )
       )}
 
       {/* Control dock - compact on mobile, hidden when chart side panel is open */}
@@ -961,18 +994,18 @@ export default function ATCPage() {
 
       {selectedAirport && (
         <div
-          className={`animate-fade-in-up fixed left-1/2 z-[10012] -translate-x-1/2 ${isMobile ? "bottom-3" : "bottom-6"}`}
+          className={`animate-fade-in-up fixed left-1/2 z-[10012] -translate-x-1/2 ${isPhone ? "bottom-3" : "bottom-6"}`}
         >
           <div
-            className={`flex items-center rounded-2xl border border-white/10 bg-black/80 backdrop-blur-xl ${isMobile ? "max-w-[calc(100vw-2rem)] gap-1.5 px-2.5 py-2" : "gap-4 px-5 py-3"}`}
+            className={`flex items-center rounded-2xl border border-white/10 bg-black/80 backdrop-blur-xl ${isPhone ? "max-w-[calc(100vw-2rem)] gap-1.5 px-2.5 py-2" : isTablet ? "gap-2.5 px-4 py-2.5" : "gap-4 px-5 py-3"}`}
           >
             <div>
               <div
-                className={`font-mono text-cyan-300 ${isMobile ? "text-[10px]" : "text-xs"}`}
+                className={`font-mono text-cyan-300 ${isPhone ? "text-[10px]" : "text-xs"}`}
               >
                 {selectedAirport.icao}
               </div>
-              {!isMobile && (
+              {!isPhone && (
                 <div className="text-[10px] text-slate-400">
                   {selectedAirport.name}
                 </div>
@@ -982,13 +1015,13 @@ export default function ATCPage() {
             {canAccessSelectedAirportCharts ? (
               <button
                 onClick={() => setShowTaxiChart(true)}
-                className={`cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 ${isMobile ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
+                className={`cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 ${isPhone ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
               >
                 Charts
               </button>
             ) : (
-              <div className={`flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 ${isMobile ? "px-2 py-1" : "px-3 py-1.5"}`}>
-                <span className={`text-white/60 ${isMobile ? "text-[9px]" : "text-[10px]"}`}>Charts</span>
+              <div className={`flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 ${isPhone ? "px-2 py-1" : "px-3 py-1.5"}`}>
+                <span className={`text-white/60 ${isPhone ? "text-[9px]" : "text-[10px]"}`}>Charts</span>
                 <ProBadge source="radar_airport_charts_badge" />
               </div>
             )}
@@ -999,12 +1032,12 @@ export default function ATCPage() {
                 showAirportFID
                   ? "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
                   : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
-              } ${isMobile ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
+              } ${isPhone ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
             >
-              {isMobile ? "FIDs" : "Flights"}
+              {isPhone ? "FIDs" : "Flights"}
             </button>
 
-            {!isMobile && (
+            {!isPhone && (
               <button
                 onClick={() => setShowAtcPlayer(!showAtcPlayer)}
                 className={`cursor-pointer rounded-lg border px-3 py-1.5 text-[10px] transition-colors ${
@@ -1028,9 +1061,9 @@ export default function ATCPage() {
                 setShowAirportFID(false);
                 setChartOverlayActive(false);
               }}
-              className={`cursor-pointer rounded-lg border border-white/10 bg-white/5 text-white/60 ${isMobile ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
+              className={`cursor-pointer rounded-lg border border-white/10 bg-white/5 text-white/60 ${isPhone ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
             >
-              {isMobile ? "×" : "Unselect"}
+              {isPhone ? "×" : "Unselect"}
             </button>
           </div>
         </div>
@@ -1046,7 +1079,7 @@ export default function ATCPage() {
 
       {showAirportFID &&
         selectedAirport &&
-        (isMobile ? (
+        (isPhone ? (
           <MobileSwipeSheet onClose={() => setShowAirportFID(false)}>
             <AirportFIDPanel
               icao={selectedAirport.icao}
@@ -1079,7 +1112,7 @@ export default function ATCPage() {
         ))}
 
       {!isReplayActive && selectedAircrafts.length > 0 &&
-        (isMobile ? (
+        (isPhone ? (
           <MobileSwipeSheet onClose={() => setSelectedAircrafts([])}>
             {selectedAircrafts.length === 1 ? (
               <Sidebar
@@ -1120,7 +1153,7 @@ export default function ATCPage() {
         ) : (
           <aside
             className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10014] border-l border-white/10 bg-black/90 backdrop-blur-xl transition-[width] duration-300 ease-in-out ${
-              isSidebarCollapsed ? "w-12" : "w-full max-w-[400px]"
+              isSidebarCollapsed ? "w-12" : `w-full ${isTablet ? "max-w-[340px]" : "max-w-[400px]"}`
             }`}
           >
             {/* Collapse/Expand toggle button */}
@@ -1228,8 +1261,8 @@ export default function ATCPage() {
         />
       )}
 
-      {/* Most Tracked Flights - desktop only, hidden when airport selected */}
-      {!isMobile && !selectedAirport && (
+      {/* Most Tracked Flights — tablet & desktop, hidden when airport selected */}
+      {!isPhone && !selectedAirport && (
         <MostTrackedPanel
           flights={isReplayActive ? [] : mostTrackedFlights}
           onTrack={(ac) => handleAircraftSelect(ac)}
