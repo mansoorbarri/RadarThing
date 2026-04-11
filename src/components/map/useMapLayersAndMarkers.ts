@@ -143,6 +143,7 @@ interface UseMapLayersAndMarkersProps {
   showTags: boolean;
   showConflicts: boolean;
   onConflictsChange?: (conflicts: ConflictAlertSummary[]) => void;
+  onInitialTrafficPaint?: () => void;
   mapReady: boolean;
   isMobile: boolean;
 }
@@ -216,7 +217,10 @@ function getVerticalTrend(aircraft: PositionUpdate) {
   return "level";
 }
 
-function getHeadingDeltaDegrees(aircraftA: PositionUpdate, aircraftB: PositionUpdate) {
+function getHeadingDeltaDegrees(
+  aircraftA: PositionUpdate,
+  aircraftB: PositionUpdate,
+) {
   const delta = Math.abs(
     toFiniteNumber(aircraftA.heading, 0) - toFiniteNumber(aircraftB.heading, 0),
   );
@@ -263,9 +267,11 @@ function isSameFlowPair(aircraftA: PositionUpdate, aircraftB: PositionUpdate) {
     trendA === "climb";
 
   return Boolean(
-    (aircraftA.navMode && aircraftB.navMode && (sameArrival || sameDeparture)) ||
-      sameArrival ||
-      sameDeparture,
+    (aircraftA.navMode &&
+      aircraftB.navMode &&
+      (sameArrival || sameDeparture)) ||
+    sameArrival ||
+    sameDeparture,
   );
 }
 
@@ -443,6 +449,7 @@ export const useMapLayersAndMarkers = ({
   showTags,
   showConflicts,
   onConflictsChange,
+  onInitialTrafficPaint,
   mapReady,
   isMobile,
 }: UseMapLayersAndMarkersProps) => {
@@ -451,6 +458,7 @@ export const useMapLayersAndMarkers = ({
   // Track existing markers by aircraft ID for smooth updates
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const conflictLayerRef = useRef<L.LayerGroup | null>(null);
+  const hasReportedInitialTrafficPaintRef = useRef(false);
 
   // Use refs for callbacks to avoid stale closures in event handlers
   const onAircraftSelectRef = useRef(onAircraftSelect);
@@ -574,6 +582,8 @@ export const useMapLayersAndMarkers = ({
   useEffect(() => {
     if (!aircraftMarkersLayer.current || !mapReady) return;
 
+    let animationFrameId: number | null = null;
+
     const currentAircraftIds = new Set(
       aircrafts.map((ac) => ac.callsign || ac.id),
     );
@@ -606,7 +616,13 @@ export const useMapLayersAndMarkers = ({
             isMobile,
             unitPrefs,
           )
-        : getAircraftDivIcon(aircraft, selectedIdForIcon, showTags, isMobile, unitPrefs);
+        : getAircraftDivIcon(
+            aircraft,
+            selectedIdForIcon,
+            showTags,
+            isMobile,
+            unitPrefs,
+          );
 
       const existingMarker = existingMarkers.get(id);
 
@@ -665,6 +681,18 @@ export const useMapLayersAndMarkers = ({
     // component (page.tsx) which properly redraws all selected aircraft paths
     // when aircraft data updates. Redrawing here would cause flickering in
     // multi-select mode since it would only redraw one aircraft's path.
+    if (!hasReportedInitialTrafficPaintRef.current) {
+      animationFrameId = requestAnimationFrame(() => {
+        hasReportedInitialTrafficPaintRef.current = true;
+        onInitialTrafficPaint?.();
+      });
+    }
+
+    return () => {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
   }, [
     aircrafts,
     isRadarMode,
@@ -675,6 +703,7 @@ export const useMapLayersAndMarkers = ({
     showTags,
     mapReady,
     isMobile,
+    onInitialTrafficPaint,
     speedUnit,
     altitudeUnit,
   ]);

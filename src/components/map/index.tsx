@@ -72,6 +72,8 @@ interface MapComponentProps {
     func: (aircrafts: PositionUpdate[], shouldZoom?: boolean) => void,
   ) => void;
   onMapReady?: () => void;
+  onInitialBaseLayerReady?: () => void;
+  onInitialTrafficPaint?: () => void;
   historyPath?: [number, number][] | null;
   onLayerModeChange?: (isDarkLayer: boolean) => void;
   replayState?: ReplayState | null;
@@ -90,6 +92,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   setDrawFlightPlanOnMap,
   setDrawMultipleFlightPlansOnMap,
   onMapReady,
+  onInitialBaseLayerReady,
+  onInitialTrafficPaint,
   historyPath,
   onLayerModeChange,
   replayState,
@@ -136,6 +140,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // Local selection state for internal use (cleared when clicking map background)
   const [localSelectedIds, setLocalSelectedIds] = useState<string[]>([]);
+  const hasReportedInitialBaseLayerRef = useRef(false);
 
   const [icaoInput, setIcaoInput] = useState("");
 
@@ -371,6 +376,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     showTags,
     showConflicts: canUseConflictAlerts && showConflicts,
     onConflictsChange: setConflictAlerts,
+    onInitialTrafficPaint,
     mapReady: mapRefs.mapReady,
     isMobile,
   });
@@ -435,6 +441,43 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [mapRefs.mapInstance, onMapReady]);
 
   useEffect(() => {
+    if (hasReportedInitialBaseLayerRef.current || !mapRefs.mapReady) return;
+
+    const activeBaseLayer = isRadarMode
+      ? mapRefs.radarBaseLayer.current
+      : isOSMMode
+        ? mapRefs.osmLayer.current
+        : mapRefs.satelliteHybridLayer.current;
+
+    if (!activeBaseLayer) return;
+
+    const markBaseLayerReady = () => {
+      if (hasReportedInitialBaseLayerRef.current) return;
+      hasReportedInitialBaseLayerRef.current = true;
+      onInitialBaseLayerReady?.();
+    };
+
+    if (!activeBaseLayer.isLoading()) {
+      markBaseLayerReady();
+      return;
+    }
+
+    activeBaseLayer.once("load", markBaseLayerReady);
+
+    return () => {
+      activeBaseLayer.off("load", markBaseLayerReady);
+    };
+  }, [
+    isOSMMode,
+    isRadarMode,
+    mapRefs.mapReady,
+    mapRefs.osmLayer,
+    mapRefs.radarBaseLayer,
+    mapRefs.satelliteHybridLayer,
+    onInitialBaseLayerReady,
+  ]);
+
+  useEffect(() => {
     if (setResetMapView) {
       setResetMapView(mapRefs.resetMapView);
     }
@@ -470,7 +513,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
     // Only zoom if the path actually changed (new flight selected)
     if (prevHistoryPathRef.current !== historyPath) {
       prevHistoryPathRef.current = historyPath;
-      const displayPath = preparePathForWorldCopy(historyPath, replayReferenceLon);
+      const displayPath = preparePathForWorldCopy(
+        historyPath,
+        replayReferenceLon,
+      );
       const bounds = L.latLngBounds(displayPath);
       mapRefs.mapInstance.current.fitBounds(bounds, {
         padding: [50, 50],
