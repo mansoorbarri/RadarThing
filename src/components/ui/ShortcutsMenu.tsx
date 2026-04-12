@@ -24,6 +24,10 @@ const shortcutGroups: ShortcutGroup[] = [
         description: "Toggle follow mode for the currently selected aircraft.",
       },
       {
+        keys: "U",
+        description: "Show or hide radar UI elements.",
+      },
+      {
         keys: "L",
         description: "Show or hide aircraft labels on the map.",
       },
