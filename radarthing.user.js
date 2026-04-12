@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RadarThing
 // @namespace    http://tampermonkey.net/
-// @version      1.5.5
+// @version      1.5.6
 // @description  Always loads the latest GeoFS ATC Radar script from GitHub
 // @author       xyzmani
 // @icon         https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/public/favicon.ico
@@ -77,11 +77,13 @@
   const CHARTS_SIZE_KEY = "geofs-charts-size";
   const CHARTS_ICAO_KEY = "geofs-charts-icao";
   const CHARTS_CACHE_KEY = "geofs-airport-charts-v1";
+  const CHARTS_ROTATIONS_KEY = "radarthing-chart-rotations-v1";
   const CHART_TYPES = ["TAXI", "SID", "STAR", "APPROACH"];
   const CHARTS_DEFAULT_TOP = 60;
   const CHARTS_DEFAULT_LEFT = 16;
   const CHARTS_DEFAULT_WIDTH = 370;
   const chartsMemoryCache = new Map();
+  let storedChartRotations = null;
 
   const chartsState = {
     currentIcao: "",
@@ -89,6 +91,7 @@
     currentType: "TAXI",
     selectedChartId: null,
     invertColors: true,
+    rotation: 0,
     zoom: { scale: 1, panX: 0, panY: 0 },
   };
   const chartsUi = {
@@ -98,6 +101,7 @@
     chartList: null,
     preview: null,
     invertToggle: null,
+    rotateToggle: null,
     previewWrap: null,
     previewImg: null,
     previewChartId: null,
@@ -403,6 +407,88 @@
     return byType;
   }
 
+  function normalizeChartRotation(value) {
+    const normalized =
+      (((Math.round(Number(value || 0) / 90) * 90) % 360) + 360) % 360;
+    if (
+      normalized === 0 ||
+      normalized === 90 ||
+      normalized === 180 ||
+      normalized === 270
+    ) {
+      return normalized;
+    }
+    return 0;
+  }
+
+  function loadStoredChartRotations() {
+    if (storedChartRotations) return storedChartRotations;
+
+    try {
+      const raw = localStorage.getItem(CHARTS_ROTATIONS_KEY);
+      if (!raw) {
+        storedChartRotations = {};
+        return storedChartRotations;
+      }
+
+      const parsed = JSON.parse(raw);
+      storedChartRotations = Object.fromEntries(
+        Object.entries(parsed || {}).map(([chartUrl, rotation]) => [
+          chartUrl,
+          normalizeChartRotation(rotation),
+        ]),
+      );
+    } catch (_) {
+      storedChartRotations = {};
+    }
+
+    return storedChartRotations;
+  }
+
+  function persistStoredChartRotations(rotations) {
+    try {
+      localStorage.setItem(CHARTS_ROTATIONS_KEY, JSON.stringify(rotations));
+    } catch (_) {}
+  }
+
+  function getStoredChartRotation(chartUrl) {
+    if (!chartUrl) return 0;
+    const rotations = loadStoredChartRotations();
+    return rotations[chartUrl] || 0;
+  }
+
+  function setStoredChartRotation(chartUrl, rotation) {
+    if (!chartUrl) return;
+
+    const normalized = normalizeChartRotation(rotation);
+    const rotations = loadStoredChartRotations();
+
+    if (normalized === 0) {
+      delete rotations[chartUrl];
+    } else {
+      rotations[chartUrl] = normalized;
+    }
+
+    persistStoredChartRotations(rotations);
+  }
+
+  function getNextStoredChartRotation(rotation) {
+    return normalizeChartRotation(rotation + 90);
+  }
+
+  function syncSelectedChartRotation() {
+    const selectedChart = getSelectedChart();
+    chartsState.rotation = selectedChart
+      ? getStoredChartRotation(selectedChart.chartUrl)
+      : 0;
+  }
+
+  function getChartRotationScale(width, height, rotation) {
+    if (normalizeChartRotation(rotation) % 180 === 0) return 1;
+    if (!width || !height) return 1;
+    return Math.min(width / height, height / width);
+  }
+
   function clearChartsCacheForAirport(icao) {
     const key = icao.toUpperCase();
     chartsMemoryCache.delete(key);
@@ -589,6 +675,7 @@
     chartsUi.chartList = panel.querySelector(".gc-list");
     chartsUi.preview = panel.querySelector(".gc-preview");
     chartsUi.invertToggle = panel.querySelector(".gc-invert-toggle");
+    chartsUi.rotateToggle = panel.querySelector(".gc-rotate-toggle");
     return chartsUi;
   }
 
@@ -611,10 +698,11 @@
     const preview = chartsUi.preview || panel?.querySelector(".gc-preview");
     if (!panel || !preview) return;
 
-    const img = chartsUi.previewImg || preview.querySelector(".gc-image-wrap img");
+    const img =
+      chartsUi.previewImg || preview.querySelector(".gc-image-wrap img");
     if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) {
       preview.style.height = "0px";
-      preview.style.overflowY = "hidden";
+      preview.style.overflow = "hidden";
       panel.style.height = "auto";
       return;
     }
@@ -631,9 +719,18 @@
 
     const horizontalPadding = 28;
     const imageWidth = Math.max(1, panel.clientWidth - horizontalPadding);
-    const naturalHeight = Math.round(
+    const renderedHeight = Math.round(
       (img.naturalHeight / img.naturalWidth) * imageWidth,
     );
+    const rotationScale = getChartRotationScale(
+      imageWidth,
+      renderedHeight,
+      chartsState.rotation,
+    );
+    const visualHeight =
+      chartsState.rotation % 180 === 0
+        ? renderedHeight
+        : Math.round(imageWidth * rotationScale);
     let maxPreviewHeight = Math.max(
       0,
       window.innerHeight - panel.offsetTop - 16 - nonPreviewHeight,
@@ -645,12 +742,16 @@
         Math.max(0, panelMaxHeight - nonPreviewHeight),
       );
     }
-    const appliedHeight = Math.min(naturalHeight, maxPreviewHeight);
+    const appliedHeight = Math.min(visualHeight, maxPreviewHeight);
 
     preview.style.height = `${appliedHeight}px`;
-    preview.style.overflowY =
-      naturalHeight > maxPreviewHeight ? "auto" : "hidden";
+    preview.style.overflow = "hidden";
     panel.style.height = "auto";
+    if (chartsUi.previewImg) {
+      requestAnimationFrame(() => {
+        if (chartsUi.previewImg) applyZoom(chartsUi.previewImg);
+      });
+    }
   }
 
   function resetChartsZoom() {
@@ -840,9 +941,12 @@
           requestChartsViewerHeightSync,
         );
         if (typeof chartsUi.previewImg.decode === "function") {
-          chartsUi.previewImg.decode().catch(() => {}).finally(() => {
-            requestChartsViewerHeightSync();
-          });
+          chartsUi.previewImg
+            .decode()
+            .catch(() => {})
+            .finally(() => {
+              requestChartsViewerHeightSync();
+            });
         } else if (chartsUi.previewImg.complete) {
           requestChartsViewerHeightSync();
         }
@@ -859,6 +963,7 @@
     if (chartsUi.previewWrap) {
       chartsUi.previewWrap.style.cursor = getPreviewCursor();
     }
+    requestChartsViewerHeightSync();
   }
 
   function renderChartsContent() {
@@ -866,8 +971,18 @@
     if (!panel) return;
 
     cacheChartsUi(panel);
-    const { title, typeTabs, chartList, preview, invertToggle } = chartsUi;
-    if (!title || !typeTabs || !chartList || !preview || !invertToggle) return;
+    const { title, typeTabs, chartList, preview, invertToggle, rotateToggle } =
+      chartsUi;
+    if (
+      !title ||
+      !typeTabs ||
+      !chartList ||
+      !preview ||
+      !invertToggle ||
+      !rotateToggle
+    ) {
+      return;
+    }
 
     const total = getChartCount(chartsState.chartsByType);
     title.textContent = chartsState.currentIcao
@@ -921,7 +1036,13 @@
     }
 
     const sel = getSelectedChart();
+    syncSelectedChartRotation();
     invertToggle.classList.toggle("active", chartsState.invertColors);
+    rotateToggle.disabled = !sel;
+    rotateToggle.classList.toggle("disabled", !sel);
+    rotateToggle.title = sel
+      ? `Rotate chart (${chartsState.rotation}\u00b0)`
+      : "Load a chart to rotate it";
     ensureChartsPreview(sel);
   }
 
@@ -1009,14 +1130,20 @@
 
   function applyZoom(img) {
     const { scale, panX, panY } = chartsState.zoom;
-    img.style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${scale})`;
+    const width = img.clientWidth || img.naturalWidth || 0;
+    const height = img.clientHeight || img.naturalHeight || 0;
+    const rotationScale = getChartRotationScale(
+      width,
+      height,
+      chartsState.rotation,
+    );
+    img.style.transform = `translate3d(${panX}px, ${panY}px, 0) rotate(${chartsState.rotation}deg) scale(${scale * rotationScale})`;
     img.style.transformOrigin = "center center";
   }
 
   function setupChartZoomHandlers() {
     const panel = chartsUi.panel || document.getElementById(CHARTS_PANEL_ID);
-    const preview =
-      chartsUi.preview || panel?.querySelector(".gc-preview");
+    const preview = chartsUi.preview || panel?.querySelector(".gc-preview");
     if (!preview) return;
 
     let panning = false,
@@ -1039,10 +1166,7 @@
 
         const previousScale = chartsState.zoom.scale;
         const factor = e.deltaY > 0 ? 0.85 : 1.18;
-        const nextScale = Math.max(
-          1,
-          Math.min(10, previousScale * factor),
-        );
+        const nextScale = Math.max(1, Math.min(10, previousScale * factor));
         if (nextScale <= 1.01) {
           resetChartsZoom();
         } else {
@@ -1388,7 +1512,10 @@
         document.getElementById(FLT_INPUT_ID).value,
       );
       const sqk = sanitizeSquawk(document.getElementById(SQK_INPUT_ID).value);
-      const af = document.getElementById(AF_INPUT_ID).value.trim().toUpperCase();
+      const af = document
+        .getElementById(AF_INPUT_ID)
+        .value.trim()
+        .toUpperCase();
 
       document.getElementById(FLT_INPUT_ID).value = flt;
       document.getElementById(SQK_INPUT_ID).value = sqk;
@@ -1420,9 +1547,13 @@
     };
 
     document.getElementById(CLEAR_BTN_ID).onclick = () => {
-      [DEP_INPUT_ID, ARR_INPUT_ID, FLT_INPUT_ID, SQK_INPUT_ID, AF_INPUT_ID].forEach(
-        (id) => (document.getElementById(id).value = ""),
-      );
+      [
+        DEP_INPUT_ID,
+        ARR_INPUT_ID,
+        FLT_INPUT_ID,
+        SQK_INPUT_ID,
+        AF_INPUT_ID,
+      ].forEach((id) => (document.getElementById(id).value = ""));
       window.dispatchEvent(
         new CustomEvent("atc-data-sync", { detail: { active: false } }),
       );
@@ -1502,31 +1633,39 @@
 
     function fetchAircraftList() {
       const es = new EventSource("https://sse.radarthing.com/api/stream");
-      const timeout = setTimeout(() => { es.close(); }, 6000);
+      const timeout = setTimeout(() => {
+        es.close();
+      }, 6000);
       es.onmessage = (event) => {
         clearTimeout(timeout);
         es.close();
         try {
           const data = JSON.parse(event.data);
           cachedAircraftList = (data.aircraft || []).filter((ac) => {
-            const myId = geofs?.userRecord?.googleid || geofs?.userRecord?.callsign;
+            const myId =
+              geofs?.userRecord?.googleid || geofs?.userRecord?.callsign;
             return ac.googleId && ac.id !== myId && ac.callsign !== myId;
           });
           renderFollowList("");
         } catch (_) {}
       };
-      es.onerror = () => { clearTimeout(timeout); es.close(); };
+      es.onerror = () => {
+        clearTimeout(timeout);
+        es.close();
+      };
     }
 
     function renderFollowList(query) {
       const q = (query || "").toUpperCase();
-      const filtered = cachedAircraftList.filter((ac) => {
-        if (!q) return true;
-        return (
-          (ac.flightNo || "").toUpperCase().includes(q) ||
-          (ac.callsign || "").toUpperCase().includes(q)
-        );
-      }).slice(0, 15);
+      const filtered = cachedAircraftList
+        .filter((ac) => {
+          if (!q) return true;
+          return (
+            (ac.flightNo || "").toUpperCase().includes(q) ||
+            (ac.callsign || "").toUpperCase().includes(q)
+          );
+        })
+        .slice(0, 15);
 
       if (filtered.length === 0) {
         followList.innerHTML = `<div style="padding:8px;text-align:center;font-size:10px;color:rgba(255,255,255,0.25);">
@@ -1535,11 +1674,12 @@
         return;
       }
 
-      followList.innerHTML = filtered.map((ac) => {
-        const key = ac.callsign || ac.id;
-        const label = ac.flightNo || ac.callsign || key;
-        const sub = `${ac.type || "?"} · ${ac.departure || "?"}→${ac.arrival || "?"}`;
-        return `<div data-follow-id="${key}" style="
+      followList.innerHTML = filtered
+        .map((ac) => {
+          const key = ac.callsign || ac.id;
+          const label = ac.flightNo || ac.callsign || key;
+          const sub = `${ac.type || "?"} · ${ac.departure || "?"}→${ac.arrival || "?"}`;
+          return `<div data-follow-id="${key}" style="
           padding:6px 8px;
           margin-bottom:2px;
           border-radius:6px;
@@ -1552,19 +1692,24 @@
           <div style="font-size:11px;font-weight:700;color:#e5e7eb;">${label}</div>
           <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:1px;">${sub} · ${ac.speed || 0} kts · FL${Math.round((ac.altMSL || 0) / 100)}</div>
         </div>`;
-      }).join("");
+        })
+        .join("");
 
       followList.querySelectorAll("[data-follow-id]").forEach((el) => {
         el.onclick = () => {
           const targetId = el.getAttribute("data-follow-id");
           window.dispatchEvent(
-            new CustomEvent("radarthing-follow-start", { detail: { targetId } }),
+            new CustomEvent("radarthing-follow-start", {
+              detail: { targetId },
+            }),
           );
           followOpen = false;
           followSearch.style.display = "none";
           followList.style.display = "none";
           followSearch.value = "";
-          showToast("Following " + (el.querySelector("div").textContent || targetId));
+          showToast(
+            "Following " + (el.querySelector("div").textContent || targetId),
+          );
         };
       });
     }
@@ -1673,7 +1818,8 @@
         gap: 6px;
       }
 
-      .gc-invert-toggle {
+      .gc-invert-toggle,
+      .gc-rotate-toggle {
         display: flex;
         align-items: center;
         gap: 5px;
@@ -1689,7 +1835,8 @@
         transition: all 0.15s ease;
       }
 
-      .gc-invert-toggle:hover {
+      .gc-invert-toggle:hover,
+      .gc-rotate-toggle:hover {
         background: rgba(255, 255, 255, 0.06);
         color: rgba(255, 255, 255, 0.7);
       }
@@ -1698,6 +1845,11 @@
         background: rgba(34, 211, 238, 0.1);
         border-color: rgba(34, 211, 238, 0.25);
         color: #22d3ee;
+      }
+
+      .gc-rotate-toggle.disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
       }
 
       .gc-close {
@@ -1920,16 +2072,25 @@
         height: 0;
         overflow: hidden;
         padding: 10px 14px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .gc-image-wrap {
         width: 100%;
+        height: 100%;
         overflow: hidden;
         position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .gc-image-wrap img {
-        width: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
         height: auto;
         display: block;
         border-radius: 6px;
@@ -2019,6 +2180,10 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20z"/></svg>
             Invert
           </button>
+          <button class="gc-rotate-toggle" title="Rotate chart">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15A9 9 0 1 1 23 10"/></svg>
+            Rotate
+          </button>
           <button class="gc-close" title="Close">&times;</button>
         </div>
       </div>
@@ -2076,6 +2241,15 @@
     panel.querySelector(".gc-close").onclick = hideChartsPanel;
     panel.querySelector(".gc-invert-toggle").onclick = () => {
       chartsState.invertColors = !chartsState.invertColors;
+      renderChartsContent();
+    };
+    panel.querySelector(".gc-rotate-toggle").onclick = () => {
+      const selectedChart = getSelectedChart();
+      if (!selectedChart) return;
+
+      const nextRotation = getNextStoredChartRotation(chartsState.rotation);
+      chartsState.rotation = nextRotation;
+      setStoredChartRotation(selectedChart.chartUrl, nextRotation);
       renderChartsContent();
     };
 
@@ -2155,8 +2329,10 @@
   });
 
   window.addEventListener("radarthing-ident-requested", (e) => {
-    identRequestDurationSeconds =
-      Math.max(5, Number(e.detail?.durationSeconds) || 15);
+    identRequestDurationSeconds = Math.max(
+      5,
+      Number(e.detail?.durationSeconds) || 15,
+    );
     identRequestUntil = Date.now() + IDENT_REQUEST_WINDOW_MS;
     updateIdentUI();
   });
