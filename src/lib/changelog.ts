@@ -8,19 +8,25 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "shortcuts-menu",
+    date: "2026-04-12",
+    title: "Shortcut Reference Menu",
+    description:
+      "The radar dock now includes a Shortcuts menu so you can quickly see the available keyboard and mouse controls.",
+    type: "new",
+  },
+  {
     id: "virtual-airlines",
     date: "2026-04-04",
     title: "VAs are now supported!",
-    description:
-      "Message @xyzmani on Discord to register yours!",
+    description: "Message @xyzmani on Discord to register yours!",
     type: "new",
   },
   {
     id: "controller-ident-requests",
     date: "2026-04-03",
     title: "Controller IDENT Requests",
-    description:
-      "Update your userscript for the new pilot IDENT UI.",
+    description: "Update your userscript for the new pilot IDENT UI.",
     type: "new",
   },
   {

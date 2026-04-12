@@ -1,6 +1,6 @@
 import React from "react";
 
-export const MapGlobalStyles = () => (
+export const MapGlobalStyles = ({ hideUi = false }: { hideUi?: boolean }) => (
   <style jsx global>{`
     .heading-tooltip {
       background: rgba(0, 10, 15, 0.85) !important;
@@ -206,5 +206,14 @@ export const MapGlobalStyles = () => (
     .precipitation-layer {
       filter: hue-rotate(90deg) saturate(1.4);
     }
+
+    ${hideUi
+      ? `
+    .leaflet-control-container,
+    .leaflet-popup-pane {
+      display: none !important;
+    }
+    `
+      : ""}
   `}</style>
 );

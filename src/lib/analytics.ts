@@ -83,6 +83,10 @@ interface WhatsNewEventProps extends BaseEventProps {
   entry_id?: string;
 }
 
+interface ShortcutsEventProps extends BaseEventProps {
+  source?: string;
+}
+
 // All analytics events
 export const Analytics = {
   // Initialize PostHog (only in production)
@@ -340,6 +344,10 @@ export const Analytics = {
 
   whatsNewToastClicked: (props?: WhatsNewEventProps) => {
     track("whats_new_toast_clicked", props);
+  },
+
+  shortcutsOpened: (props?: ShortcutsEventProps) => {
+    track("shortcuts_opened", props);
   },
 
   // ===== FLIGHT CARD EVENTS =====

@@ -50,12 +50,14 @@ import { ProBadge } from "~/components/ui/pro-badge";
 import { WhatsNew } from "~/components/ui/WhatsNew";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
 import { MobileDrawer } from "~/components/ui/MobileDrawer";
+import { ShortcutsMenu } from "~/components/ui/ShortcutsMenu";
 import {
   FlightsIcon,
   FilterIcon,
   DiscordIcon,
   InstallIcon,
   LeaderboardIcon,
+  ShortcutsIcon,
   UploadIcon,
   AdminIcon,
 } from "~/utils/dockIcons";
@@ -181,9 +183,11 @@ export default function ATCPage() {
   const [hasBootTimedOut, setHasBootTimedOut] = useState(false);
   const [isAppReady, setIsAppReady] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [showShortcutsMenu, setShowShortcutsMenu] = useState(false);
   const [isDarkLayerMode, setIsDarkLayerMode] = useState(false);
   const [isFollowMode, setIsFollowMode] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isUiHidden, setIsUiHidden] = useState(false);
   const [pendingAirportIcao, setPendingAirportIcao] = useState<string | null>(
     null,
   );
@@ -446,9 +450,19 @@ export default function ATCPage() {
     }
   }, [aircrafts, fullFlightFilter, autoSelectedFromUrl, followParam]);
 
-  // Escape key to clear filters, F key to toggle follow mode
+  // Escape key to clear filters, F key to toggle follow mode, U key to hide UI
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const activeElement = document.activeElement;
+      const isInputFocused =
+        activeElement instanceof HTMLInputElement ||
+        activeElement instanceof HTMLTextAreaElement ||
+        activeElement?.getAttribute("contenteditable") === "true";
+
+      if (showShortcutsMenu && e.key === "Escape") {
+        return;
+      }
+
       if (
         e.key === "Escape" &&
         (fullFlightFilter || selectedCallsigns.size > 0)
@@ -459,22 +473,28 @@ export default function ATCPage() {
         setAutoSelectedFromUrl(false);
       }
 
+      if ((e.key === "u" || e.key === "U") && !isInputFocused) {
+        setIsUiHidden((prev) => !prev);
+      }
+
       // F key to toggle follow mode (only when aircraft is selected and not typing in input)
-      if ((e.key === "f" || e.key === "F") && selectedAircrafts.length > 0) {
-        const activeElement = document.activeElement;
-        const isInputFocused =
-          activeElement instanceof HTMLInputElement ||
-          activeElement instanceof HTMLTextAreaElement ||
-          activeElement?.getAttribute("contenteditable") === "true";
-        if (!isInputFocused) {
-          setIsFollowMode((prev) => !prev);
-        }
+      if (
+        (e.key === "f" || e.key === "F") &&
+        selectedAircrafts.length > 0 &&
+        !isInputFocused
+      ) {
+        setIsFollowMode((prev) => !prev);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [fullFlightFilter, selectedCallsigns, selectedAircrafts.length]);
+  }, [
+    fullFlightFilter,
+    selectedCallsigns,
+    selectedAircrafts.length,
+    showShortcutsMenu,
+  ]);
 
   // Deactivate chart overlay and FID when airport changes
   useEffect(() => {
@@ -548,7 +568,7 @@ export default function ATCPage() {
           className={`absolute top-0 right-0 left-0 z-[10010] flex items-center justify-between ${isPhone ? "h-14 px-3 pt-1" : isTablet ? "h-16 px-4 pt-3" : "h-20 px-6 pt-5"}`}
         >
           <div className="flex items-center gap-2">
-            {!isPhone && (
+            {(!isPhone || isUiHidden) && (
               <Image
                 src={
                   isDarkLayerMode || isLoading
@@ -556,14 +576,14 @@ export default function ATCPage() {
                     : "/logo-black.svg"
                 }
                 alt="RadarThing"
-                width={isTablet ? 100 : 130}
-                height={isTablet ? 32 : 40}
+                width={isPhone ? 100 : isTablet ? 100 : 130}
+                height={isPhone ? 32 : isTablet ? 32 : 40}
                 className="cursor-pointer"
                 onClick={() => router.push("/radar")}
               />
             )}
 
-            {isMapLoaded && !isPhone && (
+            {!isUiHidden && isMapLoaded && !isPhone && (
               <div
                 className={`pointer-events-auto h-11 ${isTablet ? "w-64" : "w-80 lg:w-96"}`}
               >
@@ -611,7 +631,7 @@ export default function ATCPage() {
             )}
 
             {/* Mobile search button — phone only */}
-            {isMapLoaded && isPhone && !showMobileSearch && (
+            {!isUiHidden && isMapLoaded && isPhone && !showMobileSearch && (
               <button
                 onClick={() => setShowMobileSearch(true)}
                 className="pointer-events-auto flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-black/60 backdrop-blur-md"
@@ -634,7 +654,7 @@ export default function ATCPage() {
           </div>
 
           {/* UTC Time — compact on phone, full on tablet/desktop */}
-          {!isPhone && (
+          {!isUiHidden && !isPhone && (
             <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2">
               <button
                 onClick={() => setShowTimerPopup(!showTimerPopup)}
@@ -688,33 +708,35 @@ export default function ATCPage() {
             </div>
           )}
 
-          <div
-            className={`pointer-events-auto flex items-center ${isMobile ? "gap-2" : "gap-4"}`}
-          >
-            {/* Compact UTC on phone */}
-            {isPhone && (
-              <span className="font-mono text-[11px] text-cyan-400/80">
-                {time} <span className="text-[8px] text-slate-500">Z</span>
-              </span>
-            )}
-            <ConnectionStatusIndicator
-              status={connectionStatus}
-              isMobile={isMobile}
-              isStale={
-                connectionStatus === "connected" &&
-                lastMessageAgeSeconds !== null &&
-                lastMessageAgeSeconds >= 15
-              }
-              lastMessageAgeSeconds={lastMessageAgeSeconds}
-              error={streamError}
-            />
-            <WhatsNew isMobile={isMobile} />
-            <UserAuth />
-          </div>
+          {!isUiHidden && (
+            <div
+              className={`pointer-events-auto flex items-center ${isMobile ? "gap-2" : "gap-4"}`}
+            >
+              {/* Compact UTC on phone */}
+              {isPhone && (
+                <span className="font-mono text-[11px] text-cyan-400/80">
+                  {time} <span className="text-[8px] text-slate-500">Z</span>
+                </span>
+              )}
+              <ConnectionStatusIndicator
+                status={connectionStatus}
+                isMobile={isMobile}
+                isStale={
+                  connectionStatus === "connected" &&
+                  lastMessageAgeSeconds !== null &&
+                  lastMessageAgeSeconds >= 15
+                }
+                lastMessageAgeSeconds={lastMessageAgeSeconds}
+                error={streamError}
+              />
+              <WhatsNew isMobile={isMobile} />
+              <UserAuth />
+            </div>
+          )}
         </header>
 
         {/* Mobile search - bottom sheet (phone only) */}
-        {isPhone && showMobileSearch && (
+        {!isUiHidden && isPhone && showMobileSearch && (
           <>
             {/* Backdrop */}
             <div
@@ -913,11 +935,13 @@ export default function ATCPage() {
             setResetMapView={(fn) => {
               resetMapViewRef.current = fn;
             }}
+            hideUi={isUiHidden}
           />
         </main>
 
         {/* Right panels — phone: bottom sheet, tablet: narrower side panel, desktop: full side panel */}
-        {activeRightPanel === "fids" &&
+        {!isUiHidden &&
+          activeRightPanel === "fids" &&
           (isPhone ? (
             <MobileSwipeSheet onClose={() => setActiveRightPanel(null)}>
               <FIDSPanel
@@ -944,7 +968,8 @@ export default function ATCPage() {
             </aside>
           ))}
 
-        {activeRightPanel === "filter" &&
+        {!isUiHidden &&
+          activeRightPanel === "filter" &&
           (isPhone ? (
             <MobileSwipeSheet onClose={() => setActiveRightPanel(null)}>
               <CallsignFilter
@@ -968,7 +993,7 @@ export default function ATCPage() {
           ))}
 
         {/* Control dock - compact on mobile, hidden when chart side panel is open */}
-        {!(chartOverlayActive && selectedAirport?.icao) && (
+        {!isUiHidden && !(chartOverlayActive && selectedAirport?.icao) && (
           <ControlDock
             side="right"
             isMobile={isMobile}
@@ -999,6 +1024,16 @@ export default function ATCPage() {
                   const newState = activeRightPanel !== "filter";
                   setActiveRightPanel(newState ? "filter" : null);
                   if (newState) setSelectedAircrafts([]);
+                },
+              },
+              {
+                id: "shortcuts",
+                label: "Shortcuts",
+                icon: ShortcutsIcon,
+                active: showShortcutsMenu,
+                onClick: () => {
+                  setShowShortcutsMenu(true);
+                  Analytics.shortcutsOpened({ source: "dock" });
                 },
               },
               {
@@ -1057,7 +1092,7 @@ export default function ATCPage() {
           />
         )}
 
-        {selectedAirport && (
+        {!isUiHidden && selectedAirport && (
           <div
             className={`animate-fade-in-up fixed left-1/2 z-[10012] -translate-x-1/2 ${isPhone ? "bottom-3" : "bottom-6"}`}
           >
@@ -1140,7 +1175,7 @@ export default function ATCPage() {
           </div>
         )}
 
-        {showAtcPlayer && selectedAirport && (
+        {!isUiHidden && showAtcPlayer && selectedAirport && (
           <AtcPlayer
             icao={selectedAirport.icao}
             onClose={() => setShowAtcPlayer(false)}
@@ -1148,7 +1183,8 @@ export default function ATCPage() {
           />
         )}
 
-        {showAirportFID &&
+        {!isUiHidden &&
+          showAirportFID &&
           selectedAirport &&
           (isPhone ? (
             <MobileSwipeSheet onClose={() => setShowAirportFID(false)}>
@@ -1182,7 +1218,8 @@ export default function ATCPage() {
             />
           ))}
 
-        {!isReplayActive &&
+        {!isUiHidden &&
+          !isReplayActive &&
           selectedAircrafts.length > 0 &&
           (isPhone ? (
             <MobileDrawer onClose={() => setSelectedAircrafts([])}>
@@ -1307,7 +1344,7 @@ export default function ATCPage() {
             </aside>
           ))}
 
-        {showTaxiChart && selectedAirport?.icao && (
+        {!isUiHidden && showTaxiChart && selectedAirport?.icao && (
           <TaxiChartViewer
             icao={selectedAirport.icao}
             onClose={() => setShowTaxiChart(false)}
@@ -1315,7 +1352,7 @@ export default function ATCPage() {
           />
         )}
 
-        {chartOverlayActive && selectedAirport?.icao && (
+        {!isUiHidden && chartOverlayActive && selectedAirport?.icao && (
           <ChartSidePanel
             icao={selectedAirport.icao}
             onClose={() => setChartOverlayActive(false)}
@@ -1323,7 +1360,7 @@ export default function ATCPage() {
         )}
 
         {/* Flight Replay Controls */}
-        {replayFlight && (
+        {!isUiHidden && replayFlight && (
           <FlightReplayControls
             flight={replayFlight}
             onClose={() => {
@@ -1338,12 +1375,18 @@ export default function ATCPage() {
         )}
 
         {/* Most Tracked Flights — tablet & desktop, hidden when airport selected */}
-        {!isPhone && !selectedAirport && (
+        {!isUiHidden && !isPhone && !selectedAirport && (
           <MostTrackedPanel
             flights={isReplayActive ? [] : mostTrackedFlights}
             onTrack={(ac) => handleAircraftSelect(ac)}
           />
         )}
+
+        <ShortcutsMenu
+          open={showShortcutsMenu && !isUiHidden}
+          onClose={() => setShowShortcutsMenu(false)}
+          isMobile={isMobile}
+        />
       </div>
     </UnitPreferencesProvider>
   );

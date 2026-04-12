@@ -79,6 +79,7 @@ interface MapComponentProps {
   replayState?: ReplayState | null;
   followAircraft?: PositionUpdate;
   setResetMapView?: (func: () => void) => void;
+  hideUi?: boolean;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -99,6 +100,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   replayState,
   followAircraft,
   setResetMapView,
+  hideUi = false,
 }) => {
   const isMobile = useMobileDetection();
   const { isProUser, isLoading: proLoading } = useProStatus();
@@ -304,12 +306,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
           },
         } as unknown as L.LeafletMouseEvent);
       }
-      if (e.key === "u" || e.key === "U") {
+      if (e.key === "l" || e.key === "L") {
         if (!isInputFocused) {
           setShowTags((prev) => !prev);
         }
       }
-      if ((e.key === "t" || e.key === "T") && !isInputFocused) {
+      if (!hideUi && (e.key === "t" || e.key === "T") && !isInputFocused) {
         setIsHeadingMode(true);
       }
     };
@@ -319,7 +321,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [handleMapClick]);
+  }, [handleMapClick, hideUi]);
+
+  useEffect(() => {
+    if (!hideUi) return;
+
+    setIsHeadingMode(false);
+    setIsSettingsOpen(false);
+  }, [hideUi]);
 
   const mapRefs = useMapInitialization({
     mapContainerId: "map-container",
@@ -652,13 +661,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   return (
     <>
-      <MapGlobalStyles />
+      <MapGlobalStyles hideUi={hideUi} />
       <div
         id="map-container"
         style={{ height: "100%", width: "100%", background: "#0a0a0a" }}
       />
 
-      {isSettingsOpen && (
+      {isSettingsOpen && !hideUi && (
         <div className="animate-in fade-in zoom-in-95 absolute top-[180px] left-[70px] z-[10020] w-[320px] duration-200">
           <div className="rounded-xl border border-white/10 bg-[#0a1219]/95 p-5 shadow-2xl backdrop-blur-xl">
             <RadarSettings
@@ -676,7 +685,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         </div>
       )}
 
-      {canUseConflictAlerts && showConflicts && !isMobile && (
+      {canUseConflictAlerts && showConflicts && !isMobile && !hideUi && (
         <div className="pointer-events-none absolute top-[180px] right-[22px] z-[10012] w-[300px] select-none">
           <div className="rounded-xl border border-cyan-400/30 bg-gradient-to-b from-[#03131c]/95 to-[#01090f]/95 p-4 shadow-[0_0_30px_rgba(34,211,238,0.12)] backdrop-blur-xl">
             <div
@@ -764,7 +773,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       )}
 
       {/* Hide METAR panel on mobile */}
-      {!isMobile && (
+      {!isMobile && !hideUi && (
         <MetarPanel
           icaoInput={icaoInput}
           onChange={setIcaoInput}

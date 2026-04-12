@@ -140,6 +140,26 @@ export const UploadIcon = (
   </svg>
 );
 
+export const ShortcutsIcon = (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="6" width="18" height="12" rx="2.5" />
+    <path d="M7 10h.01" />
+    <path d="M11 10h.01" />
+    <path d="M15 10h.01" />
+    <path d="M17 14h-6" />
+    <path d="M7 14h.01" />
+  </svg>
+);
+
 export const AdminIcon = (
   <svg
     width="18"
