@@ -8,14 +8,6 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    id: "userscript-chart-rotation",
-    date: "2026-04-12",
-    title: "Userscript Chart Rotation",
-    description:
-      "The userscript airport chart viewer now has a Rotate control and remembers each chart's rotation across reloads.",
-    type: "improvement",
-  },
-  {
     id: "shortcuts-menu",
     date: "2026-04-12",
     title: "Shortcut Reference Menu",
