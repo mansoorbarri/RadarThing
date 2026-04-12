@@ -86,18 +86,18 @@ export function ShortcutsMenu({ open, onClose, isMobile }: ShortcutsMenuProps) {
     <div className="fixed inset-0 z-[10024] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
       <div
         ref={panelRef}
-        className={`w-full overflow-hidden rounded-2xl border border-cyan-400/20 bg-[#071019]/95 shadow-[0_24px_80px_rgba(0,0,0,0.65)] ${isMobile ? "max-w-sm" : "max-w-xl"}`}
+        className={`w-full overflow-hidden rounded-2xl border border-cyan-400/20 bg-[#071019]/95 shadow-[0_24px_80px_rgba(0,0,0,0.65)] ${isMobile ? "max-w-sm" : "max-w-4xl"}`}
       >
-        <div className="border-b border-white/10 px-5 py-4">
+        <div className="border-b border-white/10 px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-mono text-[11px] tracking-[0.24em] text-cyan-400/75 uppercase">
                 Radar Shortcuts
               </p>
-              <h2 className="mt-1 text-lg font-semibold text-white">
+              <h2 className="mt-1 text-xl font-semibold text-white">
                 Shortcut Reference
               </h2>
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
                 Keyboard and mouse shortcuts currently available on the radar.
               </p>
             </div>
@@ -124,30 +124,30 @@ export function ShortcutsMenu({ open, onClose, isMobile }: ShortcutsMenuProps) {
           </div>
         </div>
 
-        <div
-          className={`grid gap-4 p-5 ${isMobile ? "grid-cols-1" : "grid-cols-2"}`}
-        >
+        <div className="space-y-5 p-6">
           {shortcutGroups.map((group) => (
             <section
               key={group.title}
-              className="rounded-xl border border-white/10 bg-black/20 p-4"
+              className="rounded-xl border border-white/10 bg-black/20"
             >
-              <h3 className="font-mono text-[11px] tracking-[0.22em] text-cyan-400 uppercase">
-                {group.title}
-              </h3>
+              <div className="border-b border-white/8 px-4 py-3">
+                <h3 className="font-mono text-[11px] tracking-[0.22em] text-cyan-400 uppercase">
+                  {group.title}
+                </h3>
+              </div>
 
-              <div className="mt-4 space-y-3">
+              <div className="divide-y divide-white/6">
                 {group.shortcuts.map((shortcut) => (
                   <div
                     key={`${group.title}-${shortcut.keys}`}
-                    className="rounded-lg border border-white/6 bg-white/[0.02] p-3"
+                    className={`grid gap-3 px-4 py-4 ${isMobile ? "grid-cols-1" : "grid-cols-[140px_minmax(0,1fr)] items-start"}`}
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-md border border-cyan-400/25 bg-cyan-400/10 px-2 py-1 font-mono text-[11px] font-semibold text-cyan-300">
+                    <div className="flex items-center">
+                      <span className="rounded-md border border-cyan-400/25 bg-cyan-400/10 px-2.5 py-1 font-mono text-[11px] font-semibold text-cyan-300">
                         {shortcut.keys}
                       </span>
                     </div>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                    <p className="text-sm leading-relaxed text-slate-300">
                       {shortcut.description}
                     </p>
                   </div>

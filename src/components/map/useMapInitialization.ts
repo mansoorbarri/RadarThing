@@ -25,6 +25,7 @@ interface UseMapInitializationProps {
   setOpenAIPControlRef: React.MutableRefObject<OpenAIPControl | null>;
   setSettingsControlRef: React.MutableRefObject<RadarSettingsControl | null>;
   isMobile?: boolean;
+  hideUi?: boolean;
 }
 
 interface MapRefs {
@@ -61,6 +62,7 @@ export const useMapInitialization = ({
   setOpenAIPControlRef,
   setSettingsControlRef,
   isMobile = false,
+  hideUi = false,
 }: UseMapInitializationProps): MapRefs => {
   const mapInstance = useRef<L.Map | null>(null);
   const flightPlanLayerGroup = useRef<L.LayerGroup | null>(null);
@@ -118,17 +120,10 @@ export const useMapInitialization = ({
             maxBoundsViscosity: 1.0,
           }),
       attributionControl: false,
-      zoomControl: !isMobile,
+      zoomControl: false,
     }).setView(initialCenter, initialZoom);
 
     mapInstance.current = map;
-
-    L.control
-      .attribution({
-        prefix:
-          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      })
-      .addTo(map);
 
     // Shared tile loading optimizations
     const tileLoadingOptions = {
@@ -185,15 +180,6 @@ export const useMapInitialization = ({
     // Signal that map and layers are ready
     setMapReady(true);
 
-    // Only add heading control on desktop
-    // Note: Radar, OSM, OpenAIP, and Settings controls are added in a separate effect
-    // to maintain proper ordering and handle Pro status changes
-    if (!isMobile) {
-      const headingControl = new HeadingModeControl({}, setIsHeadingMode);
-      map.addControl(headingControl);
-      setHeadingControlRef.current = headingControl;
-    }
-
     map.on("click", onMapClick);
 
     // Persist zoom and center to cookies on move/zoom
@@ -224,11 +210,30 @@ export const useMapInitialization = ({
   const osmControlInstanceRef = useRef<L.Control | null>(null);
   const openAIPControlInstanceRef = useRef<L.Control | null>(null);
   const settingsControlInstanceRef = useRef<L.Control | null>(null);
+  const headingControlInstanceRef = useRef<L.Control | null>(null);
+  const zoomControlInstanceRef = useRef<L.Control.Zoom | null>(null);
+  const attributionControlInstanceRef = useRef<L.Control.Attribution | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!mapInstance.current) return;
 
     const map = mapInstance.current;
+
+    if (headingControlInstanceRef.current) {
+      map.removeControl(headingControlInstanceRef.current);
+      headingControlInstanceRef.current = null;
+      setHeadingControlRef.current = null;
+    }
+    if (zoomControlInstanceRef.current) {
+      map.removeControl(zoomControlInstanceRef.current);
+      zoomControlInstanceRef.current = null;
+    }
+    if (attributionControlInstanceRef.current) {
+      map.removeControl(attributionControlInstanceRef.current);
+      attributionControlInstanceRef.current = null;
+    }
 
     // Remove existing controls if any (always do cleanup)
     if (radarControlInstanceRef.current) {
@@ -250,6 +255,30 @@ export const useMapInitialization = ({
       map.removeControl(settingsControlInstanceRef.current);
       settingsControlInstanceRef.current = null;
       setSettingsControlRef.current = null;
+    }
+
+    if (!hideUi && !isMobile) {
+      const zoomControl = L.control.zoom({ position: "topleft" });
+      map.addControl(zoomControl);
+      zoomControlInstanceRef.current = zoomControl;
+
+      const headingControl = new HeadingModeControl({}, setIsHeadingMode);
+      map.addControl(headingControl);
+      headingControlInstanceRef.current = headingControl;
+      setHeadingControlRef.current = headingControl;
+    }
+
+    if (!hideUi) {
+      const attributionControl = L.control.attribution({
+        prefix:
+          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      });
+      map.addControl(attributionControl);
+      attributionControlInstanceRef.current = attributionControl;
+    }
+
+    if (hideUi) {
+      return;
     }
 
     // Add controls in order: Radar -> OSM -> OpenAIP -> Settings
@@ -285,8 +314,11 @@ export const useMapInitialization = ({
     settingsControlInstanceRef.current = settingsControl;
     setSettingsControlRef.current = settingsControl;
   }, [
+    hideUi,
     isMobile,
     canUseRadarMode,
+    setIsHeadingMode,
+    setHeadingControlRef,
     setIsRadarMode,
     setRadarControlRef,
     setIsOSMMode,
