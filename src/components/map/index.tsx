@@ -345,6 +345,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setOpenAIPControlRef: openAIPControlRef,
     setSettingsControlRef: settingsControlRef,
     isMobile,
+    hideUi,
   });
 
   const {

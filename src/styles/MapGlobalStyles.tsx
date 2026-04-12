@@ -209,7 +209,13 @@ export const MapGlobalStyles = ({ hideUi = false }: { hideUi?: boolean }) => (
 
     ${hideUi
       ? `
+    .leaflet-top,
+    .leaflet-bottom,
+    .leaflet-left,
+    .leaflet-right,
+    .leaflet-control,
     .leaflet-control-container,
+    .leaflet-tooltip-pane,
     .leaflet-popup-pane {
       display: none !important;
     }
