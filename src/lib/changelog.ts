@@ -127,4 +127,16 @@ export const changelog: ChangelogEntry[] = [
   },
 ];
 
-export const LATEST_CHANGELOG_ID = changelog[0]!.id;
+const CURRENT_CHANGELOG_MONTH = new Date().toISOString().slice(0, 7);
+
+export const currentMonthChangelog = changelog.filter((entry) =>
+  entry.date.startsWith(CURRENT_CHANGELOG_MONTH),
+);
+
+export const CURRENT_CHANGELOG_MONTH_LABEL = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+}).format(new Date(`${CURRENT_CHANGELOG_MONTH}-01T00:00:00Z`));
+
+export const LATEST_CHANGELOG_ID = currentMonthChangelog[0]?.id ?? null;

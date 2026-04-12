@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Megaphone } from "lucide-react";
 import { toast } from "sonner";
 import {
-  changelog,
+  currentMonthChangelog,
+  CURRENT_CHANGELOG_MONTH_LABEL,
   LATEST_CHANGELOG_ID,
   type ChangelogEntry,
 } from "~/lib/changelog";
@@ -38,6 +39,8 @@ export function WhatsNew({ isMobile }: { isMobile: boolean }) {
 
   // Check unread status on mount
   useEffect(() => {
+    if (!LATEST_CHANGELOG_ID) return;
+
     const seen = localStorage.getItem(SEEN_KEY);
     if (seen !== LATEST_CHANGELOG_ID) {
       setHasUnread(true);
@@ -46,14 +49,16 @@ export function WhatsNew({ isMobile }: { isMobile: boolean }) {
 
   // Toast on first visit after update
   useEffect(() => {
+    if (!LATEST_CHANGELOG_ID) return;
+
     const toastSeen = localStorage.getItem(TOAST_KEY);
     if (toastSeen === LATEST_CHANGELOG_ID) return;
 
-    const latest = changelog[0];
+    const latest = currentMonthChangelog[0];
     if (!latest) return;
 
     const timer = setTimeout(() => {
-      localStorage.setItem(TOAST_KEY, LATEST_CHANGELOG_ID);
+      localStorage.setItem(TOAST_KEY, latest.id);
       Analytics.whatsNewToastShown({ entry_id: latest.id });
 
       toast(
@@ -87,7 +92,7 @@ export function WhatsNew({ isMobile }: { isMobile: boolean }) {
             onClick: () => {
               Analytics.whatsNewToastClicked({ entry_id: latest.id });
               setOpen(true);
-              localStorage.setItem(SEEN_KEY, LATEST_CHANGELOG_ID);
+              localStorage.setItem(SEEN_KEY, latest.id);
               setHasUnread(false);
             },
           },
@@ -115,7 +120,9 @@ export function WhatsNew({ isMobile }: { isMobile: boolean }) {
 
     if (willOpen) {
       Analytics.whatsNewOpened({ had_unread: hasUnread });
-      localStorage.setItem(SEEN_KEY, LATEST_CHANGELOG_ID);
+      if (LATEST_CHANGELOG_ID) {
+        localStorage.setItem(SEEN_KEY, LATEST_CHANGELOG_ID);
+      }
       setHasUnread(false);
     }
   }, [open, hasUnread]);
@@ -145,39 +152,51 @@ export function WhatsNew({ isMobile }: { isMobile: boolean }) {
               What&apos;s New
             </h3>
             <span className="rounded-full bg-slate-800/80 px-2 py-0.5 text-[10px] font-medium text-slate-500 tabular-nums">
-              {changelog.length} {changelog.length === 1 ? "update" : "updates"}
+              {currentMonthChangelog.length}{" "}
+              {currentMonthChangelog.length === 1 ? "update" : "updates"}
             </span>
           </div>
 
           <div className="max-h-80 overflow-y-auto overscroll-contain p-1.5">
-            {changelog.map((entry, i) => (
-              <div
-                key={entry.id}
-                className={`group relative rounded-lg p-3 transition-colors duration-150 hover:bg-white/[0.03] ${i > 0 ? "mt-0.5" : ""}`}
-              >
-                <div
-                  className={`absolute top-3 bottom-3 left-0 w-[3px] rounded-full transition-opacity duration-150 ${typeAccent[entry.type]} opacity-40 group-hover:opacity-100`}
-                />
-                <div className="pl-3">
-                  <div className="mb-1.5 flex items-center gap-2">
-                    <span
-                      className={`shrink-0 rounded-md px-1.5 py-px text-[10px] font-semibold tracking-wider uppercase ${typeBadge[entry.type].cls}`}
-                    >
-                      {typeBadge[entry.type].label}
-                    </span>
-                    <span className="text-[11px] text-slate-600 tabular-nums">
-                      {entry.date}
-                    </span>
-                  </div>
-                  <p className="text-[13px] leading-snug font-medium text-slate-200">
-                    {entry.title}
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                    {entry.description}
-                  </p>
-                </div>
+            {currentMonthChangelog.length === 0 ? (
+              <div className="px-3 py-6 text-center">
+                <p className="text-[13px] font-medium text-slate-300">
+                  No updates yet for {CURRENT_CHANGELOG_MONTH_LABEL}.
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  New changelog items will show up here as they ship.
+                </p>
               </div>
-            ))}
+            ) : (
+              currentMonthChangelog.map((entry, i) => (
+                <div
+                  key={entry.id}
+                  className={`group relative rounded-lg p-3 transition-colors duration-150 hover:bg-white/[0.03] ${i > 0 ? "mt-0.5" : ""}`}
+                >
+                  <div
+                    className={`absolute top-3 bottom-3 left-0 w-[3px] rounded-full transition-opacity duration-150 ${typeAccent[entry.type]} opacity-40 group-hover:opacity-100`}
+                  />
+                  <div className="pl-3">
+                    <div className="mb-1.5 flex items-center gap-2">
+                      <span
+                        className={`shrink-0 rounded-md px-1.5 py-px text-[10px] font-semibold tracking-wider uppercase ${typeBadge[entry.type].cls}`}
+                      >
+                        {typeBadge[entry.type].label}
+                      </span>
+                      <span className="text-[11px] text-slate-600 tabular-nums">
+                        {entry.date}
+                      </span>
+                    </div>
+                    <p className="text-[13px] leading-snug font-medium text-slate-200">
+                      {entry.title}
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                      {entry.description}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
