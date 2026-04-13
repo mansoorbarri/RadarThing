@@ -700,11 +700,12 @@ export const Sidebar = ({
               {!imageLoaded && (
                 <div className="absolute inset-0 z-0 animate-pulse bg-white/5" />
               )}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={aircraftPhoto.imageUrl}
                 alt="Aircraft"
-                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+                fill
+                sizes="(max-width: 768px) 100vw, 420px"
+                className={`object-cover transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
                 onLoad={() => setImageLoaded(true)}
               />
               {/* Dark gradient overlay for text readability */}

@@ -836,11 +836,12 @@ export default function VirtualAirlineAdminPage() {
                     className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]"
                   >
                     <div className="relative aspect-video overflow-hidden bg-black/40">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <Image
                         src={image.imageUrl}
                         alt={image.aircraftType}
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover"
                       />
                     </div>
                     <div className="flex items-center justify-between gap-2 p-3">

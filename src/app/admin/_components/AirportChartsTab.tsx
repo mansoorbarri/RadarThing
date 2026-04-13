@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import {
@@ -575,11 +576,12 @@ export function AirportChartsTab() {
               }`}
             >
               <div className="relative aspect-[4/3] overflow-hidden bg-slate-900/50">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={chart.chartUrl}
                   alt={chart.chartName}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover"
                 />
                 <button
                   onClick={() => toggleSelect(chart.id)}

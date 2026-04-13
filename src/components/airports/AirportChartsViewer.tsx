@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   TransformWrapper,
   TransformComponent,
@@ -399,17 +400,18 @@ function ChartImage({
           wrapperClass="!w-full !h-full"
           contentClass="flex h-full w-full items-center justify-center"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={chartUrl}
-            alt={chartName}
-            className={cn(
-              "max-h-full max-w-full object-contain select-none",
-              isInverted && "invert",
-            )}
-            onLoad={handleImageLoad}
-            style={{ transform: `rotate(${rotation}deg)` }}
-          />
+          <div className="relative h-full w-full">
+            <Image
+              src={chartUrl}
+              alt={chartName}
+              fill
+              unoptimized
+              sizes="100vw"
+              className={cn("object-contain select-none", isInverted && "invert")}
+              onLoad={handleImageLoad}
+              style={{ transform: `rotate(${rotation}deg)` }}
+            />
+          </div>
         </TransformComponent>
       </>
     </TransformWrapper>

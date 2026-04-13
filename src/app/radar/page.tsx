@@ -1425,11 +1425,12 @@ function MapSkeleton() {
       <div className="absolute inset-0 [background-image:linear-gradient(rgba(34,211,238,0.32)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.32)_1px,transparent_1px)] [background-size:72px_72px] opacity-[0.06]" />
 
       {/* World map background */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src="/world-outline.svg"
         alt=""
-        className="absolute h-full w-full object-cover opacity-[0.06]"
+        fill
+        sizes="100vw"
+        className="object-cover opacity-[0.06]"
         style={{
           filter:
             "invert(65%) sepia(70%) saturate(400%) hue-rotate(140deg) brightness(95%)",

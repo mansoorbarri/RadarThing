@@ -460,11 +460,12 @@ export default function AirportChartsPage() {
                 className="group overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl transition-all hover:border-cyan-500/30"
               >
                 <div className="relative aspect-[4/3] overflow-hidden bg-slate-900/50">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={chart.chartUrl}
                     alt={chart.chartName}
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover transition-transform group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                   <ExternalLink className="absolute right-2 bottom-2 h-4 w-4 text-white opacity-0 transition-opacity group-hover:opacity-100" />

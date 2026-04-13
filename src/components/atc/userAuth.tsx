@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
+import Image from "next/image";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { LogOut, User } from "lucide-react";
@@ -47,14 +48,18 @@ export const UserAuth = () => {
           onClick={() => setOpen(!open)}
           className="flex h-full cursor-pointer items-center justify-center leading-none"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={user?.imageUrl ?? ""}
-            alt="Account"
-            width={32}
-            height={32}
-            className="rounded-full border border-cyan-400/50 transition-all hover:border-cyan-400 hover:shadow-[0_0_8px_rgba(0,255,255,0.4)]"
-          />
+          {user?.imageUrl ? (
+            <Image
+              src={user.imageUrl}
+              alt="Account"
+              width={32}
+              height={32}
+              sizes="32px"
+              className="rounded-full border border-cyan-400/50 transition-all hover:border-cyan-400 hover:shadow-[0_0_8px_rgba(0,255,255,0.4)]"
+            />
+          ) : (
+            <div className="h-8 w-8 rounded-full border border-cyan-400/50 bg-cyan-400/10" />
+          )}
         </button>
 
         {open && (

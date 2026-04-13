@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState, useImperativeHandle, forwardRef } from "react";
+import NextImage from "next/image";
 import { useDropzone } from "@uploadthing/react";
 import { generateClientDropzoneAccept } from "uploadthing/client";
 import { useUploadThing } from "~/lib/uploadthing";
@@ -11,10 +12,15 @@ const MAX_HEIGHT = 600;
 const JPEG_QUALITY = 0.8;
 const MAX_FILE_SIZE = 512 * 1024; // 512KB
 
+interface PreviewDimensions {
+  width: number;
+  height: number;
+}
+
 // Compress image using canvas
 async function compressImage(file: File): Promise<File> {
   return new Promise((resolve, reject) => {
-    const img = new Image();
+    const img = document.createElement("img");
     img.onload = () => {
       let { width, height } = img;
 
@@ -120,6 +126,28 @@ function getHumanReadableError(error: Error | string): string {
   );
 }
 
+async function getImageDimensions(file: File): Promise<PreviewDimensions> {
+  return new Promise((resolve, reject) => {
+    const img = document.createElement("img");
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      resolve({
+        width: img.naturalWidth || MAX_WIDTH,
+        height: img.naturalHeight || MAX_HEIGHT,
+      });
+      URL.revokeObjectURL(objectUrl);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Failed to load preview dimensions"));
+    };
+
+    img.src = objectUrl;
+  });
+}
+
 export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
   function ImageUploader(
     {
@@ -136,6 +164,8 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
   ) {
     const [file, setFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
+    const [previewDimensions, setPreviewDimensions] =
+      useState<PreviewDimensions | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [isCompressing, setIsCompressing] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -162,6 +192,7 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
     const resetState = useCallback(() => {
       setFile(null);
       setPreview(null);
+      setPreviewDimensions(null);
       setIsUploading(false);
       setUploadProgress(0);
       setLocalError(null);
@@ -193,6 +224,7 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
 
           setFile(compressedFile);
           onFileSelected?.(true);
+          setPreviewDimensions(await getImageDimensions(compressedFile));
 
           // Create preview from compressed file
           const reader = new FileReader();
@@ -285,8 +317,15 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
       return (
         <div className="space-y-3">
           <div className="relative overflow-hidden rounded-lg border border-white/10">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={preview} alt="Preview" className="w-full object-cover" />
+            <NextImage
+              src={preview}
+              alt="Preview"
+              width={previewDimensions?.width ?? MAX_WIDTH}
+              height={previewDimensions?.height ?? MAX_HEIGHT}
+              unoptimized
+              sizes="(max-width: 768px) 100vw, 512px"
+              className="h-auto w-full object-cover"
+            />
             {!isUploading && (
               <button
                 type="button"

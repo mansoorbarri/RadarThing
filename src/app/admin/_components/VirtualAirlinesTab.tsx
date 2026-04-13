@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useQuery } from "convex/react";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import {
@@ -914,11 +915,12 @@ export function VirtualAirlinesTab() {
                             className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]"
                           >
                             <div className="relative aspect-video overflow-hidden bg-black/40">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
+                              <Image
                                 src={image.imageUrl}
                                 alt={image.aircraftType}
-                                className="h-full w-full object-cover"
+                                fill
+                                sizes="(max-width: 640px) 100vw, 50vw"
+                                className="object-cover"
                               />
                             </div>
                             <div className="flex items-center justify-between gap-2 p-3">
