@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { useState } from "react";
@@ -21,12 +21,16 @@ import {
   Check,
   Link,
   Camera,
+  Trash2,
 } from "lucide-react";
 import Image from "next/image";
 import { useProStatus } from "~/hooks/useProStatus";
 import { Suspense } from "react";
 import { FlightCardDialog } from "~/components/flight-card/FlightCardDialog";
 import type { FlightCardData } from "~/components/flight-card/FlightCard";
+import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
+import { isFlightModeratorGoogleId } from "~/lib/flight-moderation";
+import { ConfirmModal } from "~/app/admin/_components/ConfirmModal";
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -71,8 +75,49 @@ function PilotPageContent() {
 
   const [linkCopied, setLinkCopied] = useState(false);
   const [cardFlight, setCardFlight] = useState<FlightCardData | null>(null);
+  const [deletingFlightId, setDeletingFlightId] = useState<string | null>(null);
+  const [flightPendingDelete, setFlightPendingDelete] = useState<{
+    id: Id<"flights">;
+    callsign?: string;
+    aircraftType: string;
+    depICAO?: string;
+    arrICAO?: string;
+  } | null>(null);
   const stats = useQuery(api.flights.getStatsById, { userId });
-  const { isProUser, isLoading: proLoading } = useProStatus();
+  const deleteFlight = useMutation(api.flights.deleteFlight);
+  const { isProUser, isAdminUser, isLoading: proLoading } = useProStatus();
+  const { googleId: currentUserGoogleId, isLoaded: currentUserLoaded } =
+    useCurrentUserProfile();
+
+  const canDeleteFlights =
+    currentUserLoaded &&
+    (isAdminUser || isFlightModeratorGoogleId(currentUserGoogleId));
+
+  const confirmDeleteFlight = async () => {
+    if (!flightPendingDelete) return;
+
+    setDeletingFlightId(flightPendingDelete.id);
+    try {
+      await deleteFlight({ flightId: flightPendingDelete.id });
+      toast.success("Flight deleted");
+      Analytics.track("flight_deleted", {
+        source: "pilot_profile",
+        targetUserId: userId,
+        flightId: flightPendingDelete.id,
+        callsign: flightPendingDelete.callsign,
+        aircraftType: flightPendingDelete.aircraftType,
+        depICAO: flightPendingDelete.depICAO,
+        arrICAO: flightPendingDelete.arrICAO,
+      });
+      setFlightPendingDelete(null);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete flight",
+      );
+    } finally {
+      setDeletingFlightId(null);
+    }
+  };
 
   const copyProfileLink = () => {
     const url = window.location.href;
@@ -82,7 +127,7 @@ function PilotPageContent() {
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  if (stats === undefined || proLoading) {
+  if (stats === undefined || proLoading || !currentUserLoaded) {
     return <PilotPageSkeleton callsign={callsignFromUrl} />;
   }
 
@@ -425,6 +470,28 @@ function PilotPageContent() {
                           </button>
                         </>
                       )}
+                      {canDeleteFlights && (
+                        <button
+                          onClick={() => {
+                            setFlightPendingDelete({
+                              id: flight.id,
+                              callsign: flight.callsign,
+                              aircraftType: flight.aircraftType,
+                              depICAO: flight.depICAO,
+                              arrICAO: flight.arrICAO,
+                            });
+                          }}
+                          disabled={deletingFlightId === flight.id}
+                          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-100 disabled:hover:bg-red-500/10"
+                          title={
+                            deletingFlightId === flight.id
+                              ? "Deleting flight..."
+                              : "Delete this flight"
+                          }
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -450,6 +517,21 @@ function PilotPageContent() {
           onClose={() => setCardFlight(null)}
         />
       )}
+
+      <ConfirmModal
+        isOpen={flightPendingDelete !== null}
+        title="Delete Flight"
+        message={`Remove ${flightPendingDelete?.callsign || "this flight"} from this pilot profile? This immediately recalculates the pilot's stats.`}
+        confirmLabel="Delete Flight"
+        isLoading={deletingFlightId === flightPendingDelete?.id}
+        onConfirm={() => {
+          void confirmDeleteFlight();
+        }}
+        onCancel={() => {
+          if (deletingFlightId) return;
+          setFlightPendingDelete(null);
+        }}
+      />
     </div>
   );
 }

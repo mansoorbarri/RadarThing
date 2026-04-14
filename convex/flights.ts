@@ -1,6 +1,8 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { mutation, query, type MutationCtx } from "./_generated/server";
 import { paginationOptsValidator } from "convex/server";
+import { isFlightModeratorGoogleId } from "../src/lib/flight-moderation";
 
 // Get flight history for a user by their Google ID
 export const getHistoryByGoogleId = query({
@@ -93,6 +95,111 @@ function deriveVisibleCurrentStreak(
   }
 
   return streakAtLastFlight;
+}
+
+async function recalculateUserStats(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+) {
+  const flights = await ctx.db
+    .query("flights")
+    .withIndex("by_userId_startTime", (q) => q.eq("userId", userId))
+    .collect();
+
+  const stats = await ctx.db
+    .query("userStats")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .first();
+
+  const approvedAircraftImages = stats?.approvedAircraftImages ?? 0;
+
+  if (flights.length === 0) {
+    if (stats) {
+      await ctx.db.patch(stats._id, {
+        totalFlights: 0,
+        totalFlightTimeMs: 0,
+        totalDistanceNm: 0,
+        approvedAircraftImages,
+        streakAtLastFlight: 0,
+        longestStreak: 0,
+        lastFlightDate: undefined,
+        lastFlightStartTime: undefined,
+        lastFlightCallsign: undefined,
+      });
+    }
+    return;
+  }
+
+  let totalFlightTimeMs = 0;
+  let totalDistanceNm = 0;
+
+  for (const flight of flights) {
+    if (flight.endTime !== undefined) {
+      totalFlightTimeMs += Math.max(0, flight.endTime - flight.startTime);
+    }
+    totalDistanceNm += calculateRouteDistanceNm(flight.routeData);
+  }
+
+  const uniqueDates = [
+    ...new Set(
+      flights.map((flight) => utcDateStringFromTimestamp(flight.startTime)),
+    ),
+  ];
+
+  let longestStreak = 1;
+  let streakAtLastFlight = 1;
+  let currentRun = 1;
+
+  for (let i = 1; i < uniqueDates.length; i++) {
+    const previousDate = uniqueDates[i - 1];
+    const currentDate = uniqueDates[i];
+    if (!previousDate || !currentDate) continue;
+
+    const dayDiff = diffDaysUtc(previousDate, currentDate);
+    if (dayDiff === 1) {
+      currentRun += 1;
+    } else {
+      currentRun = 1;
+    }
+    longestStreak = Math.max(longestStreak, currentRun);
+  }
+
+  streakAtLastFlight = currentRun;
+
+  const latestFlight = flights.at(-1);
+  const lastFlightDate = uniqueDates.at(-1);
+  if (!latestFlight || !lastFlightDate) return;
+
+  const nextStats = {
+    totalFlights: flights.length,
+    totalFlightTimeMs,
+    totalDistanceNm,
+    approvedAircraftImages,
+    streakAtLastFlight,
+    longestStreak,
+    lastFlightDate,
+    lastFlightStartTime: latestFlight.startTime,
+    lastFlightCallsign: latestFlight.callsign,
+  };
+
+  if (stats) {
+    await ctx.db.patch(stats._id, nextStats);
+    return;
+  }
+
+  await ctx.db.insert("userStats", {
+    userId,
+    ...nextStats,
+  });
+}
+
+function canDeleteAnyFlight(role: string, googleId?: string) {
+  if (role === "ADMIN") return true;
+
+  const superAdminGoogleId = process.env.ADMIN_GOOGLE_ID;
+  if (superAdminGoogleId && googleId === superAdminGoogleId) return true;
+
+  return isFlightModeratorGoogleId(googleId);
 }
 
 // Create a new flight
@@ -254,6 +361,43 @@ export const deleteByUserId = mutation({
     if (stats) {
       await ctx.db.delete(stats._id);
     }
+  },
+});
+
+export const deleteFlight = mutation({
+  args: { flightId: v.id("flights") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("You must be signed in to delete flights");
+    }
+
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    if (!currentUser || currentUser.isDeleted) {
+      throw new Error("Your RadarThing account could not be verified");
+    }
+
+    if (!canDeleteAnyFlight(currentUser.role, currentUser.googleId)) {
+      throw new Error("You do not have permission to delete this flight");
+    }
+
+    const flight = await ctx.db.get(args.flightId);
+    if (!flight) {
+      throw new Error("Flight not found");
+    }
+
+    await ctx.db.delete(flight._id);
+    await recalculateUserStats(ctx, flight.userId);
+
+    return {
+      success: true,
+      deletedFlightId: flight._id,
+      userId: flight.userId,
+    };
   },
 });
 
