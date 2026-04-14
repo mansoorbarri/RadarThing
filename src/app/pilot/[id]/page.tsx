@@ -379,7 +379,7 @@ function PilotPageContent() {
                       <Plane className="h-5 w-5 text-cyan-400" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex items-center gap-2">
+                      <div className="mb-1 flex flex-wrap items-center gap-2">
                         <span className="font-mono text-sm font-bold text-white">
                           {flight.depICAO || "???"}
                         </span>
@@ -393,7 +393,12 @@ function PilotPageContent() {
                             .trim()}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-slate-500">
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                        {flight.callsign && (
+                          <span className="rounded bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] text-cyan-300/80">
+                            {flight.callsign}
+                          </span>
+                        )}
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           {formatDate(flight.startTime)}
@@ -405,9 +410,6 @@ function PilotPageContent() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-slate-600">
-                        {flight.callsign}
-                      </span>
                       {flight.routeData && flight.routeData.length > 1 && (
                         <>
                           <button
