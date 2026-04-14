@@ -8,14 +8,6 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    id: "pilot-profile-flight-moderation",
-    date: "2026-04-14",
-    title: "Pilot Profile Flight Moderation",
-    description:
-      "RadarThing staff can now remove incorrect flights directly from pilot profiles without deleting the whole account history.",
-    type: "improvement",
-  },
-  {
     id: "shortcuts-menu",
     date: "2026-04-12",
     title: "Shortcut Reference Menu",
