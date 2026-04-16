@@ -1,9 +1,30 @@
 import L from "leaflet";
 import { type PositionUpdate } from "~/lib/aircraft-store";
-import { formatSpeed, formatAltitude, speedSuffix, type UnitPreferences, DEFAULT_UNIT_PREFERENCES } from "~/lib/units";
+import {
+  formatSpeed,
+  formatAltitude,
+  speedSuffix,
+  type UnitPreferences,
+  DEFAULT_UNIT_PREFERENCES,
+} from "~/lib/units";
+import { normalizeAircraftType } from "~/lib/utils";
 
 const EMERGENCY_SQUAWKS = new Set(["7700", "7600", "7500"]);
 const DEFAULT_AIRCRAFT_ICON = "/icons/e195.svg";
+const AIRCRAFT_ICONS = {
+  helicopter: "/icons/a7.svg",
+  military: "/icons/a6.svg",
+  militaryTransport: "/icons/c130.svg",
+  heavy: "/icons/md11.svg",
+  largeBusiness: "/icons/glf5.svg",
+  trijetBusiness: "/icons/fa7x.svg",
+  lightBusiness: "/icons/learjet.svg",
+  generalAviation: "/icons/cessna.svg",
+  regionalJet: "/icons/crjx.svg",
+  smallRegional: "/icons/erj.svg",
+  narrowbody: "/icons/e195.svg",
+  rearEngineJet: "/icons/f100.svg",
+} as const;
 const MILITARY_AF_CODES = new Set([
   "usaf",
   "raf",
@@ -45,52 +66,170 @@ function isMilitaryAirForce(airForce: string) {
   );
 }
 
-function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
-  const type = aircraftClass?.trim().toLowerCase() ?? "";
-  const af = airForce?.trim().toLowerCase() ?? "";
+function normalizeAircraftTypeForIcon(type: string) {
+  const cleaned = type.trim().toUpperCase();
+  const normalized = normalizeAircraftType(type);
 
-  if (isHelicopterType(type)) return "/icons/a7.svg";
-  if (isMilitaryAirForce(af)) return "/icons/a6.svg";
-  if (!type) return DEFAULT_AIRCRAFT_ICON;
-  if (
-    type.includes("military") ||
-    type.includes("fighter") ||
-    type.includes("bomber") ||
-    type.includes("attack") ||
-    type.includes("interceptor") ||
-    type.includes("recon") ||
-    type.includes("surveillance") ||
-    type.includes("patrol")
-  ) {
-    return "/icons/a6.svg";
+  if (normalized) {
+    return normalized;
   }
-  if (type.includes("cargo") || type.includes("tanker")) {
-    return "/icons/c130.svg";
+
+  if (/\bA?20N\b/.test(cleaned)) return "A320";
+  if (/\bA?21N\b/.test(cleaned)) return "A321";
+  if (/\bA?223\b/.test(cleaned)) return "A220";
+  if (/\bA?306\b|\bA?30B\b/.test(cleaned)) return "A300";
+  if (/\bA?332\b|\bA?333\b|\bA?338\b|\bA?339\b/.test(cleaned)) return "A330";
+  if (/\bA?342\b|\bA?343\b|\bA?345\b|\bA?346\b/.test(cleaned)) return "A340";
+  if (/\bA?359\b|\bA?35K\b/.test(cleaned)) return "A350";
+  if (/\bA?388\b/.test(cleaned)) return "A380";
+
+  if (/\bB?73[0-9A-Z]\b|\b73[0-9A-Z]\b/.test(cleaned)) return "B737";
+  if (/\bB?74[0-9A-Z]\b|\b74[0-9A-Z]\b/.test(cleaned)) return "B747";
+  if (/\bB?75[0-9A-Z]\b|\b75[0-9A-Z]\b/.test(cleaned)) return "B757";
+  if (/\bB?76[0-9A-Z]\b|\b76[0-9A-Z]\b/.test(cleaned)) return "B767";
+  if (/\bB?77[0-9A-Z]\b|\b77[0-9A-Z]\b/.test(cleaned)) return "B777";
+  if (/\bB?78[0-9A-Z]\b|\b78[0-9A-Z]\b/.test(cleaned)) return "B787";
+
+  if (/\bE75[LS]?\b/.test(cleaned)) return "E175";
+  if (/\bE19[05]\b|\bE9[05][LS]?\b/.test(cleaned)) return "E195";
+  if (/\bERJ[- ]?1?(35|40|45)\b|\bE145\b/.test(cleaned)) return "ERJ145";
+  if (/\bCRJ[- ]?[1279]\d{2}\b|\bCR[1279]\b|\bCL65\b/.test(cleaned)) {
+    return "CRJ";
   }
-  if (type.includes("super")) return "/icons/md11.svg";
-  if (type.includes("heavy")) return "/icons/md11.svg";
-  if (
-    type.includes("business") ||
-    type.includes("biz") ||
-    type.includes("corporate") ||
-    type.includes("executive")
-  ) {
-    return "/icons/glf5.svg";
+
+  if (/\bAT7[26]\b/.test(cleaned)) return "ATR72";
+  if (/\bDH8[ABCD]?\b|\bQ4?00\b/.test(cleaned)) return "DH8D";
+
+  if (/\bC17\b/.test(cleaned)) return "C17";
+  if (/\bC130\b|\bL100\b/.test(cleaned)) return "C130";
+  if (/\bC5\b/.test(cleaned)) return "C5";
+  if (/\bKC[- ]?(10|135|46)\b/.test(cleaned)) return "KC";
+  if (/\bA400M\b/.test(cleaned)) return "A400M";
+
+  if (/\bFA7X\b|\bFA8X\b/.test(cleaned)) return "FA7X";
+  if (/\bGLF[3456]\b|\bG[4-8]00\b|\bGLEX\b|\bGALX\b/.test(cleaned)) {
+    return "GLF5";
   }
   if (
-    type.includes("light") ||
-    type.includes("prop") ||
-    type.includes("ga") ||
-    type.includes("general aviation")
+    /\bLJ\d{2}\b|\bC25[A-Z]?\b|\bC56X\b|\bCL30\b|\bCL35\b|\bH25B\b/.test(
+      cleaned,
+    )
   ) {
-    return "/icons/cessna.svg";
+    return "LJ";
   }
+
+  return cleaned;
+}
+
+function isMilitaryTransportType(rawType: string, normalizedType: string) {
+  return (
+    /\b(transport|airlifter|tanker|awacs|surveillance|recon|patrol)\b/.test(
+      rawType,
+    ) ||
+    /^(C\d+|KC\d+|A400M|AN\d+|IL\d+|TU95|P8|E3|E7|C130|C17|C5)$/.test(
+      normalizedType,
+    )
+  );
+}
+
+function isMilitaryCombatType(rawType: string, normalizedType: string) {
+  return (
+    /\b(military|fighter|bomber|attack|interceptor|trainer)\b/.test(rawType) ||
+    /^(F\d+|B\d+|A\d+|T\d+|SU\d+|MIG\d+|TU160)$/.test(normalizedType)
+  );
+}
+
+function isGeneralAviationType(rawType: string, normalizedType: string) {
+  return (
+    /\b(light|prop|piston|ga|general aviation)\b/.test(rawType) ||
+    /\b(cessna|piper|cirrus|diamond|mooney|bonanza|baron|skyhawk|skylane|seneca|seminole|beechcraft)\b/.test(
+      rawType,
+    ) ||
+    /^(C\d{3}|PA\d{2,3}|SR\d{2}|DA\d{2}|BE\d{2})$/.test(normalizedType)
+  );
+}
+
+function isBusinessType(rawType: string) {
+  return /\b(business|biz|corporate|executive|private|gulfstream|falcon|learjet|citation|challenger|hawker|phenom|praetor|global express)\b/.test(
+    rawType,
+  );
+}
+
+function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
+  const rawType = aircraftClass?.trim().toLowerCase() ?? "";
+  const af = airForce?.trim().toLowerCase() ?? "";
+  const normalizedType = aircraftClass
+    ? normalizeAircraftTypeForIcon(aircraftClass)
+    : "";
+
+  if (isHelicopterType(rawType)) return AIRCRAFT_ICONS.helicopter;
+  if (!rawType) {
+    return isMilitaryAirForce(af)
+      ? AIRCRAFT_ICONS.military
+      : DEFAULT_AIRCRAFT_ICON;
+  }
+
+  const isMilitary =
+    isMilitaryAirForce(af) || isMilitaryCombatType(rawType, normalizedType);
+  if (isMilitary) {
+    return isMilitaryTransportType(rawType, normalizedType)
+      ? AIRCRAFT_ICONS.militaryTransport
+      : AIRCRAFT_ICONS.military;
+  }
+
   if (
-    type.includes("regional") ||
-    type.includes("commuter") ||
-    type.includes("medium")
+    /^(A300|A310|A330|A340|A350|A380|B747|B767|B777|B787|MD11|DC10|L1011|IL96)$/.test(
+      normalizedType,
+    ) ||
+    /\b(widebody|heavy|super|dreamliner)\b/.test(rawType)
   ) {
-    return "/icons/crjx.svg";
+    return AIRCRAFT_ICONS.heavy;
+  }
+
+  if (/^(B717|B727|DC8|DC9|MD80|MD90|F70|F100)$/.test(normalizedType)) {
+    return AIRCRAFT_ICONS.rearEngineJet;
+  }
+
+  if (
+    /^(E170|E175|E190|E195|A220|A318|A319|A320|A321|B737|B757|C919|MC21)$/.test(
+      normalizedType,
+    )
+  ) {
+    return AIRCRAFT_ICONS.narrowbody;
+  }
+
+  if (
+    /^(CRJ)$/.test(normalizedType) ||
+    /\b(canadair|regional jet)\b/.test(rawType)
+  ) {
+    return AIRCRAFT_ICONS.regionalJet;
+  }
+
+  if (
+    /^(ERJ145|ATR42|ATR72|DH8D|SF34|SW4)$/.test(normalizedType) ||
+    /\b(embraer regional|commuter|turboprop|dash 8|atr)\b/.test(rawType)
+  ) {
+    return AIRCRAFT_ICONS.smallRegional;
+  }
+
+  if (isBusinessType(rawType)) {
+    if (/^(FA7X)$/.test(normalizedType)) return AIRCRAFT_ICONS.trijetBusiness;
+    if (/^(GLF5)$/.test(normalizedType)) return AIRCRAFT_ICONS.largeBusiness;
+    if (/^(LJ)$/.test(normalizedType)) return AIRCRAFT_ICONS.lightBusiness;
+    return AIRCRAFT_ICONS.largeBusiness;
+  }
+
+  if (isGeneralAviationType(rawType, normalizedType)) {
+    return AIRCRAFT_ICONS.generalAviation;
+  }
+
+  if (/\b(regional|commuter)\b/.test(rawType))
+    return AIRCRAFT_ICONS.regionalJet;
+  if (/\b(business|corporate|executive)\b/.test(rawType)) {
+    return AIRCRAFT_ICONS.largeBusiness;
+  }
+  if (/\b(light|prop|ga|general aviation)\b/.test(rawType)) {
+    return AIRCRAFT_ICONS.generalAviation;
   }
 
   return DEFAULT_AIRCRAFT_ICON;
@@ -197,7 +336,8 @@ export const getAircraftDivIcon = (
   const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
   const isIdentActive =
     aircraft.identActive ||
-    (typeof aircraft.identUntil === "number" && aircraft.identUntil > Date.now());
+    (typeof aircraft.identUntil === "number" &&
+      aircraft.identUntil > Date.now());
 
   const isCurrentAircraftSelected =
     selectedAircraftId &&
@@ -291,7 +431,8 @@ export const getRadarAircraftDivIcon = (
   const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
   const isIdentActive =
     aircraft.identActive ||
-    (typeof aircraft.identUntil === "number" && aircraft.identUntil > Date.now());
+    (typeof aircraft.identUntil === "number" &&
+      aircraft.identUntil > Date.now());
 
   const isCurrentAircraftSelected =
     selectedAircraftId &&
@@ -339,16 +480,16 @@ export const getRadarAircraftDivIcon = (
     ? "#ef4444"
     : isIdentActive
       ? "#fbbf24"
-    : isCurrentAircraftSelected
-      ? "#4ade80"
-      : "#22d3ee";
+      : isCurrentAircraftSelected
+        ? "#4ade80"
+        : "#22d3ee";
   const glowColor = isEmergency
     ? "rgba(239,68,68,0.8)"
     : isIdentActive
       ? "rgba(251,191,36,0.95)"
-    : isCurrentAircraftSelected
-      ? "rgba(74,222,128,0.9)"
-      : "rgba(0,255,255,0.5)";
+      : isCurrentAircraftSelected
+        ? "rgba(74,222,128,0.9)"
+        : "rgba(0,255,255,0.5)";
 
   const dotStyle = `
     position: absolute;
