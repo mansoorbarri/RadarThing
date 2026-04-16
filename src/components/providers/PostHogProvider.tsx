@@ -5,6 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Analytics } from "~/lib/analytics";
+import { ClientDiagnosticsProvider } from "./ClientDiagnosticsProvider";
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   const { user, isLoaded: clerkLoaded } = useUser();
@@ -42,5 +43,10 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     }
   }, [clerkLoaded, user, dbUser]);
 
-  return <>{children}</>;
+  return (
+    <>
+      <ClientDiagnosticsProvider />
+      {children}
+    </>
+  );
 }

@@ -1,5 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
+import { Analytics } from "~/lib/analytics";
+import { getClientDiagnosticsContext } from "~/lib/clientDiagnostics";
+
 export default function GlobalError({
   error,
   reset,
@@ -7,6 +11,14 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    Analytics.captureException(error, {
+      source: "next_global_error",
+      digest: error.digest,
+      ...getClientDiagnosticsContext(),
+    });
+  }, [error]);
+
   return (
     <html>
       <body>

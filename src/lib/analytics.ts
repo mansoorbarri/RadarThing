@@ -102,6 +102,12 @@ export const Analytics = {
       capture_pageview: true,
       capture_pageleave: true,
       autocapture: false, // Manual tracking for better control
+      error_tracking: {
+        captureExtensionExceptions: false,
+      },
+      session_recording: {
+        maskAllInputs: true,
+      },
     });
   },
 
@@ -385,6 +391,19 @@ export const Analytics = {
   // ===== GENERIC EVENT =====
   track: (eventName: string, properties?: Record<string, unknown>) => {
     track(eventName, properties);
+  },
+
+  captureException: (
+    error: unknown,
+    properties?: Record<string, unknown>,
+  ) => {
+    if (typeof window === "undefined") return;
+    if (process.env.NODE_ENV === "development") return;
+
+    posthog.captureException(error, {
+      ...properties,
+      timestamp: Date.now(),
+    });
   },
 };
 

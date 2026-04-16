@@ -15,6 +15,8 @@ interface SearchBarProps {
   setSearchTerm: (term: string) => void;
   searchResults: SearchResults;
   isMobile: boolean;
+  autoFocus?: boolean;
+  inputDebugId?: string;
   onSelectAircraft: (aircraft: PositionUpdate) => void;
   onSelectAirport: (airport: Airport) => void;
   recentSearches?: RecentSearch[];
@@ -27,6 +29,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   setSearchTerm,
   searchResults,
   isMobile,
+  autoFocus = false,
+  inputDebugId,
   onSelectAircraft,
   onSelectAirport,
   recentSearches = [],
@@ -50,7 +54,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         onChange={(e) => setSearchTerm(e.target.value)}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-        autoFocus={isMobile}
+        autoFocus={autoFocus}
+        data-debug-id={inputDebugId}
         className={`rounded-lg border border-cyan-400/30 bg-black/80 px-4 py-2.5 text-[14px] text-cyan-400 placeholder-cyan-500/50 transition-all duration-200 outline-none ${
           isMobile ? "w-full" : "mt-1 ml-5 w-[280px]"
         } ${

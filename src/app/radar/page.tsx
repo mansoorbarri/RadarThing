@@ -30,6 +30,12 @@ import { useActiveTracker } from "~/hooks/useActiveTracker";
 import { useMostTrackedFlights } from "~/hooks/useMostTrackedFlights";
 import { Analytics } from "~/lib/analytics";
 import { isFreeChartIcao } from "~/lib/chartAccess";
+import {
+  describeElement,
+  getClientDiagnosticsContext,
+  isEditableElement,
+  isEditableTarget,
+} from "~/lib/clientDiagnostics";
 import { normalizeCallsign } from "~/lib/utils";
 
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
@@ -224,6 +230,7 @@ export default function ATCPage() {
     ((aircrafts: PositionUpdate[], zoom?: boolean) => void) | null
   >(null);
   const resetMapViewRef = useRef<(() => void) | null>(null);
+  const reportedShortcutDiagnosticsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -452,12 +459,47 @@ export default function ATCPage() {
 
   // Escape key to clear filters, F key to toggle follow mode, U key to hide UI
   useEffect(() => {
+    const reportShortcutDiagnostic = (
+      key: string,
+      reason: string,
+      target: EventTarget | null,
+    ) => {
+      const dedupeKey = `${key}:${reason}`;
+      if (reportedShortcutDiagnosticsRef.current.has(dedupeKey)) return;
+
+      reportedShortcutDiagnosticsRef.current.add(dedupeKey);
+      const targetElement =
+        target instanceof Element
+          ? target
+          : document.activeElement instanceof Element
+            ? document.activeElement
+            : null;
+
+      Analytics.track("radar_shortcut_blocked", {
+        key,
+        reason,
+        is_phone: isPhone,
+        is_tablet: isTablet,
+        show_mobile_search: showMobileSearch,
+        show_shortcuts_menu: showShortcutsMenu,
+        selected_aircraft_count: selectedAircrafts.length,
+        ...describeElement(targetElement),
+        ...getClientDiagnosticsContext(),
+      });
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeElement = document.activeElement;
-      const isInputFocused =
-        activeElement instanceof HTMLInputElement ||
-        activeElement instanceof HTMLTextAreaElement ||
-        activeElement?.getAttribute("contenteditable") === "true";
+      const isEditableContext =
+        isEditableTarget(e.target) || isEditableElement(activeElement);
+      const shouldIgnoreLetterShortcuts =
+        e.defaultPrevented ||
+        e.isComposing ||
+        e.repeat ||
+        e.metaKey ||
+        e.ctrlKey ||
+        e.altKey ||
+        isEditableContext;
 
       if (showShortcutsMenu && e.key === "Escape") {
         return;
@@ -473,16 +515,28 @@ export default function ATCPage() {
         setAutoSelectedFromUrl(false);
       }
 
-      if ((e.key === "u" || e.key === "U") && !isInputFocused) {
+      if (e.key === "u" || e.key === "U") {
+        if (shouldIgnoreLetterShortcuts) {
+          if (isEditableContext) {
+            reportShortcutDiagnostic("u", "editable_context", e.target);
+          }
+          return;
+        }
+
         setIsUiHidden((prev) => !prev);
+        return;
       }
 
       // F key to toggle follow mode (only when aircraft is selected and not typing in input)
-      if (
-        (e.key === "f" || e.key === "F") &&
-        selectedAircrafts.length > 0 &&
-        !isInputFocused
-      ) {
+      if (e.key === "f" || e.key === "F") {
+        if (shouldIgnoreLetterShortcuts) {
+          return;
+        }
+
+        if (selectedAircrafts.length === 0) {
+          return;
+        }
+
         setIsFollowMode((prev) => !prev);
       }
     };
@@ -491,8 +545,11 @@ export default function ATCPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     fullFlightFilter,
+    isPhone,
+    isTablet,
     selectedCallsigns,
     selectedAircrafts.length,
+    showMobileSearch,
     showShortcutsMenu,
   ]);
 
@@ -592,6 +649,8 @@ export default function ATCPage() {
                   setSearchTerm={setSearchTerm}
                   searchResults={searchResults}
                   isMobile={isMobile}
+                  autoFocus={false}
+                  inputDebugId="radar-header-search-input"
                   onSelectAircraft={(ac) => {
                     setSelectedAircrafts([ac]);
                     drawFlightPlanOnMapRef.current?.(ac, true);
@@ -765,6 +824,7 @@ export default function ATCPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 autoFocus
+                data-debug-id="radar-mobile-search-input"
                 className="w-full rounded-xl border border-cyan-400/30 bg-black/60 px-4 py-3 text-[15px] text-cyan-400 placeholder-cyan-500/40 outline-none focus:border-cyan-400"
               />
 
