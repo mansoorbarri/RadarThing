@@ -9,7 +9,7 @@ const repoRoot = path.resolve(__dirname, "..");
 const configPath = path.join(repoRoot, "userscript-src", "config.json");
 const config = JSON.parse(await readFile(configPath, "utf8"));
 
-const { version, baseUrl, sourceFiles } = config;
+const { version, siteUrl, assetBaseUrl, sourceFiles } = config;
 
 const publicDir = path.join(repoRoot, "public", "userscript");
 const releaseDir = path.join(publicDir, "releases", version);
@@ -71,7 +71,7 @@ function buildLoader() {
   return `(() => {
   "use strict";
 
-  const BASE_URL = ${JSON.stringify(baseUrl)};
+  const BASE_URL = ${JSON.stringify(assetBaseUrl)};
   const STABLE_BUNDLE_URL = BASE_URL + "/radarthing.bundle.js";
   const MANIFEST_URL = BASE_URL + "/latest.json";
   const STATE_KEY = "__radarThingLoaderState";
@@ -136,13 +136,13 @@ function buildLoader() {
 }
 
 function buildInstaller() {
-  const loaderUrl = `${baseUrl}/radarthing.loader.js`;
-  const installerUrl = `${baseUrl}/radarthing.user.js`;
-  const iconUrl = "https://radarthing.com/favicon.ico";
+  const loaderUrl = `${siteUrl}/loader`;
+  const installerUrl = `${siteUrl}/userscript`;
+  const iconUrl = `${siteUrl}/favicon.ico`;
 
   return `// ==UserScript==
 // @name         RadarThing
-// @namespace    https://radarthing.com/
+// @namespace    ${siteUrl}/
 // @version      ${version}
 // @description  Loads the latest RadarThing runtime for GeoFS from radarthing.com
 // @author       xyzmani

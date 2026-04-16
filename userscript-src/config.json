@@ -1,6 +1,7 @@
 {
   "version": "1.6.0",
-  "baseUrl": "https://radarthing.com/userscript",
+  "siteUrl": "https://radarthing.com",
+  "assetBaseUrl": "https://radarthing.com/userscript",
   "sourceFiles": [
     "userscript.js",
     "seabus.js",

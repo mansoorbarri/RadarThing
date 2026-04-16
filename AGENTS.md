@@ -65,6 +65,7 @@ Editable userscript source files:
 - `jth.js`
 - `userscript-src/radarthing-runtime.js`
 - `userscript-src/config.json` only when changing the userscript version or hosted base URL
+- `userscript-src/config.json` also controls the public `/userscript` and `/loader` URLs embedded in the generated installer
 - `scripts/build-userscript.mjs` only when changing the userscript build pipeline
 
 Generated userscript artifacts:
@@ -83,8 +84,8 @@ Commit rules for userscript changes:
 - The main app `build` script regenerates userscript artifacts automatically before `next build`, so deploys still include them.
 
 End-user install flow:
-- Tampermonkey users install `/userscript/radarthing.user.js`.
-- That installer loads `/userscript/radarthing.loader.js`.
+- Tampermonkey users install `/userscript`.
+- That installer loads `/loader`.
 - The loader reads `/userscript/latest.json` and loads the current bundle, falling back to `/userscript/radarthing.bundle.js` if needed.
 - Console users open GeoFS, paste the loader snippet shown on the homepage into DevTools Console, and run it.
 - Console installs are not persistent across full page reloads, so users must rerun the snippet or save it as a DevTools Snippet/bookmarklet.

@@ -17,8 +17,8 @@ import {
 } from "lucide-react";
 import userscriptConfig from "../../../userscript-src/config.json";
 
-const USERSCRIPT_INSTALL_PATH = "/userscript/radarthing.user.js";
-const USERSCRIPT_LOADER_URL = `${userscriptConfig.baseUrl}/radarthing.loader.js`;
+const USERSCRIPT_INSTALL_PATH = "/userscript";
+const USERSCRIPT_LOADER_URL = `${userscriptConfig.siteUrl}/loader`;
 const CONSOLE_SNIPPET = `(() => {
   const script = document.createElement("script");
   script.src = "${USERSCRIPT_LOADER_URL}?t=" + Date.now();
