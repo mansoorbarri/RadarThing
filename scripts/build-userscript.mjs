@@ -137,7 +137,7 @@ function buildLoader() {
 
 function buildInstaller() {
   const loaderUrl = `${siteUrl}/loader`;
-  const installerUrl = `${siteUrl}/userscript`;
+  const installerUrl = `${siteUrl}/userscript/radarthing.user.js`;
   const iconUrl = `${siteUrl}/favicon.ico`;
 
   return `// ==UserScript==

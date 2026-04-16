@@ -85,6 +85,7 @@ Commit rules for userscript changes:
 
 End-user install flow:
 - Tampermonkey users install `/userscript`.
+- `/userscript` redirects them to the real installer file at `/userscript/radarthing.user.js` so Tampermonkey sees a `.user.js` URL.
 - That installer loads `/loader`.
 - The loader reads `/userscript/latest.json` and loads the current bundle, falling back to `/userscript/radarthing.bundle.js` if needed.
 - Console users open GeoFS, paste the loader snippet shown on the homepage into DevTools Console, and run it.
