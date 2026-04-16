@@ -15,6 +15,15 @@ import {
   X,
   Download,
 } from "lucide-react";
+import userscriptConfig from "../../../userscript-src/config.json";
+
+const USERSCRIPT_INSTALL_PATH = "/userscript/radarthing.user.js";
+const USERSCRIPT_LOADER_URL = `${userscriptConfig.baseUrl}/radarthing.loader.js`;
+const CONSOLE_SNIPPET = `(() => {
+  const script = document.createElement("script");
+  script.src = "${USERSCRIPT_LOADER_URL}?t=" + Date.now();
+  document.documentElement.appendChild(script);
+})();`;
 
 export default function HomePage() {
   return (
@@ -167,8 +176,8 @@ export default function HomePage() {
               <SetupStep
                 step={2}
                 title="Add the Userscript"
-                description="Click install to add the RadarThing script to Tampermonkey"
-                link="https://xyzmani.com/radar"
+                description="Install the hosted loader script so Tampermonkey always pulls the latest runtime"
+                link={USERSCRIPT_INSTALL_PATH}
                 linkText="Install Script"
               />
               <SetupStep
@@ -178,6 +187,66 @@ export default function HomePage() {
                 link="https://geo-fs.com/geofs.php"
                 linkText="Open GeoFS"
               />
+            </div>
+
+            <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-6">
+                <p className="mb-2 text-xs font-semibold tracking-[0.24em] text-cyan-400 uppercase">
+                  No Extension
+                </p>
+                <h3 className="mb-3 text-xl font-semibold text-white">
+                  Paste the loader in the GeoFS console
+                </h3>
+                <p className="mb-6 max-w-md text-sm leading-6 text-white/45">
+                  This uses the same remote loader as Tampermonkey. It is useful
+                  for people who do not want to install an extension, but they
+                  will need to run it again after each full page reload.
+                </p>
+                <div className="space-y-3 text-sm text-white/55">
+                  <div className="rounded-xl border border-white/6 bg-black/20 p-4">
+                    <span className="mr-2 font-mono text-cyan-400">1.</span>
+                    Open GeoFS, then open DevTools with <code>F12</code> or{" "}
+                    <code>Cmd/Ctrl+Shift+I</code>.
+                  </div>
+                  <div className="rounded-xl border border-white/6 bg-black/20 p-4">
+                    <span className="mr-2 font-mono text-cyan-400">2.</span>
+                    Paste the snippet into the Console and press{" "}
+                    <code>Enter</code>.
+                  </div>
+                  <div className="rounded-xl border border-white/6 bg-black/20 p-4">
+                    <span className="mr-2 font-mono text-cyan-400">3.</span>
+                    Save it as a DevTools Snippet if you want a repeatable
+                    one-click launch without Tampermonkey.
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-cyan-400/15 bg-[#06141b] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.25)]">
+                <div className="mb-4 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.24em] text-cyan-400 uppercase">
+                      Console Loader
+                    </p>
+                    <h3 className="mt-2 text-lg font-semibold text-white">
+                      Paste this into the GeoFS console
+                    </h3>
+                  </div>
+                  <Link
+                    href="https://www.geo-fs.com/geofs.php"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 rounded-full border border-white/10 px-4 py-2 text-xs font-medium text-white/80 transition-colors hover:border-white/20 hover:bg-white/5 hover:text-white"
+                  >
+                    Open GeoFS
+                  </Link>
+                </div>
+                <CodeSnippet code={CONSOLE_SNIPPET} />
+                <p className="mt-4 text-sm leading-6 text-white/40">
+                  The snippet above only loads the stable hosted loader. The
+                  loader then resolves the current runtime bundle, so console
+                  users and Tampermonkey users stay on the same code path.
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -417,18 +486,21 @@ export default function HomePage() {
             >
               Discord
             </Link>
-            <Link
-              href="https://xyzmani.com/radar"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-white"
-            >
+            <Link href={USERSCRIPT_INSTALL_PATH} className="hover:text-white">
               Install Script
             </Link>
           </div>
         </div>
       </footer>
     </div>
+  );
+}
+
+function CodeSnippet({ code }: { code: string }) {
+  return (
+    <pre className="overflow-x-auto rounded-2xl border border-white/8 bg-[#02090d] p-4 text-xs leading-6 text-cyan-100">
+      <code>{code}</code>
+    </pre>
   );
 }
 

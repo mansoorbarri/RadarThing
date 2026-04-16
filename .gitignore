@@ -54,3 +54,7 @@ todo.md
 sse/node_modules/
 sse/bun.lock
 convex-backup/
+
+# generated userscript artifacts
+/radarthing.user.js
+/public/userscript/

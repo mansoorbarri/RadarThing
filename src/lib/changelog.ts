@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "console-loader-install",
+    date: "2026-04-16",
+    title: "Console Install Option",
+    description:
+      "RadarThing can now be launched from a console snippet that uses the same hosted loader as the Tampermonkey install.",
+    type: "new",
+  },
+  {
     id: "shortcuts-menu",
     date: "2026-04-12",
     title: "Shortcut Reference Menu",

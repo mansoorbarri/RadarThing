@@ -10,9 +10,11 @@ export default tseslint.config(
     ignores: [
       ".next",
       "userscript.js",
+      "userscript-src",
       "radarthing.user.js",
       "seabus.js",
       "jth.js",
+      "public/userscript",
       "sse",
       "next-env.d.ts",
       "convex/_generated",

@@ -1,18 +1,3 @@
-// ==UserScript==
-// @name         RadarThing
-// @namespace    http://tampermonkey.net/
-// @version      1.5.7
-// @description  Always loads the latest GeoFS ATC Radar script from GitHub
-// @author       xyzmani
-// @icon         https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/public/favicon.ico
-// @match        http://*/geofs.php*
-// @match        https://*/geofs.php*
-// @require      https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/userscript.js
-// @require      https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/seabus.js
-// @require      https://cdn.jsdelivr.net/gh/mansoorbarri/radarthing@main/jth.js
-// @grant        none
-// ==/UserScript==
-
 (function () {
   "use strict";
 
@@ -23,9 +8,6 @@
   const STORAGE_KEY = "geofs-atc-toggle-key";
   const CHARTS_TOGGLE_KEY = "geofs-atc-charts-toggle-key";
   const RADAR_PREFS_KEY = "geofs-atc-radar-prefs";
-  const USERSCRIPT_METADATA_URL =
-    "https://raw.githubusercontent.com/mansoorbarri/radarthing/main/radarthing.user.js";
-  const INSTALLED_USERSCRIPT_VERSION = "1.5.7";
   let toggleKey = localStorage.getItem(STORAGE_KEY) || "w";
   let chartsToggleKey = localStorage.getItem(CHARTS_TOGGLE_KEY) || "q";
 
@@ -64,8 +46,6 @@
   let identRequestUntil = 0;
   let identRequestDurationSeconds = 15;
   let identActiveUntil = 0;
-  let hasShownUserscriptUpdatePrompt = false;
-
   let radarPrefs = JSON.parse(
     localStorage.getItem(RADAR_PREFS_KEY) || '{"jth":false,"seabus":true}',
   );
@@ -290,172 +270,6 @@
       toast.style.opacity = "0";
       setTimeout(() => toast.remove(), 300);
     }, 2500);
-  }
-
-  function getInstalledUserscriptVersion() {
-    try {
-      if (typeof GM_info !== "undefined" && GM_info?.script?.version) {
-        return String(GM_info.script.version);
-      }
-    } catch (_) {}
-
-    try {
-      if (
-        typeof window !== "undefined" &&
-        window.GM_info &&
-        window.GM_info.script &&
-        window.GM_info.script.version
-      ) {
-        return String(window.GM_info.script.version);
-      }
-    } catch (_) {}
-
-    return INSTALLED_USERSCRIPT_VERSION;
-  }
-
-  function parseVersionParts(version) {
-    return String(version || "")
-      .trim()
-      .split(".")
-      .map((part) => {
-        const num = parseInt(part, 10);
-        return Number.isFinite(num) ? num : 0;
-      });
-  }
-
-  function compareVersions(a, b) {
-    const aParts = parseVersionParts(a);
-    const bParts = parseVersionParts(b);
-    const length = Math.max(aParts.length, bParts.length);
-
-    for (let i = 0; i < length; i += 1) {
-      const aPart = aParts[i] || 0;
-      const bPart = bParts[i] || 0;
-      if (aPart > bPart) return 1;
-      if (aPart < bPart) return -1;
-    }
-
-    return 0;
-  }
-
-  function extractUserscriptVersion(source) {
-    const match = String(source || "").match(
-      /^[ \t]*\/\/[ \t]*@version[ \t]+([^\s]+)[ \t]*$/m,
-    );
-    return match ? match[1].trim() : "";
-  }
-
-  function showUserscriptUpdatePrompt(installedVersion, latestVersion) {
-    if (hasShownUserscriptUpdatePrompt) return;
-    hasShownUserscriptUpdatePrompt = true;
-
-    const existing = document.getElementById("radarthing-userscript-update");
-    if (existing) existing.remove();
-
-    const prompt = document.createElement("div");
-    prompt.id = "radarthing-userscript-update";
-    prompt.style.cssText = `
-      position: fixed;
-      right: 20px;
-      bottom: 20px;
-      width: min(360px, calc(100vw - 24px));
-      padding: 16px;
-      border-radius: 16px;
-      border: 1px solid rgba(251, 191, 36, 0.28);
-      background: rgba(15, 23, 42, 0.96);
-      color: #e5e7eb;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
-      backdrop-filter: blur(18px);
-      z-index: 1000003;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
-    `;
-
-    prompt.innerHTML = `
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
-        <div>
-          <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#fbbf24;">
-            Userscript Update Available
-          </div>
-          <div style="margin-top:8px;font-size:13px;line-height:1.45;color:#cbd5e1;">
-            Installed version <strong style="color:#fff;">${installedVersion}</strong> is behind GitHub version <strong style="color:#fff;">${latestVersion}</strong>.
-          </div>
-        </div>
-        <button id="radarthing-userscript-update-close" style="
-          width:28px;
-          height:28px;
-          border-radius:8px;
-          border:1px solid rgba(255,255,255,0.08);
-          background:transparent;
-          color:rgba(255,255,255,0.55);
-          font-size:18px;
-          line-height:1;
-          cursor:pointer;
-        ">&times;</button>
-      </div>
-      <div style="margin-top:14px;font-size:12px;line-height:1.45;color:#94a3b8;">
-        Open the latest installer and let Tampermonkey replace your outdated script.
-      </div>
-      <div style="display:flex;gap:8px;margin-top:16px;">
-        <button id="radarthing-userscript-update-now" style="
-          flex:1;
-          height:36px;
-          border-radius:10px;
-          border:1px solid rgba(34,211,238,0.3);
-          background:rgba(34,211,238,0.16);
-          color:#67e8f9;
-          font-size:11px;
-          font-weight:700;
-          letter-spacing:0.1em;
-          text-transform:uppercase;
-          cursor:pointer;
-        ">Update</button>
-        <button id="radarthing-userscript-update-later" style="
-          flex:1;
-          height:36px;
-          border-radius:10px;
-          border:1px solid rgba(255,255,255,0.12);
-          background:rgba(255,255,255,0.06);
-          color:#cbd5e1;
-          font-size:11px;
-          font-weight:700;
-          letter-spacing:0.1em;
-          text-transform:uppercase;
-          cursor:pointer;
-        ">Later</button>
-      </div>
-    `;
-
-    document.body.appendChild(prompt);
-
-    const removePrompt = () => prompt.remove();
-    prompt.querySelector("#radarthing-userscript-update-close").onclick =
-      removePrompt;
-    prompt.querySelector("#radarthing-userscript-update-later").onclick =
-      removePrompt;
-    prompt.querySelector("#radarthing-userscript-update-now").onclick = () => {
-      window.open(USERSCRIPT_METADATA_URL, "_blank", "noopener,noreferrer");
-      removePrompt();
-    };
-  }
-
-  async function checkForUserscriptUpdate() {
-    const installedVersion = getInstalledUserscriptVersion();
-    if (!installedVersion) return;
-
-    try {
-      const response = await fetch(USERSCRIPT_METADATA_URL, {
-        cache: "no-store",
-      });
-      if (!response.ok) return;
-
-      const source = await response.text();
-      const latestVersion = extractUserscriptVersion(source);
-      if (!latestVersion) return;
-
-      if (compareVersions(installedVersion, latestVersion) < 0) {
-        showUserscriptUpdatePrompt(installedVersion, latestVersion);
-      }
-    } catch (_) {}
   }
 
   function buildInputRow(label, id, placeholder) {
@@ -2528,5 +2342,4 @@
   setupChartZoomHandlers();
   setInterval(syncFlightPlan, 3000);
   setInterval(updateIdentUI, 1000);
-  checkForUserscriptUpdate();
 })();

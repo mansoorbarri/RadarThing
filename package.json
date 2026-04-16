@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --turbo",
-    "build": "next build",
+    "build": "node scripts/build-userscript.mjs && next build",
+    "build:userscript": "node scripts/build-userscript.mjs",
     "check": "eslint . && tsc --noEmit",
     "cf": "cloudflared tunnel run dev-tunnel",
     "stripe": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",

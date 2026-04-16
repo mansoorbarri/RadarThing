@@ -27,6 +27,13 @@ bunx convex dev       # Run after any changes in convex/ folder
 ```
 Notify me to run deploy command when there are changes in the Convex folder.
 
+Userscript:
+```bash
+bun run build:userscript   # Rebuild userscript installer, loader, manifest, and bundles after userscript changes
+```
+Do not hand-edit generated userscript artifacts in `public/userscript/` or `radarthing.user.js`. Edit the source files, then run `bun run build:userscript`.
+Generated userscript artifacts are gitignored and should not be committed.
+
 ## Other Parts of the project 
 This app uses a SSE stream to get the flight data. The SSE code is in ../radar-sse.
 
@@ -49,3 +56,35 @@ When a new user-facing feature is added, add an entry to the top of the `changel
 
 ### SSE Stream
 this project using a SSE stream to get the flight details. this is located at @../radar-sse/.
+
+### Userscript Workflow
+
+Editable userscript source files:
+- `userscript.js`
+- `seabus.js`
+- `jth.js`
+- `userscript-src/radarthing-runtime.js`
+- `userscript-src/config.json` only when changing the userscript version or hosted base URL
+- `scripts/build-userscript.mjs` only when changing the userscript build pipeline
+
+Generated userscript artifacts:
+- `radarthing.user.js`
+- `public/userscript/radarthing.user.js`
+- `public/userscript/radarthing.loader.js`
+- `public/userscript/radarthing.bundle.js`
+- `public/userscript/latest.json`
+- `public/userscript/releases/<version>/radarthing.bundle.js`
+
+Commit rules for userscript changes:
+- Always commit the edited source files listed above.
+- Do not commit generated userscript artifacts. They are gitignored.
+- Never manually patch generated userscript artifacts. Rebuild them from source instead.
+- Run `bun run build:userscript` locally when testing userscript changes.
+- The main app `build` script regenerates userscript artifacts automatically before `next build`, so deploys still include them.
+
+End-user install flow:
+- Tampermonkey users install `/userscript/radarthing.user.js`.
+- That installer loads `/userscript/radarthing.loader.js`.
+- The loader reads `/userscript/latest.json` and loads the current bundle, falling back to `/userscript/radarthing.bundle.js` if needed.
+- Console users open GeoFS, paste the loader snippet shown on the homepage into DevTools Console, and run it.
+- Console installs are not persistent across full page reloads, so users must rerun the snippet or save it as a DevTools Snippet/bookmarklet.
