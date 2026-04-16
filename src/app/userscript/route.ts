@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request) {
+export function GET(request: Request) {
   const installerUrl = new URL("/userscript/radarthing.user.js", request.url);
 
   return NextResponse.redirect(installerUrl, {
