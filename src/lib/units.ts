@@ -18,15 +18,73 @@ export const DEFAULT_UNIT_PREFERENCES: UnitPreferences = {
   altitudeUnit: "auto",
 };
 
+const FT_TO_M = 0.3048;
+const ISA_SEA_LEVEL_TEMP_K = 288.15;
+const ISA_SEA_LEVEL_PRESSURE_PA = 101325;
+const ISA_LAPSE_RATE_K_PER_M = 0.0065;
+const ISA_TROPOPAUSE_ALT_M = 11000;
+const ISA_GAMMA = 1.4;
+const ISA_GAS_CONSTANT = 287.05287;
+const STD_GRAVITY_MPS2 = 9.80665;
+const SEA_LEVEL_SPEED_OF_SOUND_KTS = 661.5;
+
+const ISA_TROPOPAUSE_TEMP_K =
+  ISA_SEA_LEVEL_TEMP_K - ISA_LAPSE_RATE_K_PER_M * ISA_TROPOPAUSE_ALT_M;
+const ISA_TROPOPAUSE_PRESSURE_PA =
+  ISA_SEA_LEVEL_PRESSURE_PA *
+  Math.pow(
+    ISA_TROPOPAUSE_TEMP_K / ISA_SEA_LEVEL_TEMP_K,
+    STD_GRAVITY_MPS2 / (ISA_GAS_CONSTANT * ISA_LAPSE_RATE_K_PER_M),
+  );
+
 /**
- * Approximate speed of sound (kts) at a given altitude (ft) using ISA model.
+ * ISA static pressure (Pa) from pressure altitude (ft).
  */
-function speedOfSoundKts(altFt: number): number {
-  const altM = altFt * 0.3048;
-  // Temperature in ISA below tropopause (11 000 m)
-  const tempK = 288.15 - 0.0065 * Math.min(altM, 11000);
-  // speed of sound = 661.5 * sqrt(T / 288.15)  (kts at sea-level reference)
-  return 661.5 * Math.sqrt(tempK / 288.15);
+function isaPressurePa(altFt: number): number {
+  const altM = Math.max(altFt, 0) * FT_TO_M;
+
+  if (altM <= ISA_TROPOPAUSE_ALT_M) {
+    return (
+      ISA_SEA_LEVEL_PRESSURE_PA *
+      Math.pow(
+        1 - (ISA_LAPSE_RATE_K_PER_M * altM) / ISA_SEA_LEVEL_TEMP_K,
+        STD_GRAVITY_MPS2 / (ISA_GAS_CONSTANT * ISA_LAPSE_RATE_K_PER_M),
+      )
+    );
+  }
+
+  return (
+    ISA_TROPOPAUSE_PRESSURE_PA *
+    Math.exp(
+      (-STD_GRAVITY_MPS2 * (altM - ISA_TROPOPAUSE_ALT_M)) /
+        (ISA_GAS_CONSTANT * ISA_TROPOPAUSE_TEMP_K),
+    )
+  );
+}
+
+/**
+ * Estimate Mach from indicated airspeed using a standard-atmosphere pressure altitude model.
+ *
+ * The stream currently provides KIAS, not TAS/GS, so the old `speed / local speed of sound`
+ * approach substantially under-reported cruise Mach. This is still an estimate because IAS is
+ * not perfectly equal to CAS and real atmospheric conditions vary from ISA.
+ */
+function estimateMachFromKias(speedKias: number, altFt: number): number {
+  const clampedKias = Math.max(speedKias, 0);
+  const seaLevelMach = clampedKias / SEA_LEVEL_SPEED_OF_SOUND_KTS;
+  const gammaFactor = (ISA_GAMMA - 1) / 2;
+  const gammaExponent = ISA_GAMMA / (ISA_GAMMA - 1);
+  const inverseGammaExponent = (ISA_GAMMA - 1) / ISA_GAMMA;
+  const impactPressurePa =
+    ISA_SEA_LEVEL_PRESSURE_PA *
+    (Math.pow(1 + gammaFactor * seaLevelMach ** 2, gammaExponent) - 1);
+  const staticPressurePa = isaPressurePa(altFt);
+
+  return Math.sqrt(
+    ((2 / (ISA_GAMMA - 1)) *
+      (Math.pow(impactPressurePa / staticPressurePa + 1, inverseGammaExponent) -
+        1)),
+  );
 }
 
 /** Format speed value for display. */
@@ -36,8 +94,7 @@ export function formatSpeed(
   altFt = 0,
 ): string {
   if (unit === "mach") {
-    const sos = speedOfSoundKts(altFt);
-    const mach = speedKts / sos;
+    const mach = estimateMachFromKias(speedKts, altFt);
     return mach.toFixed(2);
   }
   return String(Math.round(speedKts));
@@ -45,7 +102,7 @@ export function formatSpeed(
 
 /** The label shown below the speed value. */
 export function speedLabel(unit: SpeedUnit): string {
-  return unit === "mach" ? "MACH GS" : "KNOTS GS";
+  return unit === "mach" ? "MACH EST" : "KNOTS IAS";
 }
 
 /** Short unit suffix appended inline. */
