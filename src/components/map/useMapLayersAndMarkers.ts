@@ -162,6 +162,8 @@ interface ConflictAlert {
 
 export interface ConflictAlertSummary {
   id: string;
+  aircraftIdA: string;
+  aircraftIdB: string;
   callsignA: string;
   callsignB: string;
   severity: ConflictSeverity;
@@ -725,6 +727,8 @@ export const useMapLayersAndMarkers = ({
     onConflictsChange?.(
       conflicts.map((conflict) => ({
         id: `${conflict.aircraftA.id}-${conflict.aircraftB.id}`,
+        aircraftIdA: conflict.aircraftA.id,
+        aircraftIdB: conflict.aircraftB.id,
         callsignA:
           conflict.aircraftA.callsign ||
           conflict.aircraftA.flightNo ||
