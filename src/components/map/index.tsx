@@ -1,8 +1,15 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { toast } from "sonner";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type OnlineAirport } from "~/hooks/useAircraftStream";
@@ -37,6 +44,14 @@ import { useWeatherOverlayLayer } from "~/hooks/useWeatherOverlayLayer";
 import { MetarPanel } from "./MetarPanel";
 import { RadarSettings } from "~/components/atc/radarSettings";
 import { Analytics } from "~/lib/analytics";
+import {
+  createMapLayerPreset,
+  getStoredMapLayerPresets,
+  mapLayerPresetStateEquals,
+  setStoredMapLayerPresets,
+  type MapBaseLayer,
+  type MapLayerPresetState,
+} from "~/lib/mapLayerPresets";
 
 export interface Airport {
   name: string;
@@ -133,6 +148,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [showConflicts, setShowConflicts] = useState(() =>
     getBooleanCookie("traffic_conflicts", false),
   );
+  const [layerPresets, setLayerPresets] = useState(() =>
+    getStoredMapLayerPresets(),
+  );
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [showTags, setShowTags] = useState(true);
   const [conflictAlerts, setConflictAlerts] = useState<ConflictAlertSummary[]>(
     [],
@@ -159,6 +178,65 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const clearHistoryPolylineRef = useRef<(() => void) | null>(null);
 
+  const currentLayerState = useMemo<MapLayerPresetState>(
+    () => ({
+      baseLayer: isRadarMode ? "radar" : isOSMMode ? "osm" : "satellite",
+      openAIP: isOpenAIPEnabled,
+      precipitation: showPrecipitation,
+      airmets: showAirmets,
+      sigmets: showSigmets,
+      conflicts: showConflicts,
+    }),
+    [
+      isOpenAIPEnabled,
+      isOSMMode,
+      isRadarMode,
+      showAirmets,
+      showConflicts,
+      showPrecipitation,
+      showSigmets,
+    ],
+  );
+
+  const activePreset = useMemo(
+    () =>
+      layerPresets.find((preset) =>
+        mapLayerPresetStateEquals(preset, currentLayerState),
+      ) ?? null,
+    [currentLayerState, layerPresets],
+  );
+
+  const selectedPreset = useMemo(
+    () =>
+      selectedPresetId
+        ? layerPresets.find((preset) => preset.id === selectedPresetId) ?? null
+        : null,
+    [layerPresets, selectedPresetId],
+  );
+
+  useEffect(() => {
+    setStoredMapLayerPresets(layerPresets);
+  }, [layerPresets]);
+
+  useEffect(() => {
+    setSelectedPresetId((current) => {
+      if (activePreset?.id) {
+        return activePreset.id;
+      }
+
+      if (current && layerPresets.some((preset) => preset.id === current)) {
+        return current;
+      }
+
+      return null;
+    });
+  }, [activePreset, layerPresets]);
+
+  const applyBaseLayer = useCallback((baseLayer: MapBaseLayer) => {
+    setIsRadarMode(baseLayer === "radar");
+    setIsOSMMode(baseLayer === "osm");
+  }, []);
+
   const toggleRadarMode = useCallback(() => {
     if (!canUseRadarMode) return;
     setIsRadarMode((prev) => {
@@ -184,6 +262,154 @@ const MapComponent: React.FC<MapComponentProps> = ({
     // OpenAIP is an overlay that can be shown on top of any base layer
     setIsOpenAIPEnabled((prev) => !prev);
   }, []);
+
+  const applyLayerPreset = useCallback(
+    (presetId: string) => {
+      const preset = layerPresets.find((entry) => entry.id === presetId);
+      if (!preset) return;
+
+      const skipped: string[] = [];
+      let nextBaseLayer = preset.baseLayer;
+      let nextAirmets = preset.airmets;
+      let nextSigmets = preset.sigmets;
+      let nextConflicts = preset.conflicts;
+
+      if (preset.baseLayer === "radar" && !canUseRadarMode) {
+        skipped.push("Radar Mode");
+        nextBaseLayer = "satellite";
+      }
+      if (preset.airmets && !canUseAdvancedWeather) {
+        skipped.push("AIRMETs");
+        nextAirmets = false;
+      }
+      if (preset.sigmets && !canUseAdvancedWeather) {
+        skipped.push("SIGMETs");
+        nextSigmets = false;
+      }
+      if (preset.conflicts && !canUseConflictAlerts) {
+        skipped.push("Conflict Alerts");
+        nextConflicts = false;
+      }
+
+      applyBaseLayer(nextBaseLayer);
+      setIsOpenAIPEnabled(preset.openAIP);
+      setShowPrecipitation(preset.precipitation);
+      setShowAirmets(nextAirmets);
+      setShowSigmets(nextSigmets);
+      setShowConflicts(nextConflicts);
+      setSelectedPresetId(preset.id);
+
+      Analytics.track("map_layer_preset_applied", {
+        preset_id: preset.id,
+        preset_name: preset.name,
+        skipped_count: skipped.length,
+      });
+
+      if (skipped.length > 0) {
+        toast.warning(`Applied ${preset.name} with ${skipped.join(", ")} skipped`);
+      }
+    },
+    [
+      applyBaseLayer,
+      canUseAdvancedWeather,
+      canUseConflictAlerts,
+      canUseRadarMode,
+      layerPresets,
+    ],
+  );
+
+  const saveLayerPreset = useCallback(
+    (name: string) => {
+      const normalizedName = name.trim();
+      if (!normalizedName) {
+        return { ok: false as const, error: "Preset name is required" };
+      }
+
+      if (normalizedName.length > 32) {
+        return {
+          ok: false as const,
+          error: "Preset names must be 32 characters or fewer",
+        };
+      }
+
+      const hasNameConflict = layerPresets.some(
+        (preset) => preset.name.toLowerCase() === normalizedName.toLowerCase(),
+      );
+      if (hasNameConflict) {
+        return {
+          ok: false as const,
+          error: "A preset with that name already exists",
+        };
+      }
+
+      const duplicateState = layerPresets.find((preset) =>
+        mapLayerPresetStateEquals(preset, currentLayerState),
+      );
+      if (duplicateState) {
+        return {
+          ok: false as const,
+          error: `Current setup already matches ${duplicateState.name}`,
+        };
+      }
+
+      const preset = createMapLayerPreset(normalizedName, currentLayerState);
+      setLayerPresets((prev) =>
+        [...prev, preset].sort((left, right) =>
+          left.name.localeCompare(right.name),
+        ),
+      );
+      setSelectedPresetId(preset.id);
+      Analytics.track("map_layer_preset_saved", {
+        preset_id: preset.id,
+        preset_name: preset.name,
+      });
+      toast.success(`Saved preset: ${preset.name}`);
+      return { ok: true as const };
+    },
+    [currentLayerState, layerPresets],
+  );
+
+  const updateLayerPreset = useCallback(
+    (presetId: string) => {
+      const preset = layerPresets.find((entry) => entry.id === presetId);
+      if (!preset) return;
+
+      setLayerPresets((prev) =>
+        prev.map((entry) =>
+          entry.id === presetId
+            ? {
+                ...entry,
+                ...currentLayerState,
+                updatedAt: Date.now(),
+              }
+            : entry,
+        ),
+      );
+      setSelectedPresetId(presetId);
+      Analytics.track("map_layer_preset_updated", {
+        preset_id: preset.id,
+        preset_name: preset.name,
+      });
+      toast.success(`Updated preset: ${preset.name}`);
+    },
+    [currentLayerState, layerPresets],
+  );
+
+  const deleteLayerPreset = useCallback(
+    (presetId: string) => {
+      const preset = layerPresets.find((entry) => entry.id === presetId);
+      if (!preset) return;
+
+      setLayerPresets((prev) => prev.filter((entry) => entry.id !== presetId));
+      setSelectedPresetId((current) => (current === presetId ? null : current));
+      Analytics.track("map_layer_preset_deleted", {
+        preset_id: preset.id,
+        preset_name: preset.name,
+      });
+      toast.success(`Deleted preset: ${preset.name}`);
+    },
+    [layerPresets],
+  );
 
   useEffect(() => {
     // Only reset when loading is complete and user doesn't have access
@@ -673,6 +899,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
           <div className="rounded-xl border border-white/10 bg-[#0a1219]/95 p-5 shadow-2xl backdrop-blur-xl">
             <RadarSettings
               isPRO={isProUser}
+              presets={layerPresets}
+              activePresetId={activePreset?.id ?? null}
+              selectedPresetId={selectedPreset?.id ?? null}
+              onApplyPreset={applyLayerPreset}
+              onSavePreset={saveLayerPreset}
+              onUpdatePreset={updateLayerPreset}
+              onDeletePreset={deleteLayerPreset}
               showPrecipitation={showPrecipitation}
               setShowPrecipitation={setShowPrecipitation}
               showAirmets={showAirmets}

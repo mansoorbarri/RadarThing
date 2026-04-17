@@ -8,6 +8,22 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "map-layer-presets",
+    date: "2026-04-17",
+    title: "Map Layer Presets",
+    description:
+      "You can now save your radar setup with presets. Set one in the radar settings icon.",
+    type: "new",
+  },
+  {
+    id: "pilot-challenges",
+    date: "2026-04-17",
+    title: "Pilot Challenges",
+    description:
+      "Admins can now publish weekly or monthly pilot challenges, with automatic tracking for flight-based goals and manual review for custom ones.",
+    type: "new",
+  },
+  {
     id: "shortcuts-menu",
     date: "2026-04-12",
     title: "Shortcut Reference Menu",
