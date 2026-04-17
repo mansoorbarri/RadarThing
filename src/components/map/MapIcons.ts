@@ -134,8 +134,12 @@ function isMilitaryTransportType(rawType: string, normalizedType: string) {
 
 function isMilitaryCombatType(rawType: string, normalizedType: string) {
   return (
-    /\b(military|fighter|bomber|attack|interceptor|trainer)\b/.test(rawType) ||
-    /^(F\d+|B\d+|A\d+|T\d+|SU\d+|MIG\d+|TU160)$/.test(normalizedType)
+    /\b(military|fighter|bomber|attack|interceptor|trainer|gunship)\b/.test(
+      rawType,
+    ) ||
+    /^(F\d+|SU\d+|MIG\d+|TU160|B1|B2|B21|B52|A10|A4|A6|A7|AV8|T\d+|M2000|JAS39|L39|YAK130)$/.test(
+      normalizedType,
+    )
   );
 }
 
