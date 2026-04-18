@@ -2,6 +2,8 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx } from "./_generated/server";
 import { paginationOptsValidator } from "convex/server";
+import { autoCompleteChallengesForFlight } from "./challenges";
+import { calculateRouteDistanceNm } from "./lib/challengeRules";
 import { isFlightModeratorGoogleId } from "../src/lib/flight-moderation";
 
 // Get flight history for a user by their Google ID
@@ -43,31 +45,6 @@ export const getHistoryByGoogleId = query({
   },
 });
 
-function isCoordinatePair(point: unknown): point is [number, number] {
-  return (
-    Array.isArray(point) &&
-    point.length >= 2 &&
-    typeof point[0] === "number" &&
-    Number.isFinite(point[0]) &&
-    typeof point[1] === "number" &&
-    Number.isFinite(point[1])
-  );
-}
-
-function calculateRouteDistanceNm(routeData: unknown): number {
-  if (!Array.isArray(routeData)) return 0;
-
-  let totalDistanceNm = 0;
-  for (let i = 1; i < routeData.length; i++) {
-    const prev = routeData[i - 1];
-    const curr = routeData[i];
-    if (!isCoordinatePair(prev) || !isCoordinatePair(curr)) continue;
-    totalDistanceNm += haversineDistance(prev[0], prev[1], curr[0], curr[1]);
-  }
-
-  return totalDistanceNm;
-}
-
 function utcDateStringFromTimestamp(timestamp: number): string {
   const d = new Date(timestamp);
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
@@ -97,10 +74,7 @@ function deriveVisibleCurrentStreak(
   return streakAtLastFlight;
 }
 
-async function recalculateUserStats(
-  ctx: MutationCtx,
-  userId: Id<"users">,
-) {
+async function recalculateUserStats(ctx: MutationCtx, userId: Id<"users">) {
   const flights = await ctx.db
     .query("flights")
     .withIndex("by_userId_startTime", (q) => q.eq("userId", userId))
@@ -260,6 +234,17 @@ export const create = mutation({
         lastFlightCallsign: args.callsign,
       });
 
+      await autoCompleteChallengesForFlight(ctx, {
+        userId: args.userId,
+        flightId,
+        aircraftType: args.aircraftType,
+        depICAO: args.depICAO,
+        arrICAO: args.arrICAO,
+        startTime: args.startTime,
+        endTime: args.endTime,
+        routeData: args.routeData,
+      });
+
       return flightId;
     }
 
@@ -300,6 +285,17 @@ export const create = mutation({
       lastFlightCallsign: isNewestFlight
         ? args.callsign
         : stats.lastFlightCallsign,
+    });
+
+    await autoCompleteChallengesForFlight(ctx, {
+      userId: args.userId,
+      flightId,
+      aircraftType: args.aircraftType,
+      depICAO: args.depICAO,
+      arrICAO: args.arrICAO,
+      startTime: args.startTime,
+      endTime: args.endTime,
+      routeData: args.routeData,
     });
 
     return flightId;
@@ -719,30 +715,6 @@ function calculateStreaks(flights: { startTime: number }[]): {
   return { currentStreak, longestStreak };
 }
 
-// Haversine formula to calculate distance between two points in nautical miles
-function haversineDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const R = 3440.065; // Earth's radius in nautical miles
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-function toRad(deg: number): number {
-  return deg * (Math.PI / 180);
-}
-
 // Get leaderboard data across all users
 export const getLeaderboard = query({
   handler: async (ctx) => {
@@ -759,14 +731,18 @@ export const getLeaderboard = query({
     for (const user of users) {
       const userStats = statsByUserId.get(user._id);
       const approvedAircraftImages = userStats?.approvedAircraftImages ?? 0;
-      if (!userStats || (userStats.totalFlights <= 0 && approvedAircraftImages <= 0)) {
+      if (
+        !userStats ||
+        (userStats.totalFlights <= 0 && approvedAircraftImages <= 0)
+      ) {
         continue;
       }
 
       leaderboard.push({
         userId: user._id,
         clerkId: user.clerkId,
-        callsign: userStats.lastFlightCallsign ?? user.discordUsername ?? "Unknown",
+        callsign:
+          userStats.lastFlightCallsign ?? user.discordUsername ?? "Unknown",
         role: user.role,
         discordUsername: user.discordUsername ?? null,
         totalFlights: userStats.totalFlights,

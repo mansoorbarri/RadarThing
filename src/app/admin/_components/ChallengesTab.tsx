@@ -1,0 +1,929 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useMutation, useQuery } from "convex/react";
+import {
+  CalendarRange,
+  CheckCircle2,
+  ClipboardCheck,
+  Flag,
+  Loader2,
+  Pencil,
+  Send,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
+import type { Id } from "../../../../convex/_generated/dataModel";
+import { api } from "../../../../convex/_generated/api";
+import { Analytics } from "~/lib/analytics";
+
+type ChallengeCadence = "weekly" | "monthly" | "custom";
+type ChallengeMode = "auto" | "manual";
+type ChallengeRuleType =
+  | "visit_airport"
+  | "visit_airport_count"
+  | "depart_airport"
+  | "arrive_airport"
+  | "route"
+  | "aircraft_type"
+  | "flight_count"
+  | "min_duration"
+  | "min_distance"
+  | "manual";
+
+interface ChallengeForm {
+  title: string;
+  description: string;
+  cadence: ChallengeCadence;
+  mode: ChallengeMode;
+  ruleType: ChallengeRuleType;
+  targetAirport: string;
+  targetDepartureAirport: string;
+  targetArrivalAirport: string;
+  targetAircraftType: string;
+  requiredAirportCount: string;
+  requiredFlightCount: string;
+  minDurationMinutes: string;
+  minDistanceNm: string;
+  startAt: string;
+  durationDays: string;
+  isPublished: boolean;
+}
+
+function toLocalInputValue(timestamp: number) {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function defaultDurationDays(cadence: ChallengeCadence) {
+  if (cadence === "monthly") return "30";
+  if (cadence === "custom") return "3";
+  return "7";
+}
+
+function defaultWindow(cadence: ChallengeCadence) {
+  const start = new Date();
+  start.setMinutes(0, 0, 0);
+
+  return {
+    startAt: toLocalInputValue(start.getTime()),
+    durationDays: defaultDurationDays(cadence),
+  };
+}
+
+function createInitialForm(): ChallengeForm {
+  const window = defaultWindow("weekly");
+  return {
+    title: "",
+    description: "",
+    cadence: "weekly",
+    mode: "auto",
+    ruleType: "visit_airport",
+    targetAirport: "",
+    targetDepartureAirport: "",
+    targetArrivalAirport: "",
+    targetAircraftType: "",
+    requiredAirportCount: "",
+    requiredFlightCount: "",
+    minDurationMinutes: "",
+    minDistanceNm: "",
+    startAt: window.startAt,
+    durationDays: window.durationDays,
+    isPublished: true,
+  };
+}
+
+function formatChallengeWindow(startAt: number, endAt: number) {
+  return `${new Date(startAt).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  })} - ${new Date(endAt).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  })}`;
+}
+
+function describeRule(challenge: {
+  mode: ChallengeMode;
+  ruleType: ChallengeRuleType;
+  targetAirport: string | null;
+  targetDepartureAirport: string | null;
+  targetArrivalAirport: string | null;
+  targetAircraftType: string | null;
+  requiredAirportCount: number | null;
+  requiredFlightCount: number | null;
+  minDurationMinutes: number | null;
+  minDistanceNm: number | null;
+}) {
+  if (challenge.mode === "manual") return "Manual review challenge";
+
+  switch (challenge.ruleType) {
+    case "visit_airport":
+      return `Visit ${challenge.targetAirport}`;
+    case "visit_airport_count":
+      return `Visit ${challenge.requiredAirportCount} unique airports`;
+    case "depart_airport":
+      return `Depart ${challenge.targetAirport}`;
+    case "arrive_airport":
+      return `Arrive at ${challenge.targetAirport}`;
+    case "route":
+      return `Route ${challenge.targetDepartureAirport} -> ${challenge.targetArrivalAirport}`;
+    case "aircraft_type":
+      return `Aircraft ${challenge.targetAircraftType}`;
+    case "flight_count":
+      return `Complete ${challenge.requiredFlightCount} flights`;
+    case "min_duration":
+      return `At least ${challenge.minDurationMinutes} minutes`;
+    case "min_distance":
+      return `At least ${challenge.minDistanceNm} nm`;
+    default:
+      return "Manual review challenge";
+  }
+}
+
+export function ChallengesTab() {
+  const challenges = useQuery(api.challenges.listAdmin, {});
+  const pendingReviews = useQuery(api.challenges.listPendingReviews, {});
+  const createChallenge = useMutation(api.challenges.create);
+  const updateChallenge = useMutation(api.challenges.update);
+  const togglePublished = useMutation(api.challenges.togglePublished);
+  const removeChallenge = useMutation(api.challenges.remove);
+  const reviewSubmission = useMutation(api.challenges.reviewSubmission);
+
+  const [editingId, setEditingId] = useState<Id<"challenges"> | null>(null);
+  const [form, setForm] = useState<ChallengeForm>(() => createInitialForm());
+  const [isSaving, setIsSaving] = useState(false);
+  const [busyReviewId, setBusyReviewId] =
+    useState<Id<"challengeCompletions"> | null>(null);
+  const [busyChallengeId, setBusyChallengeId] =
+    useState<Id<"challenges"> | null>(null);
+
+  const reviewCount = pendingReviews?.length ?? 0;
+  const isEditing = editingId !== null;
+
+  const sortedChallenges = useMemo(() => challenges ?? [], [challenges]);
+
+  function resetForm(nextCadence: ChallengeCadence = "weekly") {
+    const window = defaultWindow(nextCadence);
+    setEditingId(null);
+    setForm({
+      ...createInitialForm(),
+      cadence: nextCadence,
+      startAt: window.startAt,
+      durationDays: window.durationDays,
+    });
+  }
+
+  function loadChallengeIntoForm(
+    challenge: NonNullable<typeof challenges>[number],
+  ) {
+    setEditingId(challenge.id);
+    setForm({
+      title: challenge.title,
+      description: challenge.description,
+      cadence: challenge.cadence,
+      mode: challenge.mode,
+      ruleType: challenge.ruleType,
+      targetAirport: challenge.targetAirport ?? "",
+      targetDepartureAirport: challenge.targetDepartureAirport ?? "",
+      targetArrivalAirport: challenge.targetArrivalAirport ?? "",
+      targetAircraftType: challenge.targetAircraftType ?? "",
+      requiredAirportCount:
+        challenge.requiredAirportCount !== null
+          ? String(challenge.requiredAirportCount)
+          : "",
+      requiredFlightCount:
+        challenge.requiredFlightCount !== null
+          ? String(challenge.requiredFlightCount)
+          : "",
+      minDurationMinutes:
+        challenge.minDurationMinutes !== null
+          ? String(challenge.minDurationMinutes)
+          : "",
+      minDistanceNm:
+        challenge.minDistanceNm !== null ? String(challenge.minDistanceNm) : "",
+      startAt: toLocalInputValue(challenge.startAt),
+      durationDays: String(challenge.durationDays),
+      isPublished: challenge.isPublished,
+    });
+  }
+
+  async function handleSubmit() {
+    const startAt = new Date(form.startAt).getTime();
+    const durationDays = Number(form.durationDays);
+
+    if (!Number.isFinite(startAt)) {
+      toast.error("Pick a valid start date");
+      return;
+    }
+
+    if (!Number.isFinite(durationDays) || durationDays <= 0) {
+      toast.error("Pick a valid duration");
+      return;
+    }
+
+    const payload = {
+      title: form.title,
+      description: form.description,
+      cadence: form.cadence,
+      mode: form.mode,
+      ruleType: form.mode === "manual" ? ("manual" as const) : form.ruleType,
+      targetAirport: form.targetAirport || undefined,
+      targetDepartureAirport: form.targetDepartureAirport || undefined,
+      targetArrivalAirport: form.targetArrivalAirport || undefined,
+      targetAircraftType: form.targetAircraftType || undefined,
+      requiredAirportCount: form.requiredAirportCount
+        ? Number(form.requiredAirportCount)
+        : undefined,
+      requiredFlightCount: form.requiredFlightCount
+        ? Number(form.requiredFlightCount)
+        : undefined,
+      minDurationMinutes: form.minDurationMinutes
+        ? Number(form.minDurationMinutes)
+        : undefined,
+      minDistanceNm: form.minDistanceNm
+        ? Number(form.minDistanceNm)
+        : undefined,
+      startAt,
+      durationDays,
+      isPublished: form.isPublished,
+    };
+
+    setIsSaving(true);
+    try {
+      if (editingId) {
+        await updateChallenge({
+          challengeId: editingId,
+          ...payload,
+        });
+        toast.success("Challenge updated");
+      } else {
+        await createChallenge(payload);
+        Analytics.track("challenge_created", {
+          cadence: payload.cadence,
+          mode: payload.mode,
+          rule_type: payload.ruleType,
+          is_published: payload.isPublished,
+        });
+        toast.success("Challenge created");
+      }
+
+      resetForm(form.cadence);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not save challenge";
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleToggle(
+    challengeId: Id<"challenges">,
+    isPublished: boolean,
+  ) {
+    setBusyChallengeId(challengeId);
+    try {
+      await togglePublished({
+        challengeId,
+        isPublished: !isPublished,
+      });
+      toast.success(
+        isPublished ? "Challenge unpublished" : "Challenge published",
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not update challenge";
+      toast.error(message);
+    } finally {
+      setBusyChallengeId(null);
+    }
+  }
+
+  async function handleRemove(challengeId: Id<"challenges">) {
+    setBusyChallengeId(challengeId);
+    try {
+      await removeChallenge({ challengeId });
+      if (editingId === challengeId) {
+        resetForm(form.cadence);
+      }
+      toast.success("Challenge deleted");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not delete challenge";
+      toast.error(message);
+    } finally {
+      setBusyChallengeId(null);
+    }
+  }
+
+  async function handleReview(
+    completionId: Id<"challengeCompletions">,
+    decision: "approve" | "reject",
+  ) {
+    setBusyReviewId(completionId);
+    try {
+      await reviewSubmission({ completionId, decision });
+      Analytics.track("challenge_submission_reviewed", {
+        decision,
+      });
+      toast.success(
+        decision === "approve" ? "Submission approved" : "Submission rejected",
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not review submission";
+      toast.error(message);
+    } finally {
+      setBusyReviewId(null);
+    }
+  }
+
+  if (challenges === undefined || pendingReviews === undefined) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white">
+              {isEditing ? "Edit Challenge" : "Create Challenge"}
+            </h3>
+            <p className="mt-1 text-sm text-slate-400">
+              Weekly and monthly challenges can be auto-tracked from flights or
+              manually reviewed by admins.
+            </p>
+          </div>
+          {isEditing && (
+            <button
+              onClick={() => resetForm(form.cadence)}
+              className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10"
+            >
+              Cancel edit
+            </button>
+          )}
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-sm text-slate-400">Title</span>
+            <input
+              value={form.title}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  title: event.target.value,
+                }))
+              }
+              placeholder="Visit Innsbruck in the next 24 hours"
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+            />
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-sm text-slate-400">Cadence</span>
+            <select
+              value={form.cadence}
+              onChange={(event) => {
+                const cadence = event.target.value as ChallengeCadence;
+                const window = defaultWindow(cadence);
+                setForm((current) => ({
+                  ...current,
+                  cadence,
+                  startAt: window.startAt,
+                  durationDays: window.durationDays,
+                }));
+              }}
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+            >
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+
+          <label className="space-y-2 md:col-span-2">
+            <span className="text-sm text-slate-400">Description</span>
+            <textarea
+              value={form.description}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  description: event.target.value,
+                }))
+              }
+              rows={3}
+              placeholder="Admins can describe the target and what counts as completion."
+              className="w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white outline-none focus:border-cyan-500/50"
+            />
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-sm text-slate-400">Mode</span>
+            <select
+              value={form.mode}
+              onChange={(event) => {
+                const mode = event.target.value as ChallengeMode;
+                setForm((current) => ({
+                  ...current,
+                  mode,
+                  ruleType:
+                    mode === "manual"
+                      ? "manual"
+                      : current.ruleType === "manual"
+                        ? "visit_airport"
+                        : current.ruleType,
+                }));
+              }}
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+            >
+              <option value="auto">Auto tracked</option>
+              <option value="manual">Manual review</option>
+            </select>
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-sm text-slate-400">Rule</span>
+            <select
+              value={form.mode === "manual" ? "manual" : form.ruleType}
+              disabled={form.mode === "manual"}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  ruleType: event.target.value as ChallengeRuleType,
+                }))
+              }
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 disabled:opacity-60"
+            >
+              <option value="visit_airport">Visit airport</option>
+              <option value="visit_airport_count">Visit X airports</option>
+              <option value="depart_airport">Depart airport</option>
+              <option value="arrive_airport">Arrive airport</option>
+              <option value="route">Specific route</option>
+              <option value="aircraft_type">Specific aircraft</option>
+              <option value="flight_count">Complete X flights</option>
+              <option value="min_duration">Minimum duration</option>
+              <option value="min_distance">Minimum distance</option>
+              <option value="manual">Manual review</option>
+            </select>
+          </label>
+
+          {(form.ruleType === "visit_airport" ||
+            form.ruleType === "depart_airport" ||
+            form.ruleType === "arrive_airport") &&
+            form.mode === "auto" && (
+              <label className="space-y-2">
+                <span className="text-sm text-slate-400">Airport</span>
+                <input
+                  value={form.targetAirport}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      targetAirport: event.target.value.toUpperCase(),
+                    }))
+                  }
+                  placeholder="LOWI"
+                  className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+                />
+              </label>
+            )}
+
+          {form.ruleType === "visit_airport_count" && form.mode === "auto" && (
+            <label className="space-y-2">
+              <span className="text-sm text-slate-400">
+                Unique airports to visit
+              </span>
+              <input
+                type="number"
+                min="1"
+                value={form.requiredAirportCount}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    requiredAirportCount: event.target.value,
+                  }))
+                }
+                placeholder="5"
+                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+              />
+            </label>
+          )}
+
+          {form.ruleType === "route" && form.mode === "auto" && (
+            <>
+              <label className="space-y-2">
+                <span className="text-sm text-slate-400">
+                  Departure airport
+                </span>
+                <input
+                  value={form.targetDepartureAirport}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      targetDepartureAirport: event.target.value.toUpperCase(),
+                    }))
+                  }
+                  placeholder="KJFK"
+                  className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm text-slate-400">Arrival airport</span>
+                <input
+                  value={form.targetArrivalAirport}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      targetArrivalAirport: event.target.value.toUpperCase(),
+                    }))
+                  }
+                  placeholder="KLAX"
+                  className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+                />
+              </label>
+            </>
+          )}
+
+          {form.ruleType === "aircraft_type" && form.mode === "auto" && (
+            <label className="space-y-2">
+              <span className="text-sm text-slate-400">Aircraft type</span>
+              <input
+                value={form.targetAircraftType}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    targetAircraftType: event.target.value.toUpperCase(),
+                  }))
+                }
+                placeholder="A320"
+                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+              />
+            </label>
+          )}
+
+          {form.ruleType === "flight_count" && form.mode === "auto" && (
+            <label className="space-y-2">
+              <span className="text-sm text-slate-400">Flights required</span>
+              <input
+                type="number"
+                min="1"
+                value={form.requiredFlightCount}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    requiredFlightCount: event.target.value,
+                  }))
+                }
+                placeholder="3"
+                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+              />
+            </label>
+          )}
+
+          {form.ruleType === "min_duration" && form.mode === "auto" && (
+            <label className="space-y-2">
+              <span className="text-sm text-slate-400">Minimum minutes</span>
+              <input
+                type="number"
+                min="1"
+                value={form.minDurationMinutes}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    minDurationMinutes: event.target.value,
+                  }))
+                }
+                placeholder="90"
+                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+              />
+            </label>
+          )}
+
+          {form.ruleType === "min_distance" && form.mode === "auto" && (
+            <label className="space-y-2">
+              <span className="text-sm text-slate-400">
+                Minimum nautical miles
+              </span>
+              <input
+                type="number"
+                min="1"
+                value={form.minDistanceNm}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    minDistanceNm: event.target.value,
+                  }))
+                }
+                placeholder="500"
+                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+              />
+            </label>
+          )}
+
+          <label className="space-y-2">
+            <span className="text-sm text-slate-400">Start</span>
+            <input
+              type="datetime-local"
+              value={form.startAt}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  startAt: event.target.value,
+                }))
+              }
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+            />
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-sm text-slate-400">
+              {form.cadence === "weekly"
+                ? "Duration"
+                : form.cadence === "monthly"
+                  ? "Duration"
+                  : "Custom days"}
+            </span>
+            <input
+              type="number"
+              min="1"
+              disabled={form.cadence !== "custom"}
+              value={form.durationDays}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  durationDays: event.target.value,
+                }))
+              }
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 disabled:opacity-60"
+            />
+            <p className="text-xs text-slate-500">
+              {form.cadence === "weekly" &&
+                "Weekly challenges always run for 7 days."}
+              {form.cadence === "monthly" &&
+                "Monthly challenges always run for 30 days."}
+              {form.cadence === "custom" &&
+                "Use this for one-off challenges without manually setting an end date."}
+            </p>
+          </label>
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+          <label className="flex items-center gap-2 text-sm text-slate-300">
+            <input
+              type="checkbox"
+              checked={form.isPublished}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  isPublished: event.target.checked,
+                }))
+              }
+              className="h-4 w-4 rounded border-white/20 bg-black/30"
+            />
+            Publish immediately
+          </label>
+          <button
+            onClick={handleSubmit}
+            disabled={isSaving}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+            {isEditing ? "Save challenge" : "Create challenge"}
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+        <div className="mb-5 flex items-center gap-2">
+          <ClipboardCheck className="h-4 w-4 text-yellow-400" />
+          <h3 className="text-lg font-semibold text-white">
+            Pending Manual Reviews
+          </h3>
+          {reviewCount > 0 && (
+            <span className="rounded-full border border-yellow-500/30 bg-yellow-500/10 px-2 py-0.5 font-mono text-[10px] tracking-wider text-yellow-300 uppercase">
+              {reviewCount}
+            </span>
+          )}
+        </div>
+
+        {pendingReviews.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            No manual challenge submissions need review.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {pendingReviews.map((review) => (
+              <div
+                key={review.id}
+                className="rounded-2xl border border-white/10 bg-black/30 p-4"
+              >
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-sm font-semibold text-white">
+                      {review.challengeTitle}
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      {review.userDisplay} • submitted{" "}
+                      {new Date(review.createdAt).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleReview(review.id, "approve")}
+                      disabled={busyReviewId === review.id}
+                      className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-emerald-500/15 px-3 py-2 text-sm text-emerald-300 transition-colors hover:bg-emerald-500/25 disabled:opacity-60"
+                    >
+                      {busyReviewId === review.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4" />
+                      )}
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleReview(review.id, "reject")}
+                      disabled={busyReviewId === review.id}
+                      className="cursor-pointer rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+
+                <p className="mb-3 text-sm text-slate-300">
+                  {review.challengeDescription}
+                </p>
+                {review.submissionNote && (
+                  <p className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">
+                    {review.submissionNote}
+                  </p>
+                )}
+                {review.flight && (
+                  <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-cyan-100">
+                    Flight: {review.flight.callsign} •{" "}
+                    {review.flight.depICAO ?? "???"} to{" "}
+                    {review.flight.arrICAO ?? "???"} •{" "}
+                    {review.flight.aircraftType}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+        <div className="mb-5 flex items-center gap-2">
+          <Flag className="h-4 w-4 text-cyan-400" />
+          <h3 className="text-lg font-semibold text-white">All Challenges</h3>
+        </div>
+
+        {sortedChallenges.length === 0 ? (
+          <p className="text-sm text-slate-500">No challenges yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {sortedChallenges.map((challenge) => (
+              <div
+                key={challenge.id}
+                className="rounded-2xl border border-white/10 bg-black/30 p-4"
+              >
+                <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
+                        {challenge.cadence}
+                      </span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 font-mono text-[10px] tracking-wider uppercase ${
+                          challenge.isPublished
+                            ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                            : "border border-slate-500/30 bg-slate-500/10 text-slate-300"
+                        }`}
+                      >
+                        {challenge.isPublished ? "published" : "draft"}
+                      </span>
+                      <span className="rounded-full border border-cyan-500/20 bg-cyan-500/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
+                        {challenge.mode}
+                      </span>
+                    </div>
+                    <h4 className="text-base font-semibold text-white">
+                      {challenge.title}
+                    </h4>
+                    <p className="mt-1 text-sm text-slate-400">
+                      {challenge.description}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => loadChallengeIntoForm(challenge)}
+                      className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleToggle(challenge.id, challenge.isPublished)
+                      }
+                      disabled={busyChallengeId === challenge.id}
+                      className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 disabled:opacity-60"
+                    >
+                      {challenge.isPublished ? "Unpublish" : "Publish"}
+                    </button>
+                    <button
+                      onClick={() => handleRemove(challenge.id)}
+                      disabled={busyChallengeId === challenge.id}
+                      className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 text-sm text-slate-400 md:grid-cols-4">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                      <CalendarRange className="h-3.5 w-3.5" />
+                      Window
+                    </div>
+                    <p>
+                      {formatChallengeWindow(
+                        challenge.startAt,
+                        challenge.endAt,
+                      )}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {challenge.durationDays} day
+                      {challenge.durationDays === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                      Rule
+                    </div>
+                    <p>{describeRule(challenge)}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                      Progress
+                    </div>
+                    <p>
+                      {challenge.counts.completed} completed •{" "}
+                      {challenge.counts.pending} pending •{" "}
+                      {challenge.counts.rejected} rejected
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                      Discord Event
+                    </div>
+                    {challenge.discordEventUrl ? (
+                      <a
+                        href={challenge.discordEventUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-cyan-300 transition-colors hover:text-cyan-200"
+                      >
+                        View event
+                      </a>
+                    ) : challenge.discordEventId ? (
+                      <p>Event linked</p>
+                    ) : (
+                      <p>No event linked yet</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

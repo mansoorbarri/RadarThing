@@ -188,4 +188,71 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_googleId_status", ["googleId", "status"])
     .index("by_createdAt", ["createdAt"]),
+
+  challenges: defineTable({
+    title: v.string(),
+    description: v.string(),
+    cadence: v.union(
+      v.literal("weekly"),
+      v.literal("monthly"),
+      v.literal("custom"),
+    ),
+    mode: v.union(v.literal("auto"), v.literal("manual")),
+    ruleType: v.union(
+      v.literal("visit_airport"),
+      v.literal("visit_airport_count"),
+      v.literal("depart_airport"),
+      v.literal("arrive_airport"),
+      v.literal("route"),
+      v.literal("aircraft_type"),
+      v.literal("flight_count"),
+      v.literal("min_duration"),
+      v.literal("min_distance"),
+      v.literal("manual"),
+    ),
+    targetAirport: v.optional(v.string()),
+    targetDepartureAirport: v.optional(v.string()),
+    targetArrivalAirport: v.optional(v.string()),
+    targetAircraftType: v.optional(v.string()),
+    requiredAirportCount: v.optional(v.number()),
+    requiredFlightCount: v.optional(v.number()),
+    minDurationMinutes: v.optional(v.number()),
+    minDistanceNm: v.optional(v.number()),
+    durationDays: v.optional(v.number()),
+    startAt: v.number(),
+    endAt: v.number(),
+    isPublished: v.boolean(),
+    discordEventId: v.optional(v.string()),
+    discordEventUrl: v.optional(v.string()),
+    discordEventCreatedAt: v.optional(v.number()),
+    createdBy: v.string(),
+    updatedAt: v.number(),
+  })
+    .index("by_isPublished", ["isPublished"])
+    .index("by_startAt", ["startAt"])
+    .index("by_endAt", ["endAt"])
+    .index("by_createdBy", ["createdBy"]),
+
+  challengeCompletions: defineTable({
+    challengeId: v.id("challenges"),
+    userId: v.id("users"),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("completed"),
+      v.literal("rejected"),
+    ),
+    completedAt: v.optional(v.number()),
+    flightId: v.optional(v.id("flights")),
+    submissionNote: v.optional(v.string()),
+    reviewedBy: v.optional(v.string()),
+    reviewedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_challengeId", ["challengeId"])
+    .index("by_userId", ["userId"])
+    .index("by_status", ["status"])
+    .index("by_challengeId_userId", ["challengeId", "userId"])
+    .index("by_challengeId_status", ["challengeId", "status"])
+    .index("by_userId_status", ["userId", "status"]),
 });

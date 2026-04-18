@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
+import { ActiveChallengesPanel } from "~/components/challenges/ActiveChallengesPanel";
 import { FlightCardDialog } from "~/components/flight-card/FlightCardDialog";
 import type { FlightCardData } from "~/components/flight-card/FlightCard";
 
@@ -324,6 +325,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        <ActiveChallengesPanel />
+
         {statsLoading ? (
           <StatsSkeleton />
         ) : !stats || stats.totalFlights === 0 ? (
@@ -391,8 +394,6 @@ export default function DashboardPage() {
                 </div>
               </div>
             ) : null}
-
-            {/* Active Challenges */}
 
             <div className="mb-8 grid gap-6 lg:grid-cols-3">
               {/* Top Aircraft - PRO */}

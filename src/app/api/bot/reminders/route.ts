@@ -7,6 +7,8 @@ type BotAction =
   | "lookupUser"
   | "createReminder"
   | "listActive"
+  | "listChallengeEvents"
+  | "markChallengeEventCreated"
   | "markTriggered"
   | "markSent"
   | "markCompleted"
@@ -105,8 +107,40 @@ export async function POST(request: Request) {
     }
 
     case "listActive": {
-      const reminders = await convex.query(api.waypointReminders.listActive, {});
+      const reminders = await convex.query(
+        api.waypointReminders.listActive,
+        {},
+      );
       return NextResponse.json({ reminders });
+    }
+
+    case "listChallengeEvents": {
+      const challenges = await convex.query(
+        api.challenges.listForBotAnnouncements,
+        {
+          includeExisting: false,
+        },
+      );
+      return NextResponse.json({ challenges });
+    }
+
+    case "markChallengeEventCreated": {
+      const challengeIdValue = getString(body, "challengeId");
+      const challengeId = challengeIdValue as Id<"challenges"> | undefined;
+      const discordEventId = getString(body, "discordEventId");
+      const discordEventUrl = getString(body, "discordEventUrl");
+
+      if (!challengeId || !discordEventId) {
+        return badRequest("Missing challengeId or discordEventId");
+      }
+
+      await convex.mutation(api.challenges.updateDiscordEvent, {
+        challengeId,
+        discordEventId,
+        discordEventUrl,
+      });
+
+      return NextResponse.json({ success: true });
     }
 
     case "markTriggered": {
@@ -117,10 +151,13 @@ export async function POST(request: Request) {
         return badRequest("Missing or invalid trigger payload");
       }
 
-      const reminder = await convex.mutation(api.waypointReminders.markTriggered, {
-        id,
-        triggeredAt,
-      });
+      const reminder = await convex.mutation(
+        api.waypointReminders.markTriggered,
+        {
+          id,
+          triggeredAt,
+        },
+      );
       return NextResponse.json({ success: true, reminder });
     }
 

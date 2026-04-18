@@ -11,9 +11,11 @@
 import type * as activeTrackers from "../activeTrackers.js";
 import type * as aircraftImages from "../aircraftImages.js";
 import type * as airportCharts from "../airportCharts.js";
+import type * as challenges from "../challenges.js";
 import type * as crons from "../crons.js";
 import type * as flights from "../flights.js";
 import type * as lib_airlineCodes from "../lib/airlineCodes.js";
+import type * as lib_challengeRules from "../lib/challengeRules.js";
 import type * as lib_icaoRegions from "../lib/icaoRegions.js";
 import type * as users from "../users.js";
 import type * as virtualAirlineAircraftImages from "../virtualAirlineAircraftImages.js";
@@ -31,9 +33,11 @@ declare const fullApi: ApiFromModules<{
   activeTrackers: typeof activeTrackers;
   aircraftImages: typeof aircraftImages;
   airportCharts: typeof airportCharts;
+  challenges: typeof challenges;
   crons: typeof crons;
   flights: typeof flights;
   "lib/airlineCodes": typeof lib_airlineCodes;
+  "lib/challengeRules": typeof lib_challengeRules;
   "lib/icaoRegions": typeof lib_icaoRegions;
   users: typeof users;
   virtualAirlineAircraftImages: typeof virtualAirlineAircraftImages;

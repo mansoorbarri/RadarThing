@@ -17,6 +17,7 @@ import {
   Crown,
   Users,
   Upload,
+  Flag,
   X,
   Loader2,
   CheckCircle2,
@@ -37,11 +38,17 @@ import { AdminAccessDenied } from "./_components/AdminAccessDenied";
 import { AdminSkeleton } from "./_components/skeletons";
 import { AircraftImagesTab } from "./_components/AircraftImagesTab";
 import { AirportChartsTab } from "./_components/AirportChartsTab";
+import { ChallengesTab } from "./_components/ChallengesTab";
 import { ProManagementTab } from "./_components/ProManagementTab";
 import { VirtualAirlinesTab } from "./_components/VirtualAirlinesTab";
 
-type MainTab = "images" | "charts" | "virtual-airlines" | "pro";
-type SubmitStage = "idle" | "validating" | "uploading" | "submitting" | "success";
+type MainTab = "images" | "charts" | "challenges" | "virtual-airlines" | "pro";
+type SubmitStage =
+  | "idle"
+  | "validating"
+  | "uploading"
+  | "submitting"
+  | "success";
 
 export default function AdminPage() {
   const { isSignedIn, isLoaded } = useUser();
@@ -133,6 +140,17 @@ export default function AdminPage() {
             <Users className="h-4 w-4" />
             Virtual Airlines
           </button>
+          <button
+            onClick={() => setMainTab("challenges")}
+            className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-all ${
+              mainTab === "challenges"
+                ? "bg-cyan-500/20 text-cyan-400"
+                : "bg-white/5 text-slate-400 hover:bg-white/10"
+            }`}
+          >
+            <Flag className="h-4 w-4" />
+            Challenges
+          </button>
           {isSuperAdmin && (
             <button
               onClick={() => setMainTab("pro")}
@@ -150,6 +168,7 @@ export default function AdminPage() {
 
         {mainTab === "images" && <AircraftImagesTab />}
         {mainTab === "charts" && <AirportChartsTab />}
+        {mainTab === "challenges" && <ChallengesTab />}
         {mainTab === "virtual-airlines" && <VirtualAirlinesTab />}
         {mainTab === "pro" && <ProManagementTab />}
       </main>
@@ -159,7 +178,11 @@ export default function AdminPage() {
         <button
           onClick={() => setShowUploadModal(true)}
           className="fixed right-8 bottom-8 z-40 flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/30 transition-all hover:scale-110 hover:shadow-cyan-500/50"
-          title={mainTab === "images" ? "Upload Aircraft Image" : "Upload Airport Chart"}
+          title={
+            mainTab === "images"
+              ? "Upload Aircraft Image"
+              : "Upload Airport Chart"
+          }
         >
           <Upload className="h-6 w-6 text-white" />
         </button>
@@ -297,7 +320,10 @@ function ChartUploadModal({ onClose }: { onClose: () => void }) {
                 type="text"
                 value={formData.icao}
                 onChange={(e) =>
-                  setFormData({ ...formData, icao: e.target.value.toUpperCase() })
+                  setFormData({
+                    ...formData,
+                    icao: e.target.value.toUpperCase(),
+                  })
                 }
                 placeholder="e.g., KJFK"
                 maxLength={4}
@@ -313,7 +339,10 @@ function ChartUploadModal({ onClose }: { onClose: () => void }) {
               <select
                 value={formData.chartType}
                 onChange={(e) =>
-                  setFormData({ ...formData, chartType: e.target.value as ChartType })
+                  setFormData({
+                    ...formData,
+                    chartType: e.target.value as ChartType,
+                  })
                 }
                 required
                 disabled={isProcessing}
@@ -355,7 +384,9 @@ function ChartUploadModal({ onClose }: { onClose: () => void }) {
 
           <button
             type="submit"
-            disabled={isProcessing || !hasSelectedFiles || submitStage === "success"}
+            disabled={
+              isProcessing || !hasSelectedFiles || submitStage === "success"
+            }
             className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
               submitStage === "success"
                 ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/20"
@@ -414,8 +445,7 @@ function ImageUploadModal({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  const isProcessing =
-    submitStage !== "idle" && submitStage !== "success";
+  const isProcessing = submitStage !== "idle" && submitStage !== "success";
 
   function handleUploadComplete(url: string, key: string) {
     uploadedDataRef.current = { url, key };
@@ -558,7 +588,10 @@ function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   type="text"
                   value={formData.airlineIcao}
                   onChange={(e) =>
-                    setFormData({ ...formData, airlineIcao: e.target.value.toUpperCase() })
+                    setFormData({
+                      ...formData,
+                      airlineIcao: e.target.value.toUpperCase(),
+                    })
                   }
                   placeholder="e.g., USAF"
                   maxLength={10}
@@ -575,7 +608,10 @@ function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   type="text"
                   value={formData.aircraftType}
                   onChange={(e) =>
-                    setFormData({ ...formData, aircraftType: e.target.value.toUpperCase() })
+                    setFormData({
+                      ...formData,
+                      aircraftType: e.target.value.toUpperCase(),
+                    })
                   }
                   placeholder="F16"
                   maxLength={10}
@@ -596,7 +632,10 @@ function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   type="text"
                   value={formData.airlineIata}
                   onChange={(e) =>
-                    setFormData({ ...formData, airlineIata: e.target.value.toUpperCase() })
+                    setFormData({
+                      ...formData,
+                      airlineIata: e.target.value.toUpperCase(),
+                    })
                   }
                   placeholder="e.g., EK"
                   maxLength={2}
@@ -613,7 +652,10 @@ function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   type="text"
                   value={formData.airlineIcao}
                   onChange={(e) =>
-                    setFormData({ ...formData, airlineIcao: e.target.value.toUpperCase() })
+                    setFormData({
+                      ...formData,
+                      airlineIcao: e.target.value.toUpperCase(),
+                    })
                   }
                   placeholder="e.g., UAE"
                   maxLength={4}
@@ -630,7 +672,10 @@ function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   type="text"
                   value={formData.aircraftType}
                   onChange={(e) =>
-                    setFormData({ ...formData, aircraftType: e.target.value.toUpperCase() })
+                    setFormData({
+                      ...formData,
+                      aircraftType: e.target.value.toUpperCase(),
+                    })
                   }
                   placeholder="B777"
                   maxLength={10}
@@ -669,7 +714,9 @@ function ImageUploadModal({ onClose }: { onClose: () => void }) {
 
           <button
             type="submit"
-            disabled={isProcessing || !hasSelectedFile || submitStage === "success"}
+            disabled={
+              isProcessing || !hasSelectedFile || submitStage === "success"
+            }
             className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
               submitStage === "success"
                 ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/20"
