@@ -8,14 +8,6 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    id: "collapsible-radar-settings",
-    date: "2026-04-18",
-    title: "Collapsible Radar Settings",
-    description:
-      "Radar Configuration sections now start collapsed, include Expand All and Collapse All controls, and scroll when the panel gets too tall.",
-    type: "improvement",
-  },
-  {
     id: "conflict-review-log",
     date: "2026-04-18",
     title: "Conflict Review Log",
