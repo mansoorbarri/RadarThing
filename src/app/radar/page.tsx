@@ -612,6 +612,26 @@ export default function ATCPage() {
     setActiveRightPanel(null);
   }
 
+  const handleConflictReview = useCallback(
+    (aircraftsToReview: PositionUpdate[]) => {
+      if (aircraftsToReview.length === 0) return;
+
+      setIsViewingHistory(false);
+      setHistoryPath(null);
+      setIsFollowMode(false);
+      setActiveRightPanel(null);
+      setSelectedAircrafts(aircraftsToReview);
+
+      if (aircraftsToReview.length === 1) {
+        drawFlightPlanOnMapRef.current?.(aircraftsToReview[0]!, true);
+        return;
+      }
+
+      drawMultipleFlightPlansOnMapRef.current?.(aircraftsToReview, true);
+    },
+    [],
+  );
+
   return (
     <UnitPreferencesProvider>
       <div className="relative h-screen w-screen overflow-hidden bg-black">
@@ -992,6 +1012,7 @@ export default function ATCPage() {
             onLayerModeChange={setIsDarkLayerMode}
             replayState={replayState}
             followAircraft={isFollowMode ? selectedAircrafts[0] : undefined}
+            onConflictReview={handleConflictReview}
             setResetMapView={(fn) => {
               resetMapViewRef.current = fn;
             }}

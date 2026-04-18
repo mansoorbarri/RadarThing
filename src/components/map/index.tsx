@@ -69,6 +69,12 @@ interface ReplayState {
   isPlaying: boolean;
 }
 
+interface ConflictHistoryEvent extends ConflictAlertSummary {
+  eventKey: string;
+  createdAt: number;
+  lastSeenAt: number;
+}
+
 interface MapComponentProps {
   aircrafts: PositionUpdate[];
   airports: Airport[];
@@ -93,9 +99,12 @@ interface MapComponentProps {
   onLayerModeChange?: (isDarkLayer: boolean) => void;
   replayState?: ReplayState | null;
   followAircraft?: PositionUpdate;
+  onConflictReview?: (aircrafts: PositionUpdate[]) => void;
   setResetMapView?: (func: () => void) => void;
   hideUi?: boolean;
 }
+
+const MAX_CONFLICT_HISTORY = 12;
 
 const MapComponent: React.FC<MapComponentProps> = ({
   aircrafts,
@@ -114,6 +123,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onLayerModeChange,
   replayState,
   followAircraft,
+  onConflictReview,
   setResetMapView,
   hideUi = false,
 }) => {
@@ -156,7 +166,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [conflictAlerts, setConflictAlerts] = useState<ConflictAlertSummary[]>(
     [],
   );
+  const [conflictHistory, setConflictHistory] = useState<ConflictHistoryEvent[]>(
+    [],
+  );
   const lastConflictSnapshotRef = useRef<string>("");
+  const lastConflictHistorySignatureRef = useRef<string>("");
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // Local selection state for internal use (cleared when clicking map background)
@@ -489,6 +503,94 @@ const MapComponent: React.FC<MapComponentProps> = ({
       low,
     });
   }, [conflictAlerts, showConflicts]);
+
+  useEffect(() => {
+    if (!showConflicts) {
+      lastConflictHistorySignatureRef.current = "";
+      return;
+    }
+
+    const signature = conflictAlerts
+      .map(
+        (alert) =>
+          `${alert.id}:${alert.severity}:${Math.round(alert.horizontalSeparationNm * 10)}:${Math.round(alert.verticalSeparationFt)}:${Math.round(alert.timeToCpaMinutes * 10)}`,
+      )
+      .join("|");
+
+    if (signature === lastConflictHistorySignatureRef.current) return;
+    lastConflictHistorySignatureRef.current = signature;
+
+    if (conflictAlerts.length === 0) return;
+
+    const now = Date.now();
+    setConflictHistory((prev) => {
+      const nextByKey = new Map<string, ConflictHistoryEvent>(
+        prev.map((event) => [event.eventKey, event] as const),
+      );
+
+      conflictAlerts.forEach((alert) => {
+        const lookupKey = alert.id;
+        const existing = nextByKey.get(lookupKey);
+        nextByKey.set(lookupKey, {
+          ...(existing ?? {
+            ...alert,
+            eventKey: alert.id,
+            createdAt: now,
+            lastSeenAt: now,
+          }),
+          ...alert,
+          eventKey: alert.id,
+          lastSeenAt: now,
+        });
+      });
+
+      return Array.from(nextByKey.values())
+        .sort((left, right) => right.lastSeenAt - left.lastSeenAt)
+        .slice(0, MAX_CONFLICT_HISTORY);
+    });
+  }, [conflictAlerts, showConflicts]);
+
+  const handleClearConflictEvents = useCallback(() => {
+    setConflictHistory([]);
+  }, []);
+
+  const handleReviewConflictEvent = useCallback(
+    (event: ConflictHistoryEvent | ConflictAlertSummary) => {
+      if (!onConflictReview) return;
+
+      const reviewAircraft = aircrafts.filter(
+        (aircraft) =>
+          aircraft.id === event.aircraftIdA ||
+          aircraft.id === event.aircraftIdB ||
+          aircraft.callsign === event.callsignA ||
+          aircraft.callsign === event.callsignB ||
+          aircraft.flightNo === event.callsignA ||
+          aircraft.flightNo === event.callsignB,
+      );
+
+      const uniqueAircraft = Array.from(
+        new Map(
+          reviewAircraft.map((aircraft) => [
+            aircraft.callsign || aircraft.id,
+            aircraft,
+          ]),
+        ).values(),
+      ).slice(0, 2);
+
+      if (uniqueAircraft.length === 0) {
+        toast.error("This event is not tied to live traffic right now");
+        return;
+      }
+
+      onConflictReview(uniqueAircraft);
+      Analytics.track("conflict_event_reviewed", {
+        event_id: event.id,
+        severity: event.severity,
+        tracked_count: uniqueAircraft.length,
+      });
+    },
+    [aircrafts, onConflictReview],
+  );
 
   const handleMapClick = useCallback(
     (e: L.LeafletMouseEvent) => {
@@ -921,88 +1023,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       {canUseConflictAlerts && showConflicts && !isMobile && !hideUi && (
         <div className="pointer-events-none absolute top-[180px] right-[22px] z-[10012] w-[300px] select-none">
-          <div className="rounded-xl border border-cyan-400/30 bg-gradient-to-b from-[#03131c]/95 to-[#01090f]/95 p-4 shadow-[0_0_30px_rgba(34,211,238,0.12)] backdrop-blur-xl">
-            <div
-              className="pointer-events-none absolute inset-0 rounded-xl opacity-20"
-              style={{
-                backgroundImage:
-                  "repeating-linear-gradient(180deg, transparent, transparent 5px, rgba(34,211,238,0.08) 6px)",
-              }}
-            />
-            <div className="relative">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <p className="font-mono text-[10px] tracking-[0.2em] text-cyan-400/80 uppercase">
-                    Conflict Monitor
-                  </p>
-                  <p className="font-mono text-xs text-white/60">
-                    Live CPA prediction
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-1">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-80" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />
-                  </span>
-                  <span className="font-mono text-[10px] font-bold text-cyan-300">
-                    {conflictAlerts.length} ACTIVE
-                  </span>
-                </div>
-              </div>
-
-              <div className="mb-3 grid grid-cols-3 gap-2">
-                <SeverityStat
-                  label="HIGH"
-                  tone="text-red-300 border-red-400/30 bg-red-500/10"
-                  count={
-                    conflictAlerts.filter((a) => a.severity === "high").length
-                  }
-                />
-                <SeverityStat
-                  label="MED"
-                  tone="text-amber-300 border-amber-400/30 bg-amber-500/10"
-                  count={
-                    conflictAlerts.filter((a) => a.severity === "medium").length
-                  }
-                />
-                <SeverityStat
-                  label="LOW"
-                  tone="text-yellow-200 border-yellow-300/30 bg-yellow-500/10"
-                  count={
-                    conflictAlerts.filter((a) => a.severity === "low").length
-                  }
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                {conflictAlerts.length === 0 ? (
-                  <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 font-mono text-[11px] text-white/50">
-                    No predicted conflicts in current traffic.
-                  </div>
-                ) : (
-                  conflictAlerts.slice(0, 5).map((alert) => (
-                    <div
-                      key={alert.id}
-                      className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 font-mono text-[11px]"
-                    >
-                      <div className="flex items-center justify-between text-white/85">
-                        <span>{alert.callsignA}</span>
-                        <span className="text-white/35">×</span>
-                        <span>{alert.callsignB}</span>
-                      </div>
-                      <div className="mt-1 flex items-center justify-between text-[10px] text-white/50">
-                        <span>
-                          {alert.horizontalSeparationNm.toFixed(1)}nm /{" "}
-                          {Math.round(alert.verticalSeparationFt)}ft
-                        </span>
-                        <span>T-{alert.timeToCpaMinutes.toFixed(1)}m</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
+          <ConflictMonitorPanel
+            alerts={conflictAlerts}
+            history={conflictHistory}
+            onClearHistory={handleClearConflictEvents}
+            onReviewAlert={handleReviewConflictEvent}
+            onReviewHistoryEvent={handleReviewConflictEvent}
+          />
         </div>
       )}
 
@@ -1043,4 +1070,231 @@ function SeverityStat({
       <p className="text-sm font-bold">{count}</p>
     </div>
   );
+}
+
+function ConflictMonitorPanel({
+  alerts,
+  history,
+  onClearHistory,
+  onReviewAlert,
+  onReviewHistoryEvent,
+}: {
+  alerts: ConflictAlertSummary[];
+  history: ConflictHistoryEvent[];
+  onClearHistory: () => void;
+  onReviewAlert: (alert: ConflictAlertSummary) => void;
+  onReviewHistoryEvent: (event: ConflictHistoryEvent) => void;
+}) {
+  const highCount = alerts.filter((alert) => alert.severity === "high").length;
+  const mediumCount = alerts.filter(
+    (alert) => alert.severity === "medium",
+  ).length;
+  const lowCount = alerts.filter((alert) => alert.severity === "low").length;
+
+  return (
+    <div className="pointer-events-auto rounded-xl border border-cyan-400/30 bg-gradient-to-b from-[#03131c]/95 to-[#01090f]/95 p-4 shadow-[0_0_30px_rgba(34,211,238,0.12)] backdrop-blur-xl">
+      <div
+        className="pointer-events-none absolute inset-0 rounded-xl opacity-20"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(180deg, transparent, transparent 5px, rgba(34,211,238,0.08) 6px)",
+        }}
+      />
+      <div className="relative">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <p className="font-mono text-[10px] tracking-[0.2em] text-cyan-400/80 uppercase">
+              Conflict Monitor
+            </p>
+            <p className="font-mono text-xs text-white/60">
+              Live CPA prediction + review log
+            </p>
+          </div>
+          <div className="flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-1">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-80" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />
+            </span>
+            <span className="font-mono text-[10px] font-bold text-cyan-300">
+              {alerts.length} ACTIVE
+            </span>
+          </div>
+        </div>
+
+        <div className="mb-3 grid grid-cols-3 gap-2">
+          <SeverityStat
+            label="HIGH"
+            tone="text-red-300 border-red-400/30 bg-red-500/10"
+            count={highCount}
+          />
+          <SeverityStat
+            label="MED"
+            tone="text-amber-300 border-amber-400/30 bg-amber-500/10"
+            count={mediumCount}
+          />
+          <SeverityStat
+            label="LOW"
+            tone="text-yellow-200 border-yellow-300/30 bg-yellow-500/10"
+            count={lowCount}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          {alerts.length === 0 ? (
+            <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 font-mono text-[11px] text-white/50">
+              No predicted conflicts in current traffic.
+            </div>
+          ) : (
+            alerts.slice(0, 5).map((alert) => (
+              <ConflictAlertCard
+                key={alert.id}
+                alert={alert}
+                onReview={() => onReviewAlert(alert)}
+              />
+            ))
+          )}
+        </div>
+
+        <div className="mt-4 border-t border-white/10 pt-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div>
+              <p className="font-mono text-[10px] tracking-[0.18em] text-cyan-300/80 uppercase">
+                Recent Events
+              </p>
+              <p className="text-[10px] text-white/45">
+                Keeps the latest live alerts for quick review.
+              </p>
+            </div>
+            <button
+              onClick={onClearHistory}
+              className="cursor-pointer rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 font-mono text-[10px] text-white/60 transition-colors hover:border-white/20 hover:text-white"
+            >
+              Clear
+            </button>
+          </div>
+
+          <div className="space-y-1.5">
+            {history.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-white/10 bg-black/30 px-3 py-2 text-[11px] text-white/45">
+                No conflict events logged yet.
+              </div>
+            ) : (
+              history.map((event) => (
+                <ConflictHistoryCard
+                  key={event.eventKey}
+                  event={event}
+                  onReview={() => onReviewHistoryEvent(event)}
+                />
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConflictAlertCard({
+  alert,
+  onReview,
+}: {
+  alert: ConflictAlertSummary;
+  onReview: () => void;
+}) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 font-mono text-[11px]">
+      <div className="flex items-center justify-between gap-3 text-white/85">
+        <span className="truncate">{alert.callsignA}</span>
+        <span className="text-white/35">×</span>
+        <span className="truncate">{alert.callsignB}</span>
+      </div>
+      <div className="mt-1 flex items-center justify-between gap-3 text-[10px] text-white/50">
+        <span>
+          {alert.horizontalSeparationNm.toFixed(1)}nm /{" "}
+          {Math.round(alert.verticalSeparationFt)}ft
+        </span>
+        <span>T-{alert.timeToCpaMinutes.toFixed(1)}m</span>
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <span
+          className={`rounded-full border px-2 py-0.5 text-[9px] tracking-[0.14em] uppercase ${getSeverityTone(alert.severity)}`}
+        >
+          {alert.severity}
+        </span>
+        <button
+          onClick={onReview}
+          className="cursor-pointer rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-1 text-[10px] text-cyan-200 transition-colors hover:bg-cyan-500/15"
+        >
+          Review
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ConflictHistoryCard({
+  event,
+  onReview,
+}: {
+  event: ConflictHistoryEvent;
+  onReview: () => void;
+}) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px]">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-white/85">
+            <span className="truncate">{event.callsignA}</span>
+            <span className="text-white/35">×</span>
+            <span className="truncate">{event.callsignB}</span>
+          </div>
+          <div className="mt-1 flex items-center gap-2 text-[10px] text-white/45">
+            <span>{formatConflictEventAge(event.lastSeenAt)}</span>
+            <span>•</span>
+            <span>{event.horizontalSeparationNm.toFixed(1)}nm</span>
+            <span>•</span>
+            <span>{Math.round(event.verticalSeparationFt)}ft</span>
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <span
+            className={`rounded-full border px-2 py-0.5 text-[9px] tracking-[0.14em] uppercase ${getSeverityTone(event.severity)}`}
+          >
+            {event.severity}
+          </span>
+        </div>
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <span className="text-[10px] text-white/45">
+          Last seen T-{event.timeToCpaMinutes.toFixed(1)}m
+        </span>
+        <button
+          onClick={onReview}
+          className="cursor-pointer rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-1 text-[10px] text-cyan-200 transition-colors hover:bg-cyan-500/15"
+        >
+          Review
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function getSeverityTone(severity: ConflictAlertSummary["severity"]) {
+  if (severity === "high") {
+    return "border-red-400/30 bg-red-500/10 text-red-200";
+  }
+  if (severity === "medium") {
+    return "border-amber-400/30 bg-amber-500/10 text-amber-200";
+  }
+  return "border-yellow-300/30 bg-yellow-500/10 text-yellow-100";
+}
+
+function formatConflictEventAge(timestamp: number) {
+  const diffSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+  if (diffSeconds < 10) return "just now";
+  if (diffSeconds < 60) return `${diffSeconds}s ago`;
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  return `${diffHours}h ago`;
 }

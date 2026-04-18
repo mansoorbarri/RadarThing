@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "conflict-review-log",
+    date: "2026-04-18",
+    title: "Conflict Review Log",
+    description:
+      "Conflict alerts now keep a recent event log with a review button in the conflict monitor.",
+    type: "new",
+  },
+  {
     id: "map-layer-presets",
     date: "2026-04-17",
     title: "Map Layer Presets",
