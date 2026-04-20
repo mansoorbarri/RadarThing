@@ -115,6 +115,13 @@ import Link from "next/link";
 import { Analytics } from "~/lib/analytics";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
 import { formatSpeed, formatAltitude, speedLabel, altitudeLabel } from "~/lib/units";
+import {
+  calculateRemainingDistanceNm,
+  calculateWaypointEtas,
+  formatClockTime,
+  formatDuration,
+  getEtaGroundSpeedKts,
+} from "~/lib/waypoint-eta";
 
 const getFlightPhase = (
   altAGL: number,
@@ -127,66 +134,6 @@ const getFlightPhase = (
     return flightPlan && altAGL < 5000 ? "landing" : "descending";
   if (altAGL > 5000) return "cruising";
   return "unknown";
-};
-
-const EARTH_RADIUS_NM = 3440.065;
-
-const toRadians = (value: number) => (value * Math.PI) / 180;
-
-const distanceNm = (
-  fromLat: number,
-  fromLon: number,
-  toLat: number,
-  toLon: number,
-) => {
-  const dLat = toRadians(toLat - fromLat);
-  const dLon = toRadians(toLon - fromLon);
-  const lat1 = toRadians(fromLat);
-  const lat2 = toRadians(toLat);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return EARTH_RADIUS_NM * c;
-};
-
-const parseWaypointPosition = (
-  waypoint: Record<string, unknown>,
-): [number, number] | null => {
-  const lat =
-    typeof waypoint.lat === "number"
-      ? waypoint.lat
-      : typeof waypoint.latitude === "number"
-        ? waypoint.latitude
-        : null;
-  const lon =
-    typeof waypoint.lon === "number"
-      ? waypoint.lon
-      : typeof waypoint.lng === "number"
-        ? waypoint.lng
-        : typeof waypoint.longitude === "number"
-          ? waypoint.longitude
-          : null;
-
-  if (lat === null || lon === null) return null;
-  return [lat, lon];
-};
-
-const formatClockTime = (timestamp: number | null) => {
-  if (!timestamp) return "--:--";
-  const date = new Date(timestamp);
-  const hours = String(date.getUTCHours()).padStart(2, "0");
-  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
-  return `${hours}:${minutes}z`;
-};
-
-const formatDuration = (minutes: number | null) => {
-  if (minutes === null || !Number.isFinite(minutes)) return "--";
-  const totalMinutes = Math.max(0, Math.round(minutes));
-  const hours = Math.floor(totalMinutes / 60);
-  const mins = totalMinutes % 60;
-  if (hours <= 0) return `${mins}m`;
-  return `${hours}h ${String(mins).padStart(2, "0")}m`;
 };
 
 const normalizeAirportCode = (value: unknown): string | null => {
@@ -363,30 +310,15 @@ export const Sidebar = ({
             (wp) => typeof wp.ident === "string" && wp.ident === nextWaypoint,
           );
 
-          if (nextIdx >= 0) {
-            const rawProgress = nextIdx / Math.max(waypoints.length - 1, 1);
+          const progressIndex = nextIdx >= 0 ? nextIdx : 0;
+          if (progressIndex >= 0) {
+            const rawProgress =
+              progressIndex / Math.max(waypoints.length - 1, 1);
             waypointProgress = Math.max(0, Math.min(1, rawProgress));
-
-            const currentLat = Number(aircraft.lat ?? 0);
-            const currentLon = Number(aircraft.lon ?? 0);
-            let distance = 0;
-            let previous: [number, number] | null = [currentLat, currentLon];
-
-            for (let i = nextIdx; i < waypoints.length; i++) {
-              const point = parseWaypointPosition(waypoints[i]!);
-              if (!point || !previous) continue;
-              distance += distanceNm(
-                previous[0],
-                previous[1],
-                point[0],
-                point[1],
-              );
-              previous = point;
-            }
-
-            if (distance > 1) {
-              remainingDistanceNm = distance;
-            }
+            remainingDistanceNm = calculateRemainingDistanceNm(
+              aircraft,
+              waypoints,
+            );
           }
         }
       } catch {
@@ -394,7 +326,7 @@ export const Sidebar = ({
       }
     }
 
-    const groundSpeed = Math.max(0, Number(aircraft.speed ?? 0));
+    const groundSpeed = getEtaGroundSpeedKts(aircraft);
     const flownDistanceNm = elapsedHours > 0 ? elapsedHours * groundSpeed : 0;
     let progress = waypointProgress ?? 0;
 
@@ -427,14 +359,7 @@ export const Sidebar = ({
       progressPercent: Math.round(progress * 100),
       remainingText: formatDuration(remainingMinutes),
     };
-  }, [
-    aircraft.takeoffTime,
-    aircraft.flightPlan,
-    aircraft.nextWaypoint,
-    aircraft.lat,
-    aircraft.lon,
-    aircraft.speed,
-  ]);
+  }, [aircraft]);
 
   // Get the next waypoint identifier from the aircraft
   const nextWaypointIdent = aircraft.nextWaypoint;
@@ -463,6 +388,22 @@ export const Sidebar = ({
     };
   }, [aircraft.arrival, aircraft.flightPlan]);
 
+  const waypointEtas = useMemo(() => {
+    if (!aircraft.flightPlan) return [];
+
+    try {
+      const waypoints = JSON.parse(aircraft.flightPlan) as Record<
+        string,
+        unknown
+      >[];
+      if (!Array.isArray(waypoints)) return [];
+
+      return calculateWaypointEtas(aircraft, waypoints);
+    } catch {
+      return [];
+    }
+  }, [aircraft]);
+
   const renderFlightPlan = useCallback(() => {
     if (!aircraft.flightPlan) return null;
     try {
@@ -478,6 +419,11 @@ export const Sidebar = ({
           </div>
           {waypoints.map((wp: any, i: number) => {
             const isActive = wp.ident === nextWaypointIdent;
+            const waypointEta = waypointEtas[i];
+            const etaText =
+              waypointEta?.status === "passed"
+                ? "PASSED"
+                : waypointEta?.etaText ?? "--:--";
             return (
               <div
                 key={i}
@@ -505,7 +451,7 @@ export const Sidebar = ({
                       {wp.type}
                     </span>
                   </div>
-                  <div className="flex gap-4 font-mono text-[10px] font-bold text-white/60">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[10px] font-bold text-white/60">
                     <span>
                       ALT:{" "}
                       <span
@@ -526,6 +472,22 @@ export const Sidebar = ({
                         {wp.spd ?? "---"}
                       </span>
                     </span>
+                    <span>
+                      ETA:{" "}
+                      <span
+                        className={
+                          isActive ? "text-green-200/90" : "text-cyan-100/90"
+                        }
+                      >
+                        {etaText}
+                      </span>
+                      {waypointEta?.status === "upcoming" &&
+                        waypointEta.remainingText !== "--" && (
+                          <span className="ml-1 text-white/35">
+                            {waypointEta.remainingText}
+                          </span>
+                        )}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -536,7 +498,7 @@ export const Sidebar = ({
     } catch {
       return null;
     }
-  }, [aircraft.flightPlan, onWaypointClick, nextWaypointIdent]);
+  }, [aircraft.flightPlan, onWaypointClick, nextWaypointIdent, waypointEtas]);
 
   const renderHistoryContent = () => (
     <div className="space-y-3">

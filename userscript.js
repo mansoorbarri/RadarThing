@@ -585,6 +585,11 @@
       altMSL: Math.round(altMSL),
       heading: Math.round(geofs.animation.values.heading360 || 0),
       speed: Math.round(geofs.animation.values.kias || 0),
+      groundSpeed: Math.round(
+        geofs.animation.values.groundSpeed ||
+          geofs.animation.values.kias ||
+          0,
+      ),
       flightNo: sanitizeCallsign(info.flt),
       departure: info.dep,
       arrival: info.arr,

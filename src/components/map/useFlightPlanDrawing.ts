@@ -7,6 +7,7 @@ import {
   preparePathForWorldCopy,
   unwrapPath,
 } from "~/lib/map-utils";
+import { calculateWaypointEtas } from "~/lib/waypoint-eta";
 import {
   WaypointIcon,
   ActiveWaypointIcon,
@@ -111,6 +112,7 @@ export const useFlightPlanDrawing = ({
                 aircraft,
                 waypoints,
               );
+              const waypointEtas = calculateWaypointEtas(aircraft, waypoints);
 
               // Collect valid waypoints and their raw coordinates
               const validWaypoints: { wp: any; wpIndex: number }[] = [];
@@ -138,6 +140,16 @@ export const useFlightPlanDrawing = ({
               // Place markers and polyline at the unwrapped positions
               coords.forEach((coord, i) => {
                 const { wp, wpIndex } = validWaypoints[i]!;
+                const waypointEta = waypointEtas[wpIndex];
+                const etaText =
+                  waypointEta?.status === "passed"
+                    ? "PASSED"
+                    : waypointEta?.etaText ?? "N/A";
+                const remainingText =
+                  waypointEta?.status === "upcoming" &&
+                  waypointEta.remainingText !== "--"
+                    ? ` (${waypointEta.remainingText})`
+                    : "";
 
                 const popupContent = `
                     <div style="font-family: system-ui; padding: 4px; color: ${
@@ -159,6 +171,7 @@ export const useFlightPlanDrawing = ({
                         <div>Speed: <strong>${
                           wp.spd ? wp.spd + " kt" : "N/A"
                         }</strong></div>
+                        <div>ETA: <strong>${etaText}</strong>${remainingText}</div>
                       </div>
                     </div>
                   `;

@@ -9,6 +9,7 @@ export interface PositionUpdate {
   altMSL: number;
   heading: number;
   speed: number;
+  groundSpeed?: number;
   flightNo: string;
   departure: string;
   arrival: string;

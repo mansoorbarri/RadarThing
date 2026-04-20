@@ -64,6 +64,8 @@
       altAGL,
       heading: geofs.animation.values.heading360 || 0,
       speed: geofs.animation.values.kias || 0,
+      groundSpeed:
+        geofs.animation.values.groundSpeed || geofs.animation.values.kias || 0,
     };
   }
 
@@ -92,6 +94,7 @@
       altMSL: Math.round(snap.altMSL || 0),
       heading: Math.round(snap.heading || 0),
       speed: Math.round(snap.speed || 0),
+      groundSpeed: Math.round(snap.groundSpeed || snap.speed || 0),
       flightNo: flightInfo.flightNo,
       departure: flightInfo.departure,
       arrival: flightInfo.arrival,

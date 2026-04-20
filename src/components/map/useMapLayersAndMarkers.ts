@@ -197,8 +197,12 @@ function toRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
 
+function getGroundSpeedKts(aircraft: PositionUpdate) {
+  return Math.max(0, toFiniteNumber(aircraft.groundSpeed ?? aircraft.speed, 0));
+}
+
 function getVelocityVectorNmPerMinute(aircraft: PositionUpdate) {
-  const speedKts = Math.max(0, toFiniteNumber(aircraft.speed, 0));
+  const speedKts = getGroundSpeedKts(aircraft);
   const headingRad = toRadians(toFiniteNumber(aircraft.heading, 0));
   const speedNmPerMinute = speedKts / 60;
 
@@ -232,14 +236,14 @@ function getHeadingDeltaDegrees(
 function isSurfaceTraffic(aircraft: PositionUpdate) {
   return (
     getAltitudeAglFt(aircraft) <= SURFACE_ALTITUDE_FT &&
-    toFiniteNumber(aircraft.speed, 0) <= SURFACE_SPEED_KTS
+    getGroundSpeedKts(aircraft) <= SURFACE_SPEED_KTS
   );
 }
 
 function isTerminalTraffic(aircraft: PositionUpdate) {
   return (
     getAltitudeAglFt(aircraft) <= TERMINAL_ALTITUDE_FT ||
-    toFiniteNumber(aircraft.speed, 0) <= TERMINAL_SPEED_KTS
+    getGroundSpeedKts(aircraft) <= TERMINAL_SPEED_KTS
   );
 }
 
