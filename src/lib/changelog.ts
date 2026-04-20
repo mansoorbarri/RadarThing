@@ -8,14 +8,6 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    id: "waypoint-eta-groundspeed",
-    date: "2026-04-20",
-    title: "Waypoint ETAs",
-    description:
-      "Flight plans now show estimated arrival times for upcoming waypoints, calculated from GeoFS ground speed while keeping KIAS for speed displays.",
-    type: "new",
-  },
-  {
     id: "conflict-review-log",
     date: "2026-04-18",
     title: "Conflict Review Log",
