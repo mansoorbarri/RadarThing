@@ -43,6 +43,11 @@ interface FlightReplayEventProps extends BaseEventProps {
   duration?: number;
 }
 
+interface AccountDataExportEventProps extends BaseEventProps {
+  source: string;
+  flightCount?: number;
+}
+
 interface FlightReplaySpeedProps extends FlightReplayEventProps {
   speed: number;
 }
@@ -194,6 +199,14 @@ export const Analytics = {
     props: FlightReplayEventProps & { flightId: string },
   ) => {
     track("flight_replay_shared", props);
+  },
+
+  accountDataExportClicked: (props: AccountDataExportEventProps) => {
+    track("account_data_export_clicked", props);
+  },
+
+  accountDataExportDownloaded: (props: AccountDataExportEventProps) => {
+    track("account_data_export_downloaded", props);
   },
 
   // ===== FEATURE ACCESS EVENTS =====
@@ -393,10 +406,7 @@ export const Analytics = {
     track(eventName, properties);
   },
 
-  captureException: (
-    error: unknown,
-    properties?: Record<string, unknown>,
-  ) => {
+  captureException: (error: unknown, properties?: Record<string, unknown>) => {
     if (typeof window === "undefined") return;
     if (process.env.NODE_ENV === "development") return;
 

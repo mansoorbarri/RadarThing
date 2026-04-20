@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useProStatus } from "~/hooks/useProStatus";
 import { Analytics } from "~/lib/analytics";
 import { createPortalSession } from "~/app/actions/create-portal";
+import { getCurrentUserDataExport } from "~/app/actions/export-user-data";
 import {
   Plane,
   Clock,
@@ -20,6 +21,8 @@ import {
   Navigation,
   Copy,
   Check,
+  Download,
+  Loader2,
   Camera,
   FileText,
   Play,
@@ -38,6 +41,7 @@ import { UserAuth } from "~/components/atc/userAuth";
 import { ActiveChallengesPanel } from "~/components/challenges/ActiveChallengesPanel";
 import { FlightCardDialog } from "~/components/flight-card/FlightCardDialog";
 import type { FlightCardData } from "~/components/flight-card/FlightCard";
+import { downloadAccountDataExport } from "~/lib/account-data-export";
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -72,6 +76,7 @@ export default function DashboardPage() {
   const [profileCopied, setProfileCopied] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isExportingData, setIsExportingData] = useState(false);
   const [flightsExpanded, setFlightsExpanded] = useState(false);
   const [discordLoading, setDiscordLoading] = useState(false);
   const [cardFlight, setCardFlight] = useState<FlightCardData | null>(null);
@@ -186,6 +191,29 @@ export default function DashboardPage() {
       setProfileCopied(true);
       toast.success("Profile link copied to clipboard");
       setTimeout(() => setProfileCopied(false), 2000);
+    }
+  };
+
+  const downloadAccountData = async () => {
+    setIsExportingData(true);
+    Analytics.accountDataExportClicked({ source: "dashboard_account" });
+
+    try {
+      const exportData = await getCurrentUserDataExport();
+      downloadAccountDataExport(exportData);
+      Analytics.accountDataExportDownloaded({
+        source: "dashboard_account",
+        flightCount: exportData.flights.length,
+      });
+      toast.success("Account data downloaded");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to export account data",
+      );
+    } finally {
+      setIsExportingData(false);
     }
   };
 
@@ -700,56 +728,103 @@ export default function DashboardPage() {
             ACCOUNT
           </h3>
 
-          <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
-            <h4 className="mb-4 text-sm font-semibold text-white">
-              Account Info
-            </h4>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Mail className="h-4 w-4 text-slate-500" />
-                <span className="text-sm text-slate-300">
-                  {user?.primaryEmailAddress?.emailAddress ?? "No email"}
-                </span>
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
+            <div className="grid lg:grid-cols-[minmax(0,1fr)_360px]">
+              <div className="p-6">
+                <h4 className="mb-5 text-sm font-semibold text-white">
+                  Account Info
+                </h4>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="min-w-0">
+                    <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+                      <Mail className="h-3.5 w-3.5" />
+                      Email
+                    </div>
+                    <div className="truncate text-sm text-slate-300">
+                      {user?.primaryEmailAddress?.emailAddress ?? "No email"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+                      <Calendar className="h-3.5 w-3.5" />
+                      Joined
+                    </div>
+                    <div className="text-sm text-slate-300">
+                      {user?.createdAt
+                        ? new Date(user.createdAt).toLocaleDateString("en-US", {
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : "Unknown"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+                      <Shield className="h-3.5 w-3.5" />
+                      Plan
+                    </div>
+                    <div className="text-sm">
+                      {isPro ? (
+                        <span className="text-emerald-400">PRO</span>
+                      ) : (
+                        <span className="text-slate-500">Free Tier</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-slate-500" />
-                <span className="text-sm text-slate-300">
-                  Member since{" "}
-                  {user?.createdAt
-                    ? new Date(user.createdAt).toLocaleDateString("en-US", {
-                        month: "long",
-                        year: "numeric",
-                      })
-                    : "Unknown"}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Shield className="h-4 w-4 text-slate-500" />
-                <span className="text-sm text-slate-300">
-                  {isPro ? (
-                    <span className="text-emerald-400">PRO</span>
-                  ) : (
-                    <span className="text-slate-500">Free Tier</span>
+
+              <div className="border-t border-white/10 bg-white/[0.02] p-4 lg:border-t-0 lg:border-l">
+                <h4 className="mb-3 px-2 font-mono text-xs font-bold tracking-widest text-slate-500 uppercase">
+                  Account Actions
+                </h4>
+                <div className="flex h-14 gap-2">
+                  <button
+                    onClick={downloadAccountData}
+                    disabled={isExportingData}
+                    className={`group flex min-w-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-cyan-500/25 bg-cyan-500/10 px-4 text-cyan-300 transition-all duration-300 ease-out hover:flex-[6] hover:bg-cyan-500/20 focus-visible:flex-[6] focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${
+                      isPro ? "flex-1" : "w-full"
+                    }`}
+                    title="Download data"
+                  >
+                    {isExportingData ? (
+                      <Loader2 className="h-5 w-5 shrink-0 animate-spin" />
+                    ) : (
+                      <Download className="h-5 w-5 shrink-0" />
+                    )}
+                    <span
+                      className={`ml-0 max-w-0 overflow-hidden font-mono text-xs font-bold tracking-widest whitespace-nowrap uppercase opacity-0 transition-all duration-300 ease-out group-hover:ml-3 group-hover:max-w-40 group-hover:opacity-100 group-focus-visible:ml-3 group-focus-visible:max-w-40 group-focus-visible:opacity-100 ${
+                        isPro
+                          ? ""
+                          : "ml-3 max-w-40 opacity-100 group-hover:ml-3"
+                      }`}
+                    >
+                      Download data
+                    </span>
+                  </button>
+
+                  {isPro && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const url = await createPortalSession();
+                          if (url) window.location.href = url;
+                        } catch {
+                          // silently fail
+                        }
+                      }}
+                      className="group flex min-w-0 flex-1 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] px-4 text-slate-300 transition-all duration-300 ease-out hover:flex-[6] hover:bg-white/[0.09] hover:text-white focus-visible:flex-[6] focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:outline-none"
+                      title="Manage subscription"
+                    >
+                      <CreditCard className="h-5 w-5 shrink-0" />
+                      <span className="ml-0 max-w-0 overflow-hidden font-mono text-xs font-bold tracking-widest whitespace-nowrap uppercase opacity-0 transition-all duration-300 ease-out group-hover:ml-3 group-hover:max-w-56 group-hover:opacity-100 group-focus-visible:ml-3 group-focus-visible:max-w-56 group-focus-visible:opacity-100">
+                        Manage subscription
+                      </span>
+                    </button>
                   )}
-                </span>
+                </div>
               </div>
             </div>
-            {isPro && (
-              <button
-                onClick={async () => {
-                  try {
-                    const url = await createPortalSession();
-                    if (url) window.location.href = url;
-                  } catch {
-                    // silently fail
-                  }
-                }}
-                className="mt-4 flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-300 transition-all hover:bg-white/10 hover:text-white"
-              >
-                <CreditCard className="h-4 w-4" />
-                Manage Subscription
-              </button>
-            )}
           </div>
 
           {/* Danger Zone */}
