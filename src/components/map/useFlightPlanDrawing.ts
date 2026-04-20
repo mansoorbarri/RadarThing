@@ -141,15 +141,21 @@ export const useFlightPlanDrawing = ({
               coords.forEach((coord, i) => {
                 const { wp, wpIndex } = validWaypoints[i]!;
                 const waypointEta = waypointEtas[wpIndex];
-                const etaText =
-                  waypointEta?.status === "passed"
-                    ? "PASSED"
-                    : waypointEta?.etaText ?? "N/A";
+                const etaText = waypointEta?.etaText ?? "N/A";
                 const remainingText =
                   waypointEta?.status === "upcoming" &&
                   waypointEta.remainingText !== "--"
                     ? ` (${waypointEta.remainingText})`
                     : "";
+                const hasSpeed =
+                  wp.spd !== null && wp.spd !== undefined && wp.spd !== "";
+                const speedLine = hasSpeed
+                  ? `<div>Speed: <strong>${wp.spd} kt</strong></div>`
+                  : "";
+                const etaLine =
+                  waypointEta?.status === "passed"
+                    ? ""
+                    : `<div>ETA: <strong>${etaText}</strong>${remainingText}</div>`;
 
                 const popupContent = `
                     <div style="font-family: system-ui; padding: 4px; color: ${
@@ -168,10 +174,8 @@ export const useFlightPlanDrawing = ({
                         <div>Alt: <strong>${
                           wp.alt ? wp.alt + " ft" : "N/A"
                         }</strong></div>
-                        <div>Speed: <strong>${
-                          wp.spd ? wp.spd + " kt" : "N/A"
-                        }</strong></div>
-                        <div>ETA: <strong>${etaText}</strong>${remainingText}</div>
+                        ${speedLine}
+                        ${etaLine}
                       </div>
                     </div>
                   `;

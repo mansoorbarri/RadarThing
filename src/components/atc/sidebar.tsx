@@ -420,10 +420,10 @@ export const Sidebar = ({
           {waypoints.map((wp: any, i: number) => {
             const isActive = wp.ident === nextWaypointIdent;
             const waypointEta = waypointEtas[i];
-            const etaText =
-              waypointEta?.status === "passed"
-                ? "PASSED"
-                : waypointEta?.etaText ?? "--:--";
+            const shouldShowEta = waypointEta?.status !== "passed";
+            const hasSpeed =
+              wp.spd !== null && wp.spd !== undefined && wp.spd !== "";
+            const etaText = waypointEta?.etaText ?? "--:--";
             return (
               <div
                 key={i}
@@ -462,32 +462,40 @@ export const Sidebar = ({
                         {wp.alt ?? "---"}
                       </span>
                     </span>
-                    <span>
-                      SPD:{" "}
-                      <span
-                        className={
-                          isActive ? "text-green-200/90" : "text-cyan-100/90"
-                        }
-                      >
-                        {wp.spd ?? "---"}
+                    {hasSpeed && (
+                      <span>
+                        SPD:{" "}
+                        <span
+                          className={
+                            isActive
+                              ? "text-green-200/90"
+                              : "text-cyan-100/90"
+                          }
+                        >
+                          {wp.spd}
+                        </span>
                       </span>
-                    </span>
-                    <span>
-                      ETA:{" "}
-                      <span
-                        className={
-                          isActive ? "text-green-200/90" : "text-cyan-100/90"
-                        }
-                      >
-                        {etaText}
+                    )}
+                    {shouldShowEta && (
+                      <span>
+                        ETA:{" "}
+                        <span
+                          className={
+                            isActive
+                              ? "text-green-200/90"
+                              : "text-cyan-100/90"
+                          }
+                        >
+                          {etaText}
+                        </span>
+                        {waypointEta?.status === "upcoming" &&
+                          waypointEta.remainingText !== "--" && (
+                            <span className="ml-1 text-white/35">
+                              {waypointEta.remainingText}
+                            </span>
+                          )}
                       </span>
-                      {waypointEta?.status === "upcoming" &&
-                        waypointEta.remainingText !== "--" && (
-                          <span className="ml-1 text-white/35">
-                            {waypointEta.remainingText}
-                          </span>
-                        )}
-                    </span>
+                    )}
                   </div>
                 </div>
               </div>
