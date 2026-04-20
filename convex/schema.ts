@@ -30,6 +30,7 @@ export default defineSchema({
     duration: v.optional(v.number()), // milliseconds
     maxAltitude: v.optional(v.number()), // feet
     maxSpeed: v.optional(v.number()), // knots
+    statsExcludedReason: v.optional(v.string()),
     routeData: v.optional(v.any()), // JSON data - array of coordinates
     startTime: v.number(), // timestamp
     endTime: v.optional(v.number()), // timestamp

@@ -6,6 +6,9 @@ import { autoCompleteChallengesForFlight } from "./challenges";
 import { calculateRouteDistanceNm } from "./lib/challengeRules";
 import { isFlightModeratorGoogleId } from "../src/lib/flight-moderation";
 
+const STATS_MAX_SPEED_KTS = 750;
+const STATS_EXCLUDED_SPEED_REASON = "speed_over_750_kts";
+
 // Get flight history for a user by their Google ID
 export const getHistoryByGoogleId = query({
   args: { googleId: v.string() },
@@ -74,11 +77,33 @@ function deriveVisibleCurrentStreak(
   return streakAtLastFlight;
 }
 
+function getStatsExcludedReason(flight: {
+  maxSpeed?: number;
+  statsExcludedReason?: string;
+}): string | undefined {
+  if (flight.statsExcludedReason) return flight.statsExcludedReason;
+  if (
+    typeof flight.maxSpeed === "number" &&
+    flight.maxSpeed > STATS_MAX_SPEED_KTS
+  ) {
+    return STATS_EXCLUDED_SPEED_REASON;
+  }
+  return undefined;
+}
+
+function isFlightStatsEligible(flight: {
+  maxSpeed?: number;
+  statsExcludedReason?: string;
+}) {
+  return getStatsExcludedReason(flight) === undefined;
+}
+
 async function recalculateUserStats(ctx: MutationCtx, userId: Id<"users">) {
   const flights = await ctx.db
     .query("flights")
     .withIndex("by_userId_startTime", (q) => q.eq("userId", userId))
     .collect();
+  const eligibleFlights = flights.filter(isFlightStatsEligible);
 
   const stats = await ctx.db
     .query("userStats")
@@ -87,7 +112,7 @@ async function recalculateUserStats(ctx: MutationCtx, userId: Id<"users">) {
 
   const approvedAircraftImages = stats?.approvedAircraftImages ?? 0;
 
-  if (flights.length === 0) {
+  if (eligibleFlights.length === 0) {
     if (stats) {
       await ctx.db.patch(stats._id, {
         totalFlights: 0,
@@ -107,7 +132,7 @@ async function recalculateUserStats(ctx: MutationCtx, userId: Id<"users">) {
   let totalFlightTimeMs = 0;
   let totalDistanceNm = 0;
 
-  for (const flight of flights) {
+  for (const flight of eligibleFlights) {
     if (flight.endTime !== undefined) {
       totalFlightTimeMs += Math.max(0, flight.endTime - flight.startTime);
     }
@@ -116,7 +141,9 @@ async function recalculateUserStats(ctx: MutationCtx, userId: Id<"users">) {
 
   const uniqueDates = [
     ...new Set(
-      flights.map((flight) => utcDateStringFromTimestamp(flight.startTime)),
+      eligibleFlights.map((flight) =>
+        utcDateStringFromTimestamp(flight.startTime),
+      ),
     ),
   ];
 
@@ -140,12 +167,12 @@ async function recalculateUserStats(ctx: MutationCtx, userId: Id<"users">) {
 
   streakAtLastFlight = currentRun;
 
-  const latestFlight = flights.at(-1);
+  const latestFlight = eligibleFlights.at(-1);
   const lastFlightDate = uniqueDates.at(-1);
   if (!latestFlight || !lastFlightDate) return;
 
   const nextStats = {
-    totalFlights: flights.length,
+    totalFlights: eligibleFlights.length,
     totalFlightTimeMs,
     totalDistanceNm,
     approvedAircraftImages,
@@ -188,11 +215,13 @@ export const create = mutation({
     duration: v.optional(v.number()),
     maxAltitude: v.optional(v.number()),
     maxSpeed: v.optional(v.number()),
+    statsExcludedReason: v.optional(v.string()),
     routeData: v.optional(v.any()),
     startTime: v.number(),
     endTime: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const statsExcludedReason = getStatsExcludedReason(args);
     const flightId = await ctx.db.insert("flights", {
       userId: args.userId,
       callsign: args.callsign,
@@ -203,10 +232,15 @@ export const create = mutation({
       duration: args.duration,
       maxAltitude: args.maxAltitude,
       maxSpeed: args.maxSpeed,
+      statsExcludedReason,
       routeData: args.routeData,
       startTime: args.startTime,
       endTime: args.endTime,
     });
+
+    if (statsExcludedReason) {
+      return flightId;
+    }
 
     const stats = await ctx.db
       .query("userStats")
@@ -467,6 +501,8 @@ export const backfillUserStatsPage = mutation({
     let lastFlightCallsign = stats.lastFlightCallsign;
 
     for (const flight of page.page) {
+      if (!isFlightStatsEligible(flight)) continue;
+
       totalFlights += 1;
       if (flight.endTime !== undefined) {
         totalFlightTimeMs += Math.max(0, flight.endTime - flight.startTime);
@@ -560,6 +596,7 @@ export const getStatsByClerkId = query({
       .query("flights")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
+    const eligibleFlights = flights.filter(isFlightStatsEligible);
 
     // Calculate stats
     const aircraftCounts: Record<string, number> = {};
@@ -568,7 +605,7 @@ export const getStatsByClerkId = query({
     let fallbackTotalFlightTimeMs = 0;
     let fallbackTotalDistanceNm = 0;
 
-    for (const flight of flights) {
+    for (const flight of eligibleFlights) {
       if (!stats) {
         if (flight.endTime !== undefined) {
           fallbackTotalFlightTimeMs += Math.max(
@@ -629,10 +666,10 @@ export const getStatsByClerkId = query({
         routeData: f.routeData,
       }));
 
-    const streaks = calculateStreaks(flights);
+    const streaks = calculateStreaks(eligibleFlights);
 
     return {
-      totalFlights: stats?.totalFlights ?? flights.length,
+      totalFlights: stats?.totalFlights ?? eligibleFlights.length,
       totalFlightTimeMs: Math.round(
         stats?.totalFlightTimeMs ?? fallbackTotalFlightTimeMs,
       ),
@@ -776,6 +813,7 @@ export const getStatsById = query({
       .query("flights")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
+    const eligibleFlights = flights.filter(isFlightStatsEligible);
 
     // Calculate stats
     const aircraftCounts: Record<string, number> = {};
@@ -784,7 +822,7 @@ export const getStatsById = query({
     let fallbackTotalFlightTimeMs = 0;
     let fallbackTotalDistanceNm = 0;
 
-    for (const flight of flights) {
+    for (const flight of eligibleFlights) {
       if (!stats) {
         if (flight.endTime !== undefined) {
           fallbackTotalFlightTimeMs += Math.max(
@@ -834,7 +872,11 @@ export const getStatsById = query({
     );
 
     // Get pilot's callsign from most recent flight
-    const mostRecentFlight = sortedFlights[0];
+    const eligibleSortedFlights = [...eligibleFlights].sort(
+      (a, b) => b.startTime - a.startTime,
+    );
+
+    const mostRecentFlight = eligibleSortedFlights[0];
     const pilotCallsign =
       stats?.lastFlightCallsign ?? mostRecentFlight?.callsign ?? null;
 
@@ -852,13 +894,13 @@ export const getStatsById = query({
       routeData: f.routeData,
     }));
 
-    const streaks = calculateStreaks(flights);
+    const streaks = calculateStreaks(eligibleFlights);
 
     return {
       userRole: user.role,
       pilotCallsign,
       discordUsername: user.discordUsername ?? null,
-      totalFlights: stats?.totalFlights ?? flights.length,
+      totalFlights: stats?.totalFlights ?? eligibleFlights.length,
       totalFlightTimeMs: Math.round(
         stats?.totalFlightTimeMs ?? fallbackTotalFlightTimeMs,
       ),
