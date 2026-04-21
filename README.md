@@ -6,8 +6,6 @@
 
 A modern, real-time flight radar for the [GeoFS](https://www.geo-fs.com/) flight simulator. RadarThing tracks live traffic, records flight history, overlays weather and airport data, and gives pilots and controllers a cleaner operating picture than the original GeoFS radar.
 
-This project is a complete reimagining of the original [GeoFS Radar](https://github.com/seabus0316/GeoFS-flightradar/) with a Next.js, React, TypeScript, and Convex stack.
-
 ## Quick Start
 
 1. Open [radarthing.com](https://radarthing.com).
