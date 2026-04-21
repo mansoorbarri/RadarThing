@@ -40,6 +40,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     aircraft.navMode ? "nav" : "hdg",
   );
   const [waypointInput, setWaypointInput] = useState("0");
+  const [disconnectConfirmOpen, setDisconnectConfirmOpen] = useState(false);
 
   const aircraftId = aircraft.id;
   const currentSpeedMode = aircraft.speedMode === "mach" ? "mach" : "knots";
@@ -89,6 +90,10 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   useEffect(() => {
     setSpeedModeInput(currentSpeedMode);
   }, [aircraft.id, currentSpeedMode]);
+
+  useEffect(() => {
+    setDisconnectConfirmOpen(false);
+  }, [aircraft.id]);
 
   useEffect(() => {
     if (currentWaypointIdent) {
@@ -269,6 +274,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
         callsign: aircraft.flightNo || aircraft.callsign || aircraftId,
       });
       toast.success("Flight disconnected from RadarThing");
+      setDisconnectConfirmOpen(false);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to disconnect flight";
@@ -431,34 +437,70 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
         SET
       </button>
 
-      <button
-        onClick={handleDisconnectFlight}
-        disabled={isLoading}
-        title="Disconnect this flight from RadarThing SSE"
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 py-3 font-mono text-xs font-bold tracking-wider text-red-200 uppercase transition-colors hover:border-red-300/50 hover:bg-red-500/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
+      {!disconnectConfirmOpen ? (
+        <button
+          onClick={() => setDisconnectConfirmOpen(true)}
+          disabled={isLoading}
+          title="Disconnect this flight from RadarThing SSE"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 py-3 font-mono text-xs font-bold tracking-wider text-red-200 uppercase transition-colors hover:border-red-300/50 hover:bg-red-500/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <path d="M12 2v10" />
-          <path d="M18.4 6.6a9 9 0 1 1-12.8 0" />
-        </svg>
-        Disconnect
-      </button>
+          <PowerIcon />
+          Disconnect
+        </button>
+      ) : (
+        <div className="space-y-3 rounded-xl border border-red-400/30 bg-red-500/10 p-3">
+          <div>
+            <p className="font-mono text-[10px] font-black tracking-[0.16em] text-red-200 uppercase">
+              Disconnect flight?
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-white/50">
+              This stops your GeoFS flight from transmitting to RadarThing SSE.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setDisconnectConfirmOpen(false)}
+              disabled={isLoading}
+              className="rounded-lg border border-white/10 bg-white/5 py-2.5 font-mono text-[10px] font-bold tracking-wider text-white/60 uppercase transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDisconnectFlight}
+              disabled={isLoading}
+              className="flex items-center justify-center gap-1.5 rounded-lg bg-red-500/25 py-2.5 font-mono text-[10px] font-bold tracking-wider text-red-100 uppercase transition-colors hover:bg-red-500/35 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <PowerIcon size={12} />
+              Disconnect
+            </button>
+          </div>
+        </div>
+      )}
 
       <p className="px-1 font-mono text-[9px] text-white/30">
         Commands sent to GeoFS. NAV can target any waypoint in the active flight
         plan.
       </p>
     </div>
+  );
+}
+
+function PowerIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 2v10" />
+      <path d="M18.4 6.6a9 9 0 1 1-12.8 0" />
+    </svg>
   );
 }
 
