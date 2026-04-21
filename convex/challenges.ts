@@ -7,6 +7,8 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import {
+  calculateRouteDistanceNm,
+  countUniqueVisitedAirports,
   doesFlightCollectionMatchChallenge,
   doesFlightMatchChallenge,
   getFlightsInChallengeWindow,
@@ -373,6 +375,114 @@ function findSupportingFlightId(
   );
 }
 
+function getAutoProgress(
+  challenge: {
+    ruleType:
+      | "visit_airport"
+      | "visit_airport_count"
+      | "depart_airport"
+      | "arrive_airport"
+      | "route"
+      | "aircraft_type"
+      | "flight_count"
+      | "min_duration"
+      | "min_distance"
+      | "manual";
+    startAt: number;
+    endAt: number;
+    targetAirport?: string;
+    targetDepartureAirport?: string;
+    targetArrivalAirport?: string;
+    targetAircraftType?: string;
+    requiredAirportCount?: number;
+    requiredFlightCount?: number;
+    minDurationMinutes?: number;
+    minDistanceNm?: number;
+    mode: "auto" | "manual";
+    isPublished: boolean;
+  },
+  flights: {
+    aircraftType: string;
+    depICAO?: string;
+    arrICAO?: string;
+    startTime: number;
+    endTime?: number;
+    routeData?: unknown;
+  }[],
+) {
+  if (challenge.mode !== "auto") {
+    return {
+      progressCurrent: 0,
+      progressTarget: 1,
+      progressLabel: "Manual review",
+      isComplete: false,
+    };
+  }
+
+  const flightsInWindow = getFlightsInChallengeWindow(challenge, flights);
+  const isComplete = doesFlightCollectionMatchChallenge(challenge, flights);
+
+  switch (challenge.ruleType) {
+    case "visit_airport_count": {
+      const current = countUniqueVisitedAirports(flightsInWindow);
+      const target = challenge.requiredAirportCount ?? 1;
+      return {
+        progressCurrent: Math.min(current, target),
+        progressTarget: target,
+        progressLabel: `${Math.min(current, target)} / ${target} airports`,
+        isComplete,
+      };
+    }
+    case "flight_count": {
+      const target = challenge.requiredFlightCount ?? 1;
+      const current = flightsInWindow.length;
+      return {
+        progressCurrent: Math.min(current, target),
+        progressTarget: target,
+        progressLabel: `${Math.min(current, target)} / ${target} flights`,
+        isComplete,
+      };
+    }
+    case "min_duration": {
+      const target = challenge.minDurationMinutes ?? 1;
+      const maxMinutes = Math.max(
+        0,
+        ...flightsInWindow.map((flight) =>
+          flight.endTime ? (flight.endTime - flight.startTime) / 60000 : 0,
+        ),
+      );
+      return {
+        progressCurrent: Math.min(Math.floor(maxMinutes), target),
+        progressTarget: target,
+        progressLabel: `${Math.min(Math.floor(maxMinutes), target)} / ${target} minutes`,
+        isComplete,
+      };
+    }
+    case "min_distance": {
+      const target = challenge.minDistanceNm ?? 1;
+      const maxDistance = Math.max(
+        0,
+        ...flightsInWindow.map((flight) =>
+          calculateRouteDistanceNm(flight.routeData),
+        ),
+      );
+      return {
+        progressCurrent: Math.min(Math.floor(maxDistance), target),
+        progressTarget: target,
+        progressLabel: `${Math.min(Math.floor(maxDistance), target)} / ${target} nm`,
+        isComplete,
+      };
+    }
+    default:
+      return {
+        progressCurrent: isComplete ? 1 : 0,
+        progressTarget: 1,
+        progressLabel: isComplete ? "Complete" : "Not complete yet",
+        isComplete,
+      };
+  }
+}
+
 export async function autoCompleteChallengesForFlight(
   ctx: MutationCtx,
   args: {
@@ -486,6 +596,56 @@ export const listActiveForViewer = query({
   },
 });
 
+export const listActiveForUser = query({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user || user.isDeleted) return [];
+
+    const now = Date.now();
+    const challenges = (await getPublishedChallenges(ctx))
+      .filter((challenge) => isChallengeActiveAt(challenge, now))
+      .sort((a, b) => a.endAt - b.endAt);
+
+    const [completions, flights] = await Promise.all([
+      ctx.db
+        .query("challengeCompletions")
+        .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+        .collect(),
+      ctx.db
+        .query("flights")
+        .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+        .collect(),
+    ]);
+
+    const completionByChallengeId = new Map(
+      completions.map((completion) => [completion.challengeId, completion]),
+    );
+
+    return challenges.map((challenge) => {
+      const completion = completionByChallengeId.get(challenge._id);
+      const autoProgress = getAutoProgress(challenge, flights);
+      const computedStatus =
+        challenge.mode === "auto" && autoProgress.isComplete
+          ? "completed"
+          : null;
+
+      return {
+        ...serializeChallenge(challenge),
+        userCompletionId: completion?._id ?? null,
+        userStatus: completion?.status ?? computedStatus,
+        completedAt: completion?.completedAt ?? null,
+        submissionNote: completion?.submissionNote ?? null,
+        progressCurrent: autoProgress.progressCurrent,
+        progressTarget: autoProgress.progressTarget,
+        progressLabel: autoProgress.progressLabel,
+      };
+    });
+  },
+});
+
 export const listAdmin = query({
   args: {},
   handler: async (ctx) => {
@@ -498,6 +658,7 @@ export const listAdmin = query({
       string,
       { pending: number; completed: number; rejected: number }
     >();
+    const completedUserIdsByChallenge = new Map<string, Set<string>>();
 
     for (const completion of completions) {
       const current = completionCounts.get(completion.challengeId) ?? {
@@ -507,18 +668,70 @@ export const listAdmin = query({
       };
       current[completion.status] += 1;
       completionCounts.set(completion.challengeId, current);
+
+      if (completion.status === "completed") {
+        const users =
+          completedUserIdsByChallenge.get(completion.challengeId) ??
+          new Set<string>();
+        users.add(completion.userId);
+        completedUserIdsByChallenge.set(completion.challengeId, users);
+      }
+    }
+
+    const now = Date.now();
+    const computedCompletedUserIdsByChallenge = new Map<string, Set<string>>();
+
+    for (const challenge of challenges) {
+      if (challenge.mode !== "auto" || !isChallengeActiveAt(challenge, now)) {
+        continue;
+      }
+
+      const flights = await ctx.db
+        .query("flights")
+        .withIndex("by_startTime", (q) =>
+          q
+            .gte("startTime", challenge.startAt)
+            .lt("startTime", challenge.endAt),
+        )
+        .collect();
+
+      const flightsByUser = new Map<string, typeof flights>();
+      for (const flight of flights) {
+        const userFlights = flightsByUser.get(flight.userId) ?? [];
+        userFlights.push(flight);
+        flightsByUser.set(flight.userId, userFlights);
+      }
+
+      const completedUserIds = new Set<string>();
+      for (const [userId, userFlights] of flightsByUser.entries()) {
+        if (doesFlightCollectionMatchChallenge(challenge, userFlights)) {
+          completedUserIds.add(userId);
+        }
+      }
+      computedCompletedUserIdsByChallenge.set(challenge._id, completedUserIds);
     }
 
     return challenges
       .sort((a, b) => b.startAt - a.startAt)
-      .map((challenge) => ({
-        ...serializeChallenge(challenge),
-        counts: completionCounts.get(challenge._id) ?? {
+      .map((challenge) => {
+        const counts = completionCounts.get(challenge._id) ?? {
           pending: 0,
           completed: 0,
           rejected: 0,
-        },
-      }));
+        };
+        const completedUsers = new Set([
+          ...(completedUserIdsByChallenge.get(challenge._id) ?? []),
+          ...(computedCompletedUserIdsByChallenge.get(challenge._id) ?? []),
+        ]);
+
+        return {
+          ...serializeChallenge(challenge),
+          counts: {
+            ...counts,
+            completed: completedUsers.size,
+          },
+        };
+      });
   },
 });
 

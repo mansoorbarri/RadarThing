@@ -26,6 +26,7 @@ import {
 import Image from "next/image";
 import { useProStatus } from "~/hooks/useProStatus";
 import { Suspense } from "react";
+import { PilotChallengesPanel } from "~/components/challenges/PilotChallengesPanel";
 import { FlightCardDialog } from "~/components/flight-card/FlightCardDialog";
 import type { FlightCardData } from "~/components/flight-card/FlightCard";
 import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
@@ -205,6 +206,8 @@ function PilotPageContent() {
             </div>
           </div>
         </div>
+
+        <PilotChallengesPanel userId={userId} />
 
         {stats.totalFlights === 0 ? (
           <EmptyState />
