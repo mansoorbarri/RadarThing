@@ -2,77 +2,159 @@
   <img src="public/logo-white.svg" alt="RadarThing" width="200">
 </p>
 
-A modern, feature-rich flight radar for the [GeoFS](https://www.geo-fs.com/) flight simulator. Track flights in real-time, view detailed flight information, and manage air traffic with professional-grade tools.
+# RadarThing
 
-This project is a complete reimagining of the original [GeoFS Radar](https://github.com/seabus0316/GeoFS-flightradar/) — rebuilt from the ground up with a focus on usability, accuracy, and a clean interface.
+A modern, real-time flight radar for the [GeoFS](https://www.geo-fs.com/) flight simulator. RadarThing tracks live traffic, records flight history, overlays weather and airport data, and gives pilots and controllers a cleaner operating picture than the original GeoFS radar.
+
+This project is a complete reimagining of the original [GeoFS Radar](https://github.com/seabus0316/GeoFS-flightradar/) with a Next.js, React, TypeScript, and Convex stack.
 
 ## Quick Start
 
-1. **Install the mod:** [xyzmani.com/radar](https://xyzmani.com/radar)
-2. **Open the radar:** [radarthing](https://radarthing.com)
-3. Enter your departure/arrival airports (ICAO codes), callsign, and squawk code
-4. Click **Save** — you're now visible on the radar
+1. Open [radarthing.com](https://radarthing.com).
+2. Install the GeoFS script from [radarthing.com/userscript](https://radarthing.com/userscript), or paste the console loader shown on the homepage into GeoFS DevTools.
+3. Open [GeoFS](https://www.geo-fs.com/geofs.php) and fly normally.
+4. Your aircraft appears on the radar automatically while the script is running.
 
-> Press **W** to toggle the settings popup. Press **T** to start Heading Mode. Clear the fields and save to go invisible.
-
----
+Tampermonkey installs are persistent. Console installs use the same hosted loader, but they need to be run again after a full GeoFS page reload.
 
 ## Features
 
-### Flight Tracking
-- **Click-to-track** — Select any aircraft directly on the map to view full details
-- **Search** — Find flights instantly by callsign or GeoFS username
-- **Detailed flight plans** — View speed and altitude at every waypoint
+### Live Radar
 
-### Controller Tools
-- **Heading Mode** — Calculate headings between any two points on the map
-- **Airport markers** — Highlight airports for quick reference
-- **AGL altitude** — Accurate ground-relative altitude, essential for ATC operations
-- **Radar Mode** — Clean, professional display inspired by real-world radar screens and VATSIM
+- **Real-time aircraft stream** from the RadarThing SSE service.
+- **Click-to-track** aircraft with detailed sidebar data.
+- **Search and filtering** by callsign, flight number, airport, or GeoFS user.
+- **Multi-aircraft selection** with side-by-side tracking.
+- **Most-tracked flights** panel showing what other users are watching.
+- **Follow mode** for keeping a selected aircraft centered.
+- **Radar Mode** map styling for a cleaner controller view.
+- **Aircraft class icons** for light, regional, heavy, business, military, and helicopter traffic.
 
-### Weather & Charts
-- **METAR overlays** — Live weather data displayed on the map
-- **Airport charts** — Access approach plates and taxi diagrams via [GeoFS-Charts](https://github.com/mansoorbarri/geofs-charts) integration
+### Pilot and Controller Tools
 
----
+- **Heading Mode** for measuring headings between points on the map.
+- **Remote aircraft commands** for supported clients, including speed, altitude, heading, vertical speed, squawk, flaps, NAV/HDG mode, waypoint selection, autopilot toggles, and IDENT requests.
+- **Flight plan drawing** with waypoint speed and altitude details.
+- **Waypoint ETAs** and remaining route distance for active flights.
+- **Conflict alerts** with a recent review log.
+- **Keyboard shortcut reference** built into the radar dock.
+- **Display unit preferences** for speed and altitude.
+- **Map layer presets** for saving radar layer, weather, OpenAIP, and conflict-monitor setups.
 
-## What's Different From the Original
+### Weather and Airport Data
 
-| Original | This Version |
-|----------|--------------|
-| Multiple confusing map options | Single, streamlined interface |
-| Hard to see aircraft headings | Clear heading indicators |
-| Required zooming to select flights | Click any aircraft, anywhere |
-| MSL altitude (less useful for ATC) | AGL altitude (ground-relative) |
-| Basic flight plan display | Detailed waypoints with speed/altitude |
+- **METAR, D-ATIS, NOTAM, AIRMET, SIGMET, and precipitation layers**.
+- **Airport markers, frequencies, and live ATC indicators**.
+- **Airport charts** for taxi diagrams, SIDs, STARs, and approaches.
+- **Chart overlays** directly on the map where supported.
+- **Community chart uploads** with moderation.
+- **US airport charts are free**; advanced global chart and weather access is part of RadarThing PRO.
 
----
+### Flight History and Community
 
-## Issues & Feedback
+- **Automatic flight recording** with routes, duration, distance, max altitude, and max speed.
+- **Flight replay** from the dashboard or shared radar URLs.
+- **Live route viewing** before a flight has ended.
+- **Shareable flight cards** for completed flights.
+- **Pilot dashboard** with totals, streaks, top routes, airports, aircraft, account export, and subscription management.
+- **Pilot profiles** and a leaderboard for flights, distance, time, streaks, and approved image contributions.
+- **Pilot challenges** with automatic and manually reviewed goals.
+- **Virtual airline support** with callsign matching, members, admins, and VA-specific aircraft images.
+- **Community aircraft image uploads** and moderation.
+- **Discord waypoint reminders** through the RadarThing bot.
 
-Found a bug or have a suggestion? Open an issue on [GitHub](https://github.com/mansoorbarri/RadarThing/issues).
+## Free and PRO
 
----
+Core tracking is free. RadarThing PRO unlocks more aviation data and analytics.
+
+| Free | PRO |
+| --- | --- |
+| Live aircraft tracking | Everything in Free |
+| Search, filters, multi-select, and follow mode | Full NOTAM access with decoded text |
+| Flight recording and replay | AIRMET and SIGMET overlays |
+| Remote autopilot commands | Global airport charts and procedures |
+| Basic flight stats | Full flight history and advanced analytics |
+| Precipitation overlay | Radar Mode and chart-focused workflows |
+| Live ATC indicators and audio | Shareable flight cards |
+| Aircraft image uploads | Subscription management through Stripe |
+
+## Userscript Workflow
+
+Editable userscript source files live in:
+
+- `userscript.js`
+- `seabus.js`
+- `jth.js`
+- `userscript-src/radarthing-runtime.js`
+- `userscript-src/config.json`
+- `scripts/build-userscript.mjs`
+
+Generated userscript files are built into `public/userscript/` and `radarthing.user.js`. Do not hand-edit or commit those generated artifacts. Rebuild them from source instead:
+
+```bash
+bun run build:userscript
+```
+
+The public install flow is:
+
+1. `/userscript` redirects Tampermonkey users to `/userscript/radarthing.user.js`.
+2. The installer loads `/loader`.
+3. The loader reads `/userscript/latest.json`.
+4. The current runtime bundle is loaded, with a stable bundle fallback.
 
 ## Technical Details
 
-**Stack:** Next.js 15, React 19, TypeScript, Tailwind CSS, Convex (real-time database)
+**App:** Next.js 15, React 19, TypeScript, Tailwind CSS, shadcn-style UI components
 
-**Mapping:** [Leaflet](https://leafletjs.com/) for interactive maps
+**Data:** Convex for users, flight history, charts, aircraft images, virtual airlines, challenges, and moderation data
 
-**Authentication:** Clerk
+**Realtime:** SSE traffic stream served by the companion `../radar-sse` service
 
-**Architecture:** Built on the T3 stack with a modular, type-safe codebase. The original project was written in JavaScript with Express — this version is a complete TypeScript rewrite with modern tooling and better separation of concerns.
+**Mapping:** Leaflet with custom aircraft markers, weather overlays, chart overlays, and map layer presets
 
-### Development
+**Auth and billing:** Clerk, Stripe, UploadThing, Resend, and PostHog
+
+## Development
+
+Install dependencies:
 
 ```bash
-# Install dependencies
 bun install
-
-# Run development server
-bun dev
-
-# Build for production
-bun run build
 ```
+
+Run checks:
+
+```bash
+bun lint
+bun typecheck
+bun run check
+```
+
+Format code:
+
+```bash
+bun run format:write
+```
+
+Supporting services:
+
+```bash
+bun run cf       # Cloudflare tunnel
+bun run stripe   # Stripe webhook listener
+```
+
+Convex development:
+
+```bash
+bunx convex dev
+```
+
+After changing files in `convex/`, run Convex locally and deploy the Convex changes with the project deploy process.
+
+## Environment Variables
+
+Environment variables are validated in `src/env.js` using T3 Env. Server-side variables include Clerk, Stripe, UploadThing, and Resend keys. Client-side variables must use the `NEXT_PUBLIC_` prefix. Add new variables to `.env.example` when introducing them.
+
+## Issues and Feedback
+
+Found a bug or have a suggestion? Open an issue on [GitHub](https://github.com/mansoorbarri/RadarThing/issues) or join the RadarThing Discord from the homepage.
