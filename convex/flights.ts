@@ -6,8 +6,45 @@ import { autoCompleteChallengesForFlight } from "./challenges";
 import { calculateRouteDistanceNm } from "./lib/challengeRules";
 import { isFlightModeratorGoogleId } from "../src/lib/flight-moderation";
 
-const STATS_MAX_SPEED_KTS = 750;
-const STATS_EXCLUDED_SPEED_REASON = "speed_over_750_kts";
+const DEFAULT_STATS_MAX_SPEED_KTS = 750;
+const HIGH_PERFORMANCE_STATS_MAX_SPEED_KTS = 1100;
+const STATS_EXCLUDED_SPEED_REASON = "speed_over_stats_limit";
+const LEGACY_STATS_EXCLUDED_SPEED_REASON = "speed_over_750_kts";
+
+function isHighPerformanceStatsAircraft(aircraftType?: string) {
+  const normalized = aircraftType?.trim().toUpperCase() ?? "";
+  if (!normalized) return false;
+
+  if (normalized.includes("CONCORDE")) return true;
+
+  return (
+    /\bF\/?A-?\d{1,3}[A-Z]?\b/.test(normalized) ||
+    /\bF-?\d{1,3}[A-Z]?\b/.test(normalized) ||
+    /\b[ABT]-\d{1,3}[A-Z]?\b/.test(normalized) ||
+    /\bSR-?71\b/.test(normalized) ||
+    /\bYF-?\d{1,3}[A-Z]?\b/.test(normalized) ||
+    /\bMIG-?\d{1,3}[A-Z]?\b/.test(normalized) ||
+    /\bSU-?\d{1,3}[A-Z]?\b/.test(normalized) ||
+    /\bJAS-?\d{1,3}[A-Z]?\b/.test(normalized) ||
+    /\bEUROFIGHTER\b/.test(normalized) ||
+    /\bTYPHOON\b/.test(normalized) ||
+    /\bRAFALE\b/.test(normalized) ||
+    /\bMIRAGE\b/.test(normalized) ||
+    /\bGRIPEN\b/.test(normalized) ||
+    /\bTORNADO\b/.test(normalized) ||
+    /\bHARRIER\b/.test(normalized) ||
+    /\bPHANTOM\b/.test(normalized) ||
+    /\bVIGGEN\b/.test(normalized) ||
+    /\bSUKHOI\b/.test(normalized) ||
+    /\bMIKOYAN\b/.test(normalized)
+  );
+}
+
+function getStatsMaxSpeedKts(aircraftType?: string) {
+  return isHighPerformanceStatsAircraft(aircraftType)
+    ? HIGH_PERFORMANCE_STATS_MAX_SPEED_KTS
+    : DEFAULT_STATS_MAX_SPEED_KTS;
+}
 
 // Get flight history for a user by their Google ID
 export const getHistoryByGoogleId = query({
@@ -78,20 +115,28 @@ function deriveVisibleCurrentStreak(
 }
 
 function getStatsExcludedReason(flight: {
+  aircraftType?: string;
   maxSpeed?: number;
   statsExcludedReason?: string;
 }): string | undefined {
-  if (flight.statsExcludedReason) return flight.statsExcludedReason;
   if (
     typeof flight.maxSpeed === "number" &&
-    flight.maxSpeed > STATS_MAX_SPEED_KTS
+    flight.maxSpeed > getStatsMaxSpeedKts(flight.aircraftType)
   ) {
     return STATS_EXCLUDED_SPEED_REASON;
+  }
+  if (
+    flight.statsExcludedReason &&
+    flight.statsExcludedReason !== STATS_EXCLUDED_SPEED_REASON &&
+    flight.statsExcludedReason !== LEGACY_STATS_EXCLUDED_SPEED_REASON
+  ) {
+    return flight.statsExcludedReason;
   }
   return undefined;
 }
 
 function isFlightStatsEligible(flight: {
+  aircraftType?: string;
   maxSpeed?: number;
   statsExcludedReason?: string;
 }) {
