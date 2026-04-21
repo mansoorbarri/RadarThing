@@ -8,6 +8,25 @@ interface Props {
   onTrack: (aircraft: PositionUpdate) => void;
 }
 
+function isRadarThingTraffic(aircraft: PositionUpdate) {
+  const source = aircraft.source ?? aircraft.trafficSource;
+  if (typeof source === "string") {
+    return (
+      source.trim().toLowerCase().replace(/[\s_-]+/g, "") === "radarthing"
+    );
+  }
+
+  return (
+    typeof aircraft.navMode === "boolean" ||
+    aircraft.speedMode === "knots" ||
+    aircraft.speedMode === "mach" ||
+    typeof aircraft.flapsPosition === "number" ||
+    typeof aircraft.flapsMaxPosition === "number" ||
+    typeof aircraft.identActive === "boolean" ||
+    typeof aircraft.identUntil === "number"
+  );
+}
+
 export function FIDSPanel({ aircrafts, onTrack }: Props) {
   return (
     <div className="flex h-full flex-col">
@@ -57,14 +76,24 @@ function FIDSRow({
   onTrack: (aircraft: PositionUpdate) => void;
   index: number;
 }) {
+  const showRadarThingDot = isRadarThingTraffic(aircraft);
+
   return (
     <div
       className="animate-fade-in-up grid grid-cols-[minmax(0,3fr)_minmax(0,3fr)_4rem_5.25rem] items-center gap-2 border-b border-white/5 px-4 py-2.5 text-xs transition-colors hover:bg-white/[0.03]"
       style={{ animationDelay: `${Math.min(index * 25, 500)}ms` }}
     >
       <div className="min-w-0">
-        <div className="truncate font-mono font-bold text-cyan-300">
-          {aircraft.flightNo || aircraft.callsign || "—"}
+        <div className="flex min-w-0 items-center gap-1.5">
+          {showRadarThingDot && (
+            <span
+              title="RadarThing SSE"
+              className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.85)]"
+            />
+          )}
+          <span className="truncate font-mono font-bold text-cyan-300">
+            {aircraft.flightNo || aircraft.callsign || "—"}
+          </span>
         </div>
         {aircraft.flightNo &&
           aircraft.callsign &&

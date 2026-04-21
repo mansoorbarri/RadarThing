@@ -577,6 +577,7 @@
     const payload = {
       id: getUserIdentifier(),
       googleId: geofs.userRecord.googleid || null,
+      source: "radarthing",
       callsign: sanitizeCallsign(geofs.userRecord.callsign),
       type: inst.aircraftRecord.name || "Unknown",
       lat: lla[0],

@@ -1,6 +1,8 @@
 export interface PositionUpdate {
   id: string;
   googleId?: string;
+  source?: string | null;
+  trafficSource?: string | null;
   callsign: string;
   type: string;
   lat: number;
