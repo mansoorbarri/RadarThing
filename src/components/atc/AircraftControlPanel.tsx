@@ -22,6 +22,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     enableNav,
     disableNav,
     setWaypoint,
+    disconnectFlight,
     isLoading,
   } = useAircraftCommands();
 
@@ -108,8 +109,9 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
 
   const resetForm = useCallback(() => {
     const currentWaypointValue =
-      flightPlanWaypoints.find((waypoint) => waypoint.ident === currentWaypointIdent)
-        ?.value ||
+      flightPlanWaypoints.find(
+        (waypoint) => waypoint.ident === currentWaypointIdent,
+      )?.value ||
       flightPlanWaypoints[0]?.value ||
       "0";
 
@@ -123,7 +125,12 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     setFlapsError("");
     setModeInput(aircraft.navMode ? "nav" : "hdg");
     setWaypointInput(currentWaypointValue);
-  }, [aircraft.navMode, currentSpeedMode, currentWaypointIdent, flightPlanWaypoints]);
+  }, [
+    aircraft.navMode,
+    currentSpeedMode,
+    currentWaypointIdent,
+    flightPlanWaypoints,
+  ]);
 
   const handleSetAll = useCallback(async () => {
     const speed = parseFloat(speedInput);
@@ -214,7 +221,10 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       }
 
       if (controlsSet.length > 0) {
-        Analytics.controlSetAll({ callsign: aircraftId, controls: controlsSet });
+        Analytics.controlSetAll({
+          callsign: aircraftId,
+          controls: controlsSet,
+        });
         toast.success(`Controls sent: ${controlsSet.join(", ").toUpperCase()}`);
         resetForm();
       }
@@ -250,6 +260,26 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     disableNav,
     setWaypoint,
     resetForm,
+  ]);
+
+  const handleDisconnectFlight = useCallback(async () => {
+    try {
+      await disconnectFlight(aircraftId, aircraft.googleId);
+      Analytics.flightDisconnected({
+        callsign: aircraft.flightNo || aircraft.callsign || aircraftId,
+      });
+      toast.success("Flight disconnected from RadarThing");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to disconnect flight";
+      toast.error(message);
+    }
+  }, [
+    aircraft.callsign,
+    aircraft.flightNo,
+    aircraft.googleId,
+    aircraftId,
+    disconnectFlight,
   ]);
 
   const hasAnyInput =
@@ -401,6 +431,29 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
         SET
       </button>
 
+      <button
+        onClick={handleDisconnectFlight}
+        disabled={isLoading}
+        title="Disconnect this flight from RadarThing SSE"
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 py-3 font-mono text-xs font-bold tracking-wider text-red-200 uppercase transition-colors hover:border-red-300/50 hover:bg-red-500/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 2v10" />
+          <path d="M18.4 6.6a9 9 0 1 1-12.8 0" />
+        </svg>
+        Disconnect
+      </button>
+
       <p className="px-1 font-mono text-[9px] text-white/30">
         Commands sent to GeoFS. NAV can target any waypoint in the active flight
         plan.
@@ -409,8 +462,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   );
 }
 
-interface StyledSelectProps
-  extends React.SelectHTMLAttributes<HTMLSelectElement> {
+interface StyledSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   children: React.ReactNode;
 }
 
@@ -419,7 +471,7 @@ function StyledSelect({ children, className, ...props }: StyledSelectProps) {
     <div className="relative">
       <select
         {...props}
-        className={`h-10 w-full appearance-none rounded-xl border border-white/10 bg-black/40 px-3 pr-10 font-mono text-xs font-bold text-white outline-none transition-colors hover:bg-black/60 focus:border-cyan-500/50 ${className ?? ""}`}
+        className={`h-10 w-full appearance-none rounded-xl border border-white/10 bg-black/40 px-3 pr-10 font-mono text-xs font-bold text-white transition-colors outline-none hover:bg-black/60 focus:border-cyan-500/50 ${className ?? ""}`}
       >
         {children}
       </select>
@@ -565,7 +617,7 @@ function InlineUnitSelect({
     <div className="relative">
       <select
         {...props}
-        className={`h-8 w-[88px] appearance-none rounded-lg border border-white/10 bg-black/40 px-2 pr-6 font-mono text-[10px] font-bold text-white outline-none transition-colors hover:bg-black/60 focus:border-cyan-500/50 ${className ?? ""}`}
+        className={`h-8 w-[88px] appearance-none rounded-lg border border-white/10 bg-black/40 px-2 pr-6 font-mono text-[10px] font-bold text-white transition-colors outline-none hover:bg-black/60 focus:border-cyan-500/50 ${className ?? ""}`}
       >
         {children}
       </select>

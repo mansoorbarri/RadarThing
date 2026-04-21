@@ -88,10 +88,13 @@
       return;
     }
 
-    identExpiryTimer = setTimeout(() => {
-      identActiveUntil = 0;
-      broadcastIdentUpdate(false);
-    }, Math.max(250, identActiveUntil - Date.now() + 50));
+    identExpiryTimer = setTimeout(
+      () => {
+        identActiveUntil = 0;
+        broadcastIdentUpdate(false);
+      },
+      Math.max(250, identActiveUntil - Date.now() + 50),
+    );
   }
 
   function activateIdent(durationSeconds) {
@@ -119,7 +122,9 @@
   }
 
   window.addEventListener("radarthing-ident-confirm", (e) => {
-    activateIdent(Number(e.detail?.durationSeconds) || DEFAULT_IDENT_DURATION_SECONDS);
+    activateIdent(
+      Number(e.detail?.durationSeconds) || DEFAULT_IDENT_DURATION_SECONDS,
+    );
   });
 
   // ==========================================
@@ -363,7 +368,9 @@
           break;
 
         case "setWaypoint": {
-          const waypointIdent = String(cmd.value || "").trim().toUpperCase();
+          const waypointIdent = String(cmd.value || "")
+            .trim()
+            .toUpperCase();
           const flightPlan = geofs.flightPlan;
           const route = flightPlan?.waypointArray || [];
 
@@ -374,8 +381,15 @@
 
           const waypointIndex = route.findIndex((waypoint) => {
             const ident =
-              waypoint?.ident || waypoint?.name || waypoint?.id || waypoint?.icao;
-            return String(ident || "").trim().toUpperCase() === waypointIdent;
+              waypoint?.ident ||
+              waypoint?.name ||
+              waypoint?.id ||
+              waypoint?.icao;
+            return (
+              String(ident || "")
+                .trim()
+                .toUpperCase() === waypointIdent
+            );
           });
 
           if (waypointIndex < 0) {
@@ -418,6 +432,19 @@
 
         case "requestIdent":
           requestIdent(Number(cmd.value) || DEFAULT_IDENT_DURATION_SECONDS);
+          break;
+
+        case "disconnectFlight":
+          stopFollow();
+          window.dispatchEvent(
+            new CustomEvent("atc-data-sync", {
+              detail: { active: false },
+            }),
+          );
+          window.dispatchEvent(
+            new CustomEvent("radarthing-flight-disconnected"),
+          );
+          showIdentToast("RADAR DISCONNECTED");
           break;
 
         default:
@@ -587,9 +614,7 @@
       heading: Math.round(geofs.animation.values.heading360 || 0),
       speed: Math.round(geofs.animation.values.kias || 0),
       groundSpeed: Math.round(
-        geofs.animation.values.groundSpeed ||
-          geofs.animation.values.kias ||
-          0,
+        geofs.animation.values.groundSpeed || geofs.animation.values.kias || 0,
       ),
       flightNo: sanitizeCallsign(info.flt),
       departure: info.dep,

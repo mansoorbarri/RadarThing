@@ -1556,6 +1556,20 @@
       updateIdentUI();
     };
 
+    window.addEventListener("radarthing-flight-disconnected", () => {
+      [
+        DEP_INPUT_ID,
+        ARR_INPUT_ID,
+        FLT_INPUT_ID,
+        SQK_INPUT_ID,
+        AF_INPUT_ID,
+      ].forEach((id) => {
+        const input = document.getElementById(id);
+        if (input) input.value = "";
+      });
+      showToast("Radar disconnected");
+    });
+
     document.getElementById(CHARTS_BTN_ID).onclick = toggleChartsPanel;
 
     // ---- Follow UI logic ----

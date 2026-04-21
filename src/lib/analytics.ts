@@ -343,6 +343,10 @@ export const Analytics = {
     track("ident_requested", props);
   },
 
+  flightDisconnected: (props: { callsign?: string }) => {
+    track("flight_disconnected", props);
+  },
+
   // ===== MOST TRACKED EVENTS =====
   mostTrackedFlightClicked: (props: {
     callsign: string;

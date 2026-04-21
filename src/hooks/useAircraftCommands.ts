@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 
 const COMMAND_API_URL = "https://sse.radarthing.com/api/command";
+const END_FLIGHT_API_URL = "https://sse.radarthing.com/api/end-flight";
 
 export type CommandType =
   | "setSpeed"
@@ -14,7 +15,8 @@ export type CommandType =
   | "disableNav"
   | "setWaypoint"
   | "toggleAutopilot"
-  | "requestIdent";
+  | "requestIdent"
+  | "disconnectFlight";
 
 interface Command {
   type: CommandType;
@@ -166,6 +168,52 @@ export function useAircraftCommands() {
     [sendCommand],
   );
 
+  const disconnectFlight = useCallback(
+    async (targetId: string, targetGoogleId?: string | null) => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const endRes = await fetch(END_FLIGHT_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: targetId,
+            googleId: targetGoogleId ?? null,
+          }),
+        });
+
+        if (!endRes.ok) {
+          const data = await endRes.json().catch(() => null);
+          throw new Error(data?.error || "Failed to disconnect flight");
+        }
+
+        const commandRes = await fetch(COMMAND_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            targetId,
+            command: { type: "disconnectFlight", value: true },
+          }),
+        });
+
+        if (!commandRes.ok) {
+          const data = await commandRes.json().catch(() => null);
+          throw new Error(data?.error || "Failed to stop flight transmitter");
+        }
+
+        return await endRes.json();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        setError(message);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
+
   return {
     sendCommand,
     setSpeed,
@@ -180,6 +228,7 @@ export function useAircraftCommands() {
     setWaypoint,
     toggleAutopilot,
     requestIdent,
+    disconnectFlight,
     isLoading,
     error,
   };
