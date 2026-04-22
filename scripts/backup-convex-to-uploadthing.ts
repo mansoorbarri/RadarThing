@@ -160,10 +160,7 @@ async function uploadBackup(backup: {
   fileName: string;
   filePath: string;
 }) {
-  const uploadThingToken = process.env.UPLOADTHING_TOKEN;
-  if (!uploadThingToken) {
-    throw new Error("UPLOADTHING_TOKEN must be set.");
-  }
+  const uploadThingToken = getUploadThingToken();
 
   const bytes = await readFile(backup.filePath);
   const file = new UTFile([new Uint8Array(bytes)], backup.fileName, {
@@ -183,6 +180,48 @@ async function uploadBackup(backup: {
   }
 
   return { utapi, uploadedFile: result.data };
+}
+
+function getUploadThingToken() {
+  const rawToken = process.env.UPLOADTHING_TOKEN;
+  if (!rawToken) {
+    throw new Error("UPLOADTHING_TOKEN must be set.");
+  }
+
+  if (rawToken.startsWith("UPLOADTHING_TOKEN=")) {
+    throw new Error(
+      "UPLOADTHING_TOKEN should be only the token value, not the full UPLOADTHING_TOKEN=... line.",
+    );
+  }
+
+  const token = rawToken.trim().replace(/^(['"])(.*)\1$/, "$2");
+  validateUploadThingToken(token);
+  return token;
+}
+
+function validateUploadThingToken(token: string) {
+  try {
+    const normalized = token.replaceAll("-", "+").replaceAll("_", "/");
+    const padded = normalized.padEnd(
+      normalized.length + ((4 - (normalized.length % 4)) % 4),
+      "=",
+    );
+    const parsed = JSON.parse(Buffer.from(padded, "base64").toString("utf8"));
+
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      typeof parsed.apiKey !== "string" ||
+      typeof parsed.appId !== "string" ||
+      !Array.isArray(parsed.regions)
+    ) {
+      throw new Error("Unexpected token payload.");
+    }
+  } catch {
+    throw new Error(
+      "UPLOADTHING_TOKEN is not a valid UploadThing v7 token. Copy the raw token from UploadThing Dashboard -> API Keys. It usually starts with `eyJ` and decodes to apiKey/appId/regions JSON.",
+    );
+  }
 }
 
 async function pruneOldBackups(utapi: UTApi, retentionDays: number) {
