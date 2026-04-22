@@ -244,9 +244,6 @@ function serializeChallenge(challenge: {
   startAt: number;
   endAt: number;
   isPublished: boolean;
-  discordEventId?: string;
-  discordEventUrl?: string;
-  discordEventCreatedAt?: number;
   createdBy: string;
   updatedAt: number;
 }) {
@@ -271,9 +268,6 @@ function serializeChallenge(challenge: {
     startAt: challenge.startAt,
     endAt: challenge.endAt,
     isPublished: challenge.isPublished,
-    discordEventId: challenge.discordEventId ?? null,
-    discordEventUrl: challenge.discordEventUrl ?? null,
-    discordEventCreatedAt: challenge.discordEventCreatedAt ?? null,
     createdBy: challenge.createdBy,
     updatedAt: challenge.updatedAt,
   };
@@ -757,23 +751,6 @@ export const listAdmin = query({
   },
 });
 
-export const listForBotAnnouncements = query({
-  args: {
-    includeExisting: v.optional(v.boolean()),
-  },
-  handler: async (ctx, args) => {
-    const now = Date.now();
-    return (await getPublishedChallenges(ctx))
-      .filter(
-        (challenge) =>
-          challenge.endAt > now &&
-          (args.includeExisting || !challenge.discordEventId),
-      )
-      .sort((a, b) => a.startAt - b.startAt)
-      .map((challenge) => serializeChallenge(challenge));
-  },
-});
-
 export const listPendingReviews = query({
   args: {},
   handler: async (ctx) => {
@@ -939,22 +916,6 @@ export const togglePublished = mutation({
 
     await ctx.db.patch(args.challengeId, {
       isPublished: args.isPublished,
-      updatedAt: Date.now(),
-    });
-  },
-});
-
-export const updateDiscordEvent = mutation({
-  args: {
-    challengeId: v.id("challenges"),
-    discordEventId: v.string(),
-    discordEventUrl: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.challengeId, {
-      discordEventId: args.discordEventId.trim(),
-      discordEventUrl: args.discordEventUrl?.trim() || undefined,
-      discordEventCreatedAt: Date.now(),
       updatedAt: Date.now(),
     });
   },

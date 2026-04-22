@@ -223,9 +223,6 @@ export default defineSchema({
     startAt: v.number(),
     endAt: v.number(),
     isPublished: v.boolean(),
-    discordEventId: v.optional(v.string()),
-    discordEventUrl: v.optional(v.string()),
-    discordEventCreatedAt: v.optional(v.number()),
     createdBy: v.string(),
     updatedAt: v.number(),
   })

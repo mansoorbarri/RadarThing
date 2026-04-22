@@ -867,7 +867,7 @@ export function ChallengesTab() {
                   </div>
                 </div>
 
-                <div className="grid gap-3 text-sm text-slate-400 md:grid-cols-4">
+                <div className="grid gap-3 text-sm text-slate-400 md:grid-cols-3">
                   <div className="rounded-xl border border-white/10 bg-white/5 p-3">
                     <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
                       <CalendarRange className="h-3.5 w-3.5" />
@@ -899,25 +899,6 @@ export function ChallengesTab() {
                       {challenge.counts.pending} pending •{" "}
                       {challenge.counts.rejected} rejected
                     </p>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                      Discord Event
-                    </div>
-                    {challenge.discordEventUrl ? (
-                      <a
-                        href={challenge.discordEventUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-cyan-300 transition-colors hover:text-cyan-200"
-                      >
-                        View event
-                      </a>
-                    ) : challenge.discordEventId ? (
-                      <p>Event linked</p>
-                    ) : (
-                      <p>No event linked yet</p>
-                    )}
                   </div>
                 </div>
 
