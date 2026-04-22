@@ -11,6 +11,7 @@ import {
   Pencil,
   Send,
   Trash2,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Id } from "../../../../convex/_generated/dataModel";
@@ -918,6 +919,30 @@ export function ChallengesTab() {
                       <p>No event linked yet</p>
                     )}
                   </div>
+                </div>
+
+                <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                  <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                    <Users className="h-3.5 w-3.5" />
+                    Completed Pilots
+                  </div>
+                  {challenge.completedUsers.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {challenge.completedUsers.map((completedUser) => (
+                        <span
+                          key={completedUser.userId}
+                          title={completedUser.userId}
+                          className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-200"
+                        >
+                          {completedUser.displayName}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500">
+                      No pilots have completed this challenge yet.
+                    </p>
+                  )}
                 </div>
               </div>
             ))}

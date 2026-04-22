@@ -653,12 +653,20 @@ export const listAdmin = query({
 
     const challenges = await ctx.db.query("challenges").collect();
     const completions = await ctx.db.query("challengeCompletions").collect();
+    const users = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("isDeleted"), false))
+      .collect();
+    const usersById = new Map(users.map((user) => [user._id, user]));
 
     const completionCounts = new Map<
       string,
       { pending: number; completed: number; rejected: number }
     >();
-    const completedUserIdsByChallenge = new Map<string, Set<string>>();
+    const completedUserIdsByChallenge = new Map<
+      Id<"challenges">,
+      Set<Id<"users">>
+    >();
 
     for (const completion of completions) {
       const current = completionCounts.get(completion.challengeId) ?? {
@@ -672,14 +680,17 @@ export const listAdmin = query({
       if (completion.status === "completed") {
         const users =
           completedUserIdsByChallenge.get(completion.challengeId) ??
-          new Set<string>();
+          new Set<Id<"users">>();
         users.add(completion.userId);
         completedUserIdsByChallenge.set(completion.challengeId, users);
       }
     }
 
     const now = Date.now();
-    const computedCompletedUserIdsByChallenge = new Map<string, Set<string>>();
+    const computedCompletedUserIdsByChallenge = new Map<
+      Id<"challenges">,
+      Set<Id<"users">>
+    >();
 
     for (const challenge of challenges) {
       if (challenge.mode !== "auto" || !isChallengeActiveAt(challenge, now)) {
@@ -695,14 +706,14 @@ export const listAdmin = query({
         )
         .collect();
 
-      const flightsByUser = new Map<string, typeof flights>();
+      const flightsByUser = new Map<Id<"users">, typeof flights>();
       for (const flight of flights) {
         const userFlights = flightsByUser.get(flight.userId) ?? [];
         userFlights.push(flight);
         flightsByUser.set(flight.userId, userFlights);
       }
 
-      const completedUserIds = new Set<string>();
+      const completedUserIds = new Set<Id<"users">>();
       for (const [userId, userFlights] of flightsByUser.entries()) {
         if (doesFlightCollectionMatchChallenge(challenge, userFlights)) {
           completedUserIds.add(userId);
@@ -723,6 +734,16 @@ export const listAdmin = query({
           ...(completedUserIdsByChallenge.get(challenge._id) ?? []),
           ...(computedCompletedUserIdsByChallenge.get(challenge._id) ?? []),
         ]);
+        const completedUserDetails = [...completedUsers]
+          .map((userId) => {
+            const user = usersById.get(userId);
+            return {
+              userId,
+              displayName: user?.discordUsername ?? userId,
+              discordUsername: user?.discordUsername ?? null,
+            };
+          })
+          .sort((a, b) => a.displayName.localeCompare(b.displayName));
 
         return {
           ...serializeChallenge(challenge),
@@ -730,6 +751,7 @@ export const listAdmin = query({
             ...counts,
             completed: completedUsers.size,
           },
+          completedUsers: completedUserDetails,
         };
       });
   },
