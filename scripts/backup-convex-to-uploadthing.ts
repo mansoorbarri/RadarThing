@@ -1,9 +1,16 @@
 import { spawn } from "node:child_process";
-import { readFile, rm, mkdir, stat } from "node:fs/promises";
+import {
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  scryptSync,
+} from "node:crypto";
+import { readFile, rm, mkdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { UTApi, UTFile } from "uploadthing/server";
 
+const encryptedBackupMagic = Buffer.from("RTCB1");
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
@@ -13,6 +20,8 @@ const backupCustomIdPrefix = "convex-backup:radarthing:";
 
 interface Options {
   convexTargetArgs: string[];
+  decryptInputPath: string | null;
+  decryptOutputPath: string | null;
   includeFileStorage: boolean;
   keepLocal: boolean;
   retentionDays: number | null;
@@ -31,10 +40,15 @@ Options:
   --include-file-storage         Include Convex file storage in the backup ZIP.
   --retention-days <days>        Delete older UploadThing backups from this script.
   --keep-local                   Keep the generated ZIP under convex-backup/.
+  --decrypt <encryptedFile>      Decrypt an encrypted backup file instead of exporting.
+  --output <zipFile>             Output path for --decrypt.
   -h, --help                     Show this help.
 
 When CONVEX_DEPLOY_KEY is set, Convex uses that key's deployment and ignores
-deployment selection flags.`);
+deployment selection flags.
+
+Backups are encrypted before upload with BACKUP_ENCRYPTION_KEY because
+UploadThing free apps do not support private files.`);
   process.exit(exitCode);
 }
 
@@ -49,6 +63,8 @@ function parsePositiveInteger(value: string, flag: string) {
 function parseArgs(argv: string[]): Options {
   const options: Options = {
     convexTargetArgs: process.env.CONVEX_DEPLOY_KEY ? [] : ["--prod"],
+    decryptInputPath: null,
+    decryptOutputPath: null,
     includeFileStorage: false,
     keepLocal: false,
     retentionDays: null,
@@ -88,6 +104,18 @@ function parseArgs(argv: string[]): Options {
       case "--keep-local":
         options.keepLocal = true;
         break;
+      case "--decrypt": {
+        const inputPath = argv[++i];
+        if (!inputPath) printUsage();
+        options.decryptInputPath = inputPath;
+        break;
+      }
+      case "--output": {
+        const outputPath = argv[++i];
+        if (!outputPath) printUsage();
+        options.decryptOutputPath = outputPath;
+        break;
+      }
       case "-h":
       case "--help":
         printUsage(0);
@@ -95,6 +123,10 @@ function parseArgs(argv: string[]): Options {
       default:
         throw new Error(`Unknown option: ${arg}`);
     }
+  }
+
+  if (options.decryptInputPath && !options.decryptOutputPath) {
+    throw new Error("--output is required when using --decrypt.");
   }
 
   return options;
@@ -163,15 +195,20 @@ async function uploadBackup(backup: {
   const uploadThingToken = getUploadThingToken();
 
   const bytes = await readFile(backup.filePath);
-  const file = new UTFile([new Uint8Array(bytes)], backup.fileName, {
-    customId: `${backupCustomIdPrefix}${backup.timestamp}`,
-    type: "application/zip",
-  });
+  const encryptedBytes = encryptBackup(bytes);
+  const file = new UTFile(
+    [new Uint8Array(encryptedBytes)],
+    `${backup.fileName}.enc`,
+    {
+      customId: `${backupCustomIdPrefix}${backup.timestamp}`,
+      type: "application/octet-stream",
+    },
+  );
 
-  console.log("Uploading backup to UploadThing...");
+  console.log("Uploading encrypted backup to UploadThing...");
   const utapi = new UTApi({ token: uploadThingToken });
   const result = await utapi.uploadFiles(file, {
-    acl: "private",
+    acl: "public-read",
     contentDisposition: "attachment",
   });
 
@@ -180,6 +217,58 @@ async function uploadBackup(backup: {
   }
 
   return { utapi, uploadedFile: result.data };
+}
+
+function encryptBackup(bytes: Buffer) {
+  const encryptionKey = process.env.BACKUP_ENCRYPTION_KEY;
+  if (!encryptionKey) {
+    throw new Error("BACKUP_ENCRYPTION_KEY must be set.");
+  }
+
+  const salt = randomBytes(16);
+  const iv = randomBytes(12);
+  const key = scryptSync(encryptionKey, salt, 32);
+  const cipher = createCipheriv("aes-256-gcm", key, iv);
+  const encrypted = Buffer.concat([cipher.update(bytes), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+
+  return Buffer.concat([encryptedBackupMagic, salt, iv, authTag, encrypted]);
+}
+
+function decryptBackup(bytes: Buffer) {
+  const encryptionKey = process.env.BACKUP_ENCRYPTION_KEY;
+  if (!encryptionKey) {
+    throw new Error("BACKUP_ENCRYPTION_KEY must be set.");
+  }
+
+  if (
+    !bytes.subarray(0, encryptedBackupMagic.length).equals(encryptedBackupMagic)
+  ) {
+    throw new Error("Encrypted backup has an invalid file header.");
+  }
+
+  const saltStart = encryptedBackupMagic.length;
+  const ivStart = saltStart + 16;
+  const authTagStart = ivStart + 12;
+  const encryptedStart = authTagStart + 16;
+  const salt = bytes.subarray(saltStart, ivStart);
+  const iv = bytes.subarray(ivStart, authTagStart);
+  const authTag = bytes.subarray(authTagStart, encryptedStart);
+  const encrypted = bytes.subarray(encryptedStart);
+  const key = scryptSync(encryptionKey, salt, 32);
+  const decipher = createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAuthTag(authTag);
+
+  return Buffer.concat([decipher.update(encrypted), decipher.final()]);
+}
+
+async function decryptBackupFile(inputPath: string, outputPath: string) {
+  const encryptedBytes = await readFile(path.resolve(repoRoot, inputPath));
+  const decryptedBytes = decryptBackup(encryptedBytes);
+  const resolvedOutputPath = path.resolve(repoRoot, outputPath);
+  await mkdir(path.dirname(resolvedOutputPath), { recursive: true });
+  await writeFile(resolvedOutputPath, decryptedBytes);
+  console.log(`Decrypted backup to ${resolvedOutputPath}`);
 }
 
 function getUploadThingToken() {
@@ -266,6 +355,15 @@ async function pruneOldBackups(utapi: UTApi, retentionDays: number) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
+
+  if (options.decryptInputPath) {
+    await decryptBackupFile(
+      options.decryptInputPath,
+      options.decryptOutputPath!,
+    );
+    return;
+  }
+
   const backup = await exportConvexBackup(options);
   const { utapi, uploadedFile } = await uploadBackup(backup);
 

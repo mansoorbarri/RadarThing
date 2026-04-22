@@ -65,16 +65,16 @@ Tampermonkey installs are persistent. Console installs use the same hosted loade
 
 Core tracking is free. RadarThing PRO unlocks more aviation data and analytics.
 
-| Free | PRO |
-| --- | --- |
-| Live aircraft tracking | Everything in Free |
-| Search, filters, multi-select, and follow mode | Full NOTAM access with decoded text |
-| Flight recording and replay | AIRMET and SIGMET overlays |
-| Remote autopilot commands | Global airport charts and procedures |
-| Basic flight stats | Full flight history and advanced analytics |
-| Precipitation overlay | Radar Mode and chart-focused workflows |
-| Live ATC indicators and audio | Shareable flight cards |
-| Aircraft image uploads | Subscription management through Stripe |
+| Free                                           | PRO                                        |
+| ---------------------------------------------- | ------------------------------------------ |
+| Live aircraft tracking                         | Everything in Free                         |
+| Search, filters, multi-select, and follow mode | Full NOTAM access with decoded text        |
+| Flight recording and replay                    | AIRMET and SIGMET overlays                 |
+| Remote autopilot commands                      | Global airport charts and procedures       |
+| Basic flight stats                             | Full flight history and advanced analytics |
+| Precipitation overlay                          | Radar Mode and chart-focused workflows     |
+| Live ATC indicators and audio                  | Shareable flight cards                     |
+| Aircraft image uploads                         | Subscription management through Stripe     |
 
 ## Userscript Workflow
 
@@ -148,6 +148,61 @@ bunx convex dev
 ```
 
 After changing files in `convex/`, run Convex locally and deploy the Convex changes with the project deploy process.
+
+## Convex Backups
+
+Production Convex backups are exported by the `Convex Backup` GitHub Actions workflow and uploaded to UploadThing.
+
+UploadThing free apps do not allow private files, so backups are encrypted locally before upload and stored as `.zip.enc` files. Treat `BACKUP_ENCRYPTION_KEY` like a production database password: keep it in a password manager. If this key is lost, existing encrypted backups cannot be restored.
+
+Required GitHub Actions repository secrets:
+
+```text
+CONVEX_DEPLOY_KEY
+UPLOADTHING_TOKEN
+BACKUP_ENCRYPTION_KEY
+```
+
+Generate the encryption key with:
+
+```bash
+openssl rand -base64 48
+```
+
+Trigger a manual backup from GitHub:
+
+1. Open the repository on GitHub.
+2. Go to **Actions**.
+3. Select **Convex Backup**.
+4. Click **Run workflow**.
+
+The workflow runs daily at `08:00 UTC` and prunes encrypted UploadThing backups older than 30 days.
+
+Run the backup locally:
+
+```bash
+bun run backup:convex -- --retention-days 30
+```
+
+Include Convex file storage:
+
+```bash
+bun run backup:convex -- --include-file-storage --retention-days 30
+```
+
+Decrypt a downloaded backup:
+
+```bash
+BACKUP_ENCRYPTION_KEY="<same key used for backups>" bun run backup:convex -- \
+  --decrypt ./radarthing-convex-2026-04-22T19-08-56.513Z.zip.enc \
+  --output ./radarthing-convex-2026-04-22T19-08-56.513Z.zip
+```
+
+Restore with Convex after decrypting, preferably into a non-production deployment first:
+
+```bash
+bunx convex import ./radarthing-convex-2026-04-22T19-08-56.513Z.zip
+```
 
 ## Environment Variables
 

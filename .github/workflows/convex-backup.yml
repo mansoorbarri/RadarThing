@@ -15,6 +15,7 @@ jobs:
     env:
       CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
       UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
 
     steps:
       - name: Checkout
