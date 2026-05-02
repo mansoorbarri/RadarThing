@@ -28,6 +28,37 @@ export const getByGoogleId = query({
   },
 });
 
+// Get Discord usernames for a batch of Google IDs
+export const getDiscordUsernamesByGoogleIds = query({
+  args: { googleIds: v.array(v.string()) },
+  handler: async (ctx, args) => {
+    const googleIds = Array.from(
+      new Set(args.googleIds.map((googleId) => googleId.trim()).filter(Boolean)),
+    );
+
+    if (googleIds.length === 0) {
+      return {};
+    }
+
+    const users = await Promise.all(
+      googleIds.map((googleId) =>
+        ctx.db
+          .query("users")
+          .withIndex("by_googleId", (q) => q.eq("googleId", googleId))
+          .first(),
+      ),
+    );
+
+    return Object.fromEntries(
+      users.flatMap((user, index) => {
+        const googleId = googleIds[index];
+        if (!googleId || !user?.discordUsername) return [];
+        return [[googleId, user.discordUsername]];
+      }),
+    );
+  },
+});
+
 // Get user by Stripe Customer ID
 export const getByStripeCustomerId = query({
   args: { stripeCustomerId: v.string() },
@@ -75,6 +106,65 @@ export const getByDiscordUsername = query({
           normalizeDiscordUsername(user.discordUsername) === normalized,
       ) ?? null
     );
+  },
+});
+
+// Search pilots by Discord username prefix for radar search
+export const searchPilotsByDiscordUsername = query({
+  args: {
+    searchTerm: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const normalized = normalizeDiscordUsername(args.searchTerm).replace(
+      /^@/,
+      "",
+    );
+
+    if (!normalized) return [];
+
+    const limit = Math.max(1, Math.min(args.limit ?? 8, 20));
+    const indexedUsers = await ctx.db
+      .query("users")
+      .withIndex("by_discordUsernameLower", (q) =>
+        q
+          .gte("discordUsernameLower", normalized)
+          .lt("discordUsernameLower", `${normalized}\uffff`),
+      )
+      .take(limit * 2);
+
+    const fallbackUsers =
+      indexedUsers.length >= limit
+        ? []
+        : (await ctx.db.query("users").collect()).filter((user) => {
+            if (user.isDeleted || !user.discordUsername) return false;
+            return normalizeDiscordUsername(user.discordUsername).includes(
+              normalized,
+            );
+          });
+
+    const usersById = new Map(
+      [...indexedUsers, ...fallbackUsers]
+        .filter((user) => !user.isDeleted && user.discordUsername)
+        .map((user) => [user._id, user]),
+    );
+    const activeUsers = Array.from(usersById.values()).slice(0, limit);
+    const stats = await Promise.all(
+      activeUsers.map((user) =>
+        ctx.db
+          .query("userStats")
+          .withIndex("by_userId", (q) => q.eq("userId", user._id))
+          .first(),
+      ),
+    );
+
+    return activeUsers.map((user, index) => ({
+      _id: user._id,
+      discordUsername: user.discordUsername ?? null,
+      pilotCallsign: stats[index]?.lastFlightCallsign ?? null,
+      totalFlights: stats[index]?.totalFlights ?? 0,
+      role: user.role,
+    }));
   },
 });
 

@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { type PositionUpdate } from "~/lib/aircraft-store";
-import { type SearchResults } from "~/hooks/useAircraftSearch";
+import {
+  type SearchResults,
+  type SearchablePilot,
+} from "~/hooks/useAircraftSearch";
 import { type RecentSearch } from "~/hooks/useRecentSearches";
 
 interface Airport {
@@ -19,6 +22,7 @@ interface SearchBarProps {
   inputDebugId?: string;
   onSelectAircraft: (aircraft: PositionUpdate) => void;
   onSelectAirport: (airport: Airport) => void;
+  onSelectPilot: (pilot: SearchablePilot) => void;
   recentSearches?: RecentSearch[];
   onSelectRecentSearch?: (search: RecentSearch) => void;
   onClearRecentSearches?: () => void;
@@ -33,6 +37,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   inputDebugId,
   onSelectAircraft,
   onSelectAirport,
+  onSelectPilot,
   recentSearches = [],
   onSelectRecentSearch,
   onClearRecentSearches,
@@ -43,13 +48,15 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     isFocused && !searchTerm && recentSearches.length > 0;
   const showSearchResults =
     searchTerm &&
-    (searchResults.aircrafts.length > 0 || searchResults.airports.length > 0);
+    (searchResults.aircrafts.length > 0 ||
+      searchResults.airports.length > 0 ||
+      searchResults.pilots.length > 0);
 
   return (
     <div className={`flex flex-col ${isMobile ? "w-full" : "items-start"}`}>
       <input
         type="text"
-        placeholder="Search flight or airport..."
+        placeholder="Search flight, pilot, or airport..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         onFocus={() => setIsFocused(true)}
@@ -65,7 +72,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
       {searchTerm &&
         (searchResults.aircrafts.length > 0 ||
-          searchResults.airports.length > 0) && (
+          searchResults.airports.length > 0 ||
+          searchResults.pilots.length > 0) && (
           <div
             className={`overflow-y-auto rounded-lg border border-cyan-400/20 bg-black/90 ${
               isMobile ? "max-h-[70vh] w-full" : "ml-5 max-h-[300px] w-[280px]"
@@ -95,6 +103,39 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     <div className="mt-1 text-[12px] text-cyan-200/60">
                       {aircraft.type} • {aircraft.departure} →{" "}
                       {aircraft.arrival || "UNK"}
+                    </div>
+                    {aircraft.pilotDiscordUsername && (
+                      <div className="mt-1 text-[12px] text-cyan-300/80">
+                        Pilot: {aircraft.pilotDiscordUsername}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
+            {searchResults.pilots.length > 0 && (
+              <>
+                <div className="border-b border-cyan-400/20 bg-cyan-950/50 px-4 py-2 text-[11px] font-semibold tracking-wider text-cyan-400 uppercase">
+                  Pilots
+                </div>
+                {searchResults.pilots.map((pilot) => (
+                  <div
+                    key={`pilot-${pilot._id}`}
+                    onClick={() => {
+                      onSelectPilot(pilot);
+                      setSearchTerm("");
+                    }}
+                    className={`cursor-pointer border-b border-cyan-400/10 px-4 py-3 text-[14px] text-cyan-100 transition-colors duration-150 last:border-b-0 active:bg-cyan-400/20 ${
+                      isMobile ? "" : "hover:bg-cyan-400/10"
+                    }`}
+                  >
+                    <div className="font-semibold text-cyan-300">
+                      {pilot.discordUsername ?? "Unknown Pilot"}
+                    </div>
+                    <div className="mt-1 text-[12px] text-cyan-200/60">
+                      {pilot.pilotCallsign
+                        ? `Pilot profile • ${pilot.pilotCallsign}`
+                        : "Pilot profile"}
                     </div>
                   </div>
                 ))}
@@ -161,7 +202,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             >
               <div className="flex items-center gap-2">
                 <div className="text-[10px] text-cyan-400/60 uppercase">
-                  {search.type === "aircraft" ? "✈" : "🛫"}
+                  {search.type === "aircraft"
+                    ? "✈"
+                    : search.type === "pilot"
+                      ? "👤"
+                      : "🛫"}
                 </div>
                 <div className="flex-1">
                   <div className="font-semibold text-cyan-300">

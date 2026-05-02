@@ -198,9 +198,25 @@ export default function ATCPage() {
     null,
   );
 
+  const aircraftGoogleIds = useMemo(
+    () =>
+      Array.from(
+        new Set(aircrafts.map((aircraft) => aircraft.googleId).filter(Boolean)),
+      ).sort() as string[],
+    [aircrafts],
+  );
+  const pilotDiscordUsernamesByGoogleId =
+    useQuery(
+      api.users.getDiscordUsernamesByGoogleIds,
+      aircraftGoogleIds.length > 0
+        ? { googleIds: aircraftGoogleIds }
+        : "skip",
+    ) ?? {};
+
   const { searchTerm, setSearchTerm, searchResults } = useAircraftSearch(
     aircrafts,
     airports,
+    pilotDiscordUsernamesByGoogleId,
     fetchAirports,
   );
 
@@ -214,6 +230,7 @@ export default function ATCPage() {
     recentSearches,
     addAircraftSearch,
     addAirportSearch,
+    addPilotSearch,
     clearRecentSearches,
   } = useRecentSearches();
 
@@ -682,6 +699,11 @@ export default function ATCPage() {
                     addAirportSearch(ap);
                     setSearchTerm("");
                   }}
+                  onSelectPilot={(pilot) => {
+                    addPilotSearch(pilot);
+                    setSearchTerm("");
+                    router.push(`/pilot/${pilot._id}`);
+                  }}
                   recentSearches={recentSearches}
                   onSelectRecentSearch={(search) => {
                     if (search.type === "aircraft") {
@@ -695,13 +717,15 @@ export default function ATCPage() {
                         setSelectedAircrafts([aircraft]);
                         drawFlightPlanOnMapRef.current?.(aircraft, true);
                       }
-                    } else {
+                    } else if (search.type === "airport") {
                       const airport = airports.find(
                         (ap) => ap.icao === search.id,
                       );
                       if (airport) {
                         setSelectedAirport(airport);
                       }
+                    } else {
+                      router.push(`/pilot/${search.id}`);
                     }
                   }}
                   onClearRecentSearches={clearRecentSearches}
@@ -840,7 +864,7 @@ export default function ATCPage() {
               {/* Search input */}
               <input
                 type="text"
-                placeholder="Search flight or airport..."
+                placeholder="Search flight, pilot, or airport..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 autoFocus
@@ -851,7 +875,8 @@ export default function ATCPage() {
               {/* Results */}
               {searchTerm &&
                 (searchResults.aircrafts.length > 0 ||
-                  searchResults.airports.length > 0) && (
+                  searchResults.airports.length > 0 ||
+                  searchResults.pilots.length > 0) && (
                   <div className="mt-3 max-h-[50vh] overflow-y-auto rounded-xl border border-white/10 bg-black/40">
                     {searchResults.aircrafts.length > 0 && (
                       <>
@@ -880,6 +905,39 @@ export default function ATCPage() {
                             <div className="mt-0.5 text-[12px] text-white/50">
                               {aircraft.type} • {aircraft.departure} →{" "}
                               {aircraft.arrival || "UNK"}
+                            </div>
+                            {aircraft.pilotDiscordUsername && (
+                              <div className="mt-1 text-[12px] text-cyan-300/80">
+                                Pilot: {aircraft.pilotDiscordUsername}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    {searchResults.pilots.length > 0 && (
+                      <>
+                        <div className="border-b border-white/10 bg-cyan-950/30 px-4 py-2 text-[11px] font-semibold tracking-wider text-cyan-400 uppercase">
+                          Pilots
+                        </div>
+                        {searchResults.pilots.map((pilot) => (
+                          <div
+                            key={`pilot-${pilot._id}`}
+                            onClick={() => {
+                              addPilotSearch(pilot);
+                              setSearchTerm("");
+                              setShowMobileSearch(false);
+                              router.push(`/pilot/${pilot._id}`);
+                            }}
+                            className="border-b border-white/5 px-4 py-3 last:border-b-0 active:bg-white/10"
+                          >
+                            <div className="font-medium text-white">
+                              {pilot.discordUsername ?? "Unknown Pilot"}
+                            </div>
+                            <div className="mt-0.5 text-[12px] text-white/50">
+                              {pilot.pilotCallsign
+                                ? `Pilot profile • ${pilot.pilotCallsign}`
+                                : "Pilot profile"}
                             </div>
                           </div>
                         ))}
@@ -943,13 +1001,15 @@ export default function ATCPage() {
                             setSelectedAircrafts([aircraft]);
                             drawFlightPlanOnMapRef.current?.(aircraft, true);
                           }
-                        } else {
+                        } else if (search.type === "airport") {
                           const airport = airports.find(
                             (ap) => ap.icao === search.id,
                           );
                           if (airport) {
                             setSelectedAirport(airport);
                           }
+                        } else {
+                          router.push(`/pilot/${search.id}`);
                         }
                         setShowMobileSearch(false);
                       }}
@@ -957,7 +1017,11 @@ export default function ATCPage() {
                     >
                       <div className="flex items-center gap-2">
                         <div className="text-[14px]">
-                          {search.type === "aircraft" ? "✈" : "🛫"}
+                          {search.type === "aircraft"
+                            ? "✈"
+                            : search.type === "pilot"
+                              ? "👤"
+                              : "🛫"}
                         </div>
                         <div className="flex-1">
                           <div className="font-medium text-white">
@@ -978,7 +1042,8 @@ export default function ATCPage() {
               {/* Empty state */}
               {searchTerm &&
                 searchResults.aircrafts.length === 0 &&
-                searchResults.airports.length === 0 && (
+                searchResults.airports.length === 0 &&
+                searchResults.pilots.length === 0 && (
                   <div className="mt-6 text-center text-sm text-white/30">
                     No results found
                   </div>

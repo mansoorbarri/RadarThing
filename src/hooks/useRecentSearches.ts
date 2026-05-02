@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { type PositionUpdate } from "~/lib/aircraft-store";
+import { type SearchablePilot } from "~/hooks/useAircraftSearch";
 
 interface Airport {
   name: string;
@@ -9,8 +10,8 @@ interface Airport {
 }
 
 export interface RecentSearch {
-  type: "aircraft" | "airport";
-  id: string; // callsign/flightNo for aircraft, icao for airport
+  type: "aircraft" | "airport" | "pilot";
+  id: string; // callsign/flightNo for aircraft, icao for airport, userId for pilot
   displayName: string;
   subtitle?: string;
   timestamp: number;
@@ -76,7 +77,9 @@ export const useRecentSearches = () => {
 
     setRecentSearches((prev) => {
       // Remove existing entry if present
-      const filtered = prev.filter((s) => s.id !== id);
+      const filtered = prev.filter(
+        (s) => !(s.type === "aircraft" && s.id === id),
+      );
 
       // Add new entry at the beginning
       const newSearch: RecentSearch = {
@@ -104,7 +107,9 @@ export const useRecentSearches = () => {
 
     setRecentSearches((prev) => {
       // Remove existing entry if present
-      const filtered = prev.filter((s) => s.id !== id);
+      const filtered = prev.filter(
+        (s) => !(s.type === "airport" && s.id === id),
+      );
 
       // Add new entry at the beginning
       const newSearch: RecentSearch = {
@@ -116,6 +121,33 @@ export const useRecentSearches = () => {
       };
 
       // Keep only the most recent searches
+      return [newSearch, ...filtered].slice(0, MAX_RECENT_SEARCHES);
+    });
+  }, []);
+
+  const addPilotSearch = useCallback((pilot: SearchablePilot) => {
+    if (!pilot?._id || !pilot.discordUsername) {
+      console.warn("Invalid pilot data:", pilot);
+      return;
+    }
+
+    const id = pilot._id;
+    const displayName = pilot.discordUsername;
+    const subtitle = pilot.pilotCallsign
+      ? `Pilot profile • ${pilot.pilotCallsign}`
+      : "Pilot profile";
+
+    setRecentSearches((prev) => {
+      const filtered = prev.filter((s) => !(s.type === "pilot" && s.id === id));
+
+      const newSearch: RecentSearch = {
+        type: "pilot",
+        id,
+        displayName,
+        subtitle,
+        timestamp: Date.now(),
+      };
+
       return [newSearch, ...filtered].slice(0, MAX_RECENT_SEARCHES);
     });
   }, []);
@@ -135,6 +167,7 @@ export const useRecentSearches = () => {
     recentSearches,
     addAircraftSearch,
     addAirportSearch,
+    addPilotSearch,
     clearRecentSearches,
   };
 };
