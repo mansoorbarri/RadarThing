@@ -353,7 +353,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <ActiveChallengesPanel />
+        <ActiveChallengesPanel userId={supportId} />
 
         {statsLoading ? (
           <StatsSkeleton />

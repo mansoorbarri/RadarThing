@@ -63,9 +63,21 @@ function getRuleSummary(challenge: {
   }
 }
 
-export function ActiveChallengesPanel() {
+export function ActiveChallengesPanel({
+  userId,
+}: {
+  userId?: Id<"users"> | null;
+}) {
   const { isSignedIn } = useUser();
-  const challenges = useQuery(api.challenges.listActiveForViewer, {});
+  const viewerChallenges = useQuery(
+    api.challenges.listActiveForViewer,
+    userId ? "skip" : {},
+  );
+  const userChallenges = useQuery(
+    api.challenges.listActiveForUser,
+    userId ? { userId } : "skip",
+  );
+  const challenges = userId ? userChallenges : viewerChallenges;
   const syncForCurrentUser = useMutation(api.challenges.syncForCurrentUser);
   const submitManualClaim = useMutation(api.challenges.submitManualClaim);
   const [noteByChallengeId, setNoteByChallengeId] = useState<
@@ -117,6 +129,23 @@ export function ActiveChallengesPanel() {
     }
   }
 
+  if (isSignedIn && !userId) {
+    return (
+      <div className="mb-8 rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
+        <div className="mb-4 flex items-center gap-2">
+          <Flag className="h-4 w-4 text-cyan-400" />
+          <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
+            ACTIVE CHALLENGES
+          </h3>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading your challenge progress...
+        </div>
+      </div>
+    );
+  }
+
   if (challenges === undefined) {
     return (
       <div className="mb-8 rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
@@ -157,6 +186,8 @@ export function ActiveChallengesPanel() {
           const status = challenge.userStatus;
           const isSubmitting = submittingChallengeId === challenge.id;
           const canShowProgress = isSignedIn && challenge.mode === "auto";
+          const canSubmitManual =
+            "canSubmitManual" in challenge ? challenge.canSubmitManual : false;
           const progressTarget = Math.max(1, challenge.progressTarget ?? 1);
           const progressCurrent = challenge.progressCurrent ?? 0;
           const progressPercent = Math.min(
@@ -274,7 +305,7 @@ export function ActiveChallengesPanel() {
                 )
               ) : (
                 <div className="space-y-3">
-                  {challenge.canSubmitManual ? (
+                  {canSubmitManual ? (
                     <>
                       <textarea
                         value={noteByChallengeId[challenge.id] ?? ""}
