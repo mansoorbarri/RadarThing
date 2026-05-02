@@ -165,7 +165,12 @@ export function doesFlightMatchChallenge(
 export function isAggregateChallengeRule(
   ruleType: ChallengeRule["ruleType"],
 ): boolean {
-  return ruleType === "visit_airport_count" || ruleType === "flight_count";
+  return (
+    ruleType === "visit_airport_count" ||
+    ruleType === "flight_count" ||
+    ruleType === "min_duration" ||
+    ruleType === "min_distance"
+  );
 }
 
 export function getFlightsInChallengeWindow<T extends ChallengeFlight>(
@@ -192,6 +197,27 @@ export function countUniqueVisitedAirports(flights: ChallengeFlight[]) {
   return visited.size;
 }
 
+export function sumFlightDurationsMinutes(flights: ChallengeFlight[]) {
+  return flights.reduce((total, flight) => {
+    if (
+      typeof flight.endTime !== "number" ||
+      !Number.isFinite(flight.endTime) ||
+      flight.endTime <= flight.startTime
+    ) {
+      return total;
+    }
+
+    return total + (flight.endTime - flight.startTime) / 60000;
+  }, 0);
+}
+
+export function sumFlightDistancesNm(flights: ChallengeFlight[]) {
+  return flights.reduce(
+    (total, flight) => total + calculateRouteDistanceNm(flight.routeData),
+    0,
+  );
+}
+
 export function doesFlightCollectionMatchChallenge(
   challenge: ChallengeRule,
   flights: ChallengeFlight[],
@@ -209,6 +235,17 @@ export function doesFlightCollectionMatchChallenge(
       return (
         typeof challenge.requiredFlightCount === "number" &&
         flightsInWindow.length >= challenge.requiredFlightCount
+      );
+    case "min_duration":
+      return (
+        typeof challenge.minDurationMinutes === "number" &&
+        sumFlightDurationsMinutes(flightsInWindow) >=
+          challenge.minDurationMinutes
+      );
+    case "min_distance":
+      return (
+        typeof challenge.minDistanceNm === "number" &&
+        sumFlightDistancesNm(flightsInWindow) >= challenge.minDistanceNm
       );
     default:
       return flightsInWindow.some((flight) =>

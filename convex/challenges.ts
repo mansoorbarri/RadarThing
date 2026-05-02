@@ -7,13 +7,14 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import {
-  calculateRouteDistanceNm,
   countUniqueVisitedAirports,
   doesFlightCollectionMatchChallenge,
   doesFlightMatchChallenge,
   getFlightsInChallengeWindow,
   isAggregateChallengeRule,
   isChallengeActiveAt,
+  sumFlightDistancesNm,
+  sumFlightDurationsMinutes,
 } from "./lib/challengeRules";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -439,31 +440,21 @@ function getAutoProgress(
     }
     case "min_duration": {
       const target = challenge.minDurationMinutes ?? 1;
-      const maxMinutes = Math.max(
-        0,
-        ...flightsInWindow.map((flight) =>
-          flight.endTime ? (flight.endTime - flight.startTime) / 60000 : 0,
-        ),
-      );
+      const totalMinutes = sumFlightDurationsMinutes(flightsInWindow);
       return {
-        progressCurrent: Math.min(Math.floor(maxMinutes), target),
+        progressCurrent: Math.min(Math.floor(totalMinutes), target),
         progressTarget: target,
-        progressLabel: `${Math.min(Math.floor(maxMinutes), target)} / ${target} minutes`,
+        progressLabel: `${Math.min(Math.floor(totalMinutes), target)} / ${target} minutes`,
         isComplete,
       };
     }
     case "min_distance": {
       const target = challenge.minDistanceNm ?? 1;
-      const maxDistance = Math.max(
-        0,
-        ...flightsInWindow.map((flight) =>
-          calculateRouteDistanceNm(flight.routeData),
-        ),
-      );
+      const totalDistance = sumFlightDistancesNm(flightsInWindow);
       return {
-        progressCurrent: Math.min(Math.floor(maxDistance), target),
+        progressCurrent: Math.min(Math.floor(totalDistance), target),
         progressTarget: target,
-        progressLabel: `${Math.min(Math.floor(maxDistance), target)} / ${target} nm`,
+        progressLabel: `${Math.min(Math.floor(totalDistance), target)} / ${target} nm`,
         isComplete,
       };
     }
@@ -554,6 +545,12 @@ export const listActiveForViewer = query({
         submissionNote?: string;
       }
     >();
+    const flights = viewer.user
+      ? await ctx.db
+          .query("flights")
+          .withIndex("by_userId", (q) => q.eq("userId", viewer.user._id))
+          .collect()
+      : [];
 
     if (viewer.user) {
       const user = viewer.user;
@@ -574,12 +571,21 @@ export const listActiveForViewer = query({
 
     return challenges.map((challenge) => {
       const completion = completionByChallengeId.get(challenge._id);
+      const autoProgress = getAutoProgress(challenge, flights);
+      const computedStatus =
+        challenge.mode === "auto" && autoProgress.isComplete
+          ? "completed"
+          : null;
+
       return {
         ...serializeChallenge(challenge),
         userCompletionId: completion?.id ?? null,
-        userStatus: completion?.status ?? null,
+        userStatus: completion?.status ?? computedStatus,
         completedAt: completion?.completedAt ?? null,
         submissionNote: completion?.submissionNote ?? null,
+        progressCurrent: autoProgress.progressCurrent,
+        progressTarget: autoProgress.progressTarget,
+        progressLabel: autoProgress.progressLabel,
         canSubmitManual:
           Boolean(viewer.user) &&
           challenge.mode === "manual" &&

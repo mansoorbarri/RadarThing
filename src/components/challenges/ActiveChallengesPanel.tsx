@@ -156,6 +156,13 @@ export function ActiveChallengesPanel() {
         {challenges.map((challenge) => {
           const status = challenge.userStatus;
           const isSubmitting = submittingChallengeId === challenge.id;
+          const canShowProgress = isSignedIn && challenge.mode === "auto";
+          const progressTarget = Math.max(1, challenge.progressTarget ?? 1);
+          const progressCurrent = challenge.progressCurrent ?? 0;
+          const progressPercent = Math.min(
+            100,
+            Math.round((progressCurrent / progressTarget) * 100),
+          );
 
           return (
             <div
@@ -213,22 +220,58 @@ export function ActiveChallengesPanel() {
               </p>
 
               {challenge.mode === "auto" ? (
-                <div
-                  className={`rounded-xl border px-3 py-2 text-sm ${
-                    status === "completed"
-                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
-                      : "border-white/10 bg-black/30 text-slate-400"
-                  }`}
-                >
-                  {status === "completed" ? (
-                    <span className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4" />
-                      Completed from your recorded flights.
-                    </span>
-                  ) : (
-                    "This challenge is tracked automatically from your flight history."
-                  )}
-                </div>
+                canShowProgress ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span
+                        className={
+                          status === "completed"
+                            ? "text-emerald-300"
+                            : "text-slate-400"
+                        }
+                      >
+                        {status === "completed" ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            Complete
+                          </span>
+                        ) : (
+                          challenge.progressLabel
+                        )}
+                      </span>
+                      <span className="font-mono text-slate-500">
+                        {progressPercent}%
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className={`h-full rounded-full ${
+                          status === "completed"
+                            ? "bg-emerald-400"
+                            : "bg-cyan-400"
+                        }`}
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={`rounded-xl border px-3 py-2 text-sm ${
+                      status === "completed"
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                        : "border-white/10 bg-black/30 text-slate-400"
+                    }`}
+                  >
+                    {status === "completed" ? (
+                      <span className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Completed from your recorded flights.
+                      </span>
+                    ) : (
+                      "This challenge is tracked automatically from your flight history."
+                    )}
+                  </div>
+                )
               ) : (
                 <div className="space-y-3">
                   {challenge.canSubmitManual ? (
