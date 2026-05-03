@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import userscriptConfig from "../../../userscript-src/config.json";
 
-export type VariantId = "1" | "2" | "3" | "4" | "5";
+export type VariantId = "1" | "2" | "3" | "4" | "5" | "6";
 
 export const USERSCRIPT_INSTALL_PATH = "/userscript";
 export const USERSCRIPT_LOADER_URL = `${userscriptConfig.siteUrl}/loader`;
@@ -65,6 +65,13 @@ export const variantMeta: {
     tone: "minimal, atmospheric, dramatic",
     summary:
       "A stripped-back cinematic concept that still surfaces the strongest product pillars.",
+  },
+  {
+    id: "6",
+    name: "Current Landing",
+    tone: "feature-forward, boxed, production-style",
+    summary:
+      "The previous homepage design, kept intact as a baseline for user feedback.",
   },
 ];
 
