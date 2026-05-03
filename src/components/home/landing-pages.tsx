@@ -843,3 +843,211 @@ export function LandingVariantFivePage() {
     </div>
   );
 }
+
+export function LandingVariantSevenPage() {
+  return (
+    <div className="min-h-screen overflow-x-hidden bg-[#04070c] text-white">
+      <LandingTracker event="landing_variant_viewed" variant="7" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_8%,rgba(34,211,238,0.18),transparent_20%),radial-gradient(circle_at_85%_24%,rgba(34,211,238,0.08),transparent_18%),linear-gradient(180deg,#04070c_0%,#061019_46%,#04070c_100%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-[34rem] h-px bg-cyan-300/12" />
+      <div className="pointer-events-none absolute inset-x-0 top-[72rem] h-px bg-white/8" />
+      <div className="relative z-10">
+        <header className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-7 sm:px-6 sm:py-8 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-4">
+            <LogoLockup />
+            <ConceptNav active="7" />
+          </div>
+          <HeaderLinks variant="7" />
+        </header>
+
+        <main className="mx-auto max-w-6xl px-5 pt-14 pb-12 sm:px-6 sm:pt-16">
+          <section className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
+            <div className="max-w-4xl">
+              <SectionLabel>Concept 7 · Night radar</SectionLabel>
+              <p className="mt-6 text-xs tracking-[0.32em] text-cyan-200/72 uppercase">
+                Live traffic for GeoFS, with room to breathe
+              </p>
+              <h1
+                className={cn(
+                  "mt-6 text-4xl leading-[0.95] font-semibold tracking-tight text-white sm:text-5xl md:text-7xl lg:text-8xl",
+                  syne.className,
+                )}
+              >
+                The darker, calmer version that still feels designed.
+              </h1>
+              <p
+                className={cn(
+                  "mt-7 max-w-2xl text-base leading-8 text-white/66 sm:text-lg sm:leading-9",
+                  manrope.className,
+                )}
+              >
+                This takes the mood from 5 and the pacing from 6. The page still
+                stays dark and restrained, but it now has accent color, smaller
+                lead-in text, clearer section breaks, and more visual relief
+                between blocks of copy.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-x-8 gap-y-4">
+                <PrimaryLink href="/radar" source="hero_open_radar" variant="7">
+                  Open live radar
+                </PrimaryLink>
+                <SecondaryLink
+                  href={USERSCRIPT_INSTALL_PATH}
+                  source="hero_install"
+                  variant="7"
+                >
+                  Install userscript
+                </SecondaryLink>
+              </div>
+            </div>
+
+            <div className="lg:pl-8">
+              <div className="border-t border-cyan-300/18 pt-5">
+                <p className="text-[11px] tracking-[0.28em] text-cyan-200/74 uppercase">
+                  Why this direction reads better
+                </p>
+                <div className="mt-5 space-y-5 text-sm leading-7 text-white/65">
+                  <p>
+                    Smaller cyan lead text softens the entry before the main
+                    headline.
+                  </p>
+                  <p>
+                    Section surfaces and tinted dividers give the eye places to
+                    rest instead of one uninterrupted wall of white text.
+                  </p>
+                  <p>
+                    Feature groups are spaced into distinct moments: radar,
+                    overlays, replay, and the community layer.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="mt-16 sm:mt-20">
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+              {signalStats.map((item) => (
+                <div
+                  key={item.label}
+                  className="border-t border-cyan-300/14 pt-4"
+                >
+                  <p className="text-[11px] tracking-[0.26em] text-cyan-200/65 uppercase">
+                    {item.label}
+                  </p>
+                  <p className="mt-2 text-sm text-white/78">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="mt-20 sm:mt-24">
+            <SectionLabel>Highlights</SectionLabel>
+            <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_1fr]">
+              <div className="bg-[linear-gradient(180deg,rgba(34,211,238,0.08),rgba(34,211,238,0.02))] px-5 py-6 sm:px-7">
+                <p className="text-[11px] tracking-[0.26em] text-cyan-200/74 uppercase">
+                  Live picture
+                </p>
+                <h2 className="mt-3 text-2xl text-white sm:text-3xl">
+                  Radar first, but not radar only.
+                </h2>
+                <p className="mt-4 max-w-xl text-sm leading-7 text-white/64 sm:text-[15px]">
+                  The strongest first impression is still live GeoFS traffic,
+                  but the page immediately shows that RadarThing also has the
+                  layers and workflows that make the map useful.
+                </p>
+              </div>
+              <div className="border-t border-white/10 pt-5 lg:pt-0 lg:pl-6">
+                <WorkflowList items={featuredWorkflows.slice(0, 2)} />
+              </div>
+            </div>
+          </section>
+
+          <section className="mt-20 sm:mt-24">
+            <div className="grid gap-10 lg:grid-cols-[0.92fr_1.08fr]">
+              <div>
+                <SectionLabel>Flight loop</SectionLabel>
+                <div className="mt-6 border-t border-white/10 pt-5">
+                  <h2 className="text-2xl text-white sm:text-3xl">
+                    Fly, review, then come back.
+                  </h2>
+                  <p className="mt-4 max-w-xl text-sm leading-7 text-white/64 sm:text-[15px]">
+                    Replay, pilot stats, leaderboard movement, virtual airline
+                    activity, and shared community uploads give the product a
+                    second life after the flight ends.
+                  </p>
+                </div>
+              </div>
+              <div className="grid gap-x-10 gap-y-7 md:grid-cols-2">
+                {highlightFeatures.slice(2, 5).map((feature, index) => (
+                  <div
+                    key={feature.title}
+                    className="border-t border-white/10 pt-4"
+                  >
+                    <p className="text-[11px] tracking-[0.24em] text-cyan-200/60 uppercase">
+                      0{index + 3}
+                    </p>
+                    <h3 className="mt-3 text-lg text-white sm:text-xl">
+                      {feature.title}
+                    </h3>
+                    <p className="mt-2 max-w-xl text-sm leading-7 text-white/62 sm:text-[15px]">
+                      {feature.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="mt-20 sm:mt-24">
+            <div className="grid gap-10 lg:grid-cols-[1fr_1fr]">
+              <div>
+                <InstallBlock variant="7" />
+              </div>
+              <div className="bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] px-5 py-6 sm:px-7">
+                <SectionLabel>Free and PRO</SectionLabel>
+                <div className="mt-5 grid gap-8">
+                  <div>
+                    <p className="text-[11px] tracking-[0.26em] text-cyan-200/70 uppercase">
+                      Free
+                    </p>
+                    <h3 className="mt-2 text-2xl text-white">
+                      Open the radar fast.
+                    </h3>
+                    <p className="mt-3 text-sm leading-7 text-white/64 sm:text-[15px]">
+                      Live tracking, search, multi-select, follow mode, replay,
+                      and remote control all stay in the core product.
+                    </p>
+                  </div>
+                  <div className="border-t border-cyan-300/14 pt-5">
+                    <p className="text-[11px] tracking-[0.26em] text-cyan-200/70 uppercase">
+                      PRO
+                    </p>
+                    <h3 className="mt-2 text-2xl text-white">
+                      Add the deeper operational stack.
+                    </h3>
+                    <p className="mt-3 text-sm leading-7 text-white/64 sm:text-[15px]">
+                      Decoded weather intel, global charts and procedures, and
+                      richer history and analytics make the premium layer
+                      legible without turning the whole page into a pricing
+                      table.
+                    </p>
+                    <div className="mt-5">
+                      <PrimaryLink
+                        href="/pricing"
+                        source="pricing_block"
+                        variant="7"
+                      >
+                        Compare plans
+                      </PrimaryLink>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <FooterNav variant="7" />
+      </div>
+    </div>
+  );
+}

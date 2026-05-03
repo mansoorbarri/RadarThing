@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import userscriptConfig from "../../../userscript-src/config.json";
 
-export type VariantId = "1" | "2" | "3" | "4" | "5" | "6";
+export type VariantId = "1" | "2" | "3" | "4" | "5" | "6" | "7";
 
 export const USERSCRIPT_INSTALL_PATH = "/userscript";
 export const USERSCRIPT_LOADER_URL = `${userscriptConfig.siteUrl}/loader`;
@@ -72,6 +72,13 @@ export const variantMeta: {
     tone: "feature-forward, boxed, production-style",
     summary:
       "The previous homepage design, kept intact as a baseline for user feedback.",
+  },
+  {
+    id: "7",
+    name: "Night Radar",
+    tone: "atmospheric, paced, accent-led",
+    summary:
+      "A synthesis of 5's mood and 6's visual hierarchy, with stronger cyan accents and clearer section relief.",
   },
 ];
 
