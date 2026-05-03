@@ -18,7 +18,11 @@ import {
 import { type ReactNode } from "react";
 
 import { LandingTracker } from "./landing-analytics";
-import { CONSOLE_SNIPPET, USERSCRIPT_INSTALL_PATH } from "./landing-content";
+import {
+  CONSOLE_SNIPPET,
+  USERSCRIPT_INSTALL_PATH,
+  variantMeta,
+} from "./landing-content";
 
 export function LandingVariantSixPage() {
   return (
@@ -76,27 +80,39 @@ export function LandingVariantSixPage() {
       </div>
 
       <header className="relative z-10">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-          <div className="flex items-center gap-4">
-            <Image
-              src="/logo-white.svg"
-              alt="RadarThing"
-              width={120}
-              height={36}
-              priority
-            />
-            <div className="hidden h-4 w-px bg-white/10 sm:block" />
-            <span className="hidden text-xs text-white/30 sm:block">
-              for GeoFS
-            </span>
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-6 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center gap-4">
+              <Image
+                src="/logo-white.svg"
+                alt="RadarThing"
+                width={120}
+                height={36}
+                priority
+              />
+              <div className="hidden h-4 w-px bg-white/10 sm:block" />
+              <span className="hidden text-xs text-white/30 sm:block">
+                for GeoFS
+              </span>
+            </div>
+            <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-white/45 sm:text-sm">
+              <Link href="/" className="transition-colors hover:text-white">
+                Concepts
+              </Link>
+              {variantMeta.map((variant) => (
+                <Link
+                  key={variant.id}
+                  href={`/${variant.id}`}
+                  className={`transition-colors hover:text-white ${
+                    variant.id === "6" ? "text-white" : ""
+                  }`}
+                >
+                  /{variant.id}
+                </Link>
+              ))}
+            </nav>
           </div>
           <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="hidden text-xs text-white/45 transition-colors hover:text-white sm:block"
-            >
-              Concepts
-            </Link>
             <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
