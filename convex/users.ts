@@ -1,9 +1,37 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { hasEffectiveProAccess } from "../src/lib/proAccess";
 
 function normalizeDiscordUsername(value: string): string {
   return value.trim().toLowerCase();
+}
+
+async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity?.subject) return null;
+
+  return await ctx.db
+    .query("users")
+    .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+    .first();
+}
+
+async function requireAdminForProManagement(ctx: QueryCtx | MutationCtx) {
+  const user = await getCurrentUser(ctx);
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  const isSuperAdmin = Boolean(
+    process.env.ADMIN_GOOGLE_ID && user.googleId === process.env.ADMIN_GOOGLE_ID,
+  );
+
+  if (user.role !== "ADMIN" && !isSuperAdmin) {
+    throw new Error("Unauthorized");
+  }
+
+  return user;
 }
 
 // Get user by Clerk ID
@@ -176,7 +204,7 @@ export const isPro = query({
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
       .first();
-    return user?.role === "PRO";
+    return hasEffectiveProAccess(user);
   },
 });
 
@@ -385,6 +413,83 @@ export const getAll = query({
       .query("users")
       .filter((q) => q.eq(q.field("isDeleted"), false))
       .collect();
+  },
+});
+
+export const getAllForProManagement = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdminForProManagement(ctx);
+
+    return await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("isDeleted"), false))
+      .collect();
+  },
+});
+
+export const setPermanentProRole = mutation({
+  args: {
+    id: v.id("users"),
+    enabled: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdminForProManagement(ctx);
+
+    const user = await ctx.db.get(args.id);
+    if (!user || user.isDeleted) {
+      throw new Error("User not found");
+    }
+
+    if (user.role === "ADMIN") {
+      throw new Error("Admin users cannot be modified here");
+    }
+
+    await ctx.db.patch(args.id, {
+      role: args.enabled ? "PRO" : "FREE",
+      adminProExpiresAt: undefined,
+    });
+  },
+});
+
+export const setTemporaryProGrant = mutation({
+  args: {
+    id: v.id("users"),
+    expiresAt: v.optional(v.number()),
+    clear: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdminForProManagement(ctx);
+
+    const user = await ctx.db.get(args.id);
+    if (!user || user.isDeleted) {
+      throw new Error("User not found");
+    }
+
+    if (user.role === "ADMIN") {
+      throw new Error("Admin users cannot be modified here");
+    }
+
+    if (args.clear) {
+      await ctx.db.patch(args.id, { adminProExpiresAt: undefined });
+      return;
+    }
+
+    if (user.role === "PRO") {
+      throw new Error("This user already has permanent PRO access");
+    }
+
+    if (
+      typeof args.expiresAt !== "number" ||
+      !Number.isFinite(args.expiresAt) ||
+      args.expiresAt <= Date.now()
+    ) {
+      throw new Error("Pick a valid expiration time");
+    }
+
+    await ctx.db.patch(args.id, {
+      adminProExpiresAt: args.expiresAt,
+    });
   },
 });
 

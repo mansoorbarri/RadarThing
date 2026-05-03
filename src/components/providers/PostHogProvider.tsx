@@ -5,6 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Analytics } from "~/lib/analytics";
+import { getEffectiveAccessRole } from "~/lib/proAccess";
 import { ClientDiagnosticsProvider } from "./ClientDiagnosticsProvider";
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
@@ -36,7 +37,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       // Identify user with their properties
       Analytics.identify(user.id, {
         email: dbUser.email,
-        role: dbUser.role,
+        role: getEffectiveAccessRole(dbUser),
         googleId: dbUser.googleId,
         stripeCustomerId: dbUser.stripeCustomerId,
       });

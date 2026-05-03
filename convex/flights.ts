@@ -5,6 +5,7 @@ import { paginationOptsValidator } from "convex/server";
 import { autoCompleteChallengesForFlight } from "./challenges";
 import { calculateRouteDistanceNm } from "./lib/challengeRules";
 import { isFlightModeratorGoogleId } from "../src/lib/flight-moderation";
+import { getEffectiveAccessRole } from "../src/lib/proAccess";
 
 const DEFAULT_STATS_MAX_SPEED_KTS = 750;
 const HIGH_PERFORMANCE_STATS_MAX_SPEED_KTS = 1100;
@@ -825,7 +826,7 @@ export const getLeaderboard = query({
         clerkId: user.clerkId,
         callsign:
           userStats.lastFlightCallsign ?? user.discordUsername ?? "Unknown",
-        role: user.role,
+        role: getEffectiveAccessRole(user),
         discordUsername: user.discordUsername ?? null,
         totalFlights: userStats.totalFlights,
         totalFlightTimeMs: Math.round(userStats.totalFlightTimeMs),
@@ -942,7 +943,7 @@ export const getStatsById = query({
     const streaks = calculateStreaks(eligibleFlights);
 
     return {
-      userRole: user.role,
+      userRole: getEffectiveAccessRole(user),
       pilotCallsign,
       discordUsername: user.discordUsername ?? null,
       totalFlights: stats?.totalFlights ?? eligibleFlights.length,

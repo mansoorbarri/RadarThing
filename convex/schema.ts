@@ -11,6 +11,7 @@ export default defineSchema({
     googleId: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),
     stripeSubscriptionId: v.optional(v.string()),
+    adminProExpiresAt: v.optional(v.number()),
     discordUsername: v.optional(v.string()),
     discordUsernameLower: v.optional(v.string()),
   })

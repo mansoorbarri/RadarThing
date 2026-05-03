@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { convex, api } from "~/server/convex";
 import { env } from "~/env";
+import { hasEffectiveProAccess } from "~/lib/proAccess";
 
 // Check if current user has PRO access (PRO role or admin)
 async function canViewFlightHistory(): Promise<boolean> {
@@ -13,7 +14,7 @@ async function canViewFlightHistory(): Promise<boolean> {
   if (!user) return false;
 
   // Admin role or PRO role
-  if (user.role === "ADMIN" || user.role === "PRO") return true;
+  if (hasEffectiveProAccess(user)) return true;
 
   // Fallback: env-based super admin
   const superAdminGoogleId = env.ADMIN_GOOGLE_ID;

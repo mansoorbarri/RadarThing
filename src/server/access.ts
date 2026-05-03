@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { convex, api } from "~/server/convex";
 import { env } from "~/env";
+import { hasEffectiveProAccess } from "~/lib/proAccess";
 
 export async function getCurrentAccessContext() {
   const { userId } = await auth();
@@ -34,5 +35,6 @@ export async function getCurrentAccessContext() {
     user,
     isAdmin: user.role === "ADMIN" || isSuperAdmin,
     isSuperAdmin,
+    isPro: hasEffectiveProAccess(user) || isSuperAdmin,
   };
 }

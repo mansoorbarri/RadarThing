@@ -3,6 +3,7 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { convex, api } from "~/server/convex";
 import { env } from "~/env";
+import { hasEffectiveProAccess } from "~/lib/proAccess";
 
 // Helper to get user by email (consistent across Clerk dev/prod)
 async function getUserByEmail() {
@@ -18,15 +19,11 @@ export async function isPro() {
   if (!user) return false;
 
   // Admins also have PRO access
-  if (user.role === "ADMIN") return true;
+  if (hasEffectiveProAccess(user)) return true;
 
   // Fallback: env-based super admin
   const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
-  if (superAdminGoogleId && user.googleId === superAdminGoogleId) {
-    return true;
-  }
-
-  return user.role === "PRO";
+  return Boolean(superAdminGoogleId && user.googleId === superAdminGoogleId);
 }
 
 export async function isAdmin() {
@@ -61,7 +58,7 @@ export async function getProAndAdminStatus(): Promise<{
   );
 
   const isAdminUser = isRoleAdmin || isSuperAdminUser;
-  const isProUser = user.role === "PRO" || isAdminUser;
+  const isProUser = hasEffectiveProAccess(user) || isSuperAdminUser;
 
   return {
     isPro: isProUser,

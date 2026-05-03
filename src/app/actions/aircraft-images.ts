@@ -7,6 +7,7 @@ import { Resend } from "resend";
 import { convex, api } from "~/server/convex";
 import { env } from "~/env";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { hasEffectiveProAccess } from "~/lib/proAccess";
 
 const utapi = new UTApi();
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
@@ -132,7 +133,7 @@ async function isProUser(): Promise<boolean> {
   if (!user) return false;
 
   // Admin or PRO role
-  if (user.role === "ADMIN" || user.role === "PRO") return true;
+  if (hasEffectiveProAccess(user)) return true;
 
   // Fallback: env-based super admin
   const superAdminGoogleId = env.ADMIN_GOOGLE_ID;

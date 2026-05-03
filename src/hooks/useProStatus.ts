@@ -4,6 +4,7 @@ import { useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { api } from "../../convex/_generated/api";
 import { checkIsSuperAdmin } from "~/app/actions/is-pro";
+import { hasEffectiveProAccess } from "~/lib/proAccess";
 
 export const useProStatus = () => {
   const { user, isLoaded } = useUser();
@@ -30,7 +31,7 @@ export const useProStatus = () => {
   const isLoading = !isLoaded || (clerkId && dbUser === undefined);
   const isRoleAdmin = dbUser?.role === "ADMIN";
   const isAdminUser = isRoleAdmin || isSuperAdmin;
-  const isProUser = dbUser?.role === "PRO" || dbUser?.role === "ADMIN";
+  const isProUser = hasEffectiveProAccess(dbUser);
 
   return {
     isProUser: isProUser || isSuperAdmin, // Super admins also have PRO access
