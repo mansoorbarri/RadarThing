@@ -327,7 +327,7 @@ export default function HomePage() {
 
             <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
               {/* Free Tier */}
-              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6">
+              <div className="flex h-full flex-col rounded-xl border border-white/10 bg-white/[0.02] p-6">
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-white">Free</h3>
                   <p className="text-sm text-white/40">For casual use</p>
@@ -336,7 +336,7 @@ export default function HomePage() {
                   <span className="text-3xl font-bold text-white">$0</span>
                   <span className="text-white/40"> / forever</span>
                 </div>
-                <ul className="mb-6 space-y-3">
+                <ul className="mb-6 flex-1 space-y-3">
                   <PricingFeature included>
                     Live aircraft tracking
                   </PricingFeature>
@@ -368,14 +368,14 @@ export default function HomePage() {
                 </ul>
                 <Link
                   href="/radar"
-                  className="block w-full rounded-lg border border-white/10 py-3 text-center font-medium text-white transition-colors hover:bg-white/5"
+                  className="mt-auto block w-full rounded-lg border border-white/10 py-3 text-center font-medium text-white transition-colors hover:bg-white/5"
                 >
                   Get Started
                 </Link>
               </div>
 
               {/* Pro Tier */}
-              <div className="rounded-xl border border-cyan-400/30 bg-cyan-400/5 p-6">
+              <div className="flex h-full flex-col rounded-xl border border-cyan-400/30 bg-cyan-400/5 p-6">
                 <div className="mb-6 flex items-start justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-white">Pro</h3>
@@ -389,7 +389,7 @@ export default function HomePage() {
                   <span className="text-3xl font-bold text-white">$3</span>
                   <span className="text-white/40"> / month</span>
                 </div>
-                <ul className="mb-6 space-y-3">
+                <ul className="mb-6 flex-1 space-y-3">
                   <PricingFeature included>Everything in Free</PricingFeature>
                   <PricingFeature included>
                     NOTAMs with decoded text
@@ -413,7 +413,7 @@ export default function HomePage() {
                 </ul>
                 <Link
                   href="/pricing"
-                  className="block w-full rounded-lg bg-cyan-400 py-3 text-center font-semibold text-black transition-colors hover:bg-cyan-300"
+                  className="mt-auto block w-full rounded-lg bg-cyan-400 py-3 text-center font-semibold text-black transition-colors hover:bg-cyan-300"
                 >
                   Upgrade to Pro
                 </Link>
