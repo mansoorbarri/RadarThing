@@ -52,12 +52,14 @@ import { TaxiChartViewer } from "~/components/airports/TaxiChartsViewer";
 import { AirportFIDPanel } from "~/components/airports/AirportFIDPanel";
 import { ChartSidePanel } from "~/components/map/ChartOverlayPanel";
 import { AtcPlayer } from "~/components/atc/AtcPlayer";
+import { AirportActivityPanel } from "~/components/atc/AirportActivityPanel";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { WhatsNew } from "~/components/ui/WhatsNew";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
 import { MobileDrawer } from "~/components/ui/MobileDrawer";
 import { ShortcutsMenu } from "~/components/ui/ShortcutsMenu";
 import {
+  AirportsIcon,
   FlightsIcon,
   FilterIcon,
   DiscordIcon,
@@ -77,7 +79,7 @@ const DynamicMapComponent = dynamic(() => import("~/components/map"), {
 
 const APP_BOOT_TIMEOUT_MS = 8000;
 
-type RightPanel = "fids" | "filter" | null;
+type RightPanel = "fids" | "filter" | "airports" | null;
 
 export default function ATCPage() {
   const router = useRouter();
@@ -95,7 +97,11 @@ export default function ATCPage() {
     error: streamError,
     lastMessageAgeSeconds,
   } = useAircraftStream();
-  const { airports, fetchAirports } = useAirportData();
+  const {
+    airports,
+    fetchAirports,
+    isLoading: isAirportDataLoading,
+  } = useAirportData();
 
   // Fetch airports when online ATC data arrives so markers can render
   useEffect(() => {
@@ -174,6 +180,12 @@ export default function ATCPage() {
   const [autoSelectedFromUrl, setAutoSelectedFromUrl] = useState(false);
 
   const [activeRightPanel, setActiveRightPanel] = useState<RightPanel>(null);
+
+  useEffect(() => {
+    if (activeRightPanel === "airports") {
+      fetchAirports();
+    }
+  }, [activeRightPanel, fetchAirports]);
 
   const [showTaxiChart, setShowTaxiChart] = useState(false);
   const [showAtcPlayer, setShowAtcPlayer] = useState(false);
@@ -405,6 +417,18 @@ export default function ATCPage() {
       fetchAirports();
     },
     [airports, addAirportSearch, fetchAirports],
+  );
+
+  const handleAirportExplorerSelect = useCallback(
+    (icao: string) => {
+      handleAirportSelectByIcao(icao);
+      setActiveRightPanel(null);
+      Analytics.track("airport_activity_airport_opened", {
+        icao,
+        source: "airport_activity_panel",
+      });
+    },
+    [handleAirportSelectByIcao],
   );
 
   // Keep selected aircrafts in sync with updated positions and redraw paths
@@ -1138,6 +1162,34 @@ export default function ATCPage() {
             </aside>
           ))}
 
+        {!isUiHidden &&
+          activeRightPanel === "airports" &&
+          (isPhone ? (
+            <MobileSwipeSheet onClose={() => setActiveRightPanel(null)}>
+              <AirportActivityPanel
+                aircrafts={visibleLiveAircrafts}
+                airports={airports}
+                onlineAirports={onlineAirports}
+                selectedAirportIcao={selectedAirport?.icao}
+                isAirportDataLoading={isAirportDataLoading}
+                onSelectAirport={handleAirportExplorerSelect}
+              />
+            </MobileSwipeSheet>
+          ) : (
+            <aside
+              className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10013] w-full border-l border-white/10 bg-black/80 backdrop-blur-xl ${isTablet ? "max-w-[360px]" : "max-w-[420px]"}`}
+            >
+              <AirportActivityPanel
+                aircrafts={visibleLiveAircrafts}
+                airports={airports}
+                onlineAirports={onlineAirports}
+                selectedAirportIcao={selectedAirport?.icao}
+                isAirportDataLoading={isAirportDataLoading}
+                onSelectAirport={handleAirportExplorerSelect}
+              />
+            </aside>
+          ))}
+
         {/* Control dock - compact on mobile, hidden when chart side panel is open */}
         {!isUiHidden && !(chartOverlayActive && selectedAirport?.icao) && (
           <ControlDock
@@ -1159,6 +1211,22 @@ export default function ATCPage() {
                   const newState = activeRightPanel !== "fids";
                   setActiveRightPanel(newState ? "fids" : null);
                   if (newState) setSelectedAircrafts([]);
+                },
+              },
+              {
+                id: "airports",
+                label: "Airports",
+                icon: AirportsIcon,
+                active: activeRightPanel === "airports",
+                onClick: () => {
+                  const newState = activeRightPanel !== "airports";
+                  setActiveRightPanel(newState ? "airports" : null);
+                  if (newState) {
+                    setSelectedAircrafts([]);
+                    Analytics.track("airport_activity_panel_opened", {
+                      source: "dock",
+                    });
+                  }
                 },
               },
               {

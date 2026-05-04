@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "airport-activity-explorer",
+    date: "2026-05-04",
+    title: "Airport Activity Explorer",
+    description:
+      "The radar dock now includes a live airport activity board with search, traffic and staffing sorting, route rankings, and one-click airport drill-in.",
+    type: "new",
+  },
+  {
     id: "conflict-review-log",
     date: "2026-04-18",
     title: "Conflict Review Log",

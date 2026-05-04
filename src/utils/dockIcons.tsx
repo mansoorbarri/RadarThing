@@ -47,6 +47,28 @@ export const FilterIcon = (
   </svg>
 );
 
+export const AirportsIcon = (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M4 21h16" />
+    <path d="M7 21V10l5-4 5 4v11" />
+    <path d="M9.5 21v-4h5v4" />
+    <path d="M10 11h.01" />
+    <path d="M14 11h.01" />
+    <path d="M10 14h.01" />
+    <path d="M14 14h.01" />
+    <path d="M12 3v3" />
+  </svg>
+);
+
 export const UpgradeIcon = (
   <svg
     width="18"
