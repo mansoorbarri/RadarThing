@@ -807,11 +807,14 @@ export function ChallengesTab() {
           <p className="text-sm text-slate-500">No challenges yet.</p>
         ) : (
           <div className="space-y-3">
-            {sortedChallenges.map((challenge) => (
-              <div
-                key={challenge.id}
-                className="rounded-2xl border border-white/10 bg-black/30 p-4"
-              >
+            {sortedChallenges.map((challenge) => {
+              const topProgressUsers = challenge.topProgressUsers ?? [];
+
+              return (
+                <div
+                  key={challenge.id}
+                  className="rounded-2xl border border-white/10 bg-black/30 p-4"
+                >
                 <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="mb-2 flex flex-wrap gap-2">
@@ -908,9 +911,9 @@ export function ChallengesTab() {
                       <Flag className="h-3.5 w-3.5" />
                       Top 3 Progress
                     </div>
-                    {challenge.topProgressUsers.length > 0 ? (
+                    {topProgressUsers.length > 0 ? (
                       <div className="space-y-2">
-                        {challenge.topProgressUsers.map((pilot, index) => (
+                        {topProgressUsers.map((pilot, index) => (
                           <div
                             key={pilot.userId}
                             className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2"
@@ -971,8 +974,9 @@ export function ChallengesTab() {
                     )}
                   </div>
                 </div>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
