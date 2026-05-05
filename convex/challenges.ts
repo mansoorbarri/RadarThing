@@ -468,6 +468,47 @@ function getAutoProgress(
   }
 }
 
+function compareTopProgressUsers(
+  a: {
+    displayName: string;
+    progressCurrent: number;
+    progressTarget: number;
+    isComplete: boolean;
+    completedAt: number | null;
+  },
+  b: {
+    displayName: string;
+    progressCurrent: number;
+    progressTarget: number;
+    isComplete: boolean;
+    completedAt: number | null;
+  },
+) {
+  if (a.isComplete !== b.isComplete) {
+    return a.isComplete ? -1 : 1;
+  }
+
+  if (a.isComplete && b.isComplete) {
+    const completedAtA = a.completedAt ?? Number.MAX_SAFE_INTEGER;
+    const completedAtB = b.completedAt ?? Number.MAX_SAFE_INTEGER;
+    if (completedAtA !== completedAtB) {
+      return completedAtA - completedAtB;
+    }
+  }
+
+  const ratioA = a.progressCurrent / Math.max(1, a.progressTarget);
+  const ratioB = b.progressCurrent / Math.max(1, b.progressTarget);
+  if (ratioA !== ratioB) {
+    return ratioB - ratioA;
+  }
+
+  if (a.progressCurrent !== b.progressCurrent) {
+    return b.progressCurrent - a.progressCurrent;
+  }
+
+  return a.displayName.localeCompare(b.displayName);
+}
+
 export async function autoCompleteChallengesForFlight(
   ctx: MutationCtx,
   args: {
@@ -667,6 +708,10 @@ export const listAdmin = query({
       Id<"challenges">,
       Set<Id<"users">>
     >();
+    const completedMetadataByChallenge = new Map<
+      Id<"challenges">,
+      Map<Id<"users">, number | null>
+    >();
 
     for (const completion of completions) {
       const current = completionCounts.get(completion.challengeId) ?? {
@@ -683,6 +728,15 @@ export const listAdmin = query({
           new Set<Id<"users">>();
         users.add(completion.userId);
         completedUserIdsByChallenge.set(completion.challengeId, users);
+
+        const completedMetadata =
+          completedMetadataByChallenge.get(completion.challengeId) ??
+          new Map<Id<"users">, number | null>();
+        completedMetadata.set(completion.userId, completion.completedAt ?? null);
+        completedMetadataByChallenge.set(
+          completion.challengeId,
+          completedMetadata,
+        );
       }
     }
 
@@ -690,6 +744,19 @@ export const listAdmin = query({
     const computedCompletedUserIdsByChallenge = new Map<
       Id<"challenges">,
       Set<Id<"users">>
+    >();
+    const topProgressUsersByChallenge = new Map<
+      Id<"challenges">,
+      {
+        userId: Id<"users">;
+        displayName: string;
+        discordUsername: string | null;
+        progressCurrent: number;
+        progressTarget: number;
+        progressLabel: string;
+        isComplete: boolean;
+        completedAt: number | null;
+      }[]
     >();
 
     for (const challenge of challenges) {
@@ -720,6 +787,31 @@ export const listAdmin = query({
         }
       }
       computedCompletedUserIdsByChallenge.set(challenge._id, completedUserIds);
+
+      const rankedUsers = [...flightsByUser.entries()]
+        .map(([userId, userFlights]) => {
+          const progress = getAutoProgress(challenge, userFlights);
+          const user = usersById.get(userId);
+          return {
+            userId,
+            displayName: user?.discordUsername ?? userId,
+            discordUsername: user?.discordUsername ?? null,
+            progressCurrent: progress.progressCurrent,
+            progressTarget: progress.progressTarget,
+            progressLabel: progress.isComplete
+              ? "Completed"
+              : progress.progressLabel,
+            isComplete: progress.isComplete,
+            completedAt:
+              completedMetadataByChallenge.get(challenge._id)?.get(userId) ??
+              null,
+          };
+        })
+        .filter((entry) => entry.isComplete || entry.progressCurrent > 0)
+        .sort(compareTopProgressUsers)
+        .slice(0, 3);
+
+      topProgressUsersByChallenge.set(challenge._id, rankedUsers);
     }
 
     return challenges
@@ -744,6 +836,24 @@ export const listAdmin = query({
             };
           })
           .sort((a, b) => a.displayName.localeCompare(b.displayName));
+        const topProgressUsers =
+          topProgressUsersByChallenge.get(challenge._id) ??
+          completedUserDetails
+            .map((user) => ({
+              userId: user.userId,
+              displayName: user.displayName,
+              discordUsername: user.discordUsername,
+              progressCurrent: 1,
+              progressTarget: 1,
+              progressLabel: "Completed",
+              isComplete: true,
+              completedAt:
+                completedMetadataByChallenge
+                  .get(challenge._id)
+                  ?.get(user.userId) ?? null,
+            }))
+            .sort(compareTopProgressUsers)
+            .slice(0, 3);
 
         return {
           ...serializeChallenge(challenge),
@@ -752,6 +862,7 @@ export const listAdmin = query({
             completed: completedUsers.size,
           },
           completedUsers: completedUserDetails,
+          topProgressUsers,
         };
       });
   },

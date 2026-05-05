@@ -902,28 +902,74 @@ export function ChallengesTab() {
                   </div>
                 </div>
 
-                <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
-                  <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                    <Users className="h-3.5 w-3.5" />
-                    Completed Pilots
-                  </div>
-                  {challenge.completedUsers.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {challenge.completedUsers.map((completedUser) => (
-                        <span
-                          key={completedUser.userId}
-                          title={completedUser.userId}
-                          className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-200"
-                        >
-                          {completedUser.displayName}
-                        </span>
-                      ))}
+                <div className="mt-3 grid gap-3 xl:grid-cols-2">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                      <Flag className="h-3.5 w-3.5" />
+                      Top 3 Progress
                     </div>
-                  ) : (
-                    <p className="text-sm text-slate-500">
-                      No pilots have completed this challenge yet.
-                    </p>
-                  )}
+                    {challenge.topProgressUsers.length > 0 ? (
+                      <div className="space-y-2">
+                        {challenge.topProgressUsers.map((pilot, index) => (
+                          <div
+                            key={pilot.userId}
+                            className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+                          >
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/25 bg-cyan-500/10 font-mono text-[10px] text-cyan-200">
+                                  {index + 1}
+                                </span>
+                                <span
+                                  title={pilot.userId}
+                                  className="truncate text-sm text-slate-200"
+                                >
+                                  {pilot.displayName}
+                                </span>
+                              </div>
+                            </div>
+                            <div
+                              className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-[10px] uppercase ${
+                                pilot.isComplete
+                                  ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
+                                  : "border border-amber-500/25 bg-amber-500/10 text-amber-200"
+                              }`}
+                            >
+                              {pilot.progressLabel}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500">
+                        No pilots are on the board yet.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                      <Users className="h-3.5 w-3.5" />
+                      Completed Pilots
+                    </div>
+                    {challenge.completedUsers.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {challenge.completedUsers.map((completedUser) => (
+                          <span
+                            key={completedUser.userId}
+                            title={completedUser.userId}
+                            className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-200"
+                          >
+                            {completedUser.displayName}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500">
+                        No pilots have completed this challenge yet.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
