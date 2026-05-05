@@ -8,6 +8,7 @@
     "build": "node scripts/build-userscript.mjs && next build",
     "build:userscript": "node scripts/build-userscript.mjs",
     "backup:convex": "bun scripts/backup-convex-to-uploadthing.ts",
+    "sync:convex:prod-to-dev": "bun scripts/sync-convex-prod-to-dev.ts",
     "check": "eslint . && tsc --noEmit",
     "cf": "cloudflared tunnel run dev-tunnel",
     "stripe": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",

@@ -184,6 +184,16 @@ Run the backup locally:
 bun run backup:convex -- --retention-days 30
 ```
 
+Sync production data into the default Convex dev deployment for local testing:
+
+```bash
+bun run sync:convex:prod-to-dev
+```
+
+The sync script exports a backup of the current dev deployment first, then
+replaces the default dev deployment with production data via
+`convex import --replace-all`. It refuses to run if `CONVEX_DEPLOY_KEY` is set.
+
 Include Convex file storage:
 
 ```bash
