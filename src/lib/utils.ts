@@ -63,6 +63,10 @@ export function normalizeAircraftType(type: string | undefined): string | null {
   const dcMatch = /DC-?(\d{1,2})/.exec(cleaned);
   if (dcMatch) return `DC${dcMatch[1]}`;
 
+  // Lockheed: "L-1011", "L1011" -> "L1011"
+  const lockheedMatch = /L-?(1011)\b/.exec(cleaned);
+  if (lockheedMatch) return `L${lockheedMatch[1]}`;
+
   // Military: Sukhoi "SU-35", "SU-27", "SU-57" -> "SU35", "SU27", "SU57"
   const suMatch = /SU-?(\d{2,3})/.exec(cleaned);
   if (suMatch) return `SU${suMatch[1]}`;
