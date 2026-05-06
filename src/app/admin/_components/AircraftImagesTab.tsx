@@ -12,7 +12,6 @@ import {
   updateAircraftImageCodes,
   checkApprovalConflict,
   resolveImageConflict,
-  getUserInfoByIds,
   type AircraftImage,
 } from "~/app/actions/aircraft-images";
 import {
@@ -47,23 +46,36 @@ interface ImageType {
   uploadedBy?: string;
 }
 
+function getUploaderDisplay(
+  image: ImageType,
+  usersByClerkId?: Map<string, { _id: string; discordUsername?: string | null }>,
+) {
+  const uploader = image.uploadedBy
+    ? usersByClerkId?.get(image.uploadedBy)
+    : undefined;
+  return image.discordUsername ?? uploader?.discordUsername ?? uploader?._id ?? image.uploadedBy;
+}
+
 function matchesImageSearch(
   image: ImageType,
   query: string,
-  userInfo?: Record<string, { email: string; name: string | null }>,
+  usersByClerkId?: Map<string, { _id: string; discordUsername?: string | null }>,
 ) {
   if (!query.trim()) return true;
   const q = query.toLowerCase();
-  const uploaderEmail = image.uploadedBy
-    ? userInfo?.[image.uploadedBy]?.email
+  const uploader = image.uploadedBy
+    ? usersByClerkId?.get(image.uploadedBy)
     : undefined;
+  const uploaderDisplay = getUploaderDisplay(image, usersByClerkId);
   return (
     image.airlineIata?.toLowerCase().includes(q) ||
     image.airlineIcao?.toLowerCase().includes(q) ||
     image.aircraftType?.toLowerCase().includes(q) ||
     image.discordUsername?.toLowerCase().includes(q) ||
-    image.uploadedBy?.toLowerCase().includes(q) ||
-    uploaderEmail?.toLowerCase().includes(q)
+    uploader?.discordUsername?.toLowerCase().includes(q) ||
+    uploader?._id.toLowerCase().includes(q) ||
+    uploaderDisplay?.toLowerCase().includes(q) ||
+    image.uploadedBy?.toLowerCase().includes(q)
   );
 }
 
@@ -232,18 +244,16 @@ function EditableCodes({
 export function AircraftImagesTab() {
   const pendingQuery = useQuery(api.aircraftImages.getPending);
   const approvedQuery = useQuery(api.aircraftImages.getApproved);
+  const allUsersQuery = useQuery(api.users.getAll);
   const pendingImages = useMemo(() => pendingQuery ?? [], [pendingQuery]);
   const approvedImages = useMemo(() => approvedQuery ?? [], [approvedQuery]);
-
-  const [userInfo, setUserInfo] = useState<
-    Record<string, { email: string; name: string | null }>
-  >({});
   const [imageSubTab, setImageSubTab] = useState<ImageSubTab>("pending");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [imageSearchQuery, setImageSearchQuery] = useState("");
   const [imageAirlineFilter, setImageAirlineFilter] = useState<string>("");
   const [imageAircraftFilter, setImageAircraftFilter] = useState<string>("");
+  const [imageUploaderFilter, setImageUploaderFilter] = useState<string>("");
   const [pageSize, setPageSize] =
     useState<(typeof PAGE_SIZE_OPTIONS)[number]>(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -273,29 +283,23 @@ export function AircraftImagesTab() {
     () => [...pendingImages, ...approvedImages],
     [pendingImages, approvedImages],
   );
-
-  // Fetch user info (email) from Clerk for all uploaders
-  useEffect(() => {
-    const allUserIds = allImages
-      .map((img) => img.uploadedBy)
-      .filter((id): id is string => Boolean(id));
-    const newIds = [...new Set(allUserIds)].filter((id) => !(id in userInfo));
-    if (newIds.length > 0) {
-      getUserInfoByIds(newIds)
-        .then((info) =>
-          setUserInfo((prev) => ({ ...prev, ...info })),
-        )
-        .catch((e) => console.error("Failed to fetch user info:", e));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allImages]);
+  const usersByClerkId = useMemo(
+    () =>
+      new Map(
+        (allUsersQuery ?? []).map((user) => [
+          user.clerkId,
+          { _id: String(user._id), discordUsername: user.discordUsername ?? null },
+        ]),
+      ),
+    [allUsersQuery],
+  );
 
   const uniqueImageAirlines = useMemo(() => {
     const airlinesMap = new Map<string, { iata: string; icao: string }>();
     allImages.forEach((img) => {
       const key = img.airlineIata || img.airlineIcao;
       if (!key) return;
-      if (!matchesImageSearch(img, imageSearchQuery, userInfo)) return;
+      if (!matchesImageSearch(img, imageSearchQuery, usersByClerkId)) return;
       if (imageAircraftFilter && img.aircraftType !== imageAircraftFilter)
         return;
       if (!airlinesMap.has(key)) {
@@ -308,23 +312,65 @@ export function AircraftImagesTab() {
     return Array.from(airlinesMap.values()).sort((a, b) =>
       (a.icao || a.iata).localeCompare(b.icao || b.iata),
     );
-  }, [allImages, imageSearchQuery, imageAircraftFilter, userInfo]);
+  }, [allImages, imageSearchQuery, imageAircraftFilter, usersByClerkId]);
 
   const uniqueImageAircraftTypes = useMemo(() => {
     const types = new Set<string>();
     allImages.forEach((img) => {
       if (!img.aircraftType) return;
-      if (!matchesImageSearch(img, imageSearchQuery, userInfo)) return;
+      if (!matchesImageSearch(img, imageSearchQuery, usersByClerkId)) return;
       if (
         imageAirlineFilter &&
         img.airlineIata !== imageAirlineFilter &&
         img.airlineIcao !== imageAirlineFilter
       )
         return;
+      if (
+        imageUploaderFilter &&
+        getUploaderDisplay(img, usersByClerkId) !== imageUploaderFilter
+      )
+        return;
       types.add(img.aircraftType);
     });
     return Array.from(types).sort();
-  }, [allImages, imageSearchQuery, imageAirlineFilter, userInfo]);
+  }, [
+    allImages,
+    imageSearchQuery,
+    imageAirlineFilter,
+    imageUploaderFilter,
+    usersByClerkId,
+  ]);
+
+  const uniqueImageUploaders = useMemo(() => {
+    const uploaders = new Set<string>();
+    allImages.forEach((img) => {
+      const uploader = getUploaderDisplay(img, usersByClerkId);
+      if (!uploader) return;
+      if (!matchesImageSearch(img, imageSearchQuery, usersByClerkId)) return;
+      if (
+        imageAirlineFilter &&
+        img.airlineIata !== imageAirlineFilter &&
+        img.airlineIcao !== imageAirlineFilter
+      )
+        return;
+      if (imageAircraftFilter && img.aircraftType !== imageAircraftFilter)
+        return;
+
+      const hasDiscordUsername =
+        Boolean(img.discordUsername) ||
+        Boolean(usersByClerkId.get(img.uploadedBy ?? "")?.discordUsername);
+      if (!hasDiscordUsername) return;
+
+      uploaders.add(uploader);
+    });
+    return Array.from(uploaders).sort((a, b) => a.localeCompare(b));
+  }, [
+    allImages,
+    imageSearchQuery,
+    imageAirlineFilter,
+    imageAircraftFilter,
+    usersByClerkId,
+  ]);
 
   useEffect(() => {
     if (
@@ -346,8 +392,20 @@ export function AircraftImagesTab() {
     }
   }, [uniqueImageAircraftTypes, imageAircraftFilter]);
 
+  useEffect(() => {
+    if (
+      imageUploaderFilter &&
+      !uniqueImageUploaders.includes(imageUploaderFilter)
+    ) {
+      setImageUploaderFilter("");
+    }
+  }, [uniqueImageUploaders, imageUploaderFilter]);
+
   const hasActiveImageFilters =
-    imageSearchQuery || imageAirlineFilter || imageAircraftFilter;
+    imageSearchQuery ||
+    imageAirlineFilter ||
+    imageAircraftFilter ||
+    imageUploaderFilter;
 
   const filterImages = (images: typeof pendingImages) => {
     return images
@@ -360,7 +418,13 @@ export function AircraftImagesTab() {
           return false;
         if (imageAircraftFilter && image.aircraftType !== imageAircraftFilter)
           return false;
-        if (!matchesImageSearch(image, imageSearchQuery, userInfo)) return false;
+        if (
+          imageUploaderFilter &&
+          getUploaderDisplay(image, usersByClerkId) !== imageUploaderFilter
+        )
+          return false;
+        if (!matchesImageSearch(image, imageSearchQuery, usersByClerkId))
+          return false;
         return true;
       })
       .sort((a, b) => {
@@ -376,6 +440,7 @@ export function AircraftImagesTab() {
     setImageSearchQuery("");
     setImageAirlineFilter("");
     setImageAircraftFilter("");
+    setImageUploaderFilter("");
   };
 
   const filteredPendingImages = filterImages(pendingImages);
@@ -401,6 +466,7 @@ export function AircraftImagesTab() {
     imageSearchQuery,
     imageAirlineFilter,
     imageAircraftFilter,
+    imageUploaderFilter,
     pageSize,
   ]);
 
@@ -716,7 +782,7 @@ export function AircraftImagesTab() {
             type="text"
             value={imageSearchQuery}
             onChange={(e) => setImageSearchQuery(e.target.value)}
-            placeholder="Search by airline, aircraft, email, user ID..."
+            placeholder="Search by airline, aircraft, Discord username, Convex ID..."
             className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
           />
         </div>
@@ -735,6 +801,18 @@ export function AircraftImagesTab() {
                 {airline.icao && airline.iata
                   ? `${airline.icao} | ${airline.iata}`
                   : airline.icao || airline.iata}
+              </option>
+            ))}
+          </select>
+          <select
+            value={imageUploaderFilter}
+            onChange={(e) => setImageUploaderFilter(e.target.value)}
+            className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+          >
+            <option value="">All Uploaders</option>
+            {uniqueImageUploaders.map((uploader) => (
+              <option key={uploader} value={uploader}>
+                {uploader}
               </option>
             ))}
           </select>
@@ -969,7 +1047,7 @@ export function AircraftImagesTab() {
                     <p className="mb-1 text-xs text-slate-500">
                       Uploaded by{" "}
                       <span className="text-cyan-400">
-                        {image.discordUsername ?? image.uploadedBy}
+                        {getUploaderDisplay(image, usersByClerkId)}
                       </span>
                     </p>
                     <p className="mb-3 text-xs text-slate-600">
@@ -1079,7 +1157,7 @@ export function AircraftImagesTab() {
                     <p className="mt-1 text-xs text-slate-500">
                       Uploaded by{" "}
                       <span className="text-cyan-400">
-                        {image.discordUsername ?? image.uploadedBy}
+                        {getUploaderDisplay(image, usersByClerkId)}
                       </span>
                     </p>
                     {image.approvedAt && (
