@@ -805,18 +805,6 @@ export function AircraftImagesTab() {
             ))}
           </select>
           <select
-            value={imageUploaderFilter}
-            onChange={(e) => setImageUploaderFilter(e.target.value)}
-            className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
-          >
-            <option value="">All Uploaders</option>
-            {uniqueImageUploaders.map((uploader) => (
-              <option key={uploader} value={uploader}>
-                {uploader}
-              </option>
-            ))}
-          </select>
-          <select
             value={imageAircraftFilter}
             onChange={(e) => setImageAircraftFilter(e.target.value)}
             className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
@@ -825,6 +813,18 @@ export function AircraftImagesTab() {
             {uniqueImageAircraftTypes.map((type) => (
               <option key={type} value={type}>
                 {type}
+              </option>
+            ))}
+          </select>
+          <select
+            value={imageUploaderFilter}
+            onChange={(e) => setImageUploaderFilter(e.target.value)}
+            className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+          >
+            <option value="">All Uploaders</option>
+            {uniqueImageUploaders.map((uploader) => (
+              <option key={uploader} value={uploader}>
+                {uploader}
               </option>
             ))}
           </select>
