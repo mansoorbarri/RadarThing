@@ -503,6 +503,7 @@ export const updateCodes = mutation({
     airlineIata: v.string(),
     airlineIcao: v.string(),
     aircraftType: v.string(),
+    isMilitary: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const image = await ctx.db.get(args.id);
@@ -512,6 +513,7 @@ export const updateCodes = mutation({
       airlineIata: args.airlineIata.toUpperCase(),
       airlineIcao: args.airlineIcao.toUpperCase(),
       aircraftType: normalizeAircraftTypeKey(args.aircraftType),
+      isMilitary: args.isMilitary,
     });
 
     const updated = await ctx.db.get(args.id);
@@ -526,7 +528,6 @@ export const updateCodes = mutation({
     };
   },
 });
-
 
 // Find existing approved image for airline + aircraft (to delete when approving new one)
 export const findExistingApproved = query({

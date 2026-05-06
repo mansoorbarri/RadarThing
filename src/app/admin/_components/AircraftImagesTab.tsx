@@ -33,6 +33,7 @@ import Image from "next/image";
 import { RejectModal } from "./RejectModal";
 import { ConflictModal } from "./ConflictModal";
 import { ConfirmModal } from "./ConfirmModal";
+import { Switch } from "~/components/ui/switch";
 
 type ImageSubTab = "pending" | "approved";
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
@@ -48,18 +49,29 @@ interface ImageType {
 
 function getUploaderDisplay(
   image: ImageType,
-  usersByClerkId?: Map<string, { _id: string; discordUsername?: string | null }>,
+  usersByClerkId?: Map<
+    string,
+    { _id: string; discordUsername?: string | null }
+  >,
 ) {
   const uploader = image.uploadedBy
     ? usersByClerkId?.get(image.uploadedBy)
     : undefined;
-  return image.discordUsername ?? uploader?.discordUsername ?? uploader?._id ?? image.uploadedBy;
+  return (
+    image.discordUsername ??
+    uploader?.discordUsername ??
+    uploader?._id ??
+    image.uploadedBy
+  );
 }
 
 function matchesImageSearch(
   image: ImageType,
   query: string,
-  usersByClerkId?: Map<string, { _id: string; discordUsername?: string | null }>,
+  usersByClerkId?: Map<
+    string,
+    { _id: string; discordUsername?: string | null }
+  >,
 ) {
   if (!query.trim()) return true;
   const q = query.toLowerCase();
@@ -99,6 +111,7 @@ function EditableCodes({
   const [iata, setIata] = useState(initialIata);
   const [icao, setIcao] = useState(initialIcao);
   const [aircraftType, setAircraftType] = useState(initialAircraftType);
+  const [draftIsMilitary, setDraftIsMilitary] = useState(effectiveIsMilitary);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -106,14 +119,22 @@ function EditableCodes({
       setIata(initialIata);
       setIcao(initialIcao);
       setAircraftType(initialAircraftType);
+      setDraftIsMilitary(effectiveIsMilitary);
     }
-  }, [initialIata, initialIcao, initialAircraftType, isEditing]);
+  }, [
+    initialIata,
+    initialIcao,
+    initialAircraftType,
+    effectiveIsMilitary,
+    isEditing,
+  ]);
 
   const handleSave = async () => {
     if (
       iata === initialIata &&
       icao === initialIcao &&
-      aircraftType === initialAircraftType
+      aircraftType === initialAircraftType &&
+      draftIsMilitary === effectiveIsMilitary
     ) {
       setIsEditing(false);
       return;
@@ -124,7 +145,7 @@ function EditableCodes({
       iata,
       icao,
       aircraftType,
-      effectiveIsMilitary,
+      draftIsMilitary,
     );
     setIsSaving(false);
     if (result.success) {
@@ -140,6 +161,7 @@ function EditableCodes({
     setIata(initialIata);
     setIcao(initialIcao);
     setAircraftType(initialAircraftType);
+    setDraftIsMilitary(effectiveIsMilitary);
     setIsEditing(false);
   };
 
@@ -154,7 +176,19 @@ function EditableCodes({
   if (isEditing) {
     return (
       <div className="flex flex-wrap items-center gap-2">
-        {!effectiveIsMilitary && (
+        <label className="mr-1 flex items-center gap-2 rounded-md border border-white/10 bg-black/40 px-2 py-1">
+          <span
+            className={`text-xs font-medium ${draftIsMilitary ? "text-amber-300" : "text-slate-300"}`}
+          >
+            Military
+          </span>
+          <Switch
+            checked={draftIsMilitary}
+            onCheckedChange={setDraftIsMilitary}
+            disabled={isSaving}
+          />
+        </label>
+        {!draftIsMilitary && (
           <input
             type="text"
             value={iata}
@@ -172,11 +206,11 @@ function EditableCodes({
           value={icao}
           onChange={(e) => setIcao(e.target.value.toUpperCase())}
           onKeyDown={handleKeyDown}
-          placeholder={effectiveIsMilitary ? "AF Name" : "ICAO"}
-          maxLength={effectiveIsMilitary ? 10 : 4}
-          className={`rounded-md border bg-black/60 px-2 py-1 font-mono text-sm outline-none ${effectiveIsMilitary ? "w-20 border-amber-500/50 text-amber-400 focus:border-amber-400" : "w-16 border-blue-500/50 text-blue-400 focus:border-blue-400"}`}
+          placeholder={draftIsMilitary ? "AF Name" : "ICAO"}
+          maxLength={draftIsMilitary ? 10 : 4}
+          className={`rounded-md border bg-black/60 px-2 py-1 font-mono text-sm outline-none ${draftIsMilitary ? "w-20 border-amber-500/50 text-amber-400 focus:border-amber-400" : "w-16 border-blue-500/50 text-blue-400 focus:border-blue-400"}`}
           disabled={isSaving}
-          autoFocus={effectiveIsMilitary}
+          autoFocus={draftIsMilitary}
         />
         <input
           type="text"
@@ -228,6 +262,11 @@ function EditableCodes({
       {initialAircraftType && (
         <span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">
           {initialAircraftType}
+        </span>
+      )}
+      {effectiveIsMilitary && (
+        <span className="rounded-md bg-amber-500/20 px-2 py-1 text-xs font-bold text-amber-300">
+          MIL
         </span>
       )}
       <button
@@ -288,7 +327,10 @@ export function AircraftImagesTab() {
       new Map(
         (allUsersQuery ?? []).map((user) => [
           user.clerkId,
-          { _id: String(user._id), discordUsername: user.discordUsername ?? null },
+          {
+            _id: String(user._id),
+            discordUsername: user.discordUsername ?? null,
+          },
         ]),
       ),
     [allUsersQuery],
@@ -850,7 +892,9 @@ export function AircraftImagesTab() {
           <select
             value={pageSize}
             onChange={(e) =>
-              setPageSize(Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
+              setPageSize(
+                Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number],
+              )
             }
             className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
           >
@@ -948,8 +992,7 @@ export function AircraftImagesTab() {
             filteredApprovedImages.length > 0)) && (
           <button
             onClick={() => {
-              const currentImages =
-                paginatedCurrentTabImages;
+              const currentImages = paginatedCurrentTabImages;
               const allVisibleSelected =
                 currentImages.length > 0 &&
                 currentImages.every((image) => selectedImages.has(image.id));

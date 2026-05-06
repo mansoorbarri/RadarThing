@@ -884,6 +884,7 @@ export async function updateAircraftImageCodes(
       airlineIata: iata,
       airlineIcao: icao,
       aircraftType,
+      isMilitary: effectiveIsMilitary || undefined,
     });
 
     if (!result) {
