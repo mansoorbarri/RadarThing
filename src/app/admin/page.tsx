@@ -1,6 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -41,8 +42,7 @@ import { AirportChartsTab } from "./_components/AirportChartsTab";
 import { ChallengesTab } from "./_components/ChallengesTab";
 import { ProManagementTab } from "./_components/ProManagementTab";
 import { VirtualAirlinesTab } from "./_components/VirtualAirlinesTab";
-
-type MainTab = "images" | "charts" | "challenges" | "virtual-airlines" | "pro";
+import { getAdminTabFromPath, getAdminTabHref } from "./adminTabs";
 type SubmitStage =
   | "idle"
   | "validating"
@@ -52,11 +52,13 @@ type SubmitStage =
 
 export default function AdminPage() {
   const { isSignedIn, isLoaded } = useUser();
+  const router = useRouter();
+  const pathname = usePathname();
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [adminCheckDone, setAdminCheckDone] = useState(false);
-  const [mainTab, setMainTab] = useState<MainTab>("images");
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const mainTab = getAdminTabFromPath(pathname);
 
   // Queries for counts in tab badges
   const pendingQuery = useQuery(api.aircraftImages.getPending);
@@ -79,12 +81,23 @@ export default function AdminPage() {
     }
   }, [isLoaded, isSignedIn]);
 
+  useEffect(() => {
+    if (!adminCheckDone || !isAdminUser) return;
+    if (mainTab === "pro" && !isSuperAdmin) {
+      router.replace("/admin");
+    }
+  }, [adminCheckDone, isAdminUser, isSuperAdmin, mainTab, router]);
+
   if (!isLoaded || loading) {
     return <AdminSkeleton />;
   }
 
   if (!isSignedIn || !isAdminUser) {
     return <AdminAccessDenied />;
+  }
+
+  if (mainTab === "pro" && !isSuperAdmin) {
+    return <AdminSkeleton />;
   }
 
   return (
@@ -103,7 +116,7 @@ export default function AdminPage() {
         {/* Main Tabs */}
         <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-white/10 pb-4">
           <button
-            onClick={() => setMainTab("images")}
+            onClick={() => router.push(getAdminTabHref("images"))}
             className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-all ${
               mainTab === "images"
                 ? "bg-cyan-500/20 text-cyan-400"
@@ -119,7 +132,7 @@ export default function AdminPage() {
             )}
           </button>
           <button
-            onClick={() => setMainTab("charts")}
+            onClick={() => router.push(getAdminTabHref("charts"))}
             className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-all ${
               mainTab === "charts"
                 ? "bg-cyan-500/20 text-cyan-400"
@@ -130,7 +143,7 @@ export default function AdminPage() {
             Airport Charts
           </button>
           <button
-            onClick={() => setMainTab("virtual-airlines")}
+            onClick={() => router.push(getAdminTabHref("virtual-airlines"))}
             className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-all ${
               mainTab === "virtual-airlines"
                 ? "bg-cyan-500/20 text-cyan-400"
@@ -141,7 +154,7 @@ export default function AdminPage() {
             Virtual Airlines
           </button>
           <button
-            onClick={() => setMainTab("challenges")}
+            onClick={() => router.push(getAdminTabHref("challenges"))}
             className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-all ${
               mainTab === "challenges"
                 ? "bg-cyan-500/20 text-cyan-400"
@@ -153,7 +166,7 @@ export default function AdminPage() {
           </button>
           {isSuperAdmin && (
             <button
-              onClick={() => setMainTab("pro")}
+              onClick={() => router.push(getAdminTabHref("pro"))}
               className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-all ${
                 mainTab === "pro"
                   ? "bg-yellow-500/20 text-yellow-400"
