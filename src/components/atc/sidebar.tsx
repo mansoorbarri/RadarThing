@@ -744,7 +744,7 @@ export const Sidebar = ({
                       href={virtualAirline.website}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-1 inline-flex max-w-full truncate font-mono text-[10px] font-bold tracking-[0.14em] text-cyan-300/80 uppercase transition-colors hover:text-cyan-200"
+                      className="mt-1 block max-w-full truncate font-mono text-[10px] font-bold tracking-[0.14em] text-cyan-300/80 uppercase transition-colors hover:text-cyan-200"
                     >
                       {virtualAirline.name} - {virtualAirline.callsignPrefix}
                     </a>
@@ -757,7 +757,7 @@ export const Sidebar = ({
                   (pilotUser ? (
                     <Link
                       href={`/pilot/${pilotUser._id}?callsign=${encodeURIComponent(aircraft.callsign)}`}
-                      className="mt-1 inline-flex items-center gap-1 font-mono text-[10px] font-bold text-cyan-400 transition-colors hover:text-cyan-300"
+                      className="mt-1 flex items-center gap-1 font-mono text-[10px] font-bold text-cyan-400 transition-colors hover:text-cyan-300"
                     >
                       <span className="text-white/40">Pilot:</span>{" "}
                       {aircraft.callsign}
