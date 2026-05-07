@@ -155,6 +155,13 @@ Production Convex backups are exported by the `Convex Backup` GitHub Actions wor
 
 UploadThing free apps do not allow private files, so backups are encrypted locally before upload and stored as `.zip.enc` files. Treat `BACKUP_ENCRYPTION_KEY` like a production database password: keep it in a password manager. If this key is lost, existing encrypted backups cannot be restored.
 
+Backup filenames are target-aware and human-readable, for example:
+
+```text
+radarthing-prod-db-only-2026-05-07_08-00-00Z.zip.enc
+radarthing-prod-db-and-files-2026-05-07_08-00-00Z.zip.enc
+```
+
 Required GitHub Actions repository secrets:
 
 ```text
@@ -181,7 +188,7 @@ The workflow runs daily at `08:00 UTC` and prunes encrypted UploadThing backups 
 Run the backup locally:
 
 ```bash
-bun run backup:convex -- --retention-days 30
+bun run backup:convex -- --label prod --retention-days 30
 ```
 
 Sync production data into the default Convex dev deployment for local testing:
@@ -197,21 +204,21 @@ replaces the default dev deployment with production data via
 Include Convex file storage:
 
 ```bash
-bun run backup:convex -- --include-file-storage --retention-days 30
+bun run backup:convex -- --label prod --include-file-storage --retention-days 30
 ```
 
 Decrypt a downloaded backup:
 
 ```bash
 BACKUP_ENCRYPTION_KEY="<same key used for backups>" bun run backup:convex -- \
-  --decrypt ./radarthing-convex-2026-04-22T19-08-56.513Z.zip.enc \
-  --output ./radarthing-convex-2026-04-22T19-08-56.513Z.zip
+  --decrypt ./radarthing-prod-db-only-2026-05-07_08-00-00Z.zip.enc \
+  --output ./radarthing-prod-db-only-2026-05-07_08-00-00Z.zip
 ```
 
 Restore with Convex after decrypting, preferably into a non-production deployment first:
 
 ```bash
-bunx convex import ./radarthing-convex-2026-04-22T19-08-56.513Z.zip
+bunx convex import ./radarthing-prod-db-only-2026-05-07_08-00-00Z.zip
 ```
 
 ## Environment Variables

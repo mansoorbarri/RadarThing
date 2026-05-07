@@ -24,6 +24,7 @@ interface Options {
   decryptOutputPath: string | null;
   includeFileStorage: boolean;
   keepLocal: boolean;
+  label: string | null;
   retentionDays: number | null;
 }
 
@@ -38,6 +39,7 @@ Options:
   --deployment-name <name>       Export from a specific Convex deployment.
   --preview-name <name>          Export from a specific preview deployment.
   --include-file-storage         Include Convex file storage in the backup ZIP.
+  --label <name>                 Human-readable label to include in the backup filename.
   --retention-days <days>        Delete older UploadThing backups from this script.
   --keep-local                   Keep the generated ZIP under convex-backup/.
   --decrypt <encryptedFile>      Decrypt an encrypted backup file instead of exporting.
@@ -67,6 +69,7 @@ function parseArgs(argv: string[]): Options {
     decryptOutputPath: null,
     includeFileStorage: false,
     keepLocal: false,
+    label: null,
     retentionDays: null,
   };
 
@@ -95,6 +98,12 @@ function parseArgs(argv: string[]): Options {
       case "--include-file-storage":
         options.includeFileStorage = true;
         break;
+      case "--label": {
+        const label = argv[++i];
+        if (!label) printUsage();
+        options.label = sanitizeLabelSegment(label);
+        break;
+      }
       case "--retention-days": {
         const days = argv[++i];
         if (!days) printUsage();
@@ -132,6 +141,40 @@ function parseArgs(argv: string[]): Options {
   return options;
 }
 
+function sanitizeLabelSegment(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function getBackupTargetLabel(options: Options) {
+  const [targetFlag, targetValue] = options.convexTargetArgs;
+
+  switch (targetFlag) {
+    case "--prod":
+      return "prod";
+    case "--dev":
+      return "dev";
+    case "--deployment-name":
+      return `deployment-${sanitizeLabelSegment(targetValue ?? "unknown")}`;
+    case "--preview-name":
+      return `preview-${sanitizeLabelSegment(targetValue ?? "unknown")}`;
+    default:
+      return process.env.CONVEX_DEPLOY_KEY ? "deploy-key-target" : "dev";
+  }
+}
+
+function createBackupFileName(options: Options, timestamp: string) {
+  const humanTimestamp = timestamp
+    .replace(/\.\d{3}Z$/, "Z")
+    .replace("T", "_")
+    .replaceAll(":", "-");
+  const targetLabel = options.label ?? getBackupTargetLabel(options);
+  const storageLabel = options.includeFileStorage ? "db-and-files" : "db-only";
+  return `radarthing-${targetLabel}-${storageLabel}-${humanTimestamp}.zip`;
+}
+
 async function runCommand(command: string, args: string[]) {
   await new Promise<void>((resolve, reject) => {
     const child = spawn(command, args, {
@@ -155,8 +198,7 @@ async function exportConvexBackup(options: Options) {
   await mkdir(backupDir, { recursive: true });
 
   const timestamp = new Date().toISOString();
-  const safeTimestamp = timestamp.replaceAll(":", "-");
-  const fileName = `radarthing-convex-${safeTimestamp}.zip`;
+  const fileName = createBackupFileName(options, timestamp);
   const filePath = path.join(backupDir, fileName);
 
   const args = [
@@ -277,13 +319,11 @@ function getUploadThingToken() {
     throw new Error("UPLOADTHING_TOKEN must be set.");
   }
 
-  if (rawToken.startsWith("UPLOADTHING_TOKEN=")) {
-    throw new Error(
-      "UPLOADTHING_TOKEN should be only the token value, not the full UPLOADTHING_TOKEN=... line.",
-    );
-  }
-
-  const token = rawToken.trim().replace(/^(['"])(.*)\1$/, "$2");
+  const trimmed = rawToken.trim();
+  const maybeAssignedToken = trimmed.startsWith("UPLOADTHING_TOKEN=")
+    ? trimmed.slice("UPLOADTHING_TOKEN=".length)
+    : trimmed;
+  const token = maybeAssignedToken.replace(/^(['"])(.*)\1$/, "$2");
   validateUploadThingToken(token);
   return token;
 }

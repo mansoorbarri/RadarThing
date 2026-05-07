@@ -28,4 +28,4 @@ jobs:
         run: bun install
 
       - name: Export and Upload Convex Backup
-        run: bun run backup:convex -- --retention-days 30
+        run: bun run backup:convex -- --label prod --retention-days 30
