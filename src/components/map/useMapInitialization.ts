@@ -31,6 +31,7 @@ interface UseMapInitializationProps {
 interface MapRefs {
   mapInstance: React.MutableRefObject<L.Map | null>;
   flightPlanLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
+  importedFlightPlanLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
   aircraftMarkersLayer: React.MutableRefObject<L.LayerGroup | null>;
   airportMarkersLayer: React.MutableRefObject<L.LayerGroup | null>;
   historyLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
@@ -66,6 +67,7 @@ export const useMapInitialization = ({
 }: UseMapInitializationProps): MapRefs => {
   const mapInstance = useRef<L.Map | null>(null);
   const flightPlanLayerGroup = useRef<L.LayerGroup | null>(null);
+  const importedFlightPlanLayerGroup = useRef<L.LayerGroup | null>(null);
   const aircraftMarkersLayer = useRef<L.LayerGroup | null>(null);
   const airportMarkersLayer = useRef<L.LayerGroup | null>(null);
   const historyLayerGroup = useRef<L.LayerGroup | null>(null);
@@ -172,6 +174,7 @@ export const useMapInitialization = ({
     satelliteHybridLayer.current.addTo(map);
 
     flightPlanLayerGroup.current = L.layerGroup().addTo(map);
+    importedFlightPlanLayerGroup.current = L.layerGroup().addTo(map);
     aircraftMarkersLayer.current = L.layerGroup().addTo(map);
     airportMarkersLayer.current = L.layerGroup().addTo(map);
     historyLayerGroup.current = L.layerGroup().addTo(map);
@@ -332,6 +335,7 @@ export const useMapInitialization = ({
   return {
     mapInstance,
     flightPlanLayerGroup,
+    importedFlightPlanLayerGroup,
     aircraftMarkersLayer,
     airportMarkersLayer,
     historyLayerGroup,

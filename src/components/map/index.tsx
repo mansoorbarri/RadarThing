@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type OnlineAirport } from "~/hooks/useAircraftStream";
 import { preparePathForWorldCopy } from "~/lib/map-utils";
+import { type ImportedFlightPlan } from "~/lib/flightPlanImport";
 import { useMobileDetection } from "~/hooks/useMobileDetection";
 import { useProStatus } from "~/hooks/useProStatus";
 import { getBooleanCookie, setBooleanCookie } from "~/lib/cookies";
@@ -102,6 +103,7 @@ interface MapComponentProps {
   onConflictReview?: (aircrafts: PositionUpdate[]) => void;
   setResetMapView?: (func: () => void) => void;
   hideUi?: boolean;
+  importedFlightPlan?: ImportedFlightPlan | null;
 }
 
 const MAX_CONFLICT_HISTORY = 12;
@@ -126,6 +128,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onConflictReview,
   setResetMapView,
   hideUi = false,
+  importedFlightPlan = null,
 }) => {
   const isMobile = useMobileDetection();
   const { isProUser, isLoading: proLoading } = useProStatus();
@@ -679,11 +682,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const {
     drawFlightPlan,
     drawMultipleFlightPlans,
+    drawImportedFlightPlan,
+    clearImportedFlightPlan,
     currentSelectedAircraftRef,
     clearHistoryPolyline,
   } = useFlightPlanDrawing({
     mapInstance: mapRefs.mapInstance,
     flightPlanLayerGroup: mapRefs.flightPlanLayerGroup,
+    importedFlightPlanLayerGroup: mapRefs.importedFlightPlanLayerGroup,
     historyLayerGroup: mapRefs.historyLayerGroup,
     isRadarMode,
   });
@@ -820,6 +826,27 @@ const MapComponent: React.FC<MapComponentProps> = ({
       setResetMapView(mapRefs.resetMapView);
     }
   }, [mapRefs.resetMapView, setResetMapView]);
+
+  const prevImportedFlightPlanRef = useRef<ImportedFlightPlan | null>(null);
+
+  useEffect(() => {
+    if (!mapRefs.mapReady) return;
+
+    if (!importedFlightPlan) {
+      prevImportedFlightPlanRef.current = null;
+      clearImportedFlightPlan();
+      return;
+    }
+
+    const shouldZoom = prevImportedFlightPlanRef.current !== importedFlightPlan;
+    prevImportedFlightPlanRef.current = importedFlightPlan;
+    drawImportedFlightPlan(importedFlightPlan, shouldZoom);
+  }, [
+    clearImportedFlightPlan,
+    drawImportedFlightPlan,
+    importedFlightPlan,
+    mapRefs.mapReady,
+  ]);
 
   const metar = useMetarOverlay(
     mapRefs.mapInstance,

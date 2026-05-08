@@ -11,11 +11,16 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
+import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
 import { type Id } from "../../../convex/_generated/dataModel";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { activeAircraft } from "~/lib/aircraft-store";
+import {
+  parseImportedFlightPlan,
+  type ImportedFlightPlan,
+} from "~/lib/flightPlanImport";
 import { useMobileDetection, useDeviceType } from "~/hooks/useMobileDetection";
 import { useAircraftStream } from "~/hooks/useAircraftStream";
 import { useAirportData } from "~/hooks/useAirportData";
@@ -53,6 +58,7 @@ import { AirportFIDPanel } from "~/components/airports/AirportFIDPanel";
 import { ChartSidePanel } from "~/components/map/ChartOverlayPanel";
 import { AtcPlayer } from "~/components/atc/AtcPlayer";
 import { AirportActivityPanel } from "~/components/atc/AirportActivityPanel";
+import { ImportedFlightPlanPanel } from "~/components/atc/ImportedFlightPlanPanel";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { WhatsNew } from "~/components/ui/WhatsNew";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
@@ -69,7 +75,7 @@ import {
   UploadIcon,
   AdminIcon,
 } from "~/utils/dockIcons";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Route, X } from "lucide-react";
 import { UnitPreferencesProvider } from "~/hooks/useUnitPreferences";
 
 const DynamicMapComponent = dynamic(() => import("~/components/map"), {
@@ -209,6 +215,10 @@ export default function ATCPage() {
   const [pendingAirportIcao, setPendingAirportIcao] = useState<string | null>(
     null,
   );
+  const [importedFlightPlan, setImportedFlightPlan] =
+    useState<ImportedFlightPlan | null>(null);
+  const [showImportedFlightPlanPanel, setShowImportedFlightPlanPanel] =
+    useState(false);
 
   const aircraftGoogleIds = useMemo(
     () =>
@@ -260,6 +270,7 @@ export default function ATCPage() {
   >(null);
   const resetMapViewRef = useRef<(() => void) | null>(null);
   const reportedShortcutDiagnosticsRef = useRef<Set<string>>(new Set());
+  const importedFlightPlanInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -673,9 +684,78 @@ export default function ATCPage() {
     [],
   );
 
+  const clearImportedFlightPlan = useCallback(() => {
+    if (!importedFlightPlan) return;
+
+    setImportedFlightPlan(null);
+    setShowImportedFlightPlanPanel(false);
+    Analytics.track("flight_plan_import_cleared", {
+      source: "dock",
+      display_name: importedFlightPlan.displayName,
+    });
+    toast.success("Imported flight plan cleared");
+  }, [importedFlightPlan]);
+
+  const handleFlightPlanImportClick = useCallback(() => {
+    importedFlightPlanInputRef.current?.click();
+  }, []);
+
+  const handleFlightPlanFileChange = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      try {
+        const parsed = parseImportedFlightPlan(await file.text(), file.name);
+
+        setImportedFlightPlan(parsed);
+        setSelectedAircrafts([]);
+        setSelectedAirport(undefined);
+        setHistoryPath(null);
+        setIsViewingHistory(false);
+        setReplayFlight(null);
+        setReplayState(null);
+        setIsFollowMode(false);
+        setActiveRightPanel(null);
+        setShowImportedFlightPlanPanel(true);
+
+        Analytics.track("flight_plan_imported", {
+          source: "dock",
+          display_name: parsed.displayName,
+          source_name: parsed.sourceName,
+          waypoint_count: parsed.waypoints.length,
+        });
+        toast.success(
+          `Imported ${parsed.displayName} with ${parsed.waypoints.length} waypoints`,
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unable to import flight plan";
+
+        Analytics.track("flight_plan_import_failed", {
+          source: "dock",
+          file_name: file.name,
+          message,
+        });
+        toast.error(message);
+      } finally {
+        event.target.value = "";
+      }
+    },
+    [],
+  );
+
   return (
     <UnitPreferencesProvider>
       <div className="relative h-screen w-screen overflow-hidden bg-black">
+        <input
+          ref={importedFlightPlanInputRef}
+          type="file"
+          accept=".json,application/json"
+          className="hidden"
+          onChange={handleFlightPlanFileChange}
+        />
+
         <div
           className={`fixed inset-0 z-[10030] transition-opacity duration-500 ${isAppReady ? "pointer-events-none opacity-0" : "pointer-events-auto opacity-100"}`}
         >
@@ -1106,7 +1186,16 @@ export default function ATCPage() {
               resetMapViewRef.current = fn;
             }}
             hideUi={isUiHidden}
+            importedFlightPlan={importedFlightPlan}
           />
+
+          {importedFlightPlan && showImportedFlightPlanPanel ? (
+            <ImportedFlightPlanPanel
+              flightPlan={importedFlightPlan}
+              isMobile={isPhone}
+              onClose={() => setShowImportedFlightPlanPanel(false)}
+            />
+          ) : null}
         </main>
 
         {/* Right panels — phone: bottom sheet, tablet: narrower side panel, desktop: full side panel */}
@@ -1202,6 +1291,31 @@ export default function ATCPage() {
             }}
             items={[
               // Core features (closest to toggle button)
+              {
+                id: "import-plan",
+                label: importedFlightPlan ? "Replace Plan" : "Import Plan",
+                icon: UploadIcon,
+                active: Boolean(importedFlightPlan),
+                onClick: handleFlightPlanImportClick,
+              },
+              ...(importedFlightPlan
+                ? [
+                    {
+                      id: "plan-details",
+                      label: "Plan Details",
+                      icon: <Route size={18} strokeWidth={1.8} />,
+                      active: showImportedFlightPlanPanel,
+                      onClick: () =>
+                        setShowImportedFlightPlanPanel((current) => !current),
+                    },
+                    {
+                      id: "clear-plan",
+                      label: "Clear Plan",
+                      icon: <X size={18} strokeWidth={1.8} />,
+                      onClick: clearImportedFlightPlan,
+                    },
+                  ]
+                : []),
               {
                 id: "fids",
                 label: "Flights",
