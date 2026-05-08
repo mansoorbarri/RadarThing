@@ -695,10 +695,9 @@ export const getStatsByClerkId = query({
       .slice(0, 5)
       .map(([code, count]) => ({ code, count }));
 
-    // Recent flights (last 10) - sorted most recent first
+    // Recent flights - sorted most recent first
     const recentFlights = [...flights]
       .sort((a, b) => b.startTime - a.startTime)
-      .slice(0, 10)
       .map((f) => ({
         id: f._id,
         callsign: f.callsign,
@@ -926,8 +925,8 @@ export const getStatsById = query({
     const pilotCallsign =
       stats?.lastFlightCallsign ?? mostRecentFlight?.callsign ?? null;
 
-    // Recent flights (last 10)
-    const recentFlights = sortedFlights.slice(0, 10).map((f) => ({
+    // Recent flights
+    const recentFlights = sortedFlights.map((f) => ({
       id: f._id,
       callsign: f.callsign,
       aircraftType: f.aircraftType,

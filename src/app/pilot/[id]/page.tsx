@@ -32,6 +32,7 @@ import type { FlightCardData } from "~/components/flight-card/FlightCard";
 import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
 import { isFlightModeratorGoogleId } from "~/lib/flight-moderation";
 import { ConfirmModal } from "~/app/admin/_components/ConfirmModal";
+import { FREE_RECENT_FLIGHTS_LIMIT } from "~/lib/flightHistory";
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -89,10 +90,16 @@ function PilotPageContent() {
   const { isProUser, isAdminUser, isLoading: proLoading } = useProStatus();
   const { googleId: currentUserGoogleId, isLoaded: currentUserLoaded } =
     useCurrentUserProfile();
+  const isPro = isProUser;
 
   const canDeleteFlights =
     currentUserLoaded &&
     (isAdminUser || isFlightModeratorGoogleId(currentUserGoogleId));
+  const visibleRecentFlights = !stats
+    ? []
+    : isPro
+      ? stats.recentFlights
+      : stats.recentFlights.slice(0, FREE_RECENT_FLIGHTS_LIMIT);
 
   const confirmDeleteFlight = async () => {
     if (!flightPendingDelete) return;
@@ -160,8 +167,6 @@ function PilotPageContent() {
       </div>
     );
   }
-
-  const isPro = isProUser;
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -368,12 +373,14 @@ function PilotPageContent() {
                   RECENT FLIGHTS
                 </h3>
                 <span className="font-mono text-xs text-slate-600">
-                  {isPro ? "Last 10 flights" : "Last 3 flights"}
+                  {isPro
+                    ? "Full flight history"
+                    : `Last ${FREE_RECENT_FLIGHTS_LIMIT} flights`}
                 </span>
               </div>
 
               <div className="space-y-3">
-                {stats.recentFlights.slice(0, isPro ? 10 : 3).map((flight) => (
+                {visibleRecentFlights.map((flight) => (
                   <div
                     key={flight.id}
                     className="group flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4 transition-all hover:border-cyan-500/30 hover:bg-white/10"
@@ -501,15 +508,17 @@ function PilotPageContent() {
                   </div>
                 ))}
 
-                {!isPro && stats.recentFlights.length > 3 && (
-                  <div className="mt-4 text-center">
-                    <div className="inline-flex items-center gap-2 rounded-lg border border-slate-500/30 bg-slate-500/10 px-4 py-2 font-mono text-xs text-slate-400">
-                      <Lock className="h-3 w-3" />
-                      {stats.recentFlights.length - 3} more flights (PRO
-                      feature)
+                {!isPro &&
+                  stats.recentFlights.length > FREE_RECENT_FLIGHTS_LIMIT && (
+                    <div className="mt-4 text-center">
+                      <div className="inline-flex items-center gap-2 rounded-lg border border-slate-500/30 bg-slate-500/10 px-4 py-2 font-mono text-xs text-slate-400">
+                        <Lock className="h-3 w-3" />
+                        {stats.recentFlights.length -
+                          FREE_RECENT_FLIGHTS_LIMIT}{" "}
+                        more flights with PRO
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
           </>

@@ -1,0 +1,1 @@
+export const FREE_RECENT_FLIGHTS_LIMIT = 10;

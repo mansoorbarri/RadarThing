@@ -11,6 +11,7 @@ import Loading from "~/components/loading";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
 import { Analytics } from "~/lib/analytics";
+import { FREE_RECENT_FLIGHTS_LIMIT } from "~/lib/flightHistory";
 
 export default function PricingPage() {
   const router = useRouter();
@@ -94,7 +95,7 @@ export default function PricingPage() {
             </h1>
             <p className="mb-8 text-slate-300">
               Weather intel, charts, and full analytics are unlocked on your
-              account.
+              account, including your full flight history.
             </p>
             <button
               onClick={handleManageSubscription}
@@ -156,7 +157,7 @@ export default function PricingPage() {
               <SignalCard
                 title="Flight History"
                 value="Full"
-                subtitle="Complete route timeline + replay context"
+                subtitle={`Free gets ${FREE_RECENT_FLIGHTS_LIMIT} recent flights, PRO gets your full archive`}
               />
               <SignalCard
                 title="Charts Access"
@@ -189,9 +190,10 @@ export default function PricingPage() {
 
               <FeatureSection
                 title="Comprehensive Analytics"
-                description="Track your flying activity with meaningful stats and complete history."
+                description={`Track your flying activity with meaningful stats. Free includes your last ${FREE_RECENT_FLIGHTS_LIMIT} flights, and PRO unlocks the full archive.`}
                 features={[
-                  "Complete flight history",
+                  `Last ${FREE_RECENT_FLIGHTS_LIMIT} flights on Free`,
+                  "Full flight history on PRO",
                   "Flight time & distance tracking",
                   "Top aircraft, routes, and airports",
                 ]}
@@ -262,6 +264,12 @@ export default function PricingPage() {
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-cyan-300" />
                     Complete pilot analytics
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-cyan-300" />
+                    Full flight history beyond the free{" "}
+                    {FREE_RECENT_FLIGHTS_LIMIT}
+                    -flight view
                   </li>
                 </ul>
               </div>

@@ -42,6 +42,7 @@ import { ActiveChallengesPanel } from "~/components/challenges/ActiveChallengesP
 import { FlightCardDialog } from "~/components/flight-card/FlightCardDialog";
 import type { FlightCardData } from "~/components/flight-card/FlightCard";
 import { downloadAccountDataExport } from "~/lib/account-data-export";
+import { FREE_RECENT_FLIGHTS_LIMIT } from "~/lib/flightHistory";
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -109,6 +110,15 @@ export default function DashboardPage() {
   const supportId = useMemo(() => dbUser?._id ?? null, [dbUser]);
   const loading = !mounted || !isLoaded;
   const statsLoading = clerkId && statsQuery === undefined;
+  const visibleRecentFlights = useMemo(
+    () =>
+      !stats
+        ? []
+        : isPro
+          ? stats.recentFlights
+          : stats.recentFlights.slice(0, FREE_RECENT_FLIGHTS_LIMIT),
+    [isPro, stats],
+  );
 
   // Track page view and stats (only once per page load)
   const hasTracked = useRef(false);
@@ -552,7 +562,9 @@ export default function DashboardPage() {
                 </h3>
                 <div className="flex items-center gap-3">
                   <span className="font-mono text-xs text-slate-600">
-                    {isPro ? "Last 10 flights" : "Last 3 flights"}
+                    {isPro
+                      ? "Full flight history"
+                      : `Last ${FREE_RECENT_FLIGHTS_LIMIT} flights`}
                   </span>
                   <ChevronDown
                     className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${flightsExpanded ? "rotate-180" : ""}`}
@@ -562,134 +574,133 @@ export default function DashboardPage() {
 
               {flightsExpanded && (
                 <div className="space-y-3 px-6 pb-6">
-                  {stats.recentFlights
-                    .slice(0, isPro ? 10 : 3)
-                    .map((flight) => (
-                      <div
-                        key={flight.id}
-                        className="group flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4 transition-all hover:border-cyan-500/30 hover:bg-white/10"
-                      >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10">
-                          <Plane className="h-5 w-5 text-cyan-400" />
+                  {visibleRecentFlights.map((flight) => (
+                    <div
+                      key={flight.id}
+                      className="group flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4 transition-all hover:border-cyan-500/30 hover:bg-white/10"
+                    >
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10">
+                        <Plane className="h-5 w-5 text-cyan-400" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                          <span className="font-mono text-sm font-bold text-white">
+                            {flight.depICAO || "???"}
+                          </span>
+                          <Route className="h-3 w-3 text-slate-500" />
+                          <span className="font-mono text-sm font-bold text-white">
+                            {flight.arrICAO || "???"}
+                          </span>
+                          <span className="ml-2 rounded bg-white/10 px-2 py-0.5 font-mono text-[10px] text-slate-400">
+                            {flight.aircraftType
+                              .replace(/\s*\([^)]*\)/g, "")
+                              .trim()}
+                          </span>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-1 flex flex-wrap items-center gap-2">
-                            <span className="font-mono text-sm font-bold text-white">
-                              {flight.depICAO || "???"}
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                          {flight.callsign && (
+                            <span className="rounded bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] text-cyan-300/80">
+                              {flight.callsign}
                             </span>
-                            <Route className="h-3 w-3 text-slate-500" />
-                            <span className="font-mono text-sm font-bold text-white">
-                              {flight.arrICAO || "???"}
-                            </span>
-                            <span className="ml-2 rounded bg-white/10 px-2 py-0.5 font-mono text-[10px] text-slate-400">
-                              {flight.aircraftType
-                                .replace(/\s*\([^)]*\)/g, "")
-                                .trim()}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                            {flight.callsign && (
-                              <span className="rounded bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] text-cyan-300/80">
-                                {flight.callsign}
-                              </span>
-                            )}
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {formatDate(flight.startTime)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {formatDuration(flight.startTime, flight.endTime)}
-                            </span>
-                          </div>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {formatDate(flight.startTime)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatDuration(flight.startTime, flight.endTime)}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {flight.routeData && flight.routeData.length > 1 && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  const url = `${window.location.origin}/radar?replay=${flight.id}`;
-                                  navigator.clipboard
-                                    .writeText(url)
-                                    .then(() => {
-                                      toast.success(
-                                        "Flight replay link copied to clipboard",
-                                      );
-                                      Analytics.flightReplayShared({
-                                        callsign: flight.callsign,
-                                        aircraftType: flight.aircraftType,
-                                        depICAO: flight.depICAO,
-                                        arrICAO: flight.arrICAO,
-                                        flightId: flight.id as string,
-                                      });
-                                    });
-                                }}
-                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/40 opacity-0 transition-all group-hover:opacity-100 hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400"
-                                title="Copy share link"
-                              >
-                                <Share2 className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (!isPro) {
-                                    Analytics.proFeatureBlocked({
-                                      feature: "flight_card",
-                                    });
-                                    router.push("/pricing");
-                                    return;
-                                  }
-                                  setCardFlight({
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {flight.routeData && flight.routeData.length > 1 && (
+                          <>
+                            <button
+                              onClick={() => {
+                                const url = `${window.location.origin}/radar?replay=${flight.id}`;
+                                navigator.clipboard.writeText(url).then(() => {
+                                  toast.success(
+                                    "Flight replay link copied to clipboard",
+                                  );
+                                  Analytics.flightReplayShared({
                                     callsign: flight.callsign,
-                                    discordUsername:
-                                      dbUser?.discordUsername ?? undefined,
                                     aircraftType: flight.aircraftType,
                                     depICAO: flight.depICAO,
                                     arrICAO: flight.arrICAO,
-                                    startTime: flight.startTime,
-                                    endTime: flight.endTime,
-                                    maxAltitude: flight.maxAltitude,
-                                    maxSpeed: flight.maxSpeed,
-                                    routeData: flight.routeData,
+                                    flightId: flight.id as string,
                                   });
-                                }}
-                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/40 opacity-0 transition-all group-hover:opacity-100 hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400"
-                                title="Generate flight card"
-                              >
-                                <Camera className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() =>
-                                  router.push(`/radar?replay=${flight.id}`)
+                                });
+                              }}
+                              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/40 opacity-0 transition-all group-hover:opacity-100 hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400"
+                              title="Copy share link"
+                            >
+                              <Share2 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (!isPro) {
+                                  Analytics.proFeatureBlocked({
+                                    feature: "flight_card",
+                                  });
+                                  router.push("/pricing");
+                                  return;
                                 }
-                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 opacity-0 transition-all group-hover:opacity-100 hover:bg-amber-500/20"
-                                title="Replay this flight"
-                              >
-                                <Play className="h-4 w-4" />
-                              </button>
-                            </>
-                          )}
-                        </div>
+                                setCardFlight({
+                                  callsign: flight.callsign,
+                                  discordUsername:
+                                    dbUser?.discordUsername ?? undefined,
+                                  aircraftType: flight.aircraftType,
+                                  depICAO: flight.depICAO,
+                                  arrICAO: flight.arrICAO,
+                                  startTime: flight.startTime,
+                                  endTime: flight.endTime,
+                                  maxAltitude: flight.maxAltitude,
+                                  maxSpeed: flight.maxSpeed,
+                                  routeData: flight.routeData,
+                                });
+                              }}
+                              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/40 opacity-0 transition-all group-hover:opacity-100 hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400"
+                              title="Generate flight card"
+                            >
+                              <Camera className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                router.push(`/radar?replay=${flight.id}`)
+                              }
+                              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 opacity-0 transition-all group-hover:opacity-100 hover:bg-amber-500/20"
+                              title="Replay this flight"
+                            >
+                              <Play className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
-                    ))}
-
-                  {!isPro && stats.recentFlights.length > 3 && (
-                    <div className="mt-4 text-center">
-                      <button
-                        onClick={() => {
-                          Analytics.upgradeButtonClicked({
-                            source: "dashboard_recent_flights_lock",
-                            feature: "full_flight_history",
-                          });
-                          router.push("/pricing");
-                        }}
-                        className="inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 font-mono text-xs text-amber-400 transition-all hover:bg-amber-500/20"
-                      >
-                        <Lock className="h-3 w-3" />
-                        Start 7-day trial to see{" "}
-                        {stats.recentFlights.length - 3} more flights
-                      </button>
                     </div>
-                  )}
+                  ))}
+
+                  {!isPro &&
+                    stats.recentFlights.length > FREE_RECENT_FLIGHTS_LIMIT && (
+                      <div className="mt-4 text-center">
+                        <button
+                          onClick={() => {
+                            Analytics.upgradeButtonClicked({
+                              source: "dashboard_recent_flights_lock",
+                              feature: "full_flight_history",
+                            });
+                            router.push("/pricing");
+                          }}
+                          className="inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 font-mono text-xs text-amber-400 transition-all hover:bg-amber-500/20"
+                        >
+                          <Lock className="h-3 w-3" />
+                          Start 7-day trial to see{" "}
+                          {stats.recentFlights.length -
+                            FREE_RECENT_FLIGHTS_LIMIT}{" "}
+                          more flights
+                        </button>
+                      </div>
+                    )}
                 </div>
               )}
             </div>
@@ -702,8 +713,8 @@ export default function DashboardPage() {
                   Unlock Full Analytics
                 </h3>
                 <p className="mb-6 text-slate-400">
-                  Get detailed insights with flight time, top airports, routes,
-                  and complete history
+                  Get every recorded flight plus detailed insights for flight
+                  time, top airports, and routes
                 </p>
                 <button
                   onClick={() => {
