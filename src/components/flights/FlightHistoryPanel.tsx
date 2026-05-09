@@ -20,19 +20,8 @@ import {
   Route,
 } from "lucide-react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
-import {
   FLIGHT_HISTORY_PAGE_SIZE,
-  FLIGHT_HISTORY_REPLAY_FILTERS,
-  FLIGHT_HISTORY_STATUS_FILTERS,
   FREE_RECENT_FLIGHTS_LIMIT,
-  type FlightHistoryReplayFilter,
-  type FlightHistoryStatusFilter,
 } from "~/lib/flightHistory";
 
 export interface FlightHistoryPanelFlight {
@@ -96,22 +85,16 @@ export function FlightHistoryPanel({
 }: FlightHistoryPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  const [statusFilter, setStatusFilter] =
-    useState<FlightHistoryStatusFilter>("all");
-  const [replayFilter, setReplayFilter] =
-    useState<FlightHistoryReplayFilter>("all");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
     setPage(1);
-  }, [deferredSearchQuery, replayFilter, statusFilter, userId]);
+  }, [deferredSearchQuery, userId]);
 
   const historyPage = useQuery(api.flights.getFlightHistoryPage, {
     userId,
     page,
     searchQuery: deferredSearchQuery,
-    statusFilter,
-    replayFilter,
   });
 
   useEffect(() => {
@@ -122,10 +105,7 @@ export function FlightHistoryPanel({
   }, [historyPage, page]);
 
   const isExpanded = variant === "static" ? true : expanded;
-  const hasActiveFilters =
-    searchQuery.trim().length > 0 ||
-    statusFilter !== "all" ||
-    replayFilter !== "all";
+  const hasSearchQuery = searchQuery.trim().length > 0;
 
   return (
     <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
@@ -159,61 +139,23 @@ export function FlightHistoryPanel({
 
       {isExpanded && (
         <div className="space-y-4 px-6 pb-6">
-          <div className="grid gap-3 pt-1 md:grid-cols-[minmax(0,1.5fr)_180px_180px_auto]">
+          <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center">
             <div className="relative">
               <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search callsign, route, or aircraft"
+                placeholder="Search anything: route, callsign, aircraft, date, time..."
                 className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm text-white placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
               />
             </div>
 
-            <Select
-              value={statusFilter}
-              onValueChange={(value) =>
-                setStatusFilter(value as FlightHistoryStatusFilter)
-              }
-            >
-              <SelectTrigger className="h-11 w-full border-white/10 bg-white/5 text-white">
-                <SelectValue placeholder="Flight status" />
-              </SelectTrigger>
-              <SelectContent className="border-white/10 bg-[#07101a] text-white">
-                {(FLIGHT_HISTORY_STATUS_FILTERS ?? []).map((value) => (
-                  <SelectItem key={value} value={value}>
-                    {statusLabel(value)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={replayFilter}
-              onValueChange={(value) =>
-                setReplayFilter(value as FlightHistoryReplayFilter)
-              }
-            >
-              <SelectTrigger className="h-11 w-full border-white/10 bg-white/5 text-white">
-                <SelectValue placeholder="Replay access" />
-              </SelectTrigger>
-              <SelectContent className="border-white/10 bg-[#07101a] text-white">
-                {(FLIGHT_HISTORY_REPLAY_FILTERS ?? []).map((value) => (
-                  <SelectItem key={value} value={value}>
-                    {replayLabel(value)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
             <button
               onClick={() => {
                 setSearchQuery("");
-                setStatusFilter("all");
-                setReplayFilter("all");
               }}
-              disabled={!hasActiveFilters}
+              disabled={!hasSearchQuery}
               className="rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-slate-300 transition-all hover:border-white/20 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Clear
@@ -273,7 +215,7 @@ export function FlightHistoryPanel({
                     No matching flights
                   </h4>
                   <p className="mt-2 text-sm text-slate-400">
-                    Adjust the search or filters to broaden the history view.
+                    Adjust the search to broaden the history view.
                   </p>
                 </div>
               ) : (
@@ -380,8 +322,8 @@ export function FlightHistoryPanel({
                           Free history cap
                         </p>
                         <p className="mt-2 text-sm text-amber-100/85">
-                          {hasActiveFilters
-                            ? `Search and filters cover the latest ${FREE_RECENT_FLIGHTS_LIMIT} flights on Free. Upgrade to search all ${historyPage.totalRecordedFlights} recorded flights.`
+                          {hasSearchQuery
+                            ? `Search covers the latest ${FREE_RECENT_FLIGHTS_LIMIT} flights on Free. Upgrade to search all ${historyPage.totalRecordedFlights} recorded flights.`
                             : `Upgrade to browse ${historyPage.hiddenFlightCount} more flights beyond the latest ${FREE_RECENT_FLIGHTS_LIMIT}.`}
                         </p>
                       </div>
@@ -402,28 +344,6 @@ export function FlightHistoryPanel({
       )}
     </div>
   );
-}
-
-function statusLabel(value: FlightHistoryStatusFilter) {
-  switch (value) {
-    case "completed":
-      return "Completed only";
-    case "in_progress":
-      return "In progress only";
-    default:
-      return "All statuses";
-  }
-}
-
-function replayLabel(value: FlightHistoryReplayFilter) {
-  switch (value) {
-    case "replayable":
-      return "Replayable only";
-    case "non_replayable":
-      return "No replay data";
-    default:
-      return "All replay states";
-  }
 }
 
 function HistoryLoadingState() {
