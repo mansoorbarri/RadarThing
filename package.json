@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node scripts/check-node-version.mjs && next dev --turbo",
-    "build": "node scripts/check-node-version.mjs && node scripts/build-userscript.mjs && next build",
+    "dev": "next dev --turbo",
+    "build": "node scripts/build-userscript.mjs && next build",
     "build:userscript": "node scripts/build-userscript.mjs",
     "backup:convex": "bun scripts/backup-convex-to-uploadthing.ts",
     "sync:convex:prod-to-dev": "bun scripts/sync-convex-prod-to-dev.ts",
@@ -16,8 +16,8 @@
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "preview": "node scripts/check-node-version.mjs && next build && next start",
-    "start": "node scripts/check-node-version.mjs && next start",
+    "preview": "next build && next start",
+    "start": "next start",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
