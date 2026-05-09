@@ -56,6 +56,10 @@ export function AdminChartsTabSkeleton() {
   );
 }
 
+export function AdminTabSkeleton() {
+  return <AdminChartsTabSkeleton />;
+}
+
 export function AdminSkeleton() {
   return (
     <div className="min-h-screen bg-black text-white">
