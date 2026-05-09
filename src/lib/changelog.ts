@@ -8,6 +8,22 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "flight-history-search",
+    date: "2026-05-09",
+    title: "Smoother Flight History",
+    description:
+      "Flight history now loads faster with 10-per-page browsing and fuzzy search across routes, callsigns, aircraft, dates, and times.",
+    type: "improvement",
+  },
+  {
+    id: "flight-plan-imports",
+    date: "2026-05-08",
+    title: "Flight Plan Imports",
+    description:
+      "Import a flight plan JSON from the dock to preview the full route, waypoint altitudes, speeds, distance, and ETA.",
+    type: "new",
+  },
+  {
     id: "airport-activity-explorer",
     date: "2026-05-04",
     title: "Airport Activity Explorer",

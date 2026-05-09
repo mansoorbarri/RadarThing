@@ -25,6 +25,7 @@ import {
   FREE_RECENT_FLIGHTS_LIMIT,
   matchesFlightHistorySearch,
 } from "~/lib/flightHistory";
+import { cn } from "~/lib/utils";
 
 export interface FlightHistoryPanelFlight {
   id: Id<"flights">;
@@ -160,8 +161,25 @@ export function FlightHistoryPanel({
         </div>
       )}
 
-      {isExpanded && (
-        <div className="space-y-4 px-6 pb-6">
+      <div
+        className={cn(
+          "grid transition-all duration-300 ease-out",
+          variant === "static"
+            ? "grid-rows-[1fr] opacity-100"
+            : isExpanded
+              ? "grid-rows-[1fr] opacity-100"
+              : "grid-rows-[0fr] opacity-0",
+        )}
+      >
+        <div className="overflow-hidden">
+          <div
+            className={cn(
+              "space-y-4 px-6 pb-6 transition-transform duration-300 ease-out",
+              variant === "static" || isExpanded
+                ? "translate-y-0"
+                : "-translate-y-2",
+            )}
+          >
           <div className="pt-1">
             <div className="relative">
               <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
@@ -356,11 +374,12 @@ export function FlightHistoryPanel({
                     )}
                   </div>
                 </div>
-              )}
+                )}
             </>
           )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
