@@ -11,16 +11,6 @@ export interface UserStats {
   topAircraft: { name: string; count: number }[];
   topRoutes: { route: string; count: number }[];
   topAirports: { code: string; count: number }[];
-  recentFlights: {
-    id: string;
-    callsign: string;
-    aircraftType: string;
-    depICAO?: string;
-    arrICAO?: string;
-    startTime: number;
-    endTime?: number;
-    routeData?: [number, number][];
-  }[];
 }
 
 export async function getUserStats(): Promise<{

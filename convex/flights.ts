@@ -1,11 +1,25 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { mutation, query, type MutationCtx } from "./_generated/server";
+import {
+  mutation,
+  query,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server";
 import { paginationOptsValidator } from "convex/server";
 import { autoCompleteChallengesForFlight } from "./challenges";
 import { calculateRouteDistanceNm } from "./lib/challengeRules";
 import { isFlightModeratorGoogleId } from "../src/lib/flight-moderation";
-import { getEffectiveAccessRole } from "../src/lib/proAccess";
+import {
+  FLIGHT_HISTORY_PAGE_SIZE,
+  FREE_RECENT_FLIGHTS_LIMIT,
+  type FlightHistoryReplayFilter,
+  type FlightHistoryStatusFilter,
+} from "../src/lib/flightHistory";
+import {
+  getEffectiveAccessRole,
+  hasEffectiveProAccess,
+} from "../src/lib/proAccess";
 
 const DEFAULT_STATS_MAX_SPEED_KTS = 750;
 const HIGH_PERFORMANCE_STATS_MAX_SPEED_KTS = 1100;
@@ -142,6 +156,118 @@ function isFlightStatsEligible(flight: {
   statsExcludedReason?: string;
 }) {
   return getStatsExcludedReason(flight) === undefined;
+}
+
+async function getCurrentViewer(ctx: QueryCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity?.subject) return null;
+
+  return await ctx.db
+    .query("users")
+    .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+    .first();
+}
+
+function canViewerAccessFullFlightHistory(
+  viewer:
+    | {
+        role?: "FREE" | "PRO" | "ADMIN" | null;
+        adminProExpiresAt?: number | null;
+        googleId?: string;
+      }
+    | null
+    | undefined,
+) {
+  const isSuperAdmin = Boolean(
+    process.env.ADMIN_GOOGLE_ID &&
+    viewer?.googleId === process.env.ADMIN_GOOGLE_ID,
+  );
+
+  return isSuperAdmin || hasEffectiveProAccess(viewer);
+}
+
+function matchesFlightHistorySearch(
+  flight: {
+    callsign: string;
+    aircraftType: string;
+    depICAO?: string;
+    arrICAO?: string;
+  },
+  searchQuery: string,
+) {
+  if (!searchQuery) return true;
+
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  if (!normalizedSearch) return true;
+
+  const haystack = [
+    flight.callsign,
+    flight.aircraftType,
+    flight.depICAO,
+    flight.arrICAO,
+    flight.depICAO && flight.arrICAO
+      ? `${flight.depICAO}-${flight.arrICAO}`
+      : undefined,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return haystack.includes(normalizedSearch);
+}
+
+function matchesFlightHistoryFilters(
+  flight: {
+    endTime?: number;
+    routeData?: [number, number][];
+  },
+  statusFilter: FlightHistoryStatusFilter,
+  replayFilter: FlightHistoryReplayFilter,
+) {
+  if (statusFilter === "completed" && flight.endTime === undefined) {
+    return false;
+  }
+  if (statusFilter === "in_progress" && flight.endTime !== undefined) {
+    return false;
+  }
+
+  const hasReplayData = Boolean(
+    flight.routeData && flight.routeData.length > 1,
+  );
+  if (replayFilter === "replayable" && !hasReplayData) {
+    return false;
+  }
+  if (replayFilter === "non_replayable" && hasReplayData) {
+    return false;
+  }
+
+  return true;
+}
+
+function serializeFlightHistoryFlight(flight: {
+  _id: Id<"flights">;
+  callsign: string;
+  aircraftType: string;
+  depICAO?: string;
+  arrICAO?: string;
+  startTime: number;
+  endTime?: number;
+  maxAltitude?: number;
+  maxSpeed?: number;
+  routeData?: [number, number][];
+}) {
+  return {
+    id: flight._id,
+    callsign: flight.callsign,
+    aircraftType: flight.aircraftType,
+    depICAO: flight.depICAO,
+    arrICAO: flight.arrICAO,
+    startTime: flight.startTime,
+    endTime: flight.endTime,
+    maxAltitude: flight.maxAltitude,
+    maxSpeed: flight.maxSpeed,
+    routeData: flight.routeData,
+  };
 }
 
 async function recalculateUserStats(ctx: MutationCtx, userId: Id<"users">) {
@@ -695,22 +821,6 @@ export const getStatsByClerkId = query({
       .slice(0, 5)
       .map(([code, count]) => ({ code, count }));
 
-    // Recent flights - sorted most recent first
-    const recentFlights = [...flights]
-      .sort((a, b) => b.startTime - a.startTime)
-      .map((f) => ({
-        id: f._id,
-        callsign: f.callsign,
-        aircraftType: f.aircraftType,
-        depICAO: f.depICAO,
-        arrICAO: f.arrICAO,
-        startTime: f.startTime,
-        endTime: f.endTime,
-        maxAltitude: f.maxAltitude,
-        maxSpeed: f.maxSpeed,
-        routeData: f.routeData,
-      }));
-
     const streaks = calculateStreaks(eligibleFlights);
 
     return {
@@ -732,7 +842,99 @@ export const getStatsByClerkId = query({
       topAircraft,
       topRoutes,
       topAirports,
-      recentFlights,
+    };
+  },
+});
+
+export const getFlightHistoryPage = query({
+  args: {
+    userId: v.id("users"),
+    page: v.number(),
+    searchQuery: v.optional(v.string()),
+    statusFilter: v.optional(
+      v.union(
+        v.literal("all"),
+        v.literal("completed"),
+        v.literal("in_progress"),
+      ),
+    ),
+    replayFilter: v.optional(
+      v.union(
+        v.literal("all"),
+        v.literal("replayable"),
+        v.literal("non_replayable"),
+      ),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const targetUser = await ctx.db.get(args.userId);
+    if (!targetUser) {
+      return {
+        flights: [],
+        page: 1,
+        pageSize: FLIGHT_HISTORY_PAGE_SIZE,
+        totalPages: 1,
+        totalMatchingFlights: 0,
+        totalRecordedFlights: 0,
+        hiddenFlightCount: 0,
+        pageStart: 0,
+        pageEnd: 0,
+        hasPreviousPage: false,
+        hasNextPage: false,
+        canAccessFullHistory: false,
+      };
+    }
+
+    const viewer = await getCurrentViewer(ctx);
+    const canAccessFullHistory = canViewerAccessFullFlightHistory(viewer);
+
+    const allFlights = await ctx.db
+      .query("flights")
+      .withIndex("by_userId_startTime", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .collect();
+
+    const totalRecordedFlights = allFlights.length;
+    const accessibleFlights = canAccessFullHistory
+      ? allFlights
+      : allFlights.slice(0, FREE_RECENT_FLIGHTS_LIMIT);
+
+    const searchQuery = args.searchQuery?.trim() ?? "";
+    const statusFilter = args.statusFilter ?? "all";
+    const replayFilter = args.replayFilter ?? "all";
+
+    const filteredFlights = accessibleFlights.filter(
+      (flight) =>
+        matchesFlightHistorySearch(flight, searchQuery) &&
+        matchesFlightHistoryFilters(flight, statusFilter, replayFilter),
+    );
+
+    const totalMatchingFlights = filteredFlights.length;
+    const totalPages = Math.max(
+      1,
+      Math.ceil(totalMatchingFlights / FLIGHT_HISTORY_PAGE_SIZE),
+    );
+    const page = Math.min(Math.max(Math.floor(args.page) || 1, 1), totalPages);
+    const startIndex = (page - 1) * FLIGHT_HISTORY_PAGE_SIZE;
+    const flights = filteredFlights
+      .slice(startIndex, startIndex + FLIGHT_HISTORY_PAGE_SIZE)
+      .map(serializeFlightHistoryFlight);
+
+    return {
+      flights,
+      page,
+      pageSize: FLIGHT_HISTORY_PAGE_SIZE,
+      totalPages,
+      totalMatchingFlights,
+      totalRecordedFlights,
+      hiddenFlightCount: canAccessFullHistory
+        ? 0
+        : Math.max(totalRecordedFlights - FREE_RECENT_FLIGHTS_LIMIT, 0),
+      pageStart: totalMatchingFlights === 0 ? 0 : startIndex + 1,
+      pageEnd: totalMatchingFlights === 0 ? 0 : startIndex + flights.length,
+      hasPreviousPage: page > 1,
+      hasNextPage: page < totalPages,
+      canAccessFullHistory,
     };
   },
 });
@@ -911,11 +1113,6 @@ export const getStatsById = query({
       .slice(0, 5)
       .map(([code, count]) => ({ code, count }));
 
-    // Sort flights by start time (most recent first)
-    const sortedFlights = [...flights].sort(
-      (a, b) => b.startTime - a.startTime,
-    );
-
     // Get pilot's callsign from most recent flight
     const eligibleSortedFlights = [...eligibleFlights].sort(
       (a, b) => b.startTime - a.startTime,
@@ -924,20 +1121,6 @@ export const getStatsById = query({
     const mostRecentFlight = eligibleSortedFlights[0];
     const pilotCallsign =
       stats?.lastFlightCallsign ?? mostRecentFlight?.callsign ?? null;
-
-    // Recent flights
-    const recentFlights = sortedFlights.map((f) => ({
-      id: f._id,
-      callsign: f.callsign,
-      aircraftType: f.aircraftType,
-      depICAO: f.depICAO,
-      arrICAO: f.arrICAO,
-      startTime: f.startTime,
-      endTime: f.endTime,
-      maxAltitude: f.maxAltitude,
-      maxSpeed: f.maxSpeed,
-      routeData: f.routeData,
-    }));
 
     const streaks = calculateStreaks(eligibleFlights);
 
@@ -963,7 +1146,6 @@ export const getStatsById = query({
       topAircraft,
       topRoutes,
       topAirports,
-      recentFlights,
     };
   },
 });
