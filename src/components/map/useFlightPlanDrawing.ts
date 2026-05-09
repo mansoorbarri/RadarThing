@@ -52,7 +52,10 @@ function fitMapToCoords(
   if (coords.length === 0) return;
 
   if (coords.length === 1) {
-    map.setView(coords[0], Math.max(map.getZoom(), 8), { animate: true });
+    const [onlyCoord] = coords;
+    if (!onlyCoord) return;
+
+    map.setView(onlyCoord, Math.max(map.getZoom(), 8), { animate: true });
     return;
   }
 
@@ -268,7 +271,10 @@ export const useFlightPlanDrawing = ({
             aircraft,
             waypoints,
           );
-          const waypointEtas = calculateWaypointEtas(aircraft, waypoints);
+          const waypointEtas = calculateWaypointEtas(
+            aircraft,
+            waypoints as Record<string, unknown>[],
+          );
           const { coords, validWaypoints } = getUnwrappedWaypointCoords(
             waypoints,
             aircraft.lon,

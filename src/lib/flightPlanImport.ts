@@ -132,30 +132,30 @@ export function parseImportedFlightPlan(
     throw new Error("Flight plan JSON must be an array of waypoints");
   }
 
-  const waypoints = parsed
-    .map((entry, index) => {
-      if (!entry || typeof entry !== "object") return null;
+  const waypoints: ImportedFlightPlanWaypoint[] = [];
 
-      const waypoint = entry as Record<string, unknown>;
-      const lat = getNullableNumber(waypoint.lat);
-      const lon = getNullableNumber(waypoint.lon);
+  parsed.forEach((entry, index) => {
+    if (!entry || typeof entry !== "object") return;
 
-      if (lat === null || lon === null) return null;
+    const waypoint = entry as Record<string, unknown>;
+    const lat = getNullableNumber(waypoint.lat);
+    const lon = getNullableNumber(waypoint.lon);
 
-      return {
-        ident: getString(waypoint.ident, `WP${index + 1}`),
-        type: getString(waypoint.type, "WPT"),
-        lat,
-        lon,
-        alt: getNullableNumber(waypoint.alt),
-        spd:
-          typeof waypoint.spd === "number" || typeof waypoint.spd === "string"
-            ? waypoint.spd
-            : null,
-        heading: getNullableNumber(waypoint.heading),
-      } satisfies ImportedFlightPlanWaypoint;
-    })
-    .filter((waypoint): waypoint is ImportedFlightPlanWaypoint => waypoint !== null);
+    if (lat === null || lon === null) return;
+
+    waypoints.push({
+      ident: getString(waypoint.ident, `WP${index + 1}`),
+      type: getString(waypoint.type, "WPT"),
+      lat,
+      lon,
+      alt: getNullableNumber(waypoint.alt),
+      spd:
+        typeof waypoint.spd === "number" || typeof waypoint.spd === "string"
+          ? waypoint.spd
+          : null,
+      heading: getNullableNumber(waypoint.heading),
+    });
+  });
 
   if (waypoints.length < 2) {
     throw new Error("Flight plan needs at least two waypoints with coordinates");
