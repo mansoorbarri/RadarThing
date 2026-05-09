@@ -713,8 +713,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     isOpenAIPEnabled,
     selectedAircraftIds,
     selectedAirport,
-    currentSelectedAircraftRef,
-    drawFlightPlan,
     onAircraftSelect,
     onAirportSelect,
     showTags,

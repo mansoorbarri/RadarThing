@@ -658,7 +658,7 @@ export default function ATCPage() {
     } else {
       // Normal click: replace selection
       setSelectedAircrafts([aircraft]);
-      drawMultipleFlightPlansOnMapRef.current?.([aircraft], true);
+      drawMultipleFlightPlansOnMapRef.current?.([aircraft], false);
     }
 
     setActiveRightPanel(null);
@@ -1706,7 +1706,10 @@ export default function ATCPage() {
         {!isUiHidden && !isPhone && !selectedAirport && (
           <MostTrackedPanel
             flights={isReplayActive ? [] : mostTrackedFlights}
-            onTrack={(ac) => handleAircraftSelect(ac)}
+            onTrack={(ac) => {
+              drawFlightPlanOnMapRef.current?.(ac, true);
+              handleAircraftSelect(ac);
+            }}
           />
         )}
 

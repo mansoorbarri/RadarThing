@@ -133,8 +133,6 @@ interface UseMapLayersAndMarkersProps {
   isOpenAIPEnabled: boolean;
   selectedAircraftIds: string[];
   selectedAirport?: Airport;
-  currentSelectedAircraftRef: React.MutableRefObject<string | null>;
-  drawFlightPlan: (aircraft: PositionUpdate, shouldZoom?: boolean) => void;
   onAircraftSelect: (
     aircraft: PositionUpdate | null,
     ctrlKey?: boolean,
@@ -448,8 +446,6 @@ export const useMapLayersAndMarkers = ({
   isOpenAIPEnabled,
   selectedAircraftIds,
   selectedAirport,
-  currentSelectedAircraftRef,
-  drawFlightPlan,
   onAircraftSelect,
   onAirportSelect,
   showTags,
@@ -468,16 +464,11 @@ export const useMapLayersAndMarkers = ({
 
   // Use refs for callbacks to avoid stale closures in event handlers
   const onAircraftSelectRef = useRef(onAircraftSelect);
-  const drawFlightPlanRef = useRef(drawFlightPlan);
   const aircraftsRef = useRef(aircrafts);
 
   useEffect(() => {
     onAircraftSelectRef.current = onAircraftSelect;
   }, [onAircraftSelect]);
-
-  useEffect(() => {
-    drawFlightPlanRef.current = drawFlightPlan;
-  }, [drawFlightPlan]);
 
   useEffect(() => {
     aircraftsRef.current = aircrafts;
@@ -674,7 +665,6 @@ export const useMapLayersAndMarkers = ({
             (ac) => (ac.callsign || ac.id) === aircraftId,
           );
           if (currentAircraft) {
-            drawFlightPlanRef.current(currentAircraft, true);
             onAircraftSelectRef.current(currentAircraft, ctrlKey);
           }
         });
@@ -704,7 +694,6 @@ export const useMapLayersAndMarkers = ({
     isRadarMode,
     selectedAircraftIds,
     aircraftMarkersLayer,
-    drawFlightPlan,
     onAircraftSelect,
     showTags,
     mapReady,
