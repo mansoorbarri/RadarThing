@@ -28,6 +28,34 @@ export function ImageCardSkeleton() {
   );
 }
 
+export function AdminChartsTabSkeleton() {
+  return (
+    <>
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+        <Skeleton className="h-10 flex-1 rounded-lg" />
+        <div className="flex gap-3">
+          <Skeleton className="h-10 w-32 rounded-lg" />
+          <Skeleton className="h-10 w-32 rounded-lg" />
+        </div>
+      </div>
+
+      <div className="mb-6 flex items-center gap-2">
+        <Skeleton className="h-5 w-28" />
+        <Skeleton className="ml-auto h-9 w-28 rounded-lg" />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ImageCardSkeleton />
+        <ImageCardSkeleton />
+        <ImageCardSkeleton />
+        <ImageCardSkeleton />
+        <ImageCardSkeleton />
+        <ImageCardSkeleton />
+      </div>
+    </>
+  );
+}
+
 export function AdminSkeleton() {
   return (
     <div className="min-h-screen bg-black text-white">

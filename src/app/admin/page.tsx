@@ -62,6 +62,7 @@ export default function AdminPage() {
 
   // Queries for counts in tab badges
   const pendingQuery = useQuery(api.aircraftImages.getPending);
+  const approvedChartsQuery = useQuery(api.airportCharts.getApproved);
   const pendingCount = pendingQuery?.length ?? 0;
 
   const loading = !adminCheckDone || pendingQuery === undefined;
@@ -180,7 +181,9 @@ export default function AdminPage() {
         </div>
 
         {mainTab === "images" && <AircraftImagesTab />}
-        {mainTab === "charts" && <AirportChartsTab />}
+        {mainTab === "charts" && (
+          <AirportChartsTab approvedCharts={approvedChartsQuery} />
+        )}
         {mainTab === "challenges" && <ChallengesTab />}
         {mainTab === "virtual-airlines" && <VirtualAirlinesTab />}
         {mainTab === "pro" && <ProManagementTab />}

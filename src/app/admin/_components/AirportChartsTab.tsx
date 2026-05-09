@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmModal } from "./ConfirmModal";
+import { AdminChartsTabSkeleton } from "./skeletons";
 import type { ChartType } from "~/types/airportCharts";
 
 const CHART_TYPES: { value: ChartType; label: string }[] = [
@@ -40,6 +41,12 @@ interface ChartType2 {
   chartName: string;
   chartType: string;
   uploadedBy?: string | null;
+}
+
+interface ApprovedChart extends ChartType2 {
+  id: string;
+  chartUrl: string;
+  approvedBy?: string | null;
 }
 
 function matchesChartSearch(
@@ -202,9 +209,18 @@ function EditableChartDetails({
   );
 }
 
-export function AirportChartsTab() {
-  const approvedQuery = useQuery(api.airportCharts.getApproved);
+export function AirportChartsTab({
+  approvedCharts: preloadedApprovedCharts,
+}: {
+  approvedCharts?: readonly ApprovedChart[];
+}) {
+  const fallbackApprovedQuery = useQuery(api.airportCharts.getApproved);
+  const approvedQuery =
+    preloadedApprovedCharts === undefined
+      ? fallbackApprovedQuery
+      : preloadedApprovedCharts;
   const approvedCharts = useMemo(() => approvedQuery ?? [], [approvedQuery]);
+  const isLoading = approvedQuery === undefined;
 
   const [userInfo, setUserInfo] = useState<
     Record<string, { email: string; name: string | null }>
@@ -378,6 +394,10 @@ export function AirportChartsTab() {
     setBulkDeleteLoading(false);
     setBulkDeleteModalOpen(false);
     setBulkDeleteTargetIds([]);
+  }
+
+  if (isLoading) {
+    return <AdminChartsTabSkeleton />;
   }
 
   return (
