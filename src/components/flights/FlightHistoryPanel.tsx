@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useQuery } from "convex/react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  X,
   Lock,
   Plane,
   Play,
@@ -22,6 +23,7 @@ import {
 import {
   FLIGHT_HISTORY_PAGE_SIZE,
   FREE_RECENT_FLIGHTS_LIMIT,
+  matchesFlightHistorySearch,
 } from "~/lib/flightHistory";
 
 export interface FlightHistoryPanelFlight {
@@ -93,19 +95,40 @@ export function FlightHistoryPanel({
 
   const historyPage = useQuery(api.flights.getFlightHistoryPage, {
     userId,
-    page,
-    searchQuery: deferredSearchQuery,
   });
-
-  useEffect(() => {
-    if (!historyPage) return;
-    if (page > historyPage.totalPages) {
-      setPage(historyPage.totalPages);
-    }
-  }, [historyPage, page]);
 
   const isExpanded = variant === "static" ? true : expanded;
   const hasSearchQuery = searchQuery.trim().length > 0;
+  const filteredFlights = useMemo(() => {
+    const flights = historyPage?.flights ?? [];
+    if (!deferredSearchQuery.trim()) return flights;
+    return flights.filter((flight) =>
+      matchesFlightHistorySearch(flight, deferredSearchQuery),
+    );
+  }, [deferredSearchQuery, historyPage?.flights]);
+  const totalMatchingFlights = filteredFlights.length;
+  const totalPages = Math.max(
+    1,
+    Math.ceil(totalMatchingFlights / FLIGHT_HISTORY_PAGE_SIZE),
+  );
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  const startIndex = (page - 1) * FLIGHT_HISTORY_PAGE_SIZE;
+  const paginatedFlights = filteredFlights.slice(
+    startIndex,
+    startIndex + FLIGHT_HISTORY_PAGE_SIZE,
+  );
+  const pageStart = totalMatchingFlights === 0 ? 0 : startIndex + 1;
+  const pageEnd =
+    totalMatchingFlights === 0 ? 0 : startIndex + paginatedFlights.length;
+  const canAccessFullHistory = historyPage?.canAccessFullHistory ?? false;
+  const totalRecordedFlights = historyPage?.totalRecordedFlights ?? 0;
+  const hiddenFlightCount = historyPage?.hiddenFlightCount ?? 0;
 
   return (
     <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
@@ -139,7 +162,7 @@ export function FlightHistoryPanel({
 
       {isExpanded && (
         <div className="space-y-4 px-6 pb-6">
-          <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center">
+          <div className="pt-1">
             <div className="relative">
               <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
               <input
@@ -147,19 +170,18 @@ export function FlightHistoryPanel({
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search anything: route, callsign, aircraft, date, time..."
-                className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm text-white placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
+                className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pr-12 pl-10 text-sm text-white placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
               />
+              {hasSearchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute top-1/2 right-3 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-white"
+                  aria-label="Clear search"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
-
-            <button
-              onClick={() => {
-                setSearchQuery("");
-              }}
-              disabled={!hasSearchQuery}
-              className="rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-slate-300 transition-all hover:border-white/20 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Clear
-            </button>
           </div>
 
           {historyPage === undefined ? (
@@ -169,37 +191,35 @@ export function FlightHistoryPanel({
               <div className="flex flex-col gap-3 rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-slate-300">
-                    {historyPage.totalMatchingFlights === 0
+                    {totalMatchingFlights === 0
                       ? "No matching flights"
-                      : `Showing ${historyPage.pageStart}-${historyPage.pageEnd} of ${historyPage.totalMatchingFlights} matching flights`}
+                      : `Showing ${pageStart}-${pageEnd} of ${totalMatchingFlights} matching flights`}
                   </p>
                   <p className="mt-1 font-mono text-[11px] tracking-wide text-slate-500 uppercase">
-                    {historyPage.canAccessFullHistory
-                      ? `${historyPage.totalRecordedFlights} total recorded flights`
+                    {canAccessFullHistory
+                      ? `${totalRecordedFlights} total recorded flights`
                       : `Free includes the latest ${FREE_RECENT_FLIGHTS_LIMIT} flights`}
                   </p>
                 </div>
-                {historyPage.totalPages > 1 && (
+                {totalPages > 1 && (
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-2 py-1">
                     <button
                       onClick={() =>
                         setPage((current) => Math.max(1, current - 1))
                       }
-                      disabled={!historyPage.hasPreviousPage}
+                      disabled={page <= 1}
                       className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
                     <span className="min-w-24 text-center font-mono text-xs text-slate-300">
-                      Page {historyPage.page} / {historyPage.totalPages}
+                      Page {page} / {totalPages}
                     </span>
                     <button
                       onClick={() =>
-                        setPage((current) =>
-                          Math.min(historyPage.totalPages, current + 1),
-                        )
+                        setPage((current) => Math.min(totalPages, current + 1))
                       }
-                      disabled={!historyPage.hasNextPage}
+                      disabled={page >= totalPages}
                       className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <ChevronRight className="h-4 w-4" />
@@ -208,7 +228,7 @@ export function FlightHistoryPanel({
                 )}
               </div>
 
-              {(historyPage.flights ?? []).length === 0 ? (
+              {paginatedFlights.length === 0 ? (
                 <div className="rounded-2xl border border-white/10 bg-black/30 p-10 text-center">
                   <Search className="mx-auto mb-3 h-10 w-10 text-slate-600" />
                   <h4 className="text-lg font-semibold text-white">
@@ -220,7 +240,7 @@ export function FlightHistoryPanel({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {(historyPage.flights ?? []).map((flight) => (
+                  {paginatedFlights.map((flight) => (
                     <div
                       key={flight.id}
                       className="group flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4 transition-all hover:border-cyan-500/30 hover:bg-white/10"
@@ -312,32 +332,31 @@ export function FlightHistoryPanel({
                 </div>
               )}
 
-              {!historyPage.canAccessFullHistory &&
-                historyPage.hiddenFlightCount > 0 && (
-                  <div className="rounded-2xl border border-amber-500/20 bg-amber-500/8 p-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="flex items-center gap-2 font-mono text-xs tracking-wide text-amber-300 uppercase">
-                          <Lock className="h-3.5 w-3.5" />
-                          Free history cap
-                        </p>
-                        <p className="mt-2 text-sm text-amber-100/85">
-                          {hasSearchQuery
-                            ? `Search covers the latest ${FREE_RECENT_FLIGHTS_LIMIT} flights on Free. Upgrade to search all ${historyPage.totalRecordedFlights} recorded flights.`
-                            : `Upgrade to browse ${historyPage.hiddenFlightCount} more flights beyond the latest ${FREE_RECENT_FLIGHTS_LIMIT}.`}
-                        </p>
-                      </div>
-                      {onUpgrade && (
-                        <button
-                          onClick={onUpgrade}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 font-mono text-xs text-amber-300 transition hover:bg-amber-400/15"
-                        >
-                          Start 7-day trial
-                        </button>
-                      )}
+              {!canAccessFullHistory && hiddenFlightCount > 0 && (
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/8 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="flex items-center gap-2 font-mono text-xs tracking-wide text-amber-300 uppercase">
+                        <Lock className="h-3.5 w-3.5" />
+                        Free history cap
+                      </p>
+                      <p className="mt-2 text-sm text-amber-100/85">
+                        {hasSearchQuery
+                          ? `Search covers the latest ${FREE_RECENT_FLIGHTS_LIMIT} flights on Free. Upgrade to search all ${totalRecordedFlights} recorded flights.`
+                          : `Upgrade to browse ${hiddenFlightCount} more flights beyond the latest ${FREE_RECENT_FLIGHTS_LIMIT}.`}
+                      </p>
                     </div>
+                    {onUpgrade && (
+                      <button
+                        onClick={onUpgrade}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 font-mono text-xs text-amber-300 transition hover:bg-amber-400/15"
+                      >
+                        Start 7-day trial
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
+              )}
             </>
           )}
         </div>
