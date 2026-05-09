@@ -1193,7 +1193,7 @@ export default function ATCPage() {
             <ImportedFlightPlanPanel
               flightPlan={importedFlightPlan}
               isMobile={isPhone}
-              onClose={() => setShowImportedFlightPlanPanel(false)}
+              onClose={clearImportedFlightPlan}
             />
           ) : null}
         </main>
