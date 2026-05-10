@@ -16,6 +16,7 @@ import {
   Download,
 } from "lucide-react";
 import userscriptConfig from "../../../userscript-src/config.json";
+import { FREE_RECENT_FLIGHTS_LIMIT } from "~/lib/flightHistory";
 
 const USERSCRIPT_INSTALL_PATH = "/userscript";
 const USERSCRIPT_LOADER_URL = `${userscriptConfig.siteUrl}/loader`;
@@ -320,8 +321,8 @@ export default function HomePage() {
                 Free to use, Pro to unlock more
               </h2>
               <p className="text-white/40">
-                Core tracking is completely free. Upgrade for weather and
-                charts.
+                Core tracking is completely free. Upgrade for weather, charts,
+                and your full flight archive.
               </p>
             </div>
 
@@ -353,7 +354,9 @@ export default function HomePage() {
                   <PricingFeature included>
                     Remote autopilot commands
                   </PricingFeature>
-                  <PricingFeature included>Basic flight stats</PricingFeature>
+                  <PricingFeature included>
+                    Pilot stats + last {FREE_RECENT_FLIGHTS_LIMIT} flights
+                  </PricingFeature>
                   <PricingFeature included>Live ATC audio</PricingFeature>
                   <PricingFeature included>
                     Precipitation overlay

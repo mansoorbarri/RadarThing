@@ -5,6 +5,7 @@ import { useUser, SignInButton } from "@clerk/nextjs";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { useProStatus } from "~/hooks/useProStatus";
 import { Analytics } from "~/lib/analytics";
@@ -25,14 +26,11 @@ import {
   Loader2,
   Camera,
   FileText,
-  Play,
-  Share2,
   Link,
   Trash2,
   Mail,
   Shield,
   AlertTriangle,
-  ChevronDown,
   CreditCard,
   Flame,
 } from "lucide-react";
@@ -41,26 +39,13 @@ import { UserAuth } from "~/components/atc/userAuth";
 import { ActiveChallengesPanel } from "~/components/challenges/ActiveChallengesPanel";
 import { FlightCardDialog } from "~/components/flight-card/FlightCardDialog";
 import type { FlightCardData } from "~/components/flight-card/FlightCard";
+import {
+  FlightHistoryPanel,
+  type FlightHistoryPanelFlight,
+} from "~/components/flights/FlightHistoryPanel";
 import { downloadAccountDataExport } from "~/lib/account-data-export";
 
 function formatFlightTime(ms: number): string {
-  const hours = Math.floor(ms / (1000 * 60 * 60));
-  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-  if (hours === 0) return `${minutes}m`;
-  return `${hours}h ${minutes}m`;
-}
-
-function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatDuration(start: number, end?: number): string {
-  if (!end) return "In Progress";
-  const ms = end - start;
   const hours = Math.floor(ms / (1000 * 60 * 60));
   const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
   if (hours === 0) return `${minutes}m`;
@@ -542,157 +527,59 @@ export default function DashboardPage() {
             </div>
 
             {/* Recent Flights */}
-            <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
-              <button
-                onClick={() => setFlightsExpanded(!flightsExpanded)}
-                className="flex w-full cursor-pointer items-center justify-between p-6"
-              >
-                <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
-                  RECENT FLIGHTS
-                </h3>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs text-slate-600">
-                    {isPro ? "Last 10 flights" : "Last 3 flights"}
-                  </span>
-                  <ChevronDown
-                    className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${flightsExpanded ? "rotate-180" : ""}`}
-                  />
-                </div>
-              </button>
-
-              {flightsExpanded && (
-                <div className="space-y-3 px-6 pb-6">
-                  {stats.recentFlights
-                    .slice(0, isPro ? 10 : 3)
-                    .map((flight) => (
-                      <div
-                        key={flight.id}
-                        className="group flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4 transition-all hover:border-cyan-500/30 hover:bg-white/10"
-                      >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10">
-                          <Plane className="h-5 w-5 text-cyan-400" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-1 flex flex-wrap items-center gap-2">
-                            <span className="font-mono text-sm font-bold text-white">
-                              {flight.depICAO || "???"}
-                            </span>
-                            <Route className="h-3 w-3 text-slate-500" />
-                            <span className="font-mono text-sm font-bold text-white">
-                              {flight.arrICAO || "???"}
-                            </span>
-                            <span className="ml-2 rounded bg-white/10 px-2 py-0.5 font-mono text-[10px] text-slate-400">
-                              {flight.aircraftType
-                                .replace(/\s*\([^)]*\)/g, "")
-                                .trim()}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                            {flight.callsign && (
-                              <span className="rounded bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] text-cyan-300/80">
-                                {flight.callsign}
-                              </span>
-                            )}
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {formatDate(flight.startTime)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {formatDuration(flight.startTime, flight.endTime)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {flight.routeData && flight.routeData.length > 1 && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  const url = `${window.location.origin}/radar?replay=${flight.id}`;
-                                  navigator.clipboard
-                                    .writeText(url)
-                                    .then(() => {
-                                      toast.success(
-                                        "Flight replay link copied to clipboard",
-                                      );
-                                      Analytics.flightReplayShared({
-                                        callsign: flight.callsign,
-                                        aircraftType: flight.aircraftType,
-                                        depICAO: flight.depICAO,
-                                        arrICAO: flight.arrICAO,
-                                        flightId: flight.id as string,
-                                      });
-                                    });
-                                }}
-                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/40 opacity-0 transition-all group-hover:opacity-100 hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400"
-                                title="Copy share link"
-                              >
-                                <Share2 className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (!isPro) {
-                                    Analytics.proFeatureBlocked({
-                                      feature: "flight_card",
-                                    });
-                                    router.push("/pricing");
-                                    return;
-                                  }
-                                  setCardFlight({
-                                    callsign: flight.callsign,
-                                    discordUsername:
-                                      dbUser?.discordUsername ?? undefined,
-                                    aircraftType: flight.aircraftType,
-                                    depICAO: flight.depICAO,
-                                    arrICAO: flight.arrICAO,
-                                    startTime: flight.startTime,
-                                    endTime: flight.endTime,
-                                    maxAltitude: flight.maxAltitude,
-                                    maxSpeed: flight.maxSpeed,
-                                    routeData: flight.routeData,
-                                  });
-                                }}
-                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/40 opacity-0 transition-all group-hover:opacity-100 hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400"
-                                title="Generate flight card"
-                              >
-                                <Camera className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() =>
-                                  router.push(`/radar?replay=${flight.id}`)
-                                }
-                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 opacity-0 transition-all group-hover:opacity-100 hover:bg-amber-500/20"
-                                title="Replay this flight"
-                              >
-                                <Play className="h-4 w-4" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-
-                  {!isPro && stats.recentFlights.length > 3 && (
-                    <div className="mt-4 text-center">
-                      <button
-                        onClick={() => {
-                          Analytics.upgradeButtonClicked({
-                            source: "dashboard_recent_flights_lock",
-                            feature: "full_flight_history",
-                          });
-                          router.push("/pricing");
-                        }}
-                        className="inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 font-mono text-xs text-amber-400 transition-all hover:bg-amber-500/20"
-                      >
-                        <Lock className="h-3 w-3" />
-                        Start 7-day trial to see{" "}
-                        {stats.recentFlights.length - 3} more flights
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            {dbUser && (
+              <FlightHistoryPanel
+                userId={dbUser._id as Id<"users">}
+                variant="collapsible"
+                expanded={flightsExpanded}
+                onExpandedChange={setFlightsExpanded}
+                canGenerateFlightCard={isPro}
+                onShareFlight={(flight) => {
+                  const url = `${window.location.origin}/radar?replay=${flight.id}`;
+                  navigator.clipboard.writeText(url).then(() => {
+                    toast.success("Flight replay link copied to clipboard");
+                    Analytics.flightReplayShared({
+                      callsign: flight.callsign,
+                      aircraftType: flight.aircraftType,
+                      depICAO: flight.depICAO,
+                      arrICAO: flight.arrICAO,
+                      flightId: flight.id as string,
+                    });
+                  });
+                }}
+                onGenerateFlightCard={(flight: FlightHistoryPanelFlight) => {
+                  if (!isPro) {
+                    Analytics.proFeatureBlocked({
+                      feature: "flight_card",
+                    });
+                    router.push("/pricing");
+                    return;
+                  }
+                  setCardFlight({
+                    callsign: flight.callsign,
+                    discordUsername: dbUser.discordUsername ?? undefined,
+                    aircraftType: flight.aircraftType,
+                    depICAO: flight.depICAO,
+                    arrICAO: flight.arrICAO,
+                    startTime: flight.startTime,
+                    endTime: flight.endTime,
+                    maxAltitude: flight.maxAltitude,
+                    maxSpeed: flight.maxSpeed,
+                    routeData: flight.routeData,
+                  });
+                }}
+                onReplayFlight={(flight) =>
+                  router.push(`/radar?replay=${flight.id}`)
+                }
+                onUpgrade={() => {
+                  Analytics.upgradeButtonClicked({
+                    source: "dashboard_recent_flights_lock",
+                    feature: "full_flight_history",
+                  });
+                  router.push("/pricing");
+                }}
+              />
+            )}
 
             {/* Upgrade CTA for Free Users */}
             {!isPro && (
@@ -702,8 +589,8 @@ export default function DashboardPage() {
                   Unlock Full Analytics
                 </h3>
                 <p className="mb-6 text-slate-400">
-                  Get detailed insights with flight time, top airports, routes,
-                  and complete history
+                  Get every recorded flight plus detailed insights for flight
+                  time, top airports, and routes
                 </p>
                 <button
                   onClick={() => {
