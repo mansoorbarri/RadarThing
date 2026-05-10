@@ -36,6 +36,7 @@
   const IDENT_BTN_ID = "atc-ident-btn";
   const IDENT_REQUEST_WINDOW_MS = 60000;
   const RESUME_FLIGHT_API = "https://sse.radarthing.com/api/resume-flight";
+  const RESUME_MODAL_ID = "radarthing-resume-flight-modal";
 
   let flightUI;
   let keybindMode = null;
@@ -49,6 +50,7 @@
   let identActiveUntil = 0;
   let resumePromptCheckStarted = false;
   let resumePromptResolved = false;
+  let resumeModalResolver = null;
   let radarPrefs = JSON.parse(
     localStorage.getItem(RADAR_PREFS_KEY) || '{"jth":false,"seabus":true}',
   );
@@ -293,17 +295,239 @@
     if (afEl) afEl.value = String(detail?.af || "").toUpperCase();
   }
 
-  function formatResumePrompt(detail) {
-    return [
-      "Resume your last disconnected flight?",
-      "",
-      `Callsign: ${detail.flightNo || detail.callsign || "Unknown"}`,
-      `Route: ${detail.departure || "???"} -> ${detail.arrival || "???"}`,
-      `Aircraft: ${detail.aircraftType || "Unknown"}`,
-      `Next waypoint: ${detail.nextWaypoint || "Unknown"}`,
-      "",
-      "Press OK to continue it, or Cancel to end that old flight and start fresh.",
-    ].join("\n");
+  function ensureResumeFlightModal() {
+    let modal = document.getElementById(RESUME_MODAL_ID);
+    if (modal) return modal;
+
+    modal = document.createElement("div");
+    modal.id = RESUME_MODAL_ID;
+    modal.style.cssText = `
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      background:rgba(2,6,23,0.72);
+      backdrop-filter:blur(16px);
+      z-index:1000004;
+    `;
+
+    modal.innerHTML = `
+      <div style="
+        position:relative;
+        width:min(460px, calc(100vw - 32px));
+        overflow:hidden;
+        border-radius:24px;
+        border:1px solid rgba(103,232,249,0.18);
+        background:
+          radial-gradient(circle at top right, rgba(34,211,238,0.18), transparent 34%),
+          linear-gradient(180deg, rgba(15,23,42,0.98), rgba(2,6,23,0.96));
+        box-shadow:0 30px 80px rgba(0,0,0,0.55);
+      ">
+        <div style="
+          position:absolute;
+          inset:0;
+          pointer-events:none;
+          background:
+            linear-gradient(135deg, rgba(34,211,238,0.12), transparent 32%),
+            linear-gradient(180deg, transparent, rgba(8,47,73,0.16));
+        "></div>
+        <div style="position:relative; padding:22px 22px 20px;">
+          <div style="
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+            margin-bottom:14px;
+            border-radius:999px;
+            border:1px solid rgba(34,211,238,0.22);
+            background:rgba(8,47,73,0.42);
+            padding:6px 10px;
+            color:#67e8f9;
+            font-size:10px;
+            font-weight:700;
+            letter-spacing:0.18em;
+            text-transform:uppercase;
+          ">
+            Resume Flight
+          </div>
+          <div style="
+            margin-bottom:6px;
+            color:#f8fafc;
+            font-size:22px;
+            font-weight:700;
+            letter-spacing:-0.03em;
+          ">Continue your last disconnected leg</div>
+          <div style="
+            margin-bottom:18px;
+            color:rgba(226,232,240,0.72);
+            font-size:12px;
+            line-height:1.55;
+          ">
+            RadarThing found an interrupted session. Continue it from where you left off, or end it and start clean.
+          </div>
+
+          <div style="
+            display:grid;
+            gap:10px;
+            margin-bottom:18px;
+          ">
+            <div style="
+              display:grid;
+              grid-template-columns:1fr auto 1fr;
+              align-items:center;
+              gap:10px;
+              border-radius:18px;
+              border:1px solid rgba(148,163,184,0.16);
+              background:rgba(15,23,42,0.82);
+              padding:14px 16px;
+            ">
+              <div>
+                <div style="margin-bottom:4px; color:#64748b; font-size:10px; letter-spacing:0.16em; text-transform:uppercase;">Departure</div>
+                <div id="radarthing-resume-departure" style="color:#f8fafc; font-size:18px; font-weight:700; letter-spacing:0.08em;">---</div>
+              </div>
+              <div style="
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                width:42px;
+                height:42px;
+                border-radius:999px;
+                border:1px solid rgba(34,211,238,0.18);
+                background:rgba(8,47,73,0.45);
+                color:#67e8f9;
+                font-size:18px;
+              ">→</div>
+              <div style="text-align:right;">
+                <div style="margin-bottom:4px; color:#64748b; font-size:10px; letter-spacing:0.16em; text-transform:uppercase;">Arrival</div>
+                <div id="radarthing-resume-arrival" style="color:#f8fafc; font-size:18px; font-weight:700; letter-spacing:0.08em;">---</div>
+              </div>
+            </div>
+
+            <div style="
+              display:grid;
+              grid-template-columns:1fr 1fr;
+              gap:10px;
+            ">
+              <div style="
+                border-radius:16px;
+                border:1px solid rgba(148,163,184,0.16);
+                background:rgba(15,23,42,0.72);
+                padding:12px 14px;
+              ">
+                <div style="margin-bottom:5px; color:#64748b; font-size:10px; letter-spacing:0.16em; text-transform:uppercase;">Callsign</div>
+                <div id="radarthing-resume-callsign" style="color:#f8fafc; font-size:15px; font-weight:700;">Unknown</div>
+              </div>
+              <div style="
+                border-radius:16px;
+                border:1px solid rgba(148,163,184,0.16);
+                background:rgba(15,23,42,0.72);
+                padding:12px 14px;
+              ">
+                <div style="margin-bottom:5px; color:#64748b; font-size:10px; letter-spacing:0.16em; text-transform:uppercase;">Aircraft</div>
+                <div id="radarthing-resume-aircraft" style="color:#f8fafc; font-size:15px; font-weight:700;">Unknown</div>
+              </div>
+            </div>
+
+            <div style="
+              border-radius:16px;
+              border:1px solid rgba(251,191,36,0.16);
+              background:linear-gradient(180deg, rgba(120,53,15,0.18), rgba(15,23,42,0.78));
+              padding:12px 14px;
+            ">
+              <div style="margin-bottom:5px; color:#fbbf24; font-size:10px; letter-spacing:0.16em; text-transform:uppercase;">Next Waypoint</div>
+              <div id="radarthing-resume-waypoint" style="color:#fef3c7; font-size:15px; font-weight:700;">Unknown</div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px;">
+            <button id="radarthing-resume-decline" style="
+              flex:1;
+              height:42px;
+              border-radius:14px;
+              border:1px solid rgba(248,113,113,0.24);
+              background:rgba(127,29,29,0.22);
+              color:#fecaca;
+              font-size:11px;
+              font-weight:700;
+              letter-spacing:0.14em;
+              text-transform:uppercase;
+              cursor:pointer;
+            ">Start fresh</button>
+            <button id="radarthing-resume-accept" style="
+              flex:1.35;
+              height:42px;
+              border-radius:14px;
+              border:1px solid rgba(34,211,238,0.26);
+              background:linear-gradient(135deg, rgba(8,145,178,0.82), rgba(14,116,144,0.92));
+              color:#ecfeff;
+              font-size:11px;
+              font-weight:700;
+              letter-spacing:0.14em;
+              text-transform:uppercase;
+              box-shadow:0 14px 32px rgba(8,145,178,0.28);
+              cursor:pointer;
+            ">Continue flight</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const declineBtn = modal.querySelector("#radarthing-resume-decline");
+    const acceptBtn = modal.querySelector("#radarthing-resume-accept");
+
+    declineBtn.onclick = () => closeResumeFlightModal(false);
+    acceptBtn.onclick = () => closeResumeFlightModal(true);
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeResumeFlightModal(false);
+    });
+
+    document.addEventListener(
+      "keydown",
+      (e) => {
+        if (e.key === "Escape" && modal.style.display !== "none") {
+          closeResumeFlightModal(false);
+        }
+      },
+      true,
+    );
+
+    document.body.appendChild(modal);
+    return modal;
+  }
+
+  function closeResumeFlightModal(shouldResume) {
+    const modal = document.getElementById(RESUME_MODAL_ID);
+    if (modal) modal.style.display = "none";
+
+    if (resumeModalResolver) {
+      const resolver = resumeModalResolver;
+      resumeModalResolver = null;
+      resolver(Boolean(shouldResume));
+    }
+  }
+
+  function showResumeFlightModal(detail) {
+    const modal = ensureResumeFlightModal();
+
+    modal.querySelector("#radarthing-resume-departure").textContent =
+      String(detail?.departure || "???").toUpperCase();
+    modal.querySelector("#radarthing-resume-arrival").textContent = String(
+      detail?.arrival || "???",
+    ).toUpperCase();
+    modal.querySelector("#radarthing-resume-callsign").textContent =
+      detail?.flightNo || detail?.callsign || "Unknown";
+    modal.querySelector("#radarthing-resume-aircraft").textContent =
+      detail?.aircraftType || "Unknown";
+    modal.querySelector("#radarthing-resume-waypoint").textContent =
+      detail?.nextWaypoint || "Unknown";
+
+    modal.style.display = "flex";
+
+    return new Promise((resolve) => {
+      resumeModalResolver = resolve;
+    });
   }
 
   async function maybePromptToResumeFlight() {
@@ -331,7 +555,7 @@
         return;
       }
 
-      const shouldResume = window.confirm(formatResumePrompt(data.session));
+      const shouldResume = await showResumeFlightModal(data.session);
       const actionRes = await fetch(RESUME_FLIGHT_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
