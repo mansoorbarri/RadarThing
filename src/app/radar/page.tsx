@@ -1390,7 +1390,7 @@ export default function ATCPage() {
                 icon: InstallIcon,
                 active: false,
                 onClick: () => {
-                  window.open("https://xyzmani.com/radar", "_blank");
+                  window.open("/userscript", "_blank");
                 },
               },
               {
