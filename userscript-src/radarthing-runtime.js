@@ -35,6 +35,7 @@
   const AF_INPUT_ID = "atc-afInput";
   const IDENT_BTN_ID = "atc-ident-btn";
   const IDENT_REQUEST_WINDOW_MS = 60000;
+  const RESUME_FLIGHT_API = "https://sse.radarthing.com/api/resume-flight";
 
   let flightUI;
   let keybindMode = null;
@@ -46,6 +47,8 @@
   let identRequestUntil = 0;
   let identRequestDurationSeconds = 15;
   let identActiveUntil = 0;
+  let resumePromptCheckStarted = false;
+  let resumePromptResolved = false;
   let radarPrefs = JSON.parse(
     localStorage.getItem(RADAR_PREFS_KEY) || '{"jth":false,"seabus":true}',
   );
@@ -270,6 +273,124 @@
       toast.style.opacity = "0";
       setTimeout(() => toast.remove(), 300);
     }, 2500);
+  }
+
+  function fillFlightForm(detail) {
+    const depEl = document.getElementById(DEP_INPUT_ID);
+    const arrEl = document.getElementById(ARR_INPUT_ID);
+    const fltEl = document.getElementById(FLT_INPUT_ID);
+    const sqkEl = document.getElementById(SQK_INPUT_ID);
+    const afEl = document.getElementById(AF_INPUT_ID);
+
+    if (depEl)
+      depEl.value = String(detail?.departure || detail?.dep || "").toUpperCase();
+    if (arrEl)
+      arrEl.value = String(detail?.arrival || detail?.arr || "").toUpperCase();
+    if (fltEl)
+      fltEl.value = sanitizeFlightCallsign(detail?.flightNo || detail?.flt || "");
+    if (sqkEl)
+      sqkEl.value = sanitizeSquawk(detail?.squawk || detail?.sqk || "");
+    if (afEl) afEl.value = String(detail?.af || "").toUpperCase();
+  }
+
+  function formatResumePrompt(detail) {
+    return [
+      "Resume your last disconnected flight?",
+      "",
+      `Callsign: ${detail.flightNo || detail.callsign || "Unknown"}`,
+      `Route: ${detail.departure || "???"} -> ${detail.arrival || "???"}`,
+      `Aircraft: ${detail.aircraftType || "Unknown"}`,
+      `Next waypoint: ${detail.nextWaypoint || "Unknown"}`,
+      "",
+      "Press OK to continue it, or Cancel to end that old flight and start fresh.",
+    ].join("\n");
+  }
+
+  async function maybePromptToResumeFlight() {
+    if (resumePromptResolved || !geofs?.userRecord?.googleid) return;
+
+    if (
+      document.getElementById(DEP_INPUT_ID)?.value.trim() ||
+      document.getElementById(ARR_INPUT_ID)?.value.trim() ||
+      document.getElementById(FLT_INPUT_ID)?.value.trim()
+    ) {
+      resumePromptResolved = true;
+      return;
+    }
+
+    try {
+      const googleId = String(geofs.userRecord.googleid);
+      const res = await fetch(
+        `${RESUME_FLIGHT_API}?googleId=${encodeURIComponent(googleId)}`,
+      );
+      if (!res.ok) return;
+
+      const data = await res.json();
+      if (!data?.available || !data.session) {
+        resumePromptResolved = true;
+        return;
+      }
+
+      const shouldResume = window.confirm(formatResumePrompt(data.session));
+      const actionRes = await fetch(RESUME_FLIGHT_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: shouldResume ? "claim" : "decline",
+          googleId,
+          currentId: geofs.userRecord.googleid || geofs.userRecord.callsign,
+        }),
+      });
+
+      if (!actionRes.ok) {
+        showToast("Failed to update disconnected flight", true);
+        return;
+      }
+
+      const actionData = await actionRes.json().catch(() => null);
+
+      if (!shouldResume) {
+        if (!actionData?.finalized) {
+          showToast("Failed to end previous disconnected flight", true);
+          return;
+        }
+        showToast("Previous disconnected flight ended");
+        resumePromptResolved = true;
+        return;
+      }
+
+      const resumedSession = actionData?.session || data.session;
+      fillFlightForm(resumedSession);
+      window.dispatchEvent(
+        new CustomEvent("atc-data-sync", {
+          detail: {
+            dep: resumedSession.departure || "",
+            arr: resumedSession.arrival || "",
+            flt: resumedSession.flightNo || "",
+            sqk: resumedSession.squawk || "",
+            af: resumedSession.af || "",
+            active: true,
+          },
+        }),
+      );
+      showToast("Previous flight resumed");
+      resumePromptResolved = true;
+    } catch (_) {}
+  }
+
+  function startResumePromptPolling() {
+    if (resumePromptCheckStarted) return;
+    resumePromptCheckStarted = true;
+
+    const interval = setInterval(() => {
+      if (!geofs?.userRecord) return;
+
+      maybePromptToResumeFlight().finally(() => {
+        if (resumePromptResolved) {
+          clearInterval(interval);
+        }
+      });
+    }, 1500);
   }
 
   function buildInputRow(label, id, placeholder) {
@@ -2326,6 +2447,12 @@
     }
   });
 
+  window.addEventListener("atc-data-sync", (e) => {
+    const detail = e.detail || {};
+    if (detail.active === false) return;
+    fillFlightForm(detail);
+  });
+
   window.addEventListener("radarthing-ident-requested", (e) => {
     identRequestDurationSeconds = Math.max(
       5,
@@ -2354,6 +2481,7 @@
   injectChartsCSS();
   createChartsPanel();
   setupChartZoomHandlers();
+  startResumePromptPolling();
   setInterval(syncFlightPlan, 3000);
   setInterval(updateIdentUI, 1000);
 })();
