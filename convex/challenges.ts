@@ -468,6 +468,58 @@ function getAutoProgress(
   }
 }
 
+interface ChallengeLeaderboardEntryResult {
+  userId: Id<"users">;
+  displayName: string;
+  callsign: string | null;
+  progressCurrent: number;
+  progressTarget: number;
+  progressLabel: string;
+  isComplete: boolean;
+  completedAt: number | null;
+  status: "completed" | "in_progress" | "pending" | "rejected";
+}
+
+interface ManualChallengeLeaderboardEntryResult
+  extends ChallengeLeaderboardEntryResult {
+  status: "completed" | "pending" | "rejected" | "in_progress";
+  sortAt: number;
+}
+
+interface ChallengeLeaderboardResult {
+  id: Id<"challenges">;
+  title: string;
+  description: string;
+  cadence: "weekly" | "monthly" | "custom";
+  mode: "auto" | "manual";
+  ruleType:
+    | "visit_airport"
+    | "visit_airport_count"
+    | "depart_airport"
+    | "arrive_airport"
+    | "route"
+    | "aircraft_type"
+    | "flight_count"
+    | "min_duration"
+    | "min_distance"
+    | "manual";
+  targetAirport: string | null;
+  targetDepartureAirport: string | null;
+  targetArrivalAirport: string | null;
+  targetAircraftType: string | null;
+  requiredAirportCount: number | null;
+  requiredFlightCount: number | null;
+  minDurationMinutes: number | null;
+  minDistanceNm: number | null;
+  durationDays: number;
+  startAt: number;
+  endAt: number;
+  isPublished: boolean;
+  createdBy: string;
+  updatedAt: number;
+  entries: ChallengeLeaderboardEntryResult[];
+}
+
 function compareTopProgressUsers(
   a: {
     displayName: string;
@@ -504,6 +556,52 @@ function compareTopProgressUsers(
 
   if (a.progressCurrent !== b.progressCurrent) {
     return b.progressCurrent - a.progressCurrent;
+  }
+
+  return a.displayName.localeCompare(b.displayName);
+}
+
+function getChallengePilotDisplayName(
+  user:
+    | {
+        discordUsername?: string;
+      }
+    | undefined,
+  userStats:
+    | {
+        lastFlightCallsign?: string;
+      }
+    | undefined,
+  userId: Id<"users">,
+) {
+  return user?.discordUsername ?? userStats?.lastFlightCallsign ?? userId;
+}
+
+function compareManualLeaderboardEntries(
+  a: {
+    status: "pending" | "completed" | "rejected" | "in_progress";
+    displayName: string;
+    sortAt: number;
+  },
+  b: {
+    status: "pending" | "completed" | "rejected" | "in_progress";
+    displayName: string;
+    sortAt: number;
+  },
+) {
+  const statusRank = {
+    completed: 0,
+    pending: 1,
+    rejected: 2,
+    in_progress: 3,
+  } as const;
+
+  if (statusRank[a.status] !== statusRank[b.status]) {
+    return statusRank[a.status] - statusRank[b.status];
+  }
+
+  if (a.sortAt !== b.sortAt) {
+    return a.sortAt - b.sortAt;
   }
 
   return a.displayName.localeCompare(b.displayName);
@@ -684,6 +782,163 @@ export const listActiveForUser = query({
         progressLabel: autoProgress.progressLabel,
       };
     });
+  },
+});
+
+export const listActiveLeaderboard = query({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const challenges = (await getPublishedChallenges(ctx))
+      .filter((challenge) => isChallengeActiveAt(challenge, now))
+      .sort((a, b) => a.endAt - b.endAt);
+
+    const [users, userStats] = await Promise.all([
+      ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("isDeleted"), false))
+        .collect(),
+      ctx.db.query("userStats").collect(),
+    ]);
+
+    const usersById = new Map(users.map((user) => [user._id, user]));
+    const userStatsByUserId = new Map(
+      userStats.map((stats) => [stats.userId, stats]),
+    );
+
+    const leaderboards: ChallengeLeaderboardResult[] = [];
+
+    for (const challenge of challenges) {
+      if (challenge.mode === "auto") {
+        const [flights, completions] = await Promise.all([
+          ctx.db
+            .query("flights")
+            .withIndex("by_startTime", (q) =>
+              q
+                .gte("startTime", challenge.startAt)
+                .lt("startTime", challenge.endAt),
+            )
+            .collect(),
+          ctx.db
+            .query("challengeCompletions")
+            .withIndex("by_challengeId", (q) =>
+              q.eq("challengeId", challenge._id),
+            )
+            .collect(),
+        ]);
+
+        const completionByUserId = new Map(
+          completions.map((completion) => [completion.userId, completion]),
+        );
+        const flightsByUser = new Map<Id<"users">, typeof flights>();
+
+        for (const flight of flights) {
+          const userFlights = flightsByUser.get(flight.userId) ?? [];
+          userFlights.push(flight);
+          flightsByUser.set(flight.userId, userFlights);
+        }
+
+        const entries: ChallengeLeaderboardEntryResult[] = users
+          .map((user) => {
+            const userFlights = flightsByUser.get(user._id) ?? [];
+            const progress = getAutoProgress(challenge, userFlights);
+            const stats = userStatsByUserId.get(user._id);
+            const completion = completionByUserId.get(user._id);
+            const status: ChallengeLeaderboardEntryResult["status"] =
+              progress.isComplete ? "completed" : "in_progress";
+
+            return {
+              userId: user._id,
+              displayName: getChallengePilotDisplayName(
+                user,
+                stats,
+                user._id,
+              ),
+              callsign: stats?.lastFlightCallsign ?? null,
+              progressCurrent: progress.progressCurrent,
+              progressTarget: progress.progressTarget,
+              progressLabel: progress.isComplete
+                ? "Completed"
+                : progress.progressLabel,
+              isComplete: progress.isComplete,
+              completedAt: completion?.completedAt ?? null,
+              status,
+            };
+          })
+          .sort(compareTopProgressUsers);
+
+        leaderboards.push({
+          ...serializeChallenge(challenge),
+          entries,
+        });
+        continue;
+      }
+
+      const completions = await ctx.db
+        .query("challengeCompletions")
+        .withIndex("by_challengeId", (q) => q.eq("challengeId", challenge._id))
+        .collect();
+
+      const completionByUserId = new Map(
+        completions.map((completion) => [completion.userId, completion]),
+      );
+
+      const entries: ChallengeLeaderboardEntryResult[] = users
+        .map((user) => {
+          const completion = completionByUserId.get(user._id);
+          const stats = userStatsByUserId.get(user._id);
+
+          if (!completion) {
+            return {
+              userId: user._id,
+              displayName: getChallengePilotDisplayName(
+                user,
+                stats,
+                user._id,
+              ),
+              callsign: stats?.lastFlightCallsign ?? null,
+              progressCurrent: 0,
+              progressTarget: 1,
+              progressLabel: "No submission yet",
+              isComplete: false,
+              completedAt: null,
+              status: "in_progress",
+              sortAt: Number.MAX_SAFE_INTEGER,
+            } satisfies ManualChallengeLeaderboardEntryResult;
+          }
+
+          return {
+            userId: completion.userId,
+            displayName: getChallengePilotDisplayName(
+              user,
+              stats,
+              completion.userId,
+            ),
+            callsign: stats?.lastFlightCallsign ?? null,
+            progressCurrent: completion.status === "completed" ? 1 : 0,
+            progressTarget: 1,
+            progressLabel:
+              completion.status === "completed"
+                ? "Approved"
+                : completion.status === "pending"
+                  ? "Pending review"
+                  : "Needs resubmission",
+            isComplete: completion.status === "completed",
+            completedAt: completion.completedAt ?? null,
+            status: completion.status,
+            sortAt: completion.completedAt ?? completion.createdAt,
+          } satisfies ManualChallengeLeaderboardEntryResult;
+        })
+        .sort(compareManualLeaderboardEntries)
+        .map(({ sortAt, ...entry }) => entry);
+
+      leaderboards.push({
+        ...serializeChallenge(challenge),
+        entries,
+      });
+    }
+
+    return leaderboards;
   },
 });
 

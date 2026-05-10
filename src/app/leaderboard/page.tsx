@@ -10,15 +10,23 @@ import {
   ChevronDown,
   Clock,
   Flame,
+  Flag,
   Navigation,
   Plane,
   Trophy,
   Upload,
 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
+import { ChallengeLeaderboardTab } from "~/components/challenges/ChallengeLeaderboardTab";
 import { Analytics } from "~/lib/analytics";
 
-type SortKey = "flights" | "distance" | "time" | "streak" | "contribution";
+type SortKey =
+  | "flights"
+  | "distance"
+  | "time"
+  | "streak"
+  | "contribution"
+  | "challenges";
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -32,6 +40,7 @@ function getActiveSortLabel(sortBy: SortKey): string {
   if (sortBy === "time") return "Time";
   if (sortBy === "streak") return "Streak";
   if (sortBy === "contribution") return "Uploads";
+  if (sortBy === "challenges") return "Challenge";
   return "Flights";
 }
 
@@ -39,13 +48,25 @@ export default function LeaderboardPage() {
   const router = useRouter();
   const { user } = useUser();
   const leaderboard = useQuery(api.flights.getLeaderboard);
+  const challengeLeaderboard = useQuery(api.challenges.listActiveLeaderboard, {});
+  const dbUser = useQuery(
+    api.users.getByClerkId,
+    user?.id ? { clerkId: user.id } : "skip",
+  );
   const [sortBy, setSortBy] = useState<SortKey>("flights");
 
   const currentUserRef = useRef<HTMLButtonElement>(null);
+  const hasActiveChallenge = (challengeLeaderboard?.length ?? 0) > 0;
 
   useEffect(() => {
     Analytics.leaderboardViewed();
   }, []);
+
+  useEffect(() => {
+    if (!hasActiveChallenge && sortBy === "challenges") {
+      setSortBy("flights");
+    }
+  }, [hasActiveChallenge, sortBy]);
 
   const sorted = leaderboard
     ? [...leaderboard].sort((a, b) => {
@@ -63,6 +84,7 @@ export default function LeaderboardPage() {
     ? sorted.findIndex((entry) => entry.clerkId === user?.id) + 1
     : 0;
   const currentUserEntry = sorted?.find((entry) => entry.clerkId === user?.id) ?? null;
+  const visibleSorted = sorted?.slice(0, 10) ?? null;
 
   const scrollToCurrentUser = () => {
     currentUserRef.current?.scrollIntoView({
@@ -111,7 +133,7 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
-        {currentUserEntry && currentUserRank > 0 && (
+        {sortBy !== "challenges" && currentUserEntry && currentUserRank > 0 && (
           <button
             onClick={scrollToCurrentUser}
             className="mb-6 flex w-full cursor-pointer items-center gap-3 rounded-xl border border-cyan-500/30 bg-cyan-500/[0.06] p-3 text-left transition-all hover:bg-cyan-500/[0.1] sm:gap-4 sm:p-4"
@@ -238,10 +260,27 @@ export default function LeaderboardPage() {
                 label: "Contribution",
                 icon: Upload,
               },
+              ...(hasActiveChallenge
+                ? [
+                    {
+                      key: "challenges" as SortKey,
+                      label: "Challenges",
+                      icon: Flag,
+                    },
+                  ]
+                : []),
             ].map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
-                onClick={() => setSortBy(key)}
+                onClick={() => {
+                  setSortBy(key);
+                  if (key === "challenges") {
+                    Analytics.track("challenge_leaderboard_viewed", {
+                      challenge_count: challengeLeaderboard?.length ?? 0,
+                      source: "leaderboard_page",
+                    });
+                  }
+                }}
                 className={`flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all sm:px-4 sm:py-2 sm:text-sm ${
                   sortBy === key
                     ? "bg-white/10 text-white"
@@ -255,178 +294,191 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
-        {sorted === null ? (
-          <LeaderboardSkeleton />
-        ) : sorted.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-            <Plane className="mx-auto mb-4 h-12 w-12 text-slate-600" />
-            <h3 className="mb-2 text-xl font-semibold text-white">
-              No Pilots Yet
-            </h3>
-            <p className="text-slate-400">
-              Be the first to record a flight or get an aircraft image approved.
-            </p>
-          </div>
+        {sortBy === "challenges" ? (
+          <ChallengeLeaderboardTab
+            challenges={challengeLeaderboard}
+            highlightedUserId={dbUser?._id ?? null}
+            isLoading={challengeLeaderboard === undefined}
+            maxEntries={10}
+          />
         ) : (
-          <div>
-            <div className="flex items-center gap-3 px-3 pb-3 sm:gap-4 sm:px-4">
-              <div className="w-8 shrink-0 sm:w-9" />
-              <div className="min-w-0 flex-1 font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
-                Pilot
+          <>
+            {visibleSorted === null ? (
+              <LeaderboardSkeleton />
+            ) : visibleSorted.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
+                <Plane className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+                <h3 className="mb-2 text-xl font-semibold text-white">
+                  No Pilots Yet
+                </h3>
+                <p className="text-slate-400">
+                  Be the first to record a flight or get an aircraft image approved.
+                </p>
               </div>
-              <div className="w-14 shrink-0 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase sm:hidden">
-                {getActiveSortLabel(sortBy)}
+            ) : (
+              <div>
+                <div className="flex items-center gap-3 px-3 pb-3 sm:gap-4 sm:px-4">
+                  <div className="w-8 shrink-0 sm:w-9" />
+                  <div className="min-w-0 flex-1 font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                    Pilot
+                  </div>
+                  <div className="w-14 shrink-0 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase sm:hidden">
+                    {getActiveSortLabel(sortBy)}
+                  </div>
+                  <div className="hidden shrink-0 items-center gap-6 sm:flex">
+                    <div className="w-12 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                      Flights
+                    </div>
+                    <div className="w-16 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                      Distance
+                    </div>
+                    <div className="w-14 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                      Time
+                    </div>
+                    <div className="w-12 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                      Streak
+                    </div>
+                    <div className="w-14 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                      Uploads
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {visibleSorted.map((entry, i) => {
+                    const rank = i + 1;
+                    const isTop3 = rank <= 3;
+                    const isCurrentUser = user?.id === entry.clerkId;
+                    const medalColor =
+                      rank === 1
+                        ? "text-amber-400 border-amber-500/40 bg-amber-500/10"
+                        : rank === 2
+                          ? "text-slate-300 border-slate-400/40 bg-slate-400/10"
+                          : rank === 3
+                            ? "text-orange-400 border-orange-500/40 bg-orange-500/10"
+                            : "";
+
+                    return (
+                      <button
+                        key={entry.userId}
+                        ref={isCurrentUser ? currentUserRef : undefined}
+                        onClick={() => router.push(`/pilot/${entry.userId}`)}
+                        className={`flex w-full cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition-all hover:border-cyan-500/30 hover:bg-white/10 sm:gap-4 sm:p-4 ${
+                          isCurrentUser
+                            ? "border-cyan-500/40 bg-cyan-500/[0.08] ring-1 ring-cyan-500/20"
+                            : isTop3
+                              ? "border-white/10 bg-white/[0.04]"
+                              : "border-white/5 bg-white/[0.02]"
+                        }`}
+                      >
+                        <div
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border font-mono text-xs font-bold sm:h-9 sm:w-9 sm:text-sm ${
+                            isTop3
+                              ? medalColor
+                              : "border-white/10 bg-white/5 text-slate-500"
+                          }`}
+                        >
+                          {rank}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <span className="truncate font-mono text-xs font-bold text-white sm:text-sm">
+                              {entry.discordUsername ?? entry.callsign}
+                            </span>
+                            {isCurrentUser && (
+                              <span className="shrink-0 rounded bg-cyan-500/20 px-1 py-0.5 font-mono text-[8px] font-bold text-cyan-400 sm:px-1.5 sm:text-[9px]">
+                                YOU
+                              </span>
+                            )}
+                            {(entry.role === "PRO" || entry.role === "ADMIN") && (
+                              <span className="shrink-0 rounded bg-emerald-500/20 px-1 py-0.5 font-mono text-[8px] font-bold text-emerald-400 sm:px-1.5 sm:text-[9px]">
+                                PRO
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="w-14 shrink-0 text-right sm:hidden">
+                          <div
+                            title={
+                              sortBy === "contribution"
+                                ? `${entry.approvedAircraftImages} approved aircraft images`
+                                : undefined
+                            }
+                            className={`font-mono text-xs font-bold ${
+                              sortBy === "streak"
+                                ? "text-amber-400"
+                                : sortBy === "contribution"
+                                  ? "text-emerald-400"
+                                  : "text-cyan-400"
+                            }`}
+                          >
+                            {sortBy === "flights"
+                              ? entry.totalFlights
+                              : sortBy === "distance"
+                                ? entry.totalDistanceNm.toLocaleString()
+                                : sortBy === "time"
+                                  ? formatFlightTime(entry.totalFlightTimeMs)
+                                  : sortBy === "streak"
+                                    ? entry.currentStreak > 0
+                                      ? `${entry.currentStreak}d`
+                                      : "—"
+                                    : entry.approvedAircraftImages}
+                          </div>
+                        </div>
+
+                        <div className="hidden shrink-0 items-center gap-6 sm:flex">
+                          <div
+                            className={`w-12 text-right font-mono text-sm font-bold ${
+                              sortBy === "flights" ? "text-cyan-400" : "text-white"
+                            }`}
+                          >
+                            {entry.totalFlights}
+                          </div>
+                          <div
+                            className={`w-16 text-right font-mono text-sm font-bold ${
+                              sortBy === "distance" ? "text-cyan-400" : "text-white"
+                            }`}
+                          >
+                            {entry.totalDistanceNm.toLocaleString()}
+                          </div>
+                          <div
+                            className={`w-14 whitespace-nowrap text-right font-mono text-sm font-bold ${
+                              sortBy === "time" ? "text-cyan-400" : "text-white"
+                            }`}
+                          >
+                            {formatFlightTime(entry.totalFlightTimeMs)}
+                          </div>
+                          <div
+                            className={`w-12 text-right font-mono text-sm font-bold ${
+                              sortBy === "streak"
+                                ? "text-cyan-400"
+                                : "text-amber-400"
+                            }`}
+                          >
+                            {entry.currentStreak > 0
+                              ? `${entry.currentStreak}d`
+                              : "—"}
+                          </div>
+                          <div
+                            title={`${entry.approvedAircraftImages} approved aircraft images`}
+                            className={`w-14 text-right font-mono text-sm font-bold ${
+                              sortBy === "contribution"
+                                ? "text-emerald-400"
+                                : "text-white"
+                            }`}
+                          >
+                            {entry.approvedAircraftImages}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="hidden shrink-0 items-center gap-6 sm:flex">
-                <div className="w-12 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
-                  Flights
-                </div>
-                <div className="w-16 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
-                  Distance
-                </div>
-                <div className="w-14 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
-                  Time
-                </div>
-                <div className="w-12 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
-                  Streak
-                </div>
-                <div className="w-14 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
-                  Uploads
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {sorted.map((entry, i) => {
-                const rank = i + 1;
-                const isTop3 = rank <= 3;
-                const isCurrentUser = user?.id === entry.clerkId;
-                const medalColor =
-                  rank === 1
-                    ? "text-amber-400 border-amber-500/40 bg-amber-500/10"
-                    : rank === 2
-                      ? "text-slate-300 border-slate-400/40 bg-slate-400/10"
-                      : rank === 3
-                        ? "text-orange-400 border-orange-500/40 bg-orange-500/10"
-                        : "";
-
-                return (
-                  <button
-                    key={entry.userId}
-                    ref={isCurrentUser ? currentUserRef : undefined}
-                    onClick={() => router.push(`/pilot/${entry.userId}`)}
-                    className={`flex w-full cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition-all hover:border-cyan-500/30 hover:bg-white/10 sm:gap-4 sm:p-4 ${
-                      isCurrentUser
-                        ? "border-cyan-500/40 bg-cyan-500/[0.08] ring-1 ring-cyan-500/20"
-                        : isTop3
-                          ? "border-white/10 bg-white/[0.04]"
-                          : "border-white/5 bg-white/[0.02]"
-                    }`}
-                  >
-                    <div
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border font-mono text-xs font-bold sm:h-9 sm:w-9 sm:text-sm ${
-                        isTop3
-                          ? medalColor
-                          : "border-white/10 bg-white/5 text-slate-500"
-                      }`}
-                    >
-                      {rank}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <span className="truncate font-mono text-xs font-bold text-white sm:text-sm">
-                          {entry.discordUsername ?? entry.callsign}
-                        </span>
-                        {isCurrentUser && (
-                          <span className="shrink-0 rounded bg-cyan-500/20 px-1 py-0.5 font-mono text-[8px] font-bold text-cyan-400 sm:px-1.5 sm:text-[9px]">
-                            YOU
-                          </span>
-                        )}
-                        {(entry.role === "PRO" || entry.role === "ADMIN") && (
-                          <span className="shrink-0 rounded bg-emerald-500/20 px-1 py-0.5 font-mono text-[8px] font-bold text-emerald-400 sm:px-1.5 sm:text-[9px]">
-                            PRO
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="w-14 shrink-0 text-right sm:hidden">
-                      <div
-                        title={
-                          sortBy === "contribution"
-                            ? `${entry.approvedAircraftImages} approved aircraft images`
-                            : undefined
-                        }
-                        className={`font-mono text-xs font-bold ${
-                          sortBy === "streak"
-                            ? "text-amber-400"
-                            : sortBy === "contribution"
-                              ? "text-emerald-400"
-                              : "text-cyan-400"
-                        }`}
-                      >
-                        {sortBy === "flights"
-                          ? entry.totalFlights
-                          : sortBy === "distance"
-                            ? entry.totalDistanceNm.toLocaleString()
-                            : sortBy === "time"
-                              ? formatFlightTime(entry.totalFlightTimeMs)
-                              : sortBy === "streak"
-                                ? entry.currentStreak > 0
-                                  ? `${entry.currentStreak}d`
-                                  : "—"
-                                : entry.approvedAircraftImages}
-                      </div>
-                    </div>
-
-                    <div className="hidden shrink-0 items-center gap-6 sm:flex">
-                      <div
-                        className={`w-12 text-right font-mono text-sm font-bold ${
-                          sortBy === "flights" ? "text-cyan-400" : "text-white"
-                        }`}
-                      >
-                        {entry.totalFlights}
-                      </div>
-                      <div
-                        className={`w-16 text-right font-mono text-sm font-bold ${
-                          sortBy === "distance" ? "text-cyan-400" : "text-white"
-                        }`}
-                      >
-                        {entry.totalDistanceNm.toLocaleString()}
-                      </div>
-                      <div
-                        className={`w-14 whitespace-nowrap text-right font-mono text-sm font-bold ${
-                          sortBy === "time" ? "text-cyan-400" : "text-white"
-                        }`}
-                      >
-                        {formatFlightTime(entry.totalFlightTimeMs)}
-                      </div>
-                      <div
-                        className={`w-12 text-right font-mono text-sm font-bold ${
-                          sortBy === "streak"
-                            ? "text-cyan-400"
-                            : "text-amber-400"
-                        }`}
-                      >
-                        {entry.currentStreak > 0 ? `${entry.currentStreak}d` : "—"}
-                      </div>
-                      <div
-                        title={`${entry.approvedAircraftImages} approved aircraft images`}
-                        className={`w-14 text-right font-mono text-sm font-bold ${
-                          sortBy === "contribution"
-                            ? "text-emerald-400"
-                            : "text-white"
-                        }`}
-                      >
-                        {entry.approvedAircraftImages}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+            )}
+          </>
         )}
       </main>
     </div>
