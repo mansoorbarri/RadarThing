@@ -111,10 +111,56 @@
       .replace(/\s+/g, "");
   }
 
+  function normalizeFlightInfoValue(value) {
+    return String(value || "")
+      .trim()
+      .toUpperCase();
+  }
+
   function sanitizeSquawk(value) {
     return String(value || "")
       .replace(/\D+/g, "")
       .slice(0, 4);
+  }
+
+  function doesSessionMatchCurrentForm(session) {
+    const currentFlightNo = normalizeFlightInfoValue(
+      document.getElementById(FLT_INPUT_ID)?.value,
+    );
+    const currentDeparture = normalizeFlightInfoValue(
+      document.getElementById(DEP_INPUT_ID)?.value,
+    );
+    const currentArrival = normalizeFlightInfoValue(
+      document.getElementById(ARR_INPUT_ID)?.value,
+    );
+    const sessionFlightNo = normalizeFlightInfoValue(
+      session?.flightNo || session?.callsign,
+    );
+    const sessionDeparture = normalizeFlightInfoValue(
+      session?.departure || session?.dep,
+    );
+    const sessionArrival = normalizeFlightInfoValue(
+      session?.arrival || session?.arr,
+    );
+
+    if (!currentFlightNo || !sessionFlightNo || currentFlightNo !== sessionFlightNo) {
+      return false;
+    }
+
+    if (currentDeparture && sessionDeparture && currentDeparture !== sessionDeparture) {
+      return false;
+    }
+
+    if (currentArrival && sessionArrival && currentArrival !== sessionArrival) {
+      return false;
+    }
+
+    return Boolean(
+      currentDeparture ||
+        sessionDeparture ||
+        currentArrival ||
+        sessionArrival,
+    );
   }
 
   function updateIdentUI() {
@@ -533,14 +579,11 @@
   async function maybePromptToResumeFlight() {
     if (resumePromptResolved || !geofs?.userRecord?.googleid) return;
 
-    if (
+    const hasFilledFlightInfo = Boolean(
       document.getElementById(DEP_INPUT_ID)?.value.trim() ||
-      document.getElementById(ARR_INPUT_ID)?.value.trim() ||
-      document.getElementById(FLT_INPUT_ID)?.value.trim()
-    ) {
-      resumePromptResolved = true;
-      return;
-    }
+        document.getElementById(ARR_INPUT_ID)?.value.trim() ||
+        document.getElementById(FLT_INPUT_ID)?.value.trim(),
+    );
 
     try {
       const googleId = String(geofs.userRecord.googleid);
@@ -555,7 +598,17 @@
         return;
       }
 
-      const shouldResume = await showResumeFlightModal(data.session);
+      let shouldResume;
+      if (hasFilledFlightInfo) {
+        if (!doesSessionMatchCurrentForm(data.session)) {
+          resumePromptResolved = true;
+          return;
+        }
+        shouldResume = true;
+      } else {
+        shouldResume = await showResumeFlightModal(data.session);
+      }
+
       const actionRes = await fetch(RESUME_FLIGHT_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -593,6 +646,7 @@
             flt: resumedSession.flightNo || "",
             sqk: resumedSession.squawk || "",
             af: resumedSession.af || "",
+            takeoffTime: resumedSession.takeoffTime || "",
             active: true,
           },
         }),

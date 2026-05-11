@@ -510,6 +510,9 @@
 
   window.addEventListener("atc-data-sync", (e) => {
     const wasActive = info.active;
+    if (typeof e.detail?.takeoffTime === "string" && e.detail.takeoffTime.trim()) {
+      takeoffTimeUTC = e.detail.takeoffTime.trim();
+    }
     info = {
       ...e.detail,
       flt: sanitizeCallsign(e.detail?.flt),
