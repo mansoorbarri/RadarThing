@@ -18,9 +18,14 @@ export default function PricingPage() {
   const searchParams = useSearchParams();
   const { isSignedIn, isLoaded } = useUser();
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const autoCheckoutStartedRef = useRef(false);
 
   const { isProUser, isLoading: checkingStatus } = useProStatus();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isLoaded && !checkingStatus) {
@@ -70,7 +75,7 @@ export default function PricingPage() {
     }
   }
 
-  if (!isLoaded || checkingStatus) {
+  if (!mounted || !isLoaded || checkingStatus) {
     return <Loading />;
   }
 
@@ -81,7 +86,7 @@ export default function PricingPage() {
           <div className="absolute top-20 -left-24 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
           <div className="absolute -right-28 bottom-10 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
         </div>
-        <Header router={router} showAuth={true} />
+        <Header router={router} />
         <main className="relative mx-auto max-w-2xl px-6 py-24">
           <div className="rounded-3xl border border-emerald-400/25 bg-gradient-to-br from-emerald-500/12 via-cyan-500/8 to-blue-500/10 p-10 text-center shadow-[0_0_80px_rgba(16,185,129,0.12)] backdrop-blur-xl">
             <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/30 bg-emerald-500/15">
@@ -128,7 +133,7 @@ export default function PricingPage() {
         <div className="absolute right-[-120px] bottom-[-60px] h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
       </div>
 
-      <Header router={router} showAuth={isSignedIn} />
+      <Header router={router} />
 
       <main className="relative mx-auto max-w-5xl px-6 py-14 md:py-20">
         <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
@@ -331,10 +336,8 @@ function FeatureSection({
 
 function Header({
   router,
-  showAuth,
 }: {
   router: ReturnType<typeof useRouter>;
-  showAuth: boolean;
 }) {
   return (
     <header className="relative z-10 border-b border-white/10 bg-black/35 backdrop-blur-xl">
@@ -358,7 +361,7 @@ function Header({
             <ArrowLeft className="h-4 w-4" />
             Back
           </button>
-          {showAuth && <UserAuth />}
+          <UserAuth />
         </div>
       </div>
     </header>

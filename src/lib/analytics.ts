@@ -92,6 +92,47 @@ interface ShortcutsEventProps extends BaseEventProps {
   source?: string;
 }
 
+const RECENT_EXCEPTION_TTL_MS = 5000;
+const recentExceptionCaptures = new Map<string, number>();
+
+function getExceptionSignature(
+  error: unknown,
+  properties?: Record<string, unknown>,
+): string {
+  const source =
+    typeof properties?.source === "string" ? properties.source : "unknown";
+
+  if (error instanceof Error) {
+    const stackTop = error.stack?.split("\n").slice(0, 3).join("\n") ?? "";
+    return `${source}|${error.name}|${error.message}|${stackTop}`;
+  }
+
+  return `${source}|${String(error)}`;
+}
+
+function shouldCaptureException(
+  error: unknown,
+  properties?: Record<string, unknown>,
+): boolean {
+  const now = Date.now();
+
+  for (const [signature, timestamp] of recentExceptionCaptures.entries()) {
+    if (now - timestamp > RECENT_EXCEPTION_TTL_MS) {
+      recentExceptionCaptures.delete(signature);
+    }
+  }
+
+  const signature = getExceptionSignature(error, properties);
+  const lastCapturedAt = recentExceptionCaptures.get(signature);
+
+  if (lastCapturedAt && now - lastCapturedAt < RECENT_EXCEPTION_TTL_MS) {
+    return false;
+  }
+
+  recentExceptionCaptures.set(signature, now);
+  return true;
+}
+
 // All analytics events
 export const Analytics = {
   // Initialize PostHog (only in production)
@@ -107,6 +148,9 @@ export const Analytics = {
       capture_pageview: true,
       capture_pageleave: true,
       autocapture: false, // Manual tracking for better control
+      // We capture exceptions ourselves so we can attach custom client context
+      // and avoid duplicate reports from multiple browser hooks.
+      capture_exceptions: false,
       error_tracking: {
         captureExtensionExceptions: false,
       },
@@ -413,6 +457,7 @@ export const Analytics = {
   captureException: (error: unknown, properties?: Record<string, unknown>) => {
     if (typeof window === "undefined") return;
     if (process.env.NODE_ENV === "development") return;
+    if (!shouldCaptureException(error, properties)) return;
 
     posthog.captureException(error, {
       ...properties,

@@ -68,7 +68,7 @@ export function ActiveChallengesPanel({
 }: {
   userId?: Id<"users"> | null;
 }) {
-  const { isSignedIn } = useUser();
+  const { isSignedIn, isLoaded } = useUser();
   const viewerChallenges = useQuery(
     api.challenges.listActiveForViewer,
     userId ? "skip" : {},
@@ -127,6 +127,23 @@ export function ActiveChallengesPanel({
     } finally {
       setSubmittingChallengeId(null);
     }
+  }
+
+  if (!isLoaded && !userId) {
+    return (
+      <div className="mb-8 rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
+        <div className="mb-4 flex items-center gap-2">
+          <Flag className="h-4 w-4 text-cyan-400" />
+          <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
+            ACTIVE CHALLENGES
+          </h3>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading challenges...
+        </div>
+      </div>
+    );
   }
 
   if (isSignedIn && !userId) {

@@ -37,7 +37,7 @@ function getActiveSortLabel(sortBy: SortKey): string {
 
 export default function LeaderboardPage() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const leaderboard = useQuery(api.flights.getLeaderboard);
   const [sortBy, setSortBy] = useState<SortKey>("flights");
 
@@ -59,10 +59,14 @@ export default function LeaderboardPage() {
       })
     : null;
 
-  const currentUserRank = sorted
-    ? sorted.findIndex((entry) => entry.clerkId === user?.id) + 1
-    : 0;
-  const currentUserEntry = sorted?.find((entry) => entry.clerkId === user?.id) ?? null;
+  const currentUserRank =
+    isLoaded && sorted
+      ? sorted.findIndex((entry) => entry.clerkId === user?.id) + 1
+      : 0;
+  const currentUserEntry =
+    isLoaded && sorted
+      ? sorted.find((entry) => entry.clerkId === user?.id) ?? null
+      : null;
 
   const scrollToCurrentUser = () => {
     currentUserRef.current?.scrollIntoView({
