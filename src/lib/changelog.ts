@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "flight-resume-recovery",
+    date: "2026-05-11",
+    title: "Flight Resume Recovery",
+    description:
+      "Unexpected disconnects can now be resumed later from a top-center userscript prompt, while Clear and Disconnect still end flights instantly.",
+    type: "improvement",
+  },
+  {
     id: "flight-history-search",
     date: "2026-05-09",
     title: "Smoother Flight History",
