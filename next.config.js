@@ -26,6 +26,20 @@ const config = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/userscript",
+        destination: "/userscript/radarthing.user.js",
+        permanent: false,
+      },
+      {
+        source: "/loader",
+        destination: "/userscript/radarthing.loader.js",
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

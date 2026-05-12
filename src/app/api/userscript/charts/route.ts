@@ -22,6 +22,7 @@ function corsHeaders(origin: string | null) {
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "X-Requested-With",
     "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
   };
 }
 
@@ -66,7 +67,16 @@ export async function GET(request: NextRequest) {
       chartUrl: c.chartUrl,
     }));
 
-    return NextResponse.json({ charts }, { headers: corsHeaders(origin) });
+    return NextResponse.json(
+      { charts },
+      {
+        headers: {
+          ...corsHeaders(origin),
+          "Cache-Control":
+            "public, max-age=300, s-maxage=300, stale-while-revalidate=86400",
+        },
+      },
+    );
   } catch (error) {
     console.error("Userscript charts fetch failed:", error);
     return NextResponse.json(

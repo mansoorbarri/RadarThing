@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 // In-memory cache for NOTAMs (1 day TTL)
 const notamCache = new Map<string, { data: unknown; timestamp: number }>();
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 1 day in milliseconds
+const CACHE_CONTROL =
+  "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800";
 
 export async function GET(request: NextRequest) {
   const apiKey = process.env.AVIAPAGES_API_KEY;
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest) {
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
     return NextResponse.json(cached.data, {
       headers: {
-        "Cache-Control": "public, max-age=86400", // 1 day
+        "Cache-Control": CACHE_CONTROL,
         "X-Cache": "HIT",
       },
     });
@@ -54,6 +56,7 @@ export async function GET(request: NextRequest) {
         headers: {
           Authorization: `Token ${apiKey}`,
         },
+        next: { revalidate: 86400 },
       },
     );
 
@@ -118,7 +121,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(responseData, {
       headers: {
-        "Cache-Control": "public, max-age=86400", // 1 day
+        "Cache-Control": CACHE_CONTROL,
         "X-Cache": "MISS",
       },
     });

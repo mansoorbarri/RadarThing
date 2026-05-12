@@ -6,8 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { getProAndAdminStatus } from "~/app/actions/is-pro";
 import { Plane, ImageIcon, Map, Crown, Users, Upload, Flag } from "lucide-react";
+import { useProStatus } from "~/hooks/useProStatus";
 
 import { AdminHeader } from "./_components/AdminHeader";
 import { AdminAccessDenied } from "./_components/AdminAccessDenied";
@@ -85,42 +85,29 @@ export default function AdminPage() {
   const { isSignedIn, isLoaded } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const [isAdminUser, setIsAdminUser] = useState(false);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const [adminCheckDone, setAdminCheckDone] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const mainTab = getAdminTabFromPath(pathname);
+  const {
+    isAdminUser,
+    isSuperAdmin,
+    isLoading: proStatusLoading,
+  } = useProStatus();
 
   // Queries for counts in tab badges
   const pendingQuery = useQuery(api.aircraftImages.getPending);
   const approvedChartsQuery = useQuery(api.airportCharts.getApproved);
   const pendingCount = pendingQuery?.length ?? 0;
 
-  const loading = !adminCheckDone || pendingQuery === undefined;
-
-  // Check admin status
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      getProAndAdminStatus()
-        .then(({ isAdmin, isSuperAdmin: superAdmin }) => {
-          setIsAdminUser(isAdmin);
-          setIsSuperAdmin(superAdmin);
-          setAdminCheckDone(true);
-        })
-        .catch(() => setAdminCheckDone(true));
-    } else if (isLoaded) {
-      setAdminCheckDone(true);
-    }
-  }, [isLoaded, isSignedIn]);
+  const loading = !isLoaded || proStatusLoading || pendingQuery === undefined;
 
   useEffect(() => {
-    if (!adminCheckDone || !isAdminUser) return;
+    if (!isLoaded || proStatusLoading || !isAdminUser) return;
     if (mainTab === "pro" && !isSuperAdmin) {
       router.replace("/admin");
     }
-  }, [adminCheckDone, isAdminUser, isSuperAdmin, mainTab, router]);
+  }, [isLoaded, proStatusLoading, isAdminUser, isSuperAdmin, mainTab, router]);
 
-  if (!isLoaded || loading) {
+  if (loading) {
     return <AdminSkeleton />;
   }
 

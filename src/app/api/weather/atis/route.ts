@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_CONTROL = "public, max-age=300, s-maxage=300, stale-while-revalidate=86400";
 const atisCache = new Map<string, { data: unknown; timestamp: number }>();
 
 export async function GET(request: NextRequest) {
@@ -18,14 +19,14 @@ export async function GET(request: NextRequest) {
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
     return NextResponse.json(cached.data, {
       headers: {
-        "Cache-Control": "public, max-age=300",
+        "Cache-Control": CACHE_CONTROL,
         "X-Cache": "HIT",
       },
     });
   }
 
   const response = await fetch(`https://atis.info/api/${icao}`, {
-    cache: "no-store",
+    next: { revalidate: 300 },
   });
 
   if (!response.ok) {
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(data, {
     headers: {
-      "Cache-Control": "public, max-age=300",
+      "Cache-Control": CACHE_CONTROL,
       "X-Cache": "MISS",
     },
   });

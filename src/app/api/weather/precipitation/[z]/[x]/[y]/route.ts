@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "~/env";
 
+const CACHE_CONTROL =
+  "public, max-age=300, s-maxage=300, stale-while-revalidate=86400";
+
 export async function GET(
   request: NextRequest,
   context: {
@@ -15,7 +18,7 @@ export async function GET(
   const upstreamUrl = `https://tile.openweathermap.org/map/precipitation_new/${z}/${x}/${y}.png?appid=${env.OPENWEATHERMAP_API_KEY}`;
 
   const response = await fetch(upstreamUrl, {
-    cache: "no-store",
+    next: { revalidate: 300 },
   });
 
   if (!response.ok) {
@@ -28,7 +31,7 @@ export async function GET(
   return new NextResponse(buffer, {
     headers: {
       "Content-Type": contentType,
-      "Cache-Control": "public, max-age=300",
+      "Cache-Control": CACHE_CONTROL,
     },
   });
 }
