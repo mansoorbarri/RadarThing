@@ -33,6 +33,13 @@ import Image from "next/image";
 import { RejectModal } from "./RejectModal";
 import { ConflictModal } from "./ConflictModal";
 import { ConfirmModal } from "./ConfirmModal";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { Switch } from "~/components/ui/switch";
 
 type ImageSubTab = "pending" | "approved";
@@ -817,7 +824,7 @@ export function AircraftImagesTab() {
       />
 
       {/* Search and Filters */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+      <div className="mb-6 flex flex-col gap-4">
         <div className="relative flex-1">
           <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
@@ -828,48 +835,87 @@ export function AircraftImagesTab() {
             className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
           />
         </div>
-        <div className="flex gap-3">
-          <select
-            value={imageAirlineFilter}
-            onChange={(e) => setImageAirlineFilter(e.target.value)}
-            className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <Select
+            value={imageAirlineFilter || "__all_airlines__"}
+            onValueChange={(value) =>
+              setImageAirlineFilter(
+                value === "__all_airlines__" ? "" : value,
+              )
+            }
           >
-            <option value="">All Airlines</option>
-            {uniqueImageAirlines.map((airline) => (
-              <option
-                key={airline.iata || airline.icao}
-                value={airline.iata || airline.icao}
-              >
-                {airline.icao && airline.iata
-                  ? `${airline.icao} | ${airline.iata}`
-                  : airline.icao || airline.iata}
-              </option>
-            ))}
-          </select>
-          <select
-            value={imageAircraftFilter}
-            onChange={(e) => setImageAircraftFilter(e.target.value)}
-            className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+            <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+              <SelectValue placeholder="All Airlines" />
+            </SelectTrigger>
+            <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+              <SelectItem value="__all_airlines__" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">
+                All Airlines
+              </SelectItem>
+              {uniqueImageAirlines.map((airline) => (
+                <SelectItem
+                  key={airline.iata || airline.icao}
+                  value={airline.iata || airline.icao}
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  {airline.icao && airline.iata
+                    ? `${airline.icao} | ${airline.iata}`
+                    : airline.icao || airline.iata}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={imageAircraftFilter || "__all_aircraft__"}
+            onValueChange={(value) =>
+              setImageAircraftFilter(
+                value === "__all_aircraft__" ? "" : value,
+              )
+            }
           >
-            <option value="">All Aircraft</option>
-            {uniqueImageAircraftTypes.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-          <select
-            value={imageUploaderFilter}
-            onChange={(e) => setImageUploaderFilter(e.target.value)}
-            className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+            <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+              <SelectValue placeholder="All Aircraft" />
+            </SelectTrigger>
+            <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+              <SelectItem value="__all_aircraft__" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">
+                All Aircraft
+              </SelectItem>
+              {uniqueImageAircraftTypes.map((type) => (
+                <SelectItem
+                  key={type}
+                  value={type}
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={imageUploaderFilter || "__all_uploaders__"}
+            onValueChange={(value) =>
+              setImageUploaderFilter(
+                value === "__all_uploaders__" ? "" : value,
+              )
+            }
           >
-            <option value="">All Uploaders</option>
-            {uniqueImageUploaders.map((uploader) => (
-              <option key={uploader} value={uploader}>
-                {uploader}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+              <SelectValue placeholder="All Uploaders" />
+            </SelectTrigger>
+            <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+              <SelectItem value="__all_uploaders__" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">
+                All Uploaders
+              </SelectItem>
+              {uniqueImageUploaders.map((uploader) => (
+                <SelectItem
+                  key={uploader}
+                  value={uploader}
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  {uploader}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {hasActiveImageFilters && (
             <button
               onClick={clearImageFilters}
@@ -889,71 +935,78 @@ export function AircraftImagesTab() {
         </p>
         <div className="flex items-center gap-2">
           <span className="text-sm text-slate-500">Per page</span>
-          <select
-            value={pageSize}
-            onChange={(e) =>
-              setPageSize(
-                Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number],
-              )
+          <Select
+            value={String(pageSize)}
+            onValueChange={(value) =>
+              setPageSize(Number(value) as (typeof PAGE_SIZE_OPTIONS)[number])
             }
-            className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
           >
-            {PAGE_SIZE_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-10 min-w-[84px] rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <SelectItem
+                  key={option}
+                  value={String(option)}
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {/* Bulk Action Bar */}
       {selectedImages.size > 0 && (
-        <div className="mb-4 flex items-center gap-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
+        <div className="mb-4 flex flex-col gap-3 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4 sm:flex-row sm:items-center">
           <span className="font-mono text-sm text-cyan-400">
             {selectedImages.size} selected
           </span>
-          <div className="flex-1" />
-          <button
-            onClick={clearSelection}
-            className="cursor-pointer rounded-lg px-3 py-1.5 text-sm text-slate-400 transition-colors hover:bg-white/10"
-          >
-            Clear
-          </button>
-          {imageSubTab === "pending" ? (
-            <>
-              <button
-                onClick={handleBulkApprove}
-                disabled={bulkLoading}
-                className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-500/20 px-4 py-1.5 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
-              >
-                <Check className="h-4 w-4" />
-                Approve All
-              </button>
-              <button
-                onClick={handleBulkReject}
-                disabled={bulkLoading}
-                className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
-              >
-                <X className="h-4 w-4" />
-                Reject All
-              </button>
-            </>
-          ) : (
+          <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
             <button
-              onClick={handleBulkDelete}
-              disabled={bulkLoading}
-              className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+              onClick={clearSelection}
+              className="cursor-pointer rounded-lg px-3 py-1.5 text-sm text-slate-400 transition-colors hover:bg-white/10"
             >
-              <Trash2 className="h-4 w-4" />
-              Delete All
+              Clear
             </button>
-          )}
+            {imageSubTab === "pending" ? (
+              <>
+                <button
+                  onClick={handleBulkApprove}
+                  disabled={bulkLoading}
+                  className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
+                >
+                  <Check className="h-4 w-4" />
+                  Approve All
+                </button>
+                <button
+                  onClick={handleBulkReject}
+                  disabled={bulkLoading}
+                  className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+                >
+                  <X className="h-4 w-4" />
+                  Reject All
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleBulkDelete}
+                disabled={bulkLoading}
+                className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete All
+              </button>
+            )}
+          </div>
         </div>
       )}
 
       {/* Sub Tabs */}
-      <div className="mb-6 flex items-center gap-2">
+      <div className="mb-6 flex flex-wrap items-center gap-2">
         <button
           onClick={() => setImageSubTab("pending")}
           className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 font-mono text-sm transition-all ${
@@ -1006,7 +1059,7 @@ export function AircraftImagesTab() {
                 selectAllVisible();
               }
             }}
-            className="ml-auto flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-white/10"
+            className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-white/10 sm:ml-auto sm:w-auto sm:justify-start"
           >
             {currentPageSelectionCount === paginatedCurrentTabImages.length &&
             paginatedCurrentTabImages.length > 0 ? (

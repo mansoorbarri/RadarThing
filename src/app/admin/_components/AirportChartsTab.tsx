@@ -26,6 +26,13 @@ import {
 import { toast } from "sonner";
 import { ConfirmModal } from "./ConfirmModal";
 import { AdminChartsTabSkeleton } from "./skeletons";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import type { ChartType } from "~/types/airportCharts";
 
 const CHART_TYPES: { value: ChartType; label: string }[] = [
@@ -143,18 +150,26 @@ function EditableChartDetails({
             disabled={isSaving}
             autoFocus
           />
-          <select
+          <Select
             value={chartType}
-            onChange={(e) => setChartType(e.target.value as ChartType)}
-            className="rounded-md border border-blue-500/50 bg-black/60 px-2 py-1 text-sm text-blue-400 outline-none focus:border-blue-400"
+            onValueChange={(value) => setChartType(value as ChartType)}
             disabled={isSaving}
           >
-            {CHART_TYPES.map((type) => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-8 min-w-[132px] rounded-md border-blue-500/50 bg-black/60 px-2 text-sm text-blue-300 shadow-none hover:bg-black/70 focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+              {CHART_TYPES.map((type) => (
+                <SelectItem
+                  key={type.value}
+                  value={type.value}
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  {type.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <input
           type="text"
@@ -436,7 +451,7 @@ export function AirportChartsTab({
       />
 
       {/* Search and Filters */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+      <div className="mb-6 flex flex-col gap-4">
         <div className="relative flex-1">
           <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
@@ -447,31 +462,55 @@ export function AirportChartsTab({
             className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
           />
         </div>
-        <div className="flex gap-3">
-          <select
-            value={icaoFilter}
-            onChange={(e) => setIcaoFilter(e.target.value)}
-            className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <Select
+            value={icaoFilter || "__all_airports__"}
+            onValueChange={(value) =>
+              setIcaoFilter(value === "__all_airports__" ? "" : value)
+            }
           >
-            <option value="">All Airports</option>
-            {uniqueIcaos.map((icao) => (
-              <option key={icao} value={icao}>
-                {icao}
-              </option>
-            ))}
-          </select>
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as ChartType | "")}
-            className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+            <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+              <SelectValue placeholder="All Airports" />
+            </SelectTrigger>
+            <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+              <SelectItem value="__all_airports__" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">
+                All Airports
+              </SelectItem>
+              {uniqueIcaos.map((icao) => (
+                <SelectItem
+                  key={icao}
+                  value={icao}
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  {icao}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={typeFilter || "__all_types__"}
+            onValueChange={(value) =>
+              setTypeFilter(value === "__all_types__" ? "" : (value as ChartType))
+            }
           >
-            <option value="">All Types</option>
-            {CHART_TYPES.map((type) => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+              <SelectItem value="__all_types__" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">
+                All Types
+              </SelectItem>
+              {CHART_TYPES.map((type) => (
+                <SelectItem
+                  key={type.value}
+                  value={type.value}
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  {type.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
@@ -491,48 +530,57 @@ export function AirportChartsTab({
         </p>
         <div className="flex items-center gap-2">
           <span className="text-sm text-slate-500">Per page</span>
-          <select
-            value={pageSize}
-            onChange={(e) =>
-              setPageSize(Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
+          <Select
+            value={String(pageSize)}
+            onValueChange={(value) =>
+              setPageSize(Number(value) as (typeof PAGE_SIZE_OPTIONS)[number])
             }
-            className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
           >
-            {PAGE_SIZE_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-10 min-w-[84px] rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <SelectItem
+                  key={option}
+                  value={String(option)}
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {/* Bulk Action Bar */}
       {selectedCharts.size > 0 && (
-        <div className="mb-4 flex items-center gap-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
+        <div className="mb-4 flex flex-col gap-3 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4 sm:flex-row sm:items-center">
           <span className="font-mono text-sm text-cyan-400">
             {selectedCharts.size} selected
           </span>
-          <div className="flex-1" />
-          <button
-            onClick={clearSelection}
-            className="cursor-pointer rounded-lg px-3 py-1.5 text-sm text-slate-400 transition-colors hover:bg-white/10"
-          >
-            Clear
-          </button>
-          <button
-            onClick={handleBulkDelete}
-            disabled={bulkDeleteLoading}
-            className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
-          >
-            <Trash2 className="h-4 w-4" />
-            Delete All
-          </button>
+          <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+            <button
+              onClick={clearSelection}
+              className="cursor-pointer rounded-lg px-3 py-1.5 text-sm text-slate-400 transition-colors hover:bg-white/10"
+            >
+              Clear
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteLoading}
+              className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete All
+            </button>
+          </div>
         </div>
       )}
 
       {/* Charts Header */}
-      <div className="mb-4 flex items-center gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <span className="font-mono text-sm text-slate-400">
           Page {currentPage} of {totalPages}
         </span>
@@ -553,7 +601,7 @@ export function AirportChartsTab({
                 selectAllVisible();
               }
             }}
-            className="ml-auto flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-white/10"
+            className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-white/10 sm:ml-auto sm:w-auto sm:justify-start"
           >
             {currentPageSelectionCount === paginatedCharts.length &&
             paginatedCharts.length > 0 ? (

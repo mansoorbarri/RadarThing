@@ -8,11 +8,22 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Plane, ImageIcon, Map, Crown, Users, Upload, Flag } from "lucide-react";
 import { useProStatus } from "~/hooks/useProStatus";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 
 import { AdminHeader } from "./_components/AdminHeader";
 import { AdminAccessDenied } from "./_components/AdminAccessDenied";
 import { AdminSkeleton, AdminTabSkeleton } from "./_components/skeletons";
-import { getAdminTabFromPath, getAdminTabHref } from "./adminTabs";
+import {
+  type MainTab,
+  getAdminTabFromPath,
+  getAdminTabHref,
+} from "./adminTabs";
 
 const AircraftImagesTab = dynamic(
   () =>
@@ -119,21 +130,57 @@ export default function AdminPage() {
     return <AdminSkeleton />;
   }
 
+  const mobileTabs: Array<{
+    value: MainTab;
+    label: string;
+    badge?: number;
+  }> = [
+    { value: "images", label: "Aircraft Images", badge: pendingCount || undefined },
+    { value: "charts", label: "Airport Charts" },
+    { value: "virtual-airlines", label: "Virtual Airlines" },
+    { value: "challenges", label: "Challenges" },
+    ...(isSuperAdmin ? [{ value: "pro" as const, label: "Pro" }] : []),
+  ];
+
   return (
     <div className="min-h-screen bg-black text-white">
       <AdminHeader />
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="mb-8">
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 sm:px-4">
             <Plane className="h-4 w-4 text-cyan-400" />
             <span className="font-mono text-sm text-cyan-400">ADMIN PANEL</span>
           </div>
-          <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
+          <h1 className="text-2xl font-bold text-white sm:text-3xl">
+            Admin Dashboard
+          </h1>
         </div>
 
         {/* Main Tabs */}
-        <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-white/10 pb-4">
+        <div className="mb-4 sm:hidden">
+          <Select
+            value={mainTab}
+            onValueChange={(value) => router.push(getAdminTabHref(value as MainTab))}
+          >
+            <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-white/5 font-mono text-sm text-white shadow-none hover:bg-white/[0.07] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+              <SelectValue placeholder="Choose admin section" />
+            </SelectTrigger>
+            <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+              {mobileTabs.map((tab) => (
+                <SelectItem
+                  key={tab.value}
+                  value={tab.value}
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  {tab.badge ? `${tab.label} (${tab.badge})` : tab.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="mb-6 hidden flex-wrap items-center gap-2 border-b border-white/10 pb-4 sm:flex">
           <button
             onClick={() => router.push(getAdminTabHref("images"))}
             className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-all ${
@@ -211,7 +258,7 @@ export default function AdminPage() {
       {(mainTab === "images" || mainTab === "charts") && (
         <button
           onClick={() => setShowUploadModal(true)}
-          className="fixed right-8 bottom-8 z-40 flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/30 transition-all hover:scale-110 hover:shadow-cyan-500/50"
+          className="fixed right-4 bottom-4 z-40 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-4 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all hover:scale-105 hover:shadow-cyan-500/50 sm:right-8 sm:bottom-8 sm:h-14 sm:w-14 sm:px-0"
           title={
             mainTab === "images"
               ? "Upload Aircraft Image"
@@ -219,6 +266,9 @@ export default function AdminPage() {
           }
         >
           <Upload className="h-6 w-6 text-white" />
+          <span className="sm:hidden">
+            {mainTab === "images" ? "Upload image" : "Upload chart"}
+          </span>
         </button>
       )}
 

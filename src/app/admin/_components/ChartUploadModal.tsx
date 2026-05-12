@@ -8,6 +8,13 @@ import {
   ChartUploader,
   type ChartUploaderRef,
 } from "~/components/ui/chart-uploader";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import type { ChartType } from "~/types/airportCharts";
 
 type SubmitStage =
@@ -106,7 +113,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/10 bg-[#0a0f14] p-6 shadow-2xl">
+      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/10 bg-[#0a0f14] p-4 shadow-2xl sm:p-6">
         <button
           onClick={() => !isProcessing && onClose()}
           disabled={isProcessing}
@@ -129,7 +136,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-2 block font-mono text-xs text-slate-400">
                 ICAO CODE *
@@ -154,24 +161,31 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
               <label className="mb-2 block font-mono text-xs text-slate-400">
                 CHART TYPE *
               </label>
-              <select
+              <Select
                 value={formData.chartType}
-                onChange={(e) =>
+                onValueChange={(value) =>
                   setFormData({
                     ...formData,
-                    chartType: e.target.value as ChartType,
+                    chartType: value as ChartType,
                   })
                 }
-                required
                 disabled={isProcessing}
-                className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
               >
-                {chartTypes.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-12 w-full rounded-lg border-white/10 bg-black/40 px-4 text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+                  {chartTypes.map((type) => (
+                    <SelectItem
+                      key={type.value}
+                      value={type.value}
+                      className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                    >
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
