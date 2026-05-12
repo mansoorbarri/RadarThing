@@ -349,27 +349,28 @@
     modal.id = RESUME_MODAL_ID;
     modal.style.cssText = `
       position:fixed;
-      inset:0;
+      top:18px;
+      left:50%;
+      width:min(560px, calc(100vw - 24px));
       display:none;
-      align-items:center;
-      justify-content:center;
-      padding:24px;
-      background:rgba(2,6,23,0.72);
-      backdrop-filter:blur(16px);
+      transform:translate(-50%, -18px);
+      opacity:0;
+      transition:
+        opacity 0.22s ease,
+        transform 0.22s ease;
       z-index:1000004;
     `;
 
     modal.innerHTML = `
       <div style="
         position:relative;
-        width:min(460px, calc(100vw - 32px));
         overflow:hidden;
-        border-radius:24px;
+        border-radius:20px;
         border:1px solid rgba(103,232,249,0.18);
         background:
-          radial-gradient(circle at top right, rgba(34,211,238,0.18), transparent 34%),
-          linear-gradient(180deg, rgba(15,23,42,0.98), rgba(2,6,23,0.96));
-        box-shadow:0 30px 80px rgba(0,0,0,0.55);
+          radial-gradient(circle at top right, rgba(34,211,238,0.16), transparent 36%),
+          linear-gradient(180deg, rgba(15,23,42,0.97), rgba(2,6,23,0.95));
+        box-shadow:0 22px 56px rgba(0,0,0,0.44);
       ">
         <div style="
           position:absolute;
@@ -379,74 +380,88 @@
             linear-gradient(135deg, rgba(34,211,238,0.12), transparent 32%),
             linear-gradient(180deg, transparent, rgba(8,47,73,0.16));
         "></div>
-        <div style="position:relative; padding:22px 22px 20px;">
+        <div style="position:relative; padding:16px 16px 14px;">
           <div style="
-            display:inline-flex;
-            align-items:center;
-            gap:8px;
-            margin-bottom:14px;
-            border-radius:999px;
-            border:1px solid rgba(34,211,238,0.22);
-            background:rgba(8,47,73,0.42);
-            padding:6px 10px;
-            color:#67e8f9;
-            font-size:10px;
-            font-weight:700;
-            letter-spacing:0.18em;
-            text-transform:uppercase;
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap:12px;
+            margin-bottom:12px;
           ">
-            Resume Flight
-          </div>
-          <div style="
-            margin-bottom:6px;
-            color:#f8fafc;
-            font-size:22px;
-            font-weight:700;
-            letter-spacing:-0.03em;
-          ">Continue your last disconnected leg</div>
-          <div style="
-            margin-bottom:18px;
-            color:rgba(226,232,240,0.72);
-            font-size:12px;
-            line-height:1.55;
-          ">
-            RadarThing found an interrupted session. Continue it from where you left off, or end it and start clean.
+            <div>
+              <div style="
+                display:inline-flex;
+                align-items:center;
+                gap:8px;
+                margin-bottom:7px;
+                border-radius:999px;
+                border:1px solid rgba(34,211,238,0.22);
+                background:rgba(8,47,73,0.42);
+                padding:5px 9px;
+                color:#67e8f9;
+                font-size:9px;
+                font-weight:700;
+                letter-spacing:0.18em;
+                text-transform:uppercase;
+              ">
+                Resume Flight
+              </div>
+              <div style="
+                margin-bottom:4px;
+                color:#f8fafc;
+                font-size:18px;
+                font-weight:700;
+                letter-spacing:-0.03em;
+              ">Continue your disconnected leg</div>
+              <div style="
+                color:rgba(226,232,240,0.72);
+                font-size:11px;
+                line-height:1.45;
+              ">
+                RadarThing found an interrupted session waiting for you.
+              </div>
+            </div>
+            <button id="radarthing-resume-dismiss" style="
+              width:32px;
+              height:32px;
+              border-radius:999px;
+              border:1px solid rgba(148,163,184,0.18);
+              background:rgba(15,23,42,0.72);
+              color:#94a3b8;
+              font-size:16px;
+              cursor:pointer;
+            ">×</button>
           </div>
 
           <div style="
             display:grid;
             gap:10px;
-            margin-bottom:18px;
+            margin-bottom:14px;
           ">
             <div style="
-              display:grid;
-              grid-template-columns:1fr auto 1fr;
+              display:flex;
               align-items:center;
+              justify-content:space-between;
               gap:10px;
-              border-radius:18px;
+              border-radius:16px;
               border:1px solid rgba(148,163,184,0.16);
-              background:rgba(15,23,42,0.82);
-              padding:14px 16px;
+              background:rgba(15,23,42,0.78);
+              padding:12px 14px;
             ">
               <div>
-                <div style="margin-bottom:4px; color:#64748b; font-size:10px; letter-spacing:0.16em; text-transform:uppercase;">Departure</div>
-                <div id="radarthing-resume-departure" style="color:#f8fafc; font-size:18px; font-weight:700; letter-spacing:0.08em;">---</div>
+                <div style="margin-bottom:4px; color:#64748b; font-size:9px; letter-spacing:0.16em; text-transform:uppercase;">Callsign</div>
+                <div id="radarthing-resume-callsign" style="color:#f8fafc; font-size:15px; font-weight:700;">Unknown</div>
               </div>
               <div style="
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                width:42px;
-                height:42px;
-                border-radius:999px;
-                border:1px solid rgba(34,211,238,0.18);
-                background:rgba(8,47,73,0.45);
                 color:#67e8f9;
-                font-size:18px;
-              ">→</div>
-              <div style="text-align:right;">
-                <div style="margin-bottom:4px; color:#64748b; font-size:10px; letter-spacing:0.16em; text-transform:uppercase;">Arrival</div>
-                <div id="radarthing-resume-arrival" style="color:#f8fafc; font-size:18px; font-weight:700; letter-spacing:0.08em;">---</div>
+                font-size:14px;
+                font-weight:700;
+                letter-spacing:0.16em;
+                text-transform:uppercase;
+              ">
+                <span id="radarthing-resume-departure">---</span>
+                <span style="opacity:0.5;"> → </span>
+                <span id="radarthing-resume-arrival">---</span>
               </div>
             </div>
 
@@ -456,45 +471,35 @@
               gap:10px;
             ">
               <div style="
-                border-radius:16px;
+                border-radius:14px;
                 border:1px solid rgba(148,163,184,0.16);
-                background:rgba(15,23,42,0.72);
-                padding:12px 14px;
+                background:rgba(15,23,42,0.68);
+                padding:10px 12px;
               ">
-                <div style="margin-bottom:5px; color:#64748b; font-size:10px; letter-spacing:0.16em; text-transform:uppercase;">Callsign</div>
-                <div id="radarthing-resume-callsign" style="color:#f8fafc; font-size:15px; font-weight:700;">Unknown</div>
+                <div style="margin-bottom:4px; color:#64748b; font-size:9px; letter-spacing:0.16em; text-transform:uppercase;">Aircraft</div>
+                <div id="radarthing-resume-aircraft" style="color:#f8fafc; font-size:13px; font-weight:700;">Unknown</div>
               </div>
               <div style="
-                border-radius:16px;
-                border:1px solid rgba(148,163,184,0.16);
-                background:rgba(15,23,42,0.72);
-                padding:12px 14px;
+                border-radius:14px;
+                border:1px solid rgba(251,191,36,0.16);
+                background:linear-gradient(180deg, rgba(120,53,15,0.18), rgba(15,23,42,0.72));
+                padding:10px 12px;
               ">
-                <div style="margin-bottom:5px; color:#64748b; font-size:10px; letter-spacing:0.16em; text-transform:uppercase;">Aircraft</div>
-                <div id="radarthing-resume-aircraft" style="color:#f8fafc; font-size:15px; font-weight:700;">Unknown</div>
+                <div style="margin-bottom:4px; color:#fbbf24; font-size:9px; letter-spacing:0.16em; text-transform:uppercase;">Next Waypoint</div>
+                <div id="radarthing-resume-waypoint" style="color:#fef3c7; font-size:13px; font-weight:700;">Unknown</div>
               </div>
-            </div>
-
-            <div style="
-              border-radius:16px;
-              border:1px solid rgba(251,191,36,0.16);
-              background:linear-gradient(180deg, rgba(120,53,15,0.18), rgba(15,23,42,0.78));
-              padding:12px 14px;
-            ">
-              <div style="margin-bottom:5px; color:#fbbf24; font-size:10px; letter-spacing:0.16em; text-transform:uppercase;">Next Waypoint</div>
-              <div id="radarthing-resume-waypoint" style="color:#fef3c7; font-size:15px; font-weight:700;">Unknown</div>
             </div>
           </div>
 
           <div style="display:flex; gap:10px;">
             <button id="radarthing-resume-decline" style="
               flex:1;
-              height:42px;
-              border-radius:14px;
+              height:38px;
+              border-radius:12px;
               border:1px solid rgba(248,113,113,0.24);
               background:rgba(127,29,29,0.22);
               color:#fecaca;
-              font-size:11px;
+              font-size:10px;
               font-weight:700;
               letter-spacing:0.14em;
               text-transform:uppercase;
@@ -502,16 +507,16 @@
             ">Start fresh</button>
             <button id="radarthing-resume-accept" style="
               flex:1.35;
-              height:42px;
-              border-radius:14px;
+              height:38px;
+              border-radius:12px;
               border:1px solid rgba(34,211,238,0.26);
               background:linear-gradient(135deg, rgba(8,145,178,0.82), rgba(14,116,144,0.92));
               color:#ecfeff;
-              font-size:11px;
+              font-size:10px;
               font-weight:700;
               letter-spacing:0.14em;
               text-transform:uppercase;
-              box-shadow:0 14px 32px rgba(8,145,178,0.28);
+              box-shadow:0 12px 26px rgba(8,145,178,0.24);
               cursor:pointer;
             ">Continue flight</button>
           </div>
@@ -519,15 +524,13 @@
       </div>
     `;
 
+    const dismissBtn = modal.querySelector("#radarthing-resume-dismiss");
     const declineBtn = modal.querySelector("#radarthing-resume-decline");
     const acceptBtn = modal.querySelector("#radarthing-resume-accept");
 
+    dismissBtn.onclick = () => closeResumeFlightModal(false);
     declineBtn.onclick = () => closeResumeFlightModal(false);
     acceptBtn.onclick = () => closeResumeFlightModal(true);
-
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) closeResumeFlightModal(false);
-    });
 
     document.addEventListener(
       "keydown",
@@ -545,13 +548,21 @@
 
   function closeResumeFlightModal(shouldResume) {
     const modal = document.getElementById(RESUME_MODAL_ID);
-    if (modal) modal.style.display = "none";
+    const resolver = resumeModalResolver;
+    resumeModalResolver = null;
 
-    if (resumeModalResolver) {
-      const resolver = resumeModalResolver;
-      resumeModalResolver = null;
-      resolver(Boolean(shouldResume));
+    if (!modal) {
+      if (resolver) resolver(Boolean(shouldResume));
+      return;
     }
+
+    modal.style.opacity = "0";
+    modal.style.transform = "translate(-50%, -18px)";
+
+    setTimeout(() => {
+      modal.style.display = "none";
+      if (resolver) resolver(Boolean(shouldResume));
+    }, 220);
   }
 
   function showResumeFlightModal(detail) {
@@ -570,6 +581,10 @@
       detail?.nextWaypoint || "Unknown";
 
     modal.style.display = "flex";
+    requestAnimationFrame(() => {
+      modal.style.opacity = "1";
+      modal.style.transform = "translate(-50%, 0)";
+    });
 
     return new Promise((resolve) => {
       resumeModalResolver = resolve;

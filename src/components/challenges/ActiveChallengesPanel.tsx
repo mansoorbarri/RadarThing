@@ -7,6 +7,7 @@ import { CheckCircle2, Clock3, Flag, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
+import { ChallengeLeaderboardTab } from "~/components/challenges/ChallengeLeaderboardTab";
 import { Analytics } from "~/lib/analytics";
 
 function formatWindow(startAt: number, endAt: number) {
@@ -77,9 +78,13 @@ export function ActiveChallengesPanel({
     api.challenges.listActiveForUser,
     userId ? { userId } : "skip",
   );
+  const leaderboard = useQuery(api.challenges.listActiveLeaderboard, {});
   const challenges = userId ? userChallenges : viewerChallenges;
   const syncForCurrentUser = useMutation(api.challenges.syncForCurrentUser);
   const submitManualClaim = useMutation(api.challenges.submitManualClaim);
+  const [activeTab, setActiveTab] = useState<"challenges" | "leaderboard">(
+    "challenges",
+  );
   const [noteByChallengeId, setNoteByChallengeId] = useState<
     Record<string, string>
   >({});
@@ -193,186 +198,223 @@ export function ActiveChallengesPanel({
             ACTIVE CHALLENGES
           </h3>
         </div>
-        <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
-          {challenges.length} live
-        </span>
+        <div className="flex items-center gap-3">
+          <div className="flex rounded-xl border border-white/10 bg-white/5 p-1">
+            <button
+              onClick={() => setActiveTab("challenges")}
+              className={`cursor-pointer rounded-lg px-3 py-1.5 font-mono text-[10px] tracking-wider uppercase transition-colors ${
+                activeTab === "challenges"
+                  ? "bg-white/10 text-white"
+                  : "text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              Challenges
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("leaderboard");
+                Analytics.track("challenge_leaderboard_viewed", {
+                  challenge_count: challenges.length,
+                });
+              }}
+              className={`cursor-pointer rounded-lg px-3 py-1.5 font-mono text-[10px] tracking-wider uppercase transition-colors ${
+                activeTab === "leaderboard"
+                  ? "bg-white/10 text-white"
+                  : "text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              Leaderboard
+            </button>
+          </div>
+          <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
+            {challenges.length} live
+          </span>
+        </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {challenges.map((challenge) => {
-          const status = challenge.userStatus;
-          const isSubmitting = submittingChallengeId === challenge.id;
-          const canShowProgress = isSignedIn && challenge.mode === "auto";
-          const canSubmitManual =
-            "canSubmitManual" in challenge ? challenge.canSubmitManual : false;
-          const progressTarget = Math.max(1, challenge.progressTarget ?? 1);
-          const progressCurrent = challenge.progressCurrent ?? 0;
-          const progressPercent = Math.min(
-            100,
-            Math.round((progressCurrent / progressTarget) * 100),
-          );
+      {activeTab === "leaderboard" ? (
+        <ChallengeLeaderboardTab
+          challenges={leaderboard}
+          highlightedUserId={userId ?? null}
+          isLoading={leaderboard === undefined}
+        />
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {challenges.map((challenge) => {
+            const status = challenge.userStatus;
+            const isSubmitting = submittingChallengeId === challenge.id;
+            const canShowProgress = isSignedIn && challenge.mode === "auto";
+            const canSubmitManual =
+              "canSubmitManual" in challenge ? challenge.canSubmitManual : false;
+            const progressTarget = Math.max(1, challenge.progressTarget ?? 1);
+            const progressCurrent = challenge.progressCurrent ?? 0;
+            const progressPercent = Math.min(
+              100,
+              Math.round((progressCurrent / progressTarget) * 100),
+            );
 
-          return (
-            <div
-              key={challenge.id}
-              className="rounded-2xl border border-white/10 bg-white/5 p-5"
-            >
-              <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="mb-2 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
-                      {challenge.cadence}
-                    </span>
-                    <span
-                      className={`rounded-full px-2.5 py-1 font-mono text-[10px] tracking-wider uppercase ${
-                        challenge.mode === "auto"
-                          ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                          : "border border-amber-500/30 bg-amber-500/10 text-amber-300"
-                      }`}
-                    >
-                      {challenge.mode === "auto" ? "auto" : "manual"}
-                    </span>
-                    {status === "completed" && (
-                      <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 font-mono text-[10px] tracking-wider text-emerald-300 uppercase">
-                        completed
+            return (
+              <div
+                key={challenge.id}
+                className="rounded-2xl border border-white/10 bg-white/5 p-5"
+              >
+                <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
+                        {challenge.cadence}
                       </span>
-                    )}
-                    {status === "pending" && (
-                      <span className="rounded-full border border-yellow-500/30 bg-yellow-500/10 px-2.5 py-1 font-mono text-[10px] tracking-wider text-yellow-300 uppercase">
-                        pending review
-                      </span>
-                    )}
-                    {status === "rejected" && (
-                      <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 font-mono text-[10px] tracking-wider text-red-300 uppercase">
-                        needs resubmission
-                      </span>
-                    )}
-                  </div>
-                  <h4 className="text-lg font-semibold text-white">
-                    {challenge.title}
-                  </h4>
-                </div>
-                <div className="flex items-center gap-1 text-xs text-slate-500">
-                  <Clock3 className="h-3.5 w-3.5" />
-                  <span>
-                    {formatWindow(challenge.startAt, challenge.endAt)}
-                  </span>
-                </div>
-              </div>
-
-              <p className="mb-3 text-sm text-slate-300">
-                {challenge.description}
-              </p>
-              <p className="mb-4 font-mono text-xs text-cyan-300">
-                {getRuleSummary(challenge)}
-              </p>
-
-              {challenge.mode === "auto" ? (
-                canShowProgress ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
                       <span
-                        className={
-                          status === "completed"
-                            ? "text-emerald-300"
-                            : "text-slate-400"
-                        }
-                      >
-                        {status === "completed" ? (
-                          <span className="inline-flex items-center gap-1.5">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            Complete
-                          </span>
-                        ) : (
-                          challenge.progressLabel
-                        )}
-                      </span>
-                      <span className="font-mono text-slate-500">
-                        {progressPercent}%
-                      </span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                      <div
-                        className={`h-full rounded-full ${
-                          status === "completed"
-                            ? "bg-emerald-400"
-                            : "bg-cyan-400"
+                        className={`rounded-full px-2.5 py-1 font-mono text-[10px] tracking-wider uppercase ${
+                          challenge.mode === "auto"
+                            ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                            : "border border-amber-500/30 bg-amber-500/10 text-amber-300"
                         }`}
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    className={`rounded-xl border px-3 py-2 text-sm ${
-                      status === "completed"
-                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
-                        : "border-white/10 bg-black/30 text-slate-400"
-                    }`}
-                  >
-                    {status === "completed" ? (
-                      <span className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4" />
-                        Completed from your recorded flights.
-                      </span>
-                    ) : (
-                      "This challenge is tracked automatically from your flight history."
-                    )}
-                  </div>
-                )
-              ) : (
-                <div className="space-y-3">
-                  {canSubmitManual ? (
-                    <>
-                      <textarea
-                        value={noteByChallengeId[challenge.id] ?? ""}
-                        onChange={(event) =>
-                          setNoteByChallengeId((current) => ({
-                            ...current,
-                            [challenge.id]: event.target.value,
-                          }))
-                        }
-                        rows={3}
-                        placeholder="Optional note for admins. Describe what you did or link the relevant flight."
-                        className="w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white placeholder-slate-500 outline-none focus:border-cyan-500/50"
-                      />
-                      <button
-                        onClick={() => handleSubmit(challenge.id)}
-                        disabled={isSubmitting}
-                        className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {isSubmitting ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Send className="h-4 w-4" />
-                        )}
-                        Submit for review
-                      </button>
-                    </>
+                        {challenge.mode === "auto" ? "auto" : "manual"}
+                      </span>
+                      {status === "completed" && (
+                        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 font-mono text-[10px] tracking-wider text-emerald-300 uppercase">
+                          completed
+                        </span>
+                      )}
+                      {status === "pending" && (
+                        <span className="rounded-full border border-yellow-500/30 bg-yellow-500/10 px-2.5 py-1 font-mono text-[10px] tracking-wider text-yellow-300 uppercase">
+                          pending review
+                        </span>
+                      )}
+                      {status === "rejected" && (
+                        <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 font-mono text-[10px] tracking-wider text-red-300 uppercase">
+                          needs resubmission
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="text-lg font-semibold text-white">
+                      {challenge.title}
+                    </h4>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-slate-500">
+                    <Clock3 className="h-3.5 w-3.5" />
+                    <span>
+                      {formatWindow(challenge.startAt, challenge.endAt)}
+                    </span>
+                  </div>
+                </div>
+
+                <p className="mb-3 text-sm text-slate-300">
+                  {challenge.description}
+                </p>
+                <p className="mb-4 font-mono text-xs text-cyan-300">
+                  {getRuleSummary(challenge)}
+                </p>
+
+                {challenge.mode === "auto" ? (
+                  canShowProgress ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span
+                          className={
+                            status === "completed"
+                              ? "text-emerald-300"
+                              : "text-slate-400"
+                          }
+                        >
+                          {status === "completed" ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              Complete
+                            </span>
+                          ) : (
+                            challenge.progressLabel
+                          )}
+                        </span>
+                        <span className="font-mono text-slate-500">
+                          {progressPercent}%
+                        </span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                        <div
+                          className={`h-full rounded-full ${
+                            status === "completed"
+                              ? "bg-emerald-400"
+                              : "bg-cyan-400"
+                          }`}
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                    </div>
                   ) : (
                     <div
                       className={`rounded-xl border px-3 py-2 text-sm ${
                         status === "completed"
                           ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
-                          : status === "pending"
-                            ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-100"
-                            : "border-red-500/30 bg-red-500/10 text-red-200"
+                          : "border-white/10 bg-black/30 text-slate-400"
                       }`}
                     >
-                      {status === "completed" &&
-                        "Your submission was approved."}
-                      {status === "pending" &&
-                        "Your submission is waiting for admin review."}
-                      {status === "rejected" &&
-                        "You can update your note and resubmit this challenge."}
+                      {status === "completed" ? (
+                        <span className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4" />
+                          Completed from your recorded flights.
+                        </span>
+                      ) : (
+                        "This challenge is tracked automatically from your flight history."
+                      )}
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                  )
+                ) : (
+                  <div className="space-y-3">
+                    {canSubmitManual ? (
+                      <>
+                        <textarea
+                          value={noteByChallengeId[challenge.id] ?? ""}
+                          onChange={(event) =>
+                            setNoteByChallengeId((current) => ({
+                              ...current,
+                              [challenge.id]: event.target.value,
+                            }))
+                          }
+                          rows={3}
+                          placeholder="Optional note for admins. Describe what you did or link the relevant flight."
+                          className="w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white placeholder-slate-500 outline-none focus:border-cyan-500/50"
+                        />
+                        <button
+                          onClick={() => handleSubmit(challenge.id)}
+                          disabled={isSubmitting}
+                          className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isSubmitting ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                          Submit for review
+                        </button>
+                      </>
+                    ) : (
+                      <div
+                        className={`rounded-xl border px-3 py-2 text-sm ${
+                          status === "completed"
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                            : status === "pending"
+                              ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-100"
+                              : "border-red-500/30 bg-red-500/10 text-red-200"
+                        }`}
+                      >
+                        {status === "completed" &&
+                          "Your submission was approved."}
+                        {status === "pending" &&
+                          "Your submission is waiting for admin review."}
+                        {status === "rejected" &&
+                          "You can update your note and resubmit this challenge."}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
