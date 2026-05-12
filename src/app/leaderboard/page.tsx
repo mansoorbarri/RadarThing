@@ -17,7 +17,6 @@ import {
   Upload,
 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
-import { ChallengeLeaderboardTab } from "~/components/challenges/ChallengeLeaderboardTab";
 import { Analytics } from "~/lib/analytics";
 
 type SortKey =
@@ -42,6 +41,16 @@ function getActiveSortLabel(sortBy: SortKey): string {
   if (sortBy === "contribution") return "Uploads";
   if (sortBy === "challenges") return "Challenge";
   return "Flights";
+}
+
+function formatChallengeWindow(startAt: number, endAt: number) {
+  return `${new Date(startAt).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  })} - ${new Date(endAt).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  })}`;
 }
 
 export default function LeaderboardPage() {
@@ -299,12 +308,147 @@ export default function LeaderboardPage() {
         </div>
 
         {sortBy === "challenges" ? (
-          <ChallengeLeaderboardTab
-            challenges={challengeLeaderboard}
-            highlightedUserId={dbUser?._id ?? null}
-            isLoading={challengeLeaderboard === undefined}
-            maxEntries={10}
-          />
+          challengeLeaderboard === undefined ? (
+            <LeaderboardSkeleton />
+          ) : challengeLeaderboard.length === 0 ? (
+            <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
+              <Flag className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+              <h3 className="mb-2 text-xl font-semibold text-white">
+                No Active Challenges
+              </h3>
+              <p className="text-slate-400">
+                Challenge rankings appear here whenever a challenge is live.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {challengeLeaderboard.map((challenge) => {
+                const visibleEntries = challenge.entries.slice(0, 10);
+
+                return (
+                  <section
+                    key={challenge.id}
+                    className="rounded-2xl border border-white/10 bg-black/40 p-5 backdrop-blur-xl sm:p-6"
+                  >
+                    <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-2xl font-bold text-white">
+                          {challenge.title}
+                        </h3>
+                        <p className="mt-2 text-sm text-slate-300">
+                          {challenge.description}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-xs text-slate-500">
+                        <Clock className="h-3.5 w-3.5" />
+                        <span>
+                          {formatChallengeWindow(
+                            challenge.startAt,
+                            challenge.endAt,
+                          )}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 px-3 pb-3 sm:gap-4 sm:px-4">
+                      <div className="w-8 shrink-0 sm:w-9" />
+                      <div className="min-w-0 flex-1 font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                        Pilot
+                      </div>
+                      <div className="w-20 shrink-0 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase sm:hidden">
+                        Progress
+                      </div>
+                      <div className="hidden shrink-0 items-center gap-6 sm:flex">
+                        <div className="w-24 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                          Progress
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {visibleEntries.map((entry, index) => {
+                        const rank = index + 1;
+                        const isTop3 = rank <= 3;
+                        const isHighlighted = dbUser?._id === entry.userId;
+                        const progressPercent = Math.min(
+                          100,
+                          Math.round(
+                            (entry.progressCurrent /
+                              Math.max(1, entry.progressTarget)) *
+                              100,
+                          ),
+                        );
+                        const medalColor =
+                          rank === 1
+                            ? "text-amber-400 border-amber-500/40 bg-amber-500/10"
+                            : rank === 2
+                              ? "text-slate-300 border-slate-400/40 bg-slate-400/10"
+                              : rank === 3
+                                ? "text-orange-400 border-orange-500/40 bg-orange-500/10"
+                                : "";
+
+                        return (
+                          <button
+                            key={entry.userId}
+                            onClick={() => router.push(`/pilot/${entry.userId}`)}
+                            className={`flex w-full cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition-all hover:border-cyan-500/30 hover:bg-white/10 sm:gap-4 sm:p-4 ${
+                              isHighlighted
+                                ? "border-cyan-500/40 bg-cyan-500/[0.08] ring-1 ring-cyan-500/20"
+                                : isTop3
+                                  ? "border-white/10 bg-white/[0.04]"
+                                  : "border-white/5 bg-white/[0.02]"
+                            }`}
+                          >
+                            <div
+                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border font-mono text-xs font-bold sm:h-9 sm:w-9 sm:text-sm ${
+                                isTop3
+                                  ? medalColor
+                                  : "border-white/10 bg-white/5 text-slate-500"
+                              }`}
+                            >
+                              {rank}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 sm:gap-2">
+                                <span className="truncate font-mono text-xs font-bold text-white sm:text-sm">
+                                  {entry.displayName}
+                                </span>
+                                {isHighlighted && (
+                                  <span className="shrink-0 rounded bg-cyan-500/20 px-1 py-0.5 font-mono text-[8px] font-bold text-cyan-400 sm:px-1.5 sm:text-[9px]">
+                                    YOU
+                                  </span>
+                                )}
+                              </div>
+                              {entry.callsign &&
+                                entry.callsign !== entry.displayName && (
+                                  <p className="mt-1 font-mono text-[11px] text-slate-500">
+                                    {entry.callsign}
+                                  </p>
+                                )}
+                            </div>
+
+                            <div className="w-20 shrink-0 text-right sm:hidden">
+                              <div className="font-mono text-xs font-bold text-cyan-400">
+                                {progressPercent}%
+                              </div>
+                            </div>
+
+                            <div className="hidden shrink-0 items-center gap-6 sm:flex">
+                              <div className="w-24 text-right font-mono text-sm font-bold text-cyan-400">
+                                {progressPercent}%
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          )
         ) : (
           <>
             {visibleSorted === null ? (
