@@ -66,10 +66,11 @@ export const env = createEnv({
     BOT_API_SECRET: process.env.BOT_API_SECRET,
   },
   /**
-   * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
-   * useful for Docker builds.
+   * Skip validation explicitly via `SKIP_ENV_VALIDATION`, or automatically on Vercel preview
+   * deployments where not every production secret is available.
    */
-  skipValidation: !!process.env.SKIP_ENV_VALIDATION,
+  skipValidation:
+    !!process.env.SKIP_ENV_VALIDATION || process.env.VERCEL_ENV === "preview",
   /**
    * Makes it so that empty strings are treated as undefined. `SOME_VAR: z.string()` and
    * `SOME_VAR=''` will throw an error.
