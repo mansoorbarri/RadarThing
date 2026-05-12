@@ -921,21 +921,31 @@ export default function ATCPage() {
             >
               {/* Compact UTC on phone */}
               {isPhone && (
-                <span className="font-mono text-[11px] text-cyan-400/80">
-                  {time} <span className="text-[8px] text-slate-500">Z</span>
-                </span>
+                <button
+                  onClick={() => setShowTimerPopup(!showTimerPopup)}
+                  className="flex h-7 items-center justify-center rounded-full border border-white/10 bg-black/40 px-2.5 backdrop-blur-md"
+                >
+                  <span className="flex h-full items-center justify-center gap-1 font-mono text-[11px] leading-none text-cyan-400">
+                    <span className="leading-none">{time}</span>
+                    <span className="text-[8px] leading-none text-slate-500">
+                      UTC
+                    </span>
+                  </span>
+                </button>
               )}
-              <ConnectionStatusIndicator
-                status={connectionStatus}
-                isMobile={isMobile}
-                isStale={
-                  connectionStatus === "connected" &&
-                  lastMessageAgeSeconds !== null &&
-                  lastMessageAgeSeconds >= 15
-                }
-                lastMessageAgeSeconds={lastMessageAgeSeconds}
-                error={streamError}
-              />
+              {!isPhone && (
+                <ConnectionStatusIndicator
+                  status={connectionStatus}
+                  isMobile={isMobile}
+                  isStale={
+                    connectionStatus === "connected" &&
+                    lastMessageAgeSeconds !== null &&
+                    lastMessageAgeSeconds >= 15
+                  }
+                  lastMessageAgeSeconds={lastMessageAgeSeconds}
+                  error={streamError}
+                />
+              )}
               <WhatsNew isMobile={isMobile} />
               <UserAuth />
             </div>

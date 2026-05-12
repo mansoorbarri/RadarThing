@@ -2,6 +2,11 @@ import L from "leaflet";
 import React from "react";
 import { Analytics } from "~/lib/analytics";
 
+const tooltipCleanupMap = new WeakMap<HTMLDivElement, () => void>();
+const tooltipHideTimerMap = new WeakMap<HTMLDivElement, ReturnType<
+  typeof setTimeout
+>>();
+
 // SVG Icons for map controls (matching theme style)
 const ICONS = {
   settings: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -29,6 +34,64 @@ function applyMetarStyleButton(
   container.className =
     "map-control-btn w-[36px] h-[36px] flex items-center justify-center text-cyan-400 text-[18px] font-semibold border border-cyan-400/30 rounded-md bg-black/70 shadow-[0_0_6px_rgba(0,255,255,0.25)] cursor-pointer transition-all duration-200 hover:bg-cyan-400/10 hover:shadow-[0_0_10px_rgba(0,255,255,0.4)] hover:border-cyan-400/60";
   container.innerHTML = `${iconHtml}<span class="map-tooltip">${title}</span>`;
+  attachTooltipBehavior(container);
+}
+
+function clearTooltipHideTimer(container: HTMLDivElement) {
+  const existingTimer = tooltipHideTimerMap.get(container);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+    tooltipHideTimerMap.delete(container);
+  }
+}
+
+function showTooltip(container: HTMLDivElement) {
+  clearTooltipHideTimer(container);
+  container.classList.add("map-tooltip-visible");
+}
+
+function scheduleHideTooltip(
+  container: HTMLDivElement,
+  delayMs = 240,
+) {
+  clearTooltipHideTimer(container);
+  const timer = setTimeout(() => {
+    container.classList.remove("map-tooltip-visible");
+    tooltipHideTimerMap.delete(container);
+  }, delayMs);
+  tooltipHideTimerMap.set(container, timer);
+}
+
+function attachTooltipBehavior(container: HTMLDivElement) {
+  const handlePointerEnter = () => showTooltip(container);
+  const handlePointerLeave = () => scheduleHideTooltip(container);
+  const handleFocus = () => showTooltip(container);
+  const handleBlur = () => scheduleHideTooltip(container, 120);
+  const handlePointerDown = () => {
+    showTooltip(container);
+    scheduleHideTooltip(container, 450);
+  };
+
+  container.addEventListener("pointerenter", handlePointerEnter);
+  container.addEventListener("pointerleave", handlePointerLeave);
+  container.addEventListener("focus", handleFocus);
+  container.addEventListener("blur", handleBlur);
+  container.addEventListener("pointerdown", handlePointerDown);
+
+  tooltipCleanupMap.set(container, () => {
+    clearTooltipHideTimer(container);
+    container.classList.remove("map-tooltip-visible");
+    container.removeEventListener("pointerenter", handlePointerEnter);
+    container.removeEventListener("pointerleave", handlePointerLeave);
+    container.removeEventListener("focus", handleFocus);
+    container.removeEventListener("blur", handleBlur);
+    container.removeEventListener("pointerdown", handlePointerDown);
+  });
+}
+
+function detachTooltipBehavior(container: HTMLDivElement) {
+  tooltipCleanupMap.get(container)?.();
+  tooltipCleanupMap.delete(container);
 }
 
 function setActiveStyle(container: HTMLDivElement, active: boolean) {
@@ -80,8 +143,10 @@ export class RadarSettingsControl extends L.Control {
   }
 
   onRemove() {
-    if (this._container)
+    if (this._container) {
       L.DomEvent.off(this._container, "click", this._boundClick);
+      detachTooltipBehavior(this._container);
+    }
   }
 
   updateState(enabled: boolean) {
@@ -121,6 +186,7 @@ export class HeadingModeControl extends L.Control {
   onRemove() {
     if (this._container) {
       L.DomEvent.off(this._container, "click", this._boundClick);
+      detachTooltipBehavior(this._container);
     }
   }
 
@@ -155,8 +221,10 @@ export class RadarModeControl extends L.Control {
   }
 
   onRemove() {
-    if (this._container)
+    if (this._container) {
       L.DomEvent.off(this._container, "click", this._boundClick);
+      detachTooltipBehavior(this._container);
+    }
   }
 
   updateState(enabled: boolean) {
@@ -190,6 +258,7 @@ export class LockedRadarModeControl extends L.Control {
       <span style="position: absolute; top: -6px; right: -6px; background: rgba(234, 179, 8, 0.2); color: #facc15; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: bold;">PRO</span>
       <span class="map-tooltip">Radar Mode (PRO)</span>
     `;
+    attachTooltipBehavior(container);
     L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
     L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
     L.DomEvent.on(container, "click", this._boundClick);
@@ -198,8 +267,10 @@ export class LockedRadarModeControl extends L.Control {
   }
 
   onRemove() {
-    if (this._container)
+    if (this._container) {
       L.DomEvent.off(this._container, "click", this._boundClick);
+      detachTooltipBehavior(this._container);
+    }
   }
 }
 
@@ -229,8 +300,10 @@ export class OSMControl extends L.Control {
   }
 
   onRemove() {
-    if (this._container)
+    if (this._container) {
       L.DomEvent.off(this._container, "click", this._boundClick);
+      detachTooltipBehavior(this._container);
+    }
   }
 
   updateState(enabled: boolean) {
@@ -265,8 +338,10 @@ export class OpenAIPControl extends L.Control {
   }
 
   onRemove() {
-    if (this._container)
+    if (this._container) {
       L.DomEvent.off(this._container, "click", this._boundClick);
+      detachTooltipBehavior(this._container);
+    }
   }
 
   updateState(enabled: boolean) {

@@ -1022,8 +1022,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
       />
 
       {isSettingsOpen && !hideUi && (
-        <div className="animate-in fade-in zoom-in-95 absolute top-[180px] bottom-4 left-[70px] z-[10020] w-[min(320px,calc(100vw-86px))] duration-200">
-          <div className="h-full overflow-hidden rounded-xl border border-white/10 bg-[#0a1219]/95 p-5 shadow-2xl backdrop-blur-xl">
+        <div className="animate-in fade-in zoom-in-95 absolute top-[180px] left-[70px] z-[10020] w-[min(320px,calc(100vw-86px))] duration-200">
+          <div className="max-h-[calc(100dvh-210px)] overflow-y-auto rounded-xl border border-white/10 bg-[#0a1219]/95 p-5 shadow-2xl backdrop-blur-xl">
             <RadarSettings
               isPRO={isProUser}
               presets={layerPresets}

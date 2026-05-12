@@ -92,7 +92,7 @@
   position: absolute;
   left: calc(100% + 8px);
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-50%) translateX(-4px);
   background: rgba(0, 0, 0, 0.9);
   color: #22d3ee;
   padding: 6px 10px;
@@ -102,14 +102,19 @@
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
   border: 1px solid rgba(34, 211, 238, 0.3);
   box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
   z-index: 9999;
 }
 
-.map-control-btn:hover .map-tooltip {
+.map-control-btn:hover .map-tooltip,
+.map-control-btn.map-tooltip-visible .map-tooltip,
+.map-control-btn:focus-visible .map-tooltip {
   opacity: 1;
+  transform: translateY(-50%) translateX(0);
 }
 
 /* Smooth tile fade-in on load instead of popping in */
@@ -206,4 +211,3 @@
 .animate-scale-in {
   animation: scaleIn 0.2s ease-out both;
 }
-

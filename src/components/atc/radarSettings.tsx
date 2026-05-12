@@ -119,7 +119,7 @@ export const RadarSettings = ({
   };
 
   return (
-    <div className="flex h-full flex-col rounded-md border border-cyan-400/30 bg-black/90 font-mono text-cyan-400 shadow-xl backdrop-blur-md">
+    <div className="flex flex-col rounded-md border border-cyan-400/30 bg-black/90 font-mono text-cyan-400 shadow-xl backdrop-blur-md">
       <div className="flex flex-col gap-3 border-b border-white/10 p-3.5 sm:p-4">
         <div>
           <h3 className="text-[14px] font-bold tracking-widest text-white uppercase">
@@ -150,7 +150,7 @@ export const RadarSettings = ({
         </div>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto p-3.5 pr-2.5 sm:p-4 sm:pr-3">
+      <div className="space-y-3 p-3.5 pr-2.5 sm:p-4 sm:pr-3">
         <SettingsSection
           title="Layer Presets"
           isOpen={openSections.presets}
