@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "challenge-leaderboard-tab",
+    date: "2026-05-12",
+    title: "Challenge Leaderboard Tab",
+    description:
+      "The leaderboard now includes a Challenges tab with top 10 rankings for every active pilot challenge.",
+    type: "new",
+  },
+  {
     id: "flight-resume-recovery",
     date: "2026-05-11",
     title: "Flight Resume Recovery",
