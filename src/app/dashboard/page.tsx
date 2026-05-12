@@ -43,6 +43,16 @@ import {
   FlightHistoryPanel,
   type FlightHistoryPanelFlight,
 } from "~/components/flights/FlightHistoryPanel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "~/components/ui/alert-dialog";
 import { downloadAccountDataExport } from "~/lib/account-data-export";
 
 function formatFlightTime(ms: number): string {
@@ -65,7 +75,11 @@ export default function DashboardPage() {
   const [flightsExpanded, setFlightsExpanded] = useState(false);
   const [discordLoading, setDiscordLoading] = useState(false);
   const [cardFlight, setCardFlight] = useState<FlightCardData | null>(null);
+  const [flightPendingDelete, setFlightPendingDelete] =
+    useState<FlightHistoryPanelFlight | null>(null);
+  const [deletingFlightId, setDeletingFlightId] = useState<string | null>(null);
   const updateDiscordUsername = useMutation(api.users.updateDiscordUsername);
+  const deleteFlight = useMutation(api.flights.deleteFlight);
 
   useEffect(() => {
     setMounted(true);
@@ -199,6 +213,32 @@ export default function DashboardPage() {
       );
     } finally {
       setIsExportingData(false);
+    }
+  };
+
+  const confirmDeleteFlight = async () => {
+    if (!flightPendingDelete || !dbUser) return;
+
+    setDeletingFlightId(flightPendingDelete.id);
+    try {
+      await deleteFlight({ flightId: flightPendingDelete.id });
+      toast.success("Flight deleted");
+      Analytics.flightDeleted({
+        source: "dashboard",
+        targetUserId: dbUser._id,
+        flightId: flightPendingDelete.id,
+        callsign: flightPendingDelete.callsign,
+        aircraftType: flightPendingDelete.aircraftType,
+        depICAO: flightPendingDelete.depICAO,
+        arrICAO: flightPendingDelete.arrICAO,
+      });
+      setFlightPendingDelete(null);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete flight",
+      );
+    } finally {
+      setDeletingFlightId(null);
     }
   };
 
@@ -534,6 +574,8 @@ export default function DashboardPage() {
                 expanded={flightsExpanded}
                 onExpandedChange={setFlightsExpanded}
                 canGenerateFlightCard={isPro}
+                canDeleteFlights
+                deletingFlightId={deletingFlightId}
                 onShareFlight={(flight) => {
                   const url = `${window.location.origin}/radar?replay=${flight.id}`;
                   navigator.clipboard.writeText(url).then(() => {
@@ -571,6 +613,9 @@ export default function DashboardPage() {
                 onReplayFlight={(flight) =>
                   router.push(`/radar?replay=${flight.id}`)
                 }
+                onDeleteFlight={(flight) => {
+                  setFlightPendingDelete(flight);
+                }}
                 onUpgrade={() => {
                   Analytics.upgradeButtonClicked({
                     source: "dashboard_recent_flights_lock",
@@ -768,6 +813,81 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      <AlertDialog
+        open={flightPendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open && !deletingFlightId) {
+            setFlightPendingDelete(null);
+          }
+        }}
+      >
+        <AlertDialogContent className="overflow-hidden border-red-500/20 bg-[radial-gradient(circle_at_top,_rgba(239,68,68,0.14),_transparent_32%),linear-gradient(180deg,rgba(9,9,11,0.98),rgba(2,6,23,0.96))] p-0">
+          <div className="border-b border-white/10 bg-white/[0.03] px-6 py-5">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-red-500/25 bg-red-500/10 shadow-[0_0_30px_rgba(239,68,68,0.16)]">
+                <Trash2 className="h-5 w-5 text-red-300" />
+              </div>
+              <AlertDialogHeader className="gap-1 text-left">
+                <AlertDialogTitle className="text-xl text-white">
+                  Delete flight from your history?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-sm leading-6 text-slate-300">
+                  This can&apos;t be undone. Are you sure?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+            </div>
+          </div>
+
+          <div className="space-y-4 px-6 py-4">
+            <div className="rounded-xl border border-white/10 bg-black/25 px-4 py-3">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="font-mono font-bold text-white">
+                  {flightPendingDelete?.depICAO || "???"}
+                </span>
+                <Route className="h-3.5 w-3.5 text-slate-500" />
+                <span className="font-mono font-bold text-white">
+                  {flightPendingDelete?.arrICAO || "???"}
+                </span>
+                {flightPendingDelete?.callsign && (
+                  <span className="rounded-full bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] text-cyan-300">
+                    {flightPendingDelete.callsign}
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-sm text-slate-400">
+                {flightPendingDelete?.aircraftType || "Unknown aircraft"}
+              </p>
+            </div>
+
+            <AlertDialogFooter className="gap-2 pt-0">
+              <AlertDialogCancel
+                disabled={deletingFlightId !== null}
+                className="border-white/12 bg-white/[0.04] text-slate-200 hover:bg-white/[0.08] hover:text-white"
+              >
+                Keep flight
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(event) => {
+                  event.preventDefault();
+                  void confirmDeleteFlight();
+                }}
+                disabled={deletingFlightId !== null}
+                className="border border-red-500/30 bg-red-500/85 text-white shadow-lg shadow-red-950/30 hover:bg-red-500"
+              >
+                {deletingFlightId === flightPendingDelete?.id ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Deleting flight...
+                  </>
+                ) : (
+                  "Delete flight"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {cardFlight && (
         <FlightCardDialog

@@ -85,7 +85,7 @@ function PilotPageContent() {
     try {
       await deleteFlight({ flightId: flightPendingDelete.id });
       toast.success("Flight deleted");
-      Analytics.track("flight_deleted", {
+      Analytics.flightDeleted({
         source: "pilot_profile",
         targetUserId: userId,
         flightId: flightPendingDelete.id,

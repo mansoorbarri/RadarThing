@@ -245,6 +245,20 @@ export const Analytics = {
     track("flight_replay_shared", props);
   },
 
+  flightDeleted: (
+    props: {
+      flightId: string;
+      source: string;
+      targetUserId?: string;
+      callsign?: string;
+      aircraftType: string;
+      depICAO?: string;
+      arrICAO?: string;
+    },
+  ) => {
+    track("flight_deleted", props);
+  },
+
   accountDataExportClicked: (props: AccountDataExportEventProps) => {
     track("account_data_export_clicked", props);
   },

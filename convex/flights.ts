@@ -316,6 +316,20 @@ function canDeleteAnyFlight(role: string, googleId?: string) {
   return isFlightModeratorGoogleId(googleId);
 }
 
+function canDeleteFlight(
+  currentUser: {
+    _id: Id<"users">;
+    role: "FREE" | "PRO" | "ADMIN";
+    googleId?: string;
+  },
+  flight: { userId: Id<"users"> },
+) {
+  return (
+    currentUser._id === flight.userId ||
+    canDeleteAnyFlight(currentUser.role, currentUser.googleId)
+  );
+}
+
 // Create a new flight
 export const create = mutation({
   args: {
@@ -524,13 +538,13 @@ export const deleteFlight = mutation({
       throw new Error("Your RadarThing account could not be verified");
     }
 
-    if (!canDeleteAnyFlight(currentUser.role, currentUser.googleId)) {
-      throw new Error("You do not have permission to delete this flight");
-    }
-
     const flight = await ctx.db.get(args.flightId);
     if (!flight) {
       throw new Error("Flight not found");
+    }
+
+    if (!canDeleteFlight(currentUser, flight)) {
+      throw new Error("You do not have permission to delete this flight");
     }
 
     await ctx.db.delete(flight._id);
