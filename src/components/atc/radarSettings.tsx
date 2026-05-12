@@ -119,8 +119,8 @@ export const RadarSettings = ({
   };
 
   return (
-    <div className="flex h-full flex-col rounded-md border border-cyan-400/30 bg-black/90 font-mono text-cyan-400 shadow-xl backdrop-blur-md">
-      <div className="flex flex-col gap-3 border-b border-white/10 p-4">
+    <div className="flex flex-col rounded-md border border-cyan-400/30 bg-black/90 font-mono text-cyan-400 shadow-xl backdrop-blur-md">
+      <div className="flex flex-col gap-3 border-b border-white/10 p-3.5 sm:p-4">
         <div>
           <h3 className="text-[14px] font-bold tracking-widest text-white uppercase">
             RADAR CONFIGURATION
@@ -150,7 +150,7 @@ export const RadarSettings = ({
         </div>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto p-4 pr-3">
+      <div className="space-y-3 p-3.5 pr-2.5 sm:p-4 sm:pr-3">
         <SettingsSection
           title="Layer Presets"
           isOpen={openSections.presets}
@@ -202,7 +202,7 @@ export const RadarSettings = ({
           </div>
 
           <div className="space-y-2 rounded-lg border border-white/10 bg-white/[0.03] p-3">
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <input
                 type="text"
                 value={presetName}
@@ -219,7 +219,7 @@ export const RadarSettings = ({
               />
               <button
                 onClick={handleSavePreset}
-                className="cursor-pointer rounded-md bg-cyan-500 px-3 py-2 text-[11px] font-bold text-black transition-colors hover:bg-cyan-400"
+                className="cursor-pointer rounded-md bg-cyan-500 px-3 py-2 text-[11px] font-bold text-black transition-colors hover:bg-cyan-400 sm:self-auto"
               >
                 Save Current
               </button>
@@ -231,7 +231,7 @@ export const RadarSettings = ({
                   Selected preset:{" "}
                   <span className="text-white/75">{targetPreset.name}</span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <button
                     onClick={() => {
                       onUpdatePreset(targetPreset.id);
@@ -420,11 +420,11 @@ function SettingsToggle({
 }) {
   return (
     <div
-      className={`flex items-center justify-between text-sm ${
+      className={`flex items-start justify-between gap-3 text-sm ${
         disabled ? "opacity-60" : ""
       }`}
     >
-      <span className="flex items-center gap-2">
+      <span className="flex min-w-0 flex-wrap items-center gap-2">
         {label}
         {disabled && <ProBadge source={proBadgeSource} />}
       </span>
@@ -451,9 +451,9 @@ function UnitSelector<T extends string>({
   options: { value: T; label: string }[];
 }) {
   return (
-    <div className="flex items-center justify-between text-sm">
+    <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
       <span>{label}</span>
-      <div className="flex gap-1 rounded-lg border border-white/10 bg-white/5 p-0.5">
+      <div className="flex flex-wrap gap-1 rounded-lg border border-white/10 bg-white/5 p-0.5 sm:justify-end">
         {options.map((opt) => (
           <button
             key={opt.value}

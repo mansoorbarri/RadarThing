@@ -47,6 +47,10 @@ interface MapRefs {
 
 const DEFAULT_CENTER: [number, number] = [20, 0];
 const DEFAULT_ZOOM = 3;
+const MOBILE_MIN_ZOOM = -2;
+const DESKTOP_MIN_ZOOM = 3;
+const TILE_MIN_NATIVE_ZOOM = 0;
+const MAX_ZOOM = 18;
 
 export const useMapInitialization = ({
   mapContainerId,
@@ -81,6 +85,7 @@ export const useMapInitialization = ({
 
   // State to signal when map and layers are ready
   const [mapReady, setMapReady] = useState(false);
+  const mapMinZoom = isMobile ? MOBILE_MIN_ZOOM : DESKTOP_MIN_ZOOM;
 
   const resetMapView = useCallback(() => {
     if (!mapInstance.current) return;
@@ -104,14 +109,17 @@ export const useMapInitialization = ({
       !isNaN(savedLat) && !isNaN(savedLng)
         ? [savedLat, savedLng]
         : DEFAULT_CENTER;
-    const initialZoom = !isNaN(savedZoom) ? savedZoom : DEFAULT_ZOOM;
+    const initialZoom = Math.min(
+      MAX_ZOOM,
+      Math.max(mapMinZoom, !isNaN(savedZoom) ? savedZoom : DEFAULT_ZOOM),
+    );
 
     const map = L.map(mapContainerId, {
       zoomAnimation: true,
       fadeAnimation: true,
       markerZoomAnimation: true,
-      minZoom: isMobile ? 0 : 3,
-      maxZoom: 18,
+      minZoom: mapMinZoom,
+      maxZoom: MAX_ZOOM,
       zoomSnap: 0.25,
       zoomDelta: 0.25,
       // No maxBounds on mobile for unlimited panning, desktop has soft bounds
@@ -138,7 +146,8 @@ export const useMapInitialization = ({
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       {
         maxZoom: 19,
-        minZoom: 0,
+        minZoom: mapMinZoom,
+        minNativeZoom: TILE_MIN_NATIVE_ZOOM,
         className: "osm-tiles",
         ...tileLoadingOptions,
       },
@@ -148,8 +157,9 @@ export const useMapInitialization = ({
       "https://mt{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
       {
         subdomains: "0123", // Use mt0-mt3 for parallel loading
-        maxZoom: 18,
-        minZoom: 0,
+        maxZoom: MAX_ZOOM,
+        minZoom: mapMinZoom,
+        minNativeZoom: TILE_MIN_NATIVE_ZOOM,
         ...tileLoadingOptions,
       },
     );
@@ -158,8 +168,9 @@ export const useMapInitialization = ({
       "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
       {
         subdomains: "abcd",
-        maxZoom: 18,
-        minZoom: 0,
+        maxZoom: MAX_ZOOM,
+        minZoom: mapMinZoom,
+        minNativeZoom: TILE_MIN_NATIVE_ZOOM,
         ...tileLoadingOptions,
       },
     );
@@ -167,7 +178,8 @@ export const useMapInitialization = ({
     const openAIPUrl = `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${process.env.NEXT_PUBLIC_OPENAIP_API_KEY}`;
     openAIPLayer.current = L.tileLayer(openAIPUrl, {
       maxZoom: 19,
-      minZoom: 0,
+      minZoom: mapMinZoom,
+      minNativeZoom: TILE_MIN_NATIVE_ZOOM,
       ...tileLoadingOptions,
     });
 
@@ -204,7 +216,7 @@ export const useMapInitialization = ({
     // Intentionally excluding setState functions and canUseRadarMode
     // canUseRadarMode changes should NOT recreate the map - handle controls separately
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapContainerId, onMapClick]);
+  }, [mapContainerId, mapMinZoom, onMapClick]);
 
   // Separate effect to handle radar/OSM/OpenAIP/Settings controls
   // This ensures proper ordering: Radar -> OSM -> OpenAIP -> Settings

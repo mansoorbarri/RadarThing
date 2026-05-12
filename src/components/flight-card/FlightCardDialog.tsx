@@ -19,6 +19,7 @@ export function FlightCardDialog({ data, onClose }: FlightCardDialogProps) {
   const [scale, setScale] = useState(0.5);
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [isCompactViewport, setIsCompactViewport] = useState(false);
 
   // Trigger enter animation on mount
   useEffect(() => {
@@ -38,6 +39,7 @@ export function FlightCardDialog({ data, onClose }: FlightCardDialogProps) {
       const scaleX = maxWidth / 1200;
       const scaleY = maxHeight / 630;
       setScale(Math.min(scaleX, scaleY, 0.65));
+      setIsCompactViewport(window.innerWidth < 640);
     };
     updateScale();
     window.addEventListener("resize", updateScale);
@@ -95,12 +97,21 @@ export function FlightCardDialog({ data, onClose }: FlightCardDialogProps) {
       <div className="absolute inset-0" onClick={handleClose} />
 
       <div
-        className={`relative z-10 flex flex-col items-center gap-6 transition-all duration-200 ease-out ${
+        className={`relative z-10 flex w-full max-w-[calc(100vw-1.5rem)] flex-col items-center gap-4 px-3 transition-all duration-200 ease-out sm:max-w-none sm:gap-6 sm:px-0 ${
           isVisible && !isClosing
             ? "scale-100 opacity-100"
             : "scale-95 opacity-0"
         }`}
       >
+        {isCompactViewport && (
+          <button
+            onClick={handleClose}
+            className="absolute top-0 right-3 flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-black/70 text-white/60 backdrop-blur-md transition-all hover:bg-white/10 hover:text-white"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
+
         {/* Card preview */}
         <div
           style={{
@@ -112,11 +123,11 @@ export function FlightCardDialog({ data, onClose }: FlightCardDialogProps) {
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-3">
+        <div className="grid w-full max-w-sm grid-cols-2 gap-3 sm:flex sm:w-auto sm:max-w-none sm:items-center">
           <button
             onClick={handleDownload}
             disabled={isGenerating}
-            className="flex cursor-pointer items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-2.5 font-mono text-sm font-semibold text-cyan-400 transition-all hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2.5 font-mono text-sm font-semibold text-cyan-400 transition-all hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-5"
           >
             {isGenerating ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -128,7 +139,7 @@ export function FlightCardDialog({ data, onClose }: FlightCardDialogProps) {
           <button
             onClick={handleCopy}
             disabled={isGenerating}
-            className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 font-mono text-sm font-semibold text-white/70 transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 font-mono text-sm font-semibold text-white/70 transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-5"
           >
             {isGenerating ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -139,12 +150,14 @@ export function FlightCardDialog({ data, onClose }: FlightCardDialogProps) {
             )}
             {copied ? "Copied!" : "Copy to Clipboard"}
           </button>
-          <button
-            onClick={handleClose}
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50 transition-all hover:bg-white/10 hover:text-white"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          {!isCompactViewport && (
+            <button
+              onClick={handleClose}
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50 transition-all hover:bg-white/10 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
         </div>
       </div>
     </div>

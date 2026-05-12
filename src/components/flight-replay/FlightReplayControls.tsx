@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { type FlightData, useFlightReplay } from "~/hooks/useFlightReplay";
 import { Analytics } from "~/lib/analytics";
@@ -114,6 +114,9 @@ export function FlightReplayControls({
   isMobile = false,
 }: FlightReplayControlsProps) {
   const replay = useFlightReplay(flight);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDraggingHeader, setIsDraggingHeader] = useState(false);
+  const touchStartYRef = useRef(0);
 
   // Use ref to store onStateChange to avoid triggering effect
   const onStateChangeRef = useRef(onStateChange);
@@ -202,6 +205,34 @@ export function FlightReplayControls({
     replay.seek(value);
   };
 
+  const handleHeaderTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isMobile) return;
+    const target = e.target as HTMLElement;
+    if (target.closest("button")) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    touchStartYRef.current = touch.clientY;
+    setIsDraggingHeader(true);
+  };
+
+  const handleHeaderTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isMobile || !isDraggingHeader) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    const deltaY = touch.clientY - touchStartYRef.current;
+    setDragOffset(Math.max(0, Math.min(96, deltaY)));
+  };
+
+  const handleHeaderTouchEnd = () => {
+    if (!isMobile) return;
+    const shouldClose = dragOffset > 64;
+    setIsDraggingHeader(false);
+    setDragOffset(0);
+    if (shouldClose) {
+      handleClose();
+    }
+  };
+
   const route = [flight.depICAO, flight.arrICAO].filter(Boolean).join(" → ");
 
   return (
@@ -214,10 +245,19 @@ export function FlightReplayControls({
         className={`rounded-2xl border border-white/10 bg-[#0a1219]/95 shadow-2xl backdrop-blur-xl ${
           isMobile ? "p-3" : "p-4"
         }`}
+        style={{
+          transform:
+            isMobile && dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
+          transition: isDraggingHeader ? "none" : "transform 180ms ease-out",
+        }}
       >
         {/* Header */}
         <div
           className={`flex items-center justify-between ${isMobile ? "mb-2" : "mb-3"}`}
+          onTouchStart={handleHeaderTouchStart}
+          onTouchMove={handleHeaderTouchMove}
+          onTouchEnd={handleHeaderTouchEnd}
+          onTouchCancel={handleHeaderTouchEnd}
         >
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20">

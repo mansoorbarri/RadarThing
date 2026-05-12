@@ -1,15 +1,46 @@
 "use client";
 
-import React, { useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 
 interface MobileDrawerProps {
   children: React.ReactNode;
   onClose: () => void;
 }
 
+type DrawerState = "minimized" | "partial" | "full";
+
+const DRAWER_HEIGHTS: Record<DrawerState, number> = {
+  minimized: 14,
+  partial: 40,
+  full: 92,
+};
+
+const SNAP_ORDER: DrawerState[] = ["minimized", "partial", "full"];
+
 export const MobileDrawer = ({ children, onClose }: MobileDrawerProps) => {
-  const backdropRef = useRef<HTMLDivElement>(null);
-  const drawerRef = useRef<HTMLDivElement>(null);
+  const [drawerState, setDrawerState] = useState<DrawerState>("partial");
+  const [height, setHeight] = useState(DRAWER_HEIGHTS.partial);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartYRef = useRef(0);
+  const dragStartHeightRef = useRef(DRAWER_HEIGHTS.partial);
+  const heightRef = useRef(DRAWER_HEIGHTS.partial);
+
+  useEffect(() => {
+    heightRef.current = height;
+  }, [height]);
+
+  const snapToNearestState = useCallback((nextHeight: number) => {
+    const nextState = SNAP_ORDER.reduce((closest, state) => {
+      const closestDistance = Math.abs(
+        DRAWER_HEIGHTS[closest] - nextHeight,
+      );
+      const currentDistance = Math.abs(DRAWER_HEIGHTS[state] - nextHeight);
+      return currentDistance < closestDistance ? state : closest;
+    }, "partial" as DrawerState);
+
+    setDrawerState(nextState);
+    setHeight(DRAWER_HEIGHTS[nextState]);
+  }, []);
 
   // Close on escape key
   useEffect(() => {
@@ -20,51 +51,71 @@ export const MobileDrawer = ({ children, onClose }: MobileDrawerProps) => {
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
-  const handleBackdropClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.target === backdropRef.current) onClose();
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handlePointerMove = (e: PointerEvent) => {
+      const deltaPx = dragStartYRef.current - e.clientY;
+      const deltaVh = (deltaPx / window.innerHeight) * 100;
+      const nextHeight = Math.min(
+        DRAWER_HEIGHTS.full,
+        Math.max(
+          DRAWER_HEIGHTS.minimized,
+          dragStartHeightRef.current + deltaVh,
+        ),
+      );
+      setHeight(nextHeight);
+    };
+
+    const handlePointerUp = () => {
+      setIsDragging(false);
+      snapToNearestState(heightRef.current);
+      document.body.style.userSelect = "";
+    };
+
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerUp);
+
+    return () => {
+      document.body.style.userSelect = "";
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
+    };
+  }, [isDragging, snapToNearestState]);
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      dragStartYRef.current = e.clientY;
+      dragStartHeightRef.current = height;
+      setIsDragging(true);
     },
-    [onClose],
+    [height],
   );
 
   return (
-    <>
-      {/* Backdrop */}
+    <div className="pointer-events-none fixed inset-0 z-[10015]">
       <div
-        ref={backdropRef}
-        onClick={handleBackdropClick}
-        className="fixed inset-0 z-[10014] bg-black/60 backdrop-blur-[2px] animate-in fade-in duration-200"
-      />
-
-      {/* Drawer */}
-      <div
-        ref={drawerRef}
-        className="fixed inset-y-0 right-0 z-[10015] w-[85vw] max-w-[400px] border-l border-white/10 bg-black/95 backdrop-blur-xl animate-in slide-in-from-right duration-250 ease-out"
+        className={`pointer-events-auto fixed inset-x-0 bottom-0 overflow-hidden rounded-t-[28px] border-t border-white/10 bg-black/95 shadow-[0_-24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl ${
+          isDragging ? "" : "transition-[height] duration-250 ease-out"
+        }`}
+        style={{ height: `${height}dvh` }}
       >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 left-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-white/5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="flex h-full flex-col">
+          <div
+            onPointerDown={handlePointerDown}
+            className="flex touch-none justify-center border-b border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent px-4 pt-3 pb-2"
           >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
+            <div className="h-1.5 w-12 rounded-full bg-white/35" />
+          </div>
 
-        {/* Content */}
-        <div className="h-full overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]">
-          {children}
+          <div className="flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]">
+            {children}
+          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };

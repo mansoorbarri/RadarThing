@@ -17,6 +17,13 @@ import { toast } from "sonner";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { api } from "../../../../convex/_generated/api";
 import { Analytics } from "~/lib/analytics";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 
 type ChallengeCadence = "weekly" | "monthly" | "custom";
 type ChallengeMode = "auto" | "manual";
@@ -359,8 +366,8 @@ export function ChallengesTab() {
 
   return (
     <div className="space-y-8">
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-        <div className="mb-6 flex items-center justify-between gap-4">
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-6">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="text-lg font-semibold text-white">
               {isEditing ? "Edit Challenge" : "Create Challenge"}
@@ -398,10 +405,10 @@ export function ChallengesTab() {
 
           <label className="space-y-2">
             <span className="text-sm text-slate-400">Cadence</span>
-            <select
+            <Select
               value={form.cadence}
-              onChange={(event) => {
-                const cadence = event.target.value as ChallengeCadence;
+              onValueChange={(value) => {
+                const cadence = value as ChallengeCadence;
                 const window = defaultWindow(cadence);
                 setForm((current) => ({
                   ...current,
@@ -410,12 +417,16 @@ export function ChallengesTab() {
                   durationDays: window.durationDays,
                 }));
               }}
-              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
             >
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="custom">Custom</option>
-            </select>
+              <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+                <SelectItem value="weekly" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Weekly</SelectItem>
+                <SelectItem value="monthly" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Monthly</SelectItem>
+                <SelectItem value="custom" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Custom</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
 
           <label className="space-y-2 md:col-span-2">
@@ -436,10 +447,10 @@ export function ChallengesTab() {
 
           <label className="space-y-2">
             <span className="text-sm text-slate-400">Mode</span>
-            <select
+            <Select
               value={form.mode}
-              onChange={(event) => {
-                const mode = event.target.value as ChallengeMode;
+              onValueChange={(value) => {
+                const mode = value as ChallengeMode;
                 setForm((current) => ({
                   ...current,
                   mode,
@@ -451,37 +462,45 @@ export function ChallengesTab() {
                         : current.ruleType,
                 }));
               }}
-              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
             >
-              <option value="auto">Auto tracked</option>
-              <option value="manual">Manual review</option>
-            </select>
+              <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+                <SelectItem value="auto" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Auto tracked</SelectItem>
+                <SelectItem value="manual" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Manual review</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
 
           <label className="space-y-2">
             <span className="text-sm text-slate-400">Rule</span>
-            <select
+            <Select
               value={form.mode === "manual" ? "manual" : form.ruleType}
               disabled={form.mode === "manual"}
-              onChange={(event) =>
+              onValueChange={(value) =>
                 setForm((current) => ({
                   ...current,
-                  ruleType: event.target.value as ChallengeRuleType,
+                  ruleType: value as ChallengeRuleType,
                 }))
               }
-              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 disabled:opacity-60"
             >
-              <option value="visit_airport">Visit airport</option>
-              <option value="visit_airport_count">Visit X airports</option>
-              <option value="depart_airport">Depart airport</option>
-              <option value="arrive_airport">Arrive airport</option>
-              <option value="route">Specific route</option>
-              <option value="aircraft_type">Specific aircraft</option>
-              <option value="flight_count">Complete X flights</option>
-              <option value="min_duration">Minimum duration</option>
-              <option value="min_distance">Minimum distance</option>
-              <option value="manual">Manual review</option>
-            </select>
+              <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20 disabled:opacity-60">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+                <SelectItem value="visit_airport" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Visit airport</SelectItem>
+                <SelectItem value="visit_airport_count" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Visit X airports</SelectItem>
+                <SelectItem value="depart_airport" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Depart airport</SelectItem>
+                <SelectItem value="arrive_airport" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Arrive airport</SelectItem>
+                <SelectItem value="route" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Specific route</SelectItem>
+                <SelectItem value="aircraft_type" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Specific aircraft</SelectItem>
+                <SelectItem value="flight_count" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Complete X flights</SelectItem>
+                <SelectItem value="min_duration" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Minimum duration</SelectItem>
+                <SelectItem value="min_distance" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Minimum distance</SelectItem>
+                <SelectItem value="manual" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Manual review</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
 
           {(form.ruleType === "visit_airport" ||

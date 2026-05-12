@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Clock3,
   FileJson,
@@ -49,6 +49,37 @@ export function ImportedFlightPlanPanel({
     () => getImportedFlightPlanSummary(flightPlan),
     [flightPlan],
   );
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDraggingHeader, setIsDraggingHeader] = useState(false);
+  const touchStartYRef = useRef(0);
+
+  const handleHeaderTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isMobile) return;
+    const target = e.target as HTMLElement;
+    if (target.closest("button")) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    touchStartYRef.current = touch.clientY;
+    setIsDraggingHeader(true);
+  };
+
+  const handleHeaderTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isMobile || !isDraggingHeader) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    const deltaY = touch.clientY - touchStartYRef.current;
+    setDragOffset(Math.max(0, Math.min(96, deltaY)));
+  };
+
+  const handleHeaderTouchEnd = () => {
+    if (!isMobile) return;
+    const shouldClose = dragOffset > 64;
+    setIsDraggingHeader(false);
+    setDragOffset(0);
+    if (shouldClose) {
+      onClose();
+    }
+  };
 
   return (
     <aside
@@ -57,8 +88,19 @@ export function ImportedFlightPlanPanel({
           ? "top-16 right-3 left-3 bottom-20 rounded-2xl"
           : "top-20 right-6 max-h-[calc(100vh-6.5rem)] w-[380px] rounded-3xl"
       }`}
+      style={{
+        transform:
+          isMobile && dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
+        transition: isDraggingHeader ? "none" : "transform 180ms ease-out",
+      }}
     >
-      <div className="border-b border-cyan-400/15 bg-gradient-to-r from-cyan-400/10 via-transparent to-emerald-400/10 px-4 py-4">
+      <div
+        className="border-b border-cyan-400/15 bg-gradient-to-r from-cyan-400/10 via-transparent to-emerald-400/10 px-4 py-4"
+        onTouchStart={handleHeaderTouchStart}
+        onTouchMove={handleHeaderTouchMove}
+        onTouchEnd={handleHeaderTouchEnd}
+        onTouchCancel={handleHeaderTouchEnd}
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="mb-1 flex items-center gap-2 text-[11px] font-medium tracking-[0.28em] text-cyan-300 uppercase">

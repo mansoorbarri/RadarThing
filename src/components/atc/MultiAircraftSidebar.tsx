@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
 import { formatSpeed, formatAltitude, speedSuffix } from "~/lib/units";
@@ -77,15 +77,22 @@ interface AircraftCardProps {
   aircraft: PositionUpdate & { altMSL?: number };
   colorIndex: number;
   onRemove: () => void;
+  isMobile: boolean;
 }
 
 const AircraftCard = ({
   aircraft,
   colorIndex,
   onRemove,
+  isMobile,
 }: AircraftCardProps) => {
   const color = FLIGHT_PATH_COLORS[colorIndex % FLIGHT_PATH_COLORS.length]!;
   const { speedUnit, altitudeUnit } = useUnitPreferences();
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const touchStartXRef = useRef(0);
+  const touchStartYRef = useRef(0);
+  const isSwipeGestureRef = useRef(false);
 
   const displayValues = useMemo(() => {
     const altMSL = Number(aircraft.altMSL ?? aircraft.alt ?? 0);
@@ -112,61 +119,128 @@ const AircraftCard = ({
     altitudeUnit,
   ]);
 
+  const resetSwipe = () => {
+    setSwipeOffset(0);
+    setIsDragging(false);
+    isSwipeGestureRef.current = false;
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isMobile) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    touchStartXRef.current = touch.clientX;
+    touchStartYRef.current = touch.clientY;
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isMobile || !isDragging) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+
+    const deltaX = touch.clientX - touchStartXRef.current;
+    const deltaY = touch.clientY - touchStartYRef.current;
+
+    if (!isSwipeGestureRef.current) {
+      if (Math.abs(deltaX) < 8) return;
+      if (Math.abs(deltaX) <= Math.abs(deltaY)) {
+        setIsDragging(false);
+        return;
+      }
+      isSwipeGestureRef.current = true;
+    }
+
+    setSwipeOffset(Math.max(-112, Math.min(0, deltaX)));
+  };
+
+  const handleTouchEnd = () => {
+    if (!isMobile) return;
+    if (isSwipeGestureRef.current && swipeOffset <= -72) {
+      onRemove();
+      return;
+    }
+    resetSwipe();
+  };
+
   return (
     <div
-      className="animate-fade-in-up relative rounded-xl border border-white/10 bg-black/60 p-3 backdrop-blur-sm"
+      className="animate-fade-in-up relative overflow-hidden rounded-xl"
       style={{ animationDelay: `${colorIndex * 60}ms` }}
     >
-      {/* Color indicator strip */}
+      {isMobile && (
+        <div className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-red-500/18">
+          <span className="font-mono text-[10px] font-bold tracking-[0.18em] text-red-200 uppercase">
+            Remove
+          </span>
+        </div>
+      )}
+
       <div
-        className="absolute top-0 bottom-0 left-0 w-1 rounded-l-xl"
-        style={{ backgroundColor: color }}
-      />
-
-      {/* Remove button */}
-      <button
-        onClick={onRemove}
-        className="absolute top-2 right-2 cursor-pointer rounded-full p-1 transition-colors hover:bg-white/10"
+        className="relative rounded-xl border border-white/10 bg-black/60 p-3 backdrop-blur-sm"
+        style={{
+          transform: `translateX(${swipeOffset}px)`,
+          transition: isDragging ? "none" : "transform 180ms ease-out",
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={resetSwipe}
       >
-        <CloseIcon size={14} className="text-white/40 hover:text-white/80" />
-      </button>
+        {/* Color indicator strip */}
+        <div
+          className="absolute top-0 bottom-0 left-0 w-1 rounded-l-xl"
+          style={{ backgroundColor: color }}
+        />
 
-      <div className="flex items-start gap-3 pl-2">
-        {/* Flight info */}
-        <div className="min-w-0 flex-1 pr-4">
-          <div className="flex items-center gap-2">
-            <span className="truncate font-mono text-sm font-bold text-white">
-              {aircraft.flightNo || aircraft.callsign || "N/A"}
-            </span>
-            <span
-              className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold"
-              style={{ backgroundColor: `${color}30`, color }}
-            >
-              {displayValues.phase}
-            </span>
-          </div>
-          <div className="truncate font-mono text-[10px] text-white/50">
-            {aircraft.type || "Unknown"}
-          </div>
-          <div className="mt-1 font-mono text-[10px] text-white/40">
-            {aircraft.departure || "---"} → {aircraft.arrival || "---"}
-          </div>
-        </div>
-      </div>
+        {/* Remove button */}
+        <button
+          onClick={onRemove}
+          className="absolute top-2 right-2 cursor-pointer rounded-full p-1 transition-colors hover:bg-white/10"
+        >
+          <CloseIcon size={14} className="text-white/40 hover:text-white/80" />
+        </button>
 
-      {/* Stats row */}
-      <div className="mt-2 flex gap-4 pl-2 font-mono text-[10px]">
-        <div>
-          <span className="text-white/40">ALT </span>
-          <span className="text-white/80">{displayValues.altitude}</span>
+        <div className="flex items-start gap-3 pl-2">
+          {/* Flight info */}
+          <div className="min-w-0 flex-1 pr-4">
+            <div className="flex items-center gap-2">
+              <span className="truncate font-mono text-sm font-bold text-white">
+                {aircraft.flightNo || aircraft.callsign || "N/A"}
+              </span>
+              <span
+                className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold"
+                style={{ backgroundColor: `${color}30`, color }}
+              >
+                {displayValues.phase}
+              </span>
+            </div>
+            <div className="truncate font-mono text-[10px] text-white/50">
+              {aircraft.type || "Unknown"}
+            </div>
+            <div className="mt-1 font-mono text-[10px] text-white/40">
+              {aircraft.departure || "---"} → {aircraft.arrival || "---"}
+            </div>
+          </div>
         </div>
-        <div>
-          <span className="text-white/40">SPD </span>
-          <span className="text-white/80">{displayValues.speed}{speedSuffix(speedUnit)}</span>
-        </div>
-        <div>
-          <span className="text-white/40">HDG </span>
-          <span className="text-white/80">{displayValues.heading}</span>
+
+        {/* Stats row */}
+        <div className="mt-2 flex gap-4 pl-2 font-mono text-[10px]">
+          <div>
+            <span className="text-white/40">ALT </span>
+            <span className="text-white/80">{displayValues.altitude}</span>
+          </div>
+          <div>
+            <span className="text-white/40">SPD </span>
+            <span className="text-white/80">
+              {displayValues.speed}
+              {speedSuffix(speedUnit)}
+            </span>
+          </div>
+          <div>
+            <span className="text-white/40">HDG </span>
+            <span className="text-white/80">{displayValues.heading}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -210,6 +284,7 @@ export const MultiAircraftSidebar = ({
             aircraft={aircraft}
             colorIndex={index}
             onRemove={() => onRemoveAircraft(aircraft)}
+            isMobile={isMobile}
           />
         ))}
       </div>
