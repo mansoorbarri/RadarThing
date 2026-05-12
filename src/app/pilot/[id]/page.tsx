@@ -120,7 +120,7 @@ function PilotPageContent() {
     return (
       <div className="min-h-screen bg-black text-white">
         <Header router={router} />
-        <main className="mx-auto max-w-2xl px-6 py-20 text-center">
+        <main className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6 sm:py-20">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2">
             <Plane className="h-4 w-4 text-red-400" />
             <span className="font-mono text-sm text-red-400">
@@ -149,24 +149,24 @@ function PilotPageContent() {
     <div className="min-h-screen bg-black text-white">
       <Header router={router} />
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
         {/* Profile Header */}
-        <div className="mb-10">
-          <div className="mb-2 flex items-center gap-4">
+        <div className="mb-8 sm:mb-10">
+          <div className="mb-2 flex items-start gap-3 sm:items-center sm:gap-4">
             <button
               onClick={copyProfileLink}
-              className="group/icon flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border-2 border-cyan-500/50 bg-cyan-500/10 transition-all hover:border-cyan-400 hover:bg-cyan-500/20"
+              className="group/icon flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-cyan-500/50 bg-cyan-500/10 transition-all hover:border-cyan-400 hover:bg-cyan-500/20 sm:h-14 sm:w-14"
               title="Copy profile link"
             >
-              <Plane className="h-6 w-6 text-cyan-400 transition-all group-hover/icon:hidden" />
+              <Plane className="h-5 w-5 text-cyan-400 transition-all group-hover/icon:hidden sm:h-6 sm:w-6" />
               {linkCopied ? (
-                <Check className="hidden h-6 w-6 text-emerald-400 group-hover/icon:block" />
+                <Check className="hidden h-5 w-5 text-emerald-400 group-hover/icon:block sm:h-6 sm:w-6" />
               ) : (
-                <Link className="hidden h-6 w-6 text-cyan-300 group-hover/icon:block" />
+                <Link className="hidden h-5 w-5 text-cyan-300 group-hover/icon:block sm:h-6 sm:w-6" />
               )}
             </button>
-            <div>
-              <h1 className="text-3xl font-bold text-white">
+            <div className="min-w-0">
+              <h1 className="break-words text-2xl leading-tight font-bold text-white sm:text-3xl">
                 {stats.discordUsername ??
                   callsignFromUrl ??
                   stats.pilotCallsign ??
@@ -174,11 +174,11 @@ function PilotPageContent() {
               </h1>
               {stats.discordUsername &&
                 (callsignFromUrl || stats.pilotCallsign) && (
-                  <p className="font-mono text-xs text-slate-500">
+                  <p className="mt-1 break-all font-mono text-[11px] text-slate-500 sm:text-xs">
                     {callsignFromUrl ?? stats.pilotCallsign}
                   </p>
                 )}
-              <p className="font-mono text-sm text-slate-400">
+              <p className="mt-1 font-mono text-sm text-slate-400">
                 {stats.userRole === "PRO" || stats.userRole === "ADMIN" ? (
                   <span className="text-emerald-400">PRO Member</span>
                 ) : (
@@ -196,7 +196,7 @@ function PilotPageContent() {
         ) : (
           <>
             {/* Stats Grid */}
-            <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mb-8 grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
               <StatCard
                 icon={<Plane className="h-5 w-5" />}
                 label="Total Flights"
@@ -225,9 +225,9 @@ function PilotPageContent() {
               />
             </div>
 
-            <div className="mb-8 grid gap-6 lg:grid-cols-3">
+            <div className="mb-8 grid gap-4 sm:gap-6 lg:grid-cols-3">
               {/* Top Aircraft */}
-              <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
+              <div className="rounded-2xl border border-white/10 bg-black/40 p-4 backdrop-blur-xl sm:p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                     TOP AIRCRAFT
@@ -267,7 +267,7 @@ function PilotPageContent() {
               </div>
 
               {/* Top Routes */}
-              <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
+              <div className="rounded-2xl border border-white/10 bg-black/40 p-4 backdrop-blur-xl sm:p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                     TOP ROUTES
@@ -305,7 +305,7 @@ function PilotPageContent() {
               </div>
 
               {/* Top Airports */}
-              <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
+              <div className="rounded-2xl border border-white/10 bg-black/40 p-4 backdrop-blur-xl sm:p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                     TOP AIRPORTS
@@ -435,7 +435,7 @@ function PilotPageContent() {
 function Header({ router }: { router: ReturnType<typeof useRouter> }) {
   return (
     <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
         <button
           onClick={() => router.push("/radar")}
           className="cursor-pointer"
@@ -449,10 +449,10 @@ function Header({ router }: { router: ReturnType<typeof useRouter> }) {
         </button>
         <button
           onClick={() => router.push("/radar")}
-          className="flex cursor-pointer items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
+          className="flex shrink-0 cursor-pointer items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Map
+          <span className="hidden sm:inline">Back to Map</span>
         </button>
       </div>
     </header>

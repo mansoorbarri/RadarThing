@@ -18,6 +18,13 @@ import {
 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { Analytics } from "~/lib/analytics";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 
 type SortKey =
   | "flights"
@@ -66,6 +73,30 @@ export default function LeaderboardPage() {
 
   const currentUserRef = useRef<HTMLButtonElement>(null);
   const hasActiveChallenge = (challengeLeaderboard?.length ?? 0) > 0;
+  const sortOptions = [
+    { key: "flights" as SortKey, label: "Flights", icon: Plane },
+    {
+      key: "distance" as SortKey,
+      label: "Distance",
+      icon: Navigation,
+    },
+    { key: "time" as SortKey, label: "Time", icon: Clock },
+    { key: "streak" as SortKey, label: "Streak", icon: Flame },
+    {
+      key: "contribution" as SortKey,
+      label: "Contribution",
+      icon: Upload,
+    },
+    ...(hasActiveChallenge
+      ? [
+          {
+            key: "challenges" as SortKey,
+            label: "Challenges",
+            icon: Flag,
+          },
+        ]
+      : []),
+  ];
 
   useEffect(() => {
     Analytics.leaderboardViewed();
@@ -257,53 +288,63 @@ export default function LeaderboardPage() {
           </button>
         )}
 
-        <div className="-mx-4 mb-6 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <div className="flex w-fit gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
-            {[
-              { key: "flights" as SortKey, label: "Flights", icon: Plane },
-              {
-                key: "distance" as SortKey,
-                label: "Distance",
-                icon: Navigation,
-              },
-              { key: "time" as SortKey, label: "Time", icon: Clock },
-              { key: "streak" as SortKey, label: "Streak", icon: Flame },
-              {
-                key: "contribution" as SortKey,
-                label: "Contribution",
-                icon: Upload,
-              },
-              ...(hasActiveChallenge
-                ? [
-                    {
-                      key: "challenges" as SortKey,
-                      label: "Challenges",
-                      icon: Flag,
-                    },
-                  ]
-                : []),
-            ].map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => {
-                  setSortBy(key);
-                  if (key === "challenges") {
-                    Analytics.track("challenge_leaderboard_viewed", {
-                      challenge_count: challengeLeaderboard?.length ?? 0,
-                      source: "leaderboard_page",
-                    });
-                  }
-                }}
-                className={`flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all sm:px-4 sm:py-2 sm:text-sm ${
-                  sortBy === key
-                    ? "bg-white/10 text-white"
-                    : "text-slate-500 hover:text-slate-300"
-                }`}
-              >
-                <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                {label}
-              </button>
-            ))}
+        <div className="mb-6 sm:hidden">
+          <Select
+            value={sortBy}
+            onValueChange={(value) => {
+              const key = value as SortKey;
+              setSortBy(key);
+              if (key === "challenges") {
+                Analytics.track("challenge_leaderboard_viewed", {
+                  challenge_count: challengeLeaderboard?.length ?? 0,
+                  source: "leaderboard_page",
+                });
+              }
+            }}
+          >
+            <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-white/5 font-mono text-sm text-white shadow-none hover:bg-white/[0.07] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+              <SelectValue placeholder="Sort leaderboard" />
+            </SelectTrigger>
+            <SelectContent className="border-white/10 bg-[#12121a] text-white shadow-2xl">
+              {sortOptions.map(({ key, label }) => (
+                <SelectItem
+                  key={key}
+                  value={key}
+                  className="font-mono text-sm text-slate-200 focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="mb-6 hidden sm:block">
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <div className="flex w-fit gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
+              {sortOptions.map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    setSortBy(key);
+                    if (key === "challenges") {
+                      Analytics.track("challenge_leaderboard_viewed", {
+                        challenge_count: challengeLeaderboard?.length ?? 0,
+                        source: "leaderboard_page",
+                      });
+                    }
+                  }}
+                  className={`flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all sm:px-4 sm:py-2 sm:text-sm ${
+                    sortBy === key
+                      ? "bg-white/10 text-white"
+                      : "text-slate-500 hover:text-slate-300"
+                  }`}
+                >
+                  <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

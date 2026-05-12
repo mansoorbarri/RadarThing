@@ -151,7 +151,7 @@ export function FlightHistoryPanel({
           </div>
         </button>
       ) : (
-        <div className="flex items-center justify-between border-b border-white/5 p-6">
+        <div className="flex flex-col gap-2 border-b border-white/5 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
             RECENT FLIGHTS
           </h3>
@@ -174,7 +174,7 @@ export function FlightHistoryPanel({
         <div className="overflow-hidden">
           <div
             className={cn(
-              "space-y-4 px-6 pb-6 transition-transform duration-300 ease-out",
+              "space-y-4 px-4 pb-4 transition-transform duration-300 ease-out sm:px-6 sm:pb-6",
               variant === "static" || isExpanded
                 ? "translate-y-0"
                 : "-translate-y-2",
@@ -220,7 +220,7 @@ export function FlightHistoryPanel({
                     </p>
                   </div>
                   {totalPages > 1 && (
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-2 py-1">
+                    <div className="inline-flex w-full items-center justify-between gap-2 rounded-full border border-white/10 bg-black/30 px-2 py-1 sm:w-auto sm:justify-start">
                       <button
                         onClick={() =>
                           setPage((current) => Math.max(1, current - 1))
@@ -230,7 +230,7 @@ export function FlightHistoryPanel({
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </button>
-                      <span className="min-w-24 text-center font-mono text-xs text-slate-300">
+                      <span className="min-w-0 flex-1 text-center font-mono text-xs text-slate-300 sm:min-w-24 sm:flex-none">
                         Page {page} / {totalPages}
                       </span>
                       <button
@@ -263,58 +263,125 @@ export function FlightHistoryPanel({
                     {paginatedFlights.map((flight) => (
                       <div
                         key={flight.id}
-                        className="group flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4 transition-all hover:border-cyan-500/30 hover:bg-white/10"
+                        className="group rounded-xl border border-white/5 bg-white/5 p-4 transition-all hover:border-cyan-500/30 hover:bg-white/10"
                       >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10">
-                          <Plane className="h-5 w-5 text-cyan-400" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-1 flex flex-wrap items-center gap-2">
-                            <span className="font-mono text-sm font-bold text-white">
-                              {flight.depICAO || "???"}
-                            </span>
-                            <Route className="h-3 w-3 text-slate-500" />
-                            <span className="font-mono text-sm font-bold text-white">
-                              {flight.arrICAO || "???"}
-                            </span>
-                            <span className="ml-2 rounded bg-white/10 px-2 py-0.5 font-mono text-[10px] text-slate-400">
-                              {flight.aircraftType
-                                .replace(/\s*\([^)]*\)/g, "")
-                                .trim()}
-                            </span>
-                            <span className="rounded bg-white/5 px-2 py-0.5 font-mono text-[10px] text-slate-500">
-                              {flight.endTime ? "Completed" : "In Progress"}
-                            </span>
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                          <div className="flex items-start gap-3 sm:items-center">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10">
+                              <Plane className="h-5 w-5 text-cyan-400" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-2 flex flex-wrap items-center gap-2">
+                                <span className="font-mono text-sm font-bold text-white">
+                                  {flight.depICAO || "???"}
+                                </span>
+                                <Route className="h-3 w-3 text-slate-500" />
+                                <span className="font-mono text-sm font-bold text-white">
+                                  {flight.arrICAO || "???"}
+                                </span>
+                              </div>
+                              <div className="mb-2 flex flex-wrap items-center gap-2">
+                                <span className="rounded bg-white/10 px-2 py-0.5 font-mono text-[10px] text-slate-400">
+                                  {flight.aircraftType
+                                    .replace(/\s*\([^)]*\)/g, "")
+                                    .trim()}
+                                </span>
+                                {flight.callsign && (
+                                  <span className="rounded bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] text-cyan-300/80">
+                                    {flight.callsign}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex flex-col gap-1 text-xs text-slate-500 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {formatDate(flight.startTime)}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {formatDuration(
+                                    flight.startTime,
+                                    flight.endTime,
+                                  )}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                            {flight.callsign && (
-                              <span className="rounded bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] text-cyan-300/80">
-                                {flight.callsign}
-                              </span>
+
+                          <div className="hidden flex-wrap items-center gap-2 sm:ml-auto sm:flex sm:justify-end">
+                            {flight.routeData && flight.routeData.length > 1 && (
+                              <>
+                                <button
+                                  onClick={() => onShareFlight(flight)}
+                                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400 sm:h-8 sm:w-8 sm:text-white/40 sm:opacity-0 sm:group-hover:opacity-100"
+                                  title="Copy share link"
+                                >
+                                  <Share2 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => onGenerateFlightCard(flight)}
+                                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-all hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400 sm:h-8 sm:w-8 sm:text-white/40 sm:opacity-0 sm:group-hover:opacity-100"
+                                  title={
+                                    canGenerateFlightCard
+                                      ? "Generate flight card"
+                                      : "Unlock PRO to generate a flight card"
+                                  }
+                                >
+                                  <Camera className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => onReplayFlight(flight)}
+                                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 transition-all hover:bg-amber-500/20 sm:h-8 sm:w-8 sm:opacity-0 sm:group-hover:opacity-100"
+                                  title="Replay this flight"
+                                >
+                                  <Play className="h-4 w-4" />
+                                </button>
+                              </>
                             )}
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {formatDate(flight.startTime)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {formatDuration(flight.startTime, flight.endTime)}
-                            </span>
+                            {canDeleteFlights && onDeleteFlight && (
+                              <button
+                                onClick={() => onDeleteFlight(flight)}
+                                disabled={deletingFlightId === flight.id}
+                                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 transition-all hover:bg-red-500/20 disabled:cursor-not-allowed disabled:hover:bg-red-500/10 sm:h-8 sm:w-8 sm:opacity-0 sm:group-hover:opacity-100"
+                                title={
+                                  deletingFlightId === flight.id
+                                    ? "Deleting flight..."
+                                    : "Delete this flight"
+                                }
+                                aria-label={
+                                  deletingFlightId === flight.id
+                                    ? "Deleting flight"
+                                    : "Delete this flight"
+                                }
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+
+                        <div className="mt-4 grid grid-cols-2 gap-2 sm:hidden">
                           {flight.routeData && flight.routeData.length > 1 && (
                             <>
                               <button
+                                onClick={() => onReplayFlight(flight)}
+                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 font-mono text-[10px] tracking-wider text-amber-300 uppercase transition-colors hover:bg-amber-500/20"
+                                title="Replay this flight"
+                              >
+                                <Play className="h-3.5 w-3.5" />
+                                Replay
+                              </button>
+                              <button
                                 onClick={() => onShareFlight(flight)}
-                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/40 opacity-0 transition-all group-hover:opacity-100 hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400"
+                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-[10px] tracking-wider text-white/70 uppercase transition-colors hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-300"
                                 title="Copy share link"
                               >
                                 <Share2 className="h-3.5 w-3.5" />
+                                Share
                               </button>
                               <button
                                 onClick={() => onGenerateFlightCard(flight)}
-                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/40 opacity-0 transition-all group-hover:opacity-100 hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400"
+                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-[10px] tracking-wider text-white/70 uppercase transition-colors hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-300"
                                 title={
                                   canGenerateFlightCard
                                     ? "Generate flight card"
@@ -322,13 +389,7 @@ export function FlightHistoryPanel({
                                 }
                               >
                                 <Camera className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() => onReplayFlight(flight)}
-                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 opacity-0 transition-all group-hover:opacity-100 hover:bg-amber-500/20"
-                                title="Replay this flight"
-                              >
-                                <Play className="h-4 w-4" />
+                                Card
                               </button>
                             </>
                           )}
@@ -336,7 +397,7 @@ export function FlightHistoryPanel({
                             <button
                               onClick={() => onDeleteFlight(flight)}
                               disabled={deletingFlightId === flight.id}
-                              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 opacity-100 transition-all hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-100 disabled:hover:bg-red-500/10 sm:opacity-0 sm:group-hover:opacity-100"
+                              className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 font-mono text-[10px] tracking-wider text-red-300 uppercase transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:hover:bg-red-500/10"
                               title={
                                 deletingFlightId === flight.id
                                   ? "Deleting flight..."
@@ -349,6 +410,7 @@ export function FlightHistoryPanel({
                               }
                             >
                               <Trash2 className="h-3.5 w-3.5" />
+                              Delete
                             </button>
                           )}
                         </div>

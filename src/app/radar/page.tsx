@@ -1364,16 +1364,20 @@ export default function ATCPage() {
                   if (newState) setSelectedAircrafts([]);
                 },
               },
-              {
-                id: "shortcuts",
-                label: "Shortcuts",
-                icon: ShortcutsIcon,
-                active: showShortcutsMenu,
-                onClick: () => {
-                  setShowShortcutsMenu(true);
-                  Analytics.shortcutsOpened({ source: "dock" });
-                },
-              },
+              ...(!isMobile
+                ? [
+                    {
+                      id: "shortcuts",
+                      label: "Shortcuts",
+                      icon: ShortcutsIcon,
+                      active: showShortcutsMenu,
+                      onClick: () => {
+                        setShowShortcutsMenu(true);
+                        Analytics.shortcutsOpened({ source: "dock" });
+                      },
+                    },
+                  ]
+                : []),
               {
                 id: "leaderboard",
                 label: "Leaderboard",

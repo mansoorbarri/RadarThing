@@ -87,3 +87,6 @@ End-user install flow:
 - The loader reads `/userscript/latest.json` and loads the current bundle, falling back to `/userscript/radarthing.bundle.js` if needed.
 - Console users open GeoFS, paste the loader snippet shown on the homepage into DevTools Console, and run it.
 - Console installs are not persistent across full page reloads, so users must rerun the snippet or save it as a DevTools Snippet/bookmarklet.
+
+### Effeciency-Effectiveness
+Whenever you're designing anything, make sure its cost-effecient on Vercel/Convex/Railway/user's network while still being effective in its actual purpose. Look through official docs to fetch ways to do this right.

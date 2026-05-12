@@ -43,6 +43,13 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
 import { Analytics } from "~/lib/analytics";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 
 type SubmitStage =
   | "idle"
@@ -52,6 +59,8 @@ type SubmitStage =
   | "success";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+const ALL_AIRLINES_VALUE = "__all_airlines__";
+const ALL_AIRCRAFT_VALUE = "__all_aircraft__";
 
 export default function AircraftImagesPage() {
   const router = useRouter();
@@ -389,7 +398,7 @@ export default function AircraftImagesPage() {
   return (
     <div className="min-h-screen bg-black text-white">
       <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
           <button
             onClick={() => router.push("/radar")}
             className="cursor-pointer font-mono text-xl text-cyan-400"
@@ -401,22 +410,22 @@ export default function AircraftImagesPage() {
               height={30}
             />
           </button>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => router.push("/airport-charts")}
-              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
+              className="hidden cursor-pointer text-sm text-slate-400 transition-colors hover:text-white sm:block"
             >
               Airport Charts
             </button>
             <button
               onClick={() => router.push("/admin")}
-              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
+              className="hidden cursor-pointer text-sm text-slate-400 transition-colors hover:text-white sm:block"
             >
               Admin
             </button>
             <button
               onClick={() => router.push("/radar")}
-              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
+              className="hidden cursor-pointer text-sm text-slate-400 transition-colors hover:text-white sm:block"
             >
               Back to Map
             </button>
@@ -424,7 +433,7 @@ export default function AircraftImagesPage() {
               <UserAuth />
             ) : (
               <SignInButton mode="modal">
-                <button className="cursor-pointer rounded-lg bg-cyan-500/20 px-4 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-cyan-500/30">
+                <button className="cursor-pointer rounded-lg bg-cyan-500/20 px-3 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-cyan-500/30 sm:px-4">
                   Sign In
                 </button>
               </SignInButton>
@@ -433,31 +442,33 @@ export default function AircraftImagesPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 sm:px-4">
               <Plane className="h-4 w-4 text-cyan-400" />
-              <span className="font-mono text-sm text-cyan-400">
+              <span className="font-mono text-xs text-cyan-400 sm:text-sm">
                 AIRCRAFT GALLERY
               </span>
             </div>
-            <h1 className="text-3xl font-bold text-white">Aircraft Images</h1>
-            <p className="mt-2 text-slate-400">
+            <h1 className="text-3xl leading-tight font-bold text-white sm:text-4xl">
+              Aircraft Images
+            </h1>
+            <p className="mt-2 max-w-xl text-slate-400">
               Community-contributed aircraft photos. Upload your own!
             </p>
           </div>
           {isSignedIn ? (
             <button
               onClick={() => setShowUploadModal(true)}
-              className="flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40 sm:w-auto sm:px-6"
             >
               <Upload className="h-5 w-5" />
               Upload Image
             </button>
           ) : (
             <SignInButton mode="modal">
-              <button className="flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40">
+              <button className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40 sm:w-auto sm:px-6">
                 <Upload className="h-5 w-5" />
                 Sign in to Upload
               </button>
@@ -466,7 +477,7 @@ export default function AircraftImagesPage() {
         </div>
 
         {/* Search and Filters */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="mb-6 flex flex-col gap-3 sm:gap-4">
           <div className="relative flex-1">
             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -477,33 +488,67 @@ export default function AircraftImagesPage() {
               className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
             />
           </div>
-          <div className="flex gap-3">
-            <select
-              value={airlineFilter}
-              onChange={(e) => setAirlineFilter(e.target.value)}
-              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+            <Select
+              value={airlineFilter || ALL_AIRLINES_VALUE}
+              onValueChange={(value) =>
+                setAirlineFilter(
+                  value === ALL_AIRLINES_VALUE ? "" : value,
+                )
+              }
             >
-              <option value="">All Airlines</option>
-              {uniqueAirlines.map((airline) => (
-                <option key={airline.iata} value={airline.iata}>
-                  {airline.icao
-                    ? `${airline.icao} | ${airline.iata}`
-                    : airline.iata}
-                </option>
-              ))}
-            </select>
-            <select
-              value={aircraftFilter}
-              onChange={(e) => setAircraftFilter(e.target.value)}
-              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+              <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+                <SelectValue placeholder="All Airlines" />
+              </SelectTrigger>
+              <SelectContent className="border-white/10 bg-[#0d1218] text-white shadow-2xl">
+                <SelectItem
+                  value={ALL_AIRLINES_VALUE}
+                  className="font-mono text-sm text-slate-200 focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  All Airlines
+                </SelectItem>
+                {uniqueAirlines.map((airline) => (
+                  <SelectItem
+                    key={airline.iata}
+                    value={airline.iata}
+                    className="font-mono text-sm text-slate-200 focus:bg-cyan-500/10 focus:text-cyan-200"
+                  >
+                    {airline.icao
+                      ? `${airline.icao} | ${airline.iata}`
+                      : airline.iata}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={aircraftFilter || ALL_AIRCRAFT_VALUE}
+              onValueChange={(value) =>
+                setAircraftFilter(
+                  value === ALL_AIRCRAFT_VALUE ? "" : value,
+                )
+              }
             >
-              <option value="">All Aircraft</option>
-              {uniqueAircraftTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+                <SelectValue placeholder="All Aircraft" />
+              </SelectTrigger>
+              <SelectContent className="border-white/10 bg-[#0d1218] text-white shadow-2xl">
+                <SelectItem
+                  value={ALL_AIRCRAFT_VALUE}
+                  className="font-mono text-sm text-slate-200 focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  All Aircraft
+                </SelectItem>
+                {uniqueAircraftTypes.map((type) => (
+                  <SelectItem
+                    key={type}
+                    value={type}
+                    className="font-mono text-sm text-slate-200 focus:bg-cyan-500/10 focus:text-cyan-200"
+                  >
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {(searchQuery || airlineFilter || aircraftFilter) && (
               <button
                 onClick={() => {
@@ -526,21 +571,31 @@ export default function AircraftImagesPage() {
               ? `Showing ${pageStart}-${pageEnd} of ${filteredImages.length} filtered images (${images.length} total)`
               : `Showing ${pageStart}-${pageEnd} of ${filteredImages.length} images`}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-start sm:self-auto">
             <span className="text-sm text-slate-500">Per page</span>
-            <select
-              value={pageSize}
-              onChange={(e) =>
-                setPageSize(Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
+            <Select
+              value={String(pageSize)}
+              onValueChange={(value) =>
+                setPageSize(
+                  Number(value) as (typeof PAGE_SIZE_OPTIONS)[number],
+                )
               }
-              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
             >
-              {PAGE_SIZE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-10 min-w-[84px] rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="border-white/10 bg-[#0d1218] text-white shadow-2xl">
+                {PAGE_SIZE_OPTIONS.map((option) => (
+                  <SelectItem
+                    key={option}
+                    value={String(option)}
+                    className="font-mono text-sm text-slate-200 focus:bg-cyan-500/10 focus:text-cyan-200"
+                  >
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -609,17 +664,15 @@ export default function AircraftImagesPage() {
             </div>
 
             {totalPages > 1 && (
-              <div
-                className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-              >
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-slate-500">
                   Page {currentPage} of {totalPages}
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
                   <button
                     onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                     disabled={currentPage === 1}
-                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all hover:border-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all hover:border-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ChevronLeft className="h-4 w-4" />
                     Previous
@@ -629,7 +682,7 @@ export default function AircraftImagesPage() {
                       setCurrentPage((page) => Math.min(totalPages, page + 1))
                     }
                     disabled={currentPage === totalPages}
-                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all hover:border-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all hover:border-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Next
                     <ChevronRight className="h-4 w-4" />
