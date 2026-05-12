@@ -1390,7 +1390,7 @@ export default function ATCPage() {
                 icon: InstallIcon,
                 active: false,
                 onClick: () => {
-                  window.open("/userscript", "_blank");
+                  window.open("https://radarthing.com/userscript", "_blank");
                 },
               },
               {

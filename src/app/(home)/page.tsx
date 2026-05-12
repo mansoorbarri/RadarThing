@@ -18,7 +18,7 @@ import {
 import userscriptConfig from "../../../userscript-src/config.json";
 import { FREE_RECENT_FLIGHTS_LIMIT } from "~/lib/flightHistory";
 
-const USERSCRIPT_INSTALL_PATH = "/userscript";
+const USERSCRIPT_INSTALL_URL = "https://radarthing.com/userscript";
 const USERSCRIPT_LOADER_URL = `${userscriptConfig.siteUrl}/loader`;
 const CONSOLE_SNIPPET = `(() => {
   const script = document.createElement("script");
@@ -178,7 +178,7 @@ export default function HomePage() {
                 step={2}
                 title="Add the Userscript"
                 description="Install the hosted loader script so Tampermonkey always pulls the latest runtime"
-                link={USERSCRIPT_INSTALL_PATH}
+                link={USERSCRIPT_INSTALL_URL}
                 linkText="Install Script"
               />
               <SetupStep
@@ -489,7 +489,7 @@ export default function HomePage() {
             >
               Discord
             </Link>
-            <Link href={USERSCRIPT_INSTALL_PATH} className="hover:text-white">
+            <Link href={USERSCRIPT_INSTALL_URL} className="hover:text-white">
               Install Script
             </Link>
           </div>
