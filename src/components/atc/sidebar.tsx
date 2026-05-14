@@ -115,13 +115,6 @@ import Link from "next/link";
 import { Analytics } from "~/lib/analytics";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
 import { formatSpeed, formatAltitude, speedLabel, altitudeLabel } from "~/lib/units";
-import {
-  calculateRemainingDistanceNm,
-  calculateWaypointEtas,
-  formatClockTime,
-  formatDuration,
-  getEtaSpeedKts,
-} from "~/lib/waypoint-eta";
 
 const getFlightPhase = (
   altAGL: number,
@@ -288,80 +281,6 @@ export const Sidebar = ({
     [aircraft.alt, aircraft.vspeed, aircraft.flightPlan],
   );
 
-  const timelineData = useMemo(() => {
-    const parsedTakeoff = Date.parse(aircraft.takeoffTime || "");
-    const departureTs = Number.isFinite(parsedTakeoff) ? parsedTakeoff : null;
-    const now = Date.now();
-    const elapsedHours =
-      departureTs && departureTs <= now ? (now - departureTs) / 3_600_000 : 0;
-
-    let waypointProgress: number | null = null;
-    let remainingDistanceNm: number | null = null;
-
-    if (aircraft.flightPlan) {
-      try {
-        const waypoints = JSON.parse(aircraft.flightPlan) as Record<
-          string,
-          unknown
-        >[];
-        if (Array.isArray(waypoints) && waypoints.length > 1) {
-          const nextWaypoint = aircraft.nextWaypoint;
-          const nextIdx = waypoints.findIndex(
-            (wp) => typeof wp.ident === "string" && wp.ident === nextWaypoint,
-          );
-
-          const progressIndex = nextIdx >= 0 ? nextIdx : 0;
-          if (progressIndex >= 0) {
-            const rawProgress =
-              progressIndex / Math.max(waypoints.length - 1, 1);
-            waypointProgress = Math.max(0, Math.min(1, rawProgress));
-            remainingDistanceNm = calculateRemainingDistanceNm(
-              aircraft,
-              waypoints,
-            );
-          }
-        }
-      } catch {
-        // Ignore invalid flight plan payloads in the live stream.
-      }
-    }
-
-    const speedKts = getEtaSpeedKts(aircraft);
-    const flownDistanceNm = elapsedHours > 0 ? elapsedHours * speedKts : 0;
-    let progress = waypointProgress ?? 0;
-
-    if (
-      waypointProgress === null &&
-      remainingDistanceNm !== null &&
-      (flownDistanceNm > 1 || elapsedHours > 0)
-    ) {
-      const totalDistance = flownDistanceNm + remainingDistanceNm;
-      if (totalDistance > 1) {
-        progress = flownDistanceNm / totalDistance;
-      }
-    }
-
-    progress = Math.max(0, Math.min(1, progress));
-
-    let etaTs: number | null = null;
-    if (remainingDistanceNm !== null && speedKts > 60) {
-      etaTs = now + (remainingDistanceNm / speedKts) * 3_600_000;
-    } else if (departureTs && progress > 0.02 && progress < 1) {
-      const totalMs = (now - departureTs) / progress;
-      etaTs = departureTs + totalMs;
-    }
-
-    const remainingMinutes =
-      etaTs && etaTs >= now ? (etaTs - now) / 60_000 : null;
-
-    return {
-      departureText: formatClockTime(departureTs),
-      etaText: formatClockTime(etaTs),
-      progressPercent: Math.round(progress * 100),
-      remainingText: formatDuration(remainingMinutes),
-    };
-  }, [aircraft]);
-
   // Get the next waypoint identifier from the aircraft
   const nextWaypointIdent = aircraft.nextWaypoint;
   const departureIcao = (aircraft.departure || "").trim().toUpperCase();
@@ -389,22 +308,6 @@ export const Sidebar = ({
     };
   }, [aircraft.arrival, aircraft.flightPlan]);
 
-  const waypointEtas = useMemo(() => {
-    if (!aircraft.flightPlan) return [];
-
-    try {
-      const waypoints = JSON.parse(aircraft.flightPlan) as Record<
-        string,
-        unknown
-      >[];
-      if (!Array.isArray(waypoints)) return [];
-
-      return calculateWaypointEtas(aircraft, waypoints);
-    } catch {
-      return [];
-    }
-  }, [aircraft]);
-
   const renderFlightPlan = useCallback(() => {
     if (!aircraft.flightPlan) return null;
     try {
@@ -420,11 +323,8 @@ export const Sidebar = ({
           </div>
           {waypoints.map((wp: any, i: number) => {
             const isActive = wp.ident === nextWaypointIdent;
-            const waypointEta = waypointEtas[i];
-            const shouldShowEta = waypointEta?.status !== "passed";
             const hasSpeed =
               wp.spd !== null && wp.spd !== undefined && wp.spd !== "";
-            const etaText = waypointEta?.etaText ?? "--:--";
             return (
               <div
                 key={i}
@@ -477,26 +377,6 @@ export const Sidebar = ({
                         </span>
                       </span>
                     )}
-                    {shouldShowEta && (
-                      <span>
-                        ETA:{" "}
-                        <span
-                          className={
-                            isActive
-                              ? "text-green-200/90"
-                              : "text-cyan-100/90"
-                          }
-                        >
-                          {etaText}
-                        </span>
-                        {waypointEta?.status === "upcoming" &&
-                          waypointEta.remainingText !== "--" && (
-                            <span className="ml-1 text-white/35">
-                              {waypointEta.remainingText}
-                            </span>
-                          )}
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -507,7 +387,7 @@ export const Sidebar = ({
     } catch {
       return null;
     }
-  }, [aircraft.flightPlan, onWaypointClick, nextWaypointIdent, waypointEtas]);
+  }, [aircraft.flightPlan, onWaypointClick, nextWaypointIdent]);
 
   const renderHistoryContent = () => (
     <div className="space-y-3">
@@ -907,15 +787,6 @@ export const Sidebar = ({
 
             {tab === "info" ? (
               <div className="space-y-4">
-                {!diversionStatus.isDiverting && (
-                  <TimelineCard
-                    departure={timelineData.departureText}
-                    eta={timelineData.etaText}
-                    progressPercent={timelineData.progressPercent}
-                    remaining={timelineData.remainingText}
-                  />
-                )}
-
                 {diversionStatus.isDiverting && (
                   <DiversionStatusCard
                     filedArrival={diversionStatus.filedArrival}
@@ -990,14 +861,6 @@ export const Sidebar = ({
             <div className="custom-scrollbar flex-1 overflow-y-auto px-6 pb-12">
               {tab === "info" ? (
                 <div className="space-y-6">
-                  {!diversionStatus.isDiverting && (
-                    <TimelineCard
-                      departure={timelineData.departureText}
-                      eta={timelineData.etaText}
-                      progressPercent={timelineData.progressPercent}
-                      remaining={timelineData.remainingText}
-                    />
-                  )}
                   {diversionStatus.isDiverting && (
                     <DiversionStatusCard
                       filedArrival={diversionStatus.filedArrival}
@@ -1102,62 +965,6 @@ const StatBox = ({
       </span>
     </div>
   </button>
-);
-
-const TimelineCard = ({
-  departure,
-  eta,
-  progressPercent,
-  remaining,
-  className = "",
-}: {
-  departure: string;
-  eta: string;
-  progressPercent: number;
-  remaining: string;
-  className?: string;
-}) => (
-  <div
-    className={`animate-fade-in-up rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg ${className}`}
-    style={{ animationDelay: "120ms" }}
-  >
-    <div className="mb-3 flex items-center justify-between">
-      <span className="font-mono text-[9px] font-black tracking-[0.2em] text-slate-400 uppercase">
-        Flight Timeline
-      </span>
-      <span className="font-mono text-[10px] font-black text-cyan-400">
-        {Math.max(0, Math.min(100, progressPercent))}%
-      </span>
-    </div>
-
-    <div className="relative h-2 overflow-hidden rounded-full bg-white/10">
-      <div
-        className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 transition-all duration-500"
-        style={{ width: `${Math.max(0, Math.min(100, progressPercent))}%` }}
-      />
-    </div>
-
-    <div className="mt-3 grid grid-cols-2 gap-3">
-      <div>
-        <div className="font-mono text-[9px] tracking-wider text-white/40 uppercase">
-          Departure
-        </div>
-        <div className="font-mono text-sm font-black text-white">
-          {departure}
-        </div>
-      </div>
-      <div>
-        <div className="font-mono text-[9px] tracking-wider text-white/40 uppercase">
-          Est. Arrival
-        </div>
-        <div className="font-mono text-sm font-black text-white">{eta}</div>
-      </div>
-    </div>
-
-    <div className="mt-2 font-mono text-[10px] text-white/50">
-      Remaining: <span className="text-cyan-300">{remaining}</span>
-    </div>
-  </div>
 );
 
 const DiversionStatusCard = ({
