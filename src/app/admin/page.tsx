@@ -100,7 +100,6 @@ export default function AdminPage() {
   const mainTab = getAdminTabFromPath(pathname);
   const {
     isAdminUser,
-    isSuperAdmin,
     isLoading: proStatusLoading,
   } = useProStatus();
 
@@ -113,10 +112,10 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!isLoaded || proStatusLoading || !isAdminUser) return;
-    if (mainTab === "pro" && !isSuperAdmin) {
+    if (mainTab === "pro" && !isAdminUser) {
       router.replace("/admin");
     }
-  }, [isLoaded, proStatusLoading, isAdminUser, isSuperAdmin, mainTab, router]);
+  }, [isLoaded, proStatusLoading, isAdminUser, mainTab, router]);
 
   if (loading) {
     return <AdminSkeleton />;
@@ -126,7 +125,7 @@ export default function AdminPage() {
     return <AdminAccessDenied />;
   }
 
-  if (mainTab === "pro" && !isSuperAdmin) {
+  if (mainTab === "pro" && !isAdminUser) {
     return <AdminSkeleton />;
   }
 
@@ -139,7 +138,7 @@ export default function AdminPage() {
     { value: "charts", label: "Airport Charts" },
     { value: "virtual-airlines", label: "Virtual Airlines" },
     { value: "challenges", label: "Challenges" },
-    ...(isSuperAdmin ? [{ value: "pro" as const, label: "Pro" }] : []),
+    ...(isAdminUser ? [{ value: "pro" as const, label: "Pro" }] : []),
   ];
 
   return (
@@ -230,7 +229,7 @@ export default function AdminPage() {
             <Flag className="h-4 w-4" />
             Challenges
           </button>
-          {isSuperAdmin && (
+          {isAdminUser && (
             <button
               onClick={() => router.push(getAdminTabHref("pro"))}
               className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-all ${
