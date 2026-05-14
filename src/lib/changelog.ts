@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "dashboard-flight-delete",
+    date: "2026-05-14",
+    title: "Delete Flights from Dashboard",
+    description: "Delete your own flights from the dashboard with a confirmation prompt.",
+    type: "new",
+  },
+  {
     id: "challenge-leaderboard-tab",
     date: "2026-05-12",
     title: "Challenge Leaderboard Tab",
