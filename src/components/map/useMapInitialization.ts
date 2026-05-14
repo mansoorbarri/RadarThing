@@ -48,7 +48,7 @@ interface MapRefs {
 
 const DEFAULT_CENTER: [number, number] = [20, 0];
 const DEFAULT_ZOOM = 3;
-const USER_LOCATION_RESET_ZOOM = 8;
+const USER_LOCATION_RESET_ZOOM = 5.5;
 // On mobile, keep the full world visible without shrinking it so far that
 // Leaflet shows additional wrapped world copies in the viewport.
 const MOBILE_MIN_ZOOM = 1;

@@ -101,7 +101,7 @@ const DEFAULT_CENTER: [number, number] = [0, 20];
 const DEFAULT_ZOOM = 0.45;
 const MIN_ZOOM = 0;
 const MAX_ZOOM = 8;
-const USER_LOCATION_RESET_ZOOM = 4.8;
+const USER_LOCATION_RESET_ZOOM = 3.6;
 const FLIGHT_PATH_COLORS = [
   "#00ff00",
   "#ff6b6b",
