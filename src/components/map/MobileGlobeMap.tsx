@@ -109,9 +109,17 @@ interface LineFeature {
   properties: Record<string, string | number | boolean | null>;
 }
 
+interface PolygonFeature {
+  type: "Feature";
+  geometry:
+    | { type: "Polygon"; coordinates: [number, number][][] }
+    | { type: "MultiPolygon"; coordinates: [number, number][][][] };
+  properties: Record<string, string | number | boolean | null>;
+}
+
 interface FeatureCollection {
   type: "FeatureCollection";
-  features: (PointFeature | LineFeature)[];
+  features: (PointFeature | LineFeature | PolygonFeature)[];
 }
 
 interface FlightPlanWaypointLike {
@@ -124,10 +132,13 @@ interface FlightPlanWaypointLike {
 }
 
 const DEFAULT_CENTER: [number, number] = [0, 20];
-const DEFAULT_ZOOM = 0.45;
-const MIN_ZOOM = 0;
+const MOBILE_DEFAULT_ZOOM = 0.45;
+const DESKTOP_DEFAULT_ZOOM = 3;
+const MOBILE_MIN_ZOOM = 0;
+const DESKTOP_MIN_ZOOM = 3;
 const MAX_ZOOM = 18;
-const USER_LOCATION_RESET_ZOOM = 3.6;
+const MOBILE_USER_LOCATION_RESET_ZOOM = 3.6;
+const DESKTOP_USER_LOCATION_RESET_ZOOM = 5.5;
 const FLIGHT_PATH_COLORS = [
   "#00ff00",
   "#ff6b6b",
@@ -140,9 +151,12 @@ const FLIGHT_PATH_COLORS = [
 ] as const;
 const EMERGENCY_SQUAWKS = new Set(["7700", "7600", "7500"]);
 
-const COOKIE_ZOOM = "mobile_globe_zoom";
-const COOKIE_LAT = "mobile_globe_center_lat";
-const COOKIE_LNG = "mobile_globe_center_lng";
+const MOBILE_COOKIE_ZOOM = "mobile_globe_zoom";
+const MOBILE_COOKIE_LAT = "mobile_globe_center_lat";
+const MOBILE_COOKIE_LNG = "mobile_globe_center_lng";
+const DESKTOP_COOKIE_ZOOM = "map_zoom";
+const DESKTOP_COOKIE_LAT = "map_center_lat";
+const DESKTOP_COOKIE_LNG = "map_center_lng";
 const SATELLITE_TILES = [
   "https://mt0.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
   "https://mt1.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
@@ -168,6 +182,8 @@ const BASE_LAYER_IDS = {
   openAip: "mobile-globe-openaip",
 } as const;
 const FIRST_OVERLAY_LAYER_ID = "mobile-globe-selected-history";
+const OPENAIP_SOURCE_ID = "mobile-globe-openaip-source";
+const OPENAIP_TILES = `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${process.env.NEXT_PUBLIC_OPENAIP_API_KEY}`;
 
 const SOURCE_IDS = {
   selectedHistory: "mobile-globe-selected-history",
@@ -410,8 +426,9 @@ function syncAircraftMarkerElement(
 }
 
 function buildBaseStyle(
-  openAipUrl: string,
   baseLayerMode: GlobeBaseLayer,
+  isOpenAIPEnabled: boolean,
+  openAipMinZoom: number,
 ): StyleSpecification {
   return {
     version: 8,
@@ -437,10 +454,11 @@ function buildBaseStyle(
       satellite: {
         ...getBaseSourceSpec(baseLayerMode),
       },
-      openaip: {
+      [OPENAIP_SOURCE_ID]: {
         type: "raster",
-        tiles: [openAipUrl],
+        tiles: [OPENAIP_TILES],
         tileSize: 256,
+        minzoom: openAipMinZoom,
         maxzoom: 19,
       },
     },
@@ -454,10 +472,13 @@ function buildBaseStyle(
       {
         id: BASE_LAYER_IDS.openAip,
         type: "raster",
-        source: "openaip",
-        layout: { visibility: "none" },
+        source: OPENAIP_SOURCE_ID,
+        minzoom: openAipMinZoom,
+        layout: {
+          visibility: isOpenAIPEnabled ? "visible" : "none",
+        },
         paint: {
-          "raster-opacity": 0.9,
+          "raster-opacity": isOpenAIPEnabled ? 0.9 : 0,
         },
       },
     ],
@@ -626,6 +647,15 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
 
   const { isProUser } = useProStatus();
   const canUseRadarMode = isProUser;
+  const isDesktopGlobe = showDesktopControls;
+  const defaultZoom = isDesktopGlobe ? DESKTOP_DEFAULT_ZOOM : MOBILE_DEFAULT_ZOOM;
+  const minZoom = isDesktopGlobe ? DESKTOP_MIN_ZOOM : MOBILE_MIN_ZOOM;
+  const userLocationResetZoom = isDesktopGlobe
+    ? DESKTOP_USER_LOCATION_RESET_ZOOM
+    : MOBILE_USER_LOCATION_RESET_ZOOM;
+  const zoomCookieKey = isDesktopGlobe ? DESKTOP_COOKIE_ZOOM : MOBILE_COOKIE_ZOOM;
+  const latCookieKey = isDesktopGlobe ? DESKTOP_COOKIE_LAT : MOBILE_COOKIE_LAT;
+  const lngCookieKey = isDesktopGlobe ? DESKTOP_COOKIE_LNG : MOBILE_COOKIE_LNG;
 
   const selectedAircraftKeySet = useMemo(
     () => new Set(selectedAircraftIds),
@@ -708,12 +738,17 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   const updateBaseLayerVisibility = useCallback(() => {
     const map = mapRef.current;
     if (map?.isStyleLoaded() !== true) return;
+
     if (map.getLayer(BASE_LAYER_IDS.satellite)) {
       map.removeLayer(BASE_LAYER_IDS.satellite);
     }
     if (map.getSource("satellite")) {
       map.removeSource("satellite");
     }
+
+    const satelliteBeforeLayer = map.getLayer(BASE_LAYER_IDS.openAip)
+      ? BASE_LAYER_IDS.openAip
+      : FIRST_OVERLAY_LAYER_ID;
 
     map.addSource("satellite", getBaseSourceSpec(baseLayerMode));
     map.addLayer(
@@ -723,23 +758,9 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
         source: "satellite",
         paint: getBaseLayerPaint(baseLayerMode),
       },
-      FIRST_OVERLAY_LAYER_ID,
+      satelliteBeforeLayer,
     );
-
-    map.setLayoutProperty(
-      BASE_LAYER_IDS.openAip,
-      "visibility",
-      isOpenAIPEnabled ? "visible" : "none",
-    );
-    map.setPaintProperty(
-      BASE_LAYER_IDS.openAip,
-      "raster-opacity",
-      isOpenAIPEnabled ? 0.9 : 0,
-    );
-
-    map.moveLayer(BASE_LAYER_IDS.satellite, FIRST_OVERLAY_LAYER_ID);
-    map.moveLayer(BASE_LAYER_IDS.openAip, FIRST_OVERLAY_LAYER_ID);
-  }, [baseLayerMode, isOpenAIPEnabled]);
+  }, [baseLayerMode]);
 
   const clearHeadingMeasurement = useCallback(() => {
     const map = mapRef.current;
@@ -905,7 +926,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       const center: [number, number] = targetLocation
         ? [targetLocation.lng, targetLocation.lat]
         : DEFAULT_CENTER;
-      const zoom = targetLocation ? USER_LOCATION_RESET_ZOOM : DEFAULT_ZOOM;
+      const zoom = targetLocation ? userLocationResetZoom : defaultZoom;
 
       map.easeTo({
         center,
@@ -914,11 +935,11 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
         bearing: 0,
         duration: 800,
       });
-      setCookie(COOKIE_ZOOM, String(zoom));
-      setCookie(COOKIE_LAT, String(center[1]));
-      setCookie(COOKIE_LNG, String(center[0]));
+      setCookie(zoomCookieKey, String(zoom));
+      setCookie(latCookieKey, String(center[1]));
+      setCookie(lngCookieKey, String(center[0]));
     },
-    [],
+    [defaultZoom, latCookieKey, lngCookieKey, userLocationResetZoom, zoomCookieKey],
   );
 
   useEffect(() => {
@@ -980,31 +1001,34 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     };
   }, [hideUi]);
 
+  const mapStyle = useMemo(
+    () => buildBaseStyle(baseLayerMode, isOpenAIPEnabled, minZoom),
+    [baseLayerMode, isOpenAIPEnabled, minZoom],
+  );
+
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    const savedZoom = Number.parseFloat(getCookie(COOKIE_ZOOM) ?? "");
-    const savedLat = Number.parseFloat(getCookie(COOKIE_LAT) ?? "");
-    const savedLng = Number.parseFloat(getCookie(COOKIE_LNG) ?? "");
+    const savedZoom = Number.parseFloat(getCookie(zoomCookieKey) ?? "");
+    const savedLat = Number.parseFloat(getCookie(latCookieKey) ?? "");
+    const savedLng = Number.parseFloat(getCookie(lngCookieKey) ?? "");
 
     const initialCenter: [number, number] =
       Number.isFinite(savedLng) && Number.isFinite(savedLat)
         ? [savedLng, savedLat]
         : DEFAULT_CENTER;
     const initialZoom = Number.isFinite(savedZoom)
-      ? Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, savedZoom))
-      : DEFAULT_ZOOM;
-
-    const openAipUrl = `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${process.env.NEXT_PUBLIC_OPENAIP_API_KEY}`;
+      ? Math.min(MAX_ZOOM, Math.max(minZoom, savedZoom))
+      : defaultZoom;
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: buildBaseStyle(openAipUrl, baseLayerMode),
+      style: mapStyle,
       center: initialCenter,
       zoom: initialZoom,
       pitch: 0,
       bearing: 0,
-      minZoom: MIN_ZOOM,
+      minZoom,
       maxZoom: MAX_ZOOM,
       attributionControl: {},
       maplibreLogo: false,
@@ -1222,9 +1246,9 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
 
     map.on("moveend", () => {
       const center = map.getCenter();
-      setCookie(COOKIE_ZOOM, String(map.getZoom()));
-      setCookie(COOKIE_LAT, String(center.lat));
-      setCookie(COOKIE_LNG, String(center.lng));
+      setCookie(zoomCookieKey, String(map.getZoom()));
+      setCookie(latCookieKey, String(center.lat));
+      setCookie(lngCookieKey, String(center.lng));
     });
 
     map.on("click", (event) => {
@@ -1244,11 +1268,38 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       map.remove();
       mapRef.current = null;
     };
-  }, [baseLayerMode, updateBaseLayerVisibility]);
+  }, [
+    defaultZoom,
+    isOpenAIPEnabled,
+    latCookieKey,
+    lngCookieKey,
+    mapStyle,
+    minZoom,
+    updateBaseLayerVisibility,
+    zoomCookieKey,
+  ]);
 
   useEffect(() => {
     updateBaseLayerVisibility();
   }, [updateBaseLayerVisibility]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+
+    if (!map.getLayer(BASE_LAYER_IDS.openAip)) return;
+
+    map.setLayoutProperty(
+      BASE_LAYER_IDS.openAip,
+      "visibility",
+      isOpenAIPEnabled ? "visible" : "none",
+    );
+    map.setPaintProperty(
+      BASE_LAYER_IDS.openAip,
+      "raster-opacity",
+      isOpenAIPEnabled ? 0.9 : 0,
+    );
+  }, [isOpenAIPEnabled, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
