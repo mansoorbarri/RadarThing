@@ -129,11 +129,11 @@ export default function AdminPage() {
     return <AdminSkeleton />;
   }
 
-  const mobileTabs: Array<{
+  const mobileTabs: {
     value: MainTab;
     label: string;
     badge?: number;
-  }> = [
+  }[] = [
     { value: "images", label: "Aircraft Images", badge: pendingCount || undefined },
     { value: "charts", label: "Airport Charts" },
     { value: "virtual-airlines", label: "Virtual Airlines" },
