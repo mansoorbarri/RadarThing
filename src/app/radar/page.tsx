@@ -745,6 +745,154 @@ export default function ATCPage() {
     [],
   );
 
+  const dockSections = [
+    {
+      id: "radar",
+      label: "Radar",
+      items: [
+        {
+          id: "import-plan",
+          label: importedFlightPlan ? "Replace Plan" : "Import Plan",
+          icon: UploadIcon,
+          active: Boolean(importedFlightPlan),
+          onClick: handleFlightPlanImportClick,
+        },
+        ...(importedFlightPlan
+          ? [
+              {
+                id: "plan-details",
+                label: "Plan Details",
+                icon: <Route size={18} strokeWidth={1.8} />,
+                active: showImportedFlightPlanPanel,
+                onClick: () =>
+                  setShowImportedFlightPlanPanel((current) => !current),
+              },
+              {
+                id: "clear-plan",
+                label: "Clear Plan",
+                icon: <X size={18} strokeWidth={1.8} />,
+                onClick: clearImportedFlightPlan,
+              },
+            ]
+          : []),
+        {
+          id: "fids",
+          label: "Flights",
+          icon: FlightsIcon,
+          active: activeRightPanel === "fids",
+          onClick: () => {
+            const newState = activeRightPanel !== "fids";
+            setActiveRightPanel(newState ? "fids" : null);
+            if (newState) setSelectedAircrafts([]);
+          },
+        },
+        {
+          id: "airports",
+          label: "Airports",
+          icon: AirportsIcon,
+          active: activeRightPanel === "airports",
+          onClick: () => {
+            const newState = activeRightPanel !== "airports";
+            setActiveRightPanel(newState ? "airports" : null);
+            if (newState) {
+              setSelectedAircrafts([]);
+              Analytics.track("airport_activity_panel_opened", {
+                source: "dock",
+              });
+            }
+          },
+        },
+        {
+          id: "filter",
+          label: "Filter",
+          icon: FilterIcon,
+          active: activeRightPanel === "filter",
+          onClick: () => {
+            const newState = activeRightPanel !== "filter";
+            setActiveRightPanel(newState ? "filter" : null);
+            if (newState) setSelectedAircrafts([]);
+          },
+        },
+        ...(!isMobile
+          ? [
+              {
+                id: "shortcuts",
+                label: "Shortcuts",
+                icon: ShortcutsIcon,
+                active: showShortcutsMenu,
+                onClick: () => {
+                  setShowShortcutsMenu(true);
+                  Analytics.shortcutsOpened({ source: "dock" });
+                },
+              },
+            ]
+          : []),
+      ],
+    },
+    {
+      id: "pages",
+      label: "Pages",
+      items: [
+        {
+          id: "leaderboard",
+          label: "Leaderboard",
+          icon: LeaderboardIcon,
+          active: false,
+          onClick: () => {
+            Analytics.leaderboardIconClicked();
+            router.push("/leaderboard");
+          },
+        },
+        {
+          id: "upload",
+          label: "Upload",
+          icon: UploadIcon,
+          active: false,
+          onClick: () => {
+            router.push("/aircraft-images");
+          },
+        },
+        ...(isAdminUser
+          ? [
+              {
+                id: "admin",
+                label: "Admin",
+                icon: AdminIcon,
+                active: false,
+                onClick: () => {
+                  router.push("/admin");
+                },
+              },
+            ]
+          : []),
+      ],
+    },
+    {
+      id: "help",
+      label: "Help",
+      items: [
+        {
+          id: "install",
+          label: "Install",
+          icon: InstallIcon,
+          active: false,
+          onClick: () => {
+            window.open("https://radarthing.com/userscript", "_blank");
+          },
+        },
+        {
+          id: "discord",
+          label: "Help",
+          icon: DiscordIcon,
+          active: false,
+          onClick: () => {
+            window.open("https://discord.gg/pbQF4txdRC", "_blank");
+          },
+        },
+      ],
+    },
+  ];
+
   return (
     <UnitPreferencesProvider>
       <div className="relative h-screen w-screen overflow-hidden bg-black">
@@ -1299,138 +1447,7 @@ export default function ATCPage() {
               label: "Reset map view",
               onClick: () => resetMapViewRef.current?.(),
             }}
-            items={[
-              // Core features (closest to toggle button)
-              {
-                id: "import-plan",
-                label: importedFlightPlan ? "Replace Plan" : "Import Plan",
-                icon: UploadIcon,
-                active: Boolean(importedFlightPlan),
-                onClick: handleFlightPlanImportClick,
-              },
-              ...(importedFlightPlan
-                ? [
-                    {
-                      id: "plan-details",
-                      label: "Plan Details",
-                      icon: <Route size={18} strokeWidth={1.8} />,
-                      active: showImportedFlightPlanPanel,
-                      onClick: () =>
-                        setShowImportedFlightPlanPanel((current) => !current),
-                    },
-                    {
-                      id: "clear-plan",
-                      label: "Clear Plan",
-                      icon: <X size={18} strokeWidth={1.8} />,
-                      onClick: clearImportedFlightPlan,
-                    },
-                  ]
-                : []),
-              {
-                id: "fids",
-                label: "Flights",
-                icon: FlightsIcon,
-                active: activeRightPanel === "fids",
-                onClick: () => {
-                  const newState = activeRightPanel !== "fids";
-                  setActiveRightPanel(newState ? "fids" : null);
-                  if (newState) setSelectedAircrafts([]);
-                },
-              },
-              {
-                id: "airports",
-                label: "Airports",
-                icon: AirportsIcon,
-                active: activeRightPanel === "airports",
-                onClick: () => {
-                  const newState = activeRightPanel !== "airports";
-                  setActiveRightPanel(newState ? "airports" : null);
-                  if (newState) {
-                    setSelectedAircrafts([]);
-                    Analytics.track("airport_activity_panel_opened", {
-                      source: "dock",
-                    });
-                  }
-                },
-              },
-              {
-                id: "filter",
-                label: "Filter",
-                icon: FilterIcon,
-                active: activeRightPanel === "filter",
-                onClick: () => {
-                  const newState = activeRightPanel !== "filter";
-                  setActiveRightPanel(newState ? "filter" : null);
-                  if (newState) setSelectedAircrafts([]);
-                },
-              },
-              ...(!isMobile
-                ? [
-                    {
-                      id: "shortcuts",
-                      label: "Shortcuts",
-                      icon: ShortcutsIcon,
-                      active: showShortcutsMenu,
-                      onClick: () => {
-                        setShowShortcutsMenu(true);
-                        Analytics.shortcutsOpened({ source: "dock" });
-                      },
-                    },
-                  ]
-                : []),
-              {
-                id: "leaderboard",
-                label: "Leaderboard",
-                icon: LeaderboardIcon,
-                active: false,
-                onClick: () => {
-                  Analytics.leaderboardIconClicked();
-                  router.push("/leaderboard");
-                },
-              },
-              {
-                id: "upload",
-                label: "Upload",
-                icon: UploadIcon,
-                active: false,
-                onClick: () => {
-                  router.push("/aircraft-images");
-                },
-              },
-              // External links (furthest from toggle)
-              {
-                id: "install",
-                label: "Install",
-                icon: InstallIcon,
-                active: false,
-                onClick: () => {
-                  window.open("https://radarthing.com/userscript", "_blank");
-                },
-              },
-              {
-                id: "discord",
-                label: "Help",
-                icon: DiscordIcon,
-                active: false,
-                onClick: () => {
-                  window.open("https://discord.gg/pbQF4txdRC", "_blank");
-                },
-              },
-              // Admin (only visible to admins)
-              ...(isAdminUser
-                ? [
-                    {
-                      id: "admin",
-                      label: "Admin",
-                      icon: AdminIcon,
-                      active: false,
-                      onClick: () => {
-                        router.push("/admin");
-                      },
-                    },
-                  ]
-                : []),
-            ]}
+            sections={dockSections}
           />
         )}
 
