@@ -2,6 +2,10 @@ import React from "react";
 
 export const MapGlobalStyles = ({ hideUi = false }: { hideUi?: boolean }) => (
   <style jsx global>{`
+    .leaflet-container {
+      background: #081722 !important;
+    }
+
     .heading-tooltip {
       background: rgba(0, 10, 15, 0.85) !important;
       color: #00ffff !important;

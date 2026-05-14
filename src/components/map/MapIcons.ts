@@ -159,7 +159,7 @@ function isBusinessType(rawType: string) {
   );
 }
 
-function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
+export function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
   const rawType = aircraftClass?.trim().toLowerCase() ?? "";
   const af = airForce?.trim().toLowerCase() ?? "";
   const normalizedType = aircraftClass
@@ -239,7 +239,10 @@ function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
   return DEFAULT_AIRCRAFT_ICON;
 }
 
-function getAircraftIconFilter(isEmergency: boolean, isSelected: boolean) {
+export function getAircraftIconFilter(
+  isEmergency: boolean,
+  isSelected: boolean,
+) {
   if (isEmergency) {
     return "brightness(0) saturate(100%) invert(41%) sepia(96%) saturate(2084%) hue-rotate(338deg) brightness(102%) contrast(102%) drop-shadow(0 1px 2px rgba(15,23,42,0.95)) drop-shadow(0 0 6px rgba(239,68,68,0.5))";
   }

@@ -1018,7 +1018,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       <MapGlobalStyles hideUi={hideUi} />
       <div
         id="map-container"
-        style={{ height: "100%", width: "100%", background: "#0a0a0a" }}
+        style={{ height: "100%", width: "100%", background: "#081722" }}
       />
 
       {isSettingsOpen && !hideUi && (

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
 import { getCookie, setCookie } from "~/lib/cookies";
+import { getUserResetLocation } from "~/lib/mapResetLocation";
 import {
   HeadingModeControl,
   RadarModeControl,
@@ -47,7 +48,10 @@ interface MapRefs {
 
 const DEFAULT_CENTER: [number, number] = [20, 0];
 const DEFAULT_ZOOM = 3;
-const MOBILE_MIN_ZOOM = -2;
+const USER_LOCATION_RESET_ZOOM = 8;
+// On mobile, keep the full world visible without shrinking it so far that
+// Leaflet shows additional wrapped world copies in the viewport.
+const MOBILE_MIN_ZOOM = 1;
 const DESKTOP_MIN_ZOOM = 3;
 const TILE_MIN_NATIVE_ZOOM = 0;
 const MAX_ZOOM = 18;
@@ -87,14 +91,21 @@ export const useMapInitialization = ({
   const [mapReady, setMapReady] = useState(false);
   const mapMinZoom = isMobile ? MOBILE_MIN_ZOOM : DESKTOP_MIN_ZOOM;
 
-  const resetMapView = useCallback(() => {
+  const resetMapView = useCallback(async () => {
     if (!mapInstance.current) return;
-    mapInstance.current.setView(DEFAULT_CENTER, DEFAULT_ZOOM, {
+
+    const userLocation = await getUserResetLocation();
+    const center: [number, number] = userLocation
+      ? [userLocation.lat, userLocation.lng]
+      : DEFAULT_CENTER;
+    const zoom = userLocation ? USER_LOCATION_RESET_ZOOM : DEFAULT_ZOOM;
+
+    mapInstance.current.setView(center, zoom, {
       animate: true,
     });
-    setCookie("map_zoom", String(DEFAULT_ZOOM));
-    setCookie("map_center_lat", String(DEFAULT_CENTER[0]));
-    setCookie("map_center_lng", String(DEFAULT_CENTER[1]));
+    setCookie("map_zoom", String(zoom));
+    setCookie("map_center_lat", String(center[0]));
+    setCookie("map_center_lng", String(center[1]));
   }, []);
 
   useEffect(() => {
@@ -293,6 +304,10 @@ export const useMapInitialization = ({
     }
 
     if (hideUi) {
+      return;
+    }
+
+    if (isMobile) {
       return;
     }
 
