@@ -1,18 +1,23 @@
 const STORAGE_KEY = "radarthing.map_reset_location.v1";
 
-interface StoredResetLocation {
+export interface MapResetLocation {
   lat: number;
   lng: number;
 }
 
-function readStoredResetLocation(): StoredResetLocation | null {
+interface LocationApiResponse {
+  lat: number | null;
+  lng: number | null;
+}
+
+function readStoredResetLocation(): MapResetLocation | null {
   if (typeof window === "undefined") return null;
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
 
-    const parsed = JSON.parse(raw) as Partial<StoredResetLocation>;
+    const parsed = JSON.parse(raw) as Partial<MapResetLocation>;
     const { lat, lng } = parsed;
     if (
       typeof lat !== "number" ||
@@ -32,7 +37,7 @@ function readStoredResetLocation(): StoredResetLocation | null {
   }
 }
 
-function writeStoredResetLocation(location: StoredResetLocation) {
+function writeStoredResetLocation(location: MapResetLocation) {
   if (typeof window === "undefined") return;
 
   try {
@@ -42,10 +47,39 @@ function writeStoredResetLocation(location: StoredResetLocation) {
   }
 }
 
-export async function getUserResetLocation(): Promise<StoredResetLocation | null> {
-  const stored = readStoredResetLocation();
-  if (stored) return stored;
+async function getApproximateResetLocation(): Promise<MapResetLocation | null> {
+  if (typeof window === "undefined") return null;
 
+  try {
+    const response = await fetch("/api/location", {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as Partial<LocationApiResponse>;
+    if (
+      typeof data.lat !== "number" ||
+      typeof data.lng !== "number" ||
+      !Number.isFinite(data.lat) ||
+      !Number.isFinite(data.lng)
+    ) {
+      return null;
+    }
+
+    const next = {
+      lat: data.lat,
+      lng: data.lng,
+    };
+    writeStoredResetLocation(next);
+    return next;
+  } catch {
+    return null;
+  }
+}
+
+async function getBrowserResetLocation(): Promise<MapResetLocation | null> {
   if (
     typeof window === "undefined" ||
     typeof navigator === "undefined" ||
@@ -72,4 +106,17 @@ export async function getUserResetLocation(): Promise<StoredResetLocation | null
       },
     );
   });
+}
+
+export async function getUserResetLocation(): Promise<MapResetLocation | null> {
+  const stored = readStoredResetLocation();
+  if (stored) return stored;
+
+  const precise = await getBrowserResetLocation();
+  if (precise) return precise;
+
+  const approximate = await getApproximateResetLocation();
+  if (approximate) return approximate;
+
+  return null;
 }

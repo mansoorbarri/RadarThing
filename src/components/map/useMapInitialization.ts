@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
 import { getCookie, setCookie } from "~/lib/cookies";
-import { getUserResetLocation } from "~/lib/mapResetLocation";
+import { type MapResetLocation } from "~/lib/mapResetLocation";
 import {
   HeadingModeControl,
   RadarModeControl,
@@ -43,7 +43,7 @@ interface MapRefs {
   openAIPLayer: React.MutableRefObject<L.TileLayer | null>;
   weatherOverlayLayer: React.MutableRefObject<L.TileLayer | null>;
   mapReady: boolean;
-  resetMapView: () => void;
+  resetMapView: (targetLocation?: MapResetLocation | null) => void;
 }
 
 const DEFAULT_CENTER: [number, number] = [20, 0];
@@ -91,14 +91,12 @@ export const useMapInitialization = ({
   const [mapReady, setMapReady] = useState(false);
   const mapMinZoom = isMobile ? MOBILE_MIN_ZOOM : DESKTOP_MIN_ZOOM;
 
-  const resetMapView = useCallback(async () => {
+  const resetMapView = useCallback((targetLocation?: MapResetLocation | null) => {
     if (!mapInstance.current) return;
-
-    const userLocation = await getUserResetLocation();
-    const center: [number, number] = userLocation
-      ? [userLocation.lat, userLocation.lng]
+    const center: [number, number] = targetLocation
+      ? [targetLocation.lat, targetLocation.lng]
       : DEFAULT_CENTER;
-    const zoom = userLocation ? USER_LOCATION_RESET_ZOOM : DEFAULT_ZOOM;
+    const zoom = targetLocation ? USER_LOCATION_RESET_ZOOM : DEFAULT_ZOOM;
 
     mapInstance.current.setView(center, zoom, {
       animate: true,

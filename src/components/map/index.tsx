@@ -15,6 +15,7 @@ import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type OnlineAirport } from "~/hooks/useAircraftStream";
 import { preparePathForWorldCopy } from "~/lib/map-utils";
 import { type ImportedFlightPlan } from "~/lib/flightPlanImport";
+import { type MapResetLocation } from "~/lib/mapResetLocation";
 import { useMobileDetection } from "~/hooks/useMobileDetection";
 import { useProStatus } from "~/hooks/useProStatus";
 import { getBooleanCookie, setBooleanCookie } from "~/lib/cookies";
@@ -100,7 +101,9 @@ interface MapComponentProps {
   replayState?: ReplayState | null;
   followAircraft?: PositionUpdate;
   onConflictReview?: (aircrafts: PositionUpdate[]) => void;
-  setResetMapView?: (func: () => void) => void;
+  setResetMapView?: (
+    func: (targetLocation?: MapResetLocation | null) => void,
+  ) => void;
   hideUi?: boolean;
   importedFlightPlan?: ImportedFlightPlan | null;
 }

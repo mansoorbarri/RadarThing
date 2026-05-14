@@ -8,7 +8,7 @@ import type { StyleSpecification } from "maplibre-gl";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type OnlineAirport } from "~/hooks/useAircraftStream";
 import { type ImportedFlightPlan } from "~/lib/flightPlanImport";
-import { getUserResetLocation } from "~/lib/mapResetLocation";
+import { type MapResetLocation } from "~/lib/mapResetLocation";
 import {
   getCookie,
   setCookie,
@@ -64,7 +64,9 @@ interface MapComponentProps {
   replayState?: ReplayState | null;
   followAircraft?: PositionUpdate;
   onConflictReview?: (aircrafts: PositionUpdate[]) => void;
-  setResetMapView?: (func: () => void) => void;
+  setResetMapView?: (
+    func: (targetLocation?: MapResetLocation | null) => void,
+  ) => void;
   hideUi?: boolean;
   importedFlightPlan?: ImportedFlightPlan | null;
 }
@@ -536,15 +538,15 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     map.setLayoutProperty(BASE_LAYER_IDS.openAip, "visibility", "none");
   }, []);
 
-  const resetMapView = useCallback(async () => {
+  const resetMapView = useCallback(
+    (targetLocation?: MapResetLocation | null) => {
     const map = mapRef.current;
     if (!map) return;
 
-    const userLocation = await getUserResetLocation();
-    const center: [number, number] = userLocation
-      ? [userLocation.lng, userLocation.lat]
+    const center: [number, number] = targetLocation
+      ? [targetLocation.lng, targetLocation.lat]
       : DEFAULT_CENTER;
-    const zoom = userLocation ? USER_LOCATION_RESET_ZOOM : DEFAULT_ZOOM;
+    const zoom = targetLocation ? USER_LOCATION_RESET_ZOOM : DEFAULT_ZOOM;
 
     map.easeTo({
       center,
@@ -556,7 +558,9 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     setCookie(COOKIE_ZOOM, String(zoom));
     setCookie(COOKIE_LAT, String(center[1]));
     setCookie(COOKIE_LNG, String(center[0]));
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     onLayerModeChange?.(false);
