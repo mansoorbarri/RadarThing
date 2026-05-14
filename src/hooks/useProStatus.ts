@@ -54,11 +54,22 @@ export const useProStatus = () => {
 
   useEffect(() => {
     if (dbUser === undefined) return;
+    if (dbUser === null) {
+      setIsSuperAdmin(false);
+      setIsCheckingSuperAdmin(false);
+      return;
+    }
 
-    const googleId = dbUser?.googleId;
+    const googleId = dbUser.googleId;
 
-    // Role-based admins do not need the break-glass lookup.
-    if (!googleId || dbUser.role === "ADMIN") {
+    // Role-based admins should retain access to admin-only tabs without the break-glass lookup.
+    if (dbUser.role === "ADMIN") {
+      setIsSuperAdmin(true);
+      setIsCheckingSuperAdmin(false);
+      return;
+    }
+
+    if (!googleId) {
       setIsSuperAdmin(false);
       setIsCheckingSuperAdmin(false);
       return;
