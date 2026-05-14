@@ -13,13 +13,19 @@ function readStoredResetLocation(): StoredResetLocation | null {
     if (!raw) return null;
 
     const parsed = JSON.parse(raw) as Partial<StoredResetLocation>;
-    if (!Number.isFinite(parsed.lat) || !Number.isFinite(parsed.lng)) {
+    const { lat, lng } = parsed;
+    if (
+      typeof lat !== "number" ||
+      typeof lng !== "number" ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng)
+    ) {
       return null;
     }
 
     return {
-      lat: parsed.lat,
-      lng: parsed.lng,
+      lat,
+      lng,
     };
   } catch {
     return null;

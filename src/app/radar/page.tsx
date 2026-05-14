@@ -33,6 +33,7 @@ import { useProStatus } from "~/hooks/useProStatus";
 import { useRecentSearches } from "~/hooks/useRecentSearches";
 import { useActiveTracker } from "~/hooks/useActiveTracker";
 import { useMostTrackedFlights } from "~/hooks/useMostTrackedFlights";
+import { useTileCacheWorker } from "~/hooks/useTileCacheWorker";
 import { Analytics } from "~/lib/analytics";
 import { isFreeChartIcao } from "~/lib/chartAccess";
 import {
@@ -98,6 +99,7 @@ type RightPanel = "fids" | "filter" | "airports" | null;
 export default function ATCPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  useTileCacheWorker();
   const isMobile = useMobileDetection();
   const deviceType = useDeviceType();
   const isPhone = deviceType === "phone";

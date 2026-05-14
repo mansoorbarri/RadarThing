@@ -39,7 +39,6 @@ import { getReplayAircraftIcon } from "~/components/map/MapIcons";
 import { MapGlobalStyles } from "~/styles/MapGlobalStyles";
 import { useMetarOverlay } from "~/hooks/useMetarOverlay";
 import { useAtisOverlay } from "~/hooks/useAtisOverlay";
-import { useTileCacheWorker } from "~/hooks/useTileCacheWorker";
 import { useNotamOverlay } from "~/hooks/useNotamOverlay";
 import { useWeatherOverlayLayer } from "~/hooks/useWeatherOverlayLayer";
 import { MetarPanel } from "./MetarPanel";
@@ -132,7 +131,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 }) => {
   const isMobile = useMobileDetection();
   const { isProUser, isLoading: proLoading } = useProStatus();
-  useTileCacheWorker();
 
   const canUseRadarMode = isProUser;
   const canUseAdvancedWeather = isProUser;
