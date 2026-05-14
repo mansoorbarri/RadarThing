@@ -253,7 +253,7 @@ function buildRouteLegs(routePoints: RoutePoint[]) {
     const from = routePoints[index]!;
     const to = routePoints[index + 1]!;
     const explicitSpeed = parseSpeedKts(to.spd) ?? parseSpeedKts(from.spd);
-    const plannedSpeedKts =
+    const plannedSpeedKts: number =
       explicitSpeed ??
       previousKnownSpeed ??
       estimateFallbackSpeedKts(from, to);
@@ -421,17 +421,19 @@ export function calculateFlightProgress(
       adjustedLegSpeed(currentLeg)) *
     60;
 
-  const waypointEtas = waypoints.map((waypoint, index) => ({
-    index,
-    ident: waypoint.ident,
-    type: waypoint.type,
-    etaTs: null,
-    distanceRemainingNm: null,
-    isActive: index === currentLeg.toWaypointIndex,
-    isPassed:
-      waypoint.routePointIndex !== null &&
-      waypoint.routePointIndex < currentLeg.toRoutePointIndex,
-  }));
+  const waypointEtas: FlightProgressWaypointEta[] = waypoints.map(
+    (waypoint, index) => ({
+      index,
+      ident: waypoint.ident,
+      type: waypoint.type,
+      etaTs: null,
+      distanceRemainingNm: null,
+      isActive: index === currentLeg.toWaypointIndex,
+      isPassed:
+        waypoint.routePointIndex !== null &&
+        waypoint.routePointIndex < currentLeg.toRoutePointIndex,
+    }),
+  );
 
   let minutesFromNow = remainingMinutes;
   let distanceFromAircraftNm = currentLeg.distanceNm * (1 - projection.fraction);
