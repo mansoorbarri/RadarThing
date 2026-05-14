@@ -115,6 +115,12 @@ import Link from "next/link";
 import { Analytics } from "~/lib/analytics";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
 import { formatSpeed, formatAltitude, speedLabel, altitudeLabel } from "~/lib/units";
+import {
+  calculateFlightProgress,
+  parseLiveFlightPlanWaypoints,
+  type FlightProgressSnapshot,
+  type LiveFlightPlanWaypoint,
+} from "~/lib/flightProgress";
 
 const getFlightPhase = (
   altAGL: number,
@@ -162,6 +168,41 @@ const getPlannedDestination = (flightPlan?: string): string | null => {
   } catch {
     return null;
   }
+};
+
+const formatZuluTime = (timestamp: number | null | undefined) => {
+  if (typeof timestamp !== "number" || !Number.isFinite(timestamp)) {
+    return "---";
+  }
+
+  const date = new Date(timestamp);
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}Z`;
+};
+
+const formatDuration = (minutes: number | null | undefined) => {
+  if (typeof minutes !== "number" || !Number.isFinite(minutes) || minutes < 0) {
+    return "---";
+  }
+
+  const roundedMinutes = Math.max(0, Math.round(minutes));
+  if (roundedMinutes < 1) return "<1m";
+
+  const hours = Math.floor(roundedMinutes / 60);
+  const mins = roundedMinutes % 60;
+
+  return hours > 0 ? `${hours}h ${String(mins).padStart(2, "0")}m` : `${mins}m`;
+};
+
+const formatEtaCountdown = (timestamp: number | null | undefined) => {
+  if (typeof timestamp !== "number" || !Number.isFinite(timestamp)) {
+    return null;
+  }
+
+  const minutes = (timestamp - Date.now()) / 60_000;
+  const formatted = formatDuration(minutes);
+  return formatted === "---" ? null : `In ${formatted}`;
 };
 
 export interface HistoryFlight {
@@ -283,6 +324,14 @@ export const Sidebar = ({
 
   // Get the next waypoint identifier from the aircraft
   const nextWaypointIdent = aircraft.nextWaypoint;
+  const flightPlanWaypoints = useMemo(
+    () => parseLiveFlightPlanWaypoints(aircraft.flightPlan),
+    [aircraft.flightPlan],
+  );
+  const flightProgress = useMemo(
+    () => calculateFlightProgress(aircraft, flightPlanWaypoints),
+    [aircraft, flightPlanWaypoints],
+  );
   const departureIcao = (aircraft.departure || "").trim().toUpperCase();
   const arrivalIcao = (aircraft.arrival || "").trim().toUpperCase();
   const isClickableAirport = (icao: string) => /^[A-Z0-9]{3,4}$/.test(icao);
@@ -309,85 +358,123 @@ export const Sidebar = ({
   }, [aircraft.arrival, aircraft.flightPlan]);
 
   const renderFlightPlan = useCallback(() => {
-    if (!aircraft.flightPlan) return null;
-    try {
-      const waypoints = JSON.parse(aircraft.flightPlan);
-      return (
-        <div className="mt-6 space-y-2.5">
-          <div className="flex items-center gap-2 px-1">
-            <div className="h-[1px] flex-1 bg-white/20" />
-            <span className="font-mono text-[9px] font-black tracking-[0.3em] text-white/50 uppercase">
-              Enroute Path
-            </span>
-            <div className="h-[1px] flex-1 bg-white/20" />
-          </div>
-          {waypoints.map((wp: any, i: number) => {
-            const isActive = wp.ident === nextWaypointIdent;
-            const hasSpeed =
-              wp.spd !== null && wp.spd !== undefined && wp.spd !== "";
-            return (
-              <div
-                key={i}
-                className={`animate-fade-in-up group flex cursor-pointer items-center gap-4 rounded-xl border p-3.5 transition ${
-                  isActive
-                    ? "border-green-500/60 bg-green-500/10 shadow-[0_0_12px_rgba(34,197,94,0.2)]"
+    if (flightPlanWaypoints.length === 0) return null;
+
+    return (
+      <div className="mt-6 space-y-2.5">
+        <div className="flex items-center gap-2 px-1">
+          <div className="h-[1px] flex-1 bg-white/20" />
+          <span className="font-mono text-[9px] font-black tracking-[0.3em] text-white/50 uppercase">
+            Enroute Path
+          </span>
+          <div className="h-[1px] flex-1 bg-white/20" />
+        </div>
+        {flightPlanWaypoints.map((wp: LiveFlightPlanWaypoint, i: number) => {
+          const waypointProgress = flightProgress?.waypointEtas[i];
+          const isPassed = Boolean(waypointProgress?.isPassed);
+          const isActive =
+            waypointProgress?.isActive || wp.ident === nextWaypointIdent;
+          const hasSpeed =
+            wp.spd !== null && wp.spd !== undefined && wp.spd !== "";
+          const etaLabel = formatZuluTime(waypointProgress?.etaTs);
+          const distanceLabel = formatEtaCountdown(waypointProgress?.etaTs);
+          const isClickable = Boolean(onWaypointClick);
+
+          return (
+            <button
+              key={i}
+              type="button"
+              className={`animate-fade-in-up group flex w-full items-center gap-4 rounded-xl border p-3.5 text-left transition ${
+                isActive
+                  ? "border-green-500/60 bg-green-500/10 shadow-[0_0_12px_rgba(34,197,94,0.2)]"
+                  : isPassed
+                    ? "border-white/8 bg-black/25"
                     : "border-white/10 bg-black/40 hover:border-cyan-500/40 hover:bg-black/60"
+              } ${isClickable ? "cursor-pointer" : "cursor-default"}`}
+              style={{ animationDelay: `${i * 40}ms` }}
+              onClick={
+                isClickable ? () => onWaypointClick?.(wp, i) : undefined
+              }
+              disabled={!isClickable}
+            >
+              <div
+                className={`font-mono text-xs font-black ${
+                  isActive
+                    ? "text-green-400"
+                    : isPassed
+                      ? "text-white/30"
+                      : "text-cyan-400"
                 }`}
-                style={{ animationDelay: `${i * 40}ms` }}
-                onClick={() => onWaypointClick?.(wp, i)}
               >
-                <div
-                  className={`font-mono text-xs font-black ${isActive ? "text-green-400" : "text-cyan-400"}`}
-                >
-                  {String(i + 1).padStart(2, "0")}
+                {String(i + 1).padStart(2, "0")}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-3">
+                  <span
+                    className={`truncate font-mono text-sm font-black tracking-wider ${
+                      isActive
+                        ? "text-green-300"
+                        : isPassed
+                          ? "text-white/50"
+                          : "text-white"
+                    }`}
+                  >
+                    {wp.ident}
+                  </span>
+                  <span className="font-mono text-[9px] font-bold text-white/40 uppercase">
+                    {wp.type}
+                  </span>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[10px] font-bold text-white/60">
+                  <span>
+                    ALT:{" "}
                     <span
-                      className={`font-mono text-sm font-black tracking-wider ${isActive ? "text-green-300" : "text-white"}`}
+                      className={
+                        isActive ? "text-green-200/90" : "text-cyan-100/90"
+                      }
                     >
-                      {wp.ident}
+                      {wp.alt ?? "---"}
                     </span>
-                    <span className="font-mono text-[9px] font-bold text-white/40 uppercase">
-                      {wp.type}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[10px] font-bold text-white/60">
+                  </span>
+                  {hasSpeed && (
                     <span>
-                      ALT:{" "}
+                      SPD:{" "}
                       <span
                         className={
                           isActive ? "text-green-200/90" : "text-cyan-100/90"
                         }
                       >
-                        {wp.alt ?? "---"}
+                        {wp.spd}
                       </span>
                     </span>
-                    {hasSpeed && (
-                      <span>
-                        SPD:{" "}
-                        <span
-                          className={
-                            isActive
-                              ? "text-green-200/90"
-                              : "text-cyan-100/90"
-                          }
-                        >
-                          {wp.spd}
-                        </span>
-                      </span>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
-            );
-          })}
-        </div>
-      );
-    } catch {
-      return null;
-    }
-  }, [aircraft.flightPlan, onWaypointClick, nextWaypointIdent]);
+              {!isPassed && (
+                <div className="shrink-0 text-right">
+                  <div className="font-mono text-[9px] font-black tracking-[0.18em] text-white/35 uppercase">
+                    ETA
+                  </div>
+                  <div
+                    className={`font-mono text-xs font-black ${
+                      isActive ? "text-green-300" : "text-cyan-300"
+                    }`}
+                  >
+                    {etaLabel}
+                  </div>
+                  {distanceLabel && (
+                    <div className="font-mono text-[9px] text-white/35">
+                      {distanceLabel}
+                    </div>
+                  )}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }, [flightPlanWaypoints, flightProgress, nextWaypointIdent, onWaypointClick]);
 
   const renderHistoryContent = () => (
     <div className="space-y-3">
@@ -794,6 +881,10 @@ export const Sidebar = ({
                   />
                 )}
 
+                {flightProgress && (
+                  <FlightTimelineCard progress={flightProgress} />
+                )}
+
                 <div className="grid grid-cols-2 gap-2.5">
                   <StatBox
                     label="Departure"
@@ -866,6 +957,9 @@ export const Sidebar = ({
                       filedArrival={diversionStatus.filedArrival}
                       plannedArrival={diversionStatus.plannedArrival}
                     />
+                  )}
+                  {flightProgress && (
+                    <FlightTimelineCard progress={flightProgress} />
                   )}
                   <div className="grid grid-cols-2 gap-3.5">
                     <StatBox
@@ -986,6 +1080,60 @@ const DiversionStatusCard = ({
     </p>
   </div>
 );
+
+const FlightTimelineCard = ({
+  progress,
+}: {
+  progress: FlightProgressSnapshot;
+}) => {
+  return (
+    <div
+      className="animate-fade-in-up rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg"
+      style={{ animationDelay: "120ms" }}
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <span className="font-mono text-[9px] font-black tracking-[0.2em] text-slate-400 uppercase">
+          Flight Timeline
+        </span>
+        <span className="font-mono text-[10px] font-black text-cyan-400">
+          {Math.max(0, Math.min(100, progress.progressPercent))}%
+        </span>
+      </div>
+
+      <div className="relative h-2 overflow-hidden rounded-full bg-white/10">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 transition-all duration-500"
+          style={{
+            width: `${Math.max(0, Math.min(100, progress.progressPercent))}%`,
+          }}
+        />
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <div>
+          <div className="font-mono text-[9px] tracking-wider text-white/40 uppercase">
+            Departure
+          </div>
+          <div className="font-mono text-sm font-black text-white">
+            {formatZuluTime(progress.departureTimeTs)}
+          </div>
+        </div>
+        <div>
+          <div className="font-mono text-[9px] tracking-wider text-white/40 uppercase">
+            Est. Arrival
+          </div>
+          <div className="font-mono text-sm font-black text-white">
+            {formatZuluTime(progress.arrivalEtaTs)}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-2 font-mono text-[10px] text-white/50">
+        Remaining: <span className="text-cyan-300">{formatDuration(progress.remainingMinutes)}</span>
+      </div>
+    </div>
+  );
+};
 
 const MiniStat = ({ label, value }: { label: string; value: string }) => (
   <div className="rounded-xl border border-white/10 bg-black/40 px-2 py-2 text-center">
