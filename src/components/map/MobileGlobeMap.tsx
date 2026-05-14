@@ -4,24 +4,47 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { StyleSpecification } from "maplibre-gl";
+import Image from "next/image";
+import { toast } from "sonner";
+import {
+  Crosshair,
+  Globe2,
+  Minus,
+  Plus,
+  Settings2,
+} from "lucide-react";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type OnlineAirport } from "~/hooks/useAircraftStream";
+import { useProStatus } from "~/hooks/useProStatus";
 import { type ImportedFlightPlan } from "~/lib/flightPlanImport";
 import { type MapResetLocation } from "~/lib/mapResetLocation";
 import {
+  getBooleanCookie,
   getCookie,
   setCookie,
+  setBooleanCookie,
 } from "~/lib/cookies";
 import {
+  calculateBearing,
+  calculateDistance,
   findActiveWaypointIndex,
   preparePathForWorldCopy,
   unwrapPath,
 } from "~/lib/map-utils";
+import { Analytics } from "~/lib/analytics";
+import {
+  createMapLayerPreset,
+  getStoredMapLayerPresets,
+  mapLayerPresetStateEquals,
+  setStoredMapLayerPresets,
+  type MapLayerPresetState,
+} from "~/lib/mapLayerPresets";
 import {
   getAircraftIconFilter,
   getAircraftIconUrl,
 } from "~/components/map/MapIcons";
+import { RadarSettings } from "~/components/atc/radarSettings";
 
 interface Airport {
   name: string;
@@ -67,6 +90,9 @@ interface MapComponentProps {
   setResetMapView?: (
     func: (targetLocation?: MapResetLocation | null) => void,
   ) => void;
+  mapRenderer?: "flat" | "globe";
+  onMapRendererChange?: (renderer: "flat" | "globe") => void;
+  showDesktopControls?: boolean;
   hideUi?: boolean;
   importedFlightPlan?: ImportedFlightPlan | null;
 }
@@ -100,7 +126,7 @@ interface FlightPlanWaypointLike {
 const DEFAULT_CENTER: [number, number] = [0, 20];
 const DEFAULT_ZOOM = 0.45;
 const MIN_ZOOM = 0;
-const MAX_ZOOM = 8;
+const MAX_ZOOM = 18;
 const USER_LOCATION_RESET_ZOOM = 3.6;
 const FLIGHT_PATH_COLORS = [
   "#00ff00",
@@ -117,6 +143,23 @@ const EMERGENCY_SQUAWKS = new Set(["7700", "7600", "7500"]);
 const COOKIE_ZOOM = "mobile_globe_zoom";
 const COOKIE_LAT = "mobile_globe_center_lat";
 const COOKIE_LNG = "mobile_globe_center_lng";
+const SATELLITE_TILES = [
+  "https://mt0.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
+  "https://mt1.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
+  "https://mt2.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
+  "https://mt3.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
+] as const;
+const RADAR_TILES = [
+  "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  "https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+] as const;
+const OSM_TILES = [
+  "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png",
+] as const;
 
 const BASE_LAYER_IDS = {
   satellite: "mobile-globe-satellite",
@@ -124,6 +167,7 @@ const BASE_LAYER_IDS = {
   osm: "mobile-globe-osm",
   openAip: "mobile-globe-openaip",
 } as const;
+const FIRST_OVERLAY_LAYER_ID = "mobile-globe-selected-history";
 
 const SOURCE_IDS = {
   selectedHistory: "mobile-globe-selected-history",
@@ -135,11 +179,15 @@ const SOURCE_IDS = {
   replayRemaining: "mobile-globe-replay-remaining",
   replayCurrent: "mobile-globe-replay-current",
   importedFlightPlan: "mobile-globe-imported-flight-plan",
+  headingLine: "mobile-globe-heading-line",
+  headingStart: "mobile-globe-heading-start",
 } as const;
 
 function emptyFeatureCollection(): FeatureCollection {
   return { type: "FeatureCollection", features: [] };
 }
+
+type GlobeBaseLayer = "satellite" | "radar" | "osm";
 
 function isGeoJsonSource(
   source: maplibregl.Source | undefined,
@@ -190,6 +238,55 @@ function buildLineFeature(
     type: "Feature",
     geometry: { type: "LineString", coordinates },
     properties,
+  };
+}
+
+function getBaseLayerMode(
+  isRadarMode: boolean,
+  isOSMMode: boolean,
+): GlobeBaseLayer {
+  if (isRadarMode) return "radar";
+  if (isOSMMode) return "osm";
+  return "satellite";
+}
+
+function getBaseTiles(mode: GlobeBaseLayer): string[] {
+  switch (mode) {
+    case "radar":
+      return [...RADAR_TILES];
+    case "osm":
+      return [...OSM_TILES];
+    default:
+      return [...SATELLITE_TILES];
+  }
+}
+
+function getBaseSourceSpec(mode: GlobeBaseLayer) {
+  return {
+    type: "raster" as const,
+    tiles: getBaseTiles(mode),
+    tileSize: 256,
+    maxzoom: mode === "osm" ? 19 : 18,
+    ...(mode === "osm"
+      ? { attribution: "© OpenStreetMap contributors" }
+      : {}),
+    ...(mode === "satellite" ? { scheme: "xyz" as const } : {}),
+  };
+}
+
+function getBaseLayerPaint(mode: GlobeBaseLayer) {
+  if (mode === "osm") {
+    return {
+      "raster-brightness-max": 0.6,
+      "raster-contrast": 0.1,
+      "raster-saturation": -0.1,
+    };
+  }
+
+  return {
+    "raster-brightness-max": 1,
+    "raster-contrast": 0,
+    "raster-saturation": 0,
   };
 }
 
@@ -312,7 +409,10 @@ function syncAircraftMarkerElement(
   `;
 }
 
-function buildBaseStyle(openAipUrl: string): StyleSpecification {
+function buildBaseStyle(
+  openAipUrl: string,
+  baseLayerMode: GlobeBaseLayer,
+): StyleSpecification {
   return {
     version: 8,
     projection: { type: "globe" },
@@ -335,38 +435,7 @@ function buildBaseStyle(openAipUrl: string): StyleSpecification {
     },
     sources: {
       satellite: {
-        type: "raster",
-        tiles: [
-          "https://mt0.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
-          "https://mt1.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
-          "https://mt2.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
-          "https://mt3.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
-        ],
-        tileSize: 256,
-        maxzoom: 18,
-        scheme: "xyz",
-      },
-      radar: {
-        type: "raster",
-        tiles: [
-          "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-          "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-          "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-          "https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-        ],
-        tileSize: 256,
-        maxzoom: 18,
-      },
-      osm: {
-        type: "raster",
-        tiles: [
-          "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        ],
-        tileSize: 256,
-        maxzoom: 19,
-        attribution: "© OpenStreetMap contributors",
+        ...getBaseSourceSpec(baseLayerMode),
       },
       openaip: {
         type: "raster",
@@ -380,23 +449,7 @@ function buildBaseStyle(openAipUrl: string): StyleSpecification {
         id: BASE_LAYER_IDS.satellite,
         type: "raster",
         source: "satellite",
-      },
-      {
-        id: BASE_LAYER_IDS.radar,
-        type: "raster",
-        source: "radar",
-        layout: { visibility: "none" },
-      },
-      {
-        id: BASE_LAYER_IDS.osm,
-        type: "raster",
-        source: "osm",
-        layout: { visibility: "none" },
-        paint: {
-          "raster-brightness-max": 0.6,
-          "raster-contrast": 0.1,
-          "raster-saturation": -0.1,
-        },
+        paint: getBaseLayerPaint(baseLayerMode),
       },
       {
         id: BASE_LAYER_IDS.openAip,
@@ -474,6 +527,39 @@ function buildSelectedFlightData(aircrafts: PositionUpdate[]) {
   return { historyFeatures, routeFeatures, waypointFeatures, zoomCoords };
 }
 
+interface GlobeControlButtonProps {
+  active?: boolean;
+  disabled?: boolean;
+  title: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}
+
+function GlobeControlButton({
+  active = false,
+  disabled = false,
+  title,
+  onClick,
+  children,
+}: GlobeControlButtonProps) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      disabled={disabled}
+      onClick={onClick}
+      className={`flex h-10 w-10 items-center justify-center rounded-md border text-cyan-400 shadow-[0_0_8px_rgba(0,255,255,0.28)] transition-all duration-200 ${
+        active
+          ? "border-cyan-300/80 bg-cyan-500/20 shadow-[0_0_14px_rgba(34,211,238,0.48)]"
+          : "border-cyan-400/30 bg-black/70 hover:border-cyan-300/60 hover:bg-cyan-500/10"
+      } ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+    >
+      {children}
+    </button>
+  );
+}
+
 const MobileGlobeMap: React.FC<MapComponentProps> = ({
   aircrafts,
   selectedAircraftIds = [],
@@ -489,6 +575,10 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   replayState,
   followAircraft,
   setResetMapView,
+  mapRenderer = "globe",
+  onMapRendererChange,
+  showDesktopControls = false,
+  hideUi = false,
   importedFlightPlan = null,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -502,12 +592,81 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   const onInitialBaseLayerReadyRef = useRef(onInitialBaseLayerReady);
   const hasReportedTrafficPaintRef = useRef(false);
   const hasReportedBaseLayerRef = useRef(false);
+  const headingStartPointRef = useRef<maplibregl.LngLat | null>(null);
+  const headingPopupRef = useRef<maplibregl.Popup | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [isMapVisible, setIsMapVisible] = useState(false);
+  const [isRadarMode, setIsRadarMode] = useState(() =>
+    getBooleanCookie("map_radar_mode", false),
+  );
+  const [isOSMMode, setIsOSMMode] = useState(() =>
+    getBooleanCookie("map_osm_mode", false),
+  );
+  const [isOpenAIPEnabled, setIsOpenAIPEnabled] = useState(() =>
+    getBooleanCookie("map_openaip", false),
+  );
+  const [showPrecipitation, setShowPrecipitation] = useState(() =>
+    getBooleanCookie("weather_precipitation", false),
+  );
+  const [showAirmets, setShowAirmets] = useState(() =>
+    getBooleanCookie("weather_airmets", false),
+  );
+  const [showSigmets, setShowSigmets] = useState(() =>
+    getBooleanCookie("weather_sigmets", false),
+  );
+  const [showConflicts, setShowConflicts] = useState(() =>
+    getBooleanCookie("traffic_conflicts", false),
+  );
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isHeadingMode, setIsHeadingMode] = useState(false);
+  const [layerPresets, setLayerPresets] = useState(() =>
+    getStoredMapLayerPresets(),
+  );
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+
+  const { isProUser } = useProStatus();
+  const canUseRadarMode = isProUser;
 
   const selectedAircraftKeySet = useMemo(
     () => new Set(selectedAircraftIds),
     [selectedAircraftIds],
+  );
+
+  const currentLayerState = useMemo<MapLayerPresetState>(
+    () => ({
+      baseLayer: isRadarMode ? "radar" : isOSMMode ? "osm" : "satellite",
+      mapRenderer,
+      openAIP: isOpenAIPEnabled,
+      precipitation: showPrecipitation,
+      airmets: showAirmets,
+      sigmets: showSigmets,
+      conflicts: showConflicts,
+    }),
+    [
+      isOpenAIPEnabled,
+      isOSMMode,
+      isRadarMode,
+      mapRenderer,
+      showAirmets,
+      showConflicts,
+      showPrecipitation,
+      showSigmets,
+    ],
+  );
+
+  const activePreset = useMemo(
+    () =>
+      layerPresets.find((preset) =>
+        mapLayerPresetStateEquals(preset, currentLayerState, {
+          allowLegacyRendererMatch: true,
+        }),
+      ) ?? null,
+    [currentLayerState, layerPresets],
+  );
+
+  const baseLayerMode = useMemo(
+    () => getBaseLayerMode(isRadarMode, isOSMMode),
+    [isOSMMode, isRadarMode],
   );
 
   useEffect(() => {
@@ -528,43 +687,298 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     onInitialBaseLayerReadyRef.current = onInitialBaseLayerReady;
   }, [onInitialBaseLayerReady]);
 
+  useEffect(() => {
+    setStoredMapLayerPresets(layerPresets);
+  }, [layerPresets]);
+
+  useEffect(() => {
+    setSelectedPresetId((current) => {
+      if (activePreset?.id) {
+        return activePreset.id;
+      }
+
+      if (current && layerPresets.some((preset) => preset.id === current)) {
+        return current;
+      }
+
+      return null;
+    });
+  }, [activePreset, layerPresets]);
+
   const updateBaseLayerVisibility = useCallback(() => {
     const map = mapRef.current;
     if (map?.isStyleLoaded() !== true) return;
+    if (map.getLayer(BASE_LAYER_IDS.satellite)) {
+      map.removeLayer(BASE_LAYER_IDS.satellite);
+    }
+    if (map.getSource("satellite")) {
+      map.removeSource("satellite");
+    }
 
-    map.setLayoutProperty(BASE_LAYER_IDS.satellite, "visibility", "visible");
-    map.setLayoutProperty(BASE_LAYER_IDS.radar, "visibility", "none");
-    map.setLayoutProperty(BASE_LAYER_IDS.osm, "visibility", "none");
-    map.setLayoutProperty(BASE_LAYER_IDS.openAip, "visibility", "none");
+    map.addSource("satellite", getBaseSourceSpec(baseLayerMode));
+    map.addLayer(
+      {
+        id: BASE_LAYER_IDS.satellite,
+        type: "raster",
+        source: "satellite",
+        paint: getBaseLayerPaint(baseLayerMode),
+      },
+      FIRST_OVERLAY_LAYER_ID,
+    );
+
+    map.setLayoutProperty(
+      BASE_LAYER_IDS.openAip,
+      "visibility",
+      isOpenAIPEnabled ? "visible" : "none",
+    );
+    map.setPaintProperty(
+      BASE_LAYER_IDS.openAip,
+      "raster-opacity",
+      isOpenAIPEnabled ? 0.9 : 0,
+    );
+
+    map.moveLayer(BASE_LAYER_IDS.satellite, FIRST_OVERLAY_LAYER_ID);
+    map.moveLayer(BASE_LAYER_IDS.openAip, FIRST_OVERLAY_LAYER_ID);
+  }, [baseLayerMode, isOpenAIPEnabled]);
+
+  const clearHeadingMeasurement = useCallback(() => {
+    const map = mapRef.current;
+    if (map) {
+      setSourceData(map, SOURCE_IDS.headingLine, emptyFeatureCollection());
+      setSourceData(map, SOURCE_IDS.headingStart, emptyFeatureCollection());
+      map.dragPan.enable();
+      map.getCanvas().style.cursor = "";
+    }
+
+    headingPopupRef.current?.remove();
+    headingPopupRef.current = null;
+    headingStartPointRef.current = null;
   }, []);
+
+  const toggleRadarMode = useCallback(() => {
+    if (!canUseRadarMode) {
+      Analytics.upgradeButtonClicked({
+        source: "globe_radar_mode_control",
+        feature: "radar_mode_layer",
+      });
+      window.location.href = "/pricing";
+      return;
+    }
+
+    setIsRadarMode((prev) => {
+      const next = !prev;
+      if (next) {
+        setIsOSMMode(false);
+      }
+      Analytics.mapModeChanged({
+        mode: next ? "radar" : isOSMMode ? "osm" : "satellite",
+      });
+      return next;
+    });
+  }, [canUseRadarMode, isOSMMode]);
+
+  const toggleOSMMode = useCallback(() => {
+    setIsOSMMode((prev) => {
+      const next = !prev;
+      if (next) {
+        setIsRadarMode(false);
+      }
+      Analytics.mapModeChanged({
+        mode: next ? "osm" : isRadarMode ? "radar" : "satellite",
+      });
+      return next;
+    });
+  }, [isRadarMode]);
+
+  const toggleOpenAIPMode = useCallback(() => {
+    setIsOpenAIPEnabled((prev) => !prev);
+  }, []);
+
+  const zoomIn = useCallback(() => {
+    mapRef.current?.zoomIn({ duration: 250 });
+  }, []);
+
+  const zoomOut = useCallback(() => {
+    mapRef.current?.zoomOut({ duration: 250 });
+  }, []);
+
+  const toggleHeadingMode = useCallback(() => {
+    setIsSettingsOpen(false);
+    setIsHeadingMode((prev) => {
+      const next = !prev;
+      if (!next) {
+        clearHeadingMeasurement();
+      }
+      Analytics.headingModeToggled({ enabled: next });
+      return next;
+    });
+  }, [clearHeadingMeasurement]);
+
+  const applyLayerPreset = useCallback(
+    (presetId: string) => {
+      const preset = layerPresets.find((entry) => entry.id === presetId);
+      if (!preset) return;
+
+      setBooleanCookie("map_radar_mode", preset.baseLayer === "radar");
+      setBooleanCookie("map_osm_mode", preset.baseLayer === "osm");
+      setBooleanCookie("map_openaip", preset.openAIP);
+      setBooleanCookie("weather_precipitation", preset.precipitation);
+      setBooleanCookie("weather_airmets", preset.airmets);
+      setBooleanCookie("weather_sigmets", preset.sigmets);
+      setBooleanCookie("traffic_conflicts", preset.conflicts);
+
+      setIsRadarMode(preset.baseLayer === "radar");
+      setIsOSMMode(preset.baseLayer === "osm");
+      setIsOpenAIPEnabled(preset.openAIP);
+      setShowPrecipitation(preset.precipitation);
+      setShowAirmets(preset.airmets);
+      setShowSigmets(preset.sigmets);
+      setShowConflicts(preset.conflicts);
+      setSelectedPresetId(presetId);
+
+      if (
+        preset.mapRenderer &&
+        onMapRendererChange &&
+        preset.mapRenderer !== mapRenderer
+      ) {
+        onMapRendererChange(preset.mapRenderer);
+      }
+    },
+    [layerPresets, mapRenderer, onMapRendererChange],
+  );
+
+  const saveLayerPreset = useCallback((name: string) => {
+    const normalizedName = name.trim();
+    if (!normalizedName) {
+      return { ok: false as const, error: "Enter a preset name" };
+    }
+
+    const duplicateState = layerPresets.find((preset) =>
+      mapLayerPresetStateEquals(preset, currentLayerState),
+    );
+    if (duplicateState) {
+      return {
+        ok: false as const,
+        error: `Current setup already matches ${duplicateState.name}`,
+      };
+    }
+
+    const preset = createMapLayerPreset(normalizedName, currentLayerState);
+    setLayerPresets((prev) =>
+      [...prev, preset].sort((left, right) =>
+        left.name.localeCompare(right.name),
+      ),
+    );
+    setSelectedPresetId(preset.id);
+    toast.success(`Saved preset: ${preset.name}`);
+    return { ok: true as const };
+  }, [currentLayerState, layerPresets]);
+
+  const updateLayerPreset = useCallback((presetId: string) => {
+    const preset = layerPresets.find((entry) => entry.id === presetId);
+    if (!preset) return;
+
+    setLayerPresets((prev) =>
+      prev.map((entry) =>
+        entry.id === presetId
+          ? { ...entry, ...currentLayerState, updatedAt: Date.now() }
+          : entry,
+      ),
+    );
+    toast.success(`Updated preset: ${preset.name}`);
+  }, [currentLayerState, layerPresets]);
+
+  const deleteLayerPreset = useCallback((presetId: string) => {
+    const preset = layerPresets.find((entry) => entry.id === presetId);
+    if (!preset) return;
+
+    setLayerPresets((prev) => prev.filter((entry) => entry.id !== presetId));
+    setSelectedPresetId((current) => (current === presetId ? null : current));
+    toast.success(`Deleted preset: ${preset.name}`);
+  }, [layerPresets]);
 
   const resetMapView = useCallback(
     (targetLocation?: MapResetLocation | null) => {
-    const map = mapRef.current;
-    if (!map) return;
+      const map = mapRef.current;
+      if (!map) return;
 
-    const center: [number, number] = targetLocation
-      ? [targetLocation.lng, targetLocation.lat]
-      : DEFAULT_CENTER;
-    const zoom = targetLocation ? USER_LOCATION_RESET_ZOOM : DEFAULT_ZOOM;
+      const center: [number, number] = targetLocation
+        ? [targetLocation.lng, targetLocation.lat]
+        : DEFAULT_CENTER;
+      const zoom = targetLocation ? USER_LOCATION_RESET_ZOOM : DEFAULT_ZOOM;
 
-    map.easeTo({
-      center,
-      zoom,
-      pitch: 0,
-      bearing: 0,
-      duration: 800,
-    });
-    setCookie(COOKIE_ZOOM, String(zoom));
-    setCookie(COOKIE_LAT, String(center[1]));
-    setCookie(COOKIE_LNG, String(center[0]));
+      map.easeTo({
+        center,
+        zoom,
+        pitch: 0,
+        bearing: 0,
+        duration: 800,
+      });
+      setCookie(COOKIE_ZOOM, String(zoom));
+      setCookie(COOKIE_LAT, String(center[1]));
+      setCookie(COOKIE_LNG, String(center[0]));
     },
     [],
   );
 
   useEffect(() => {
-    onLayerModeChange?.(false);
-  }, [onLayerModeChange]);
+    onLayerModeChange?.(isRadarMode || isOSMMode);
+  }, [isOSMMode, isRadarMode, onLayerModeChange]);
+
+  useEffect(() => {
+    setBooleanCookie("map_radar_mode", isRadarMode);
+  }, [isRadarMode]);
+
+  useEffect(() => {
+    setBooleanCookie("map_osm_mode", isOSMMode);
+  }, [isOSMMode]);
+
+  useEffect(() => {
+    setBooleanCookie("map_openaip", isOpenAIPEnabled);
+  }, [isOpenAIPEnabled]);
+
+  useEffect(() => {
+    setBooleanCookie("weather_precipitation", showPrecipitation);
+  }, [showPrecipitation]);
+
+  useEffect(() => {
+    setBooleanCookie("weather_airmets", showAirmets);
+  }, [showAirmets]);
+
+  useEffect(() => {
+    setBooleanCookie("weather_sigmets", showSigmets);
+  }, [showSigmets]);
+
+  useEffect(() => {
+    setBooleanCookie("traffic_conflicts", showConflicts);
+  }, [showConflicts]);
+
+  useEffect(() => {
+    if (!showDesktopControls || hideUi) {
+      setIsSettingsOpen(false);
+      setIsHeadingMode(false);
+      clearHeadingMeasurement();
+    }
+  }, [clearHeadingMeasurement, hideUi, showDesktopControls]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const activeElement = document.activeElement;
+      const isInputFocused =
+        activeElement instanceof HTMLInputElement ||
+        activeElement instanceof HTMLTextAreaElement ||
+        activeElement?.getAttribute("contenteditable") === "true";
+
+      if (!hideUi && (event.key === "t" || event.key === "T") && !isInputFocused) {
+        setIsHeadingMode(true);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [hideUi]);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
@@ -585,7 +999,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: buildBaseStyle(openAipUrl),
+      style: buildBaseStyle(openAipUrl, baseLayerMode),
       center: initialCenter,
       zoom: initialZoom,
       pitch: 0,
@@ -637,6 +1051,14 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
         data: emptyFeatureCollection(),
       });
       map.addSource(SOURCE_IDS.importedFlightPlan, {
+        type: "geojson",
+        data: emptyFeatureCollection(),
+      });
+      map.addSource(SOURCE_IDS.headingLine, {
+        type: "geojson",
+        data: emptyFeatureCollection(),
+      });
+      map.addSource(SOURCE_IDS.headingStart, {
         type: "geojson",
         data: emptyFeatureCollection(),
       });
@@ -763,6 +1185,30 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
         },
       });
 
+      map.addLayer({
+        id: "mobile-globe-heading-line",
+        type: "line",
+        source: SOURCE_IDS.headingLine,
+        paint: {
+          "line-color": "#22d3ee",
+          "line-width": 2.5,
+          "line-opacity": 0.9,
+          "line-dasharray": [3, 2],
+        },
+      });
+
+      map.addLayer({
+        id: "mobile-globe-heading-start",
+        type: "circle",
+        source: SOURCE_IDS.headingStart,
+        paint: {
+          "circle-radius": 5,
+          "circle-color": "#22d3ee",
+          "circle-stroke-width": 2,
+          "circle-stroke-color": "#ecfeff",
+        },
+      });
+
       updateBaseLayerVisibility();
       setMapReady(true);
       setIsMapVisible(true);
@@ -786,20 +1232,119 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       if (target instanceof HTMLElement && target.closest("[data-aircraft-marker]")) {
         return;
       }
+      setIsSettingsOpen(false);
       onAircraftSelectRef.current(null);
     });
 
     return () => {
       aircraftMarkers.forEach(({ marker }) => marker.remove());
       aircraftMarkers.clear();
+      headingPopupRef.current?.remove();
+      headingPopupRef.current = null;
       map.remove();
       mapRef.current = null;
     };
-  }, [updateBaseLayerVisibility]);
+  }, [baseLayerMode, updateBaseLayerVisibility]);
 
   useEffect(() => {
     updateBaseLayerVisibility();
   }, [updateBaseLayerVisibility]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+
+    if (!isHeadingMode) {
+      clearHeadingMeasurement();
+      return;
+    }
+
+    map.getCanvas().style.cursor = "crosshair";
+
+    const handleMouseDown = (event: maplibregl.MapMouseEvent) => {
+      headingStartPointRef.current = event.lngLat;
+      map.dragPan.disable();
+      setSourceData(map, SOURCE_IDS.headingStart, {
+        type: "FeatureCollection",
+        features: [buildPointFeature(event.lngLat.lng, event.lngLat.lat)],
+      });
+      setSourceData(map, SOURCE_IDS.headingLine, emptyFeatureCollection());
+    };
+
+    const handleMouseMove = (event: maplibregl.MapMouseEvent) => {
+      const start = headingStartPointRef.current;
+      if (!start) return;
+
+      const end = event.lngLat;
+      const line = buildLineFeature([
+        [start.lng, start.lat],
+        [end.lng, end.lat],
+      ]);
+      setSourceData(map, SOURCE_IDS.headingLine, {
+        type: "FeatureCollection",
+        features: line ? [line] : [],
+      });
+
+      const heading = calculateBearing(start.lat, start.lng, end.lat, end.lng);
+      const distanceKm = calculateDistance(
+        start.lat,
+        start.lng,
+        end.lat,
+        end.lng,
+        "km",
+      );
+      const distanceMiles = calculateDistance(
+        start.lat,
+        start.lng,
+        end.lat,
+        end.lng,
+        "miles",
+      );
+
+      if (!headingPopupRef.current) {
+        headingPopupRef.current = new maplibregl.Popup({
+          closeButton: false,
+          closeOnClick: false,
+          offset: 18,
+          className: "globe-heading-popup",
+        });
+      }
+
+      headingPopupRef.current
+        .setLngLat(end)
+        .setHTML(
+          `<div style="font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; line-height: 1.5;">
+            <div style="font-weight: 700; color: #e0f2fe;">Heading: ${heading.toFixed(1)}°</div>
+            <div style="color: rgba(224,242,254,0.82);">Distance: ${distanceKm.toFixed(1)} km / ${distanceMiles.toFixed(1)} mi</div>
+          </div>`,
+        )
+        .addTo(map);
+    };
+
+    const handleMouseUp = () => {
+      clearHeadingMeasurement();
+      setIsHeadingMode(false);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      clearHeadingMeasurement();
+      setIsHeadingMode(false);
+    };
+
+    map.on("mousedown", handleMouseDown);
+    map.on("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      map.off("mousedown", handleMouseDown);
+      map.off("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("keydown", handleEscape);
+      clearHeadingMeasurement();
+    };
+  }, [clearHeadingMeasurement, isHeadingMode, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1032,12 +1577,98 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   }, [mapReady, selectedAircraftIds]);
 
   return (
-    <div
-      ref={mapContainerRef}
-      className={`h-full w-full bg-[#020814] transition-opacity duration-300 ${
-        isMapVisible ? "opacity-100" : "opacity-0"
-      }`}
-    />
+    <>
+      <div
+        ref={mapContainerRef}
+        className={`h-full w-full bg-[#020814] transition-opacity duration-300 ${
+          isMapVisible ? "opacity-100" : "opacity-0"
+        }`}
+      />
+
+      {showDesktopControls && !hideUi ? (
+        <>
+          <div className="absolute top-[92px] left-3 z-[10018] flex flex-col gap-2">
+            <GlobeControlButton title="Zoom in" onClick={zoomIn}>
+              <Plus size={18} strokeWidth={1.8} />
+            </GlobeControlButton>
+            <GlobeControlButton title="Zoom out" onClick={zoomOut}>
+              <Minus size={18} strokeWidth={1.8} />
+            </GlobeControlButton>
+            <GlobeControlButton
+              title="Heading mode"
+              active={isHeadingMode}
+              onClick={toggleHeadingMode}
+            >
+              <Crosshair size={18} strokeWidth={1.8} />
+            </GlobeControlButton>
+            <GlobeControlButton
+              title={canUseRadarMode ? "Radar mode" : "Radar mode (PRO)"}
+              active={isRadarMode}
+              onClick={toggleRadarMode}
+            >
+              <Image
+                src="/icons/radar.svg"
+                alt=""
+                width={18}
+                height={18}
+                style={{
+                  filter:
+                    "brightness(0) saturate(100%) invert(79%) sepia(44%) saturate(1177%) hue-rotate(152deg) brightness(98%) contrast(90%)",
+                }}
+              />
+            </GlobeControlButton>
+            <GlobeControlButton
+              title="OpenStreetMap"
+              active={isOSMMode}
+              onClick={toggleOSMMode}
+            >
+              <Image src="/icons/OSM.svg" alt="" width={18} height={18} />
+            </GlobeControlButton>
+            <GlobeControlButton
+              title="OpenAIP overlay"
+              active={isOpenAIPEnabled}
+              onClick={toggleOpenAIPMode}
+            >
+              <Globe2 size={18} strokeWidth={1.8} />
+            </GlobeControlButton>
+            <GlobeControlButton
+              title="Map settings"
+              active={isSettingsOpen}
+              onClick={() => setIsSettingsOpen((prev) => !prev)}
+            >
+              <Settings2 size={18} strokeWidth={1.8} />
+            </GlobeControlButton>
+          </div>
+
+          {isSettingsOpen ? (
+            <div className="animate-in fade-in zoom-in-95 absolute top-[180px] left-[70px] z-[10020] w-[min(320px,calc(100vw-86px))] duration-200">
+              <div className="max-h-[calc(100dvh-210px)] overflow-y-auto rounded-xl border border-white/10 bg-[#0a1219]/95 p-5 shadow-2xl backdrop-blur-xl">
+                <RadarSettings
+                  isPRO={isProUser}
+                  mapRenderer={mapRenderer}
+                  onMapRendererChange={onMapRendererChange}
+                  presets={layerPresets}
+                  activePresetId={activePreset?.id ?? null}
+                  selectedPresetId={selectedPresetId}
+                  onApplyPreset={applyLayerPreset}
+                  onSavePreset={saveLayerPreset}
+                  onUpdatePreset={updateLayerPreset}
+                  onDeletePreset={deleteLayerPreset}
+                  showPrecipitation={showPrecipitation}
+                  setShowPrecipitation={setShowPrecipitation}
+                  showAirmets={showAirmets}
+                  setShowAirmets={setShowAirmets}
+                  showSigmets={showSigmets}
+                  setShowSigmets={setShowSigmets}
+                  showConflicts={showConflicts}
+                  setShowConflicts={setShowConflicts}
+                />
+              </div>
+            </div>
+          ) : null}
+        </>
+      ) : null}
+    </>
   );
 };
 

@@ -1,7 +1,9 @@
 export type MapBaseLayer = "satellite" | "radar" | "osm";
+export type MapRenderer = "flat" | "globe";
 
 export interface MapLayerPresetState {
   baseLayer: MapBaseLayer;
+  mapRenderer?: MapRenderer;
   openAIP: boolean;
   precipitation: boolean;
   airmets: boolean;
@@ -33,6 +35,10 @@ function isMapBaseLayer(value: unknown): value is MapBaseLayer {
   return value === "satellite" || value === "radar" || value === "osm";
 }
 
+function isMapRenderer(value: unknown): value is MapRenderer {
+  return value === "flat" || value === "globe";
+}
+
 function isMapLayerPreset(value: unknown): value is MapLayerPreset {
   if (!value || typeof value !== "object") return false;
 
@@ -43,6 +49,7 @@ function isMapLayerPreset(value: unknown): value is MapLayerPreset {
     typeof preset.createdAt === "number" &&
     typeof preset.updatedAt === "number" &&
     isMapBaseLayer(preset.baseLayer) &&
+    (preset.mapRenderer === undefined || isMapRenderer(preset.mapRenderer)) &&
     typeof preset.openAIP === "boolean" &&
     typeof preset.precipitation === "boolean" &&
     typeof preset.airmets === "boolean" &&
@@ -89,9 +96,19 @@ export function createMapLayerPreset(
 export function mapLayerPresetStateEquals(
   left: MapLayerPresetState,
   right: MapLayerPresetState,
+  options?: {
+    allowLegacyRendererMatch?: boolean;
+  },
 ) {
+  const rendererMatches =
+    options?.allowLegacyRendererMatch &&
+    (left.mapRenderer === undefined || right.mapRenderer === undefined)
+      ? true
+      : left.mapRenderer === right.mapRenderer;
+
   return (
     left.baseLayer === right.baseLayer &&
+    rendererMatches &&
     left.openAIP === right.openAIP &&
     left.precipitation === right.precipitation &&
     left.airmets === right.airmets &&

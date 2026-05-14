@@ -104,6 +104,8 @@ interface MapComponentProps {
   setResetMapView?: (
     func: (targetLocation?: MapResetLocation | null) => void,
   ) => void;
+  mapRenderer?: "flat" | "globe";
+  onMapRendererChange?: (renderer: "flat" | "globe") => void;
   hideUi?: boolean;
   importedFlightPlan?: ImportedFlightPlan | null;
 }
@@ -129,6 +131,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   followAircraft,
   onConflictReview,
   setResetMapView,
+  mapRenderer = "flat",
+  onMapRendererChange,
   hideUi = false,
   importedFlightPlan = null,
 }) => {
@@ -199,6 +203,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const currentLayerState = useMemo<MapLayerPresetState>(
     () => ({
       baseLayer: isRadarMode ? "radar" : isOSMMode ? "osm" : "satellite",
+      mapRenderer,
       openAIP: isOpenAIPEnabled,
       precipitation: showPrecipitation,
       airmets: showAirmets,
@@ -209,6 +214,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       isOpenAIPEnabled,
       isOSMMode,
       isRadarMode,
+      mapRenderer,
       showAirmets,
       showConflicts,
       showPrecipitation,
@@ -219,7 +225,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const activePreset = useMemo(
     () =>
       layerPresets.find((preset) =>
-        mapLayerPresetStateEquals(preset, currentLayerState),
+        mapLayerPresetStateEquals(preset, currentLayerState, {
+          allowLegacyRendererMatch: true,
+        }),
       ) ?? null,
     [currentLayerState, layerPresets],
   );
@@ -309,6 +317,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
         nextConflicts = false;
       }
 
+      setBooleanCookie("map_radar_mode", nextBaseLayer === "radar");
+      setBooleanCookie("map_osm_mode", nextBaseLayer === "osm");
+      setBooleanCookie("map_openaip", preset.openAIP);
+      setBooleanCookie("weather_precipitation", preset.precipitation);
+      setBooleanCookie("weather_airmets", nextAirmets);
+      setBooleanCookie("weather_sigmets", nextSigmets);
+      setBooleanCookie("traffic_conflicts", nextConflicts);
+
       applyBaseLayer(nextBaseLayer);
       setIsOpenAIPEnabled(preset.openAIP);
       setShowPrecipitation(preset.precipitation);
@@ -316,6 +332,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
       setShowSigmets(nextSigmets);
       setShowConflicts(nextConflicts);
       setSelectedPresetId(preset.id);
+
+      if (
+        preset.mapRenderer &&
+        onMapRendererChange &&
+        preset.mapRenderer !== mapRenderer
+      ) {
+        onMapRendererChange(preset.mapRenderer);
+      }
 
       Analytics.track("map_layer_preset_applied", {
         preset_id: preset.id,
@@ -333,6 +357,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
       canUseConflictAlerts,
       canUseRadarMode,
       layerPresets,
+      mapRenderer,
+      onMapRendererChange,
     ],
   );
 
@@ -1027,6 +1053,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
           <div className="max-h-[calc(100dvh-210px)] overflow-y-auto rounded-xl border border-white/10 bg-[#0a1219]/95 p-5 shadow-2xl backdrop-blur-xl">
             <RadarSettings
               isPRO={isProUser}
+              mapRenderer={mapRenderer}
+              onMapRendererChange={onMapRendererChange}
               presets={layerPresets}
               activePresetId={activePreset?.id ?? null}
               selectedPresetId={selectedPreset?.id ?? null}

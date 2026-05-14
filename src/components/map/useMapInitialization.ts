@@ -9,6 +9,8 @@ import {
   OpenAIPControl,
   OSMControl,
   RadarSettingsControl,
+  ZoomInControl,
+  ZoomOutControl,
 } from "~/components/map/MapControls";
 
 interface UseMapInitializationProps {
@@ -235,7 +237,8 @@ export const useMapInitialization = ({
   const openAIPControlInstanceRef = useRef<L.Control | null>(null);
   const settingsControlInstanceRef = useRef<L.Control | null>(null);
   const headingControlInstanceRef = useRef<L.Control | null>(null);
-  const zoomControlInstanceRef = useRef<L.Control.Zoom | null>(null);
+  const zoomInControlInstanceRef = useRef<L.Control | null>(null);
+  const zoomOutControlInstanceRef = useRef<L.Control | null>(null);
   const attributionControlInstanceRef = useRef<L.Control.Attribution | null>(
     null,
   );
@@ -250,9 +253,13 @@ export const useMapInitialization = ({
       headingControlInstanceRef.current = null;
       setHeadingControlRef.current = null;
     }
-    if (zoomControlInstanceRef.current) {
-      map.removeControl(zoomControlInstanceRef.current);
-      zoomControlInstanceRef.current = null;
+    if (zoomInControlInstanceRef.current) {
+      map.removeControl(zoomInControlInstanceRef.current);
+      zoomInControlInstanceRef.current = null;
+    }
+    if (zoomOutControlInstanceRef.current) {
+      map.removeControl(zoomOutControlInstanceRef.current);
+      zoomOutControlInstanceRef.current = null;
     }
     if (attributionControlInstanceRef.current) {
       map.removeControl(attributionControlInstanceRef.current);
@@ -282,9 +289,13 @@ export const useMapInitialization = ({
     }
 
     if (!hideUi && !isMobile) {
-      const zoomControl = L.control.zoom({ position: "topleft" });
-      map.addControl(zoomControl);
-      zoomControlInstanceRef.current = zoomControl;
+      const zoomInControl = new ZoomInControl({}, mapInstance);
+      map.addControl(zoomInControl);
+      zoomInControlInstanceRef.current = zoomInControl;
+
+      const zoomOutControl = new ZoomOutControl({}, mapInstance);
+      map.addControl(zoomOutControl);
+      zoomOutControlInstanceRef.current = zoomOutControl;
 
       const headingControl = new HeadingModeControl({}, setIsHeadingMode);
       map.addControl(headingControl);

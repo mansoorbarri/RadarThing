@@ -9,19 +9,27 @@ const tooltipHideTimerMap = new WeakMap<HTMLDivElement, ReturnType<
 
 // SVG Icons for map controls (matching theme style)
 const ICONS = {
-  settings: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  zoomIn: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 5v14"/>
+    <path d="M5 12h14"/>
+  </svg>`,
+  zoomOut: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M5 12h14"/>
+  </svg>`,
+  settings: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <circle cx="12" cy="12" r="3"/>
     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
   </svg>`,
   heading: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M7 17L17 7"/>
-    <path d="M9 7h8v8"/>
+    <circle cx="12" cy="12" r="8"/>
+    <path d="M12 8v8"/>
+    <path d="M8 12h8"/>
   </svg>`,
   radar: `<img src="/icons/radar.svg" width="18" height="18" alt="Radar" style="filter: brightness(0) saturate(100%) invert(79%) sepia(44%) saturate(1177%) hue-rotate(152deg) brightness(98%) contrast(90%);" />`,
   osm: `<img src="/icons/OSM.svg" width="18" height="18" alt="OSM" />`,
-  globe: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  globe: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <circle cx="12" cy="12" r="10"/>
-    <line x1="2" y1="12" x2="22" y2="12"/>
+    <path d="M2 12h20"/>
     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
   </svg>`,
 };
@@ -32,7 +40,7 @@ function applyMetarStyleButton(
   iconHtml: string,
 ) {
   container.className =
-    "map-control-btn w-[36px] h-[36px] flex items-center justify-center text-cyan-400 text-[18px] font-semibold border border-cyan-400/30 rounded-md bg-black/70 shadow-[0_0_6px_rgba(0,255,255,0.25)] cursor-pointer transition-all duration-200 hover:bg-cyan-400/10 hover:shadow-[0_0_10px_rgba(0,255,255,0.4)] hover:border-cyan-400/60";
+    "map-control-btn flex h-10 w-10 items-center justify-center rounded-md border border-cyan-400/30 bg-black/70 text-cyan-400 shadow-[0_0_8px_rgba(0,255,255,0.28)] transition-all duration-200 hover:border-cyan-300/60 hover:bg-cyan-500/10";
   container.innerHTML = `${iconHtml}<span class="map-tooltip">${title}</span>`;
   attachTooltipBehavior(container);
 }
@@ -98,19 +106,82 @@ function setActiveStyle(container: HTMLDivElement, active: boolean) {
   if (active) {
     container.classList.add(
       "bg-cyan-500/30",
-      "border-cyan-400",
-      "shadow-[0_0_12px_rgba(0,255,255,0.8)]",
-      "animate-radarPulse",
+      "border-cyan-300/80",
+      "shadow-[0_0_14px_rgba(34,211,238,0.48)]",
     );
     container.classList.remove("bg-black/70");
   } else {
     container.classList.remove(
       "bg-cyan-500/30",
-      "border-cyan-400",
-      "shadow-[0_0_12px_rgba(0,255,255,0.8)]",
-      "animate-radarPulse",
+      "border-cyan-300/80",
+      "shadow-[0_0_14px_rgba(34,211,238,0.48)]",
     );
     container.classList.add("bg-black/70");
+  }
+}
+
+abstract class IconButtonControl extends L.Control {
+  public options = { position: "topleft" as L.ControlPosition };
+  public _container: HTMLDivElement | null = null;
+  protected abstract title: string;
+  protected abstract iconHtml: string;
+  protected abstract onButtonClick(): void;
+
+  onAdd(): HTMLDivElement {
+    const container = L.DomUtil.create("div");
+    applyMetarStyleButton(container, this.title, this.iconHtml);
+    L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
+    L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
+    L.DomEvent.on(container, "click", this.handleClick);
+    this._container = container;
+    return container;
+  }
+
+  onRemove() {
+    if (this._container) {
+      L.DomEvent.off(this._container, "click", this.handleClick);
+      detachTooltipBehavior(this._container);
+    }
+  }
+
+  private handleClick = () => {
+    this.onButtonClick();
+  };
+}
+
+export class ZoomInControl extends IconButtonControl {
+  protected title = "Zoom in";
+  protected iconHtml = ICONS.zoomIn;
+  private readonly mapRef: React.MutableRefObject<L.Map | null>;
+
+  constructor(
+    options: L.ControlOptions,
+    mapRef: React.MutableRefObject<L.Map | null>,
+  ) {
+    super(options);
+    this.mapRef = mapRef;
+  }
+
+  protected onButtonClick() {
+    this.mapRef.current?.zoomIn();
+  }
+}
+
+export class ZoomOutControl extends IconButtonControl {
+  protected title = "Zoom out";
+  protected iconHtml = ICONS.zoomOut;
+  private readonly mapRef: React.MutableRefObject<L.Map | null>;
+
+  constructor(
+    options: L.ControlOptions,
+    mapRef: React.MutableRefObject<L.Map | null>,
+  ) {
+    super(options);
+    this.mapRef = mapRef;
+  }
+
+  protected onButtonClick() {
+    this.mapRef.current?.zoomOut();
   }
 }
 

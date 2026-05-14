@@ -46,6 +46,7 @@ import {
   getUserResetLocation,
   type MapResetLocation,
 } from "~/lib/mapResetLocation";
+import { getCookie, setCookie } from "~/lib/cookies";
 import { normalizeCallsign } from "~/lib/utils";
 
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
@@ -83,6 +84,11 @@ import {
 import { RotateCcw, Route, X } from "lucide-react";
 import { UnitPreferencesProvider } from "~/hooks/useUnitPreferences";
 
+const DynamicMapComponent = dynamic(() => import("~/components/map"), {
+  ssr: false,
+  loading: () => <MapSkeleton />,
+});
+
 const DynamicGlobeMapComponent = dynamic(
   () => import("~/components/map/MobileGlobeMap"),
   {
@@ -92,8 +98,10 @@ const DynamicGlobeMapComponent = dynamic(
 );
 
 const APP_BOOT_TIMEOUT_MS = 8000;
+const DESKTOP_MAP_RENDERER_COOKIE = "desktop_map_renderer";
 
 type RightPanel = "fids" | "filter" | "airports" | null;
+type DesktopMapRenderer = "flat" | "globe";
 
 export default function ATCPage() {
   const router = useRouter();
@@ -228,6 +236,11 @@ export default function ATCPage() {
     useState<ImportedFlightPlan | null>(null);
   const [showImportedFlightPlanPanel, setShowImportedFlightPlanPanel] =
     useState(false);
+  const [desktopMapRenderer, setDesktopMapRenderer] =
+    useState<DesktopMapRenderer>(() => {
+      const stored = getCookie(DESKTOP_MAP_RENDERER_COOKIE);
+      return stored === "flat" ? "flat" : "globe";
+    });
 
   const aircraftGoogleIds = useMemo(
     () =>
@@ -287,6 +300,10 @@ export default function ATCPage() {
     const targetLocation = await getUserResetLocation();
     resetMapViewRef.current?.(targetLocation);
   }, []);
+
+  useEffect(() => {
+    setCookie(DESKTOP_MAP_RENDERER_COOKIE, desktopMapRenderer);
+  }, [desktopMapRenderer]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1331,37 +1348,76 @@ export default function ATCPage() {
         )}
 
         <main className="absolute inset-0">
-          <DynamicGlobeMapComponent
-            aircrafts={visibleAircrafts}
-            airports={airports}
-            onlineAirports={onlineAirports}
-            selectedAirport={selectedAirport}
-            selectedAircraftIds={selectedAircraftIds}
-            onAircraftSelect={handleAircraftSelect}
-            onAirportSelect={(airport) => {
-              setSelectedAirport(airport);
-              addAirportSearch(airport);
-            }}
-            setDrawFlightPlanOnMap={(fn) => {
-              drawFlightPlanOnMapRef.current = fn;
-            }}
-            setDrawMultipleFlightPlansOnMap={(fn) => {
-              drawMultipleFlightPlansOnMapRef.current = fn;
-            }}
-            onMapReady={handleMapReady}
-            onInitialBaseLayerReady={handleInitialBaseLayerReady}
-            onInitialTrafficPaint={handleInitialTrafficPaint}
-            historyPath={historyPath}
-            onLayerModeChange={setIsDarkLayerMode}
-            replayState={replayState}
-            followAircraft={isFollowMode ? selectedAircrafts[0] : undefined}
-            onConflictReview={handleConflictReview}
-            setResetMapView={(fn) => {
-              resetMapViewRef.current = fn;
-            }}
-            hideUi={isUiHidden}
-            importedFlightPlan={importedFlightPlan}
-          />
+          {isPhone || desktopMapRenderer === "globe" ? (
+            <DynamicGlobeMapComponent
+              aircrafts={visibleAircrafts}
+              airports={airports}
+              onlineAirports={onlineAirports}
+              selectedAirport={selectedAirport}
+              selectedAircraftIds={selectedAircraftIds}
+              onAircraftSelect={handleAircraftSelect}
+              onAirportSelect={(airport) => {
+                setSelectedAirport(airport);
+                addAirportSearch(airport);
+              }}
+              setDrawFlightPlanOnMap={(fn) => {
+                drawFlightPlanOnMapRef.current = fn;
+              }}
+              setDrawMultipleFlightPlansOnMap={(fn) => {
+                drawMultipleFlightPlansOnMapRef.current = fn;
+              }}
+              onMapReady={handleMapReady}
+              onInitialBaseLayerReady={handleInitialBaseLayerReady}
+              onInitialTrafficPaint={handleInitialTrafficPaint}
+              historyPath={historyPath}
+              onLayerModeChange={setIsDarkLayerMode}
+              replayState={replayState}
+              followAircraft={isFollowMode ? selectedAircrafts[0] : undefined}
+              onConflictReview={handleConflictReview}
+              setResetMapView={(fn) => {
+                resetMapViewRef.current = fn;
+              }}
+              mapRenderer={desktopMapRenderer}
+              onMapRendererChange={setDesktopMapRenderer}
+              showDesktopControls={!isMobile}
+              hideUi={isUiHidden}
+              importedFlightPlan={importedFlightPlan}
+            />
+          ) : (
+            <DynamicMapComponent
+              aircrafts={visibleAircrafts}
+              airports={airports}
+              onlineAirports={onlineAirports}
+              selectedAirport={selectedAirport}
+              selectedAircraftIds={selectedAircraftIds}
+              onAircraftSelect={handleAircraftSelect}
+              onAirportSelect={(airport) => {
+                setSelectedAirport(airport);
+                addAirportSearch(airport);
+              }}
+              setDrawFlightPlanOnMap={(fn) => {
+                drawFlightPlanOnMapRef.current = fn;
+              }}
+              setDrawMultipleFlightPlansOnMap={(fn) => {
+                drawMultipleFlightPlansOnMapRef.current = fn;
+              }}
+              onMapReady={handleMapReady}
+              onInitialBaseLayerReady={handleInitialBaseLayerReady}
+              onInitialTrafficPaint={handleInitialTrafficPaint}
+              historyPath={historyPath}
+              onLayerModeChange={setIsDarkLayerMode}
+              replayState={replayState}
+              followAircraft={isFollowMode ? selectedAircrafts[0] : undefined}
+              onConflictReview={handleConflictReview}
+              setResetMapView={(fn) => {
+                resetMapViewRef.current = fn;
+              }}
+              mapRenderer={desktopMapRenderer}
+              onMapRendererChange={setDesktopMapRenderer}
+              hideUi={isUiHidden}
+              importedFlightPlan={importedFlightPlan}
+            />
+          )}
 
           {importedFlightPlan && showImportedFlightPlanPanel ? (
             <ImportedFlightPlanPanel
