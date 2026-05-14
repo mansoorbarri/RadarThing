@@ -45,6 +45,8 @@ import {
   getAircraftIconUrl,
 } from "~/components/map/MapIcons";
 import { RadarSettings } from "~/components/atc/radarSettings";
+import { useUnitPreferences } from "~/hooks/useUnitPreferences";
+import { formatAltitude, formatSpeed, speedSuffix } from "~/lib/units";
 
 interface Airport {
   name: string;
@@ -384,11 +386,13 @@ function fitMapToCoords(
 function createAircraftMarkerElement() {
   const button = document.createElement("button");
   button.type = "button";
-  button.className = "pointer-events-auto relative h-8 w-8 cursor-pointer bg-transparent p-0";
+  button.className =
+    "pointer-events-auto relative h-8 w-8 cursor-pointer overflow-visible bg-transparent p-0";
   button.style.border = "none";
   button.style.outline = "none";
   button.style.padding = "0";
   button.style.margin = "0";
+  button.style.overflow = "visible";
   return button;
 }
 
@@ -396,17 +400,50 @@ function syncAircraftMarkerElement(
   element: HTMLButtonElement,
   aircraft: PositionUpdate,
   isSelected: boolean,
+  showTags: boolean,
+  hasSelection: boolean,
+  isDesktop: boolean,
+  speedUnit: "kts" | "mach",
+  altitudeUnit: "auto" | "feet" | "fl",
 ) {
   const isEmergency =
     Boolean(aircraft.squawk) && EMERGENCY_SQUAWKS.has(aircraft.squawk);
+  const isIdentActive =
+    aircraft.identActive ||
+    (typeof aircraft.identUntil === "number" &&
+      aircraft.identUntil > Date.now());
   const iconUrl = getAircraftIconUrl(aircraft.type, aircraft.af);
   const filter = getAircraftIconFilter(isEmergency, isSelected);
+  const altMSL = Number(aircraft.altMSL ?? aircraft.alt ?? 0);
+  const altAGL = Number(aircraft.alt ?? 0);
+  const speedKts = Number(aircraft.speed ?? 0);
+  const isOnGround = altAGL < 100;
+  const displayAlt = isOnGround
+    ? `${altAGL.toFixed(0)}`
+    : formatAltitude(altMSL, altitudeUnit);
+  const displaySpeed = isOnGround
+    ? `${speedKts.toFixed(0)}kt`
+    : `${formatSpeed(speedKts, speedUnit, altMSL)}${speedSuffix(speedUnit)}`;
+  const primaryLabel = aircraft.flightNo || aircraft.callsign || "N/A";
+  const secondaryLabel =
+    aircraft.callsign && aircraft.callsign !== primaryLabel
+      ? aircraft.callsign
+      : "";
+  const shouldShowTag = showTags && (!hasSelection || isSelected);
   const selectionRing = isSelected
     ? `<div style="position:absolute; inset:1px; border-radius:9999px; border:1.5px solid rgba(250,204,21,0.95); box-shadow:0 0 10px rgba(250,204,21,0.45);"></div>`
     : "";
+  const identRing = isIdentActive
+    ? `<div style="position:absolute; inset:-4px; border-radius:9999px; border:2px solid rgba(251,191,36,0.95); animation:radar-ident-pulse 1s ease-in-out infinite; pointer-events:none;"></div>`
+    : "";
+  const tagWidth = isDesktop ? 116 : 92;
+  const tagFontSize = isDesktop ? 12 : 10;
+  const tagHeaderSize = isDesktop ? 13 : 11;
+  const tagSecondarySize = isDesktop ? 10 : 8;
 
   element.setAttribute("aria-label", aircraft.flightNo || aircraft.callsign || "Aircraft");
   element.innerHTML = `
+    ${identRing}
     ${selectionRing}
     <img
       src="${iconUrl}"
@@ -422,6 +459,55 @@ function syncAircraftMarkerElement(
         pointer-events:none;
       "
     />
+    <div
+      style="
+        position:absolute;
+        top:50%;
+        left:40px;
+        transform:translateY(-50%);
+        width:${tagWidth}px;
+        display:${shouldShowTag ? "block" : "none"};
+        pointer-events:none;
+        z-index:10;
+      "
+    >
+      <div
+        style="
+          border-radius:4px;
+          border:1px solid ${isEmergency ? "rgba(239,68,68,0.7)" : "rgba(34,211,238,0.3)"};
+          background:rgba(0,0,0,0.5);
+          color:${isEmergency ? "rgb(248,113,113)" : "rgb(165,243,252)"};
+          backdrop-filter:blur(8px);
+          padding:${isDesktop ? "4px 6px" : "3px 5px"};
+          font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;
+          font-size:${tagFontSize}px;
+          line-height:1.3;
+          box-shadow:0 8px 24px rgba(0,0,0,0.22);
+        "
+      >
+        <div
+          style="
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:6px;
+            font-size:${tagHeaderSize}px;
+            font-weight:600;
+          "
+        >
+          <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}</span>
+          ${isEmergency ? '<span style="color:rgb(239,68,68);">!</span>' : ""}
+        </div>
+        <div style="opacity:0.85;">
+          ${displayAlt} ${displaySpeed}
+        </div>
+        ${
+          secondaryLabel
+            ? `<div style="opacity:0.65; font-size:${tagSecondarySize}px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${secondaryLabel}</div>`
+            : ""
+        }
+      </div>
+    </div>
   `;
 }
 
@@ -638,6 +724,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   const [showConflicts, setShowConflicts] = useState(() =>
     getBooleanCookie("traffic_conflicts", false),
   );
+  const [showTags, setShowTags] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHeadingMode, setIsHeadingMode] = useState(false);
   const [layerPresets, setLayerPresets] = useState(() =>
@@ -646,6 +733,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
 
   const { isProUser } = useProStatus();
+  const { speedUnit, altitudeUnit } = useUnitPreferences();
   const canUseRadarMode = isProUser;
   const isDesktopGlobe = showDesktopControls;
   const defaultZoom = isDesktopGlobe ? DESKTOP_DEFAULT_ZOOM : MOBILE_DEFAULT_ZOOM;
@@ -990,6 +1078,9 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
         activeElement instanceof HTMLTextAreaElement ||
         activeElement?.getAttribute("contenteditable") === "true";
 
+      if ((event.key === "l" || event.key === "L") && !isInputFocused) {
+        setShowTags((prev) => !prev);
+      }
       if (!hideUi && (event.key === "t" || event.key === "T") && !isInputFocused) {
         setIsHeadingMode(true);
       }
@@ -1416,7 +1507,16 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
           const element = createAircraftMarkerElement();
           element.dataset.aircraftMarker = "true";
           element.dataset.aircraftKey = aircraftKey;
-          syncAircraftMarkerElement(element, aircraft, isSelected);
+          syncAircraftMarkerElement(
+            element,
+            aircraft,
+            isSelected,
+            showTags,
+            selectedAircraftKeySet.size > 0,
+            isDesktopGlobe,
+            speedUnit,
+            altitudeUnit,
+          );
           element.addEventListener("click", (event) => {
             event.stopPropagation();
             const target = event.currentTarget as HTMLButtonElement;
@@ -1439,7 +1539,16 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
           return;
         }
 
-        syncAircraftMarkerElement(existing.element, aircraft, isSelected);
+        syncAircraftMarkerElement(
+          existing.element,
+          aircraft,
+          isSelected,
+          showTags,
+          selectedAircraftKeySet.size > 0,
+          isDesktopGlobe,
+          speedUnit,
+          altitudeUnit,
+        );
         existing.marker.setLngLat([aircraft.lon, aircraft.lat]);
       });
 
@@ -1453,7 +1562,16 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       hasReportedTrafficPaintRef.current = true;
       onInitialTrafficPaint?.();
     }
-  }, [aircrafts, mapReady, onInitialTrafficPaint, selectedAircraftKeySet]);
+  }, [
+    aircrafts,
+    altitudeUnit,
+    isDesktopGlobe,
+    mapReady,
+    onInitialTrafficPaint,
+    selectedAircraftKeySet,
+    showTags,
+    speedUnit,
+  ]);
 
   useEffect(() => {
     const map = mapRef.current;
