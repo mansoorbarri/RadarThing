@@ -120,7 +120,7 @@ import {
   calculateWaypointEtas,
   formatClockTime,
   formatDuration,
-  getEtaGroundSpeedKts,
+  getEtaSpeedKts,
 } from "~/lib/waypoint-eta";
 
 const getFlightPhase = (
@@ -326,11 +326,12 @@ export const Sidebar = ({
       }
     }
 
-    const groundSpeed = getEtaGroundSpeedKts(aircraft);
-    const flownDistanceNm = elapsedHours > 0 ? elapsedHours * groundSpeed : 0;
+    const speedKts = getEtaSpeedKts(aircraft);
+    const flownDistanceNm = elapsedHours > 0 ? elapsedHours * speedKts : 0;
     let progress = waypointProgress ?? 0;
 
     if (
+      waypointProgress === null &&
       remainingDistanceNm !== null &&
       (flownDistanceNm > 1 || elapsedHours > 0)
     ) {
@@ -343,8 +344,8 @@ export const Sidebar = ({
     progress = Math.max(0, Math.min(1, progress));
 
     let etaTs: number | null = null;
-    if (remainingDistanceNm !== null && groundSpeed > 60) {
-      etaTs = now + (remainingDistanceNm / groundSpeed) * 3_600_000;
+    if (remainingDistanceNm !== null && speedKts > 60) {
+      etaTs = now + (remainingDistanceNm / speedKts) * 3_600_000;
     } else if (departureTs && progress > 0.02 && progress < 1) {
       const totalMs = (now - departureTs) / progress;
       etaTs = departureTs + totalMs;
