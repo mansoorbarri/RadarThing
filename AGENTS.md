@@ -43,6 +43,7 @@ This app uses a SSE stream to get the flight data. The SSE code is in ../radar-s
 - Use shadcn for components and icons
 - Use Tailwind for CSS
 - Use TypeScript; only use JS if there's no TS solution or it's objectively better
+- NEVER EVER USE PILLS IN UI DESIGN
 
 ### Environment Variables
 

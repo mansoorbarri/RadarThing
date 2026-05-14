@@ -53,7 +53,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       searchResults.pilots.length > 0);
 
   return (
-    <div className={`flex flex-col ${isMobile ? "w-full" : "items-start"}`}>
+    <div className="flex w-full flex-col">
       <input
         type="text"
         placeholder="Search flight, pilot, or airport..."
@@ -64,7 +64,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         autoFocus={autoFocus}
         data-debug-id={inputDebugId}
         className={`rounded-lg border border-cyan-400/30 bg-black/80 px-4 py-2.5 text-[14px] text-cyan-400 placeholder-cyan-500/50 transition-all duration-200 outline-none ${
-          isMobile ? "w-full" : "mt-1 ml-5 w-[280px]"
+          isMobile ? "w-full" : "mt-1 w-full"
         } ${
           showSearchResults || showRecentSearches ? "mb-2" : ""
         } hover:border-cyan-400/60 focus:border-cyan-400 focus:shadow-[0_0_12px_rgba(0,255,255,0.3)]`}
@@ -76,7 +76,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           searchResults.pilots.length > 0) && (
           <div
             className={`overflow-y-auto rounded-lg border border-cyan-400/20 bg-black/90 ${
-              isMobile ? "max-h-[70vh] w-full" : "ml-5 max-h-[300px] w-[280px]"
+              isMobile ? "max-h-[70vh] w-full" : "max-h-[300px] w-full"
             }`}
           >
             {searchResults.aircrafts.length > 0 && (
@@ -173,7 +173,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       {showRecentSearches && onSelectRecentSearch && (
         <div
           className={`overflow-y-auto rounded-lg border border-cyan-400/20 bg-black/90 ${
-            isMobile ? "max-h-[70vh] w-full" : "ml-5 max-h-[300px] w-[280px]"
+            isMobile ? "max-h-[70vh] w-full" : "max-h-[300px] w-full"
           }`}
         >
           <div className="flex items-center justify-between border-b border-cyan-400/20 bg-cyan-950/50 px-4 py-2">

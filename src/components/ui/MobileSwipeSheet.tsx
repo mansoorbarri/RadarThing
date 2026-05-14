@@ -18,9 +18,9 @@ export const MobileSwipeSheet = ({
   const [state, setState] = useState<SheetState>(initialState);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const sheetRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef(0);
   const currentYRef = useRef(0);
+  const closeTimeoutRef = useRef<number | null>(null);
 
   // Heights for each state (in vh)
   const heights: Record<SheetState, number> = {
@@ -28,6 +28,20 @@ export const MobileSwipeSheet = ({
     full: 92,
     closed: 0,
   };
+
+  const requestClose = useCallback(() => {
+    setIsDragging(false);
+    setDragOffset(0);
+    setState("closed");
+
+    if (closeTimeoutRef.current !== null) {
+      window.clearTimeout(closeTimeoutRef.current);
+    }
+
+    closeTimeoutRef.current = window.setTimeout(() => {
+      onClose();
+    }, 200);
+  }, [onClose]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
@@ -62,16 +76,13 @@ export const MobileSwipeSheet = ({
         // Swiped up - expand to full
         setState("full");
       } else if (delta < -threshold) {
-        // Swiped down - close
-        setState("closed");
-        setTimeout(onClose, 200);
+        requestClose();
       }
     } else if (state === "full") {
       if (delta < -threshold) {
         // Swiped down - go to half or close based on distance
         if (delta < -150) {
-          setState("closed");
-          setTimeout(onClose, 200);
+          requestClose();
         } else {
           setState("half");
         }
@@ -79,12 +90,12 @@ export const MobileSwipeSheet = ({
     }
 
     setDragOffset(0);
-  }, [isDragging, state, onClose]);
+  }, [isDragging, requestClose, state]);
 
   // Calculate current height based on state and drag
   const getHeight = () => {
     const baseHeight = heights[state];
-    if (!isDragging || state === "closed") return `${baseHeight}vh`;
+    if (!isDragging || state === "closed") return `${baseHeight}dvh`;
 
     // Convert drag offset (pixels) to vh adjustment
     const windowHeight = window.innerHeight;
@@ -93,34 +104,59 @@ export const MobileSwipeSheet = ({
 
     // Clamp the height
     const newHeight = Math.min(92, Math.max(0, baseHeight + adjustment));
-    return `${newHeight}vh`;
+    return `${newHeight}dvh`;
   };
 
-  // Close when state becomes closed
   useEffect(() => {
-    if (state === "closed") {
-      onClose();
-    }
-  }, [state, onClose]);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        requestClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [requestClose]);
+
+  useEffect(
+    () => () => {
+      if (closeTimeoutRef.current !== null) {
+        window.clearTimeout(closeTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   return (
-    <div
-      ref={sheetRef}
-      className={`fixed inset-x-0 bottom-0 z-[10014] rounded-t-3xl border-t border-white/10 bg-black/90 backdrop-blur-xl ${
-        isDragging ? "" : "transition-[height] duration-200 ease-out"
-      }`}
-      style={{ height: getHeight() }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      {/* Drag handle */}
-      <div className="flex touch-none items-center justify-center pt-3 pb-2">
-        <div className="h-1.5 w-12 rounded-full bg-white/30" />
-      </div>
+    <div className="fixed inset-0 z-[10014]">
+      <button
+        type="button"
+        aria-label="Close panel"
+        className="absolute inset-0 bg-black/45"
+        onClick={requestClose}
+      />
 
-      {/* Content */}
-      <div className="h-[calc(100%-28px)] overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]">{children}</div>
+      <div
+        className={`absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-white/10 bg-black/90 backdrop-blur-xl ${
+          isDragging ? "" : "transition-[height] duration-200 ease-out"
+        }`}
+        style={{ height: getHeight() }}
+      >
+        {/* Drag handle */}
+        <div
+          className="flex touch-none items-center justify-center pt-3 pb-2"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div className="h-1.5 w-12 rounded-full bg-white/30" />
+        </div>
+
+        {/* Content */}
+        <div className="h-[calc(100%-28px)] overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]">
+          {children}
+        </div>
+      </div>
     </div>
   );
 };
