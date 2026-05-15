@@ -7,6 +7,7 @@ export default defineSchema({
     email: v.string(),
     role: v.union(v.literal("FREE"), v.literal("PRO"), v.literal("ADMIN")),
     isDeleted: v.boolean(),
+    createdAt: v.optional(v.number()),
     deletedAt: v.optional(v.number()), // timestamp
     googleId: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),
@@ -20,6 +21,38 @@ export default defineSchema({
     .index("by_googleId", ["googleId"])
     .index("by_stripeCustomerId", ["stripeCustomerId"])
     .index("by_discordUsernameLower", ["discordUsernameLower"]),
+
+  referralCodes: defineTable({
+    ownerUserId: v.id("users"),
+    code: v.string(),
+    createdAt: v.number(),
+    qualifiedCount: v.number(),
+    rewardGrantedAt: v.optional(v.number()),
+  })
+    .index("by_ownerUserId", ["ownerUserId"])
+    .index("by_code", ["code"]),
+
+  referralClaims: defineTable({
+    referralCodeId: v.id("referralCodes"),
+    referralCode: v.string(),
+    referrerUserId: v.id("users"),
+    referredUserId: v.id("users"),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("qualified"),
+      v.literal("rejected"),
+    ),
+    createdAt: v.number(),
+    qualifiedAt: v.optional(v.number()),
+    rejectedAt: v.optional(v.number()),
+    rejectionReason: v.optional(v.string()),
+    qualifyingFlightCount: v.optional(v.number()),
+  })
+    .index("by_referralCodeId", ["referralCodeId"])
+    .index("by_referralCodeId_status", ["referralCodeId", "status"])
+    .index("by_referrerUserId", ["referrerUserId"])
+    .index("by_referrerUserId_status", ["referrerUserId", "status"])
+    .index("by_referredUserId", ["referredUserId"]),
 
   flights: defineTable({
     userId: v.id("users"),

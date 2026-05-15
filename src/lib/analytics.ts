@@ -92,6 +92,15 @@ interface ShortcutsEventProps extends BaseEventProps {
   source?: string;
 }
 
+interface ReferralPageEventProps extends BaseEventProps {
+  mode?: "dashboard" | "landing" | "generic";
+  status?: "valid" | "invalid";
+}
+
+interface ReferralShareEventProps extends BaseEventProps {
+  type: "code" | "link";
+}
+
 const RECENT_EXCEPTION_TTL_MS = 5000;
 const recentExceptionCaptures = new Map<string, number>();
 
@@ -348,6 +357,14 @@ export const Analytics = {
   // ===== DASHBOARD EVENTS =====
   dashboardViewed: (props?: BaseEventProps) => {
     track("dashboard_viewed", props);
+  },
+
+  referralPageViewed: (props?: ReferralPageEventProps) => {
+    track("referral_page_viewed", props);
+  },
+
+  referralShareCopied: (props: ReferralShareEventProps) => {
+    track("referral_share_copied", props);
   },
 
   statsCalculated: (props: {

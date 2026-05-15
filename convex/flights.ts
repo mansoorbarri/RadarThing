@@ -19,6 +19,7 @@ import {
   getEffectiveAccessRole,
   hasEffectiveProAccess,
 } from "../src/lib/proAccess";
+import { maybeQualifyReferralForUser } from "./referrals";
 
 const DEFAULT_STATS_MAX_SPEED_KTS = 750;
 const HIGH_PERFORMANCE_STATS_MAX_SPEED_KTS = 1100;
@@ -395,6 +396,8 @@ export const create = mutation({
         lastFlightCallsign: args.callsign,
       });
 
+      await maybeQualifyReferralForUser(ctx, args.userId);
+
       await autoCompleteChallengesForFlight(ctx, {
         userId: args.userId,
         flightId,
@@ -447,6 +450,8 @@ export const create = mutation({
         ? args.callsign
         : stats.lastFlightCallsign,
     });
+
+    await maybeQualifyReferralForUser(ctx, args.userId);
 
     await autoCompleteChallengesForFlight(ctx, {
       userId: args.userId,

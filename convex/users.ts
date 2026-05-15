@@ -1,7 +1,12 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { hasEffectiveProAccess } from "../src/lib/proAccess";
+import {
+  REFERRAL_MIN_ACCOUNT_AGE_MS,
+} from "../src/lib/referrals";
+import { maybeCreateReferralClaimForNewUser } from "./referrals";
 
 function normalizeDiscordUsername(value: string): string {
   return value.trim().toLowerCase();
@@ -224,6 +229,7 @@ export const getRole = query({
 export const storeUser = mutation({
   args: {
     googleId: v.optional(v.string()),
+    referralCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -274,13 +280,31 @@ export const storeUser = mutation({
     }
 
     // Create new user
-    return await ctx.db.insert("users", {
+    const createdAt = Date.now();
+    const userId = await ctx.db.insert("users", {
       clerkId,
       email,
       googleId: args.googleId,
       role: "FREE",
       isDeleted: false,
+      createdAt,
     });
+
+    const claimId = await maybeCreateReferralClaimForNewUser(
+      ctx,
+      { _id: userId, createdAt },
+      args.referralCode,
+    );
+
+    if (claimId) {
+      await ctx.scheduler.runAfter(
+        REFERRAL_MIN_ACCOUNT_AGE_MS,
+        internal.referrals.evaluateClaimQualification,
+        { claimId },
+      );
+    }
+
+    return userId;
   },
 });
 

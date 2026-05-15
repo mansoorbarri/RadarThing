@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "referral-program",
+    date: "2026-05-15",
+    title: "Referral Program",
+    description:
+      "You can now generate a five-letter referral code at /referral, track pending and qualified signups, and unlock a one-time month of PRO after 20 qualified referrals.",
+    type: "new",
+  },
+  {
     id: "flat-globe-view-switcher",
     date: "2026-05-14",
     title: "Flat and Globe Views",
