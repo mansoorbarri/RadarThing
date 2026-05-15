@@ -320,7 +320,14 @@ export const getAircraftDivIcon = (
 ) => {
   const iconUrl = getAircraftIconUrl(aircraft.type, aircraft.af);
   const planeSize = isMobile ? 24 : 28;
-  const tagHeight = isMobile ? 38 : 52;
+  const callsignDisplay = aircraft.callsign || "";
+  const tagHeight = callsignDisplay
+    ? isMobile
+      ? 46
+      : 56
+    : isMobile
+      ? 38
+      : 52;
   const tagWidth = isMobile ? 85 : 115;
   const tagOffsetFromPlane = isMobile ? 6 : 8;
 
@@ -389,7 +396,6 @@ export const getAircraftDivIcon = (
   `;
 
   const fontSize = isMobile ? "10px" : "12px";
-  const callsignDisplay = aircraft.callsign || "";
   const detailContent = `
     <div class="
       flex flex-col px-1.5 py-1
@@ -399,7 +405,7 @@ export const getAircraftDivIcon = (
       ${isEmergency ? "border-red-500/70" : "border-cyan-400/30"}
       font-mono
       ${isEmergency ? "text-red-400" : "text-cyan-200"}
-    " style="font-size: ${fontSize}; line-height: 1.3;">
+    " style="min-height: ${tagHeight}px; box-sizing: border-box; font-size: ${fontSize}; line-height: 1.3;">
       <div class="flex items-center justify-between font-semibold" style="font-size: ${isMobile ? "11px" : "13px"};">
         <span>${aircraft.flightNo || aircraft.callsign || "N/A"}</span>
         ${isEmergency ? `<span class="text-red-500 animate-pulse">!</span>` : ""}
@@ -461,7 +467,14 @@ export const getRadarAircraftDivIcon = (
     : isMobile
       ? 10
       : 12;
-  const labelHeight = isMobile ? 32 : 46;
+  const callsignDisplay = aircraft.callsign || "";
+  const labelHeight = callsignDisplay
+    ? isMobile
+      ? 46
+      : 56
+    : isMobile
+      ? 32
+      : 46;
   const labelWidth = isMobile ? 75 : 100;
   const labelOffsetFromDot = isMobile ? 10 : 12;
 
@@ -561,24 +574,23 @@ export const getRadarAircraftDivIcon = (
   `;
 
   const fontSize = isMobile ? "10px" : "12px";
-  const callsignDisplay = aircraft.callsign || "";
   const detailContent = `
     <div class="
-      px-1.5 py-1
+      flex flex-col gap-0.5 px-1.5 py-1
       rounded-sm
       bg-black/60
       border
       ${isEmergency ? "border-red-500/60" : "border-cyan-400/30"}
       font-mono
       ${isEmergency ? "text-red-400" : "text-cyan-300"}
-    " style="font-size: ${fontSize}; line-height: 1.3;">
-      <div class="font-semibold" style="font-size: ${isMobile ? "11px" : "13px"};">
+    " style="min-height: ${labelHeight}px; box-sizing: border-box; font-size: ${fontSize}; line-height: 1.2;">
+      <div class="font-semibold" style="font-size: ${isMobile ? "11px" : "13px"}; line-height: 1.1;">
         ${aircraft.flightNo || aircraft.callsign || "N/A"}${isEmergency ? " !" : ""}
       </div>
-      <div class="opacity-85">
+      <div class="opacity-85" style="line-height: 1.15;">
         ${displayAlt} ${displaySpeed}
       </div>
-      ${callsignDisplay ? `<div class="opacity-60" style="font-size: ${isMobile ? "8px" : "10px"}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${callsignDisplay}</div>` : ""}
+      ${callsignDisplay ? `<div class="opacity-60" style="font-size: ${isMobile ? "8px" : "10px"}; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${callsignDisplay}</div>` : ""}
     </div>
   `;
 

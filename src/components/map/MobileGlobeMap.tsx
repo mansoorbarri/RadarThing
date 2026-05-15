@@ -393,6 +393,7 @@ function createAircraftMarkerElement() {
   button.style.padding = "0";
   button.style.margin = "0";
   button.style.overflow = "visible";
+  button.style.textAlign = "left";
   return button;
 }
 
@@ -440,6 +441,13 @@ function syncAircraftMarkerElement(
   const tagFontSize = isDesktop ? 12 : 10;
   const tagHeaderSize = isDesktop ? 13 : 11;
   const tagSecondarySize = isDesktop ? 10 : 8;
+  const tagMinHeight = secondaryLabel
+    ? isDesktop
+      ? 56
+      : 46
+    : isDesktop
+      ? 40
+      : 32;
 
   element.setAttribute("aria-label", aircraft.flightNo || aircraft.callsign || "Aircraft");
   element.innerHTML = `
@@ -473,15 +481,23 @@ function syncAircraftMarkerElement(
     >
       <div
         style="
+          display:flex;
+          flex-direction:column;
+          align-items:stretch;
+          gap:2px;
+          overflow:hidden;
           border-radius:4px;
           border:1px solid ${isEmergency ? "rgba(239,68,68,0.7)" : "rgba(34,211,238,0.3)"};
           background:rgba(0,0,0,0.5);
           color:${isEmergency ? "rgb(248,113,113)" : "rgb(165,243,252)"};
           backdrop-filter:blur(8px);
           padding:${isDesktop ? "4px 6px" : "3px 5px"};
+          min-height:${tagMinHeight}px;
+          box-sizing:border-box;
+          text-align:left;
           font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;
           font-size:${tagFontSize}px;
-          line-height:1.3;
+          line-height:1.2;
           box-shadow:0 8px 24px rgba(0,0,0,0.22);
         "
       >
@@ -493,17 +509,19 @@ function syncAircraftMarkerElement(
             gap:6px;
             font-size:${tagHeaderSize}px;
             font-weight:600;
+            line-height:1.1;
+            width:100%;
           "
         >
-          <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}</span>
+          <span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}</span>
           ${isEmergency ? '<span style="color:rgb(239,68,68);">!</span>' : ""}
         </div>
-        <div style="opacity:0.85;">
+        <div style="width:100%; opacity:0.85; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
           ${displayAlt} ${displaySpeed}
         </div>
         ${
           secondaryLabel
-            ? `<div style="opacity:0.65; font-size:${tagSecondarySize}px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${secondaryLabel}</div>`
+            ? `<div style="width:100%; opacity:0.65; font-size:${tagSecondarySize}px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${secondaryLabel}</div>`
             : ""
         }
       </div>
