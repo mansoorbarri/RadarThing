@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   Check,
@@ -161,7 +161,7 @@ function ReferralClaimCard({
   );
 }
 
-export default function ReferralPage() {
+function ReferralPageContent() {
   const { isSignedIn, isLoaded, user } = useUser();
   const searchParams = useSearchParams();
   const ensureReferralCode = useMutation(api.referrals.getOrCreateMyCode);
@@ -551,5 +551,13 @@ export default function ReferralPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function ReferralPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <ReferralPageContent />
+    </Suspense>
   );
 }
