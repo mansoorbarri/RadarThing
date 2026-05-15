@@ -1,4 +1,3 @@
-import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import {
@@ -686,6 +685,47 @@ function getChallengePilotDisplayName(
   return user?.discordUsername ?? userStats?.lastFlightCallsign ?? userId;
 }
 
+function compareGlobalLeaderboardUsers(
+  a: {
+    displayName: string;
+    totalFlights: number;
+    totalDistanceNm: number;
+    totalFlightTimeMs: number;
+    approvedAircraftImages: number;
+    currentStreak: number;
+  },
+  b: {
+    displayName: string;
+    totalFlights: number;
+    totalDistanceNm: number;
+    totalFlightTimeMs: number;
+    approvedAircraftImages: number;
+    currentStreak: number;
+  },
+) {
+  if (a.totalFlights !== b.totalFlights) {
+    return b.totalFlights - a.totalFlights;
+  }
+
+  if (a.totalDistanceNm !== b.totalDistanceNm) {
+    return b.totalDistanceNm - a.totalDistanceNm;
+  }
+
+  if (a.totalFlightTimeMs !== b.totalFlightTimeMs) {
+    return b.totalFlightTimeMs - a.totalFlightTimeMs;
+  }
+
+  if (a.approvedAircraftImages !== b.approvedAircraftImages) {
+    return b.approvedAircraftImages - a.approvedAircraftImages;
+  }
+
+  if (a.currentStreak !== b.currentStreak) {
+    return b.currentStreak - a.currentStreak;
+  }
+
+  return a.displayName.localeCompare(b.displayName);
+}
+
 function compareManualLeaderboardEntries(
   a: {
     status: "pending" | "completed" | "rejected" | "in_progress";
@@ -938,6 +978,28 @@ export const listActiveLeaderboard = query({
     const userStatsByUserId = new Map(
       userStats.map((stats) => [stats.userId, stats]),
     );
+    const globallyRankedUsers = users
+      .flatMap((user) => {
+        const stats = userStatsByUserId.get(user._id);
+        const approvedAircraftImages = stats?.approvedAircraftImages ?? 0;
+        if (!stats || (stats.totalFlights <= 0 && approvedAircraftImages <= 0)) {
+          return [];
+        }
+
+        return [
+          {
+            userId: user._id,
+            displayName: getChallengePilotDisplayName(user, stats, user._id),
+            callsign: stats.lastFlightCallsign ?? null,
+            totalFlights: stats.totalFlights,
+            totalDistanceNm: Math.round(stats.totalDistanceNm),
+            totalFlightTimeMs: Math.round(stats.totalFlightTimeMs),
+            approvedAircraftImages,
+            currentStreak: stats.streakAtLastFlight,
+          },
+        ];
+      })
+      .sort(compareGlobalLeaderboardUsers);
 
     const leaderboards: ChallengeLeaderboardResult[] = [];
 
@@ -1030,28 +1092,14 @@ export const listActiveLeaderboard = query({
 
         if (entries.length < DEFAULT_LEADERBOARD_ENTRY_LIMIT) {
           const rankedUserIds = new Set(entries.map((entry) => entry.userId));
-          const fillerEntries = users
+          const fillerEntries = globallyRankedUsers
             .flatMap((user) => {
-              if (rankedUserIds.has(user._id)) return [];
-
-              const stats = userStatsByUserId.get(user._id);
-              const approvedAircraftImages = stats?.approvedAircraftImages ?? 0;
-              if (
-                !stats ||
-                (stats.totalFlights <= 0 && approvedAircraftImages <= 0)
-              ) {
-                return [];
-              }
-
+              if (rankedUserIds.has(user.userId)) return [];
               return [
                 {
-                  userId: user._id,
-                  displayName: getChallengePilotDisplayName(
-                    user,
-                    stats,
-                    user._id,
-                  ),
-                  callsign: stats?.lastFlightCallsign ?? null,
+                  userId: user.userId,
+                  displayName: user.displayName,
+                  callsign: user.callsign,
                   progressCurrent: 0,
                   progressTarget: 1,
                   progressLabel: "Not started",
@@ -1061,7 +1109,6 @@ export const listActiveLeaderboard = query({
                 } satisfies ChallengeLeaderboardEntryResult,
               ];
             })
-            .sort(compareTopProgressUsers)
             .slice(0, DEFAULT_LEADERBOARD_ENTRY_LIMIT - entries.length);
 
           entries.push(...fillerEntries);
@@ -1114,28 +1161,14 @@ export const listActiveLeaderboard = query({
 
       if (entries.length < DEFAULT_LEADERBOARD_ENTRY_LIMIT) {
         const rankedUserIds = new Set(entries.map((entry) => entry.userId));
-        const fillerEntries = users
+        const fillerEntries = globallyRankedUsers
           .flatMap((user) => {
-            if (rankedUserIds.has(user._id)) return [];
-
-            const stats = userStatsByUserId.get(user._id);
-            const approvedAircraftImages = stats?.approvedAircraftImages ?? 0;
-            if (
-              !stats ||
-              (stats.totalFlights <= 0 && approvedAircraftImages <= 0)
-            ) {
-              return [];
-            }
-
+            if (rankedUserIds.has(user.userId)) return [];
             return [
               {
-                userId: user._id,
-                displayName: getChallengePilotDisplayName(
-                  user,
-                  stats,
-                  user._id,
-                ),
-                callsign: stats?.lastFlightCallsign ?? null,
+                userId: user.userId,
+                displayName: user.displayName,
+                callsign: user.callsign,
                 progressCurrent: 0,
                 progressTarget: 1,
                 progressLabel: "No submission yet",
@@ -1146,7 +1179,6 @@ export const listActiveLeaderboard = query({
               } satisfies ManualChallengeLeaderboardEntryResult,
             ];
           })
-          .sort(compareManualLeaderboardEntries)
           .slice(0, DEFAULT_LEADERBOARD_ENTRY_LIMIT - entries.length)
           .map(({ sortAt, ...entry }) => entry);
 
@@ -1716,69 +1748,5 @@ export const syncForCurrentUser = mutation({
     });
 
     return created;
-  },
-});
-
-export const rebuildAutoLeaderboardEntries = mutation({
-  args: {
-    challengeId: v.optional(v.id("challenges")),
-    paginationOpts: paginationOptsValidator,
-  },
-  handler: async (ctx, args) => {
-    await requireAdmin(ctx);
-
-    const now = Date.now();
-    const challengeList = args.challengeId
-      ? []
-      : await getActiveAutoChallenges(ctx, now);
-
-    if (args.challengeId) {
-      const challenge = await ctx.db.get(args.challengeId);
-      if (!challenge) {
-        throw new Error("Challenge not found");
-      }
-      if (challenge.mode !== "auto") {
-        throw new Error("Only auto challenges can be rebuilt");
-      }
-      if (!isChallengeActiveAt(challenge, now)) {
-        throw new Error("Challenge must be active to rebuild");
-      }
-      challengeList.push(challenge);
-    }
-
-    const page = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("isDeleted"), false))
-      .paginate(args.paginationOpts);
-
-    let updatedEntries = 0;
-
-    for (const user of page.page) {
-      const [flights, completions] = await Promise.all([
-        ctx.db
-          .query("flights")
-          .withIndex("by_userId", (q) => q.eq("userId", user._id))
-          .collect(),
-        ctx.db
-          .query("challengeCompletions")
-          .withIndex("by_userId", (q) => q.eq("userId", user._id))
-          .collect(),
-      ]);
-
-      updatedEntries += await syncAutoLeaderboardEntriesForUser(ctx, {
-        userId: user._id,
-        challenges: challengeList,
-        flights,
-        completions,
-        now,
-      });
-    }
-
-    return {
-      processedUsers: page.page.length,
-      updatedEntries,
-      isDone: page.isDone,
-      continueCursor: page.continueCursor,
-    };
   },
 });
