@@ -69,6 +69,9 @@ export function ActiveChallengesPanel({
 }: {
   userId?: Id<"users"> | null;
 }) {
+  const [activeTab, setActiveTab] = useState<"challenges" | "leaderboard">(
+    "challenges",
+  );
   const { isSignedIn, isLoaded } = useUser();
   const viewerChallenges = useQuery(
     api.challenges.listActiveForViewer,
@@ -78,13 +81,13 @@ export function ActiveChallengesPanel({
     api.challenges.listActiveForUser,
     userId ? { userId } : "skip",
   );
-  const leaderboard = useQuery(api.challenges.listActiveLeaderboard, {});
+  const leaderboard = useQuery(
+    api.challenges.listActiveLeaderboard,
+    activeTab === "leaderboard" ? {} : "skip",
+  );
   const challenges = userId ? userChallenges : viewerChallenges;
   const syncForCurrentUser = useMutation(api.challenges.syncForCurrentUser);
   const submitManualClaim = useMutation(api.challenges.submitManualClaim);
-  const [activeTab, setActiveTab] = useState<"challenges" | "leaderboard">(
-    "challenges",
-  );
   const [noteByChallengeId, setNoteByChallengeId] = useState<
     Record<string, string>
   >({});

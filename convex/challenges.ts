@@ -1,3 +1,4 @@
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import {
@@ -18,6 +19,7 @@ import {
 } from "./lib/challengeRules";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_LEADERBOARD_ENTRY_LIMIT = 10;
 
 function normalizeAirportCode(value?: string) {
   const normalized = value?.trim().toUpperCase() ?? "";
@@ -279,6 +281,113 @@ async function getPublishedChallenges(ctx: QueryCtx | MutationCtx) {
     .query("challenges")
     .withIndex("by_isPublished", (q) => q.eq("isPublished", true))
     .collect();
+}
+
+async function getActiveChallenges(ctx: QueryCtx | MutationCtx, now: number) {
+  return (await getPublishedChallenges(ctx)).filter((challenge) =>
+    isChallengeActiveAt(challenge, now),
+  );
+}
+
+async function getActiveAutoChallenges(ctx: QueryCtx | MutationCtx, now: number) {
+  return (await getActiveChallenges(ctx, now)).filter(
+    (challenge) => challenge.mode === "auto",
+  );
+}
+
+async function clearChallengeLeaderboardEntries(
+  ctx: MutationCtx,
+  challengeId: Id<"challenges">,
+) {
+  const entries = await ctx.db
+    .query("challengeLeaderboardEntries")
+    .withIndex("by_challengeId", (q) => q.eq("challengeId", challengeId))
+    .collect();
+
+  for (const entry of entries) {
+    await ctx.db.delete(entry._id);
+  }
+}
+
+async function syncAutoLeaderboardEntriesForUser(
+  ctx: MutationCtx,
+  args: {
+    userId: Id<"users">;
+    challenges: Awaited<ReturnType<typeof getActiveAutoChallenges>>;
+    flights: {
+      aircraftType: string;
+      depICAO?: string;
+      arrICAO?: string;
+      startTime: number;
+      endTime?: number;
+      routeData?: unknown;
+    }[];
+    completions: {
+      challengeId: Id<"challenges">;
+      status: "pending" | "completed" | "rejected";
+      completedAt?: number;
+    }[];
+    now: number;
+  },
+) {
+  if (args.challenges.length === 0) return 0;
+
+  const existingEntries = await ctx.db
+    .query("challengeLeaderboardEntries")
+    .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+    .collect();
+
+  const existingEntryByChallengeId = new Map(
+    existingEntries.map((entry) => [entry.challengeId, entry]),
+  );
+  const completionByChallengeId = new Map(
+    args.completions.map((completion) => [completion.challengeId, completion]),
+  );
+
+  let changedEntries = 0;
+
+  for (const challenge of args.challenges) {
+    const progress = getAutoProgress(challenge, args.flights);
+    const completion = completionByChallengeId.get(challenge._id);
+    const isComplete = completion?.status === "completed" || progress.isComplete;
+    const progressCurrent =
+      isComplete && progress.progressCurrent === 0 ? 1 : progress.progressCurrent;
+    const progressTarget = Math.max(1, progress.progressTarget);
+    const progressLabel = isComplete ? "Completed" : progress.progressLabel;
+    const existingEntry = existingEntryByChallengeId.get(challenge._id);
+    const shouldKeep = isComplete || progressCurrent > 0;
+
+    if (!shouldKeep) {
+      if (existingEntry) {
+        await ctx.db.delete(existingEntry._id);
+        changedEntries += 1;
+      }
+      continue;
+    }
+
+    const nextValues = {
+      progressCurrent,
+      progressTarget,
+      progressLabel,
+      isComplete,
+      status: isComplete ? "completed" : "in_progress",
+      completedAt: completion?.completedAt,
+      updatedAt: args.now,
+    } as const;
+
+    if (existingEntry) {
+      await ctx.db.patch(existingEntry._id, nextValues);
+    } else {
+      await ctx.db.insert("challengeLeaderboardEntries", {
+        challengeId: challenge._id,
+        userId: args.userId,
+        ...nextValues,
+      });
+    }
+    changedEntries += 1;
+  }
+
+  return changedEntries;
 }
 
 async function insertAutoCompletionIfMissing(
@@ -621,10 +730,7 @@ export async function autoCompleteChallengesForFlight(
   },
 ) {
   const now = Date.now();
-  const publishedChallenges = await getPublishedChallenges(ctx);
-  const activeChallenges = publishedChallenges.filter((challenge) =>
-    isChallengeActiveAt(challenge, now),
-  );
+  const activeChallenges = await getActiveAutoChallenges(ctx, now);
   const aggregateChallenges = activeChallenges.filter((challenge) =>
     isAggregateChallengeRule(challenge.ruleType),
   );
@@ -637,6 +743,12 @@ export async function autoCompleteChallengesForFlight(
       : [];
 
   let completedCount = 0;
+  const completions: {
+    challengeId: Id<"challenges">;
+    status: "pending" | "completed" | "rejected";
+    completedAt?: number;
+  }[] = [];
+
   for (const challenge of activeChallenges) {
     const matches = isAggregateChallengeRule(challenge.ruleType)
       ? doesFlightCollectionMatchChallenge(challenge, allFlights)
@@ -660,8 +772,29 @@ export async function autoCompleteChallengesForFlight(
       flightId: supportingFlightId,
       now,
     });
-    if (inserted) completedCount += 1;
+    if (inserted) {
+      completedCount += 1;
+      completions.push({
+        challengeId: challenge._id,
+        status: "completed",
+        completedAt: now,
+      });
+    }
   }
+
+  const existingCompletions = await ctx.db
+    .query("challengeCompletions")
+    .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+    .collect();
+  completions.push(...existingCompletions);
+
+  await syncAutoLeaderboardEntriesForUser(ctx, {
+    userId: args.userId,
+    challenges: activeChallenges,
+    flights: allFlights,
+    completions,
+    now,
+  });
 
   return completedCount;
 }
@@ -789,9 +922,9 @@ export const listActiveLeaderboard = query({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
-    const challenges = (await getPublishedChallenges(ctx))
-      .filter((challenge) => isChallengeActiveAt(challenge, now))
-      .sort((a, b) => a.endAt - b.endAt);
+    const challenges = (await getActiveChallenges(ctx, now)).sort(
+      (a, b) => a.endAt - b.endAt,
+    );
 
     const [users, userStats] = await Promise.all([
       ctx.db
@@ -810,13 +943,11 @@ export const listActiveLeaderboard = query({
 
     for (const challenge of challenges) {
       if (challenge.mode === "auto") {
-        const [flights, completions] = await Promise.all([
+        const [storedEntries, completions] = await Promise.all([
           ctx.db
-            .query("flights")
-            .withIndex("by_startTime", (q) =>
-              q
-                .gte("startTime", challenge.startAt)
-                .lt("startTime", challenge.endAt),
+            .query("challengeLeaderboardEntries")
+            .withIndex("by_challengeId", (q) =>
+              q.eq("challengeId", challenge._id),
             )
             .collect(),
           ctx.db
@@ -827,49 +958,118 @@ export const listActiveLeaderboard = query({
             .collect(),
         ]);
 
-        const completionByUserId = new Map(
-          completions.map((completion) => [completion.userId, completion]),
-        );
-        const flightsByUser = new Map<Id<"users">, typeof flights>();
+        const entryByUserId = new Map<
+          Id<"users">,
+          {
+            userId: Id<"users">;
+            progressCurrent: number;
+            progressTarget: number;
+            progressLabel: string;
+            isComplete: boolean;
+            completedAt: number | null;
+            status: "completed" | "in_progress";
+          }
+        >();
 
-        for (const flight of flights) {
-          const userFlights = flightsByUser.get(flight.userId) ?? [];
-          userFlights.push(flight);
-          flightsByUser.set(flight.userId, userFlights);
+        for (const entry of storedEntries) {
+          entryByUserId.set(entry.userId, {
+            userId: entry.userId,
+            progressCurrent: entry.progressCurrent,
+            progressTarget: entry.progressTarget,
+            progressLabel: entry.progressLabel,
+            isComplete: entry.isComplete,
+            completedAt: entry.completedAt ?? null,
+            status: entry.status,
+          });
         }
 
-        const entries: ChallengeLeaderboardEntryResult[] = users
-          .map((user) => {
-            const userFlights = flightsByUser.get(user._id) ?? [];
-            const progress = getAutoProgress(challenge, userFlights);
-            const stats = userStatsByUserId.get(user._id);
-            const completion = completionByUserId.get(user._id);
-            const status: ChallengeLeaderboardEntryResult["status"] =
-              progress.isComplete ? "completed" : "in_progress";
+        for (const completion of completions) {
+          if (
+            completion.status !== "completed" ||
+            entryByUserId.has(completion.userId)
+          ) {
+            continue;
+          }
 
-            return {
-              userId: user._id,
-              displayName: getChallengePilotDisplayName(
-                user,
-                stats,
-                user._id,
-              ),
-              callsign: stats?.lastFlightCallsign ?? null,
-              progressCurrent: progress.progressCurrent,
-              progressTarget: progress.progressTarget,
-              progressLabel: progress.isComplete
-                ? "Completed"
-                : progress.progressLabel,
-              isComplete: progress.isComplete,
-              completedAt: completion?.completedAt ?? null,
-              status,
-            };
+          entryByUserId.set(completion.userId, {
+            userId: completion.userId,
+            progressCurrent: 1,
+            progressTarget: 1,
+            progressLabel: "Completed",
+            isComplete: true,
+            completedAt: completion.completedAt ?? null,
+            status: "completed",
+          });
+        }
+
+        const entries: ChallengeLeaderboardEntryResult[] = [...entryByUserId.values()]
+          .flatMap((entry) => {
+            const user = usersById.get(entry.userId);
+            if (!user) return [];
+
+            const stats = userStatsByUserId.get(entry.userId);
+            return [
+              {
+                userId: entry.userId,
+                displayName: getChallengePilotDisplayName(
+                  user,
+                  stats,
+                  entry.userId,
+                ),
+                callsign: stats?.lastFlightCallsign ?? null,
+                progressCurrent: entry.progressCurrent,
+                progressTarget: entry.progressTarget,
+                progressLabel: entry.progressLabel,
+                isComplete: entry.isComplete,
+                completedAt: entry.completedAt,
+                status: entry.status,
+              } satisfies ChallengeLeaderboardEntryResult,
+            ];
           })
           .sort(compareTopProgressUsers);
 
+        if (entries.length < DEFAULT_LEADERBOARD_ENTRY_LIMIT) {
+          const rankedUserIds = new Set(entries.map((entry) => entry.userId));
+          const fillerEntries = users
+            .flatMap((user) => {
+              if (rankedUserIds.has(user._id)) return [];
+
+              const stats = userStatsByUserId.get(user._id);
+              const approvedAircraftImages = stats?.approvedAircraftImages ?? 0;
+              if (
+                !stats ||
+                (stats.totalFlights <= 0 && approvedAircraftImages <= 0)
+              ) {
+                return [];
+              }
+
+              return [
+                {
+                  userId: user._id,
+                  displayName: getChallengePilotDisplayName(
+                    user,
+                    stats,
+                    user._id,
+                  ),
+                  callsign: stats?.lastFlightCallsign ?? null,
+                  progressCurrent: 0,
+                  progressTarget: 1,
+                  progressLabel: "Not started",
+                  isComplete: false,
+                  completedAt: null,
+                  status: "in_progress",
+                } satisfies ChallengeLeaderboardEntryResult,
+              ];
+            })
+            .sort(compareTopProgressUsers)
+            .slice(0, DEFAULT_LEADERBOARD_ENTRY_LIMIT - entries.length);
+
+          entries.push(...fillerEntries);
+        }
+
         leaderboards.push({
           ...serializeChallenge(challenge),
-          entries,
+          entries: entries.slice(0, DEFAULT_LEADERBOARD_ENTRY_LIMIT),
         });
         continue;
       }
@@ -879,62 +1079,83 @@ export const listActiveLeaderboard = query({
         .withIndex("by_challengeId", (q) => q.eq("challengeId", challenge._id))
         .collect();
 
-      const completionByUserId = new Map(
-        completions.map((completion) => [completion.userId, completion]),
-      );
+      const entries: ChallengeLeaderboardEntryResult[] = completions
+        .flatMap((completion) => {
+          const user = usersById.get(completion.userId);
+          if (!user) return [];
 
-      const entries: ChallengeLeaderboardEntryResult[] = users
-        .map((user) => {
-          const completion = completionByUserId.get(user._id);
-          const stats = userStatsByUserId.get(user._id);
-
-          if (!completion) {
-            return {
-              userId: user._id,
+          const stats = userStatsByUserId.get(completion.userId);
+          return [
+            {
+              userId: completion.userId,
               displayName: getChallengePilotDisplayName(
                 user,
                 stats,
-                user._id,
+                completion.userId,
               ),
               callsign: stats?.lastFlightCallsign ?? null,
-              progressCurrent: 0,
+              progressCurrent: completion.status === "completed" ? 1 : 0,
               progressTarget: 1,
-              progressLabel: "No submission yet",
-              isComplete: false,
-              completedAt: null,
-              status: "in_progress",
-              sortAt: Number.MAX_SAFE_INTEGER,
-            } satisfies ManualChallengeLeaderboardEntryResult;
-          }
-
-          return {
-            userId: completion.userId,
-            displayName: getChallengePilotDisplayName(
-              user,
-              stats,
-              completion.userId,
-            ),
-            callsign: stats?.lastFlightCallsign ?? null,
-            progressCurrent: completion.status === "completed" ? 1 : 0,
-            progressTarget: 1,
-            progressLabel:
-              completion.status === "completed"
-                ? "Approved"
-                : completion.status === "pending"
-                  ? "Pending review"
-                  : "Needs resubmission",
-            isComplete: completion.status === "completed",
-            completedAt: completion.completedAt ?? null,
-            status: completion.status,
-            sortAt: completion.completedAt ?? completion.createdAt,
-          } satisfies ManualChallengeLeaderboardEntryResult;
+              progressLabel:
+                completion.status === "completed"
+                  ? "Approved"
+                  : completion.status === "pending"
+                    ? "Pending review"
+                    : "Needs resubmission",
+              isComplete: completion.status === "completed",
+              completedAt: completion.completedAt ?? null,
+              status: completion.status,
+              sortAt: completion.completedAt ?? completion.createdAt,
+            } satisfies ManualChallengeLeaderboardEntryResult,
+          ];
         })
         .sort(compareManualLeaderboardEntries)
         .map(({ sortAt, ...entry }) => entry);
 
+      if (entries.length < DEFAULT_LEADERBOARD_ENTRY_LIMIT) {
+        const rankedUserIds = new Set(entries.map((entry) => entry.userId));
+        const fillerEntries = users
+          .flatMap((user) => {
+            if (rankedUserIds.has(user._id)) return [];
+
+            const stats = userStatsByUserId.get(user._id);
+            const approvedAircraftImages = stats?.approvedAircraftImages ?? 0;
+            if (
+              !stats ||
+              (stats.totalFlights <= 0 && approvedAircraftImages <= 0)
+            ) {
+              return [];
+            }
+
+            return [
+              {
+                userId: user._id,
+                displayName: getChallengePilotDisplayName(
+                  user,
+                  stats,
+                  user._id,
+                ),
+                callsign: stats?.lastFlightCallsign ?? null,
+                progressCurrent: 0,
+                progressTarget: 1,
+                progressLabel: "No submission yet",
+                isComplete: false,
+                completedAt: null,
+                status: "in_progress",
+                sortAt: Number.MAX_SAFE_INTEGER,
+              } satisfies ManualChallengeLeaderboardEntryResult,
+            ];
+          })
+          .sort(compareManualLeaderboardEntries)
+          .slice(0, DEFAULT_LEADERBOARD_ENTRY_LIMIT - entries.length)
+          .map(({ sortAt, ...entry }) => entry);
+
+        entries.push(...fillerEntries);
+      }
+
       leaderboards.push({
         ...serializeChallenge(challenge),
-        entries,
+        entries: entries.slice(0, DEFAULT_LEADERBOARD_ENTRY_LIMIT),
       });
     }
 
@@ -1273,6 +1494,7 @@ export const update = mutation({
       ...values,
       updatedAt: Date.now(),
     });
+    await clearChallengeLeaderboardEntries(ctx, args.challengeId);
 
     return await ctx.db.get(args.challengeId);
   },
@@ -1290,6 +1512,7 @@ export const togglePublished = mutation({
       isPublished: args.isPublished,
       updatedAt: Date.now(),
     });
+    await clearChallengeLeaderboardEntries(ctx, args.challengeId);
   },
 });
 
@@ -1309,6 +1532,7 @@ export const remove = mutation({
       await ctx.db.delete(completion._id);
     }
 
+    await clearChallengeLeaderboardEntries(ctx, args.challengeId);
     await ctx.db.delete(args.challengeId);
   },
 });
@@ -1424,10 +1648,7 @@ export const syncForCurrentUser = mutation({
     const viewer = await requireViewer(ctx);
     const user = viewer.user;
     const now = Date.now();
-    const activeChallenges = (await getPublishedChallenges(ctx)).filter(
-      (challenge) =>
-        challenge.mode === "auto" && isChallengeActiveAt(challenge, now),
-    );
+    const activeChallenges = await getActiveAutoChallenges(ctx, now);
 
     if (activeChallenges.length === 0) return 0;
 
@@ -1445,6 +1666,11 @@ export const syncForCurrentUser = mutation({
     const completedChallengeIds = new Set(
       existingCompletions.map((completion) => completion.challengeId),
     );
+    const leaderboardCompletions = existingCompletions.map((completion) => ({
+      challengeId: completion.challengeId,
+      status: completion.status,
+      completedAt: completion.completedAt,
+    }));
     let created = 0;
 
     const sortedFlights = [...flights].sort(
@@ -1472,10 +1698,87 @@ export const syncForCurrentUser = mutation({
         createdAt: now,
         updatedAt: now,
       });
+      leaderboardCompletions.push({
+        challengeId: challenge._id,
+        status: "completed",
+        completedAt: now,
+      });
       completedChallengeIds.add(challenge._id);
       created += 1;
     }
 
+    await syncAutoLeaderboardEntriesForUser(ctx, {
+      userId: user._id,
+      challenges: activeChallenges,
+      flights: sortedFlights,
+      completions: leaderboardCompletions,
+      now,
+    });
+
     return created;
+  },
+});
+
+export const rebuildAutoLeaderboardEntries = mutation({
+  args: {
+    challengeId: v.optional(v.id("challenges")),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
+    const now = Date.now();
+    const challengeList = args.challengeId
+      ? []
+      : await getActiveAutoChallenges(ctx, now);
+
+    if (args.challengeId) {
+      const challenge = await ctx.db.get(args.challengeId);
+      if (!challenge) {
+        throw new Error("Challenge not found");
+      }
+      if (challenge.mode !== "auto") {
+        throw new Error("Only auto challenges can be rebuilt");
+      }
+      if (!isChallengeActiveAt(challenge, now)) {
+        throw new Error("Challenge must be active to rebuild");
+      }
+      challengeList.push(challenge);
+    }
+
+    const page = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("isDeleted"), false))
+      .paginate(args.paginationOpts);
+
+    let updatedEntries = 0;
+
+    for (const user of page.page) {
+      const [flights, completions] = await Promise.all([
+        ctx.db
+          .query("flights")
+          .withIndex("by_userId", (q) => q.eq("userId", user._id))
+          .collect(),
+        ctx.db
+          .query("challengeCompletions")
+          .withIndex("by_userId", (q) => q.eq("userId", user._id))
+          .collect(),
+      ]);
+
+      updatedEntries += await syncAutoLeaderboardEntriesForUser(ctx, {
+        userId: user._id,
+        challenges: challengeList,
+        flights,
+        completions,
+        now,
+      });
+    }
+
+    return {
+      processedUsers: page.page.length,
+      updatedEntries,
+      isDone: page.isDone,
+      continueCursor: page.continueCursor,
+    };
   },
 });

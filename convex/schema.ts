@@ -254,4 +254,19 @@ export default defineSchema({
     .index("by_challengeId_userId", ["challengeId", "userId"])
     .index("by_challengeId_status", ["challengeId", "status"])
     .index("by_userId_status", ["userId", "status"]),
+
+  challengeLeaderboardEntries: defineTable({
+    challengeId: v.id("challenges"),
+    userId: v.id("users"),
+    progressCurrent: v.number(),
+    progressTarget: v.number(),
+    progressLabel: v.string(),
+    isComplete: v.boolean(),
+    status: v.union(v.literal("completed"), v.literal("in_progress")),
+    completedAt: v.optional(v.number()),
+    updatedAt: v.number(),
+  })
+    .index("by_challengeId", ["challengeId"])
+    .index("by_userId", ["userId"])
+    .index("by_challengeId_userId", ["challengeId", "userId"]),
 });
