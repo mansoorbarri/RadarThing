@@ -52,10 +52,10 @@ function PilotPageContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
-  const userId = params.id as Id<"users">;
+  const userId = params?.id as Id<"users">;
 
   // Get callsign from URL query param (from SSE), fall back to DB
-  const callsignFromUrl = searchParams.get("callsign");
+  const callsignFromUrl = searchParams?.get("callsign") ?? null;
 
   const [linkCopied, setLinkCopied] = useState(false);
   const [cardFlight, setCardFlight] = useState<FlightCardData | null>(null);

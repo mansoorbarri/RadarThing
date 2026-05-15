@@ -97,7 +97,7 @@ export default function AdminPage() {
   const router = useRouter();
   const pathname = usePathname();
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const mainTab = getAdminTabFromPath(pathname);
+  const mainTab = getAdminTabFromPath(pathname ?? "/admin");
   const {
     isAdminUser,
     isLoading: proStatusLoading,

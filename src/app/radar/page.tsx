@@ -159,7 +159,7 @@ export default function ATCPage() {
   } | null>(null);
 
   // Check if callsign param is a full flight number (e.g., EK213) vs just a prefix (e.g., EK)
-  const callsignParam = searchParams.get("callsign");
+  const callsignParam = searchParams?.get("callsign") ?? null;
   const normalizedCallsignParam = callsignParam
     ? normalizeCallsign(callsignParam)
     : null;
@@ -167,7 +167,7 @@ export default function ATCPage() {
     normalizedCallsignParam && /^[A-Z]+\d+.*$/i.test(normalizedCallsignParam);
 
   // Handle replay param from dashboard
-  const replayParam = searchParams.get("replay");
+  const replayParam = searchParams?.get("replay") ?? null;
   const replayFlightQuery = useQuery(
     api.flights.getById,
     replayParam ? { id: replayParam as Id<"flights"> } : "skip",
@@ -520,7 +520,7 @@ export default function ATCPage() {
   }, [isReplayActive]);
 
   // Auto-select aircraft from URL param if it's a full flight number
-  const followParam = searchParams.get("follow") === "true";
+  const followParam = searchParams?.get("follow") === "true";
 
   useEffect(() => {
     if (!fullFlightFilter || autoSelectedFromUrl || aircrafts.length === 0)

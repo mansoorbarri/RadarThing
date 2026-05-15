@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
 import { useMutation } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { useUser } from "@clerk/nextjs";
@@ -30,14 +29,17 @@ export function useStoreUserEffect() {
 
 export function StoreUserProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user, storedRef } = useStoreUserEffect();
-  const searchParams = useSearchParams();
   const storeUser = useMutation(api.users.storeUser);
-  const referralCode = normalizeReferralCode(searchParams.get("ref"));
 
   useEffect(() => {
+    const referralCode = normalizeReferralCode(
+      typeof window === "undefined"
+        ? null
+        : new URLSearchParams(window.location.search).get("ref"),
+    );
     if (user || !isReferralCode(referralCode)) return;
     persistReferralCode(referralCode);
-  }, [referralCode, user]);
+  }, [user]);
 
   useEffect(() => {
     if (!isAuthenticated || !user || storedRef.current) return;

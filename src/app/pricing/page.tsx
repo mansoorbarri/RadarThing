@@ -55,7 +55,7 @@ export default function PricingPage() {
 
   useEffect(() => {
     if (!isLoaded || checkingStatus || !isSignedIn) return;
-    if (searchParams.get("checkout") !== "1") return;
+    if (searchParams?.get("checkout") !== "1") return;
     if (autoCheckoutStartedRef.current) return;
 
     autoCheckoutStartedRef.current = true;
