@@ -91,7 +91,8 @@ export const useMapInitialization = ({
 
   // State to signal when map and layers are ready
   const [mapReady, setMapReady] = useState(false);
-  const mapMinZoom = isMobile ? MOBILE_MIN_ZOOM : DESKTOP_MIN_ZOOM;
+  const [isMobileMapMode] = useState(isMobile);
+  const mapMinZoom = isMobileMapMode ? MOBILE_MIN_ZOOM : DESKTOP_MIN_ZOOM;
 
   const resetMapView = useCallback((targetLocation?: MapResetLocation | null) => {
     if (!mapInstance.current) return;
@@ -134,7 +135,7 @@ export const useMapInitialization = ({
       zoomSnap: 0.25,
       zoomDelta: 0.25,
       // No maxBounds on mobile for unlimited panning, desktop has soft bounds
-      ...(isMobile
+      ...(isMobileMapMode
         ? {}
         : {
             maxBounds: L.latLngBounds(L.latLng(-85, -540), L.latLng(85, 540)),
@@ -227,7 +228,7 @@ export const useMapInitialization = ({
     // Intentionally excluding setState functions and canUseRadarMode
     // canUseRadarMode changes should NOT recreate the map - handle controls separately
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapContainerId, mapMinZoom, onMapClick]);
+  }, [isMobileMapMode, mapContainerId, mapMinZoom, onMapClick]);
 
   // Separate effect to handle radar/OSM/OpenAIP/Settings controls
   // This ensures proper ordering: Radar -> OSM -> OpenAIP -> Settings
@@ -350,7 +351,6 @@ export const useMapInitialization = ({
     setSettingsControlRef.current = settingsControl;
   }, [
     hideUi,
-    isMobile,
     canUseRadarMode,
     setIsHeadingMode,
     setHeadingControlRef,

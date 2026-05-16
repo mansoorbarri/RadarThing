@@ -753,11 +753,11 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     getStoredMapLayerPresets(),
   );
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+  const [isDesktopGlobe] = useState(showDesktopControls);
 
   const { isProUser } = useProStatus();
   const { speedUnit, altitudeUnit } = useUnitPreferences();
   const canUseRadarMode = isProUser;
-  const isDesktopGlobe = showDesktopControls;
   const shouldShowLeftControls = showLeftControls;
   const defaultZoom = isDesktopGlobe ? DESKTOP_DEFAULT_ZOOM : MOBILE_DEFAULT_ZOOM;
   const minZoom = isDesktopGlobe ? DESKTOP_MIN_ZOOM : MOBILE_MIN_ZOOM;

@@ -103,6 +103,10 @@ const DESKTOP_MAP_RENDERER_COOKIE = "desktop_map_renderer";
 type RightPanel = "fids" | "filter" | "airports" | null;
 type DesktopMapRenderer = "flat" | "globe";
 
+const isTouchDevice = () =>
+  navigator.maxTouchPoints > 1 ||
+  window.matchMedia("(pointer: coarse)").matches;
+
 export default function ATCPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -240,10 +244,8 @@ export default function ATCPage() {
   const [showImportedFlightPlanPanel, setShowImportedFlightPlanPanel] =
     useState(false);
   const [desktopMapRenderer, setDesktopMapRenderer] =
-    useState<DesktopMapRenderer>(() => {
-      const stored = getCookie(DESKTOP_MAP_RENDERER_COOKIE);
-      return stored === "flat" ? "flat" : "globe";
-    });
+    useState<DesktopMapRenderer>("globe");
+  const [hasResolvedMapRenderer, setHasResolvedMapRenderer] = useState(false);
 
   const aircraftGoogleIds = useMemo(
     () =>
@@ -305,8 +307,21 @@ export default function ATCPage() {
   }, []);
 
   useEffect(() => {
+    const stored = getCookie(DESKTOP_MAP_RENDERER_COOKIE);
+    const storedRenderer: DesktopMapRenderer =
+      stored === "flat" ? "flat" : "globe";
+    const w = window.innerWidth;
+    const touch = isTouchDevice();
+    const initialIsPhone = w < 768 || (w < 1024 && touch);
+
+    setDesktopMapRenderer(initialIsPhone ? "globe" : storedRenderer);
+    setHasResolvedMapRenderer(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasResolvedMapRenderer) return;
     setCookie(DESKTOP_MAP_RENDERER_COOKIE, desktopMapRenderer);
-  }, [desktopMapRenderer]);
+  }, [desktopMapRenderer, hasResolvedMapRenderer]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1355,7 +1370,8 @@ export default function ATCPage() {
         )}
 
         <main className="absolute inset-0">
-          {isPhone || desktopMapRenderer === "globe" ? (
+          {hasResolvedMapRenderer &&
+          (desktopMapRenderer === "globe" ? (
             <DynamicGlobeMapComponent
               aircrafts={visibleAircrafts}
               airports={airports}
@@ -1425,7 +1441,7 @@ export default function ATCPage() {
               hideUi={isUiHidden}
               importedFlightPlan={importedFlightPlan}
             />
-          )}
+          ))}
 
           {importedFlightPlan && showImportedFlightPlanPanel ? (
             <ImportedFlightPlanPanel
