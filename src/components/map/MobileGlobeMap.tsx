@@ -48,6 +48,7 @@ import {
 } from "~/components/map/MapIcons";
 import { RadarSettings } from "~/components/atc/radarSettings";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
+import { getAircraftWakeCategory } from "~/lib/aircraftCategory";
 import { formatAltitude, formatSpeed, speedSuffix } from "~/lib/units";
 
 interface Airport {
@@ -428,9 +429,14 @@ function syncAircraftMarkerElement(
   const displaySpeed = isOnGround
     ? `${speedKts.toFixed(0)}kt`
     : `${formatSpeed(speedKts, speedUnit, altMSL)}${speedSuffix(speedUnit)}`;
-  const primaryLabel = aircraft.flightNo || aircraft.callsign || "N/A";
+  const wakeCategory = getAircraftWakeCategory(aircraft.type);
+  const primaryLabelBase = aircraft.flightNo || aircraft.callsign || "N/A";
+  const primaryLabel = wakeCategory
+    ? `${primaryLabelBase}<span style="font-size:82%; opacity:0.78;"> - ${wakeCategory}</span>`
+    : primaryLabelBase;
+  const detailLabel = `${displayAlt} ${displaySpeed}`;
   const secondaryLabel =
-    aircraft.callsign && aircraft.callsign !== primaryLabel
+    aircraft.callsign && aircraft.callsign !== primaryLabelBase
       ? aircraft.callsign
       : "";
   const shouldShowTag = showTags && (!hasSelection || isSelected);
@@ -440,7 +446,7 @@ function syncAircraftMarkerElement(
   const identRing = isIdentActive
     ? `<div style="position:absolute; inset:-4px; border-radius:9999px; border:2px solid rgba(251,191,36,0.95); animation:radar-ident-pulse 1s ease-in-out infinite; pointer-events:none;"></div>`
     : "";
-  const tagWidth = isDesktop ? 116 : 92;
+  const tagWidth = isDesktop ? 132 : 104;
   const tagFontSize = isDesktop ? 12 : 10;
   const tagHeaderSize = isDesktop ? 13 : 11;
   const tagSecondarySize = isDesktop ? 10 : 8;
@@ -520,7 +526,7 @@ function syncAircraftMarkerElement(
           ${isEmergency ? '<span style="color:rgb(239,68,68);">!</span>' : ""}
         </div>
         <div style="width:100%; opacity:0.85; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-          ${displayAlt} ${displaySpeed}
+          ${detailLabel}
         </div>
         ${
           secondaryLabel

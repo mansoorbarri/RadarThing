@@ -7,6 +7,7 @@ import {
   type UnitPreferences,
   DEFAULT_UNIT_PREFERENCES,
 } from "~/lib/units";
+import { getAircraftWakeCategory } from "~/lib/aircraftCategory";
 import { normalizeAircraftType } from "~/lib/utils";
 
 const EMERGENCY_SQUAWKS = new Set(["7700", "7600", "7500"]);
@@ -328,7 +329,7 @@ export const getAircraftDivIcon = (
     : isMobile
       ? 38
       : 52;
-  const tagWidth = isMobile ? 85 : 115;
+  const tagWidth = isMobile ? 104 : 132;
   const tagOffsetFromPlane = isMobile ? 6 : 8;
 
   const totalWidth = planeSize + tagOffsetFromPlane + tagWidth;
@@ -346,6 +347,12 @@ export const getAircraftDivIcon = (
   const displaySpeed = isOnGround
     ? `${aircraft.speed.toFixed(0)}kt`
     : `${formatSpeed(aircraft.speed, unitPrefs.speedUnit, altMSL)}${speedSuffix(unitPrefs.speedUnit)}`;
+  const wakeCategory = getAircraftWakeCategory(aircraft.type);
+  const primaryLabel = aircraft.flightNo || aircraft.callsign || "N/A";
+  const headerContent = wakeCategory
+    ? `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}<span style="font-size: 82%; opacity: 0.78;"> - ${wakeCategory}</span></span>`
+    : `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}</span>`;
+  const detailLabel = `${displayAlt} ${displaySpeed}`;
 
   const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
   const isIdentActive =
@@ -407,11 +414,11 @@ export const getAircraftDivIcon = (
       ${isEmergency ? "text-red-400" : "text-cyan-200"}
     " style="min-height: ${tagHeight}px; box-sizing: border-box; font-size: ${fontSize}; line-height: 1.3;">
       <div class="flex items-center justify-between font-semibold" style="font-size: ${isMobile ? "11px" : "13px"};">
-        <span>${aircraft.flightNo || aircraft.callsign || "N/A"}</span>
+        ${headerContent}
         ${isEmergency ? `<span class="text-red-500 animate-pulse">!</span>` : ""}
       </div>
-      <div class="opacity-80">
-        ${displayAlt} ${displaySpeed}
+      <div class="opacity-80" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+        ${detailLabel}
       </div>
       ${callsignDisplay ? `<div class="opacity-60" style="font-size: ${isMobile ? "8px" : "10px"}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${callsignDisplay}</div>` : ""}
     </div>
@@ -475,7 +482,7 @@ export const getRadarAircraftDivIcon = (
     : isMobile
       ? 32
       : 46;
-  const labelWidth = isMobile ? 75 : 100;
+  const labelWidth = isMobile ? 104 : 132;
   const labelOffsetFromDot = isMobile ? 10 : 12;
 
   const totalWidth =
@@ -494,6 +501,12 @@ export const getRadarAircraftDivIcon = (
   const displaySpeed = isOnGround
     ? `${aircraft.speed.toFixed(0)}kt`
     : `${formatSpeed(aircraft.speed, unitPrefs.speedUnit, altMSL)}${speedSuffix(unitPrefs.speedUnit)}`;
+  const wakeCategory = getAircraftWakeCategory(aircraft.type);
+  const primaryLabel = aircraft.flightNo || aircraft.callsign || "N/A";
+  const headerContent = wakeCategory
+    ? `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}<span style="font-size: 82%; opacity: 0.78;"> - ${wakeCategory}</span></span>`
+    : `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}</span>`;
+  const detailLabel = `${displayAlt} ${displaySpeed}`;
 
   // Color scheme: selected = bright green, emergency = red, normal = cyan
   const dotColor = isEmergency
@@ -584,11 +597,11 @@ export const getRadarAircraftDivIcon = (
       font-mono
       ${isEmergency ? "text-red-400" : "text-cyan-300"}
     " style="min-height: ${labelHeight}px; box-sizing: border-box; font-size: ${fontSize}; line-height: 1.2;">
-      <div class="font-semibold" style="font-size: ${isMobile ? "11px" : "13px"}; line-height: 1.1;">
-        ${aircraft.flightNo || aircraft.callsign || "N/A"}${isEmergency ? " !" : ""}
+      <div class="font-semibold" style="font-size: ${isMobile ? "11px" : "13px"}; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+        ${headerContent}${isEmergency ? " !" : ""}
       </div>
-      <div class="opacity-85" style="line-height: 1.15;">
-        ${displayAlt} ${displaySpeed}
+      <div class="opacity-85" style="line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+        ${detailLabel}
       </div>
       ${callsignDisplay ? `<div class="opacity-60" style="font-size: ${isMobile ? "8px" : "10px"}; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${callsignDisplay}</div>` : ""}
     </div>
