@@ -302,9 +302,14 @@ export default function ATCPage() {
   const importedFlightPlanInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleResetMapView = useCallback(async () => {
+    if (desktopMapRenderer === "flat") {
+      resetMapViewRef.current?.(null);
+      return;
+    }
+
     const targetLocation = await getUserResetLocation();
     resetMapViewRef.current?.(targetLocation);
-  }, []);
+  }, [desktopMapRenderer]);
 
   useEffect(() => {
     const stored = getCookie(DESKTOP_MAP_RENDERER_COOKIE);
