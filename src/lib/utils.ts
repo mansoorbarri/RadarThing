@@ -93,6 +93,150 @@ export function normalizeAircraftType(type: string | undefined): string | null {
   return firstWord || null;
 }
 
+export function getCompactAircraftType(type: string | undefined): string | null {
+  if (!type) return null;
+
+  const cleaned = type.trim().toUpperCase();
+  if (!cleaned) return null;
+
+  if (/\bB77W\b/.test(cleaned)) return "B77W";
+  if (/\bB77L\b/.test(cleaned)) return "B77L";
+  if (/\bB77F\b/.test(cleaned)) return "B77F";
+  if (/\bB773\b/.test(cleaned) || /\b777[- ]?300\b/.test(cleaned)) {
+    return "B773";
+  }
+  if (/\bB772\b/.test(cleaned) || /\b777[- ]?200(ER)?\b/.test(cleaned)) {
+    return "B772";
+  }
+  if (/\b777[- ]?300ER\b/.test(cleaned)) return "B77W";
+  if (/\b777[- ]?200LR\b/.test(cleaned)) return "B77L";
+  if (/\b777[- ]?(FREIGHTER|200F)\b/.test(cleaned)) return "B77F";
+
+  if (/\bB78X\b/.test(cleaned) || /\b787[- ]?10\b/.test(cleaned)) {
+    return "B78X";
+  }
+  if (/\bB789\b/.test(cleaned) || /\b787[- ]?9\b/.test(cleaned)) {
+    return "B789";
+  }
+  if (/\bB788\b/.test(cleaned) || /\b787[- ]?8\b/.test(cleaned)) {
+    return "B788";
+  }
+
+  if (/\bB748\b/.test(cleaned) || /\b747[- ]?8\b/.test(cleaned)) {
+    return "B748";
+  }
+  if (/\bB744\b/.test(cleaned) || /\b747[- ]?400\b/.test(cleaned)) {
+    return "B744";
+  }
+
+  if (/\bB764\b/.test(cleaned) || /\b767[- ]?400\b/.test(cleaned)) {
+    return "B764";
+  }
+  if (/\bB763\b/.test(cleaned) || /\b767[- ]?300\b/.test(cleaned)) {
+    return "B763";
+  }
+  if (/\bB762\b/.test(cleaned) || /\b767[- ]?200\b/.test(cleaned)) {
+    return "B762";
+  }
+
+  if (/\bB753\b/.test(cleaned) || /\b757[- ]?300\b/.test(cleaned)) {
+    return "B753";
+  }
+  if (/\bB752\b/.test(cleaned) || /\b757[- ]?200\b/.test(cleaned)) {
+    return "B752";
+  }
+
+  if (/\bB38M\b/.test(cleaned) || /\b737[- ]?8(MAX)?\b/.test(cleaned)) {
+    return "B38M";
+  }
+  if (/\bB39M\b/.test(cleaned) || /\b737[- ]?9(MAX)?\b/.test(cleaned)) {
+    return "B39M";
+  }
+  if (/\bB739\b/.test(cleaned) || /\b737[- ]?900\b/.test(cleaned)) {
+    return "B739";
+  }
+  if (/\bB738\b/.test(cleaned) || /\b737[- ]?800\b/.test(cleaned)) {
+    return "B738";
+  }
+  if (/\bB737\b/.test(cleaned) || /\b737[- ]?700\b/.test(cleaned)) {
+    return "B737";
+  }
+  if (/\bB734\b/.test(cleaned) || /\b737[- ]?400\b/.test(cleaned)) {
+    return "B734";
+  }
+  if (/\bB733\b/.test(cleaned) || /\b737[- ]?300\b/.test(cleaned)) {
+    return "B733";
+  }
+  if (/\bB732\b/.test(cleaned) || /\b737[- ]?200\b/.test(cleaned)) {
+    return "B732";
+  }
+
+  if (/\bA388\b/.test(cleaned) || /\bA380\b/.test(cleaned)) return "A388";
+  if (/\bA35K\b/.test(cleaned) || /\bA350[- ]?1000\b/.test(cleaned)) {
+    return "A35K";
+  }
+  if (/\bA359\b/.test(cleaned) || /\bA350[- ]?900\b/.test(cleaned)) {
+    return "A359";
+  }
+  if (/\bA346\b/.test(cleaned) || /\bA340[- ]?600\b/.test(cleaned)) {
+    return "A346";
+  }
+  if (/\bA345\b/.test(cleaned) || /\bA340[- ]?500\b/.test(cleaned)) {
+    return "A345";
+  }
+  if (/\bA343\b/.test(cleaned) || /\bA340[- ]?300\b/.test(cleaned)) {
+    return "A343";
+  }
+  if (/\bA342\b/.test(cleaned) || /\bA340[- ]?200\b/.test(cleaned)) {
+    return "A342";
+  }
+  if (/\bA339\b/.test(cleaned) || /\bA330[- ]?900\b/.test(cleaned)) {
+    return "A339";
+  }
+  if (/\bA338\b/.test(cleaned) || /\bA330[- ]?800\b/.test(cleaned)) {
+    return "A338";
+  }
+  if (/\bA333\b/.test(cleaned) || /\bA330[- ]?300\b/.test(cleaned)) {
+    return "A333";
+  }
+  if (/\bA332\b/.test(cleaned) || /\bA330[- ]?200\b/.test(cleaned)) {
+    return "A332";
+  }
+  if (/\bA21N\b/.test(cleaned) || /\bA321NEO\b/.test(cleaned)) {
+    return "A21N";
+  }
+  if (/\bA20N\b/.test(cleaned) || /\bA320NEO\b/.test(cleaned)) {
+    return "A20N";
+  }
+  if (/\bA321\b/.test(cleaned)) return "A321";
+  if (/\bA320\b/.test(cleaned)) return "A320";
+  if (/\bA319\b/.test(cleaned)) return "A319";
+  if (/\bA318\b/.test(cleaned)) return "A318";
+  if (/\bA310\b/.test(cleaned)) return "A310";
+  if (/\bA306\b|\bA30B\b|\bA300\b/.test(cleaned)) return "A306";
+
+  if (/\bA223\b/.test(cleaned) || /\bA220[- ]?300\b/.test(cleaned)) {
+    return "A223";
+  }
+  if (/\bA221\b/.test(cleaned) || /\bA220[- ]?100\b/.test(cleaned)) {
+    return "A221";
+  }
+
+  if (/\bE195\b|\bE95[LS]?\b/.test(cleaned)) return "E195";
+  if (/\bE190\b|\bE90[LS]?\b/.test(cleaned)) return "E190";
+  if (/\bE175\b|\bE75[LS]?\b/.test(cleaned)) return "E175";
+  if (/\bE170\b/.test(cleaned)) return "E170";
+  if (/\bERJ[- ]?145\b|\bE145\b/.test(cleaned)) return "E145";
+  if (/\bCRJ[- ]?[1279]\d{2}\b|\bCRJ\b|\bCL65\b/.test(cleaned)) return "CRJ";
+  if (/\bAT7[26]\b|\bATR[- ]?72\b/.test(cleaned)) return "AT76";
+  if (/\bAT4[26]\b|\bATR[- ]?42\b/.test(cleaned)) return "AT46";
+  if (/\bDH8[ABCD]?\b|\bQ400\b/.test(cleaned)) return "DH8D";
+
+  if (/^[A-Z0-9]{3,5}$/.test(cleaned)) return cleaned;
+
+  return normalizeAircraftType(type);
+}
+
 export function getAircraftTypeLookupCandidates(
   type: string | undefined,
 ): string[] {

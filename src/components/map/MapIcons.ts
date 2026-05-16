@@ -7,8 +7,7 @@ import {
   type UnitPreferences,
   DEFAULT_UNIT_PREFERENCES,
 } from "~/lib/units";
-import { getAircraftWakeCategory } from "~/lib/aircraftCategory";
-import { normalizeAircraftType } from "~/lib/utils";
+import { getCompactAircraftType, normalizeAircraftType } from "~/lib/utils";
 
 const EMERGENCY_SQUAWKS = new Set(["7700", "7600", "7500"]);
 const DEFAULT_AIRCRAFT_ICON = "/icons/e195.svg";
@@ -347,10 +346,10 @@ export const getAircraftDivIcon = (
   const displaySpeed = isOnGround
     ? `${aircraft.speed.toFixed(0)}kt`
     : `${formatSpeed(aircraft.speed, unitPrefs.speedUnit, altMSL)}${speedSuffix(unitPrefs.speedUnit)}`;
-  const wakeCategory = getAircraftWakeCategory(aircraft.type);
+  const compactType = getCompactAircraftType(aircraft.type);
   const primaryLabel = aircraft.flightNo || aircraft.callsign || "N/A";
-  const headerContent = wakeCategory
-    ? `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}<span style="font-size: 82%; opacity: 0.78;"> - ${wakeCategory}</span></span>`
+  const headerContent = compactType
+    ? `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}<span style="font-size: 78%; opacity: 0.72;"> ${compactType}</span></span>`
     : `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}</span>`;
   const detailLabel = `${displayAlt} ${displaySpeed}`;
 
@@ -501,10 +500,10 @@ export const getRadarAircraftDivIcon = (
   const displaySpeed = isOnGround
     ? `${aircraft.speed.toFixed(0)}kt`
     : `${formatSpeed(aircraft.speed, unitPrefs.speedUnit, altMSL)}${speedSuffix(unitPrefs.speedUnit)}`;
-  const wakeCategory = getAircraftWakeCategory(aircraft.type);
+  const compactType = getCompactAircraftType(aircraft.type);
   const primaryLabel = aircraft.flightNo || aircraft.callsign || "N/A";
-  const headerContent = wakeCategory
-    ? `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}<span style="font-size: 82%; opacity: 0.78;"> - ${wakeCategory}</span></span>`
+  const headerContent = compactType
+    ? `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}<span style="font-size: 78%; opacity: 0.72;"> ${compactType}</span></span>`
     : `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}</span>`;
   const detailLabel = `${displayAlt} ${displaySpeed}`;
 

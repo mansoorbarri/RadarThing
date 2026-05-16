@@ -48,8 +48,8 @@ import {
 } from "~/components/map/MapIcons";
 import { RadarSettings } from "~/components/atc/radarSettings";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
-import { getAircraftWakeCategory } from "~/lib/aircraftCategory";
 import { formatAltitude, formatSpeed, speedSuffix } from "~/lib/units";
+import { getCompactAircraftType } from "~/lib/utils";
 
 interface Airport {
   name: string;
@@ -429,10 +429,10 @@ function syncAircraftMarkerElement(
   const displaySpeed = isOnGround
     ? `${speedKts.toFixed(0)}kt`
     : `${formatSpeed(speedKts, speedUnit, altMSL)}${speedSuffix(speedUnit)}`;
-  const wakeCategory = getAircraftWakeCategory(aircraft.type);
+  const compactType = getCompactAircraftType(aircraft.type);
   const primaryLabelBase = aircraft.flightNo || aircraft.callsign || "N/A";
-  const primaryLabel = wakeCategory
-    ? `${primaryLabelBase}<span style="font-size:82%; opacity:0.78;"> - ${wakeCategory}</span>`
+  const primaryLabel = compactType
+    ? `${primaryLabelBase}<span style="font-size:78%; opacity:0.72;"> ${compactType}</span>`
     : primaryLabelBase;
   const detailLabel = `${displayAlt} ${displaySpeed}`;
   const secondaryLabel =
