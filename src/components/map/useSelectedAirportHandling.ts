@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import { type Airport } from "~/components/map";
+import { SELECTED_AIRPORT_RADIUS_METERS } from "~/lib/map-utils";
 
 interface UseSelectedAirportHandlingProps {
   mapInstance: React.MutableRefObject<L.Map | null>;
@@ -34,7 +35,7 @@ export const useSelectedAirportHandling = ({
     highlightRef.current = L.circle(
       [selectedAirport.lat, selectedAirport.lon],
       {
-        radius: 2500,
+        radius: SELECTED_AIRPORT_RADIUS_METERS,
         color: isRadarMode ? "#22d3ee" : "#3b82f6",
         weight: 2,
         opacity: 0.8,

@@ -28,8 +28,10 @@ import {
 import {
   calculateBearing,
   calculateDistance,
+  createGeodesicCircle,
   findActiveWaypointIndex,
   preparePathForWorldCopy,
+  SELECTED_AIRPORT_RADIUS_MILES,
   unwrapPath,
 } from "~/lib/map-utils";
 import { Analytics } from "~/lib/analytics";
@@ -1265,6 +1267,27 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       });
 
       map.addLayer({
+        id: "mobile-globe-selected-airport-radius-fill",
+        type: "fill",
+        source: SOURCE_IDS.selectedAirport,
+        paint: {
+          "fill-color": "#22d3ee",
+          "fill-opacity": 0.07,
+        },
+      });
+
+      map.addLayer({
+        id: "mobile-globe-selected-airport-radius-outline",
+        type: "line",
+        source: SOURCE_IDS.selectedAirport,
+        paint: {
+          "line-color": "#22d3ee",
+          "line-width": 2,
+          "line-opacity": 0.8,
+        },
+      });
+
+      map.addLayer({
         id: "mobile-globe-selected-airport",
         type: "circle",
         source: SOURCE_IDS.selectedAirport,
@@ -1603,6 +1626,22 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     setSourceData(map, SOURCE_IDS.selectedAirport, {
       type: "FeatureCollection",
       features: [
+        {
+          type: "Feature",
+          geometry: {
+            type: "Polygon",
+            coordinates: [
+              createGeodesicCircle(
+                selectedAirport.lat,
+                selectedAirport.lon,
+                SELECTED_AIRPORT_RADIUS_MILES,
+              ),
+            ],
+          },
+          properties: {
+            icao: selectedAirport.icao,
+          },
+        },
         buildPointFeature(selectedAirport.lon, selectedAirport.lat, {
           icao: selectedAirport.icao,
         }),

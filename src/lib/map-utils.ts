@@ -2,6 +2,13 @@
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
 
+const EARTH_RADIUS_KM = 6371;
+const MILES_TO_KM = 1.609344;
+
+export const SELECTED_AIRPORT_RADIUS_MILES = 5;
+export const SELECTED_AIRPORT_RADIUS_METERS =
+  SELECTED_AIRPORT_RADIUS_MILES * 1609.344;
+
 export const calculateDistance = (
   lat1: number,
   lon1: number,
@@ -9,10 +16,9 @@ export const calculateDistance = (
   lon2: number,
   unit: "km" | "miles" = "km",
 ): number => {
-  const R_km = 6371;
   const R_miles = 3958.8;
 
-  const R = unit === "miles" ? R_miles : R_km;
+  const R = unit === "miles" ? R_miles : EARTH_RADIUS_KM;
 
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -24,6 +30,44 @@ export const calculateDistance = (
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
+};
+
+export const createGeodesicCircle = (
+  lat: number,
+  lon: number,
+  radiusMiles: number,
+  points = 64,
+): [number, number][] => {
+  const angularDistance = (radiusMiles * MILES_TO_KM) / EARTH_RADIUS_KM;
+  const latRad = (lat * Math.PI) / 180;
+  const lonRad = (lon * Math.PI) / 180;
+  const coordinates: [number, number][] = [];
+
+  for (let i = 0; i <= points; i++) {
+    const bearing = (2 * Math.PI * i) / points;
+    const sinLat = Math.sin(latRad);
+    const cosLat = Math.cos(latRad);
+    const sinAngularDistance = Math.sin(angularDistance);
+    const cosAngularDistance = Math.cos(angularDistance);
+
+    const destLat = Math.asin(
+      sinLat * cosAngularDistance +
+        cosLat * sinAngularDistance * Math.cos(bearing),
+    );
+    const destLon =
+      lonRad +
+      Math.atan2(
+        Math.sin(bearing) * sinAngularDistance * cosLat,
+        cosAngularDistance - sinLat * Math.sin(destLat),
+      );
+
+    const normalizedLon =
+      ((((destLon * 180) / Math.PI) + 540) % 360) - 180;
+
+    coordinates.push([normalizedLon, (destLat * 180) / Math.PI]);
+  }
+
+  return coordinates;
 };
 
 export const calculateBearing = (
