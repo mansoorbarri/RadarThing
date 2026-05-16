@@ -214,6 +214,9 @@ export default function ATCPage() {
   const [showAtcPlayer, setShowAtcPlayer] = useState(false);
   const [showAirportFID, setShowAirportFID] = useState(false);
   const [chartOverlayActive, setChartOverlayActive] = useState(false);
+  const [chartOverlayIcao, setChartOverlayIcao] = useState<string | null>(
+    null,
+  );
 
   const [showTimerPopup, setShowTimerPopup] = useState(false);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -638,11 +641,15 @@ export default function ATCPage() {
     showShortcutsMenu,
   ]);
 
-  // Deactivate chart overlay and FID when airport changes
+  // Keep the sideview open on the last airport unless the user closes it.
   useEffect(() => {
-    setChartOverlayActive(false);
     setShowAirportFID(false);
   }, [selectedAirport?.icao]);
+
+  useEffect(() => {
+    if (!chartOverlayActive || !selectedAirport?.icao) return;
+    setChartOverlayIcao(selectedAirport.icao);
+  }, [chartOverlayActive, selectedAirport?.icao]);
 
   useEffect(() => {
     if (!pendingAirportIcao || airports.length === 0) return;
@@ -1510,7 +1517,7 @@ export default function ATCPage() {
           ))}
 
         {/* Control dock - compact on mobile, hidden when chart side panel is open */}
-        {!isUiHidden && !(chartOverlayActive && selectedAirport?.icao) && (
+        {!isUiHidden && !(chartOverlayActive && chartOverlayIcao) && (
           <ControlDock
             side="right"
             isMobile={isMobile}
@@ -1596,7 +1603,6 @@ export default function ATCPage() {
                   setSelectedAirport(undefined);
                   setShowAtcPlayer(false);
                   setShowAirportFID(false);
-                  setChartOverlayActive(false);
                 }}
                 className={`cursor-pointer rounded-lg border border-white/10 bg-white/5 text-white/60 ${isPhone ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
               >
@@ -1779,14 +1785,20 @@ export default function ATCPage() {
           <TaxiChartViewer
             icao={selectedAirport.icao}
             onClose={() => setShowTaxiChart(false)}
-            onOpenSideView={() => setChartOverlayActive(true)}
+            onOpenSideView={() => {
+              setChartOverlayIcao(selectedAirport.icao);
+              setChartOverlayActive(true);
+            }}
           />
         )}
 
-        {!isUiHidden && chartOverlayActive && selectedAirport?.icao && (
+        {!isUiHidden && chartOverlayActive && chartOverlayIcao && (
           <ChartSidePanel
-            icao={selectedAirport.icao}
-            onClose={() => setChartOverlayActive(false)}
+            icao={chartOverlayIcao}
+            onClose={() => {
+              setChartOverlayActive(false);
+              setChartOverlayIcao(null);
+            }}
           />
         )}
 
