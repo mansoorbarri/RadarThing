@@ -288,7 +288,7 @@ export const useMapInitialization = ({
       setSettingsControlRef.current = null;
     }
 
-    if (!hideUi && !isMobile) {
+    if (!hideUi) {
       const zoomInControl = new ZoomInControl({}, mapInstance);
       map.addControl(zoomInControl);
       zoomInControlInstanceRef.current = zoomInControl;
@@ -313,10 +313,6 @@ export const useMapInitialization = ({
     }
 
     if (hideUi) {
-      return;
-    }
-
-    if (isMobile) {
       return;
     }
 

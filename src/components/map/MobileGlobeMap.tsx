@@ -97,6 +97,7 @@ interface MapComponentProps {
   mapRenderer?: "flat" | "globe";
   onMapRendererChange?: (renderer: "flat" | "globe") => void;
   showDesktopControls?: boolean;
+  showLeftControls?: boolean;
   hideUi?: boolean;
   importedFlightPlan?: ImportedFlightPlan | null;
 }
@@ -705,6 +706,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   mapRenderer = "globe",
   onMapRendererChange,
   showDesktopControls = false,
+  showLeftControls = showDesktopControls,
   hideUi = false,
   importedFlightPlan = null,
 }) => {
@@ -756,6 +758,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   const { speedUnit, altitudeUnit } = useUnitPreferences();
   const canUseRadarMode = isProUser;
   const isDesktopGlobe = showDesktopControls;
+  const shouldShowLeftControls = showLeftControls;
   const defaultZoom = isDesktopGlobe ? DESKTOP_DEFAULT_ZOOM : MOBILE_DEFAULT_ZOOM;
   const minZoom = isDesktopGlobe ? DESKTOP_MIN_ZOOM : MOBILE_MIN_ZOOM;
   const userLocationResetZoom = isDesktopGlobe
@@ -1083,12 +1086,12 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   }, [showConflicts]);
 
   useEffect(() => {
-    if (!showDesktopControls || hideUi) {
+    if (!shouldShowLeftControls || hideUi) {
       setIsSettingsOpen(false);
       setIsHeadingMode(false);
       clearHeadingMeasurement();
     }
-  }, [clearHeadingMeasurement, hideUi, showDesktopControls]);
+  }, [clearHeadingMeasurement, hideUi, shouldShowLeftControls]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -1811,9 +1814,13 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
         }`}
       />
 
-      {showDesktopControls && !hideUi ? (
+      {shouldShowLeftControls && !hideUi ? (
         <>
-          <div className="absolute top-[92px] left-3 z-[10018] flex flex-col gap-2">
+          <div
+            className={`absolute left-3 z-[10018] flex flex-col gap-2 ${
+              isDesktopGlobe ? "top-[92px]" : "top-[64px]"
+            }`}
+          >
             <GlobeControlButton title="Zoom in" onClick={zoomIn}>
               <Plus size={18} strokeWidth={1.8} />
             </GlobeControlButton>
@@ -1867,7 +1874,13 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
           </div>
 
           {isSettingsOpen ? (
-            <div className="animate-in fade-in zoom-in-95 absolute top-[180px] left-[70px] z-[10020] w-[min(320px,calc(100vw-86px))] duration-200">
+            <div
+              className={`animate-in fade-in zoom-in-95 absolute z-[10020] duration-200 ${
+                isDesktopGlobe
+                  ? "top-[180px] left-[70px] w-[min(320px,calc(100vw-86px))]"
+                  : "top-[152px] left-[58px] w-[min(320px,calc(100vw-74px))]"
+              }`}
+            >
               <div className="max-h-[calc(100dvh-210px)] overflow-y-auto rounded-xl border border-white/10 bg-[#0a1219]/95 p-5 shadow-2xl backdrop-blur-xl">
                 <RadarSettings
                   isPRO={isProUser}

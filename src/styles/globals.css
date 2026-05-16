@@ -133,14 +133,6 @@
   transition: transform 0.35s cubic-bezier(0, 0, 0.25, 1) !important;
 }
 
-/* ── Hide zoom & heading controls on mobile ── */
-@media (max-width: 767px) {
-  .leaflet-control-zoom,
-  [data-control="heading"] {
-    display: none !important;
-  }
-}
-
 /* ── Subtle UI animations ── */
 
 @keyframes fadeInUp {

@@ -1387,6 +1387,7 @@ export default function ATCPage() {
               mapRenderer={desktopMapRenderer}
               onMapRendererChange={setDesktopMapRenderer}
               showDesktopControls={!isMobile}
+              showLeftControls={true}
               hideUi={isUiHidden}
               importedFlightPlan={importedFlightPlan}
             />
