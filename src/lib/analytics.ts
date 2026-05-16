@@ -83,6 +83,10 @@ interface ConflictSnapshotProps extends BaseEventProps {
   low: number;
 }
 
+interface TimeDisplayPreferenceProps extends BaseEventProps {
+  mode: "utc" | "local";
+}
+
 interface WhatsNewEventProps extends BaseEventProps {
   had_unread?: boolean;
   entry_id?: string;
@@ -254,17 +258,15 @@ export const Analytics = {
     track("flight_replay_shared", props);
   },
 
-  flightDeleted: (
-    props: {
-      flightId: string;
-      source: string;
-      targetUserId?: string;
-      callsign?: string;
-      aircraftType: string;
-      depICAO?: string;
-      arrICAO?: string;
-    },
-  ) => {
+  flightDeleted: (props: {
+    flightId: string;
+    source: string;
+    targetUserId?: string;
+    callsign?: string;
+    aircraftType: string;
+    depICAO?: string;
+    arrICAO?: string;
+  }) => {
     track("flight_deleted", props);
   },
 
@@ -313,6 +315,10 @@ export const Analytics = {
 
   conflictSnapshotUpdated: (props: ConflictSnapshotProps) => {
     track("conflict_snapshot_updated", props);
+  },
+
+  timeDisplayPreferenceChanged: (props: TimeDisplayPreferenceProps) => {
+    track("time_display_preference_changed", props);
   },
 
   // ===== AIRPORT EVENTS =====

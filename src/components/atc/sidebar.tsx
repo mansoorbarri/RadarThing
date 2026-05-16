@@ -114,7 +114,14 @@ import { AircraftControlPanel } from "./AircraftControlPanel";
 import Link from "next/link";
 import { Analytics } from "~/lib/analytics";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
-import { formatSpeed, formatAltitude, speedLabel, altitudeLabel } from "~/lib/units";
+import { useTimeDisplayPreference } from "~/hooks/useTimeDisplayPreference";
+import { formatRadarTime } from "~/lib/timeDisplay";
+import {
+  formatSpeed,
+  formatAltitude,
+  speedLabel,
+  altitudeLabel,
+} from "~/lib/units";
 import {
   calculateFlightProgress,
   parseLiveFlightPlanWaypoints,
@@ -168,17 +175,6 @@ const getPlannedDestination = (flightPlan?: string): string | null => {
   } catch {
     return null;
   }
-};
-
-const formatZuluTime = (timestamp: number | null | undefined) => {
-  if (typeof timestamp !== "number" || !Number.isFinite(timestamp)) {
-    return "---";
-  }
-
-  const date = new Date(timestamp);
-  const hours = String(date.getUTCHours()).padStart(2, "0");
-  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
-  return `${hours}:${minutes}Z`;
 };
 
 const formatDuration = (minutes: number | null | undefined) => {
@@ -244,6 +240,7 @@ export const Sidebar = ({
   // Real-time flight history query
   const { isProUser } = useProStatus();
   const { speedUnit, altitudeUnit } = useUnitPreferences();
+  const { timeDisplayMode } = useTimeDisplayPreference();
   const googleId = aircraft.googleId;
   const shouldFetchHistory = tab === "history" && googleId && isProUser;
   const historyQuery = useQuery(
@@ -264,7 +261,9 @@ export const Sidebar = ({
     if (!liveRoute || liveRoute.length < 2) return null;
 
     const parsedTakeoff = Date.parse(aircraft.takeoffTime || "");
-    const startTime = Number.isFinite(parsedTakeoff) ? parsedTakeoff : aircraft.ts;
+    const startTime = Number.isFinite(parsedTakeoff)
+      ? parsedTakeoff
+      : aircraft.ts;
 
     return {
       id: `live:${aircraft.callsign || aircraft.id}`,
@@ -376,7 +375,10 @@ export const Sidebar = ({
             waypointProgress?.isActive || wp.ident === nextWaypointIdent;
           const hasSpeed =
             wp.spd !== null && wp.spd !== undefined && wp.spd !== "";
-          const etaLabel = formatZuluTime(waypointProgress?.etaTs);
+          const etaLabel = formatRadarTime(
+            waypointProgress?.etaTs,
+            timeDisplayMode,
+          );
           const distanceLabel = formatEtaCountdown(waypointProgress?.etaTs);
           const isClickable = Boolean(onWaypointClick);
 
@@ -392,9 +394,7 @@ export const Sidebar = ({
                     : "border-white/10 bg-black/40 hover:border-cyan-500/40 hover:bg-black/60"
               } ${isClickable ? "cursor-pointer" : "cursor-default"}`}
               style={{ animationDelay: `${i * 40}ms` }}
-              onClick={
-                isClickable ? () => onWaypointClick?.(wp, i) : undefined
-              }
+              onClick={isClickable ? () => onWaypointClick?.(wp, i) : undefined}
               disabled={!isClickable}
             >
               <div
@@ -474,7 +474,13 @@ export const Sidebar = ({
         })}
       </div>
     );
-  }, [flightPlanWaypoints, flightProgress, nextWaypointIdent, onWaypointClick]);
+  }, [
+    flightPlanWaypoints,
+    flightProgress,
+    nextWaypointIdent,
+    onWaypointClick,
+    timeDisplayMode,
+  ]);
 
   const renderHistoryContent = () => (
     <div className="space-y-3">
@@ -1086,6 +1092,8 @@ const FlightTimelineCard = ({
 }: {
   progress: FlightProgressSnapshot;
 }) => {
+  const { timeDisplayMode } = useTimeDisplayPreference();
+
   return (
     <div
       className="animate-fade-in-up rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg"
@@ -1115,7 +1123,7 @@ const FlightTimelineCard = ({
             Departure
           </div>
           <div className="font-mono text-sm font-black text-white">
-            {formatZuluTime(progress.departureTimeTs)}
+            {formatRadarTime(progress.departureTimeTs, timeDisplayMode)}
           </div>
         </div>
         <div>
@@ -1123,13 +1131,16 @@ const FlightTimelineCard = ({
             Est. Arrival
           </div>
           <div className="font-mono text-sm font-black text-white">
-            {formatZuluTime(progress.arrivalEtaTs)}
+            {formatRadarTime(progress.arrivalEtaTs, timeDisplayMode)}
           </div>
         </div>
       </div>
 
       <div className="mt-2 font-mono text-[10px] text-white/50">
-        Remaining: <span className="text-cyan-300">{formatDuration(progress.remainingMinutes)}</span>
+        Remaining:{" "}
+        <span className="text-cyan-300">
+          {formatDuration(progress.remainingMinutes)}
+        </span>
       </div>
     </div>
   );

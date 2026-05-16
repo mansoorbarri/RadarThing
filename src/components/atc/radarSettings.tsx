@@ -7,6 +7,8 @@ import { Switch } from "~/components/ui/switch";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { Analytics } from "~/lib/analytics";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
+import { useTimeDisplayPreference } from "~/hooks/useTimeDisplayPreference";
+import type { TimeDisplayMode } from "~/lib/timeDisplay";
 import type { SpeedUnit, AltitudeUnit } from "~/lib/units";
 import type { MapLayerPreset } from "~/lib/mapLayerPresets";
 
@@ -34,9 +36,7 @@ interface RadarSettingsProps {
   activePresetId: string | null;
   selectedPresetId: string | null;
   onApplyPreset: (presetId: string) => void;
-  onSavePreset: (
-    name: string,
-  ) => { ok: true } | { ok: false; error: string };
+  onSavePreset: (name: string) => { ok: true } | { ok: false; error: string };
   onUpdatePreset: (presetId: string) => void;
   onDeletePreset: (presetId: string) => void;
 
@@ -75,6 +75,7 @@ export const RadarSettings = ({
 }: RadarSettingsProps) => {
   const { speedUnit, altitudeUnit, setSpeedUnit, setAltitudeUnit } =
     useUnitPreferences();
+  const { timeDisplayMode, setUseLocalTime } = useTimeDisplayPreference();
   const [presetName, setPresetName] = useState("");
   const [deleteArmed, setDeleteArmed] = useState(false);
   const [openSections, setOpenSections] = useState(COLLAPSED_SECTIONS);
@@ -262,7 +263,7 @@ export const RadarSettings = ({
                 }}
                 maxLength={32}
                 placeholder="Preset name"
-                className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/25 outline-none focus:border-cyan-500/50"
+                className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none placeholder:text-white/25 focus:border-cyan-500/50"
               />
               <button
                 onClick={handleSavePreset}
@@ -381,10 +382,26 @@ export const RadarSettings = ({
         </SettingsSection>
 
         <SettingsSection
-          title="Display Units"
+          title="Display"
           isOpen={openSections.units}
           onToggle={() => toggleSection("units")}
         >
+          <UnitSelector<TimeDisplayMode>
+            label="Time"
+            value={timeDisplayMode}
+            onChange={(value) => {
+              const enabled = value === "local";
+              setUseLocalTime(enabled);
+              Analytics.timeDisplayPreferenceChanged({
+                mode: enabled ? "local" : "utc",
+              });
+            }}
+            options={[
+              { value: "utc", label: "Zulu" },
+              { value: "local", label: "Local" },
+            ]}
+          />
+
           <UnitSelector<SpeedUnit>
             label="Speed"
             value={speedUnit}
@@ -454,12 +471,14 @@ function SettingsSection({
 
 function SettingsToggle({
   label,
+  description,
   checked,
   onChange,
   disabled = false,
   proBadgeSource,
 }: {
   label: string;
+  description?: string;
   checked: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;
@@ -471,10 +490,17 @@ function SettingsToggle({
         disabled ? "opacity-60" : ""
       }`}
     >
-      <span className="flex min-w-0 flex-wrap items-center gap-2">
-        {label}
-        {disabled && <ProBadge source={proBadgeSource} />}
-      </span>
+      <div className="min-w-0">
+        <span className="flex min-w-0 flex-wrap items-center gap-2">
+          {label}
+          {disabled && <ProBadge source={proBadgeSource} />}
+        </span>
+        {description ? (
+          <p className="mt-1 max-w-[220px] text-[11px] leading-5 text-white/45">
+            {description}
+          </p>
+        ) : null}
+      </div>
 
       <Switch
         checked={checked}
