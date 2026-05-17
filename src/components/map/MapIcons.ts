@@ -254,6 +254,67 @@ export function getAircraftIconFilter(
   return "brightness(0) saturate(100%) invert(83%) sepia(77%) saturate(1238%) hue-rotate(353deg) brightness(103%) contrast(103%) drop-shadow(0 1px 2px rgba(15,23,42,0.98)) drop-shadow(0 0 4px rgba(250,204,21,0.35))";
 }
 
+function toRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function getBearingDegrees(
+  fromLat: number,
+  fromLon: number,
+  toLat: number,
+  toLon: number,
+) {
+  const startLat = toRadians(fromLat);
+  const endLat = toRadians(toLat);
+  const deltaLon = toRadians(toLon - fromLon);
+  const y = Math.sin(deltaLon) * Math.cos(endLat);
+  const x =
+    Math.cos(startLat) * Math.sin(endLat) -
+    Math.sin(startLat) * Math.cos(endLat) * Math.cos(deltaLon);
+
+  const bearing = (Math.atan2(y, x) * 180) / Math.PI;
+  return (bearing + 360) % 360;
+}
+
+function getRadarTrailBearings(
+  aircraft: PositionUpdate,
+  maxDots: number,
+): number[] {
+  const history = aircraft.flightPath?.slice(0, -1) ?? [];
+
+  if (history.length === 0) {
+    const fallbackBearing = ((aircraft.heading || 0) + 180) % 360;
+    return Array.from({ length: maxDots }, () => fallbackBearing);
+  }
+
+  const stride = Math.max(1, Math.floor(history.length / maxDots));
+  const bearings: number[] = [];
+
+  for (let dotIndex = 0; dotIndex < maxDots; dotIndex += 1) {
+    const historyIndex = Math.max(0, history.length - 1 - dotIndex * stride);
+    const sample = history[historyIndex];
+    if (!sample) continue;
+
+    const [sampleLat, sampleLon] = sample;
+    if (!Number.isFinite(sampleLat) || !Number.isFinite(sampleLon)) continue;
+
+    bearings.push(
+      getBearingDegrees(aircraft.lat, aircraft.lon, sampleLat, sampleLon),
+    );
+  }
+
+  if (bearings.length === 0) {
+    const fallbackBearing = ((aircraft.heading || 0) + 180) % 360;
+    return Array.from({ length: maxDots }, () => fallbackBearing);
+  }
+
+  while (bearings.length < maxDots) {
+    bearings.push(bearings[bearings.length - 1]!);
+  }
+
+  return bearings;
+}
+
 export const WaypointIcon = L.divIcon({
   html: `
     <div class="
@@ -458,38 +519,54 @@ export const getRadarAircraftDivIcon = (
     (aircraft.id === selectedAircraftId ||
       aircraft.callsign === selectedAircraftId);
 
-  // Smaller dot and heading line, even smaller on mobile
   const dotSize = isCurrentAircraftSelected
     ? isMobile
-      ? 8
-      : 10
+      ? 7
+      : 9
     : isMobile
-      ? 5
-      : 6;
+      ? 4
+      : 5;
   const headingLineLength = isCurrentAircraftSelected
     ? isMobile
-      ? 14
-      : 18
+      ? 18
+      : 24
     : isMobile
-      ? 10
-      : 12;
+      ? 13
+      : 18;
+  const trailDotCount = isMobile ? 3 : 4;
+  const trailSpacing = isMobile ? 8 : 10;
+  const trailReach = trailDotCount * trailSpacing + 8;
   const callsignDisplay = aircraft.callsign || "";
+  const shouldShowLabel =
+    showTags && (!selectedAircraftId || Boolean(isCurrentAircraftSelected));
   const labelHeight = callsignDisplay
     ? isMobile
-      ? 46
-      : 56
+      ? 30
+      : 34
     : isMobile
-      ? 32
-      : 46;
-  const labelWidth = isMobile ? 104 : 132;
-  const labelOffsetFromDot = isMobile ? 10 : 12;
+      ? 20
+      : 24;
+  const labelWidth = isMobile ? 108 : 138;
+  const connectorGap = isMobile ? 8 : 10;
+  const labelOffsetFromDot = isMobile ? 16 : 20;
+  const centerYPadding = isMobile ? 8 : 10;
+  const totalHeight = Math.max(
+    labelHeight + centerYPadding * 2,
+    trailReach * 2 + dotSize + 8,
+  );
+  const centerY = totalHeight / 2;
+  const dotLeft = trailReach;
+  const dotCenterX = dotLeft + dotSize / 2;
+  const labelTop = Math.max(
+    0,
+    Math.min(totalHeight - labelHeight, centerY - labelHeight + 6),
+  );
+  const labelLeft = dotCenterX + labelOffsetFromDot;
+  const connectorWidth = Math.max(0, labelLeft - dotCenterX - connectorGap);
+  const totalWidth = labelLeft + labelWidth + 4;
 
-  const totalWidth =
-    dotSize + headingLineLength + labelOffsetFromDot + labelWidth;
-  const totalHeight = Math.max(dotSize + 8, labelHeight);
-
-  const anchorX = dotSize / 2;
-  const anchorY = totalHeight / 2;
+  const anchorX = dotCenterX;
+  const anchorY = centerY;
 
   const altMSL = aircraft.altMSL ?? aircraft.alt;
   const altAGL = aircraft.alt;
@@ -522,11 +599,17 @@ export const getRadarAircraftDivIcon = (
       : isCurrentAircraftSelected
         ? "rgba(74,222,128,0.9)"
         : "rgba(0,255,255,0.5)";
+  const connectorColor = isEmergency
+    ? "rgba(248,113,113,0.8)"
+    : isCurrentAircraftSelected
+      ? "rgba(187,247,208,0.95)"
+      : "rgba(226,232,240,0.7)";
+  const trailBearings = getRadarTrailBearings(aircraft, trailDotCount);
 
   const dotStyle = `
     position: absolute;
-    top: ${(totalHeight - dotSize) / 2}px;
-    left: 0;
+    top: ${centerY - dotSize / 2}px;
+    left: ${dotLeft}px;
     width: ${dotSize}px;
     height: ${dotSize}px;
     border-radius: 9999px;
@@ -538,8 +621,8 @@ export const getRadarAircraftDivIcon = (
   const identRingStyle = isIdentActive
     ? `
     position: absolute;
-    top: ${(totalHeight - dotSize) / 2 - 6}px;
-    left: -6px;
+    top: ${centerY - dotSize / 2 - 6}px;
+    left: ${dotLeft - 6}px;
     width: ${dotSize + 12}px;
     height: ${dotSize + 12}px;
     border-radius: 9999px;
@@ -552,8 +635,8 @@ export const getRadarAircraftDivIcon = (
   const selectionRingStyle = isCurrentAircraftSelected
     ? `
     position: absolute;
-    top: ${(totalHeight - dotSize) / 2 - 4}px;
-    left: -4px;
+    top: ${centerY - dotSize / 2 - 4}px;
+    left: ${dotLeft - 4}px;
     width: ${dotSize + 8}px;
     height: ${dotSize + 8}px;
     border-radius: 9999px;
@@ -565,8 +648,8 @@ export const getRadarAircraftDivIcon = (
 
   const headingLineStyle = `
     position: absolute;
-    top: ${totalHeight / 2 - (isCurrentAircraftSelected ? 1 : 0.5)}px;
-    left: ${dotSize / 2}px;
+    top: ${centerY - (isCurrentAircraftSelected ? 1 : 0.5)}px;
+    left: ${dotCenterX}px;
     width: ${headingLineLength}px;
     height: ${isCurrentAircraftSelected ? 2 : 1}px;
     background-color: ${dotColor};
@@ -575,44 +658,82 @@ export const getRadarAircraftDivIcon = (
     ${isCurrentAircraftSelected ? `box-shadow: 0 0 4px ${glowColor};` : ""}
   `;
 
+  const connectorLineStyle = `
+    position: absolute;
+    top: ${centerY}px;
+    left: ${dotCenterX + connectorGap}px;
+    width: ${connectorWidth}px;
+    height: 1px;
+    background: linear-gradient(90deg, ${connectorColor}, rgba(148, 163, 184, 0.35));
+    transform: translateY(-0.5px);
+    ${!shouldShowLabel ? "display: none;" : ""}
+  `;
+
   const labelStyle = `
     position: absolute;
-    top: ${(totalHeight - labelHeight) / 2}px;
-    left: ${dotSize + labelOffsetFromDot}px;
+    top: ${labelTop}px;
+    left: ${labelLeft}px;
     width: ${labelWidth}px;
     cursor: pointer;
     z-index: 1000;
-    ${!showTags || (selectedAircraftId && !isCurrentAircraftSelected) ? "display: none;" : ""}
+    ${!shouldShowLabel ? "display: none;" : ""}
   `;
 
-  const fontSize = isMobile ? "10px" : "12px";
+  const trailDotsHtml = trailBearings
+    .map((bearing, dotIndex) => {
+      const radians = toRadians(bearing - 90);
+      const distance = trailSpacing * (dotIndex + 1);
+      const size = Math.max(
+        isMobile ? 1.5 : 2,
+        (isMobile ? 3 : 4) - dotIndex * 0.7,
+      );
+      const opacity = Math.max(0.25, 0.7 - dotIndex * 0.12);
+      const x = dotCenterX + Math.cos(radians) * distance - size / 2;
+      const y = centerY + Math.sin(radians) * distance - size / 2;
+
+      return `<div style="
+        position: absolute;
+        left: ${x}px;
+        top: ${y}px;
+        width: ${size}px;
+        height: ${size}px;
+        border-radius: 9999px;
+        background-color: ${dotColor};
+        opacity: ${opacity};
+        box-shadow: 0 0 3px ${glowColor};
+      "></div>`;
+    })
+    .join("");
+
   const detailContent = `
-    <div class="
-      flex flex-col gap-0.5 px-1.5 py-1
-      rounded-sm
-      bg-black/60
-      border
-      ${isEmergency ? "border-red-500/60" : "border-cyan-400/30"}
-      font-mono
-      ${isEmergency ? "text-red-400" : "text-cyan-300"}
-    " style="min-height: ${labelHeight}px; box-sizing: border-box; font-size: ${fontSize}; line-height: 1.2;">
-      <div class="font-semibold" style="font-size: ${isMobile ? "11px" : "13px"}; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+    <div style="
+      min-height: ${labelHeight}px;
+      box-sizing: border-box;
+      color: ${isEmergency ? "#fca5a5" : isCurrentAircraftSelected ? "#dcfce7" : "#f8fafc"};
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: ${isMobile ? "10px" : "12px"};
+      line-height: 1.05;
+      letter-spacing: 0.03em;
+      text-shadow: 0 0 6px ${glowColor};
+    ">
+      <div style="font-weight: 700; font-size: ${isMobile ? "11px" : "13px"}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
         ${headerContent}${isEmergency ? " !" : ""}
       </div>
-      <div class="opacity-85" style="line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+      <div style="margin-top: 2px; opacity: 0.95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
         ${detailLabel}
       </div>
-      ${callsignDisplay ? `<div class="opacity-60" style="font-size: ${isMobile ? "8px" : "10px"}; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${callsignDisplay}</div>` : ""}
     </div>
   `;
 
   return L.divIcon({
     html: `
-      <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px; pointer-events: auto; cursor: pointer;">
+      <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px; overflow: visible; pointer-events: auto; cursor: pointer;">
+        ${trailDotsHtml}
         ${isIdentActive ? `<div style="${identRingStyle} pointer-events: none;"></div>` : ""}
         ${isCurrentAircraftSelected ? `<div style="${selectionRingStyle} pointer-events: none;"></div>` : ""}
         <div style="${dotStyle} pointer-events: none;"></div>
         <div style="${headingLineStyle} pointer-events: none;"></div>
+        <div style="${connectorLineStyle} pointer-events: none;"></div>
         <div style="${labelStyle} pointer-events: none;">
           ${detailContent}
         </div>
