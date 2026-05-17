@@ -16,6 +16,9 @@ export function normalizeAircraftType(type: string | undefined): string | null {
   if (!type) return null;
   const cleaned = type.trim().toUpperCase();
 
+  const poseidonMatch = /\bP-?8(?:I)?\b/.exec(cleaned);
+  if (poseidonMatch) return "P8";
+
   const airbusMatch = /A\d{3}/.exec(cleaned);
   if (airbusMatch) return airbusMatch[0];
 
@@ -247,6 +250,11 @@ export function getAircraftTypeLookupCandidates(
 
   const candidates = new Set<string>();
   const normalized = normalizeAircraftType(type);
+  const antonovMatch = /\bAN-?(\d{2,3})\b/.exec(cleaned);
+
+  if (antonovMatch) {
+    candidates.add(`AN${antonovMatch[1]}`);
+  }
 
   if (normalized) {
     candidates.add(normalized);

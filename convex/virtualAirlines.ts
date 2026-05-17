@@ -14,6 +14,10 @@ function normalizeAircraftTypeKey(aircraftType: string): string {
   const cleaned = aircraftType.trim().toUpperCase();
   const atrMatch = /\bATR?[\s-]?(\d{2})\b/.exec(cleaned);
   if (atrMatch) return `ATR${atrMatch[1]}`;
+  const poseidonMatch = /\bP-?8(?:I)?\b/.exec(cleaned);
+  if (poseidonMatch) return "P8";
+  const antonovMatch = /\bAN-?(\d{2,3})\b/.exec(cleaned);
+  if (antonovMatch) return `AN${antonovMatch[1]}`;
   return cleaned;
 }
 

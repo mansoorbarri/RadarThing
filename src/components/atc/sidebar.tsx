@@ -10,7 +10,7 @@ import React, {
 
 import { toast } from "sonner";
 import { useUserByGoogleId } from "~/hooks/useUserByGoogleId";
-import { normalizeCallsign } from "~/lib/utils";
+import { getCompactAircraftType, normalizeCallsign } from "~/lib/utils";
 // Inline SVG icons to avoid bundling entire react-icons library (~7.8MB)
 const PlaneInflightIcon = ({
   size = 24,
@@ -236,6 +236,7 @@ export const Sidebar = ({
   const [tab, setTab] = useState<"info" | "history">("info");
   const [imageLoaded, setImageLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const compactAircraftType = getCompactAircraftType(aircraft.type);
 
   // Real-time flight history query
   const { isProUser } = useProStatus();
@@ -710,7 +711,7 @@ export const Sidebar = ({
                   )}
                 </div>
                 <p className="truncate font-mono text-[11px] font-black tracking-[0.15em] text-slate-300 uppercase">
-                  {aircraft.type || "Unknown Class"}
+                  {compactAircraftType || aircraft.type || "Unknown Class"}
                 </p>
                 {virtualAirline &&
                   (virtualAirline.website ? (
