@@ -18,6 +18,8 @@ export function normalizeAircraftType(type: string | undefined): string | null {
 
   const poseidonMatch = /\bP-?8(?:I)?\b/.exec(cleaned);
   if (poseidonMatch) return "P8";
+  const ilyushinMatch = /\bIL-?76(?:[A-Z0-9-]*)/.exec(cleaned);
+  if (ilyushinMatch) return "IL76";
 
   const airbusMatch = /A\d{3}/.exec(cleaned);
   if (airbusMatch) return airbusMatch[0];
@@ -258,6 +260,14 @@ export function getAircraftTypeLookupCandidates(
 
   if (normalized) {
     candidates.add(normalized);
+  }
+
+  // Some environments have KC-135 records stored as K135.
+  if (normalized === "KC135" || /\bKC-?135[A-Z]?\b/.test(cleaned)) {
+    candidates.add("K135");
+  }
+  if (normalized === "K135" || /\bK135\b/.test(cleaned)) {
+    candidates.add("KC135");
   }
 
   // Preserve military suffix variants such as F-35B when available,

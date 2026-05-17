@@ -37,6 +37,8 @@ function normalizeAircraftTypeKey(aircraftType: string): string {
   if (atrMatch) return `ATR${atrMatch[1]}`;
   const poseidonMatch = /\bP-?8(?:I)?\b/.exec(cleaned);
   if (poseidonMatch) return "P8";
+  const ilyushinMatch = /\bIL-?76(?:[A-Z0-9-]*)/.exec(cleaned);
+  if (ilyushinMatch) return "IL76";
   const antonovMatch = /\bAN-?(\d{2,3})\b/.exec(cleaned);
   if (antonovMatch) return `AN${antonovMatch[1]}`;
   return cleaned;
