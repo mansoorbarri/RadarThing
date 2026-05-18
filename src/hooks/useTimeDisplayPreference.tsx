@@ -21,6 +21,8 @@ interface TimeDisplayPreferenceContextValue {
 const TimeDisplayPreferenceContext =
   createContext<TimeDisplayPreferenceContextValue | null>(null);
 
+const noopSetUseLocalTime = (_enabled: boolean) => undefined;
+
 export function TimeDisplayPreferenceProvider({
   children,
 }: {
@@ -57,7 +59,7 @@ export function useTimeDisplayPreference() {
     return {
       useLocalTime: false,
       timeDisplayMode: "utc" as const,
-      setUseLocalTime: () => {},
+      setUseLocalTime: noopSetUseLocalTime,
     };
   }
 

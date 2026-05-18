@@ -227,7 +227,6 @@ export const useMapInitialization = ({
     };
     // Intentionally excluding setState functions and canUseRadarMode
     // canUseRadarMode changes should NOT recreate the map - handle controls separately
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobileMapMode, mapContainerId, mapMinZoom, onMapClick]);
 
   // Separate effect to handle radar/OSM/OpenAIP/Settings controls
