@@ -48,6 +48,15 @@ interface AccountDataExportEventProps extends BaseEventProps {
   flightCount?: number;
 }
 
+interface AccountActionEventProps extends BaseEventProps {
+  source: string;
+}
+
+interface AccountNameUpdatedEventProps extends AccountActionEventProps {
+  hasFirstName: boolean;
+  hasLastName: boolean;
+}
+
 interface FlightReplaySpeedProps extends FlightReplayEventProps {
   speed: number;
 }
@@ -276,6 +285,14 @@ export const Analytics = {
 
   accountDataExportDownloaded: (props: AccountDataExportEventProps) => {
     track("account_data_export_downloaded", props);
+  },
+
+  accountNameEditOpened: (props: AccountActionEventProps) => {
+    track("account_name_edit_opened", props);
+  },
+
+  accountNameUpdated: (props: AccountNameUpdatedEventProps) => {
+    track("account_name_updated", props);
   },
 
   // ===== FEATURE ACCESS EVENTS =====

@@ -33,6 +33,8 @@ import {
   AlertTriangle,
   CreditCard,
   Flame,
+  User,
+  Pencil,
 } from "lucide-react";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -53,6 +55,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
+import { Button } from "~/components/ui/button";
 import { downloadAccountDataExport } from "~/lib/account-data-export";
 
 function formatFlightTime(ms: number): string {
@@ -60,6 +63,18 @@ function formatFlightTime(ms: number): string {
   const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
   if (hours === 0) return `${minutes}m`;
   return `${hours}h ${minutes}m`;
+}
+
+function getDisplayName(
+  user: ReturnType<typeof useUser>["user"],
+): string | null {
+  if (!user) return null;
+  return (
+    user.fullName ??
+    user.username ??
+    user.primaryEmailAddress?.emailAddress?.split("@")[0] ??
+    null
+  );
 }
 
 export default function DashboardPage() {
@@ -72,6 +87,10 @@ export default function DashboardPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
+  const [showNameEditor, setShowNameEditor] = useState(false);
+  const [firstNameDraft, setFirstNameDraft] = useState("");
+  const [lastNameDraft, setLastNameDraft] = useState("");
+  const [isSavingName, setIsSavingName] = useState(false);
   const [flightsExpanded, setFlightsExpanded] = useState(false);
   const [discordLoading, setDiscordLoading] = useState(false);
   const [cardFlight, setCardFlight] = useState<FlightCardData | null>(null);
@@ -106,6 +125,7 @@ export default function DashboardPage() {
 
   const stats = useMemo(() => statsQuery ?? null, [statsQuery]);
   const supportId = useMemo(() => dbUser?._id ?? null, [dbUser]);
+  const displayName = useMemo(() => getDisplayName(user), [user]);
   const loading = !mounted || !isLoaded;
   const statsLoading = clerkId && statsQuery === undefined;
 
@@ -216,6 +236,44 @@ export default function DashboardPage() {
     }
   };
 
+  const openNameEditor = () => {
+    Analytics.accountNameEditOpened({ source: "dashboard_account" });
+    setFirstNameDraft(user?.firstName ?? "");
+    setLastNameDraft(user?.lastName ?? "");
+    setShowNameEditor(true);
+  };
+
+  const saveName = async () => {
+    if (!user) return;
+
+    const nextFirstName = firstNameDraft.trim() || null;
+    const nextLastName = lastNameDraft.trim() || null;
+
+    setIsSavingName(true);
+    try {
+      await user.update({
+        firstName: nextFirstName,
+        lastName: nextLastName,
+      });
+      await user.reload();
+      Analytics.accountNameUpdated({
+        source: "dashboard_account",
+        hasFirstName: Boolean(nextFirstName),
+        hasLastName: Boolean(nextLastName),
+      });
+      toast.success("Name updated");
+      setShowNameEditor(false);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to update your name";
+      toast.error(message);
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
   const confirmDeleteFlight = async () => {
     if (!flightPendingDelete || !dbUser) return;
 
@@ -317,11 +375,19 @@ export default function DashboardPage() {
               </button>
             )}
             <div>
-              <h1 className="text-3xl font-bold text-white">
-                {user?.firstName
-                  ? `${user.firstName}'s Account`
-                  : "Your Account"}
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-bold text-white">
+                  {displayName ? `${displayName}'s Account` : "Your Account"}
+                </h1>
+                <button
+                  onClick={openNameEditor}
+                  className="cursor-pointer rounded-full border border-white/8 bg-white/[0.03] p-2 text-slate-500 transition-all hover:border-emerald-400/30 hover:bg-emerald-500/10 hover:text-emerald-300 focus-visible:ring-2 focus-visible:ring-emerald-400/40 focus-visible:outline-none"
+                  title="Change name"
+                  aria-label="Change name"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              </div>
               {supportId && (
                 <div className="mt-1">
                   <button
@@ -666,7 +732,16 @@ export default function DashboardPage() {
                 <h4 className="mb-5 text-sm font-semibold text-white">
                   Account Info
                 </h4>
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="min-w-0">
+                    <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+                      <User className="h-3.5 w-3.5" />
+                      Name
+                    </div>
+                    <div className="truncate text-sm text-slate-300">
+                      {displayName ?? "Not set"}
+                    </div>
+                  </div>
                   <div className="min-w-0">
                     <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">
                       <Mail className="h-3.5 w-3.5" />
@@ -710,33 +785,27 @@ export default function DashboardPage() {
                 <h4 className="mb-3 px-2 font-mono text-xs font-bold tracking-widest text-slate-500 uppercase">
                   Account Actions
                 </h4>
-                <div className="flex h-14 gap-2">
-                  <button
+                <div className="flex flex-col gap-2 md:h-14 md:flex-row">
+                  <AccountActionButton
+                    icon={
+                      isExportingData ? (
+                        <Loader2 className="h-5 w-5 shrink-0 animate-spin" />
+                      ) : (
+                        <Download className="h-5 w-5 shrink-0" />
+                      )
+                    }
+                    label="Download data"
+                    title="Download data"
                     onClick={downloadAccountData}
                     disabled={isExportingData}
-                    className={`group flex min-w-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-cyan-500/25 bg-cyan-500/10 px-4 text-cyan-300 transition-all duration-300 ease-out hover:flex-[6] hover:bg-cyan-500/20 focus-visible:flex-[6] focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${
-                      isPro ? "flex-1" : "w-full"
-                    }`}
-                    title="Download data"
-                  >
-                    {isExportingData ? (
-                      <Loader2 className="h-5 w-5 shrink-0 animate-spin" />
-                    ) : (
-                      <Download className="h-5 w-5 shrink-0" />
-                    )}
-                    <span
-                      className={`ml-0 max-w-0 overflow-hidden font-mono text-xs font-bold tracking-widest whitespace-nowrap uppercase opacity-0 transition-all duration-300 ease-out group-hover:ml-3 group-hover:max-w-40 group-hover:opacity-100 group-focus-visible:ml-3 group-focus-visible:max-w-40 group-focus-visible:opacity-100 ${
-                        isPro
-                          ? ""
-                          : "ml-3 max-w-40 opacity-100 group-hover:ml-3"
-                      }`}
-                    >
-                      Download data
-                    </span>
-                  </button>
+                    tone="cyan"
+                  />
 
                   {isPro && (
-                    <button
+                    <AccountActionButton
+                      icon={<CreditCard className="h-5 w-5 shrink-0" />}
+                      label="Manage subscription"
+                      title="Manage subscription"
                       onClick={async () => {
                         try {
                           const url = await createPortalSession();
@@ -745,14 +814,8 @@ export default function DashboardPage() {
                           // silently fail
                         }
                       }}
-                      className="group flex min-w-0 flex-1 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] px-4 text-slate-300 transition-all duration-300 ease-out hover:flex-[6] hover:bg-white/[0.09] hover:text-white focus-visible:flex-[6] focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:outline-none"
-                      title="Manage subscription"
-                    >
-                      <CreditCard className="h-5 w-5 shrink-0" />
-                      <span className="ml-0 max-w-0 overflow-hidden font-mono text-xs font-bold tracking-widest whitespace-nowrap uppercase opacity-0 transition-all duration-300 ease-out group-hover:ml-3 group-hover:max-w-56 group-hover:opacity-100 group-focus-visible:ml-3 group-focus-visible:max-w-56 group-focus-visible:opacity-100">
-                        Manage subscription
-                      </span>
-                    </button>
+                      tone="slate"
+                    />
                   )}
                 </div>
               </div>
@@ -813,6 +876,94 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      <AlertDialog
+        open={showNameEditor}
+        onOpenChange={(open) => {
+          if (!isSavingName) {
+            setShowNameEditor(open);
+          }
+        }}
+      >
+        <AlertDialogContent className="overflow-hidden border-emerald-500/20 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.16),_transparent_34%),linear-gradient(180deg,rgba(9,9,11,0.98),rgba(2,6,23,0.96))] p-0">
+          <div className="border-b border-white/10 bg-white/[0.03] px-6 py-5">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/25 bg-emerald-500/10 shadow-[0_0_30px_rgba(16,185,129,0.16)]">
+                <User className="h-5 w-5 text-emerald-300" />
+              </div>
+              <AlertDialogHeader className="justify-center gap-0 text-left">
+                <AlertDialogTitle className="text-xl text-white">
+                  Change your name
+                </AlertDialogTitle>
+              </AlertDialogHeader>
+            </div>
+          </div>
+
+          <form
+            className="space-y-5 px-6 py-5"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void saveName();
+            }}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                  First name
+                </span>
+                <input
+                  value={firstNameDraft}
+                  onChange={(event) => setFirstNameDraft(event.target.value)}
+                  maxLength={64}
+                  autoComplete="given-name"
+                  disabled={isSavingName}
+                  className="w-full rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white shadow-inner shadow-black/10 outline-none transition focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  placeholder="First name"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                  Last name
+                </span>
+                <input
+                  value={lastNameDraft}
+                  onChange={(event) => setLastNameDraft(event.target.value)}
+                  maxLength={64}
+                  autoComplete="family-name"
+                  disabled={isSavingName}
+                  className="w-full rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white shadow-inner shadow-black/10 outline-none transition focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  placeholder="Last name"
+                />
+              </label>
+            </div>
+
+            <AlertDialogFooter className="gap-2 pt-0">
+              <AlertDialogCancel
+                type="button"
+                disabled={isSavingName}
+                className="border-white/12 bg-white/[0.04] text-slate-200 hover:bg-white/[0.08] hover:text-white"
+              >
+                Cancel
+              </AlertDialogCancel>
+              <Button
+                type="submit"
+                disabled={isSavingName}
+                className="rounded-xl bg-emerald-500 text-black hover:bg-emerald-400"
+              >
+                {isSavingName ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save name"
+                )}
+              </Button>
+            </AlertDialogFooter>
+          </form>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={flightPendingDelete !== null}
@@ -977,6 +1128,47 @@ function StatCard({
         </>
       )}
     </div>
+  );
+}
+
+function AccountActionButton({
+  icon,
+  label,
+  onClick,
+  title,
+  disabled = false,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void | Promise<void>;
+  title: string;
+  disabled?: boolean;
+  tone: "cyan" | "emerald" | "slate";
+}) {
+  const toneClasses = {
+    cyan:
+      "border-cyan-500/25 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 focus-visible:ring-cyan-400/60",
+    emerald:
+      "border-emerald-500/25 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 focus-visible:ring-emerald-400/60",
+    slate:
+      "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.09] hover:text-white focus-visible:ring-white/30",
+  };
+
+  return (
+    <button
+      onClick={() => {
+        void onClick();
+      }}
+      disabled={disabled}
+      className={`group flex h-14 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border px-4 transition-all duration-300 ease-out md:min-w-0 md:flex-1 md:hover:flex-[6] md:focus-visible:flex-[6] focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${toneClasses[tone]}`}
+      title={title}
+    >
+      {icon}
+      <span className="ml-3 max-w-40 overflow-hidden font-mono text-xs font-bold tracking-widest whitespace-nowrap uppercase opacity-100 transition-all duration-300 ease-out md:ml-0 md:max-w-0 md:opacity-0 md:group-hover:ml-3 md:group-hover:max-w-56 md:group-hover:opacity-100 md:group-focus-visible:ml-3 md:group-focus-visible:max-w-56 md:group-focus-visible:opacity-100">
+        {label}
+      </span>
+    </button>
   );
 }
 
