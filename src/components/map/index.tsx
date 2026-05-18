@@ -53,6 +53,10 @@ import {
   type MapBaseLayer,
   type MapLayerPresetState,
 } from "~/lib/mapLayerPresets";
+import {
+  getStoredRadarTrailPreferences,
+  setStoredRadarTrailPreferences,
+} from "~/lib/radarTrailPreferences";
 
 export interface Airport {
   name: string;
@@ -171,6 +175,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   );
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [showTags, setShowTags] = useState(true);
+  const [radarTrailPreferences, setRadarTrailPreferences] = useState(() =>
+    getStoredRadarTrailPreferences(),
+  );
   const [conflictAlerts, setConflictAlerts] = useState<ConflictAlertSummary[]>(
     [],
   );
@@ -743,6 +750,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     onAircraftSelect,
     onAirportSelect,
     showTags,
+    radarTrailPreferences,
     showConflicts: canUseConflictAlerts && showConflicts,
     onConflictsChange: setConflictAlerts,
     onInitialTrafficPaint,
@@ -1055,6 +1063,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
               isPRO={isProUser}
               mapRenderer={mapRenderer}
               onMapRendererChange={onMapRendererChange}
+              radarTrailPreferences={radarTrailPreferences}
+              onRadarTrailPreferencesChange={(nextPreferences) => {
+                setRadarTrailPreferences(
+                  setStoredRadarTrailPreferences(nextPreferences),
+                );
+              }}
               presets={layerPresets}
               activePresetId={activePreset?.id ?? null}
               selectedPresetId={selectedPreset?.id ?? null}

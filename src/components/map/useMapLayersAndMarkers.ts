@@ -11,6 +11,7 @@ import {
   RadarAirportIcon,
 } from "./MapIcons";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
+import { type RadarTrailPreferences } from "~/lib/radarTrailPreferences";
 
 // Track active animations to cancel them when new position arrives
 const activeAnimations = new Map<L.Marker, number>();
@@ -139,6 +140,7 @@ interface UseMapLayersAndMarkersProps {
   ) => void;
   onAirportSelect?: (airport: Airport) => void;
   showTags: boolean;
+  radarTrailPreferences: RadarTrailPreferences;
   showConflicts: boolean;
   onConflictsChange?: (conflicts: ConflictAlertSummary[]) => void;
   onInitialTrafficPaint?: () => void;
@@ -449,6 +451,7 @@ export const useMapLayersAndMarkers = ({
   onAircraftSelect,
   onAirportSelect,
   showTags,
+  radarTrailPreferences,
   showConflicts,
   onConflictsChange,
   onInitialTrafficPaint,
@@ -612,6 +615,7 @@ export const useMapLayersAndMarkers = ({
             showTags,
             isMobile,
             unitPrefs,
+            radarTrailPreferences,
           )
         : getAircraftDivIcon(
             aircraft,
@@ -696,6 +700,7 @@ export const useMapLayersAndMarkers = ({
     aircraftMarkersLayer,
     onAircraftSelect,
     showTags,
+    radarTrailPreferences,
     mapReady,
     isMobile,
     onInitialTrafficPaint,

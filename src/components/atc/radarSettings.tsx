@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "~/components/ui/switch";
+import { Slider } from "~/components/ui/slider";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { Analytics } from "~/lib/analytics";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
@@ -11,10 +12,15 @@ import { useTimeDisplayPreference } from "~/hooks/useTimeDisplayPreference";
 import type { TimeDisplayMode } from "~/lib/timeDisplay";
 import type { SpeedUnit, AltitudeUnit } from "~/lib/units";
 import type { MapLayerPreset } from "~/lib/mapLayerPresets";
+import {
+  type RadarTrailMode,
+  type RadarTrailPreferences,
+} from "~/lib/radarTrailPreferences";
 
 const SETTINGS_SECTION_IDS = [
   "presets",
   "weather",
+  "trail",
   "traffic",
   "units",
 ] as const;
@@ -24,6 +30,7 @@ type SettingsSectionId = (typeof SETTINGS_SECTION_IDS)[number];
 const COLLAPSED_SECTIONS: Record<SettingsSectionId, boolean> = {
   presets: false,
   weather: false,
+  trail: false,
   traffic: false,
   units: false,
 };
@@ -32,6 +39,8 @@ interface RadarSettingsProps {
   isPRO: boolean;
   mapRenderer?: "flat" | "globe";
   onMapRendererChange?: (renderer: "flat" | "globe") => void;
+  radarTrailPreferences?: RadarTrailPreferences;
+  onRadarTrailPreferencesChange?: (preferences: RadarTrailPreferences) => void;
   presets: MapLayerPreset[];
   activePresetId: string | null;
   selectedPresetId: string | null;
@@ -57,6 +66,8 @@ export const RadarSettings = ({
   isPRO,
   mapRenderer,
   onMapRendererChange,
+  radarTrailPreferences,
+  onRadarTrailPreferencesChange,
   presets,
   activePresetId,
   selectedPresetId,
@@ -118,9 +129,30 @@ export const RadarSettings = ({
     setOpenSections({
       presets: open,
       weather: open,
+      trail: open,
       traffic: open,
       units: open,
     });
+  };
+
+  const updateRadarTrailPreferences = (
+    updates: Partial<RadarTrailPreferences>,
+    trackChange = true,
+  ) => {
+    if (!radarTrailPreferences || !onRadarTrailPreferencesChange) return;
+
+    const nextPreferences = {
+      ...radarTrailPreferences,
+      ...updates,
+    };
+    onRadarTrailPreferencesChange(nextPreferences);
+    if (trackChange) {
+      Analytics.track("radar_trail_preference_changed", {
+        mode: nextPreferences.mode,
+        minutes: nextPreferences.minutes,
+        distance_nm: nextPreferences.distanceNm,
+      });
+    }
   };
 
   return (
@@ -360,6 +392,78 @@ export const RadarSettings = ({
           />
         </SettingsSection>
 
+        {isPRO && radarTrailPreferences && onRadarTrailPreferencesChange ? (
+          <SettingsSection
+            title="Radar Trail"
+            isOpen={openSections.trail}
+            onToggle={() => toggleSection("trail")}
+          >
+            <p className="text-[11px] leading-5 text-white/45">
+              Choose whether each radar trail dot represents elapsed minutes or
+              distance flown. Dots step out at that interval: 1x, 2x, 3x, and
+              4x.
+            </p>
+
+            <TrailModeSelector
+              value={radarTrailPreferences.mode}
+              onChange={(mode) => updateRadarTrailPreferences({ mode })}
+            />
+
+            <div className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-3">
+              <div>
+                <div className="text-[11px] font-semibold tracking-[0.14em] text-white uppercase">
+                  Interval
+                </div>
+                <p className="mt-1 text-[11px] text-white/45">
+                  {radarTrailPreferences.mode === "minutes"
+                    ? "Each dot marks where the aircraft was this many minutes ago."
+                    : "Each dot marks where the aircraft was this many nautical miles ago."}
+                </p>
+              </div>
+
+              <Slider
+                min={1}
+                max={10}
+                step={1}
+                value={[
+                  radarTrailPreferences.mode === "minutes"
+                    ? radarTrailPreferences.minutes
+                    : radarTrailPreferences.distanceNm,
+                ]}
+                onValueChange={([value]) => {
+                  if (!value) return;
+                  updateRadarTrailPreferences(
+                    radarTrailPreferences.mode === "minutes"
+                      ? { minutes: value }
+                      : { distanceNm: value },
+                    false,
+                  );
+                }}
+                onValueCommit={([value]) => {
+                  if (!value) return;
+                  Analytics.track("radar_trail_preference_changed", {
+                    mode: radarTrailPreferences.mode,
+                    minutes:
+                      radarTrailPreferences.mode === "minutes"
+                        ? value
+                        : radarTrailPreferences.minutes,
+                    distance_nm:
+                      radarTrailPreferences.mode === "nm"
+                        ? value
+                        : radarTrailPreferences.distanceNm,
+                  });
+                }}
+                aria-label="Radar trail interval"
+              />
+
+              <div className="flex items-center justify-between text-[10px] tracking-[0.18em] text-white/35 uppercase">
+                <span>1</span>
+                <span>10</span>
+              </div>
+            </div>
+          </SettingsSection>
+        ) : null}
+
         <SettingsSection
           title="Traffic"
           isOpen={openSections.traffic}
@@ -541,6 +645,41 @@ function UnitSelector<T extends string>({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function TrailModeSelector({
+  value,
+  onChange,
+}: {
+  value: RadarTrailMode;
+  onChange: (value: RadarTrailMode) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1 rounded-lg border border-white/10 bg-white/5 p-0.5">
+        <button
+          type="button"
+          onClick={() => onChange("minutes")}
+          className={`cursor-pointer rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors ${
+            value === "minutes"
+              ? "bg-cyan-500 text-black"
+              : "text-white/60 hover:bg-white/10 hover:text-white"
+          }`}
+        >
+          Minutes
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange("nm")}
+          className={`cursor-pointer rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors ${
+            value === "nm"
+              ? "bg-cyan-500 text-black"
+              : "text-white/60 hover:bg-white/10 hover:text-white"
+          }`}
+        >
+          Nautical Miles
+        </button>
     </div>
   );
 }

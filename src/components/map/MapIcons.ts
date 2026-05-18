@@ -7,7 +7,11 @@ import {
   type UnitPreferences,
   DEFAULT_UNIT_PREFERENCES,
 } from "~/lib/units";
-import { unwrapPath } from "~/lib/map-utils";
+import { getRadarTrailBearings } from "~/lib/radarTrail";
+import {
+  type RadarTrailPreferences,
+  DEFAULT_RADAR_TRAIL_PREFERENCES,
+} from "~/lib/radarTrailPreferences";
 import { getCompactAircraftType, normalizeAircraftType } from "~/lib/utils";
 
 const EMERGENCY_SQUAWKS = new Set(["7700", "7600", "7500"]);
@@ -38,7 +42,6 @@ const MILITARY_AF_CODES = new Set([
   "usmc",
   "rafac",
 ]);
-const RADAR_TRAIL_SEGMENTS_PER_DOT = 6;
 
 function isHelicopterType(type: string) {
   return (
@@ -260,90 +263,6 @@ function toRadians(value: number) {
   return (value * Math.PI) / 180;
 }
 
-function getBearingDegrees(
-  fromLat: number,
-  fromLon: number,
-  toLat: number,
-  toLon: number,
-) {
-  const startLat = toRadians(fromLat);
-  const endLat = toRadians(toLat);
-  const deltaLon = toRadians(toLon - fromLon);
-  const y = Math.sin(deltaLon) * Math.cos(endLat);
-  const x =
-    Math.cos(startLat) * Math.sin(endLat) -
-    Math.sin(startLat) * Math.cos(endLat) * Math.cos(deltaLon);
-
-  const bearing = (Math.atan2(y, x) * 180) / Math.PI;
-  return (bearing + 360) % 360;
-}
-
-function getRadarTrailFallbackBearing(aircraft: PositionUpdate) {
-  return ((aircraft.heading || 0) + 180) % 360;
-}
-
-function getRadarTrailBearings(
-  aircraft: PositionUpdate,
-  maxDots: number,
-): number[] {
-  const fallbackBearing = getRadarTrailFallbackBearing(aircraft);
-  const fullPath = aircraft.flightPath ?? [];
-  const currentPoint: [number, number] = [aircraft.lat, aircraft.lon];
-
-  if (!Number.isFinite(currentPoint[0]) || !Number.isFinite(currentPoint[1])) {
-    return Array.from({ length: maxDots }, () => fallbackBearing);
-  }
-
-  const recentPointCount = maxDots * RADAR_TRAIL_SEGMENTS_PER_DOT + 1;
-  const recentPath = fullPath.slice(-recentPointCount);
-  const lastPathPoint = recentPath[recentPath.length - 1];
-  const trailPath = unwrapPath(
-    lastPathPoint &&
-      lastPathPoint[0] === currentPoint[0] &&
-      lastPathPoint[1] === currentPoint[1]
-      ? recentPath
-      : [...recentPath, currentPoint],
-  );
-
-  if (trailPath.length < 2) {
-    return Array.from({ length: maxDots }, () => fallbackBearing);
-  }
-
-  const segmentCount = trailPath.length - 1;
-  const stride = Math.max(1, Math.floor(segmentCount / maxDots));
-  const bearings: number[] = [];
-
-  for (let dotIndex = 0; dotIndex < maxDots; dotIndex += 1) {
-    const segmentEndIndex = Math.max(1, trailPath.length - 1 - dotIndex * stride);
-    const fromPoint = trailPath[segmentEndIndex];
-    const toPoint = trailPath[segmentEndIndex - 1];
-    if (!fromPoint || !toPoint) continue;
-
-    const [fromLat, fromLon] = fromPoint;
-    const [toLat, toLon] = toPoint;
-    if (
-      !Number.isFinite(fromLat) ||
-      !Number.isFinite(fromLon) ||
-      !Number.isFinite(toLat) ||
-      !Number.isFinite(toLon)
-    ) {
-      continue;
-    }
-
-    bearings.push(getBearingDegrees(fromLat, fromLon, toLat, toLon));
-  }
-
-  if (bearings.length === 0) {
-    return Array.from({ length: maxDots }, () => fallbackBearing);
-  }
-
-  while (bearings.length < maxDots) {
-    bearings.push(bearings[bearings.length - 1]!);
-  }
-
-  return bearings;
-}
-
 export const WaypointIcon = L.divIcon({
   html: `
     <div class="
@@ -536,6 +455,7 @@ export const getRadarAircraftDivIcon = (
   showTags = true,
   isMobile = false,
   unitPrefs: UnitPreferences = DEFAULT_UNIT_PREFERENCES,
+  trailPreferences: RadarTrailPreferences = DEFAULT_RADAR_TRAIL_PREFERENCES,
 ) => {
   const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
   const isIdentActive =
@@ -633,7 +553,11 @@ export const getRadarAircraftDivIcon = (
     : isCurrentAircraftSelected
       ? "rgba(187,247,208,0.95)"
       : "rgba(226,232,240,0.7)";
-  const trailBearings = getRadarTrailBearings(aircraft, trailDotCount);
+  const trailBearings = getRadarTrailBearings(
+    aircraft,
+    trailDotCount,
+    trailPreferences,
+  );
 
   const dotStyle = `
     position: absolute;
