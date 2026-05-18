@@ -7,6 +7,7 @@ import {
   type UnitPreferences,
   DEFAULT_UNIT_PREFERENCES,
 } from "~/lib/units";
+import { unwrapPath } from "~/lib/map-utils";
 import { getCompactAircraftType, normalizeAircraftType } from "~/lib/utils";
 
 const EMERGENCY_SQUAWKS = new Set(["7700", "7600", "7500"]);
@@ -37,6 +38,7 @@ const MILITARY_AF_CODES = new Set([
   "usmc",
   "rafac",
 ]);
+const RADAR_TRAIL_SEGMENTS_PER_DOT = 6;
 
 function isHelicopterType(type: string) {
   return (
@@ -276,35 +278,62 @@ function getBearingDegrees(
   return (bearing + 360) % 360;
 }
 
+function getRadarTrailFallbackBearing(aircraft: PositionUpdate) {
+  return ((aircraft.heading || 0) + 180) % 360;
+}
+
 function getRadarTrailBearings(
   aircraft: PositionUpdate,
   maxDots: number,
 ): number[] {
-  const history = aircraft.flightPath?.slice(0, -1) ?? [];
+  const fallbackBearing = getRadarTrailFallbackBearing(aircraft);
+  const fullPath = aircraft.flightPath ?? [];
+  const currentPoint: [number, number] = [aircraft.lat, aircraft.lon];
 
-  if (history.length === 0) {
-    const fallbackBearing = ((aircraft.heading || 0) + 180) % 360;
+  if (!Number.isFinite(currentPoint[0]) || !Number.isFinite(currentPoint[1])) {
     return Array.from({ length: maxDots }, () => fallbackBearing);
   }
 
-  const stride = Math.max(1, Math.floor(history.length / maxDots));
+  const recentPointCount = maxDots * RADAR_TRAIL_SEGMENTS_PER_DOT + 1;
+  const recentPath = fullPath.slice(-recentPointCount);
+  const lastPathPoint = recentPath[recentPath.length - 1];
+  const trailPath = unwrapPath(
+    lastPathPoint &&
+      lastPathPoint[0] === currentPoint[0] &&
+      lastPathPoint[1] === currentPoint[1]
+      ? recentPath
+      : [...recentPath, currentPoint],
+  );
+
+  if (trailPath.length < 2) {
+    return Array.from({ length: maxDots }, () => fallbackBearing);
+  }
+
+  const segmentCount = trailPath.length - 1;
+  const stride = Math.max(1, Math.floor(segmentCount / maxDots));
   const bearings: number[] = [];
 
   for (let dotIndex = 0; dotIndex < maxDots; dotIndex += 1) {
-    const historyIndex = Math.max(0, history.length - 1 - dotIndex * stride);
-    const sample = history[historyIndex];
-    if (!sample) continue;
+    const segmentEndIndex = Math.max(1, trailPath.length - 1 - dotIndex * stride);
+    const fromPoint = trailPath[segmentEndIndex];
+    const toPoint = trailPath[segmentEndIndex - 1];
+    if (!fromPoint || !toPoint) continue;
 
-    const [sampleLat, sampleLon] = sample;
-    if (!Number.isFinite(sampleLat) || !Number.isFinite(sampleLon)) continue;
+    const [fromLat, fromLon] = fromPoint;
+    const [toLat, toLon] = toPoint;
+    if (
+      !Number.isFinite(fromLat) ||
+      !Number.isFinite(fromLon) ||
+      !Number.isFinite(toLat) ||
+      !Number.isFinite(toLon)
+    ) {
+      continue;
+    }
 
-    bearings.push(
-      getBearingDegrees(aircraft.lat, aircraft.lon, sampleLat, sampleLon),
-    );
+    bearings.push(getBearingDegrees(fromLat, fromLon, toLat, toLon));
   }
 
   if (bearings.length === 0) {
-    const fallbackBearing = ((aircraft.heading || 0) + 180) % 360;
     return Array.from({ length: maxDots }, () => fallbackBearing);
   }
 
