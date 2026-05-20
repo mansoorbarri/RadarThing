@@ -16,19 +16,19 @@ When creating a new app:
 - Use Clerk for auth, Convex for DB, Stripe for payment, Zod for validation, UploadThing for files
 - Always use T3-stack
 - Use TypeScript where possible; only use JS if there's no TS solution or it's objectively better—then exclude in `tsconfig` and lint
-- Always run Node commands using Bun
+- Use pnpm for package management and script execution
 - **Never run build or dev server unless explicitly asked**
 
 ## Lint and Typecheck
 
 ```bash
-bun lint
-bun typecheck
+pnpm lint
+pnpm typecheck
 ```
 
 ## Convex
 
-- Always run `bunx convex dev` whenever you make any changes in the `convex/` folder
+- Always run `pnpm run convex:dev` whenever you make any changes in the `convex/` folder
 - Notify me to run deploy command when there are changes in the Convex folder
 
 ## Environment Variables

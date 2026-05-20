@@ -9,29 +9,29 @@ A modern, real-time flight radar for the GeoFS flight simulator. Built with Next
 **Never run build or dev server unless explicitly asked.**
 
 ```bash
-bun lint              # ESLint
-bun typecheck         # TypeScript check
-bun run check         # Run lint + typecheck together
-bun run format:write  # Prettier auto-format
+pnpm lint              # ESLint
+pnpm typecheck         # TypeScript check
+pnpm run check         # Run lint + typecheck together
+pnpm run format:write  # Prettier auto-format
 ```
 
 Supporting services for local development:
 ```bash
-bun run cf            # Cloudflare tunnel (radarthing-dev)
-bun run stripe        # Stripe webhook listener → localhost:3000/api/webhooks/stripe
+pnpm run cf            # Cloudflare tunnel (radarthing-dev)
+pnpm run stripe        # Stripe webhook listener → localhost:3000/api/webhooks/stripe
 ```
 
 Convex:
 ```bash
-bunx convex dev       # Run after any changes in convex/ folder
+pnpm run convex:dev   # Run after any changes in convex/ folder
 ```
 Notify me to run deploy command when there are changes in the Convex folder.
 
 Userscript:
 ```bash
-bun run build:userscript   # Rebuild userscript installer, loader, manifest, and bundles after userscript changes
+pnpm run build:userscript   # Rebuild userscript installer, loader, manifest, and bundles after userscript changes
 ```
-Do not hand-edit generated userscript artifacts in `public/userscript/` or `radarthing.user.js`. Edit the source files, then run `bun run build:userscript`.
+Do not hand-edit generated userscript artifacts in `public/userscript/` or `radarthing.user.js`. Edit the source files, then run `pnpm run build:userscript`.
 Generated userscript artifacts are gitignored and should not be committed.
 
 ## Other Parts of the project 
@@ -78,7 +78,7 @@ Commit rules for userscript changes:
 - Always commit the edited source files listed above.
 - Do not commit generated userscript artifacts. They are gitignored.
 - Never manually patch generated userscript artifacts. Rebuild them from source instead.
-- Run `bun run build:userscript` locally when testing userscript changes.
+- Run `pnpm run build:userscript` locally when testing userscript changes.
 - The main app `build` script regenerates userscript artifacts automatically before `next build`, so deploys still include them.
 
 End-user install flow:

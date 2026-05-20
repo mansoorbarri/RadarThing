@@ -90,7 +90,7 @@ Editable userscript source files live in:
 Generated userscript files are built into `public/userscript/` and `radarthing.user.js`. Do not hand-edit or commit those generated artifacts. Rebuild them from source instead:
 
 ```bash
-bun run build:userscript
+pnpm run build:userscript
 ```
 
 The public install flow is:
@@ -117,34 +117,40 @@ The public install flow is:
 Install dependencies:
 
 ```bash
-bun install
+pnpm install
+```
+
+If pnpm is not installed yet, enable it through Corepack first:
+
+```bash
+corepack enable
 ```
 
 Run checks:
 
 ```bash
-bun lint
-bun typecheck
-bun run check
+pnpm lint
+pnpm typecheck
+pnpm run check
 ```
 
 Format code:
 
 ```bash
-bun run format:write
+pnpm run format:write
 ```
 
 Supporting services:
 
 ```bash
-bun run cf       # Cloudflare tunnel
-bun run stripe   # Stripe webhook listener
+pnpm run cf       # Cloudflare tunnel
+pnpm run stripe   # Stripe webhook listener
 ```
 
 Convex development:
 
 ```bash
-bunx convex dev
+pnpm run convex:dev
 ```
 
 After changing files in `convex/`, run Convex locally and deploy the Convex changes with the project deploy process.
@@ -188,13 +194,13 @@ The workflow runs daily at `08:00 UTC` and prunes encrypted UploadThing backups 
 Run the backup locally:
 
 ```bash
-bun run backup:convex -- --label prod --retention-days 30
+pnpm run backup:convex -- --label prod --retention-days 30
 ```
 
 Sync production data into the default Convex dev deployment for local testing:
 
 ```bash
-bun run sync:convex:prod-to-dev
+pnpm run sync:convex:prod-to-dev
 ```
 
 The sync script exports a backup of the current dev deployment first, then
@@ -204,13 +210,13 @@ replaces the default dev deployment with production data via
 Include Convex file storage:
 
 ```bash
-bun run backup:convex -- --label prod --include-file-storage --retention-days 30
+pnpm run backup:convex -- --label prod --include-file-storage --retention-days 30
 ```
 
 Decrypt a downloaded backup:
 
 ```bash
-BACKUP_ENCRYPTION_KEY="<same key used for backups>" bun run backup:convex -- \
+BACKUP_ENCRYPTION_KEY="<same key used for backups>" pnpm run backup:convex -- \
   --decrypt ./radarthing-prod-db-only-2026-05-07_08-00-00Z.zip.enc \
   --output ./radarthing-prod-db-only-2026-05-07_08-00-00Z.zip
 ```
@@ -218,7 +224,7 @@ BACKUP_ENCRYPTION_KEY="<same key used for backups>" bun run backup:convex -- \
 Restore with Convex after decrypting, preferably into a non-production deployment first:
 
 ```bash
-bunx convex import ./radarthing-prod-db-only-2026-05-07_08-00-00Z.zip
+pnpm exec convex import ./radarthing-prod-db-only-2026-05-07_08-00-00Z.zip
 ```
 
 ## Environment Variables

@@ -19,7 +19,7 @@ interface Options {
 function printUsage(exitCode = 1): never {
   const writer = exitCode === 0 ? console.log : console.error;
 
-  writer(`Usage: bun scripts/sync-convex-prod-to-dev.ts [options]
+  writer(`Usage: pnpm run sync:convex:prod-to-dev -- [options]
 
 Exports the production Convex deployment and imports it into the default
 development deployment with --replace-all.
@@ -41,12 +41,13 @@ changes which deployment the Convex CLI targets.`);
 }
 
 function parseArgs(argv: string[]): Options {
+  const normalizedArgv = argv[0] === "--" ? argv.slice(1) : argv;
   const options: Options = {
     yes: false,
     keepProdExport: false,
   };
 
-  for (const arg of argv) {
+  for (const arg of normalizedArgv) {
     switch (arg) {
       case "-y":
       case "--yes":
@@ -94,6 +95,17 @@ async function runCommand(command: string, args: string[]) {
   });
 }
 
+async function runPnpm(args: string[]) {
+  const pnpmExecPath = process.env.npm_execpath;
+
+  if (pnpmExecPath) {
+    await runCommand(process.execPath, [pnpmExecPath, ...args]);
+    return;
+  }
+
+  await runCommand("pnpm", args);
+}
+
 function createBackupPaths() {
   const timestamp = new Date().toISOString().replaceAll(":", "-");
 
@@ -138,13 +150,14 @@ async function confirmSync() {
 
 async function exportDevBackup(devBackupPath: string) {
   console.log(`Exporting current dev deployment to ${devBackupPath}...`);
-  await runCommand("bunx", ["convex", "export", "--path", devBackupPath]);
+  await runPnpm(["exec", "convex", "export", "--path", devBackupPath]);
   await ensureZipExists(devBackupPath);
 }
 
 async function exportProdSnapshot(prodExportPath: string) {
   console.log(`Exporting production deployment to ${prodExportPath}...`);
-  await runCommand("bunx", [
+  await runPnpm([
+    "exec",
     "convex",
     "export",
     "--path",
@@ -167,7 +180,7 @@ async function importProdIntoDev(prodExportPath: string, skipPrompt: boolean) {
   }
 
   console.log("Importing production snapshot into the default dev deployment...");
-  await runCommand("bunx", args);
+  await runPnpm(["exec", ...args]);
 }
 
 async function main() {
@@ -196,7 +209,7 @@ async function main() {
     console.log(`Production export kept at: ${prodExportPath}`);
   }
   console.log(
-    `To restore dev later: bunx convex import ${JSON.stringify(devBackupPath)} --replace-all`,
+    `To restore dev later: pnpm exec convex import ${JSON.stringify(devBackupPath)} --replace-all`,
   );
 }
 

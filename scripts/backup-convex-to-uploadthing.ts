@@ -31,7 +31,7 @@ interface Options {
 function printUsage(exitCode = 1): never {
   const output = exitCode === 0 ? console.log : console.error;
 
-  output(`Usage: bun scripts/backup-convex-to-uploadthing.ts [options]
+  output(`Usage: pnpm run backup:convex -- [options]
 
 Options:
   --prod                         Export from the production deployment.
@@ -63,6 +63,7 @@ function parsePositiveInteger(value: string, flag: string) {
 }
 
 function parseArgs(argv: string[]): Options {
+  const normalizedArgv = argv[0] === "--" ? argv.slice(1) : argv;
   const options: Options = {
     convexTargetArgs: process.env.CONVEX_DEPLOY_KEY ? [] : ["--prod"],
     decryptInputPath: null,
@@ -73,8 +74,8 @@ function parseArgs(argv: string[]): Options {
     retentionDays: null,
   };
 
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
+  for (let i = 0; i < normalizedArgv.length; i++) {
+    const arg = normalizedArgv[i];
 
     switch (arg) {
       case "--prod":
@@ -84,13 +85,13 @@ function parseArgs(argv: string[]): Options {
         options.convexTargetArgs = [];
         break;
       case "--deployment-name": {
-        const deploymentName = argv[++i];
+        const deploymentName = normalizedArgv[++i];
         if (!deploymentName) printUsage();
         options.convexTargetArgs = ["--deployment-name", deploymentName];
         break;
       }
       case "--preview-name": {
-        const previewName = argv[++i];
+        const previewName = normalizedArgv[++i];
         if (!previewName) printUsage();
         options.convexTargetArgs = ["--preview-name", previewName];
         break;
@@ -99,13 +100,13 @@ function parseArgs(argv: string[]): Options {
         options.includeFileStorage = true;
         break;
       case "--label": {
-        const label = argv[++i];
+        const label = normalizedArgv[++i];
         if (!label) printUsage();
         options.label = sanitizeLabelSegment(label);
         break;
       }
       case "--retention-days": {
-        const days = argv[++i];
+        const days = normalizedArgv[++i];
         if (!days) printUsage();
         options.retentionDays = parsePositiveInteger(days, arg);
         break;
@@ -114,13 +115,13 @@ function parseArgs(argv: string[]): Options {
         options.keepLocal = true;
         break;
       case "--decrypt": {
-        const inputPath = argv[++i];
+        const inputPath = normalizedArgv[++i];
         if (!inputPath) printUsage();
         options.decryptInputPath = inputPath;
         break;
       }
       case "--output": {
-        const outputPath = argv[++i];
+        const outputPath = normalizedArgv[++i];
         if (!outputPath) printUsage();
         options.decryptOutputPath = outputPath;
         break;
@@ -194,6 +195,17 @@ async function runCommand(command: string, args: string[]) {
   });
 }
 
+async function runPnpm(args: string[]) {
+  const pnpmExecPath = process.env.npm_execpath;
+
+  if (pnpmExecPath) {
+    await runCommand(process.execPath, [pnpmExecPath, ...args]);
+    return;
+  }
+
+  await runCommand("pnpm", args);
+}
+
 async function exportConvexBackup(options: Options) {
   await mkdir(backupDir, { recursive: true });
 
@@ -214,7 +226,7 @@ async function exportConvexBackup(options: Options) {
   }
 
   console.log("Exporting Convex backup...");
-  await runCommand("bunx", args);
+  await runPnpm(["exec", ...args]);
 
   const backupStat = await stat(filePath);
   if (!backupStat.isFile() || backupStat.size === 0) {

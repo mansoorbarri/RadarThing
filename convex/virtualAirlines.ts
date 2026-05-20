@@ -193,7 +193,7 @@ export const getFlightContext = query({
         args.callsign,
       );
 
-      if (!matchingVirtualAirline || matchingVirtualAirline.adminClerkId !== user.clerkId) {
+      if (matchingVirtualAirline?.adminClerkId !== user.clerkId) {
         return {
           virtualAirline: null,
           image: null,

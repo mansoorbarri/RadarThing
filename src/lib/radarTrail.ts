@@ -125,9 +125,8 @@ function buildDistanceTrailPath(aircraft: PositionUpdate) {
   const path = aircraft.flightPath ?? [];
   const lastPathPoint = path[path.length - 1];
   return unwrapPath(
-    lastPathPoint &&
-      lastPathPoint[0] === currentPoint[0] &&
-      lastPathPoint[1] === currentPoint[1]
+    lastPathPoint?.[0] === currentPoint[0] &&
+      lastPathPoint?.[1] === currentPoint[1]
       ? path
       : [...path, currentPoint],
   );

@@ -1615,7 +1615,7 @@ export const submitManualClaim = mutation({
 
     if (args.flightId) {
       const flight = await ctx.db.get(args.flightId);
-      if (!flight || flight.userId !== user._id) {
+      if (flight?.userId !== user._id) {
         throw new Error("You can only attach your own flight");
       }
     }
