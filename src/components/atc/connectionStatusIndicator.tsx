@@ -28,7 +28,13 @@ export const ConnectionStatusIndicator: React.FC<
   };
 
   const ageLabel =
-    lastMessageAgeSeconds === null ? null : `${lastMessageAgeSeconds}s`;
+    typeof lastMessageAgeSeconds === "number"
+      ? `${lastMessageAgeSeconds}s`
+      : null;
+  const shouldShowAgeLabel =
+    status === "connected" &&
+    typeof lastMessageAgeSeconds === "number" &&
+    lastMessageAgeSeconds >= 5;
   const textMap: Record<typeof status, string> = {
     connected: isStale ? "◔ Stale" : "● Live",
     connecting: "◐ Connecting...",
@@ -48,7 +54,7 @@ export const ConnectionStatusIndicator: React.FC<
     >
       <span>
         {textMap[status]}
-        {status === "connected" && ageLabel ? ` ${ageLabel}` : ""}
+        {shouldShowAgeLabel && ageLabel ? ` ${ageLabel}` : ""}
       </span>
     </div>
   );
