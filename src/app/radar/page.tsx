@@ -398,6 +398,10 @@ function ATCPageContent() {
   const isReplayActive = isViewingHistory || replayFlight !== null;
   const visibleAircrafts = isReplayActive ? [] : filteredAircrafts;
   const visibleLiveAircrafts = isReplayActive ? [] : aircrafts;
+  const isTrafficStale =
+    connectionStatus === "connected" &&
+    lastMessageAgeSeconds !== null &&
+    lastMessageAgeSeconds >= 15;
 
   // Memoize selected aircraft IDs to avoid recalculating on every render
   const selectedAircraftIds = useMemo(
@@ -1154,11 +1158,7 @@ function ATCPageContent() {
               <ConnectionStatusIndicator
                 status={connectionStatus}
                 isMobile={isMobile}
-                isStale={
-                  connectionStatus === "connected" &&
-                  lastMessageAgeSeconds !== null &&
-                  lastMessageAgeSeconds >= 15
-                }
+                isStale={isTrafficStale}
                 lastMessageAgeSeconds={lastMessageAgeSeconds}
                 error={streamError}
               />
