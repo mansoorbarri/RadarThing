@@ -32,7 +32,6 @@ export interface PositionUpdate {
   ts: number;
   lastSeen: number;
   flightPath?: [number, number][];
-  trailSamples?: TimedPositionSample[];
 }
 
 type Subscriber = (aircraft: Map<string, PositionUpdate>) => void;
@@ -43,9 +42,6 @@ const MAX_SPEED_SAMPLE_AGE_MS = 90_000;
 const MIN_SPEED_SAMPLE_WINDOW_MS = 8_000;
 const MAX_REASONABLE_OBSERVED_SPEED_KTS = 1_400;
 const ETA_SPEED_HALF_LIFE_MS = 12_000;
-const MAX_TRAIL_SAMPLE_POINTS = 300;
-const MAX_TRAIL_SAMPLE_AGE_MS = 45 * 60_000;
-const MIN_TRAIL_SAMPLE_INTERVAL_MS = 10_000;
 
 export interface TimedPositionSample {
   lat: number;
@@ -78,7 +74,6 @@ class AircraftStore {
   private store = new Map<string, PositionUpdate>();
   private flightPaths = new Map<string, [number, number][]>();
   private recentSamples = new Map<string, TimedPositionSample[]>();
-  private trailSamples = new Map<string, TimedPositionSample[]>();
   private subscribers = new Set<Subscriber>();
   private pendingNotification = false;
   private notificationFrame: number | null = null;
@@ -104,7 +99,6 @@ class AircraftStore {
 
     const sampleTs = Number.isFinite(data.ts) ? data.ts : Date.now();
     const samples = this.recordRecentSample(id, currentPosition, sampleTs);
-    const trailSamples = this.recordTrailSample(id, currentPosition, sampleTs);
     const observedGroundSpeed = this.calculateObservedGroundSpeedKts(samples);
     const etaObservedGroundSpeed =
       this.calculateEtaObservedGroundSpeedKts(samples);
@@ -115,7 +109,6 @@ class AircraftStore {
       observedGroundSpeed,
       etaObservedGroundSpeed,
       flightPath: this.flightPaths.get(id) || [],
-      trailSamples,
     };
 
     this.store.set(id, dataWithPath);
@@ -134,7 +127,6 @@ class AircraftStore {
     const existed = this.store.delete(id);
     this.flightPaths.delete(id);
     this.recentSamples.delete(id);
-    this.trailSamples.delete(id);
     if (existed) {
       this.notifySubscribers();
     }
@@ -145,7 +137,6 @@ class AircraftStore {
     this.store.clear();
     this.flightPaths.clear();
     this.recentSamples.clear();
-    this.trailSamples.clear();
     this.notifySubscribers();
   }
 
@@ -235,38 +226,6 @@ class AircraftStore {
     this.recentSamples.set(id, next);
     return next;
   }
-
-  private recordTrailSample(
-    id: string,
-    position: [number, number],
-    ts: number,
-  ): TimedPositionSample[] {
-    const [lat, lon] = position;
-    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(ts)) {
-      return this.trailSamples.get(id) || [];
-    }
-
-    const existing = this.trailSamples.get(id) || [];
-    const last = existing[existing.length - 1];
-    let next = existing;
-
-    if (!last) {
-      next = [{ lat, lon, ts }];
-    } else if (ts > last.ts && ts - last.ts >= MIN_TRAIL_SAMPLE_INTERVAL_MS) {
-      next = [...existing, { lat, lon, ts }];
-    }
-
-    const minTs = ts - MAX_TRAIL_SAMPLE_AGE_MS;
-    next = next.filter((sample) => sample.ts >= minTs);
-
-    if (next.length > MAX_TRAIL_SAMPLE_POINTS) {
-      next = next.slice(-MAX_TRAIL_SAMPLE_POINTS);
-    }
-
-    this.trailSamples.set(id, next);
-    return next;
-  }
-
   private calculateObservedGroundSpeedKts(
     samples: TimedPositionSample[],
   ): number | undefined {

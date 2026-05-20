@@ -43,10 +43,6 @@ import {
   type MapLayerPresetState,
 } from "~/lib/mapLayerPresets";
 import {
-  getStoredRadarTrailPreferences,
-  setStoredRadarTrailPreferences,
-} from "~/lib/radarTrailPreferences";
-import {
   getAircraftIconFilter,
   getAircraftIconUrl,
 } from "~/components/map/MapIcons";
@@ -757,9 +753,6 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     getBooleanCookie("traffic_conflicts", false),
   );
   const [showTags, setShowTags] = useState(true);
-  const [radarTrailPreferences, setRadarTrailPreferences] = useState(() =>
-    getStoredRadarTrailPreferences(),
-  );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHeadingMode, setIsHeadingMode] = useState(false);
   const [layerPresets, setLayerPresets] = useState(() =>
@@ -1899,12 +1892,6 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
                   isPRO={isProUser}
                   mapRenderer={mapRenderer}
                   onMapRendererChange={onMapRendererChange}
-                  radarTrailPreferences={radarTrailPreferences}
-                  onRadarTrailPreferencesChange={(nextPreferences) => {
-                    setRadarTrailPreferences(
-                      setStoredRadarTrailPreferences(nextPreferences),
-                    );
-                  }}
                   presets={layerPresets}
                   activePresetId={activePreset?.id ?? null}
                   selectedPresetId={selectedPresetId}

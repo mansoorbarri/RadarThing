@@ -7,11 +7,6 @@ import {
   type UnitPreferences,
   DEFAULT_UNIT_PREFERENCES,
 } from "~/lib/units";
-import { getRadarTrailBearings } from "~/lib/radarTrail";
-import {
-  type RadarTrailPreferences,
-  DEFAULT_RADAR_TRAIL_PREFERENCES,
-} from "~/lib/radarTrailPreferences";
 import { getCompactAircraftType, normalizeAircraftType } from "~/lib/utils";
 
 const EMERGENCY_SQUAWKS = new Set(["7700", "7600", "7500"]);
@@ -259,10 +254,6 @@ export function getAircraftIconFilter(
   return "brightness(0) saturate(100%) invert(83%) sepia(77%) saturate(1238%) hue-rotate(353deg) brightness(103%) contrast(103%) drop-shadow(0 1px 2px rgba(15,23,42,0.98)) drop-shadow(0 0 4px rgba(250,204,21,0.35))";
 }
 
-function toRadians(value: number) {
-  return (value * Math.PI) / 180;
-}
-
 export const WaypointIcon = L.divIcon({
   html: `
     <div class="
@@ -455,7 +446,6 @@ export const getRadarAircraftDivIcon = (
   showTags = true,
   isMobile = false,
   unitPrefs: UnitPreferences = DEFAULT_UNIT_PREFERENCES,
-  trailPreferences: RadarTrailPreferences = DEFAULT_RADAR_TRAIL_PREFERENCES,
 ) => {
   const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
   const isIdentActive =
@@ -482,9 +472,6 @@ export const getRadarAircraftDivIcon = (
     : isMobile
       ? 13
       : 18;
-  const trailDotCount = isMobile ? 3 : 4;
-  const trailSpacing = isMobile ? 8 : 10;
-  const trailReach = trailDotCount * trailSpacing + 8;
   const callsignDisplay = aircraft.callsign || "";
   const shouldShowLabel =
     showTags && (!selectedAircraftId || Boolean(isCurrentAircraftSelected));
@@ -499,20 +486,23 @@ export const getRadarAircraftDivIcon = (
   const connectorGap = isMobile ? 8 : 10;
   const labelOffsetFromDot = isMobile ? 16 : 20;
   const centerYPadding = isMobile ? 8 : 10;
-  const totalHeight = Math.max(
-    labelHeight + centerYPadding * 2,
-    trailReach * 2 + dotSize + 8,
-  );
+  const compactPadding = 8;
+  const totalHeight = shouldShowLabel
+    ? labelHeight + centerYPadding * 2
+    : dotSize + compactPadding * 2;
   const centerY = totalHeight / 2;
-  const dotLeft = trailReach;
+  const dotLeft = compactPadding;
   const dotCenterX = dotLeft + dotSize / 2;
-  const labelTop = Math.max(
-    0,
-    Math.min(totalHeight - labelHeight, centerY - labelHeight + 6),
-  );
-  const labelLeft = dotCenterX + labelOffsetFromDot;
-  const connectorWidth = Math.max(0, labelLeft - dotCenterX - connectorGap);
-  const totalWidth = labelLeft + labelWidth + 4;
+  const labelTop = shouldShowLabel
+    ? Math.max(0, Math.min(totalHeight - labelHeight, centerY - labelHeight + 6))
+    : centerY - dotSize / 2;
+  const labelLeft = shouldShowLabel ? dotCenterX + labelOffsetFromDot : dotLeft;
+  const connectorWidth = shouldShowLabel
+    ? Math.max(0, labelLeft - dotCenterX - connectorGap)
+    : 0;
+  const totalWidth = shouldShowLabel
+    ? labelLeft + labelWidth + 4
+    : dotLeft + dotSize + compactPadding;
 
   const anchorX = dotCenterX;
   const anchorY = centerY;
@@ -553,11 +543,6 @@ export const getRadarAircraftDivIcon = (
     : isCurrentAircraftSelected
       ? "rgba(187,247,208,0.95)"
       : "rgba(226,232,240,0.7)";
-  const trailBearings = getRadarTrailBearings(
-    aircraft,
-    trailDotCount,
-    trailPreferences,
-  );
 
   const dotStyle = `
     position: absolute;
@@ -632,32 +617,6 @@ export const getRadarAircraftDivIcon = (
     ${!shouldShowLabel ? "display: none;" : ""}
   `;
 
-  const trailDotsHtml = trailBearings
-    .map((bearing, dotIndex) => {
-      const radians = toRadians(bearing - 90);
-      const distance = trailSpacing * (dotIndex + 1);
-      const size = Math.max(
-        isMobile ? 1.5 : 2,
-        (isMobile ? 3 : 4) - dotIndex * 0.7,
-      );
-      const opacity = Math.max(0.25, 0.7 - dotIndex * 0.12);
-      const x = dotCenterX + Math.cos(radians) * distance - size / 2;
-      const y = centerY + Math.sin(radians) * distance - size / 2;
-
-      return `<div style="
-        position: absolute;
-        left: ${x}px;
-        top: ${y}px;
-        width: ${size}px;
-        height: ${size}px;
-        border-radius: 9999px;
-        background-color: ${dotColor};
-        opacity: ${opacity};
-        box-shadow: 0 0 3px ${glowColor};
-      "></div>`;
-    })
-    .join("");
-
   const detailContent = `
     <div style="
       min-height: ${labelHeight}px;
@@ -681,7 +640,6 @@ export const getRadarAircraftDivIcon = (
   return L.divIcon({
     html: `
       <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px; overflow: visible; pointer-events: auto; cursor: pointer;">
-        ${trailDotsHtml}
         ${isIdentActive ? `<div style="${identRingStyle} pointer-events: none;"></div>` : ""}
         ${isCurrentAircraftSelected ? `<div style="${selectionRingStyle} pointer-events: none;"></div>` : ""}
         <div style="${dotStyle} pointer-events: none;"></div>
