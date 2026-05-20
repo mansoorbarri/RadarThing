@@ -4,11 +4,16 @@ import { useEffect, useState } from "react";
 import { useTimeDisplayPreference } from "~/hooks/useTimeDisplayPreference";
 import { formatClockParts } from "~/lib/timeDisplay";
 
+function getInitialClock(timeDisplayMode: "utc" | "local") {
+  return {
+    time: "--:--:--",
+    zoneLabel: timeDisplayMode === "utc" ? "UTC" : "LOCAL",
+  };
+}
+
 export function useDisplayedTime() {
   const { timeDisplayMode } = useTimeDisplayPreference();
-  const [clock, setClock] = useState(() =>
-    formatClockParts(new Date(), timeDisplayMode),
-  );
+  const [clock, setClock] = useState(() => getInitialClock(timeDisplayMode));
 
   useEffect(() => {
     const updateClock = () => {
