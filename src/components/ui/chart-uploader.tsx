@@ -1,10 +1,30 @@
 "use client";
 
-import { useCallback, useState, useImperativeHandle, forwardRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  forwardRef,
+} from "react";
 import Image from "next/image";
 import { useDropzone } from "@uploadthing/react";
 import { useUploadThing } from "~/lib/uploadthing";
-import { X, Loader2, ImageIcon, AlertCircle, Pencil } from "lucide-react";
+import {
+  X,
+  Loader2,
+  ImageIcon,
+  AlertCircle,
+  Pencil,
+  ChevronDown,
+} from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "~/components/ui/collapsible";
+import { cn } from "~/lib/utils";
 
 interface FileEntry {
   id: string;
@@ -33,6 +53,8 @@ export interface ChartUploaderRef {
   fileCount: () => number;
   reset: () => void;
 }
+
+const COLLAPSIBLE_FILE_THRESHOLD = 5;
 
 function getHumanReadableError(error: Error | string): string {
   const message = typeof error === "string" ? error : error.message;
@@ -82,13 +104,15 @@ function deriveChartName(fileName: string): string {
 
 export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
   function ChartUploader(
-    { onUploadComplete, onError, onFileSelected, icao, disabled},
+    { onUploadComplete, onError, onFileSelected, icao, disabled },
     ref,
   ) {
     const [files, setFiles] = useState<FileEntry[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [localError, setLocalError] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [isFileListOpen, setIsFileListOpen] = useState(false);
+    const previousFileCountRef = useRef(0);
 
     const { startUpload } = useUploadThing("airportChartUploader", {
       onUploadProgress: () => {
@@ -102,8 +126,20 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
 
       setLocalError(null);
       setEditingId(null);
+      setIsFileListOpen(false);
       onFileSelected?.(false);
     }, [onFileSelected]);
+
+    useEffect(() => {
+      if (
+        files.length > COLLAPSIBLE_FILE_THRESHOLD &&
+        previousFileCountRef.current <= COLLAPSIBLE_FILE_THRESHOLD
+      ) {
+        setIsFileListOpen(false);
+      }
+
+      previousFileCountRef.current = files.length;
+    }, [files.length]);
 
     const onDrop = useCallback(
       (acceptedFiles: File[]) => {
@@ -221,6 +257,63 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
       [triggerUpload, files.length, resetState],
     );
 
+    const shouldCollapseFileList = files.length > COLLAPSIBLE_FILE_THRESHOLD;
+    const fileList = files.map((entry) => (
+      <div
+        key={entry.id}
+        className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/30 p-2"
+      >
+        <div className="relative h-10 w-10 overflow-hidden rounded">
+          <Image
+            src={entry.preview}
+            alt={entry.chartName}
+            fill
+            unoptimized
+            sizes="40px"
+            className="object-cover"
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          {editingId === entry.id ? (
+            <input
+              type="text"
+              value={entry.chartName}
+              onChange={(e) => updateChartName(entry.id, e.target.value)}
+              onBlur={() => setEditingId(null)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") setEditingId(null);
+              }}
+              autoFocus
+              className="w-full rounded border border-cyan-500/50 bg-black/40 px-2 py-1 text-sm text-white outline-none"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => !isUploading && setEditingId(entry.id)}
+              className="flex w-full cursor-pointer items-center gap-1.5 text-left"
+              disabled={isUploading}
+            >
+              <span className="truncate text-sm text-white">
+                {entry.chartName}
+              </span>
+              {!isUploading && (
+                <Pencil className="h-3 w-3 flex-shrink-0 text-slate-500" />
+              )}
+            </button>
+          )}
+        </div>
+        {!isUploading && (
+          <button
+            type="button"
+            onClick={() => removeFile(entry.id)}
+            className="cursor-pointer rounded p-1 text-slate-400 transition-colors hover:bg-red-500/20 hover:text-red-400"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    ));
+
     return (
       <div className="space-y-3">
         {localError && (
@@ -233,63 +326,41 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
         {/* File list */}
         {files.length > 0 && (
           <div className="space-y-2">
-            {files.map((entry) => (
-              <div
-                key={entry.id}
-                className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/30 p-2"
+            {shouldCollapseFileList ? (
+              <Collapsible
+                open={isFileListOpen}
+                onOpenChange={setIsFileListOpen}
+                className="overflow-hidden rounded-xl border border-white/10 bg-black/20"
               >
-                <div className="relative h-10 w-10 overflow-hidden rounded">
-                  <Image
-                    src={entry.preview}
-                    alt={entry.chartName}
-                    fill
-                    unoptimized
-                    sizes="40px"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  {editingId === entry.id ? (
-                    <input
-                      type="text"
-                      value={entry.chartName}
-                      onChange={(e) =>
-                        updateChartName(entry.id, e.target.value)
-                      }
-                      onBlur={() => setEditingId(null)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") setEditingId(null);
-                      }}
-                      autoFocus
-                      className="w-full rounded border border-cyan-500/50 bg-black/40 px-2 py-1 text-sm text-white outline-none"
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => !isUploading && setEditingId(entry.id)}
-                      className="flex w-full cursor-pointer items-center gap-1.5 text-left"
-                      disabled={isUploading}
-                    >
-                      <span className="truncate text-sm text-white">
-                        {entry.chartName}
-                      </span>
-                      {!isUploading && (
-                        <Pencil className="h-3 w-3 flex-shrink-0 text-slate-500" />
-                      )}
-                    </button>
-                  )}
-                </div>
-                {!isUploading && (
+                <CollapsibleTrigger asChild>
                   <button
                     type="button"
-                    onClick={() => removeFile(entry.id)}
-                    className="cursor-pointer rounded p-1 text-slate-400 transition-colors hover:bg-red-500/20 hover:text-red-400"
+                    className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
                   >
-                    <X className="h-4 w-4" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white">
+                        {files.length} selected chart
+                        {files.length !== 1 ? "s" : ""}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        Expand to review names or remove files.
+                      </p>
+                    </div>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 flex-shrink-0 text-slate-400 transition-transform duration-200",
+                        isFileListOpen && "rotate-180",
+                      )}
+                    />
                   </button>
-                )}
-              </div>
-            ))}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-2 border-t border-white/10 px-2 py-2">
+                  {fileList}
+                </CollapsibleContent>
+              </Collapsible>
+            ) : (
+              fileList
+            )}
           </div>
         )}
 
