@@ -1694,7 +1694,7 @@
           letter-spacing:0.12em;
           text-transform:uppercase;
           cursor:pointer;
-        ">Clear</button>
+        ">Save/Clear</button>
       </div>
 
       <div style="
