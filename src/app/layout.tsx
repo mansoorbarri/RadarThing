@@ -10,7 +10,6 @@ import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { ConvexProvider } from "~/components/providers/ConvexProvider";
 import { PostHogProvider } from "~/components/providers/PostHogProvider";
-import { SiteOutageBanner } from "~/components/ui/SiteOutageBanner";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://radarthing.com"),
@@ -75,7 +74,6 @@ export default function RootLayout({
           <ConvexProvider>
             <PostHogProvider>
               <Suspense fallback={null}>
-                <SiteOutageBanner />
                 <Toaster
                   theme="dark"
                   position="top-center"
