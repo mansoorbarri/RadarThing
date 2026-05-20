@@ -486,17 +486,23 @@ export const getRadarAircraftDivIcon = (
   const connectorGap = isMobile ? 8 : 10;
   const labelOffsetFromDot = isMobile ? 16 : 20;
   const centerYPadding = isMobile ? 8 : 10;
-  const totalHeight = labelHeight + centerYPadding * 2;
+  const compactPadding = 8;
+  const totalHeight = shouldShowLabel
+    ? labelHeight + centerYPadding * 2
+    : dotSize + compactPadding * 2;
   const centerY = totalHeight / 2;
-  const dotLeft = 8;
+  const dotLeft = compactPadding;
   const dotCenterX = dotLeft + dotSize / 2;
-  const labelTop = Math.max(
-    0,
-    Math.min(totalHeight - labelHeight, centerY - labelHeight + 6),
-  );
-  const labelLeft = dotCenterX + labelOffsetFromDot;
-  const connectorWidth = Math.max(0, labelLeft - dotCenterX - connectorGap);
-  const totalWidth = labelLeft + labelWidth + 4;
+  const labelTop = shouldShowLabel
+    ? Math.max(0, Math.min(totalHeight - labelHeight, centerY - labelHeight + 6))
+    : centerY - dotSize / 2;
+  const labelLeft = shouldShowLabel ? dotCenterX + labelOffsetFromDot : dotLeft;
+  const connectorWidth = shouldShowLabel
+    ? Math.max(0, labelLeft - dotCenterX - connectorGap)
+    : 0;
+  const totalWidth = shouldShowLabel
+    ? labelLeft + labelWidth + 4
+    : dotLeft + dotSize + compactPadding;
 
   const anchorX = dotCenterX;
   const anchorY = centerY;
