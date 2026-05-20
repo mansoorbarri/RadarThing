@@ -21,6 +21,12 @@ import {
   setChartRotation as persistChartRotation,
 } from "~/lib/chartRotation";
 import type { AirportChart, ChartType } from "~/types/airportCharts";
+import {
+  ALL_RUNWAYS_KEY,
+  buildRunwayChartGroups,
+  extractChartRunways,
+  getAirportChartKey,
+} from "~/services/airportChartsService";
 import { Search, X, RotateCcw, RotateCw } from "lucide-react";
 
 const CHART_PANEL_WIDTH_KEY = "chart_panel_width";
@@ -52,6 +58,39 @@ interface TransformState {
   positionY: number;
 }
 const transformCache = new Map<string, TransformState>();
+
+function RunwayFilterBar({
+  runwayGroups,
+  selectedRunwayKey,
+  onSelectRunway,
+}: {
+  runwayGroups: ReturnType<typeof buildRunwayChartGroups>;
+  selectedRunwayKey: string;
+  onSelectRunway: (runwayKey: string) => void;
+}) {
+  if (runwayGroups.length <= 1) {
+    return null;
+  }
+
+  return (
+    <div className="mb-2 flex flex-wrap gap-1">
+      {runwayGroups.map((group) => (
+        <button
+          key={group.key}
+          onClick={() => onSelectRunway(group.key)}
+          className={`cursor-pointer rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+            selectedRunwayKey === group.key
+              ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
+              : "border-white/10 text-white/50 hover:bg-white/10 hover:text-white/80"
+          }`}
+        >
+          {group.label}
+          <span className="ml-1 text-[9px] opacity-60">{group.charts.length}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function ChartControls({
   onReset,
@@ -171,6 +210,8 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
   const [pdfError, setPdfError] = useState(false);
   const [chartRotation, setChartRotation] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRunwayKey, setSelectedRunwayKey] =
+    useState<string>(ALL_RUNWAYS_KEY);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
@@ -229,14 +270,31 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
     };
   }, [charts]);
 
-  const currentCharts = chartsByType?.[selectedType] ?? [];
-  const selectedChart = currentCharts[selectedChartIndex] ?? null;
-  const isPdf = selectedChart?.chartUrl.toLowerCase().endsWith(".pdf");
-
   const availableTabs = useMemo(() => {
     if (!chartsByType) return [];
     return CHART_TYPES.filter((t) => chartsByType[t.key].length > 0);
   }, [chartsByType]);
+
+  const runwayGroups = useMemo(
+    () => buildRunwayChartGroups(chartsByType?.[selectedType] ?? []),
+    [chartsByType, selectedType],
+  );
+  const activeRunwayGroup = useMemo(
+    () =>
+      runwayGroups.find((group) => group.key === selectedRunwayKey) ??
+      runwayGroups[0] ?? {
+        key: ALL_RUNWAYS_KEY,
+        label: "All",
+        charts: [],
+      },
+    [runwayGroups, selectedRunwayKey],
+  );
+  const currentCharts = activeRunwayGroup.charts;
+  const selectedChart = currentCharts[selectedChartIndex] ?? null;
+  const selectedChartKey = selectedChart
+    ? getAirportChartKey(selectedChart)
+    : null;
+  const isPdf = selectedChart?.chartUrl.toLowerCase().endsWith(".pdf");
 
   const allCharts = useMemo(() => {
     if (!chartsByType) return [];
@@ -290,6 +348,23 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
   }, [icao]);
 
   useEffect(() => {
+    if (runwayGroups.some((group) => group.key === selectedRunwayKey)) {
+      return;
+    }
+
+    setSelectedRunwayKey(ALL_RUNWAYS_KEY);
+    setSelectedChartIndex(0);
+  }, [runwayGroups, selectedRunwayKey]);
+
+  useEffect(() => {
+    if (selectedChartIndex < currentCharts.length) {
+      return;
+    }
+
+    setSelectedChartIndex(0);
+  }, [currentCharts.length, selectedChartIndex]);
+
+  useEffect(() => {
     const container = chartContainerRef.current;
     if (!container) return;
 
@@ -314,12 +389,29 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
   };
 
   const handleChartSelect = useCallback(
-    (type: ChartType, index: number) => {
+    (type: ChartType, chart: AirportChart) => {
+      const nextTypeCharts = chartsByType?.[type] ?? [];
+      const nextRunwayGroups = buildRunwayChartGroups(nextTypeCharts);
+      const preferredRunwayKey =
+        extractChartRunways(chart.chartName)[0] ?? ALL_RUNWAYS_KEY;
+      const nextRunwayGroup =
+        nextRunwayGroups.find((group) => group.key === preferredRunwayKey) ??
+        nextRunwayGroups[0];
+
+      if (!nextRunwayGroup) {
+        return;
+      }
+
+      const nextIndex = nextRunwayGroup.charts.findIndex(
+        (candidate) => getAirportChartKey(candidate) === getAirportChartKey(chart),
+      );
+
       setSelectedType(type);
-      setSelectedChartIndex(index);
+      setSelectedRunwayKey(nextRunwayGroup.key);
+      setSelectedChartIndex(nextIndex >= 0 ? nextIndex : 0);
       setSearchQuery("");
     },
-    [],
+    [chartsByType],
   );
 
   const hasCharts = availableTabs.length > 0;
@@ -402,6 +494,15 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
               ))}
             </div>
 
+            <RunwayFilterBar
+              runwayGroups={runwayGroups}
+              selectedRunwayKey={activeRunwayGroup.key}
+              onSelectRunway={(runwayKey) => {
+                setSelectedRunwayKey(runwayKey);
+                setSelectedChartIndex(0);
+              }}
+            />
+
             {allCharts.length > 1 && (
               <div className="mb-2">
                 <div className="relative">
@@ -443,12 +544,13 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
                       typeLabel: string;
                     }) => {
                       const isSelected =
-                        selectedType === type && selectedChartIndex === index;
+                        selectedType === type &&
+                        selectedChartKey === getAirportChartKey(chart);
 
                       return (
                         <button
                           key={chart.id ?? `${type}-${index}-${chart.chartUrl}`}
-                          onClick={() => handleChartSelect(type, index)}
+                          onClick={() => handleChartSelect(type, chart)}
                           className={`w-full rounded-md border px-2.5 py-2 text-left transition-colors ${
                             isSelected
                               ? "border-cyan-500/30 bg-cyan-500/15 text-cyan-300"

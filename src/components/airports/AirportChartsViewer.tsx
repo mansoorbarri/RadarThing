@@ -21,6 +21,12 @@ import {
 } from "~/lib/chartRotation";
 import { cn } from "~/lib/utils";
 import {
+  ALL_RUNWAYS_KEY,
+  buildRunwayChartGroups,
+  extractChartRunways,
+  getAirportChartKey,
+} from "~/services/airportChartsService";
+import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
@@ -60,6 +66,40 @@ const CHART_TYPES: { type: ChartType; label: string }[] = [
 
 function isPdf(url: string): boolean {
   return url.toLowerCase().endsWith(".pdf");
+}
+
+function RunwayFilterBar({
+  runwayGroups,
+  selectedRunwayKey,
+  onSelectRunway,
+}: {
+  runwayGroups: ReturnType<typeof buildRunwayChartGroups>;
+  selectedRunwayKey: string;
+  onSelectRunway: (runwayKey: string) => void;
+}) {
+  if (runwayGroups.length <= 1) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {runwayGroups.map((group) => (
+        <button
+          key={group.key}
+          onClick={() => onSelectRunway(group.key)}
+          className={cn(
+            "flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors",
+            selectedRunwayKey === group.key
+              ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
+              : "border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200",
+          )}
+        >
+          <span>{group.label}</span>
+          <span className="text-[10px] opacity-70">{group.charts.length}</span>
+        </button>
+      ))}
+    </div>
+  );
 }
 
 function ChartTypeTab({
@@ -109,6 +149,7 @@ function ChartSidebar({
   allCharts,
   selectedType,
   selectedIndex,
+  selectedChartKey,
   onChange,
   onSelectChart,
   isCollapsed,
@@ -118,8 +159,9 @@ function ChartSidebar({
   allCharts: ChartsByType | null;
   selectedType: ChartType;
   selectedIndex: number;
+  selectedChartKey: string | null;
   onChange: (index: number) => void;
-  onSelectChart: (type: ChartType, index: number) => void;
+  onSelectChart: (type: ChartType, chart: AirportChart) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
 }) {
@@ -240,12 +282,13 @@ function ChartSidebar({
                     <button
                       key={chart.id ?? `${type}-${indexInType}`}
                       onClick={() => {
-                        onSelectChart(type, indexInType);
+                        onSelectChart(type, chart);
                         setSearchQuery("");
                       }}
                       className={cn(
                         "w-full rounded-md px-3 py-2 text-left text-xs transition-colors",
-                        selectedType === type && selectedIndex === indexInType
+                        selectedType === type &&
+                          selectedChartKey === getAirportChartKey(chart)
                           ? "border border-cyan-500/30 bg-cyan-500/20 text-cyan-300"
                           : "border border-transparent text-slate-300 hover:bg-white/5",
                       )}
@@ -424,6 +467,8 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
   const [isInverted, setIsInverted] = useState(true);
   const [chartRotation, setChartRotation] = useState(0);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [selectedRunwayKey, setSelectedRunwayKey] =
+    useState<string>(ALL_RUNWAYS_KEY);
 
   const {
     charts,
@@ -433,28 +478,81 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
     setSelectedType,
     selectedChartIndex,
     setSelectedChartIndex,
-    currentCharts,
-    selectedChart,
     chartCounts,
     totalCharts,
     refetch,
   } = useAirportCharts(icao);
 
+  const runwayGroups = useMemo(
+    () => buildRunwayChartGroups(charts?.[selectedType] ?? []),
+    [charts, selectedType],
+  );
+  const activeRunwayGroup = useMemo(
+    () =>
+      runwayGroups.find((group) => group.key === selectedRunwayKey) ??
+      runwayGroups[0] ?? {
+        key: ALL_RUNWAYS_KEY,
+        label: "All",
+        charts: [],
+      },
+    [runwayGroups, selectedRunwayKey],
+  );
+  const currentCharts = activeRunwayGroup.charts;
+  const selectedChart = currentCharts[selectedChartIndex] ?? null;
+  const selectedChartKey = selectedChart
+    ? getAirportChartKey(selectedChart)
+    : null;
+
   // Handler for selecting a chart from search (switches type and index)
   const handleSelectChart = useCallback(
-    (type: ChartType, index: number) => {
+    (type: ChartType, chart: AirportChart) => {
+      const nextTypeCharts = charts?.[type] ?? [];
+      const nextRunwayGroups = buildRunwayChartGroups(nextTypeCharts);
+      const preferredRunwayKey =
+        extractChartRunways(chart.chartName)[0] ?? ALL_RUNWAYS_KEY;
+      const nextRunwayGroup =
+        nextRunwayGroups.find((group) => group.key === preferredRunwayKey) ??
+        nextRunwayGroups[0];
+
+      if (!nextRunwayGroup) {
+        return;
+      }
+
+      const nextIndex = nextRunwayGroup.charts.findIndex(
+        (candidate) => getAirportChartKey(candidate) === getAirportChartKey(chart),
+      );
+
       if (type !== selectedType) {
-        // We need to set both type and index, but setSelectedType resets index to 0
-        // So we set the type first, then manually set the index
+        setSelectedRunwayKey(nextRunwayGroup.key);
         setSelectedType(type);
-        // Small delay to ensure type is set before index
-        setTimeout(() => setSelectedChartIndex(index), 0);
+        setTimeout(
+          () => setSelectedChartIndex(nextIndex >= 0 ? nextIndex : 0),
+          0,
+        );
       } else {
-        setSelectedChartIndex(index);
+        setSelectedRunwayKey(nextRunwayGroup.key);
+        setSelectedChartIndex(nextIndex >= 0 ? nextIndex : 0);
       }
     },
-    [selectedType, setSelectedType, setSelectedChartIndex],
+    [charts, selectedType, setSelectedType, setSelectedChartIndex],
   );
+
+  useEffect(() => {
+    if (runwayGroups.some((group) => group.key === selectedRunwayKey)) {
+      return;
+    }
+
+    setSelectedRunwayKey(ALL_RUNWAYS_KEY);
+    setSelectedChartIndex(0);
+  }, [runwayGroups, selectedRunwayKey, setSelectedChartIndex]);
+
+  useEffect(() => {
+    if (selectedChartIndex < currentCharts.length) {
+      return;
+    }
+
+    setSelectedChartIndex(0);
+  }, [currentCharts.length, selectedChartIndex, setSelectedChartIndex]);
 
   // Reset PDF error when chart changes
   useEffect(() => {
@@ -555,6 +653,15 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
               />
             ))}
           </div>
+
+          <RunwayFilterBar
+            runwayGroups={runwayGroups}
+            selectedRunwayKey={activeRunwayGroup.key}
+            onSelectRunway={(runwayKey) => {
+              setSelectedRunwayKey(runwayKey);
+              setSelectedChartIndex(0);
+            }}
+          />
         </header>
 
         {/* Content with optional sidebar */}
@@ -565,6 +672,7 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
             allCharts={charts}
             selectedType={selectedType}
             selectedIndex={selectedChartIndex}
+            selectedChartKey={selectedChartKey}
             onChange={setSelectedChartIndex}
             onSelectChart={handleSelectChart}
             isCollapsed={sidebarCollapsed}
