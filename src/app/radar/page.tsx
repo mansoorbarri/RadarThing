@@ -104,10 +104,6 @@ const DESKTOP_MAP_RENDERER_COOKIE = "desktop_map_renderer";
 type RightPanel = "fids" | "filter" | "airports" | null;
 type DesktopMapRenderer = "flat" | "globe";
 
-const isTouchDevice = () =>
-  navigator.maxTouchPoints > 1 ||
-  window.matchMedia("(pointer: coarse)").matches;
-
 export default function ATCPage() {
   return (
     <UnitPreferencesProvider>
@@ -322,11 +318,8 @@ function ATCPageContent() {
     const stored = getCookie(DESKTOP_MAP_RENDERER_COOKIE);
     const storedRenderer: DesktopMapRenderer =
       stored === "flat" ? "flat" : "globe";
-    const w = window.innerWidth;
-    const touch = isTouchDevice();
-    const initialIsPhone = w < 768 || (w < 1024 && touch);
 
-    setDesktopMapRenderer(initialIsPhone ? "globe" : storedRenderer);
+    setDesktopMapRenderer(storedRenderer);
     setHasResolvedMapRenderer(true);
   }, []);
 
