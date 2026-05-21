@@ -52,6 +52,7 @@ import {
   getAircraftIconUrl,
 } from "~/components/map/MapIcons";
 import { RadarSettings } from "~/components/atc/radarSettings";
+import { MapSettingsSidebar } from "~/components/map/MapSettingsSidebar";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
 import { formatAltitude, formatSpeed, speedSuffix } from "~/lib/units";
 import { getCompactAircraftType } from "~/lib/utils";
@@ -763,6 +764,8 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     getStoredRadarTrailPreferences(),
   );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSettingsSidebarCollapsed, setIsSettingsSidebarCollapsed] =
+    useState(false);
   const [isHeadingMode, setIsHeadingMode] = useState(false);
   const [layerPresets, setLayerPresets] = useState(() =>
     getStoredMapLayerPresets(),
@@ -787,6 +790,11 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     () => new Set(selectedAircraftIds),
     [selectedAircraftIds],
   );
+
+  useEffect(() => {
+    if (isDesktopGlobe || selectedAircraftIds.length > 0) return;
+    setIsSettingsOpen(false);
+  }, [isDesktopGlobe, selectedAircraftIds]);
 
   const currentLayerState = useMemo<MapLayerPresetState>(
     () => ({
@@ -1932,43 +1940,43 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
             </GlobeControlButton>
           </div>
 
-          {isSettingsOpen ? (
-            <div
-              className={`animate-in fade-in zoom-in-95 absolute z-[10020] duration-200 ${
-                isDesktopGlobe
-                  ? "top-[180px] left-[70px] w-[min(320px,calc(100vw-86px))]"
-                  : "top-[152px] left-[58px] w-[min(320px,calc(100vw-74px))]"
-              }`}
+          {!hideUi ? (
+            <MapSettingsSidebar
+              isOpen={isSettingsOpen}
+              isMobile={!isDesktopGlobe}
+              isCollapsed={isSettingsSidebarCollapsed}
+              onClose={() => setIsSettingsOpen(false)}
+              onToggleCollapsed={() =>
+                setIsSettingsSidebarCollapsed((current) => !current)
+              }
             >
-              <div className="max-h-[calc(100dvh-210px)] overflow-y-auto rounded-xl border border-white/10 bg-[#0a1219]/95 p-5 shadow-2xl backdrop-blur-xl">
-                <RadarSettings
-                  isPRO={isProUser}
-                  mapRenderer={mapRenderer}
-                  onMapRendererChange={onMapRendererChange}
-                  radarTrailPreferences={radarTrailPreferences}
-                  onRadarTrailPreferencesChange={(nextPreferences) => {
-                    setRadarTrailPreferences(
-                      setStoredRadarTrailPreferences(nextPreferences),
-                    );
-                  }}
-                  presets={layerPresets}
-                  activePresetId={activePreset?.id ?? null}
-                  selectedPresetId={selectedPresetId}
-                  onApplyPreset={applyLayerPreset}
-                  onSavePreset={saveLayerPreset}
-                  onUpdatePreset={updateLayerPreset}
-                  onDeletePreset={deleteLayerPreset}
-                  showPrecipitation={showPrecipitation}
-                  setShowPrecipitation={setShowPrecipitation}
-                  showAirmets={showAirmets}
-                  setShowAirmets={setShowAirmets}
-                  showSigmets={showSigmets}
-                  setShowSigmets={setShowSigmets}
-                  showConflicts={showConflicts}
-                  setShowConflicts={setShowConflicts}
-                />
-              </div>
-            </div>
+              <RadarSettings
+                isPRO={isProUser}
+                mapRenderer={mapRenderer}
+                onMapRendererChange={onMapRendererChange}
+                radarTrailPreferences={radarTrailPreferences}
+                onRadarTrailPreferencesChange={(nextPreferences) => {
+                  setRadarTrailPreferences(
+                    setStoredRadarTrailPreferences(nextPreferences),
+                  );
+                }}
+                presets={layerPresets}
+                activePresetId={activePreset?.id ?? null}
+                selectedPresetId={selectedPresetId}
+                onApplyPreset={applyLayerPreset}
+                onSavePreset={saveLayerPreset}
+                onUpdatePreset={updateLayerPreset}
+                onDeletePreset={deleteLayerPreset}
+                showPrecipitation={showPrecipitation}
+                setShowPrecipitation={setShowPrecipitation}
+                showAirmets={showAirmets}
+                setShowAirmets={setShowAirmets}
+                showSigmets={showSigmets}
+                setShowSigmets={setShowSigmets}
+                showConflicts={showConflicts}
+                setShowConflicts={setShowConflicts}
+              />
+            </MapSettingsSidebar>
           ) : null}
         </>
       ) : null}
