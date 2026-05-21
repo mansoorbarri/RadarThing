@@ -212,7 +212,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [onAircraftSelect]);
 
   useEffect(() => {
-    if (!isMobile || selectedAircraftIds.length === 0) return;
+    if (!isMobile || selectedAircraftIds.length > 0) return;
     setIsSettingsOpen(false);
   }, [isMobile, selectedAircraftIds]);
 

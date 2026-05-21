@@ -1,8 +1,10 @@
 "use client";
 
 import React from "react";
+import { ChevronRight } from "lucide-react";
 
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
+import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
 
 interface MapSettingsSidebarProps {
@@ -43,37 +45,27 @@ export const MapSettingsSidebar = ({
         isCollapsed ? "w-12" : "w-full max-w-[360px] xl:max-w-[400px]",
       )}
     >
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon-xs"
         onClick={onToggleCollapsed}
-        className="absolute top-1/2 -right-3 z-10 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-slate-900 text-slate-400 shadow-lg transition-colors hover:bg-slate-800 hover:text-white"
+        className="absolute top-1/2 -right-3 z-10 -translate-y-1/2 rounded-full border border-white/20 bg-slate-900 text-slate-400 shadow-lg transition-colors hover:bg-slate-800 hover:text-white"
         title={isCollapsed ? "Expand settings" : "Collapse settings"}
         aria-label={isCollapsed ? "Expand settings" : "Collapse settings"}
       >
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <ChevronRight
           className={cn(
             "transition-transform duration-300",
             !isCollapsed ? "rotate-180" : "",
           )}
-        >
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </button>
+        />
+      </Button>
 
       {isCollapsed ? (
         <div className="flex h-full flex-col items-center py-6">
           <div className="mb-4 h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
           <div
-            className="font-mono text-[10px] font-bold tracking-wider text-cyan-400 uppercase"
-            style={{ writingMode: "vertical-rl" }}
+            className="font-mono text-[10px] font-bold tracking-wider text-cyan-400 uppercase [writing-mode:vertical-rl]"
           >
             SETTINGS
           </div>

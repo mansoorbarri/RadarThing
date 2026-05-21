@@ -792,7 +792,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   );
 
   useEffect(() => {
-    if (isDesktopGlobe || selectedAircraftIds.length === 0) return;
+    if (isDesktopGlobe || selectedAircraftIds.length > 0) return;
     setIsSettingsOpen(false);
   }, [isDesktopGlobe, selectedAircraftIds]);
 
