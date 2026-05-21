@@ -411,6 +411,7 @@ function createAircraftMarkerElement() {
 function syncAircraftMarkerElement(
   element: HTMLButtonElement,
   aircraft: PositionUpdate,
+  isRadarMode: boolean,
   isSelected: boolean,
   showTags: boolean,
   hasSelection: boolean,
@@ -447,6 +448,132 @@ function syncAircraftMarkerElement(
       ? aircraft.callsign
       : "";
   const shouldShowTag = showTags && (!hasSelection || isSelected);
+
+  element.setAttribute(
+    "aria-label",
+    aircraft.flightNo || aircraft.callsign || "Aircraft",
+  );
+
+  if (isRadarMode) {
+    const dotSize = isSelected ? (isDesktop ? 9 : 7) : isDesktop ? 5 : 4;
+    const headingLineLength = isSelected ? (isDesktop ? 24 : 18) : isDesktop ? 18 : 13;
+    const dotColor = isEmergency
+      ? "#ef4444"
+      : isIdentActive
+        ? "#fbbf24"
+        : isSelected
+          ? "#4ade80"
+          : "#22d3ee";
+    const glowColor = isEmergency
+      ? "rgba(239,68,68,0.8)"
+      : isIdentActive
+        ? "rgba(251,191,36,0.95)"
+        : isSelected
+          ? "rgba(74,222,128,0.9)"
+          : "rgba(0,255,255,0.5)";
+    const connectorColor = isEmergency
+      ? "rgba(248,113,113,0.8)"
+      : isSelected
+        ? "rgba(187,247,208,0.95)"
+        : "rgba(226,232,240,0.7)";
+    const centerX = 16;
+    const centerY = 16;
+    const dotLeft = centerX - dotSize / 2;
+    const dotTop = centerY - dotSize / 2;
+    const tagWidth = isDesktop ? 138 : 108;
+    const tagFontSize = isDesktop ? 12 : 10;
+    const tagHeaderSize = isDesktop ? 13 : 11;
+    const tagSecondarySize = isDesktop ? 10 : 8;
+    const labelOffset = isDesktop ? 20 : 16;
+    const connectorGap = isDesktop ? 10 : 8;
+    const tagLeft = centerX + labelOffset;
+
+    const identRing = isIdentActive
+      ? `<div style="position:absolute; top:${dotTop - 6}px; left:${dotLeft - 6}px; width:${dotSize + 12}px; height:${dotSize + 12}px; border-radius:9999px; border:2px solid rgba(251,191,36,0.95); animation:radar-ident-pulse 1s ease-in-out infinite; pointer-events:none;"></div>`
+      : "";
+    const selectionRing = isSelected
+      ? `<div style="position:absolute; top:${dotTop - 4}px; left:${dotLeft - 4}px; width:${dotSize + 8}px; height:${dotSize + 8}px; border-radius:9999px; border:1.5px solid ${isEmergency ? "#ef4444" : "#4ade80"}; box-shadow:0 0 6px ${isEmergency ? "rgba(239,68,68,0.6)" : "rgba(74,222,128,0.6)"}; animation:radar-ring-pulse 1.5s ease-in-out infinite; pointer-events:none;"></div>`
+      : "";
+
+    element.innerHTML = `
+      ${identRing}
+      ${selectionRing}
+      <div
+        style="
+          position:absolute;
+          top:${dotTop}px;
+          left:${dotLeft}px;
+          width:${dotSize}px;
+          height:${dotSize}px;
+          border-radius:9999px;
+          background-color:${dotColor};
+          box-shadow:0 0 ${isSelected ? "8px" : "4px"} ${glowColor}${isSelected ? `, 0 0 14px ${glowColor}` : ""};
+          ${isSelected ? "animation:radar-selected-pulse 1.5s ease-in-out infinite;" : ""}
+          pointer-events:none;
+        "
+      ></div>
+      <div
+        style="
+          position:absolute;
+          top:${centerY - (isSelected ? 1 : 0.5)}px;
+          left:${centerX}px;
+          width:${headingLineLength}px;
+          height:${isSelected ? 2 : 1}px;
+          background-color:${dotColor};
+          transform-origin:0% 50%;
+          transform:rotate(${(aircraft.heading || 0) - 90}deg);
+          ${isSelected ? `box-shadow:0 0 4px ${glowColor};` : ""}
+          pointer-events:none;
+        "
+      ></div>
+      <div
+        style="
+          position:absolute;
+          top:${centerY}px;
+          left:${centerX + connectorGap}px;
+          width:${Math.max(0, labelOffset - connectorGap)}px;
+          height:1px;
+          background:linear-gradient(90deg, ${connectorColor}, rgba(148, 163, 184, 0.35));
+          transform:translateY(-0.5px);
+          display:${shouldShowTag ? "block" : "none"};
+          pointer-events:none;
+        "
+      ></div>
+      <div
+        style="
+          position:absolute;
+          top:50%;
+          left:${tagLeft}px;
+          transform:translateY(-50%);
+          width:${tagWidth}px;
+          display:${shouldShowTag ? "block" : "none"};
+          pointer-events:none;
+          z-index:10;
+          color:${isEmergency ? "#fca5a5" : isSelected ? "#dcfce7" : "#f8fafc"};
+          font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;
+          font-size:${tagFontSize}px;
+          line-height:1.05;
+          letter-spacing:0.03em;
+          text-shadow:0 0 6px ${glowColor};
+          text-align:left;
+        "
+      >
+        <div style="font-weight:700; font-size:${tagHeaderSize}px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          ${primaryLabel}${isEmergency ? " !" : ""}
+        </div>
+        <div style="margin-top:2px; opacity:0.95; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          ${detailLabel}
+        </div>
+        ${
+          secondaryLabel
+            ? `<div style="margin-top:2px; opacity:0.65; font-size:${tagSecondarySize}px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${secondaryLabel}</div>`
+            : ""
+        }
+      </div>
+    `;
+    return;
+  }
+
   const selectionRing = isSelected
     ? `<div style="position:absolute; inset:1px; border-radius:9999px; border:1.5px solid rgba(250,204,21,0.95); box-shadow:0 0 10px rgba(250,204,21,0.45);"></div>`
     : "";
@@ -465,7 +592,6 @@ function syncAircraftMarkerElement(
       ? 40
       : 32;
 
-  element.setAttribute("aria-label", aircraft.flightNo || aircraft.callsign || "Aircraft");
   element.innerHTML = `
     ${identRing}
     ${selectionRing}
@@ -1595,6 +1721,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
           syncAircraftMarkerElement(
             element,
             aircraft,
+            isRadarMode,
             isSelected,
             showTags,
             selectedAircraftKeySet.size > 0,
@@ -1627,6 +1754,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
         syncAircraftMarkerElement(
           existing.element,
           aircraft,
+          isRadarMode,
           isSelected,
           showTags,
           selectedAircraftKeySet.size > 0,
@@ -1650,6 +1778,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   }, [
     aircrafts,
     altitudeUnit,
+    isRadarMode,
     isDesktopGlobe,
     mapReady,
     onInitialTrafficPaint,
