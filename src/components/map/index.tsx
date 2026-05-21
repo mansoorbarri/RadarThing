@@ -80,6 +80,7 @@ interface MapComponentProps {
   aircrafts: PositionUpdate[];
   airports: Airport[];
   onlineAirports?: OnlineAirport[];
+  isMobile?: boolean;
   onAircraftSelect: (
     aircraft: PositionUpdate | null,
     ctrlKey?: boolean,
@@ -116,6 +117,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   aircrafts,
   airports,
   onlineAirports,
+  isMobile: isMobileProp,
   onAircraftSelect,
   onAirportSelect,
   selectedAircraftIds = [],
@@ -136,7 +138,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   hideUi = false,
   importedFlightPlan = null,
 }) => {
-  const isMobile = useMobileDetection();
+  const detectedIsMobile = useMobileDetection();
+  const isMobile = isMobileProp ?? detectedIsMobile;
   const { isProUser, isLoading: proLoading } = useProStatus();
 
   const canUseRadarMode = isProUser;

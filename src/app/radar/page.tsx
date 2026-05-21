@@ -1419,6 +1419,7 @@ function ATCPageContent() {
               aircrafts={visibleAircrafts}
               airports={airports}
               onlineAirports={onlineAirports}
+              isMobile={isPhone}
               selectedAirport={selectedAirport}
               selectedAircraftIds={selectedAircraftIds}
               onAircraftSelect={handleAircraftSelect}

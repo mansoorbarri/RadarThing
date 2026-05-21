@@ -49,15 +49,31 @@ interface MapRefs {
 }
 
 const DEFAULT_CENTER: [number, number] = [20, 0];
+const MOBILE_DEFAULT_CENTER: [number, number] = [8, -28];
 const DEFAULT_ZOOM = 3;
-const MOBILE_DEFAULT_ZOOM = 1.75;
+const MOBILE_DEFAULT_ZOOM = 2.2;
 const USER_LOCATION_RESET_ZOOM = 5.5;
 // Mobile needs a substantially wider zoom-out range than desktop.
-// Going much lower than this starts to look sparse even with wrapping disabled.
-const MOBILE_MIN_ZOOM = -0.5;
+// The floor should match the broader Atlantic framing without allowing
+// the map to collapse into a tiny world thumbnail.
+const MOBILE_MIN_ZOOM = 2.2;
 const DESKTOP_MIN_ZOOM = 3;
 const TILE_MIN_NATIVE_ZOOM = 0;
 const MAX_ZOOM = 18;
+const DESKTOP_ZOOM_COOKIE = "map_zoom";
+const DESKTOP_LAT_COOKIE = "map_center_lat";
+const DESKTOP_LNG_COOKIE = "map_center_lng";
+const MOBILE_ZOOM_COOKIE = "mobile_map_zoom";
+const MOBILE_LAT_COOKIE = "mobile_map_center_lat";
+const MOBILE_LNG_COOKIE = "mobile_map_center_lng";
+
+function normalizeLng(lng: number) {
+  return ((lng + 180) % 360 + 360) % 360 - 180;
+}
+
+function clampLat(lat: number) {
+  return Math.max(-85, Math.min(85, lat));
+}
 
 export const useMapInitialization = ({
   mapContainerId,
@@ -94,35 +110,42 @@ export const useMapInitialization = ({
   const [mapReady, setMapReady] = useState(false);
   const [isMobileMapMode] = useState(isMobile);
   const mapMinZoom = isMobileMapMode ? MOBILE_MIN_ZOOM : DESKTOP_MIN_ZOOM;
+  const tileLayerMinZoom = isMobileMapMode
+    ? Math.floor(mapMinZoom)
+    : mapMinZoom;
+  const defaultCenter = isMobileMapMode ? MOBILE_DEFAULT_CENTER : DEFAULT_CENTER;
   const defaultZoom = isMobileMapMode ? MOBILE_DEFAULT_ZOOM : DEFAULT_ZOOM;
+  const zoomCookieKey = isMobileMapMode ? MOBILE_ZOOM_COOKIE : DESKTOP_ZOOM_COOKIE;
+  const latCookieKey = isMobileMapMode ? MOBILE_LAT_COOKIE : DESKTOP_LAT_COOKIE;
+  const lngCookieKey = isMobileMapMode ? MOBILE_LNG_COOKIE : DESKTOP_LNG_COOKIE;
 
   const resetMapView = useCallback((targetLocation?: MapResetLocation | null) => {
     if (!mapInstance.current) return;
     const center: [number, number] = targetLocation
-      ? [targetLocation.lat, targetLocation.lng]
-      : DEFAULT_CENTER;
+      ? [clampLat(targetLocation.lat), normalizeLng(targetLocation.lng)]
+      : defaultCenter;
     const zoom = targetLocation ? USER_LOCATION_RESET_ZOOM : defaultZoom;
 
     mapInstance.current.setView(center, zoom, {
       animate: true,
     });
-    setCookie("map_zoom", String(zoom));
-    setCookie("map_center_lat", String(center[0]));
-    setCookie("map_center_lng", String(center[1]));
-  }, [defaultZoom]);
+    setCookie(zoomCookieKey, String(zoom));
+    setCookie(latCookieKey, String(center[0]));
+    setCookie(lngCookieKey, String(center[1]));
+  }, [defaultCenter, defaultZoom, latCookieKey, lngCookieKey, zoomCookieKey]);
 
   useEffect(() => {
     if (mapInstance.current) return;
 
     // Restore saved map position or use defaults
-    const savedZoom = parseFloat(getCookie("map_zoom") ?? "");
-    const savedLat = parseFloat(getCookie("map_center_lat") ?? "");
-    const savedLng = parseFloat(getCookie("map_center_lng") ?? "");
+    const savedZoom = parseFloat(getCookie(zoomCookieKey) ?? "");
+    const savedLat = parseFloat(getCookie(latCookieKey) ?? "");
+    const savedLng = parseFloat(getCookie(lngCookieKey) ?? "");
 
     const initialCenter: [number, number] =
       !isNaN(savedLat) && !isNaN(savedLng)
-        ? [savedLat, savedLng]
-        : DEFAULT_CENTER;
+        ? [clampLat(savedLat), normalizeLng(savedLng)]
+        : defaultCenter;
     const initialZoom = Math.min(
       MAX_ZOOM,
       Math.max(mapMinZoom, !isNaN(savedZoom) ? savedZoom : defaultZoom),
@@ -136,13 +159,10 @@ export const useMapInitialization = ({
       maxZoom: MAX_ZOOM,
       zoomSnap: 0.25,
       zoomDelta: 0.25,
-      // No maxBounds on mobile for unlimited panning, desktop has soft bounds
-      ...(isMobileMapMode
-        ? {}
-        : {
-            maxBounds: L.latLngBounds(L.latLng(-85, -540), L.latLng(85, 540)),
-            maxBoundsViscosity: 1.0,
-          }),
+      // Keep the viewport inside the world bounds on both desktop and mobile
+      // so users cannot pan into empty black areas.
+      maxBounds: L.latLngBounds(L.latLng(-85, -540), L.latLng(85, 540)),
+      maxBoundsViscosity: 1.0,
       attributionControl: false,
       zoomControl: false,
     }).setView(initialCenter, initialZoom);
@@ -160,9 +180,8 @@ export const useMapInitialization = ({
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       {
         maxZoom: 19,
-        minZoom: mapMinZoom,
+        minZoom: tileLayerMinZoom,
         minNativeZoom: TILE_MIN_NATIVE_ZOOM,
-        noWrap: isMobileMapMode,
         className: "osm-tiles",
         ...tileLoadingOptions,
       },
@@ -173,9 +192,8 @@ export const useMapInitialization = ({
       {
         subdomains: "0123", // Use mt0-mt3 for parallel loading
         maxZoom: MAX_ZOOM,
-        minZoom: mapMinZoom,
+        minZoom: tileLayerMinZoom,
         minNativeZoom: TILE_MIN_NATIVE_ZOOM,
-        noWrap: isMobileMapMode,
         ...tileLoadingOptions,
       },
     );
@@ -185,9 +203,8 @@ export const useMapInitialization = ({
       {
         subdomains: "abcd",
         maxZoom: MAX_ZOOM,
-        minZoom: mapMinZoom,
+        minZoom: tileLayerMinZoom,
         minNativeZoom: TILE_MIN_NATIVE_ZOOM,
-        noWrap: isMobileMapMode,
         ...tileLoadingOptions,
       },
     );
@@ -195,9 +212,8 @@ export const useMapInitialization = ({
     const openAIPUrl = `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${process.env.NEXT_PUBLIC_OPENAIP_API_KEY}`;
     openAIPLayer.current = L.tileLayer(openAIPUrl, {
       maxZoom: 19,
-      minZoom: mapMinZoom,
+      minZoom: tileLayerMinZoom,
       minNativeZoom: TILE_MIN_NATIVE_ZOOM,
-      noWrap: isMobileMapMode,
       ...tileLoadingOptions,
     });
 
@@ -219,9 +235,9 @@ export const useMapInitialization = ({
     const saveMapPosition = () => {
       const center = map.getCenter();
       const zoom = map.getZoom();
-      setCookie("map_zoom", String(zoom));
-      setCookie("map_center_lat", String(center.lat));
-      setCookie("map_center_lng", String(center.lng));
+      setCookie(zoomCookieKey, String(zoom));
+      setCookie(latCookieKey, String(clampLat(center.lat)));
+      setCookie(lngCookieKey, String(normalizeLng(center.lng)));
     };
     map.on("moveend", saveMapPosition);
 
@@ -233,7 +249,18 @@ export const useMapInitialization = ({
     };
     // Intentionally excluding setState functions and canUseRadarMode
     // canUseRadarMode changes should NOT recreate the map - handle controls separately
-  }, [defaultZoom, isMobileMapMode, mapContainerId, mapMinZoom, onMapClick]);
+  }, [
+    defaultCenter,
+    defaultZoom,
+    isMobileMapMode,
+    latCookieKey,
+    lngCookieKey,
+    mapContainerId,
+    mapMinZoom,
+    onMapClick,
+    tileLayerMinZoom,
+    zoomCookieKey,
+  ]);
 
   // Separate effect to handle radar/OSM/OpenAIP/Settings controls
   // This ensures proper ordering: Radar -> OSM -> OpenAIP -> Settings
