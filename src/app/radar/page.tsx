@@ -362,6 +362,15 @@ function ATCPageContent() {
   }, [desktopMapRenderer, hasResolvedMapRenderer]);
 
   useEffect(() => {
+    setHasResolvedInitialAirportFromUrl(!normalizedAirportParam);
+    setPendingAirportIcao(null);
+
+    if (!normalizedAirportParam) {
+      setSelectedAirport(undefined);
+    }
+  }, [normalizedAirportParam]);
+
+  useEffect(() => {
     replaceRadarSearchParams((params) => {
       if (fullFlightFilter) {
         params.set("callsign", fullFlightFilter);
@@ -409,13 +418,19 @@ function ATCPageContent() {
       return;
     }
 
-    if (pendingAirportIcao !== normalizedAirportParam) {
-      setPendingAirportIcao(normalizedAirportParam);
-      fetchAirports();
+    if (airports.length === 0) {
+      if (isAirportDataLoading) return;
+
+      if (pendingAirportIcao !== normalizedAirportParam) {
+        setPendingAirportIcao(normalizedAirportParam);
+        fetchAirports();
+        return;
+      }
+
+      setPendingAirportIcao(null);
+      setHasResolvedInitialAirportFromUrl(true);
       return;
     }
-
-    if (isAirportDataLoading) return;
 
     setPendingAirportIcao(null);
     setHasResolvedInitialAirportFromUrl(true);
@@ -561,9 +576,11 @@ function ATCPageContent() {
       }
 
       setPendingAirportIcao(normalizedIcao);
-      fetchAirports();
+      if (!isAirportDataLoading && airports.length === 0) {
+        fetchAirports();
+      }
     },
-    [airports, fetchAirports, selectAirport],
+    [airports, fetchAirports, isAirportDataLoading, selectAirport],
   );
 
   const handleAirportExplorerSelect = useCallback(
@@ -754,13 +771,20 @@ function ATCPageContent() {
   useEffect(() => {
     if (!pendingAirportIcao || airports.length === 0) return;
 
+    if (
+      normalizedAirportParam &&
+      pendingAirportIcao !== normalizedAirportParam
+    ) {
+      return;
+    }
+
     const airport = airports.find((ap) => ap.icao === pendingAirportIcao);
     if (airport) {
       selectAirport(airport);
     }
 
     setPendingAirportIcao(null);
-  }, [pendingAirportIcao, airports, selectAirport]);
+  }, [normalizedAirportParam, pendingAirportIcao, airports, selectAirport]);
 
   function handleAircraftSelect(
     aircraft: PositionUpdate | null,
