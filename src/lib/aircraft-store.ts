@@ -32,12 +32,13 @@ export interface PositionUpdate {
   ts: number;
   lastSeen: number;
   flightPath?: [number, number][];
+  trailSamples?: TimedPositionSample[];
 }
 
 type Subscriber = (aircraft: Map<string, PositionUpdate>) => void;
 
 const MAX_FLIGHT_PATH_POINTS = 150;
-const MAX_SPEED_SAMPLE_POINTS = 60;
+const MAX_RECENT_SAMPLE_POINTS = 180;
 const MAX_SPEED_SAMPLE_AGE_MS = 90_000;
 const MIN_SPEED_SAMPLE_WINDOW_MS = 8_000;
 const MAX_REASONABLE_OBSERVED_SPEED_KTS = 1_400;
@@ -109,6 +110,7 @@ class AircraftStore {
       observedGroundSpeed,
       etaObservedGroundSpeed,
       flightPath: this.flightPaths.get(id) || [],
+      trailSamples: samples,
     };
 
     this.store.set(id, dataWithPath);
@@ -219,8 +221,8 @@ class AircraftStore {
     const minTs = ts - MAX_SPEED_SAMPLE_AGE_MS;
     next = next.filter((sample) => sample.ts >= minTs);
 
-    if (next.length > MAX_SPEED_SAMPLE_POINTS) {
-      next = next.slice(-MAX_SPEED_SAMPLE_POINTS);
+    if (next.length > MAX_RECENT_SAMPLE_POINTS) {
+      next = next.slice(-MAX_RECENT_SAMPLE_POINTS);
     }
 
     this.recentSamples.set(id, next);

@@ -726,6 +726,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   useMapLayersAndMarkers({
     mapInstance: mapRefs.mapInstance,
+    radarTrailsLayer: mapRefs.radarTrailsLayerGroup,
     aircraftMarkersLayer: mapRefs.aircraftMarkersLayer,
     airportMarkersLayer: mapRefs.airportMarkersLayer,
     osmLayer: mapRefs.osmLayer,
