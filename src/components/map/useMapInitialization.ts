@@ -50,10 +50,11 @@ interface MapRefs {
 
 const DEFAULT_CENTER: [number, number] = [20, 0];
 const DEFAULT_ZOOM = 3;
+const MOBILE_DEFAULT_ZOOM = 1.75;
 const USER_LOCATION_RESET_ZOOM = 5.5;
-// On mobile, keep the full world visible without shrinking it so far that
-// Leaflet shows additional wrapped world copies in the viewport.
-const MOBILE_MIN_ZOOM = 0.35;
+// Mobile needs a substantially wider zoom-out range than desktop.
+// Going much lower than this starts to look sparse even with wrapping disabled.
+const MOBILE_MIN_ZOOM = -0.5;
 const DESKTOP_MIN_ZOOM = 3;
 const TILE_MIN_NATIVE_ZOOM = 0;
 const MAX_ZOOM = 18;
@@ -93,13 +94,14 @@ export const useMapInitialization = ({
   const [mapReady, setMapReady] = useState(false);
   const [isMobileMapMode] = useState(isMobile);
   const mapMinZoom = isMobileMapMode ? MOBILE_MIN_ZOOM : DESKTOP_MIN_ZOOM;
+  const defaultZoom = isMobileMapMode ? MOBILE_DEFAULT_ZOOM : DEFAULT_ZOOM;
 
   const resetMapView = useCallback((targetLocation?: MapResetLocation | null) => {
     if (!mapInstance.current) return;
     const center: [number, number] = targetLocation
       ? [targetLocation.lat, targetLocation.lng]
       : DEFAULT_CENTER;
-    const zoom = targetLocation ? USER_LOCATION_RESET_ZOOM : DEFAULT_ZOOM;
+    const zoom = targetLocation ? USER_LOCATION_RESET_ZOOM : defaultZoom;
 
     mapInstance.current.setView(center, zoom, {
       animate: true,
@@ -107,7 +109,7 @@ export const useMapInitialization = ({
     setCookie("map_zoom", String(zoom));
     setCookie("map_center_lat", String(center[0]));
     setCookie("map_center_lng", String(center[1]));
-  }, []);
+  }, [defaultZoom]);
 
   useEffect(() => {
     if (mapInstance.current) return;
@@ -123,7 +125,7 @@ export const useMapInitialization = ({
         : DEFAULT_CENTER;
     const initialZoom = Math.min(
       MAX_ZOOM,
-      Math.max(mapMinZoom, !isNaN(savedZoom) ? savedZoom : DEFAULT_ZOOM),
+      Math.max(mapMinZoom, !isNaN(savedZoom) ? savedZoom : defaultZoom),
     );
 
     const map = L.map(mapContainerId, {
@@ -160,6 +162,7 @@ export const useMapInitialization = ({
         maxZoom: 19,
         minZoom: mapMinZoom,
         minNativeZoom: TILE_MIN_NATIVE_ZOOM,
+        noWrap: isMobileMapMode,
         className: "osm-tiles",
         ...tileLoadingOptions,
       },
@@ -172,6 +175,7 @@ export const useMapInitialization = ({
         maxZoom: MAX_ZOOM,
         minZoom: mapMinZoom,
         minNativeZoom: TILE_MIN_NATIVE_ZOOM,
+        noWrap: isMobileMapMode,
         ...tileLoadingOptions,
       },
     );
@@ -183,6 +187,7 @@ export const useMapInitialization = ({
         maxZoom: MAX_ZOOM,
         minZoom: mapMinZoom,
         minNativeZoom: TILE_MIN_NATIVE_ZOOM,
+        noWrap: isMobileMapMode,
         ...tileLoadingOptions,
       },
     );
@@ -192,6 +197,7 @@ export const useMapInitialization = ({
       maxZoom: 19,
       minZoom: mapMinZoom,
       minNativeZoom: TILE_MIN_NATIVE_ZOOM,
+      noWrap: isMobileMapMode,
       ...tileLoadingOptions,
     });
 
@@ -227,7 +233,7 @@ export const useMapInitialization = ({
     };
     // Intentionally excluding setState functions and canUseRadarMode
     // canUseRadarMode changes should NOT recreate the map - handle controls separately
-  }, [isMobileMapMode, mapContainerId, mapMinZoom, onMapClick]);
+  }, [defaultZoom, isMobileMapMode, mapContainerId, mapMinZoom, onMapClick]);
 
   // Separate effect to handle radar/OSM/OpenAIP/Settings controls
   // This ensures proper ordering: Radar -> OSM -> OpenAIP -> Settings
