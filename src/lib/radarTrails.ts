@@ -2,11 +2,15 @@ import {
   type PositionUpdate,
   type TimedPositionSample,
 } from "~/lib/aircraft-store";
+import { unwrapPath } from "~/lib/map-utils";
+import {
+  type RadarTrailPreferences,
+  DEFAULT_RADAR_TRAIL_PREFERENCES,
+} from "~/lib/radarTrailPreferences";
 
-export const RADAR_TRAIL_RENDER_LENGTH = 15;
-export const RADAR_TRAIL_SAMPLE_INTERVAL_MS = 5000;
 export const RADAR_TRAIL_MIN_SPEED_KTS = 50;
 export const RADAR_TRAIL_COLOR = "#ff9a1f";
+const RADAR_TRAIL_RENDER_LENGTH = 4;
 const RADAR_TRAIL_MAX_RADIUS_PX = 2.8;
 const RADAR_TRAIL_MIN_RADIUS_PX = 1.2;
 
@@ -51,36 +55,184 @@ function getTrailOpacity(index: number) {
   return Math.max(0.12, opacity);
 }
 
-export function buildRadarTrailDots(aircraft: PositionUpdate): RadarTrailDot[] {
+function toRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function distanceNm(
+  fromLat: number,
+  fromLon: number,
+  toLat: number,
+  toLon: number,
+) {
+  const dLat = toRadians(toLat - fromLat);
+  const dLon = toRadians(toLon - fromLon);
+  const lat1 = toRadians(fromLat);
+  const lat2 = toRadians(toLat);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return 3440.065 * c;
+}
+
+function interpolatePoint(
+  fromPoint: [number, number],
+  toPoint: [number, number],
+  ratio: number,
+): [number, number] {
+  return [
+    fromPoint[0] + (toPoint[0] - fromPoint[0]) * ratio,
+    fromPoint[1] + (toPoint[1] - fromPoint[1]) * ratio,
+  ];
+}
+
+function unwrapTimedSamples(samples: TimedPositionSample[]) {
+  const unwrapped = unwrapPath(
+    samples.map((sample) => [sample.lat, sample.lon] as [number, number]),
+  );
+
+  return samples.map((sample, index) => ({
+    ...sample,
+    lat: unwrapped[index]?.[0] ?? sample.lat,
+    lon: unwrapped[index]?.[1] ?? sample.lon,
+  }));
+}
+
+function buildTimeTrailSamples(aircraft: PositionUpdate) {
+  const currentTs = Number.isFinite(aircraft.ts) ? aircraft.ts : Date.now();
+  const baseSamples = aircraft.trailSamples ?? [];
+  const nextSamples = [...baseSamples];
+  const lastSample = nextSamples[nextSamples.length - 1];
+
+  if (!lastSample || currentTs > lastSample.ts) {
+    nextSamples.push({
+      lat: aircraft.lat,
+      lon: aircraft.lon,
+      ts: currentTs,
+    });
+  }
+
+  return unwrapTimedSamples(nextSamples);
+}
+
+function getPointAtTimeOffset(
+  samples: TimedPositionSample[],
+  targetOffsetMs: number,
+): [number, number] | null {
+  if (samples.length < 2) return null;
+
+  const newest = samples[samples.length - 1];
+  if (!newest) return null;
+
+  const targetTs = newest.ts - targetOffsetMs;
+  if (targetTs < samples[0]!.ts) return null;
+
+  for (let index = samples.length - 1; index > 0; index -= 1) {
+    const newer = samples[index];
+    const older = samples[index - 1];
+    if (!newer || !older || newer.ts <= older.ts) continue;
+    if (targetTs < older.ts || targetTs > newer.ts) continue;
+
+    const ratio = (targetTs - older.ts) / (newer.ts - older.ts);
+    return interpolatePoint(
+      [older.lat, older.lon],
+      [newer.lat, newer.lon],
+      ratio,
+    );
+  }
+
+  return null;
+}
+
+function buildDistanceTrailPath(aircraft: PositionUpdate) {
+  const currentPoint: [number, number] = [aircraft.lat, aircraft.lon];
+  const path = aircraft.flightPath ?? [];
+  const lastPathPoint = path[path.length - 1];
+
+  return unwrapPath(
+    lastPathPoint?.[0] === currentPoint[0] &&
+      lastPathPoint?.[1] === currentPoint[1]
+      ? path
+      : [...path, currentPoint],
+  );
+}
+
+function getPointAtDistanceOffset(
+  path: [number, number][],
+  targetDistanceNm: number,
+): [number, number] | null {
+  if (path.length < 2) return null;
+
+  let traversedDistanceNm = 0;
+
+  for (let index = path.length - 1; index > 0; index -= 1) {
+    const segmentEnd = path[index];
+    const segmentStart = path[index - 1];
+    if (!segmentEnd || !segmentStart) continue;
+
+    const segmentDistanceNm = distanceNm(
+      segmentStart[0],
+      segmentStart[1],
+      segmentEnd[0],
+      segmentEnd[1],
+    );
+    if (segmentDistanceNm <= 0) continue;
+
+    if (traversedDistanceNm + segmentDistanceNm >= targetDistanceNm) {
+      const remainingDistanceNm = targetDistanceNm - traversedDistanceNm;
+      const ratio = remainingDistanceNm / segmentDistanceNm;
+      return interpolatePoint(segmentEnd, segmentStart, ratio);
+    }
+
+    traversedDistanceNm += segmentDistanceNm;
+  }
+
+  return null;
+}
+
+export function buildRadarTrailDots(
+  aircraft: PositionUpdate,
+  preferences: RadarTrailPreferences = DEFAULT_RADAR_TRAIL_PREFERENCES,
+): RadarTrailDot[] {
   const speedKts = getTrailSpeedKts(aircraft);
   if (speedKts < RADAR_TRAIL_MIN_SPEED_KTS) return [];
+  if (!preferences.enabled) return [];
+  if (!Number.isFinite(aircraft.lat) || !Number.isFinite(aircraft.lon)) {
+    return [];
+  }
 
-  const samples = aircraft.trailSamples;
-  if (!samples || samples.length < 2) return [];
+  const timeSamples =
+    preferences.mode === "minutes" ? buildTimeTrailSamples(aircraft) : null;
+  const distancePath = buildDistanceTrailPath(aircraft);
 
   const dots: RadarTrailDot[] = [];
-  let newestAcceptedTs = samples[samples.length - 1]?.ts ?? 0;
+  const interval =
+    preferences.mode === "minutes"
+      ? preferences.minutes
+      : preferences.distanceNm;
 
-  for (let index = samples.length - 2; index >= 0; index--) {
-    const sample = samples[index];
-    if (!sample || !isValidSample(sample)) continue;
+  for (let index = 0; index < RADAR_TRAIL_RENDER_LENGTH; index += 1) {
+    const targetValue = interval * (index + 1);
+    const point =
+      preferences.mode === "minutes"
+        ? getPointAtTimeOffset(timeSamples ?? [], targetValue * 60_000) ??
+          getPointAtDistanceOffset(
+            distancePath,
+            (speedKts * targetValue) / 60,
+          )
+        : getPointAtDistanceOffset(distancePath, targetValue);
 
-    if (newestAcceptedTs - sample.ts < RADAR_TRAIL_SAMPLE_INTERVAL_MS) {
+    if (!point || !isValidSample({ lat: point[0], lon: point[1], ts: 0 })) {
       continue;
     }
 
-    const ageIndex = dots.length;
     dots.push({
-      lat: sample.lat,
-      lon: sample.lon,
-      opacity: getTrailOpacity(ageIndex),
-      radius: getTrailRadius(ageIndex),
+      lat: point[0],
+      lon: point[1],
+      opacity: getTrailOpacity(index),
+      radius: getTrailRadius(index),
     });
-    newestAcceptedTs = sample.ts;
-
-    if (dots.length >= RADAR_TRAIL_RENDER_LENGTH) {
-      break;
-    }
   }
 
   return dots;

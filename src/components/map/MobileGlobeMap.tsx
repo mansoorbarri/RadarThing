@@ -44,6 +44,10 @@ import {
   type MapLayerPresetState,
 } from "~/lib/mapLayerPresets";
 import {
+  getStoredRadarTrailPreferences,
+  setStoredRadarTrailPreferences,
+} from "~/lib/radarTrailPreferences";
+import {
   getAircraftIconFilter,
   getAircraftIconUrl,
 } from "~/components/map/MapIcons";
@@ -755,6 +759,9 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     getBooleanCookie("traffic_conflicts", false),
   );
   const [showTags, setShowTags] = useState(true);
+  const [radarTrailPreferences, setRadarTrailPreferences] = useState(() =>
+    getStoredRadarTrailPreferences(),
+  );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHeadingMode, setIsHeadingMode] = useState(false);
   const [layerPresets, setLayerPresets] = useState(() =>
@@ -1682,13 +1689,13 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     const map = mapRef.current;
     if (!mapReady || !map) return;
 
-    if (!isRadarMode) {
+    if (!isRadarMode || !radarTrailPreferences.enabled) {
       setSourceData(map, SOURCE_IDS.radarTrails, emptyFeatureCollection());
       return;
     }
 
     const features = aircrafts.flatMap((aircraft) =>
-      buildRadarTrailDots(aircraft)
+      buildRadarTrailDots(aircraft, radarTrailPreferences)
         .filter((dot) => isValidCoordinate(dot.lat, dot.lon))
         .map((dot) =>
           buildPointFeature(dot.lon, dot.lat, {
@@ -1702,7 +1709,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       type: "FeatureCollection",
       features,
     });
-  }, [aircrafts, isRadarMode, mapReady]);
+  }, [aircrafts, isRadarMode, mapReady, radarTrailPreferences]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1938,6 +1945,12 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
                   isPRO={isProUser}
                   mapRenderer={mapRenderer}
                   onMapRendererChange={onMapRendererChange}
+                  radarTrailPreferences={radarTrailPreferences}
+                  onRadarTrailPreferencesChange={(nextPreferences) => {
+                    setRadarTrailPreferences(
+                      setStoredRadarTrailPreferences(nextPreferences),
+                    );
+                  }}
                   presets={layerPresets}
                   activePresetId={activePreset?.id ?? null}
                   selectedPresetId={selectedPresetId}

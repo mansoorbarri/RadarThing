@@ -6,6 +6,7 @@ import { type Airport } from "~/components/map"; // Adjusted path
 import { type OnlineAirport } from "~/hooks/useAircraftStream";
 import { preparePathForWorldCopy } from "~/lib/map-utils";
 import { RADAR_TRAIL_COLOR, buildRadarTrailDots } from "~/lib/radarTrails";
+import { type RadarTrailPreferences } from "~/lib/radarTrailPreferences";
 import {
   getAircraftDivIcon,
   getRadarAircraftDivIcon,
@@ -142,6 +143,7 @@ interface UseMapLayersAndMarkersProps {
   ) => void;
   onAirportSelect?: (airport: Airport) => void;
   showTags: boolean;
+  radarTrailPreferences: RadarTrailPreferences;
   showConflicts: boolean;
   onConflictsChange?: (conflicts: ConflictAlertSummary[]) => void;
   onInitialTrafficPaint?: () => void;
@@ -453,6 +455,7 @@ export const useMapLayersAndMarkers = ({
   onAircraftSelect,
   onAirportSelect,
   showTags,
+  radarTrailPreferences,
   showConflicts,
   onConflictsChange,
   onInitialTrafficPaint,
@@ -526,10 +529,10 @@ export const useMapLayersAndMarkers = ({
     if (!trailLayer || !renderer || !mapReady) return;
 
     trailLayer.clearLayers();
-    if (!isRadarMode) return;
+    if (!isRadarMode || !radarTrailPreferences.enabled) return;
 
     aircrafts.forEach((aircraft) => {
-      const dots = buildRadarTrailDots(aircraft);
+      const dots = buildRadarTrailDots(aircraft, radarTrailPreferences);
       if (dots.length === 0) return;
 
       const displayDots = preparePathForWorldCopy(
@@ -553,7 +556,7 @@ export const useMapLayersAndMarkers = ({
         }).addTo(trailLayer);
       });
     });
-  }, [aircrafts, isRadarMode, mapReady, radarTrailsLayer]);
+  }, [aircrafts, isRadarMode, mapReady, radarTrailsLayer, radarTrailPreferences]);
 
   // Effect for managing base layers (OSM/Satellite/Radar)
   useEffect(() => {
