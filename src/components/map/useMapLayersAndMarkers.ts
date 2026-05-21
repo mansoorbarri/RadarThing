@@ -4,6 +4,9 @@ import L from "leaflet";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type Airport } from "~/components/map"; // Adjusted path
 import { type OnlineAirport } from "~/hooks/useAircraftStream";
+import { preparePathForWorldCopy } from "~/lib/map-utils";
+import { RADAR_TRAIL_COLOR, buildRadarTrailDots } from "~/lib/radarTrails";
+import { type RadarTrailPreferences } from "~/lib/radarTrailPreferences";
 import {
   getAircraftDivIcon,
   getRadarAircraftDivIcon,
@@ -119,6 +122,7 @@ function slideTo(marker: L.Marker, destLat: number, destLng: number) {
 
 interface UseMapLayersAndMarkersProps {
   mapInstance: React.MutableRefObject<L.Map | null>;
+  radarTrailsLayer: React.MutableRefObject<L.LayerGroup | null>;
   aircraftMarkersLayer: React.MutableRefObject<L.LayerGroup | null>;
   airportMarkersLayer: React.MutableRefObject<L.LayerGroup | null>;
   osmLayer: React.MutableRefObject<L.TileLayer | null>;
@@ -139,6 +143,7 @@ interface UseMapLayersAndMarkersProps {
   ) => void;
   onAirportSelect?: (airport: Airport) => void;
   showTags: boolean;
+  radarTrailPreferences: RadarTrailPreferences;
   showConflicts: boolean;
   onConflictsChange?: (conflicts: ConflictAlertSummary[]) => void;
   onInitialTrafficPaint?: () => void;
@@ -432,6 +437,7 @@ function detectConflicts(aircrafts: PositionUpdate[]): ConflictAlert[] {
 
 export const useMapLayersAndMarkers = ({
   mapInstance,
+  radarTrailsLayer,
   aircraftMarkersLayer,
   airportMarkersLayer,
   osmLayer,
@@ -449,6 +455,7 @@ export const useMapLayersAndMarkers = ({
   onAircraftSelect,
   onAirportSelect,
   showTags,
+  radarTrailPreferences,
   showConflicts,
   onConflictsChange,
   onInitialTrafficPaint,
@@ -460,6 +467,7 @@ export const useMapLayersAndMarkers = ({
   // Track existing markers by aircraft ID for smooth updates
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const conflictLayerRef = useRef<L.LayerGroup | null>(null);
+  const radarTrailRendererRef = useRef<L.Renderer | null>(null);
   const hasReportedInitialTrafficPaintRef = useRef(false);
 
   // Use refs for callbacks to avoid stale closures in event handlers
@@ -500,6 +508,10 @@ export const useMapLayersAndMarkers = ({
     const map = mapInstance.current;
     if (!map || !mapReady) return;
 
+    if (!radarTrailRendererRef.current) {
+      radarTrailRendererRef.current = L.canvas({ padding: 0.25 });
+    }
+
     if (!conflictLayerRef.current) {
       conflictLayerRef.current = L.layerGroup().addTo(map);
     }
@@ -510,6 +522,41 @@ export const useMapLayersAndMarkers = ({
       conflictLayerRef.current = null;
     };
   }, [mapInstance, mapReady]);
+
+  useEffect(() => {
+    const trailLayer = radarTrailsLayer.current;
+    const renderer = radarTrailRendererRef.current;
+    if (!trailLayer || !renderer || !mapReady) return;
+
+    trailLayer.clearLayers();
+    if (!isRadarMode || !radarTrailPreferences.enabled) return;
+
+    aircrafts.forEach((aircraft) => {
+      const dots = buildRadarTrailDots(aircraft, radarTrailPreferences);
+      if (dots.length === 0) return;
+
+      const displayDots = preparePathForWorldCopy(
+        dots.map((dot) => [dot.lat, dot.lon] as [number, number]),
+        aircraft.lon,
+      );
+
+      displayDots.forEach(([lat, lon], index) => {
+        const dot = dots[index];
+        if (!dot) return;
+
+        L.circleMarker([lat, lon], {
+          radius: dot.radius,
+          color: RADAR_TRAIL_COLOR,
+          weight: 1,
+          opacity: dot.opacity,
+          fillColor: RADAR_TRAIL_COLOR,
+          fillOpacity: dot.opacity * 0.35,
+          interactive: false,
+          renderer,
+        }).addTo(trailLayer);
+      });
+    });
+  }, [aircrafts, isRadarMode, mapReady, radarTrailsLayer, radarTrailPreferences]);
 
   // Effect for managing base layers (OSM/Satellite/Radar)
   useEffect(() => {

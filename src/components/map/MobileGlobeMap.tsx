@@ -34,6 +34,7 @@ import {
   SELECTED_AIRPORT_RADIUS_MILES,
   unwrapPath,
 } from "~/lib/map-utils";
+import { RADAR_TRAIL_COLOR, buildRadarTrailDots } from "~/lib/radarTrails";
 import { Analytics } from "~/lib/analytics";
 import {
   createMapLayerPreset,
@@ -42,6 +43,10 @@ import {
   setStoredMapLayerPresets,
   type MapLayerPresetState,
 } from "~/lib/mapLayerPresets";
+import {
+  getStoredRadarTrailPreferences,
+  setStoredRadarTrailPreferences,
+} from "~/lib/radarTrailPreferences";
 import {
   getAircraftIconFilter,
   getAircraftIconUrl,
@@ -192,6 +197,7 @@ const OPENAIP_SOURCE_ID = "mobile-globe-openaip-source";
 const OPENAIP_TILES = `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=${process.env.NEXT_PUBLIC_OPENAIP_API_KEY}`;
 
 const SOURCE_IDS = {
+  radarTrails: "mobile-globe-radar-trails",
   selectedHistory: "mobile-globe-selected-history",
   selectedRoutes: "mobile-globe-selected-routes",
   selectedWaypoints: "mobile-globe-selected-waypoints",
@@ -753,6 +759,9 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     getBooleanCookie("traffic_conflicts", false),
   );
   const [showTags, setShowTags] = useState(true);
+  const [radarTrailPreferences, setRadarTrailPreferences] = useState(() =>
+    getStoredRadarTrailPreferences(),
+  );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHeadingMode, setIsHeadingMode] = useState(false);
   const [layerPresets, setLayerPresets] = useState(() =>
@@ -1166,6 +1175,10 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
         type: "geojson",
         data: emptyFeatureCollection(),
       });
+      map.addSource(SOURCE_IDS.radarTrails, {
+        type: "geojson",
+        data: emptyFeatureCollection(),
+      });
       map.addSource(SOURCE_IDS.selectedRoutes, {
         type: "geojson",
         data: emptyFeatureCollection(),
@@ -1227,6 +1240,20 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
           "line-width": 2.5,
           "line-opacity": 0.72,
           "line-dasharray": [4, 3],
+        },
+      });
+
+      map.addLayer({
+        id: "mobile-globe-radar-trails",
+        type: "circle",
+        source: SOURCE_IDS.radarTrails,
+        paint: {
+          "circle-color": RADAR_TRAIL_COLOR,
+          "circle-radius": ["coalesce", ["get", "radius"], 2],
+          "circle-opacity": ["coalesce", ["get", "opacity"], 0.5],
+          "circle-stroke-color": RADAR_TRAIL_COLOR,
+          "circle-stroke-opacity": ["coalesce", ["get", "opacity"], 0.5],
+          "circle-stroke-width": 0.6,
         },
       });
 
@@ -1662,6 +1689,32 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     const map = mapRef.current;
     if (!mapReady || !map) return;
 
+    if (!isRadarMode || !radarTrailPreferences.enabled) {
+      setSourceData(map, SOURCE_IDS.radarTrails, emptyFeatureCollection());
+      return;
+    }
+
+    const features = aircrafts.flatMap((aircraft) =>
+      buildRadarTrailDots(aircraft, radarTrailPreferences)
+        .filter((dot) => isValidCoordinate(dot.lat, dot.lon))
+        .map((dot) =>
+          buildPointFeature(dot.lon, dot.lat, {
+            radius: dot.radius,
+            opacity: dot.opacity,
+          }),
+        ),
+    );
+
+    setSourceData(map, SOURCE_IDS.radarTrails, {
+      type: "FeatureCollection",
+      features,
+    });
+  }, [aircrafts, isRadarMode, mapReady, radarTrailPreferences]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+
     if (!historyPath || historyPath.length < 2) {
       setSourceData(map, SOURCE_IDS.history, emptyFeatureCollection());
       return;
@@ -1892,6 +1945,12 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
                   isPRO={isProUser}
                   mapRenderer={mapRenderer}
                   onMapRendererChange={onMapRendererChange}
+                  radarTrailPreferences={radarTrailPreferences}
+                  onRadarTrailPreferencesChange={(nextPreferences) => {
+                    setRadarTrailPreferences(
+                      setStoredRadarTrailPreferences(nextPreferences),
+                    );
+                  }}
                   presets={layerPresets}
                   activePresetId={activePreset?.id ?? null}
                   selectedPresetId={selectedPresetId}
