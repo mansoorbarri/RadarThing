@@ -44,6 +44,7 @@ import { useNotamOverlay } from "~/hooks/useNotamOverlay";
 import { useWeatherOverlayLayer } from "~/hooks/useWeatherOverlayLayer";
 import { MetarPanel } from "./MetarPanel";
 import { RadarSettings } from "~/components/atc/radarSettings";
+import { MapSettingsSidebar } from "~/components/map/MapSettingsSidebar";
 import { Analytics } from "~/lib/analytics";
 import {
   createMapLayerPreset,
@@ -191,6 +192,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const lastConflictHistorySignatureRef = useRef<string>("");
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSettingsSidebarCollapsed, setIsSettingsSidebarCollapsed] =
+    useState(false);
   // Local selection state for internal use (cleared when clicking map background)
   const [localSelectedIds, setLocalSelectedIds] = useState<string[]>([]);
   const hasReportedInitialBaseLayerRef = useRef(false);
@@ -207,6 +210,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
   useEffect(() => {
     onAircraftSelectRef.current = onAircraftSelect;
   }, [onAircraftSelect]);
+
+  useEffect(() => {
+    if (!isMobile || selectedAircraftIds.length === 0) return;
+    setIsSettingsOpen(false);
+  }, [isMobile, selectedAircraftIds]);
 
   const clearHistoryPolylineRef = useRef<(() => void) | null>(null);
 
@@ -1060,40 +1068,50 @@ const MapComponent: React.FC<MapComponentProps> = ({
         style={{ height: "100%", width: "100%", background: "#081722" }}
       />
 
-      {isSettingsOpen && !hideUi && (
-        <div className="animate-in fade-in zoom-in-95 absolute top-[180px] left-[70px] z-[10020] w-[min(320px,calc(100vw-86px))] duration-200">
-          <div className="max-h-[calc(100dvh-210px)] overflow-y-auto rounded-xl border border-white/10 bg-[#0a1219]/95 p-5 shadow-2xl backdrop-blur-xl">
-            <RadarSettings
-              isPRO={isProUser}
-              mapRenderer={mapRenderer}
-              onMapRendererChange={onMapRendererChange}
-              radarTrailPreferences={radarTrailPreferences}
-              onRadarTrailPreferencesChange={(nextPreferences) => {
-                setRadarTrailPreferences(
-                  setStoredRadarTrailPreferences(nextPreferences),
-                );
-              }}
-              presets={layerPresets}
-              activePresetId={activePreset?.id ?? null}
-              selectedPresetId={selectedPreset?.id ?? null}
-              onApplyPreset={applyLayerPreset}
-              onSavePreset={saveLayerPreset}
-              onUpdatePreset={updateLayerPreset}
-              onDeletePreset={deleteLayerPreset}
-              showPrecipitation={showPrecipitation}
-              setShowPrecipitation={setShowPrecipitation}
-              showAirmets={showAirmets}
-              setShowAirmets={setShowAirmets}
-              showSigmets={showSigmets}
-              setShowSigmets={setShowSigmets}
-              showConflicts={showConflicts}
-              setShowConflicts={setShowConflicts}
-            />
-          </div>
-        </div>
-      )}
+      {!hideUi ? (
+        <MapSettingsSidebar
+          isOpen={isSettingsOpen}
+          isMobile={isMobile}
+          isCollapsed={isSettingsSidebarCollapsed}
+          onClose={() => setIsSettingsOpen(false)}
+          onToggleCollapsed={() =>
+            setIsSettingsSidebarCollapsed((current) => !current)
+          }
+        >
+          <RadarSettings
+            isPRO={isProUser}
+            mapRenderer={mapRenderer}
+            onMapRendererChange={onMapRendererChange}
+            radarTrailPreferences={radarTrailPreferences}
+            onRadarTrailPreferencesChange={(nextPreferences) => {
+              setRadarTrailPreferences(
+                setStoredRadarTrailPreferences(nextPreferences),
+              );
+            }}
+            presets={layerPresets}
+            activePresetId={activePreset?.id ?? null}
+            selectedPresetId={selectedPreset?.id ?? null}
+            onApplyPreset={applyLayerPreset}
+            onSavePreset={saveLayerPreset}
+            onUpdatePreset={updateLayerPreset}
+            onDeletePreset={deleteLayerPreset}
+            showPrecipitation={showPrecipitation}
+            setShowPrecipitation={setShowPrecipitation}
+            showAirmets={showAirmets}
+            setShowAirmets={setShowAirmets}
+            showSigmets={showSigmets}
+            setShowSigmets={setShowSigmets}
+            showConflicts={showConflicts}
+            setShowConflicts={setShowConflicts}
+          />
+        </MapSettingsSidebar>
+      ) : null}
 
-      {canUseConflictAlerts && showConflicts && !isMobile && !hideUi && (
+      {canUseConflictAlerts &&
+      showConflicts &&
+      !isMobile &&
+      !hideUi &&
+      !isSettingsOpen ? (
         <div className="pointer-events-none absolute top-[180px] right-[22px] z-[10012] w-[300px] select-none">
           <ConflictMonitorPanel
             alerts={conflictAlerts}
@@ -1103,7 +1121,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             onReviewHistoryEvent={handleReviewConflictEvent}
           />
         </div>
-      )}
+      ) : null}
 
       {/* Hide METAR panel on mobile */}
       {!isMobile && !hideUi && (
