@@ -48,6 +48,7 @@ import {
 } from "~/lib/mapResetLocation";
 import { getCookie, setCookie } from "~/lib/cookies";
 import { normalizeCallsign } from "~/lib/utils";
+import { type Airport } from "~/components/map";
 
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
 import { SearchBar } from "~/components/atc/searchbar";
@@ -149,7 +150,9 @@ function ATCPageContent() {
   const [selectedAircrafts, setSelectedAircrafts] = useState<PositionUpdate[]>(
     [],
   );
-  const [selectedAirport, setSelectedAirport] = useState<any>(undefined);
+  const [selectedAirport, setSelectedAirport] = useState<Airport | undefined>(
+    undefined,
+  );
   const canAccessSelectedAirportCharts =
     Boolean(selectedAirport?.icao) &&
     (isProUser || isFreeChartIcao(selectedAirport?.icao));
@@ -174,6 +177,8 @@ function ATCPageContent() {
   const normalizedCallsignParam = callsignParam
     ? normalizeCallsign(callsignParam)
     : null;
+  const airportParam = searchParams?.get("airport") ?? null;
+  const normalizedAirportParam = airportParam?.trim().toUpperCase() || null;
   const isFullFlightNumberParam =
     normalizedCallsignParam && /^[A-Z]+\d+.*$/i.test(normalizedCallsignParam);
 
@@ -212,6 +217,8 @@ function ATCPageContent() {
 
   // Track if we've already auto-selected from URL param
   const [autoSelectedFromUrl, setAutoSelectedFromUrl] = useState(false);
+  const [hasResolvedInitialAirportFromUrl, setHasResolvedInitialAirportFromUrl] =
+    useState(() => !normalizedAirportParam);
 
   const [activeRightPanel, setActiveRightPanel] = useState<RightPanel>(null);
 
@@ -304,6 +311,32 @@ function ATCPageContent() {
   const reportedShortcutDiagnosticsRef = useRef<Set<string>>(new Set());
   const importedFlightPlanInputRef = useRef<HTMLInputElement | null>(null);
 
+  const replaceRadarSearchParams = useCallback(
+    (mutate: (params: URLSearchParams) => void) => {
+      const params = new URLSearchParams(window.location.search);
+      mutate(params);
+
+      const query = params.toString();
+      const newUrl = query
+        ? `${window.location.pathname}?${query}`
+        : window.location.pathname;
+      window.history.replaceState(null, "", newUrl);
+    },
+    [],
+  );
+
+  const selectAirport = useCallback(
+    (airport: Airport, options?: { addToRecent?: boolean }) => {
+      setSelectedAirport(airport);
+      setPendingAirportIcao(null);
+
+      if (options?.addToRecent !== false) {
+        addAirportSearch(airport);
+      }
+    },
+    [addAirportSearch],
+  );
+
   const handleResetMapView = useCallback(async () => {
     if (desktopMapRenderer === "flat") {
       resetMapViewRef.current?.(null);
@@ -329,21 +362,16 @@ function ATCPageContent() {
   }, [desktopMapRenderer, hasResolvedMapRenderer]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-
-    if (fullFlightFilter) {
-      params.set("callsign", fullFlightFilter);
-    } else if (selectedCallsigns.size > 0) {
-      params.set("callsign", Array.from(selectedCallsigns).join(","));
-    } else {
-      params.delete("callsign");
-    }
-
-    const newUrl = params.toString()
-      ? `?${params.toString()}`
-      : window.location.pathname;
-    window.history.replaceState(null, "", newUrl);
-  }, [selectedCallsigns, fullFlightFilter]);
+    replaceRadarSearchParams((params) => {
+      if (fullFlightFilter) {
+        params.set("callsign", fullFlightFilter);
+      } else if (selectedCallsigns.size > 0) {
+        params.set("callsign", Array.from(selectedCallsigns).join(","));
+      } else {
+        params.delete("callsign");
+      }
+    });
+  }, [selectedCallsigns, fullFlightFilter, replaceRadarSearchParams]);
 
   // Auto-start replay when flight data is loaded from URL param
   useEffect(() => {
@@ -358,14 +386,64 @@ function ATCPageContent() {
         setIsViewingHistory(true);
       }
       // Clear the replay param from URL after loading
-      const params = new URLSearchParams(window.location.search);
-      params.delete("replay");
-      const newUrl = params.toString()
-        ? `?${params.toString()}`
-        : window.location.pathname;
-      window.history.replaceState(null, "", newUrl);
+      replaceRadarSearchParams((params) => {
+        params.delete("replay");
+      });
     }
-  }, [replayFlightQuery, replayFlight]);
+  }, [replayFlightQuery, replayFlight, replaceRadarSearchParams]);
+
+  useEffect(() => {
+    if (hasResolvedInitialAirportFromUrl) return;
+
+    if (!normalizedAirportParam) {
+      setHasResolvedInitialAirportFromUrl(true);
+      return;
+    }
+
+    const matchedAirport = airports.find(
+      (airport) => airport.icao === normalizedAirportParam,
+    );
+    if (matchedAirport) {
+      selectAirport(matchedAirport);
+      setHasResolvedInitialAirportFromUrl(true);
+      return;
+    }
+
+    if (pendingAirportIcao !== normalizedAirportParam) {
+      setPendingAirportIcao(normalizedAirportParam);
+      fetchAirports();
+      return;
+    }
+
+    if (isAirportDataLoading) return;
+
+    setPendingAirportIcao(null);
+    setHasResolvedInitialAirportFromUrl(true);
+  }, [
+    airports,
+    fetchAirports,
+    hasResolvedInitialAirportFromUrl,
+    isAirportDataLoading,
+    normalizedAirportParam,
+    pendingAirportIcao,
+    selectAirport,
+  ]);
+
+  useEffect(() => {
+    if (!hasResolvedInitialAirportFromUrl) return;
+
+    replaceRadarSearchParams((params) => {
+      if (selectedAirport?.icao) {
+        params.set("airport", selectedAirport.icao.toLowerCase());
+      } else {
+        params.delete("airport");
+      }
+    });
+  }, [
+    hasResolvedInitialAirportFromUrl,
+    replaceRadarSearchParams,
+    selectedAirport?.icao,
+  ]);
 
   const filteredAircrafts = useMemo(() => {
     // If we have a full flight number filter, only show that aircraft
@@ -478,16 +556,14 @@ function ATCPageContent() {
 
       const airport = airports.find((ap) => ap.icao === normalizedIcao);
       if (airport) {
-        setSelectedAirport(airport);
-        addAirportSearch(airport);
-        setPendingAirportIcao(null);
+        selectAirport(airport);
         return;
       }
 
       setPendingAirportIcao(normalizedIcao);
       fetchAirports();
     },
-    [airports, addAirportSearch, fetchAirports],
+    [airports, fetchAirports, selectAirport],
   );
 
   const handleAirportExplorerSelect = useCallback(
@@ -680,12 +756,11 @@ function ATCPageContent() {
 
     const airport = airports.find((ap) => ap.icao === pendingAirportIcao);
     if (airport) {
-      setSelectedAirport(airport);
-      addAirportSearch(airport);
+      selectAirport(airport);
     }
 
     setPendingAirportIcao(null);
-  }, [pendingAirportIcao, airports, addAirportSearch]);
+  }, [pendingAirportIcao, airports, selectAirport]);
 
   function handleAircraftSelect(
     aircraft: PositionUpdate | null,
@@ -775,6 +850,7 @@ function ATCPageContent() {
         setImportedFlightPlan(parsed);
         setSelectedAircrafts([]);
         setSelectedAirport(undefined);
+        setPendingAirportIcao(null);
         setHistoryPath(null);
         setIsViewingHistory(false);
         setReplayFlight(null);
@@ -1012,8 +1088,7 @@ function ATCPageContent() {
                   setSearchTerm("");
                 }}
                 onSelectAirport={(ap) => {
-                  setSelectedAirport(ap);
-                  addAirportSearch(ap);
+                  selectAirport(ap);
                   setSearchTerm("");
                 }}
                 onSelectPilot={(pilot) => {
@@ -1035,12 +1110,7 @@ function ATCPageContent() {
                       drawFlightPlanOnMapRef.current?.(aircraft, true);
                     }
                   } else if (search.type === "airport") {
-                    const airport = airports.find(
-                      (ap) => ap.icao === search.id,
-                    );
-                    if (airport) {
-                      setSelectedAirport(airport);
-                    }
+                    handleAirportSelectByIcao(search.id);
                   } else {
                     router.push(`/pilot/${search.id}`);
                   }
@@ -1276,8 +1346,7 @@ function ATCPageContent() {
                         <div
                           key={`ap-${airport.icao}`}
                           onClick={() => {
-                            setSelectedAirport(airport);
-                            addAirportSearch(airport);
+                            selectAirport(airport);
                             setSearchTerm("");
                             setShowMobileSearch(false);
                           }}
@@ -1326,12 +1395,7 @@ function ATCPageContent() {
                           drawFlightPlanOnMapRef.current?.(aircraft, true);
                         }
                       } else if (search.type === "airport") {
-                        const airport = airports.find(
-                          (ap) => ap.icao === search.id,
-                        );
-                        if (airport) {
-                          setSelectedAirport(airport);
-                        }
+                        handleAirportSelectByIcao(search.id);
                       } else {
                         router.push(`/pilot/${search.id}`);
                       }
@@ -1387,8 +1451,7 @@ function ATCPageContent() {
               selectedAircraftIds={selectedAircraftIds}
               onAircraftSelect={handleAircraftSelect}
               onAirportSelect={(airport) => {
-                setSelectedAirport(airport);
-                addAirportSearch(airport);
+                selectAirport(airport);
               }}
               setDrawFlightPlanOnMap={(fn) => {
                 drawFlightPlanOnMapRef.current = fn;
@@ -1424,8 +1487,7 @@ function ATCPageContent() {
               selectedAircraftIds={selectedAircraftIds}
               onAircraftSelect={handleAircraftSelect}
               onAirportSelect={(airport) => {
-                setSelectedAirport(airport);
-                addAirportSearch(airport);
+                selectAirport(airport);
               }}
               setDrawFlightPlanOnMap={(fn) => {
                 drawFlightPlanOnMapRef.current = fn;
@@ -1626,6 +1688,7 @@ function ATCPageContent() {
             <button
               onClick={() => {
                 setSelectedAirport(undefined);
+                setPendingAirportIcao(null);
                 setShowAtcPlayer(false);
                 setShowAirportFID(false);
               }}
