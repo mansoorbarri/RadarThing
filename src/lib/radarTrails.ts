@@ -10,9 +10,8 @@ import {
 
 export const RADAR_TRAIL_MIN_SPEED_KTS = 50;
 export const RADAR_TRAIL_COLOR = "#ff9a1f";
-const RADAR_TRAIL_RENDER_LENGTH = 4;
+const RADAR_TRAIL_RENDER_LENGTH = 5;
 const RADAR_TRAIL_MAX_RADIUS_PX = 2.8;
-const RADAR_TRAIL_MIN_RADIUS_PX = 1.2;
 
 export interface RadarTrailDot {
   lat: number;
@@ -40,14 +39,8 @@ function getTrailSpeedKts(aircraft: PositionUpdate) {
   );
 }
 
-function getTrailRadius(index: number) {
-  if (RADAR_TRAIL_RENDER_LENGTH <= 1) return RADAR_TRAIL_MAX_RADIUS_PX;
-
-  const progress = index / (RADAR_TRAIL_RENDER_LENGTH - 1);
-  return (
-    RADAR_TRAIL_MAX_RADIUS_PX -
-    (RADAR_TRAIL_MAX_RADIUS_PX - RADAR_TRAIL_MIN_RADIUS_PX) * progress
-  );
+function getTrailRadius() {
+  return RADAR_TRAIL_MAX_RADIUS_PX;
 }
 
 function getTrailOpacity(index: number) {
@@ -217,10 +210,10 @@ export function buildRadarTrailDots(
     const targetValue = interval * (index + 1);
     const point =
       preferences.mode === "minutes"
-        ? getPointAtTimeOffset(timeSamples ?? [], targetValue * 60_000) ??
+        ? getPointAtTimeOffset(timeSamples ?? [], targetValue * 1_000) ??
           getPointAtDistanceOffset(
             distancePath,
-            (speedKts * targetValue) / 60,
+            (speedKts * targetValue) / 3_600,
           )
         : getPointAtDistanceOffset(distancePath, targetValue);
 
@@ -232,7 +225,7 @@ export function buildRadarTrailDots(
       lat: point[0],
       lon: point[1],
       opacity: getTrailOpacity(index),
-      radius: getTrailRadius(index),
+      radius: getTrailRadius(),
     });
   }
 

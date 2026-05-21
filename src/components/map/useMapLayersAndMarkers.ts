@@ -683,7 +683,17 @@ export const useMapLayersAndMarkers = ({
           Math.abs(currentTarget.lat - newLat) > 0.0001 ||
           Math.abs(currentTarget.lng - newLng) > 0.0001
         ) {
-          slideTo(existingMarker, newLat, newLng);
+          if (isRadarMode) {
+            const existingAnimation = activeAnimations.get(existingMarker);
+            if (existingAnimation) {
+              cancelAnimationFrame(existingAnimation);
+              activeAnimations.delete(existingMarker);
+            }
+            animationTargets.set(existingMarker, { lat: newLat, lng: newLng });
+            existingMarker.setLatLng([newLat, newLng]);
+          } else {
+            slideTo(existingMarker, newLat, newLng);
+          }
         }
 
         // Skip icon updates during zoom — setIcon() destroys and recreates the

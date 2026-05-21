@@ -17,17 +17,26 @@ const RADAR_TRAIL_DISTANCE_COOKIE = "radar_trail_distance_nm";
 export const DEFAULT_RADAR_TRAIL_PREFERENCES: RadarTrailPreferences = {
   enabled: true,
   mode: "minutes",
-  minutes: 1,
+  minutes: 10,
   distanceNm: 5,
 };
 
-function clampInterval(value: number) {
+function clampTimeInterval(value: number) {
+  return Math.min(60, Math.max(2, Math.round(value)));
+}
+
+function clampDistanceInterval(value: number) {
   return Math.min(10, Math.max(1, Math.round(value)));
 }
 
-function parseIntervalCookie(value: string | null, fallback: number) {
+function parseTimeIntervalCookie(value: string | null, fallback: number) {
   const parsed = Number.parseInt(value ?? "", 10);
-  return Number.isFinite(parsed) ? clampInterval(parsed) : fallback;
+  return Number.isFinite(parsed) ? clampTimeInterval(parsed) : fallback;
+}
+
+function parseDistanceIntervalCookie(value: string | null, fallback: number) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) ? clampDistanceInterval(parsed) : fallback;
 }
 
 export function normalizeRadarTrailPreferences(
@@ -39,10 +48,10 @@ export function normalizeRadarTrailPreferences(
         ? preferences.enabled
         : DEFAULT_RADAR_TRAIL_PREFERENCES.enabled,
     mode: preferences?.mode === "nm" ? "nm" : "minutes",
-    minutes: clampInterval(
+    minutes: clampTimeInterval(
       preferences?.minutes ?? DEFAULT_RADAR_TRAIL_PREFERENCES.minutes,
     ),
-    distanceNm: clampInterval(
+    distanceNm: clampDistanceInterval(
       preferences?.distanceNm ?? DEFAULT_RADAR_TRAIL_PREFERENCES.distanceNm,
     ),
   };
@@ -59,11 +68,11 @@ export function getStoredRadarTrailPreferences(): RadarTrailPreferences {
         : enabledCookie === "true" || enabledCookie === "1",
     mode:
       modeCookie === "minutes" || modeCookie === "nm" ? modeCookie : undefined,
-    minutes: parseIntervalCookie(
+    minutes: parseTimeIntervalCookie(
       getCookie(RADAR_TRAIL_MINUTES_COOKIE),
       DEFAULT_RADAR_TRAIL_PREFERENCES.minutes,
     ),
-    distanceNm: parseIntervalCookie(
+    distanceNm: parseDistanceIntervalCookie(
       getCookie(RADAR_TRAIL_DISTANCE_COOKIE),
       DEFAULT_RADAR_TRAIL_PREFERENCES.distanceNm,
     ),

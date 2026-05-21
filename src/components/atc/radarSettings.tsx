@@ -109,7 +109,7 @@ export const RadarSettings = ({
   const allCollapsed = SETTINGS_SECTION_IDS.every((id) => !openSections[id]);
   const currentTrailIntervalLabel = radarTrailPreferences
     ? radarTrailPreferences.mode === "minutes"
-      ? `${radarTrailPreferences.minutes} min`
+      ? `${radarTrailPreferences.minutes} sec`
       : `${radarTrailPreferences.distanceNm} NM`
     : null;
 
@@ -155,7 +155,7 @@ export const RadarSettings = ({
       Analytics.track("radar_trail_preference_changed", {
         enabled: nextPreferences.enabled,
         mode: nextPreferences.mode,
-        minutes: nextPreferences.minutes,
+        seconds: nextPreferences.minutes,
         distance_nm: nextPreferences.distanceNm,
       });
     }
@@ -417,7 +417,7 @@ export const RadarSettings = ({
               className={`space-y-3 ${!radarTrailPreferences.enabled ? "opacity-50" : ""}`}
             >
               <p className="text-[11px] leading-5 text-white/45">
-                Choose whether each radar trail dot represents elapsed minutes or
+                Choose whether each radar trail dot represents elapsed seconds or
                 distance flown. Dots step out at that interval: 1x, 2x, 3x, and
                 4x.
               </p>
@@ -435,15 +435,15 @@ export const RadarSettings = ({
                   </div>
                   <p className="mt-1 text-[11px] text-white/45">
                     {radarTrailPreferences.mode === "minutes"
-                      ? "Each dot marks where the aircraft was this many minutes ago."
+                      ? "Each dot marks where the aircraft was this many seconds ago."
                       : "Each dot marks where the aircraft was this many nautical miles ago."}
                   </p>
                 </div>
 
                 <Slider
                   disabled={!radarTrailPreferences.enabled}
-                  min={1}
-                  max={10}
+                  min={radarTrailPreferences.mode === "minutes" ? 2 : 1}
+                  max={radarTrailPreferences.mode === "minutes" ? 60 : 10}
                   step={1}
                   value={[
                     radarTrailPreferences.mode === "minutes"
@@ -464,7 +464,7 @@ export const RadarSettings = ({
                     Analytics.track("radar_trail_preference_changed", {
                       enabled: radarTrailPreferences.enabled,
                       mode: radarTrailPreferences.mode,
-                      minutes:
+                      seconds:
                         radarTrailPreferences.mode === "minutes"
                           ? value
                           : radarTrailPreferences.minutes,
@@ -478,11 +478,15 @@ export const RadarSettings = ({
                 />
 
                 <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/35 uppercase">
-                  <span>1</span>
+                  <span>
+                    {radarTrailPreferences.mode === "minutes" ? "2" : "1"}
+                  </span>
                   <span className="text-center text-[11px] font-semibold tracking-[0.14em] text-cyan-200">
                     {currentTrailIntervalLabel}
                   </span>
-                  <span className="text-right">10</span>
+                  <span className="text-right">
+                    {radarTrailPreferences.mode === "minutes" ? "60" : "10"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -695,7 +699,7 @@ function TrailModeSelector({
             : "text-white/60 hover:bg-white/10 hover:text-white"
         }`}
       >
-        Minutes
+        Seconds
       </button>
       <button
         type="button"
