@@ -53,7 +53,7 @@ const DEFAULT_ZOOM = 3;
 const USER_LOCATION_RESET_ZOOM = 5.5;
 // On mobile, keep the full world visible without shrinking it so far that
 // Leaflet shows additional wrapped world copies in the viewport.
-const MOBILE_MIN_ZOOM = 1;
+const MOBILE_MIN_ZOOM = 0.75;
 const DESKTOP_MIN_ZOOM = 3;
 const TILE_MIN_NATIVE_ZOOM = 0;
 const MAX_ZOOM = 18;
