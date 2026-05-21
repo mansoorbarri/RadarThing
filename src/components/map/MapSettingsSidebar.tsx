@@ -41,7 +41,7 @@ export const MapSettingsSidebar = ({
   return (
     <aside
       className={cn(
-        "animate-slide-in-left fixed inset-y-0 left-0 z-[10020] border-r border-white/10 bg-black/90 backdrop-blur-xl transition-[width] duration-300 ease-in-out",
+        "animate-slide-in-right fixed inset-y-0 right-0 z-[10020] border-l border-white/10 bg-black/90 backdrop-blur-xl transition-[width] duration-300 ease-in-out",
         isCollapsed ? "w-12" : "w-full max-w-[360px] xl:max-w-[400px]",
       )}
     >
@@ -49,14 +49,14 @@ export const MapSettingsSidebar = ({
         variant="ghost"
         size="icon-xs"
         onClick={onToggleCollapsed}
-        className="absolute top-1/2 -right-3 z-10 -translate-y-1/2 rounded-full border border-white/20 bg-slate-900 text-slate-400 shadow-lg transition-colors hover:bg-slate-800 hover:text-white"
+        className="absolute top-1/2 -left-3 z-10 -translate-y-1/2 rounded-full border border-white/20 bg-slate-900 text-slate-400 shadow-lg transition-colors hover:bg-slate-800 hover:text-white"
         title={isCollapsed ? "Expand settings" : "Collapse settings"}
         aria-label={isCollapsed ? "Expand settings" : "Collapse settings"}
       >
         <ChevronRight
           className={cn(
             "transition-transform duration-300",
-            !isCollapsed ? "rotate-180" : "",
+            isCollapsed ? "rotate-180" : "",
           )}
         />
       </Button>
