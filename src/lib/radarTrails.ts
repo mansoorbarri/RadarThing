@@ -211,6 +211,7 @@ export function buildRadarTrailDots(
     preferences.mode === "minutes"
       ? preferences.minutes
       : preferences.distanceNm;
+  if (!Number.isFinite(interval) || interval <= 0) return [];
 
   for (let index = 0; index < RADAR_TRAIL_RENDER_LENGTH; index += 1) {
     const targetValue = interval * (index + 1);
