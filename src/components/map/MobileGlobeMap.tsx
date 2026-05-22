@@ -30,6 +30,7 @@ import {
   calculateDistance,
   createGeodesicCircle,
   findActiveWaypointIndex,
+  getRadarLineBearing,
   preparePathForWorldCopy,
   SELECTED_AIRPORT_RADIUS_MILES,
   unwrapPath,
@@ -476,6 +477,7 @@ function syncAircraftMarkerElement(
       : isSelected
         ? "rgba(187,247,208,0.95)"
         : "rgba(226,232,240,0.7)";
+    const radarLineBearing = getRadarLineBearing(aircraft);
     const centerX = 16;
     const centerY = 16;
     const dotLeft = centerX - dotSize / 2;
@@ -521,7 +523,7 @@ function syncAircraftMarkerElement(
           height:${isSelected ? 2 : 1}px;
           background-color:${dotColor};
           transform-origin:0% 50%;
-          transform:rotate(${(aircraft.heading || 0) - 90}deg);
+          transform:rotate(${radarLineBearing - 90}deg);
           ${isSelected ? `box-shadow:0 0 4px ${glowColor};` : ""}
           pointer-events:none;
         "

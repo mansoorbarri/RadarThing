@@ -1,5 +1,6 @@
 import L from "leaflet";
 import { type PositionUpdate } from "~/lib/aircraft-store";
+import { getRadarLineBearing } from "~/lib/map-utils";
 import {
   formatSpeed,
   formatAltitude,
@@ -543,6 +544,7 @@ export const getRadarAircraftDivIcon = (
     : isCurrentAircraftSelected
       ? "rgba(187,247,208,0.95)"
       : "rgba(226,232,240,0.7)";
+  const radarLineBearing = getRadarLineBearing(aircraft);
 
   const dotStyle = `
     position: absolute;
@@ -592,7 +594,7 @@ export const getRadarAircraftDivIcon = (
     height: ${isCurrentAircraftSelected ? 2 : 1}px;
     background-color: ${dotColor};
     transform-origin: 0% 50%;
-    transform: rotate(${(aircraft.heading || 0) - 90}deg);
+    transform: rotate(${radarLineBearing - 90}deg);
     ${isCurrentAircraftSelected ? `box-shadow: 0 0 4px ${glowColor};` : ""}
   `;
 

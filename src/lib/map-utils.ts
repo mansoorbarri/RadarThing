@@ -91,6 +91,73 @@ export const calculateBearing = (
   return (θ + 360) % 360;
 };
 
+function isValidLatLonPoint(
+  point: [number, number] | undefined,
+): point is [number, number] {
+  return Boolean(
+    point &&
+      Number.isFinite(point[0]) &&
+      Number.isFinite(point[1]),
+  );
+}
+
+export function getRadarLineBearing(aircraft: PositionUpdate): number {
+  const fallbackBearing = Number.isFinite(aircraft.heading)
+    ? (aircraft.heading + 180) % 360
+    : 0;
+  const currentPoint: [number, number] = [aircraft.lat, aircraft.lon];
+
+  if (!isValidLatLonPoint(currentPoint)) {
+    return fallbackBearing;
+  }
+
+  const trailPath = (aircraft.trailSamples ?? [])
+    .map((sample) => [sample.lat, sample.lon] as [number, number])
+    .filter(isValidLatLonPoint);
+  const historyPath =
+    trailPath.length > 0
+      ? trailPath
+      : (aircraft.flightPath ?? []).filter(isValidLatLonPoint);
+
+  if (historyPath.length === 0) {
+    return fallbackBearing;
+  }
+
+  const lastHistoryPoint = historyPath[historyPath.length - 1];
+  const pathWithCurrent =
+    lastHistoryPoint &&
+    lastHistoryPoint[0] === currentPoint[0] &&
+    lastHistoryPoint[1] === currentPoint[1]
+      ? historyPath
+      : [...historyPath, currentPoint];
+  const unwrappedPath = unwrapPath(pathWithCurrent);
+  const latestPoint = unwrappedPath[unwrappedPath.length - 1];
+
+  if (!latestPoint) {
+    return fallbackBearing;
+  }
+
+  for (let index = unwrappedPath.length - 2; index >= 0; index -= 1) {
+    const previousPoint = unwrappedPath[index];
+    if (
+      !previousPoint ||
+      (previousPoint[0] === latestPoint[0] &&
+        previousPoint[1] === latestPoint[1])
+    ) {
+      continue;
+    }
+
+    return calculateBearing(
+      latestPoint[0],
+      latestPoint[1],
+      previousPoint[0],
+      previousPoint[1],
+    );
+  }
+
+  return fallbackBearing;
+}
+
 /**
  * Make a path's longitudes continuous so it renders on one side of the map.
  * Use this when you control both the markers and the polyline (e.g. flight plans),
