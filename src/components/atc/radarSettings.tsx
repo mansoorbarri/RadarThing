@@ -13,6 +13,7 @@ import type { TimeDisplayMode } from "~/lib/timeDisplay";
 import type { SpeedUnit, AltitudeUnit } from "~/lib/units";
 import type { MapLayerPreset } from "~/lib/mapLayerPresets";
 import {
+  type RadarModeLinePreferences,
   type RadarTrailMode,
   type RadarTrailPreferences,
 } from "~/lib/radarTrailPreferences";
@@ -40,7 +41,11 @@ interface RadarSettingsProps {
   mapRenderer?: "flat" | "globe";
   onMapRendererChange?: (renderer: "flat" | "globe") => void;
   radarTrailPreferences?: RadarTrailPreferences;
+  radarModeLinePreferences?: RadarModeLinePreferences;
   onRadarTrailPreferencesChange?: (preferences: RadarTrailPreferences) => void;
+  onRadarModeLinePreferencesChange?: (
+    preferences: RadarModeLinePreferences,
+  ) => void;
   presets: MapLayerPreset[];
   activePresetId: string | null;
   selectedPresetId: string | null;
@@ -67,7 +72,9 @@ export const RadarSettings = ({
   mapRenderer,
   onMapRendererChange,
   radarTrailPreferences,
+  radarModeLinePreferences,
   onRadarTrailPreferencesChange,
+  onRadarModeLinePreferencesChange,
   presets,
   activePresetId,
   selectedPresetId,
@@ -112,6 +119,11 @@ export const RadarSettings = ({
       ? `${radarTrailPreferences.minutes} sec`
       : `${radarTrailPreferences.distanceNm} NM`
     : null;
+  const currentModeLineIntervalLabel = radarModeLinePreferences
+    ? radarModeLinePreferences.mode === "minutes"
+      ? `${radarModeLinePreferences.minutes} sec`
+      : `${radarModeLinePreferences.distanceNm} NM`
+    : null;
 
   const handleSavePreset = () => {
     const result = onSavePreset(presetName);
@@ -153,6 +165,27 @@ export const RadarSettings = ({
     onRadarTrailPreferencesChange(nextPreferences);
     if (trackChange) {
       Analytics.track("radar_trail_preference_changed", {
+        enabled: nextPreferences.enabled,
+        mode: nextPreferences.mode,
+        seconds: nextPreferences.minutes,
+        distance_nm: nextPreferences.distanceNm,
+      });
+    }
+  };
+
+  const updateRadarModeLinePreferences = (
+    updates: Partial<RadarModeLinePreferences>,
+    trackChange = true,
+  ) => {
+    if (!radarModeLinePreferences || !onRadarModeLinePreferencesChange) return;
+
+    const nextPreferences = {
+      ...radarModeLinePreferences,
+      ...updates,
+    };
+    onRadarModeLinePreferencesChange(nextPreferences);
+    if (trackChange) {
+      Analytics.track("radar_mode_line_preference_changed", {
         enabled: nextPreferences.enabled,
         mode: nextPreferences.mode,
         seconds: nextPreferences.minutes,
@@ -398,7 +431,11 @@ export const RadarSettings = ({
           />
         </SettingsSection>
 
-        {isPRO && radarTrailPreferences && onRadarTrailPreferencesChange ? (
+        {isPRO &&
+        radarTrailPreferences &&
+        radarModeLinePreferences &&
+        onRadarTrailPreferencesChange &&
+        onRadarModeLinePreferencesChange ? (
           <SettingsSection
             title="Radar Trail"
             isOpen={openSections.trail}
@@ -487,6 +524,97 @@ export const RadarSettings = ({
                   <span className="text-right">
                     {radarTrailPreferences.mode === "minutes" ? "60" : "10"}
                   </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 rounded-lg border border-white/10 bg-black/20 p-3">
+              <SettingsToggle
+                label="Mode Line"
+                description="Show a recent backtrack line behind aircraft in radar mode."
+                checked={radarModeLinePreferences.enabled}
+                onChange={(enabled) =>
+                  updateRadarModeLinePreferences({ enabled })
+                }
+              />
+
+              <div
+                className={`space-y-3 ${!radarModeLinePreferences.enabled ? "opacity-50" : ""}`}
+              >
+                <p className="text-[11px] leading-5 text-white/45">
+                  Choose whether the line reaches back by elapsed seconds or
+                  distance flown. The line follows the recent track instead of
+                  projecting from heading.
+                </p>
+
+                <TrailModeSelector
+                  value={radarModeLinePreferences.mode}
+                  onChange={(mode) =>
+                    updateRadarModeLinePreferences({ mode })
+                  }
+                  disabled={!radarModeLinePreferences.enabled}
+                />
+
+                <div className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-3">
+                  <div>
+                    <div className="text-[11px] font-semibold tracking-[0.14em] text-white uppercase">
+                      Length
+                    </div>
+                    <p className="mt-1 text-[11px] text-white/45">
+                      {radarModeLinePreferences.mode === "minutes"
+                        ? "Each line reaches back this many seconds along the recent path."
+                        : "Each line reaches back this many nautical miles along the recent path."}
+                    </p>
+                  </div>
+
+                  <Slider
+                    disabled={!radarModeLinePreferences.enabled}
+                    min={radarModeLinePreferences.mode === "minutes" ? 2 : 1}
+                    max={radarModeLinePreferences.mode === "minutes" ? 60 : 10}
+                    step={1}
+                    value={[
+                      radarModeLinePreferences.mode === "minutes"
+                        ? radarModeLinePreferences.minutes
+                        : radarModeLinePreferences.distanceNm,
+                    ]}
+                    onValueChange={([value]) => {
+                      if (!value) return;
+                      updateRadarModeLinePreferences(
+                        radarModeLinePreferences.mode === "minutes"
+                          ? { minutes: value }
+                          : { distanceNm: value },
+                        false,
+                      );
+                    }}
+                    onValueCommit={([value]) => {
+                      if (!value) return;
+                      Analytics.track("radar_mode_line_preference_changed", {
+                        enabled: radarModeLinePreferences.enabled,
+                        mode: radarModeLinePreferences.mode,
+                        seconds:
+                          radarModeLinePreferences.mode === "minutes"
+                            ? value
+                            : radarModeLinePreferences.minutes,
+                        distance_nm:
+                          radarModeLinePreferences.mode === "nm"
+                            ? value
+                            : radarModeLinePreferences.distanceNm,
+                      });
+                    }}
+                    aria-label="Radar mode line length"
+                  />
+
+                  <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/35 uppercase">
+                    <span>
+                      {radarModeLinePreferences.mode === "minutes" ? "2" : "1"}
+                    </span>
+                    <span className="text-center text-[11px] font-semibold tracking-[0.14em] text-cyan-200">
+                      {currentModeLineIntervalLabel}
+                    </span>
+                    <span className="text-right">
+                      {radarModeLinePreferences.mode === "minutes" ? "60" : "10"}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

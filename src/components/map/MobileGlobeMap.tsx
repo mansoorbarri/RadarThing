@@ -30,12 +30,15 @@ import {
   calculateDistance,
   createGeodesicCircle,
   findActiveWaypointIndex,
-  getRadarLineBearing,
   preparePathForWorldCopy,
   SELECTED_AIRPORT_RADIUS_MILES,
   unwrapPath,
 } from "~/lib/map-utils";
-import { RADAR_TRAIL_COLOR, buildRadarTrailDots } from "~/lib/radarTrails";
+import {
+  RADAR_TRAIL_COLOR,
+  buildRadarModeLinePath,
+  buildRadarTrailDots,
+} from "~/lib/radarTrails";
 import { Analytics } from "~/lib/analytics";
 import {
   createMapLayerPreset,
@@ -45,7 +48,9 @@ import {
   type MapLayerPresetState,
 } from "~/lib/mapLayerPresets";
 import {
+  getStoredRadarModeLinePreferences,
   getStoredRadarTrailPreferences,
+  setStoredRadarModeLinePreferences,
   setStoredRadarTrailPreferences,
 } from "~/lib/radarTrailPreferences";
 import {
@@ -200,6 +205,7 @@ const OPENAIP_TILES = `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y
 
 const SOURCE_IDS = {
   radarTrails: "mobile-globe-radar-trails",
+  radarModeLines: "mobile-globe-radar-mode-lines",
   selectedHistory: "mobile-globe-selected-history",
   selectedRoutes: "mobile-globe-selected-routes",
   selectedWaypoints: "mobile-globe-selected-waypoints",
@@ -324,6 +330,47 @@ function toLngLatCoords(path: [number, number][]) {
   return path
     .filter(([lat, lon]) => isValidCoordinate(lat, lon))
     .map(([lat, lon]) => [lon, lat] as [number, number]);
+}
+
+function getRadarModeLineStyle(
+  aircraft: PositionUpdate,
+  isSelected: boolean,
+): { color: string; opacity: number; width: number } {
+  const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
+  const isIdentActive =
+    aircraft.identActive ||
+    (typeof aircraft.identUntil === "number" &&
+      aircraft.identUntil > Date.now());
+
+  if (isEmergency) {
+    return {
+      color: "#ef4444",
+      opacity: isSelected ? 0.95 : 0.8,
+      width: isSelected ? 2.6 : 1.7,
+    };
+  }
+
+  if (isIdentActive) {
+    return {
+      color: "#fbbf24",
+      opacity: isSelected ? 0.95 : 0.82,
+      width: isSelected ? 2.5 : 1.6,
+    };
+  }
+
+  if (isSelected) {
+    return {
+      color: "#4ade80",
+      opacity: 0.95,
+      width: 2.4,
+    };
+  }
+
+  return {
+    color: "#22d3ee",
+    opacity: 0.72,
+    width: 1.5,
+  };
 }
 
 function getUnwrappedWaypointCoords(
@@ -457,7 +504,6 @@ function syncAircraftMarkerElement(
 
   if (isRadarMode) {
     const dotSize = isSelected ? (isDesktop ? 9 : 7) : isDesktop ? 5 : 4;
-    const headingLineLength = isSelected ? (isDesktop ? 24 : 18) : isDesktop ? 18 : 13;
     const dotColor = isEmergency
       ? "#ef4444"
       : isIdentActive
@@ -477,7 +523,6 @@ function syncAircraftMarkerElement(
       : isSelected
         ? "rgba(187,247,208,0.95)"
         : "rgba(226,232,240,0.7)";
-    const radarLineBearing = getRadarLineBearing(aircraft);
     const centerX = 16;
     const centerY = 16;
     const dotLeft = centerX - dotSize / 2;
@@ -511,20 +556,6 @@ function syncAircraftMarkerElement(
           background-color:${dotColor};
           box-shadow:0 0 ${isSelected ? "8px" : "4px"} ${glowColor}${isSelected ? `, 0 0 14px ${glowColor}` : ""};
           ${isSelected ? "animation:radar-selected-pulse 1.5s ease-in-out infinite;" : ""}
-          pointer-events:none;
-        "
-      ></div>
-      <div
-        style="
-          position:absolute;
-          top:${centerY - (isSelected ? 1 : 0.5)}px;
-          left:${centerX}px;
-          width:${headingLineLength}px;
-          height:${isSelected ? 2 : 1}px;
-          background-color:${dotColor};
-          transform-origin:0% 50%;
-          transform:rotate(${radarLineBearing - 90}deg);
-          ${isSelected ? `box-shadow:0 0 4px ${glowColor};` : ""}
           pointer-events:none;
         "
       ></div>
@@ -890,6 +921,9 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   const [showTags, setShowTags] = useState(true);
   const [radarTrailPreferences, setRadarTrailPreferences] = useState(() =>
     getStoredRadarTrailPreferences(),
+  );
+  const [radarModeLinePreferences, setRadarModeLinePreferences] = useState(() =>
+    getStoredRadarModeLinePreferences(),
   );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSettingsSidebarCollapsed, setIsSettingsSidebarCollapsed] =
@@ -1315,6 +1349,10 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
         type: "geojson",
         data: emptyFeatureCollection(),
       });
+      map.addSource(SOURCE_IDS.radarModeLines, {
+        type: "geojson",
+        data: emptyFeatureCollection(),
+      });
       map.addSource(SOURCE_IDS.selectedRoutes, {
         type: "geojson",
         data: emptyFeatureCollection(),
@@ -1376,6 +1414,21 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
           "line-width": 2.5,
           "line-opacity": 0.72,
           "line-dasharray": [4, 3],
+        },
+      });
+
+      map.addLayer({
+        id: "mobile-globe-radar-mode-lines",
+        type: "line",
+        source: SOURCE_IDS.radarModeLines,
+        paint: {
+          "line-color": ["coalesce", ["get", "color"], "#22d3ee"],
+          "line-width": ["coalesce", ["get", "width"], 1.5],
+          "line-opacity": ["coalesce", ["get", "opacity"], 0.72],
+        },
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
         },
       });
 
@@ -1828,6 +1881,36 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     const map = mapRef.current;
     if (!mapReady || !map) return;
 
+    if (!isRadarMode || !radarModeLinePreferences.enabled) {
+      setSourceData(map, SOURCE_IDS.radarModeLines, emptyFeatureCollection());
+      return;
+    }
+
+    const features = aircrafts.flatMap((aircraft) => {
+      const aircraftKey = aircraft.callsign || aircraft.id;
+      const line = buildLineFeature(
+        toLngLatCoords(buildRadarModeLinePath(aircraft, radarModeLinePreferences)),
+        getRadarModeLineStyle(aircraft, selectedAircraftKeySet.has(aircraftKey)),
+      );
+      return line ? [line] : [];
+    });
+
+    setSourceData(map, SOURCE_IDS.radarModeLines, {
+      type: "FeatureCollection",
+      features,
+    });
+  }, [
+    aircrafts,
+    isRadarMode,
+    mapReady,
+    radarModeLinePreferences,
+    selectedAircraftKeySet,
+  ]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+
     if (!isRadarMode || !radarTrailPreferences.enabled) {
       setSourceData(map, SOURCE_IDS.radarTrails, emptyFeatureCollection());
       return;
@@ -2086,9 +2169,15 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
                 mapRenderer={mapRenderer}
                 onMapRendererChange={onMapRendererChange}
                 radarTrailPreferences={radarTrailPreferences}
+                radarModeLinePreferences={radarModeLinePreferences}
                 onRadarTrailPreferencesChange={(nextPreferences) => {
                   setRadarTrailPreferences(
                     setStoredRadarTrailPreferences(nextPreferences),
+                  );
+                }}
+                onRadarModeLinePreferencesChange={(nextPreferences) => {
+                  setRadarModeLinePreferences(
+                    setStoredRadarModeLinePreferences(nextPreferences),
                   );
                 }}
                 presets={layerPresets}

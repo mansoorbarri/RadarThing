@@ -55,7 +55,9 @@ import {
   type MapLayerPresetState,
 } from "~/lib/mapLayerPresets";
 import {
+  getStoredRadarModeLinePreferences,
   getStoredRadarTrailPreferences,
+  setStoredRadarModeLinePreferences,
   setStoredRadarTrailPreferences,
 } from "~/lib/radarTrailPreferences";
 
@@ -181,6 +183,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [showTags, setShowTags] = useState(true);
   const [radarTrailPreferences, setRadarTrailPreferences] = useState(() =>
     getStoredRadarTrailPreferences(),
+  );
+  const [radarModeLinePreferences, setRadarModeLinePreferences] = useState(() =>
+    getStoredRadarModeLinePreferences(),
   );
   const [conflictAlerts, setConflictAlerts] = useState<ConflictAlertSummary[]>(
     [],
@@ -745,6 +750,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   useMapLayersAndMarkers({
     mapInstance: mapRefs.mapInstance,
     radarTrailsLayer: mapRefs.radarTrailsLayerGroup,
+    radarModeLineLayer: mapRefs.radarModeLineLayerGroup,
     aircraftMarkersLayer: mapRefs.aircraftMarkersLayer,
     airportMarkersLayer: mapRefs.airportMarkersLayer,
     osmLayer: mapRefs.osmLayer,
@@ -763,6 +769,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     onAirportSelect,
     showTags,
     radarTrailPreferences,
+    radarModeLinePreferences,
     showConflicts: canUseConflictAlerts && showConflicts,
     onConflictsChange: setConflictAlerts,
     onInitialTrafficPaint,
@@ -1083,9 +1090,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
             mapRenderer={mapRenderer}
             onMapRendererChange={onMapRendererChange}
             radarTrailPreferences={radarTrailPreferences}
+            radarModeLinePreferences={radarModeLinePreferences}
             onRadarTrailPreferencesChange={(nextPreferences) => {
               setRadarTrailPreferences(
                 setStoredRadarTrailPreferences(nextPreferences),
+              );
+            }}
+            onRadarModeLinePreferencesChange={(nextPreferences) => {
+              setRadarModeLinePreferences(
+                setStoredRadarModeLinePreferences(nextPreferences),
               );
             }}
             presets={layerPresets}

@@ -5,8 +5,15 @@ import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type Airport } from "~/components/map"; // Adjusted path
 import { type OnlineAirport } from "~/hooks/useAircraftStream";
 import { preparePathForWorldCopy } from "~/lib/map-utils";
-import { RADAR_TRAIL_COLOR, buildRadarTrailDots } from "~/lib/radarTrails";
-import { type RadarTrailPreferences } from "~/lib/radarTrailPreferences";
+import {
+  RADAR_TRAIL_COLOR,
+  buildRadarModeLinePath,
+  buildRadarTrailDots,
+} from "~/lib/radarTrails";
+import {
+  type RadarModeLinePreferences,
+  type RadarTrailPreferences,
+} from "~/lib/radarTrailPreferences";
 import {
   getAircraftDivIcon,
   getRadarAircraftDivIcon,
@@ -123,6 +130,7 @@ function slideTo(marker: L.Marker, destLat: number, destLng: number) {
 interface UseMapLayersAndMarkersProps {
   mapInstance: React.MutableRefObject<L.Map | null>;
   radarTrailsLayer: React.MutableRefObject<L.LayerGroup | null>;
+  radarModeLineLayer: React.MutableRefObject<L.LayerGroup | null>;
   aircraftMarkersLayer: React.MutableRefObject<L.LayerGroup | null>;
   airportMarkersLayer: React.MutableRefObject<L.LayerGroup | null>;
   osmLayer: React.MutableRefObject<L.TileLayer | null>;
@@ -144,6 +152,7 @@ interface UseMapLayersAndMarkersProps {
   onAirportSelect?: (airport: Airport) => void;
   showTags: boolean;
   radarTrailPreferences: RadarTrailPreferences;
+  radarModeLinePreferences: RadarModeLinePreferences;
   showConflicts: boolean;
   onConflictsChange?: (conflicts: ConflictAlertSummary[]) => void;
   onInitialTrafficPaint?: () => void;
@@ -190,6 +199,7 @@ const TERMINAL_HORIZONTAL_THRESHOLD_NM = 1.5;
 const TERMINAL_VERTICAL_THRESHOLD_FT = 700;
 const SAME_FLOW_HEADING_DELTA_DEG = 18;
 const SAME_FLOW_RELATIVE_SPEED_NM_PER_MIN = 2;
+const EMERGENCY_SQUAWKS = new Set(["7700", "7600", "7500"]);
 
 function toFiniteNumber(value: unknown, fallback = 0): number {
   const n = Number(value);
@@ -321,6 +331,47 @@ function getConflictStyle(severity: ConflictSeverity) {
   return { color: "#facc15", weight: 2, radius: 5 };
 }
 
+function getRadarLineStyle(
+  aircraft: PositionUpdate,
+  isSelected: boolean,
+): { color: string; opacity: number; weight: number } {
+  const isEmergency = aircraft.squawk && EMERGENCY_SQUAWKS.has(aircraft.squawk);
+  const isIdentActive =
+    aircraft.identActive ||
+    (typeof aircraft.identUntil === "number" &&
+      aircraft.identUntil > Date.now());
+
+  if (isEmergency) {
+    return {
+      color: "#ef4444",
+      opacity: isSelected ? 0.95 : 0.8,
+      weight: isSelected ? 2.6 : 1.7,
+    };
+  }
+
+  if (isIdentActive) {
+    return {
+      color: "#fbbf24",
+      opacity: isSelected ? 0.95 : 0.82,
+      weight: isSelected ? 2.5 : 1.6,
+    };
+  }
+
+  if (isSelected) {
+    return {
+      color: "#4ade80",
+      opacity: 0.95,
+      weight: 2.4,
+    };
+  }
+
+  return {
+    color: "#22d3ee",
+    opacity: 0.72,
+    weight: 1.5,
+  };
+}
+
 function detectConflicts(aircrafts: PositionUpdate[]): ConflictAlert[] {
   const conflicts: ConflictAlert[] = [];
 
@@ -438,6 +489,7 @@ function detectConflicts(aircrafts: PositionUpdate[]): ConflictAlert[] {
 export const useMapLayersAndMarkers = ({
   mapInstance,
   radarTrailsLayer,
+  radarModeLineLayer,
   aircraftMarkersLayer,
   airportMarkersLayer,
   osmLayer,
@@ -456,6 +508,7 @@ export const useMapLayersAndMarkers = ({
   onAirportSelect,
   showTags,
   radarTrailPreferences,
+  radarModeLinePreferences,
   showConflicts,
   onConflictsChange,
   onInitialTrafficPaint,
@@ -557,6 +610,41 @@ export const useMapLayersAndMarkers = ({
       });
     });
   }, [aircrafts, isRadarMode, mapReady, radarTrailsLayer, radarTrailPreferences]);
+
+  useEffect(() => {
+    const lineLayer = radarModeLineLayer.current;
+    const renderer = radarTrailRendererRef.current;
+    if (!lineLayer || !renderer || !mapReady) return;
+
+    lineLayer.clearLayers();
+    if (!isRadarMode || !radarModeLinePreferences.enabled) return;
+
+    const selectedIdsSet = new Set(selectedAircraftIds);
+
+    aircrafts.forEach((aircraft) => {
+      const linePath = buildRadarModeLinePath(aircraft, radarModeLinePreferences);
+      if (linePath.length < 2) return;
+
+      const displayPath = preparePathForWorldCopy(linePath, aircraft.lon);
+      const aircraftKey = aircraft.callsign || aircraft.id;
+      const style = getRadarLineStyle(aircraft, selectedIdsSet.has(aircraftKey));
+
+      L.polyline(displayPath, {
+        color: style.color,
+        opacity: style.opacity,
+        weight: style.weight,
+        interactive: false,
+        renderer,
+      }).addTo(lineLayer);
+    });
+  }, [
+    aircrafts,
+    isRadarMode,
+    mapReady,
+    radarModeLineLayer,
+    radarModeLinePreferences,
+    selectedAircraftIds,
+  ]);
 
   // Effect for managing base layers (OSM/Satellite/Radar)
   useEffect(() => {

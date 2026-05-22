@@ -2,8 +2,10 @@ import {
   type PositionUpdate,
   type TimedPositionSample,
 } from "~/lib/aircraft-store";
-import { unwrapPath } from "~/lib/map-utils";
+import { getRadarLineBearing, unwrapPath } from "~/lib/map-utils";
 import {
+  type RadarIntervalPreferences,
+  type RadarModeLinePreferences,
   type RadarTrailPreferences,
   DEFAULT_RADAR_TRAIL_PREFERENCES,
 } from "~/lib/radarTrailPreferences";
@@ -18,6 +20,13 @@ export interface RadarTrailDot {
   lon: number;
   opacity: number;
   radius: number;
+}
+
+function dedupeSequentialPath(path: [number, number][]) {
+  return path.filter((point, index) => {
+    const previous = path[index - 1];
+    return previous?.[0] !== point[0] || previous?.[1] !== point[1];
+  });
 }
 
 function isValidSample(sample: TimedPositionSample | undefined) {
@@ -138,6 +147,43 @@ function getPointAtTimeOffset(
   return null;
 }
 
+function getPathAtTimeOffset(
+  samples: TimedPositionSample[],
+  targetOffsetMs: number,
+): [number, number][] {
+  if (samples.length < 2) return [];
+
+  const newest = samples[samples.length - 1];
+  const oldest = samples[0];
+  if (!newest || !oldest) return [];
+
+  const targetTs = newest.ts - targetOffsetMs;
+  if (targetTs <= oldest.ts) {
+    return dedupeSequentialPath(
+      samples.map((sample) => [sample.lat, sample.lon] as [number, number]),
+    );
+  }
+
+  for (let index = 1; index < samples.length; index += 1) {
+    const older = samples[index - 1];
+    const newer = samples[index];
+    if (!older || !newer || newer.ts <= older.ts) continue;
+    if (targetTs < older.ts || targetTs > newer.ts) continue;
+
+    const ratio = (targetTs - older.ts) / (newer.ts - older.ts);
+    return dedupeSequentialPath([
+      interpolatePoint([older.lat, older.lon], [newer.lat, newer.lon], ratio),
+      ...samples
+        .slice(index)
+        .map((sample) => [sample.lat, sample.lon] as [number, number]),
+    ]);
+  }
+
+  return dedupeSequentialPath(
+    samples.map((sample) => [sample.lat, sample.lon] as [number, number]),
+  );
+}
+
 function buildDistanceTrailPath(aircraft: PositionUpdate) {
   const currentPoint: [number, number] = [aircraft.lat, aircraft.lon];
   const path = aircraft.flightPath ?? [];
@@ -182,6 +228,95 @@ function getPointAtDistanceOffset(
   }
 
   return null;
+}
+
+function getPathAtDistanceOffset(
+  path: [number, number][],
+  targetDistanceNm: number,
+): [number, number][] {
+  if (path.length < 2) return [];
+
+  let traversedDistanceNm = 0;
+
+  for (let index = path.length - 1; index > 0; index -= 1) {
+    const segmentEnd = path[index];
+    const segmentStart = path[index - 1];
+    if (!segmentEnd || !segmentStart) continue;
+
+    const segmentDistanceNm = distanceNm(
+      segmentStart[0],
+      segmentStart[1],
+      segmentEnd[0],
+      segmentEnd[1],
+    );
+    if (segmentDistanceNm <= 0) continue;
+
+    if (traversedDistanceNm + segmentDistanceNm >= targetDistanceNm) {
+      const remainingDistanceNm = targetDistanceNm - traversedDistanceNm;
+      const ratio = remainingDistanceNm / segmentDistanceNm;
+      return dedupeSequentialPath([
+        interpolatePoint(segmentEnd, segmentStart, ratio),
+        ...path.slice(index),
+      ]);
+    }
+
+    traversedDistanceNm += segmentDistanceNm;
+  }
+
+  return dedupeSequentialPath(path);
+}
+
+function destinationPoint(
+  lat: number,
+  lon: number,
+  bearingDegrees: number,
+  distanceNmValue: number,
+): [number, number] {
+  const angularDistance = distanceNmValue / 3440.065;
+  const bearing = toRadians(bearingDegrees);
+  const latRad = toRadians(lat);
+  const lonRad = toRadians(lon);
+
+  const destLat = Math.asin(
+    Math.sin(latRad) * Math.cos(angularDistance) +
+      Math.cos(latRad) * Math.sin(angularDistance) * Math.cos(bearing),
+  );
+  const destLon =
+    lonRad +
+    Math.atan2(
+      Math.sin(bearing) * Math.sin(angularDistance) * Math.cos(latRad),
+      Math.cos(angularDistance) - Math.sin(latRad) * Math.sin(destLat),
+    );
+
+  return [
+    (destLat * 180) / Math.PI,
+    ((((destLon * 180) / Math.PI) + 540) % 360) - 180,
+  ];
+}
+
+function getFallbackLinePath(
+  aircraft: PositionUpdate,
+  preferences: RadarIntervalPreferences,
+): [number, number][] {
+  const speedKts = getTrailSpeedKts(aircraft);
+  const distanceNmValue =
+    preferences.mode === "minutes"
+      ? (speedKts * preferences.minutes) / 3_600
+      : preferences.distanceNm;
+
+  if (!Number.isFinite(distanceNmValue) || distanceNmValue <= 0) {
+    return [];
+  }
+
+  return dedupeSequentialPath([
+    destinationPoint(
+      aircraft.lat,
+      aircraft.lon,
+      getRadarLineBearing(aircraft),
+      distanceNmValue,
+    ),
+    [aircraft.lat, aircraft.lon],
+  ]);
 }
 
 export function buildRadarTrailDots(
@@ -230,4 +365,31 @@ export function buildRadarTrailDots(
   }
 
   return dots;
+}
+
+export function buildRadarModeLinePath(
+  aircraft: PositionUpdate,
+  preferences: RadarModeLinePreferences,
+): [number, number][] {
+  if (!preferences.enabled) return [];
+  if (!Number.isFinite(aircraft.lat) || !Number.isFinite(aircraft.lon)) {
+    return [];
+  }
+
+  const path =
+    preferences.mode === "minutes"
+      ? getPathAtTimeOffset(
+          buildTimeTrailSamples(aircraft),
+          preferences.minutes * 1_000,
+        )
+      : getPathAtDistanceOffset(
+          buildDistanceTrailPath(aircraft),
+          preferences.distanceNm,
+        );
+
+  if (path.length >= 2) {
+    return dedupeSequentialPath(path);
+  }
+
+  return getFallbackLinePath(aircraft, preferences);
 }

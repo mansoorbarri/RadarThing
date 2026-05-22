@@ -125,9 +125,8 @@ export function getRadarLineBearing(aircraft: PositionUpdate): number {
 
   const lastHistoryPoint = historyPath[historyPath.length - 1];
   const pathWithCurrent =
-    lastHistoryPoint &&
-    lastHistoryPoint[0] === currentPoint[0] &&
-    lastHistoryPoint[1] === currentPoint[1]
+    lastHistoryPoint?.[0] === currentPoint[0] &&
+    lastHistoryPoint?.[1] === currentPoint[1]
       ? historyPath
       : [...historyPath, currentPoint];
   const unwrappedPath = unwrapPath(pathWithCurrent);

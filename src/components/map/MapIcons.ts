@@ -1,6 +1,5 @@
 import L from "leaflet";
 import { type PositionUpdate } from "~/lib/aircraft-store";
-import { getRadarLineBearing } from "~/lib/map-utils";
 import {
   formatSpeed,
   formatAltitude,
@@ -466,13 +465,6 @@ export const getRadarAircraftDivIcon = (
     : isMobile
       ? 4
       : 5;
-  const headingLineLength = isCurrentAircraftSelected
-    ? isMobile
-      ? 18
-      : 24
-    : isMobile
-      ? 13
-      : 18;
   const callsignDisplay = aircraft.callsign || "";
   const shouldShowLabel =
     showTags && (!selectedAircraftId || Boolean(isCurrentAircraftSelected));
@@ -544,7 +536,6 @@ export const getRadarAircraftDivIcon = (
     : isCurrentAircraftSelected
       ? "rgba(187,247,208,0.95)"
       : "rgba(226,232,240,0.7)";
-  const radarLineBearing = getRadarLineBearing(aircraft);
 
   const dotStyle = `
     position: absolute;
@@ -585,18 +576,6 @@ export const getRadarAircraftDivIcon = (
     animation: radar-ring-pulse 1.5s ease-in-out infinite;
   `
     : "";
-
-  const headingLineStyle = `
-    position: absolute;
-    top: ${centerY - (isCurrentAircraftSelected ? 1 : 0.5)}px;
-    left: ${dotCenterX}px;
-    width: ${headingLineLength}px;
-    height: ${isCurrentAircraftSelected ? 2 : 1}px;
-    background-color: ${dotColor};
-    transform-origin: 0% 50%;
-    transform: rotate(${radarLineBearing - 90}deg);
-    ${isCurrentAircraftSelected ? `box-shadow: 0 0 4px ${glowColor};` : ""}
-  `;
 
   const connectorLineStyle = `
     position: absolute;
@@ -645,7 +624,6 @@ export const getRadarAircraftDivIcon = (
         ${isIdentActive ? `<div style="${identRingStyle} pointer-events: none;"></div>` : ""}
         ${isCurrentAircraftSelected ? `<div style="${selectionRingStyle} pointer-events: none;"></div>` : ""}
         <div style="${dotStyle} pointer-events: none;"></div>
-        <div style="${headingLineStyle} pointer-events: none;"></div>
         <div style="${connectorLineStyle} pointer-events: none;"></div>
         <div style="${labelStyle} pointer-events: none;">
           ${detailContent}
