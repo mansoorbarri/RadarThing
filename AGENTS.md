@@ -60,7 +60,6 @@ this project using a SSE stream to get the flight details. this is located at @.
 Editable userscript source files:
 - `userscript.js`
 - `seabus.js`
-- `jth.js`
 - `userscript-src/radarthing-runtime.js`
 - `userscript-src/config.json` only when changing the userscript version or hosted base URL
 - `userscript-src/config.json` also controls the public `/userscript` and `/loader` URLs embedded in the generated installer

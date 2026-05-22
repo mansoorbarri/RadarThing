@@ -24,7 +24,6 @@
   const RADAR_SETTINGS_HEADER_ID = "atc-radar-settings-header";
   const RADAR_SETTINGS_BODY_ID = "atc-radar-settings-body";
   const RADAR_SETTINGS_ARROW_ID = "atc-radar-settings-arrow";
-  const JTH_TOGGLE_ID = "atc-toggle-jth";
   const SEABUS_TOGGLE_ID = "atc-toggle-seabus";
   const CHARTS_BTN_ID = "atc-charts-btn";
   const FOLLOW_SECTION_ID = "atc-follow-section";
@@ -51,9 +50,25 @@
   let resumePromptCheckStarted = false;
   let resumePromptResolved = false;
   let resumeModalResolver = null;
-  let radarPrefs = JSON.parse(
-    localStorage.getItem(RADAR_PREFS_KEY) || '{"jth":false,"seabus":true}',
-  );
+  function loadRadarPrefs() {
+    try {
+      const raw = localStorage.getItem(RADAR_PREFS_KEY);
+      if (!raw) return { seabus: false };
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") {
+        return { seabus: false };
+      }
+
+      return {
+        seabus: parsed.seabus === true,
+      };
+    } catch (_) {
+      return { seabus: false };
+    }
+  }
+
+  let radarPrefs = loadRadarPrefs();
   window.__radarPrefs = radarPrefs;
 
   // ==========================================
@@ -1773,7 +1788,6 @@
           margin-top:8px;
           padding:0 2px;
         ">
-          ${buildToggleRow("JTH Radar", JTH_TOGGLE_ID, radarPrefs.jth)}
           ${buildToggleRow("Seabus Radar", SEABUS_TOGGLE_ID, radarPrefs.seabus)}
           <div style="margin-top:6px;">
             ${buildInputRow("AF", AF_INPUT_ID, "USAF")}
@@ -1900,7 +1914,6 @@
       };
     }
 
-    setupToggle(JTH_TOGGLE_ID, "jth");
     setupToggle(SEABUS_TOGGLE_ID, "seabus");
 
     document.getElementById(SAVE_BTN_ID).onclick = async () => {

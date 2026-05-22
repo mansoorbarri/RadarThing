@@ -82,7 +82,6 @@ Editable userscript source files live in:
 
 - `userscript.js`
 - `seabus.js`
-- `jth.js`
 - `userscript-src/radarthing-runtime.js`
 - `userscript-src/config.json`
 - `scripts/build-userscript.mjs`

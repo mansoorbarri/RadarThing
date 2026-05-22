@@ -45,7 +45,6 @@
     "userscript-src",
     "radarthing.user.js",
     "seabus.js",
-    "jth.js",
     "sse",
     "public/tile-cache-sw.js",
     "public/userscript"
