@@ -827,7 +827,7 @@ function TrailModeSelector({
             : "text-white/60 hover:bg-white/10 hover:text-white"
         }`}
       >
-        Seconds
+        Minutes
       </button>
       <button
         type="button"
