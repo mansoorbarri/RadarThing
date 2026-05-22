@@ -531,7 +531,7 @@ export const RadarSettings = ({
             <div className="space-y-3 rounded-lg border border-white/10 bg-black/20 p-3">
               <SettingsToggle
                 label="Track Line"
-                description="Show a recent backtrack line behind aircraft in radar mode."
+                description="Show a projected heading line for aircraft in radar mode."
                 checked={radarModeLinePreferences.enabled}
                 onChange={(enabled) =>
                   updateRadarModeLinePreferences({ enabled })
@@ -542,9 +542,8 @@ export const RadarSettings = ({
                 className={`space-y-3 ${!radarModeLinePreferences.enabled ? "opacity-50" : ""}`}
               >
                 <p className="text-[11px] leading-5 text-white/45">
-                  Choose whether the line reaches back by elapsed seconds or
-                  distance flown. The line follows the recent track instead of
-                  projecting from heading.
+                  Choose whether the line projects by elapsed seconds or
+                  nautical miles. The line uses the aircraft heading.
                 </p>
 
                 <TrailModeSelector
@@ -562,8 +561,8 @@ export const RadarSettings = ({
                     </div>
                     <p className="mt-1 text-[11px] text-white/45">
                       {radarModeLinePreferences.mode === "minutes"
-                        ? "Each line reaches back this many seconds along the recent path."
-                        : "Each line reaches back this many nautical miles along the recent path."}
+                        ? "Each line projects this many seconds ahead at the current speed."
+                        : "Each line projects this many nautical miles ahead on the current heading."}
                     </p>
                   </div>
 

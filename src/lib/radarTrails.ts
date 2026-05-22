@@ -2,9 +2,8 @@ import {
   type PositionUpdate,
   type TimedPositionSample,
 } from "~/lib/aircraft-store";
-import { getRadarLineBearing, unwrapPath } from "~/lib/map-utils";
+import { unwrapPath } from "~/lib/map-utils";
 import {
-  type RadarIntervalPreferences,
   type RadarModeLinePreferences,
   type RadarTrailPreferences,
   DEFAULT_RADAR_TRAIL_PREFERENCES,
@@ -147,43 +146,6 @@ function getPointAtTimeOffset(
   return null;
 }
 
-function getPathAtTimeOffset(
-  samples: TimedPositionSample[],
-  targetOffsetMs: number,
-): [number, number][] {
-  if (samples.length < 2) return [];
-
-  const newest = samples[samples.length - 1];
-  const oldest = samples[0];
-  if (!newest || !oldest) return [];
-
-  const targetTs = newest.ts - targetOffsetMs;
-  if (targetTs <= oldest.ts) {
-    return dedupeSequentialPath(
-      samples.map((sample) => [sample.lat, sample.lon] as [number, number]),
-    );
-  }
-
-  for (let index = 1; index < samples.length; index += 1) {
-    const older = samples[index - 1];
-    const newer = samples[index];
-    if (!older || !newer || newer.ts <= older.ts) continue;
-    if (targetTs < older.ts || targetTs > newer.ts) continue;
-
-    const ratio = (targetTs - older.ts) / (newer.ts - older.ts);
-    return dedupeSequentialPath([
-      interpolatePoint([older.lat, older.lon], [newer.lat, newer.lon], ratio),
-      ...samples
-        .slice(index)
-        .map((sample) => [sample.lat, sample.lon] as [number, number]),
-    ]);
-  }
-
-  return dedupeSequentialPath(
-    samples.map((sample) => [sample.lat, sample.lon] as [number, number]),
-  );
-}
-
 function buildDistanceTrailPath(aircraft: PositionUpdate) {
   const currentPoint: [number, number] = [aircraft.lat, aircraft.lon];
   const path = aircraft.flightPath ?? [];
@@ -230,42 +192,6 @@ function getPointAtDistanceOffset(
   return null;
 }
 
-function getPathAtDistanceOffset(
-  path: [number, number][],
-  targetDistanceNm: number,
-): [number, number][] {
-  if (path.length < 2) return [];
-
-  let traversedDistanceNm = 0;
-
-  for (let index = path.length - 1; index > 0; index -= 1) {
-    const segmentEnd = path[index];
-    const segmentStart = path[index - 1];
-    if (!segmentEnd || !segmentStart) continue;
-
-    const segmentDistanceNm = distanceNm(
-      segmentStart[0],
-      segmentStart[1],
-      segmentEnd[0],
-      segmentEnd[1],
-    );
-    if (segmentDistanceNm <= 0) continue;
-
-    if (traversedDistanceNm + segmentDistanceNm >= targetDistanceNm) {
-      const remainingDistanceNm = targetDistanceNm - traversedDistanceNm;
-      const ratio = remainingDistanceNm / segmentDistanceNm;
-      return dedupeSequentialPath([
-        interpolatePoint(segmentEnd, segmentStart, ratio),
-        ...path.slice(index),
-      ]);
-    }
-
-    traversedDistanceNm += segmentDistanceNm;
-  }
-
-  return dedupeSequentialPath(path);
-}
-
 function destinationPoint(
   lat: number,
   lon: number,
@@ -294,9 +220,9 @@ function destinationPoint(
   ];
 }
 
-function getFallbackLinePath(
+function getProjectedTrackLinePath(
   aircraft: PositionUpdate,
-  preferences: RadarIntervalPreferences,
+  preferences: RadarModeLinePreferences,
 ): [number, number][] {
   const speedKts = getTrailSpeedKts(aircraft);
   const distanceNmValue =
@@ -309,13 +235,13 @@ function getFallbackLinePath(
   }
 
   return dedupeSequentialPath([
+    [aircraft.lat, aircraft.lon],
     destinationPoint(
       aircraft.lat,
       aircraft.lon,
-      getRadarLineBearing(aircraft),
+      Number(aircraft.heading ?? 0),
       distanceNmValue,
     ),
-    [aircraft.lat, aircraft.lon],
   ]);
 }
 
@@ -376,20 +302,5 @@ export function buildRadarModeLinePath(
     return [];
   }
 
-  const path =
-    preferences.mode === "minutes"
-      ? getPathAtTimeOffset(
-          buildTimeTrailSamples(aircraft),
-          preferences.minutes * 1_000,
-        )
-      : getPathAtDistanceOffset(
-          buildDistanceTrailPath(aircraft),
-          preferences.distanceNm,
-        );
-
-  if (path.length >= 2) {
-    return dedupeSequentialPath(path);
-  }
-
-  return getFallbackLinePath(aircraft, preferences);
+  return getProjectedTrackLinePath(aircraft, preferences);
 }
