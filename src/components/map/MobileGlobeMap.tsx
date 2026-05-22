@@ -58,6 +58,7 @@ import {
   getAircraftIconUrl,
 } from "~/components/map/MapIcons";
 import { RadarSettings } from "~/components/atc/radarSettings";
+import { HEADING_MODE_CURSOR } from "~/components/map/headingModeCursor";
 import { MapSettingsSidebar } from "~/components/map/MapSettingsSidebar";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
 import { formatAltitude, formatSpeed, speedSuffix } from "~/lib/units";
@@ -1665,7 +1666,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       return;
     }
 
-    map.getCanvas().style.cursor = "crosshair";
+    map.getCanvas().style.cursor = HEADING_MODE_CURSOR;
 
     const handleMouseDown = (event: maplibregl.MapMouseEvent) => {
       headingStartPointRef.current = event.lngLat;

@@ -298,6 +298,7 @@ export function buildRadarModeLinePath(
   preferences: RadarModeLinePreferences,
 ): [number, number][] {
   if (!preferences.enabled) return [];
+  if (getTrailSpeedKts(aircraft) < RADAR_TRAIL_MIN_SPEED_KTS) return [];
   if (!Number.isFinite(aircraft.lat) || !Number.isFinite(aircraft.lon)) {
     return [];
   }

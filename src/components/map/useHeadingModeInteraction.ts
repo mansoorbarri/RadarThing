@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import L from "leaflet";
+import { HEADING_MODE_CURSOR } from "~/components/map/headingModeCursor";
 import { calculateDistance, calculateBearing } from "~/lib/map-utils";
 
 interface UseHeadingModeInteractionProps {
@@ -146,7 +147,7 @@ export const useHeadingModeInteraction = ({
 
     if (isHeadingMode) {
       map.on("mousedown", handleMouseDown);
-      map.getContainer().style.cursor = "crosshair";
+      map.getContainer().style.cursor = HEADING_MODE_CURSOR;
     } else {
       cleanupHeadingMode();
       map.off("mousedown", handleMouseDown);
