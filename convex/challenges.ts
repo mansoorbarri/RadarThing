@@ -1200,12 +1200,15 @@ export const listAdmin = query({
   handler: async (ctx) => {
     await requireAdmin(ctx);
 
-    const challenges = await ctx.db.query("challenges").collect();
-    const completions = await ctx.db.query("challengeCompletions").collect();
-    const users = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("isDeleted"), false))
-      .collect();
+    const [challenges, completions, leaderboardEntries, users] = await Promise.all([
+      ctx.db.query("challenges").collect(),
+      ctx.db.query("challengeCompletions").collect(),
+      ctx.db.query("challengeLeaderboardEntries").collect(),
+      ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("isDeleted"), false))
+        .collect(),
+    ]);
     const usersById = new Map(users.map((user) => [user._id, user]));
 
     const completionCounts = new Map<
@@ -1219,6 +1222,14 @@ export const listAdmin = query({
     const completedMetadataByChallenge = new Map<
       Id<"challenges">,
       Map<Id<"users">, number | null>
+    >();
+    const leaderboardEntriesByChallenge = new Map<
+      Id<"challenges">,
+      typeof leaderboardEntries
+    >();
+    const completedLeaderboardUserIdsByChallenge = new Map<
+      Id<"challenges">,
+      Set<Id<"users">>
     >();
 
     for (const completion of completions) {
@@ -1248,78 +1259,19 @@ export const listAdmin = query({
       }
     }
 
-    const now = Date.now();
-    const computedCompletedUserIdsByChallenge = new Map<
-      Id<"challenges">,
-      Set<Id<"users">>
-    >();
-    const topProgressUsersByChallenge = new Map<
-      Id<"challenges">,
-      {
-        userId: Id<"users">;
-        displayName: string;
-        discordUsername: string | null;
-        progressCurrent: number;
-        progressTarget: number;
-        progressLabel: string;
-        isComplete: boolean;
-        completedAt: number | null;
-      }[]
-    >();
+    for (const entry of leaderboardEntries) {
+      const challengeEntries =
+        leaderboardEntriesByChallenge.get(entry.challengeId) ?? [];
+      challengeEntries.push(entry);
+      leaderboardEntriesByChallenge.set(entry.challengeId, challengeEntries);
 
-    for (const challenge of challenges) {
-      if (challenge.mode !== "auto" || !isChallengeActiveAt(challenge, now)) {
-        continue;
-      }
+      if (!entry.isComplete) continue;
 
-      const flights = await ctx.db
-        .query("flights")
-        .withIndex("by_startTime", (q) =>
-          q
-            .gte("startTime", challenge.startAt)
-            .lt("startTime", challenge.endAt),
-        )
-        .collect();
-
-      const flightsByUser = new Map<Id<"users">, typeof flights>();
-      for (const flight of flights) {
-        const userFlights = flightsByUser.get(flight.userId) ?? [];
-        userFlights.push(flight);
-        flightsByUser.set(flight.userId, userFlights);
-      }
-
-      const completedUserIds = new Set<Id<"users">>();
-      for (const [userId, userFlights] of flightsByUser.entries()) {
-        if (doesFlightCollectionMatchChallenge(challenge, userFlights)) {
-          completedUserIds.add(userId);
-        }
-      }
-      computedCompletedUserIdsByChallenge.set(challenge._id, completedUserIds);
-
-      const rankedUsers = [...flightsByUser.entries()]
-        .map(([userId, userFlights]) => {
-          const progress = getAutoProgress(challenge, userFlights);
-          const user = usersById.get(userId);
-          return {
-            userId,
-            displayName: user?.discordUsername ?? userId,
-            discordUsername: user?.discordUsername ?? null,
-            progressCurrent: progress.progressCurrent,
-            progressTarget: progress.progressTarget,
-            progressLabel: progress.isComplete
-              ? "Completed"
-              : progress.progressLabel,
-            isComplete: progress.isComplete,
-            completedAt:
-              completedMetadataByChallenge.get(challenge._id)?.get(userId) ??
-              null,
-          };
-        })
-        .filter((entry) => entry.isComplete || entry.progressCurrent > 0)
-        .sort(compareTopProgressUsers)
-        .slice(0, 3);
-
-      topProgressUsersByChallenge.set(challenge._id, rankedUsers);
+      const completedUsers =
+        completedLeaderboardUserIdsByChallenge.get(entry.challengeId) ??
+        new Set<Id<"users">>();
+      completedUsers.add(entry.userId);
+      completedLeaderboardUserIdsByChallenge.set(entry.challengeId, completedUsers);
     }
 
     return challenges
@@ -1332,7 +1284,7 @@ export const listAdmin = query({
         };
         const completedUsers = new Set([
           ...(completedUserIdsByChallenge.get(challenge._id) ?? []),
-          ...(computedCompletedUserIdsByChallenge.get(challenge._id) ?? []),
+          ...(completedLeaderboardUserIdsByChallenge.get(challenge._id) ?? []),
         ]);
         const completedUserDetails = [...completedUsers]
           .map((userId) => {
@@ -1344,9 +1296,29 @@ export const listAdmin = query({
             };
           })
           .sort((a, b) => a.displayName.localeCompare(b.displayName));
-        const topProgressUsers =
-          topProgressUsersByChallenge.get(challenge._id) ??
-          completedUserDetails
+        const topProgressUsers = challenge.mode === "auto"
+          ? (leaderboardEntriesByChallenge.get(challenge._id) ?? [])
+              .map((entry) => {
+                const user = usersById.get(entry.userId);
+                return {
+                  userId: entry.userId,
+                  displayName: user?.discordUsername ?? entry.userId,
+                  discordUsername: user?.discordUsername ?? null,
+                  progressCurrent: entry.progressCurrent,
+                  progressTarget: entry.progressTarget,
+                  progressLabel: entry.progressLabel,
+                  isComplete: entry.isComplete,
+                  completedAt:
+                    entry.completedAt ??
+                    completedMetadataByChallenge
+                      .get(challenge._id)
+                      ?.get(entry.userId) ??
+                    null,
+                };
+              })
+              .sort(compareTopProgressUsers)
+              .slice(0, 3)
+          : completedUserDetails
             .map((user) => ({
               userId: user.userId,
               displayName: user.displayName,
