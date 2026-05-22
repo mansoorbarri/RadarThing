@@ -530,7 +530,7 @@ export const RadarSettings = ({
 
             <div className="space-y-3 rounded-lg border border-white/10 bg-black/20 p-3">
               <SettingsToggle
-                label="Mode Line"
+                label="Track Line"
                 description="Show a recent backtrack line behind aircraft in radar mode."
                 checked={radarModeLinePreferences.enabled}
                 onChange={(enabled) =>
@@ -601,7 +601,7 @@ export const RadarSettings = ({
                             : radarModeLinePreferences.distanceNm,
                       });
                     }}
-                    aria-label="Radar mode line length"
+                    aria-label="Radar track line length"
                   />
 
                   <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/35 uppercase">
