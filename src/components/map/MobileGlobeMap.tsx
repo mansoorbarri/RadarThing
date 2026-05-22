@@ -1721,9 +1721,9 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       headingPopupRef.current
         .setLngLat(end)
         .setHTML(
-          `<div style="font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; line-height: 1.5;">
-            <div style="font-weight: 700; color: #e0f2fe;">Heading: ${heading.toFixed(1)}°</div>
-            <div style="color: rgba(224,242,254,0.82);">Distance: ${distanceKm.toFixed(1)} km / ${distanceMiles.toFixed(1)} mi</div>
+          `<div>
+            <div class="globe-heading-popup__heading">Heading: ${heading.toFixed(1)}°</div>
+            <div class="globe-heading-popup__distance">Distance: ${distanceKm.toFixed(1)} km / ${distanceMiles.toFixed(1)} mi</div>
           </div>`,
         )
         .addTo(map);

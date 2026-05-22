@@ -117,6 +117,33 @@
   transform: translateY(-50%) translateX(0);
 }
 
+.globe-heading-popup .maplibregl-popup-content {
+  background: rgba(0, 10, 15, 0.85);
+  color: #00ffff;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 8px 10px;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.25);
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.7);
+}
+
+.globe-heading-popup .maplibregl-popup-tip {
+  border-top-color: rgba(0, 10, 15, 0.85);
+  border-bottom-color: rgba(0, 10, 15, 0.85);
+}
+
+.globe-heading-popup__heading {
+  font-weight: 700;
+  color: #00ffff;
+}
+
+.globe-heading-popup__distance {
+  color: #00ffff;
+}
+
 /* Smooth tile fade-in on load instead of popping in */
 .leaflet-tile {
   will-change: opacity;
