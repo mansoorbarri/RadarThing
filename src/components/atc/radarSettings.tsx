@@ -121,7 +121,7 @@ export const RadarSettings = ({
     : null;
   const currentModeLineIntervalLabel = radarModeLinePreferences
     ? radarModeLinePreferences.mode === "minutes"
-      ? `${radarModeLinePreferences.minutes} sec`
+      ? `${Math.round(radarModeLinePreferences.minutes / 60)} min`
       : `${radarModeLinePreferences.distanceNm} NM`
     : null;
 
@@ -542,7 +542,7 @@ export const RadarSettings = ({
                 className={`space-y-3 ${!radarModeLinePreferences.enabled ? "opacity-50" : ""}`}
               >
                 <p className="text-[11px] leading-5 text-white/45">
-                  Choose whether the line projects by elapsed seconds or
+                  Choose whether the line projects by elapsed minutes or
                   nautical miles. The line uses the aircraft heading.
                 </p>
 
@@ -561,39 +561,40 @@ export const RadarSettings = ({
                     </div>
                     <p className="mt-1 text-[11px] text-white/45">
                       {radarModeLinePreferences.mode === "minutes"
-                        ? "Each line projects this many seconds ahead at the current speed."
+                        ? "Each line projects this many minutes ahead at the current speed."
                         : "Each line projects this many nautical miles ahead on the current heading."}
                     </p>
                   </div>
 
                   <Slider
                     disabled={!radarModeLinePreferences.enabled}
-                    min={radarModeLinePreferences.mode === "minutes" ? 2 : 1}
-                    max={radarModeLinePreferences.mode === "minutes" ? 60 : 10}
+                    min={radarModeLinePreferences.mode === "minutes" ? 1 : 1}
+                    max={radarModeLinePreferences.mode === "minutes" ? 5 : 10}
                     step={1}
                     value={[
                       radarModeLinePreferences.mode === "minutes"
-                        ? radarModeLinePreferences.minutes
+                        ? Math.round(radarModeLinePreferences.minutes / 60)
                         : radarModeLinePreferences.distanceNm,
                     ]}
                     onValueChange={([value]) => {
                       if (!value) return;
                       updateRadarModeLinePreferences(
                         radarModeLinePreferences.mode === "minutes"
-                          ? { minutes: value }
+                          ? { minutes: value * 60 }
                           : { distanceNm: value },
                         false,
                       );
                     }}
                     onValueCommit={([value]) => {
                       if (!value) return;
+                      const modeLineSeconds =
+                        radarModeLinePreferences.mode === "minutes"
+                          ? value * 60
+                          : radarModeLinePreferences.minutes;
                       Analytics.track("radar_mode_line_preference_changed", {
                         enabled: radarModeLinePreferences.enabled,
                         mode: radarModeLinePreferences.mode,
-                        seconds:
-                          radarModeLinePreferences.mode === "minutes"
-                            ? value
-                            : radarModeLinePreferences.minutes,
+                        seconds: modeLineSeconds,
                         distance_nm:
                           radarModeLinePreferences.mode === "nm"
                             ? value
@@ -605,13 +606,13 @@ export const RadarSettings = ({
 
                   <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/35 uppercase">
                     <span>
-                      {radarModeLinePreferences.mode === "minutes" ? "2" : "1"}
+                      {radarModeLinePreferences.mode === "minutes" ? "1" : "1"}
                     </span>
                     <span className="text-center text-[11px] font-semibold tracking-[0.14em] text-cyan-200">
                       {currentModeLineIntervalLabel}
                     </span>
                     <span className="text-right">
-                      {radarModeLinePreferences.mode === "minutes" ? "60" : "10"}
+                      {radarModeLinePreferences.mode === "minutes" ? "5" : "10"}
                     </span>
                   </div>
                 </div>

@@ -926,8 +926,6 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     getStoredRadarModeLinePreferences(),
   );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isSettingsSidebarCollapsed, setIsSettingsSidebarCollapsed] =
-    useState(false);
   const [isHeadingMode, setIsHeadingMode] = useState(false);
   const [layerPresets, setLayerPresets] = useState(() =>
     getStoredMapLayerPresets(),
@@ -2158,11 +2156,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
             <MapSettingsSidebar
               isOpen={isSettingsOpen}
               isMobile={!isDesktopGlobe}
-              isCollapsed={isSettingsSidebarCollapsed}
               onClose={() => setIsSettingsOpen(false)}
-              onToggleCollapsed={() =>
-                setIsSettingsSidebarCollapsed((current) => !current)
-              }
             >
               <RadarSettings
                 isPRO={isProUser}

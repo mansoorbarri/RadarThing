@@ -197,8 +197,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const lastConflictHistorySignatureRef = useRef<string>("");
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isSettingsSidebarCollapsed, setIsSettingsSidebarCollapsed] =
-    useState(false);
   // Local selection state for internal use (cleared when clicking map background)
   const [localSelectedIds, setLocalSelectedIds] = useState<string[]>([]);
   const hasReportedInitialBaseLayerRef = useRef(false);
@@ -1079,11 +1077,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         <MapSettingsSidebar
           isOpen={isSettingsOpen}
           isMobile={isMobile}
-          isCollapsed={isSettingsSidebarCollapsed}
           onClose={() => setIsSettingsOpen(false)}
-          onToggleCollapsed={() =>
-            setIsSettingsSidebarCollapsed((current) => !current)
-          }
         >
           <RadarSettings
             isPRO={isProUser}

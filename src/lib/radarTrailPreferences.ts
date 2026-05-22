@@ -32,21 +32,33 @@ export const DEFAULT_RADAR_TRAIL_PREFERENCES: RadarTrailPreferences = {
 export const DEFAULT_RADAR_MODE_LINE_PREFERENCES: RadarModeLinePreferences = {
   enabled: true,
   mode: "minutes",
-  minutes: 10,
+  minutes: 60,
   distanceNm: 5,
 };
 
-function clampTimeInterval(value: number) {
+function clampTrailTimeInterval(value: number) {
   return Math.min(60, Math.max(2, Math.round(value)));
+}
+
+function clampModeLineTimeInterval(value: number) {
+  return Math.min(300, Math.max(60, Math.round(value)));
 }
 
 function clampDistanceInterval(value: number) {
   return Math.min(10, Math.max(1, Math.round(value)));
 }
 
-function parseTimeIntervalCookie(value: string | null, fallback: number) {
+function parseTrailTimeIntervalCookie(value: string | null, fallback: number) {
   const parsed = Number.parseInt(value ?? "", 10);
-  return Number.isFinite(parsed) ? clampTimeInterval(parsed) : fallback;
+  return Number.isFinite(parsed) ? clampTrailTimeInterval(parsed) : fallback;
+}
+
+function parseModeLineTimeIntervalCookie(
+  value: string | null,
+  fallback: number,
+) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) ? clampModeLineTimeInterval(parsed) : fallback;
 }
 
 function parseDistanceIntervalCookie(value: string | null, fallback: number) {
@@ -64,7 +76,7 @@ function normalizeRadarIntervalPreferences<T extends RadarIntervalPreferences>(
         ? preferences.enabled
         : fallback.enabled,
     mode: preferences?.mode === "nm" ? "nm" : "minutes",
-    minutes: clampTimeInterval(preferences?.minutes ?? fallback.minutes),
+    minutes: clampTrailTimeInterval(preferences?.minutes ?? fallback.minutes),
     distanceNm: clampDistanceInterval(
       preferences?.distanceNm ?? fallback.distanceNm,
     ),
@@ -83,10 +95,20 @@ export function normalizeRadarTrailPreferences(
 export function normalizeRadarModeLinePreferences(
   preferences: Partial<RadarModeLinePreferences> | null | undefined,
 ): RadarModeLinePreferences {
-  return normalizeRadarIntervalPreferences(
-    preferences,
-    DEFAULT_RADAR_MODE_LINE_PREFERENCES,
-  );
+  return {
+    enabled:
+      typeof preferences?.enabled === "boolean"
+        ? preferences.enabled
+        : DEFAULT_RADAR_MODE_LINE_PREFERENCES.enabled,
+    mode: preferences?.mode === "nm" ? "nm" : "minutes",
+    minutes: clampModeLineTimeInterval(
+      preferences?.minutes ?? DEFAULT_RADAR_MODE_LINE_PREFERENCES.minutes,
+    ),
+    distanceNm: clampDistanceInterval(
+      preferences?.distanceNm ??
+        DEFAULT_RADAR_MODE_LINE_PREFERENCES.distanceNm,
+    ),
+  };
 }
 
 export function getStoredRadarTrailPreferences(): RadarTrailPreferences {
@@ -100,7 +122,7 @@ export function getStoredRadarTrailPreferences(): RadarTrailPreferences {
         : enabledCookie === "true" || enabledCookie === "1",
     mode:
       modeCookie === "minutes" || modeCookie === "nm" ? modeCookie : undefined,
-    minutes: parseTimeIntervalCookie(
+    minutes: parseTrailTimeIntervalCookie(
       getCookie(RADAR_TRAIL_MINUTES_COOKIE),
       DEFAULT_RADAR_TRAIL_PREFERENCES.minutes,
     ),
@@ -133,7 +155,7 @@ export function getStoredRadarModeLinePreferences(): RadarModeLinePreferences {
         : enabledCookie === "true" || enabledCookie === "1",
     mode:
       modeCookie === "minutes" || modeCookie === "nm" ? modeCookie : undefined,
-    minutes: parseTimeIntervalCookie(
+    minutes: parseModeLineTimeIntervalCookie(
       getCookie(RADAR_MODE_LINE_MINUTES_COOKIE),
       DEFAULT_RADAR_MODE_LINE_PREFERENCES.minutes,
     ),

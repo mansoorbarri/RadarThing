@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ChevronRight } from "lucide-react";
+import { PanelLeftClose } from "lucide-react";
 
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
 import { Button } from "~/components/ui/button";
@@ -10,18 +10,14 @@ import { cn } from "~/lib/utils";
 interface MapSettingsSidebarProps {
   isOpen: boolean;
   isMobile: boolean;
-  isCollapsed: boolean;
   onClose: () => void;
-  onToggleCollapsed: () => void;
   children: React.ReactNode;
 }
 
 export const MapSettingsSidebar = ({
   isOpen,
   isMobile,
-  isCollapsed,
   onClose,
-  onToggleCollapsed,
   children,
 }: MapSettingsSidebarProps) => {
   if (!isOpen) {
@@ -41,40 +37,23 @@ export const MapSettingsSidebar = ({
   return (
     <aside
       className={cn(
-        "animate-slide-in-left fixed inset-y-0 left-0 z-[10020] border-r border-white/10 bg-black/90 backdrop-blur-xl transition-[width] duration-300 ease-in-out",
-        isCollapsed ? "w-12" : "w-full max-w-[360px] xl:max-w-[400px]",
+        "animate-slide-in-left fixed inset-y-0 left-0 z-[10020] w-full max-w-[360px] border-r border-white/10 bg-black/90 backdrop-blur-xl xl:max-w-[400px]",
       )}
     >
       <Button
         variant="ghost"
         size="icon-xs"
-        onClick={onToggleCollapsed}
+        onClick={onClose}
         className="absolute top-1/2 -right-3 z-10 -translate-y-1/2 rounded-full border border-white/20 bg-slate-900 text-slate-400 shadow-lg transition-colors hover:bg-slate-800 hover:text-white"
-        title={isCollapsed ? "Expand settings" : "Collapse settings"}
-        aria-label={isCollapsed ? "Expand settings" : "Collapse settings"}
+        title="Close settings"
+        aria-label="Close settings"
       >
-        <ChevronRight
-          className={cn(
-            "transition-transform duration-300",
-            !isCollapsed ? "rotate-180" : "",
-          )}
-        />
+        <PanelLeftClose />
       </Button>
 
-      {isCollapsed ? (
-        <div className="flex h-full flex-col items-center py-6">
-          <div className="mb-4 h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
-          <div
-            className="font-mono text-[10px] font-bold tracking-wider text-cyan-400 uppercase [writing-mode:vertical-rl]"
-          >
-            SETTINGS
-          </div>
-        </div>
-      ) : (
-        <div className="custom-scrollbar h-full overflow-y-auto p-4">
-          {children}
-        </div>
-      )}
+      <div className="custom-scrollbar h-full overflow-y-auto p-4">
+        {children}
+      </div>
     </aside>
   );
 };
