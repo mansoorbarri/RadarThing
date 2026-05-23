@@ -20,14 +20,20 @@ export function normalizeAircraftType(type: string | undefined): string | null {
   if (poseidonMatch) return "P8";
   const ilyushinMatch = /\bIL-?76(?:[A-Z0-9-]*)/.exec(cleaned);
   if (ilyushinMatch) return "IL76";
+  const shuttleOrbiterMatch = /\bOV-?(\d{3})\b/.exec(cleaned);
+  if (shuttleOrbiterMatch) return `OV${shuttleOrbiterMatch[1]}`;
+  if (/\bSPACE\s+SHUTTLE\b/.test(cleaned)) return "SHUTTLE";
 
   const airbusMatch = /A\d{3}/.exec(cleaned);
   if (airbusMatch) return airbusMatch[0];
 
+  const boeingManufacturerMatch = /\bBOEING\s+(\d{3})(?!\d)/.exec(cleaned);
+  if (boeingManufacturerMatch) return `B${boeingManufacturerMatch[1]}`;
+
   const boeingMatch = /B\d{3}/.exec(cleaned);
   if (boeingMatch) return boeingMatch[0];
 
-  const boeingNameMatch = /\b(7[0-9]7)\b/.exec(cleaned);
+  const boeingNameMatch = /\b(7\d{2})\b/.exec(cleaned);
   if (boeingNameMatch) return `B${boeingNameMatch[1]}`;
 
   const embraerMatch = /E\d{3}|ERJ\d{3}|CRJ\d{3}/.exec(cleaned);
