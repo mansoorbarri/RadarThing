@@ -43,6 +43,7 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
 import { Analytics } from "~/lib/analytics";
+import { dispatchBirthdayCtfHint } from "~/lib/birthdayCtf";
 import {
   Select,
   SelectContent,
@@ -95,6 +96,7 @@ export default function AircraftImagesPage() {
       setFormData((prev) => ({ ...prev, discordUsername: savedUsername }));
     }
     Analytics.imageGalleryViewed();
+    dispatchBirthdayCtfHint("upload-image");
   }, []);
   const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -206,7 +208,8 @@ export default function AircraftImagesPage() {
     const start = (currentPage - 1) * pageSize;
     return filteredImages.slice(start, start + pageSize);
   }, [currentPage, filteredImages, pageSize]);
-  const pageStart = filteredImages.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const pageStart =
+    filteredImages.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const pageEnd = Math.min(currentPage * pageSize, filteredImages.length);
 
   useEffect(() => {
@@ -492,9 +495,7 @@ export default function AircraftImagesPage() {
             <Select
               value={airlineFilter || ALL_AIRLINES_VALUE}
               onValueChange={(value) =>
-                setAirlineFilter(
-                  value === ALL_AIRLINES_VALUE ? "" : value,
-                )
+                setAirlineFilter(value === ALL_AIRLINES_VALUE ? "" : value)
               }
             >
               <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
@@ -523,9 +524,7 @@ export default function AircraftImagesPage() {
             <Select
               value={aircraftFilter || ALL_AIRCRAFT_VALUE}
               onValueChange={(value) =>
-                setAircraftFilter(
-                  value === ALL_AIRCRAFT_VALUE ? "" : value,
-                )
+                setAircraftFilter(value === ALL_AIRCRAFT_VALUE ? "" : value)
               }
             >
               <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
@@ -576,9 +575,7 @@ export default function AircraftImagesPage() {
             <Select
               value={String(pageSize)}
               onValueChange={(value) =>
-                setPageSize(
-                  Number(value) as (typeof PAGE_SIZE_OPTIONS)[number],
-                )
+                setPageSize(Number(value) as (typeof PAGE_SIZE_OPTIONS)[number])
               }
             >
               <SelectTrigger className="h-10 min-w-[84px] rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
@@ -670,7 +667,9 @@ export default function AircraftImagesPage() {
                 </p>
                 <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
                   <button
-                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                    onClick={() =>
+                      setCurrentPage((page) => Math.max(1, page - 1))
+                    }
                     disabled={currentPage === 1}
                     className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white transition-all hover:border-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -937,8 +936,12 @@ export default function AircraftImagesPage() {
               <div className="absolute inset-0 z-50 flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-[#0a0f14]">
                 {/* Radar sweep glow */}
                 <div className="pointer-events-none absolute inset-0">
-                  <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 animate-[radarSweep_2s_linear_infinite] rounded-full opacity-30"
-                    style={{ background: "conic-gradient(from 0deg, transparent 0deg, rgba(34,211,238,0.4) 40deg, transparent 80deg)" }}
+                  <div
+                    className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 animate-[radarSweep_2s_linear_infinite] rounded-full opacity-30"
+                    style={{
+                      background:
+                        "conic-gradient(from 0deg, transparent 0deg, rgba(34,211,238,0.4) 40deg, transparent 80deg)",
+                    }}
                   />
                 </div>
 
@@ -951,8 +954,10 @@ export default function AircraftImagesPage() {
 
                 {/* Animated plane flyover */}
                 <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                  <div className="absolute top-[38%] animate-[planePass_1.8s_cubic-bezier(0.4,0,0.2,1)_0.2s_forwards]"
-                    style={{ left: "-40px", opacity: 0 }}>
+                  <div
+                    className="absolute top-[38%] animate-[planePass_1.8s_cubic-bezier(0.4,0,0.2,1)_0.2s_forwards]"
+                    style={{ left: "-40px", opacity: 0 }}
+                  >
                     <Plane className="h-5 w-5 -rotate-12 text-cyan-400/70" />
                   </div>
                   {/* Contrail */}
@@ -960,8 +965,10 @@ export default function AircraftImagesPage() {
                 </div>
 
                 {/* Center content */}
-                <div className="relative z-10 flex flex-col items-center animate-[fadeInUp_0.5s_ease-out_forwards]"
-                  style={{ opacity: 0 }}>
+                <div
+                  className="relative z-10 flex animate-[fadeInUp_0.5s_ease-out_forwards] flex-col items-center"
+                  style={{ opacity: 0 }}
+                >
                   {/* Ping rings */}
                   <div className="relative mb-5">
                     <div className="absolute inset-0 animate-[ping_1.2s_ease-out_forwards] rounded-full border-2 border-cyan-400/40" />
@@ -984,27 +991,61 @@ export default function AircraftImagesPage() {
 
                 <style jsx>{`
                   @keyframes radarSweep {
-                    from { transform: translate(-50%, -50%) rotate(0deg); }
-                    to { transform: translate(-50%, -50%) rotate(360deg); }
+                    from {
+                      transform: translate(-50%, -50%) rotate(0deg);
+                    }
+                    to {
+                      transform: translate(-50%, -50%) rotate(360deg);
+                    }
                   }
                   @keyframes planePass {
-                    0% { transform: translateX(0); opacity: 0; }
-                    10% { opacity: 0.7; }
-                    90% { opacity: 0.7; }
-                    100% { transform: translateX(calc(100vw + 80px)); opacity: 0; }
+                    0% {
+                      transform: translateX(0);
+                      opacity: 0;
+                    }
+                    10% {
+                      opacity: 0.7;
+                    }
+                    90% {
+                      opacity: 0.7;
+                    }
+                    100% {
+                      transform: translateX(calc(100vw + 80px));
+                      opacity: 0;
+                    }
                   }
                   @keyframes contrail {
-                    0% { width: 0; opacity: 0; }
-                    10% { opacity: 0.5; }
-                    100% { width: 100%; opacity: 0; }
+                    0% {
+                      width: 0;
+                      opacity: 0;
+                    }
+                    10% {
+                      opacity: 0.5;
+                    }
+                    100% {
+                      width: 100%;
+                      opacity: 0;
+                    }
                   }
                   @keyframes ping {
-                    0% { transform: scale(1); opacity: 1; }
-                    100% { transform: scale(2.8); opacity: 0; }
+                    0% {
+                      transform: scale(1);
+                      opacity: 1;
+                    }
+                    100% {
+                      transform: scale(2.8);
+                      opacity: 0;
+                    }
                   }
                   @keyframes fadeInUp {
-                    0% { transform: translateY(12px); opacity: 0; }
-                    100% { transform: translateY(0); opacity: 1; }
+                    0% {
+                      transform: translateY(12px);
+                      opacity: 0;
+                    }
+                    100% {
+                      transform: translateY(0);
+                      opacity: 1;
+                    }
                   }
                 `}</style>
               </div>

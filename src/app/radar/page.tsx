@@ -34,7 +34,19 @@ import { useRecentSearches } from "~/hooks/useRecentSearches";
 import { useActiveTracker } from "~/hooks/useActiveTracker";
 import { useMostTrackedFlights } from "~/hooks/useMostTrackedFlights";
 import { useTileCacheWorker } from "~/hooks/useTileCacheWorker";
+import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
 import { Analytics } from "~/lib/analytics";
+import {
+  BIRTHDAY_CTF_COMPLETED_KEY,
+  BIRTHDAY_CTF_EVENT,
+  BIRTHDAY_CTF_FLAG,
+  BIRTHDAY_CTF_TARGET_SECONDS,
+  BIRTHDAY_CTF_SEEN_HINTS_KEY,
+  birthdayCtfHints,
+  dispatchBirthdayCtfHint,
+  formatBirthdayCtfTimer,
+  type BirthdayCtfHintId,
+} from "~/lib/birthdayCtf";
 import { isFreeChartIcao } from "~/lib/chartAccess";
 import {
   describeElement,
@@ -82,7 +94,7 @@ import {
   UploadIcon,
   AdminIcon,
 } from "~/utils/dockIcons";
-import { RotateCcw, Route, X } from "lucide-react";
+import { Flag, RotateCcw, Route, X } from "lucide-react";
 import { UnitPreferencesProvider } from "~/hooks/useUnitPreferences";
 import { TimeDisplayPreferenceProvider } from "~/hooks/useTimeDisplayPreference";
 
@@ -123,6 +135,7 @@ function ATCPageContent() {
   const deviceType = useDeviceType();
   const isPhone = deviceType === "phone";
   const isTablet = deviceType === "tablet";
+  const { googleId: currentUserGoogleId } = useCurrentUserProfile();
 
   const {
     aircrafts,
@@ -217,8 +230,10 @@ function ATCPageContent() {
 
   // Track if we've already auto-selected from URL param
   const [autoSelectedFromUrl, setAutoSelectedFromUrl] = useState(false);
-  const [hasResolvedInitialAirportFromUrl, setHasResolvedInitialAirportFromUrl] =
-    useState(() => !normalizedAirportParam);
+  const [
+    hasResolvedInitialAirportFromUrl,
+    setHasResolvedInitialAirportFromUrl,
+  ] = useState(() => !normalizedAirportParam);
 
   const [activeRightPanel, setActiveRightPanel] = useState<RightPanel>(null);
 
@@ -244,6 +259,12 @@ function ATCPageContent() {
   const [isAppReady, setIsAppReady] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showShortcutsMenu, setShowShortcutsMenu] = useState(false);
+  const [showBirthdayHints, setShowBirthdayHints] = useState(false);
+  const [showBirthdayFlag, setShowBirthdayFlag] = useState(false);
+  const [seenBirthdayHints, setSeenBirthdayHints] = useState<
+    Set<BirthdayCtfHintId>
+  >(() => new Set());
+  const [birthdayCtfCompleted, setBirthdayCtfCompleted] = useState(false);
   const [isDarkLayerMode, setIsDarkLayerMode] = useState(false);
   const [isFollowMode, setIsFollowMode] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -297,7 +318,8 @@ function ATCPageContent() {
   const mostTrackedFlights = useMostTrackedFlights(aircrafts);
 
   const { time, zoneLabel } = useDisplayedTime();
-  const { formattedTime, isRunning, start, stop, reset } = useTimer();
+  const { time: timerSeconds, isRunning, start, stop, reset } = useTimer();
+  const formattedTime = formatBirthdayCtfTimer(timerSeconds);
 
   const drawFlightPlanOnMapRef = useRef<
     ((ac: PositionUpdate, zoom?: boolean) => void) | null
@@ -325,10 +347,78 @@ function ATCPageContent() {
     [],
   );
 
+  useEffect(() => {
+    try {
+      const parsed = JSON.parse(
+        window.localStorage.getItem(BIRTHDAY_CTF_SEEN_HINTS_KEY) ?? "[]",
+      );
+      if (Array.isArray(parsed)) {
+        setSeenBirthdayHints(
+          new Set(
+            parsed.filter(
+              (value): value is BirthdayCtfHintId =>
+                typeof value === "string" && value in birthdayCtfHints,
+            ),
+          ),
+        );
+      }
+    } catch {
+      setSeenBirthdayHints(new Set());
+    }
+
+    setBirthdayCtfCompleted(
+      window.localStorage.getItem(BIRTHDAY_CTF_COMPLETED_KEY) === "1",
+    );
+  }, []);
+
+  useEffect(() => {
+    const handleBirthdayHint = (
+      event: Event & { detail?: { hintId?: BirthdayCtfHintId } },
+    ) => {
+      const hintId = event.detail?.hintId;
+      if (!hintId || !(hintId in birthdayCtfHints)) return;
+
+      setSeenBirthdayHints((current) => {
+        if (current.has(hintId)) return current;
+        const next = new Set(current);
+        next.add(hintId);
+        return next;
+      });
+
+      toast.info(birthdayCtfHints[hintId], {
+        id: `birthday-ctf-${hintId}`,
+        duration: 5500,
+        icon: <Flag className="h-4 w-4 text-cyan-300" />,
+        className:
+          "!rounded-lg !border !border-cyan-400/25 !bg-black/85 !text-cyan-50 !backdrop-blur-xl",
+      });
+    };
+
+    window.addEventListener(BIRTHDAY_CTF_EVENT, handleBirthdayHint);
+    return () =>
+      window.removeEventListener(BIRTHDAY_CTF_EVENT, handleBirthdayHint);
+  }, []);
+
+  useEffect(() => {
+    if (
+      !isRunning ||
+      birthdayCtfCompleted ||
+      timerSeconds !== BIRTHDAY_CTF_TARGET_SECONDS
+    ) {
+      return;
+    }
+
+    stop();
+    window.localStorage.setItem(BIRTHDAY_CTF_COMPLETED_KEY, "1");
+    setBirthdayCtfCompleted(true);
+    setShowBirthdayFlag(true);
+  }, [birthdayCtfCompleted, isRunning, stop, timerSeconds]);
+
   const selectAirport = useCallback(
     (airport: Airport, options?: { addToRecent?: boolean }) => {
       setSelectedAirport(airport);
       setPendingAirportIcao(null);
+      dispatchBirthdayCtfHint("airport");
 
       if (options?.addToRecent !== false) {
         addAirportSearch(airport);
@@ -630,6 +720,20 @@ function ATCPageContent() {
     const aircraftId = selectedAircraft.callsign || selectedAircraft.id;
     activeAircraft.mergeFlightPath(aircraftId, activeFlightPath);
   }, [activeFlightPath, isViewingHistory, selectedAircraft]);
+
+  useEffect(() => {
+    if (!currentUserGoogleId) return;
+
+    const ownAircraftVisible = aircrafts.some(
+      (aircraft) => aircraft.googleId === currentUserGoogleId,
+    );
+    if (!ownAircraftVisible) return;
+
+    dispatchBirthdayCtfHint("own-flight-clock");
+    window.setTimeout(() => {
+      dispatchBirthdayCtfHint("own-flight-hold");
+    }, 1200);
+  }, [aircrafts, currentUserGoogleId]);
 
   useEffect(() => {
     if (!isReplayActive) return;
@@ -1106,16 +1210,19 @@ function ATCPageContent() {
                 autoFocus={false}
                 inputDebugId="radar-header-search-input"
                 onSelectAircraft={(ac) => {
+                  dispatchBirthdayCtfHint("search");
                   setSelectedAircrafts([ac]);
                   drawFlightPlanOnMapRef.current?.(ac, true);
                   addAircraftSearch(ac);
                   setSearchTerm("");
                 }}
                 onSelectAirport={(ap) => {
+                  dispatchBirthdayCtfHint("search");
                   selectAirport(ap);
                   setSearchTerm("");
                 }}
                 onSelectPilot={(pilot) => {
+                  dispatchBirthdayCtfHint("search");
                   addPilotSearch(pilot);
                   setSearchTerm("");
                   router.push(`/pilot/${pilot._id}`);
@@ -1172,7 +1279,7 @@ function ATCPageContent() {
           <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2">
             <button
               onClick={() => setShowTimerPopup(!showTimerPopup)}
-              className={`cursor-pointer rounded-full border border-white/10 bg-black/40 backdrop-blur-md ${isTablet ? "px-3 py-1" : "px-4 py-1.5"}`}
+              className={`cursor-pointer rounded-lg border border-white/10 bg-black/40 backdrop-blur-md ${isTablet ? "px-3 py-1" : "px-4 py-1.5"}`}
             >
               <span
                 className={`font-mono text-cyan-400 ${isTablet ? "text-base" : "text-xl"}`}
@@ -1231,7 +1338,7 @@ function ATCPageContent() {
             {isPhone && (
               <button
                 onClick={() => setShowTimerPopup(!showTimerPopup)}
-                className="flex h-7 items-center justify-center rounded-full border border-white/10 bg-black/40 px-2.5 backdrop-blur-md"
+                className="flex h-7 items-center justify-center rounded-lg border border-white/10 bg-black/40 px-2.5 backdrop-blur-md"
               >
                 <span className="flex h-full items-center justify-center gap-1 font-mono text-[11px] leading-none text-cyan-400">
                   <span className="leading-none">{time}</span>
@@ -1284,7 +1391,12 @@ function ATCPageContent() {
               type="text"
               placeholder="Search flight, pilot, or airport..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                if (!searchTerm && e.target.value.trim()) {
+                  dispatchBirthdayCtfHint("search");
+                }
+                setSearchTerm(e.target.value);
+              }}
               autoFocus
               data-debug-id="radar-mobile-search-input"
               className="w-full rounded-xl border border-cyan-400/30 bg-black/60 px-4 py-3 text-[15px] text-cyan-400 placeholder-cyan-500/40 outline-none focus:border-cyan-400"
@@ -1309,6 +1421,7 @@ function ATCPageContent() {
                             `ac-${index}`
                           }
                           onClick={() => {
+                            dispatchBirthdayCtfHint("search");
                             setSelectedAircrafts([aircraft]);
                             drawFlightPlanOnMapRef.current?.(aircraft, true);
                             addAircraftSearch(aircraft);
@@ -1342,6 +1455,7 @@ function ATCPageContent() {
                         <div
                           key={`pilot-${pilot._id}`}
                           onClick={() => {
+                            dispatchBirthdayCtfHint("search");
                             addPilotSearch(pilot);
                             setSearchTerm("");
                             setShowMobileSearch(false);
@@ -1370,6 +1484,7 @@ function ATCPageContent() {
                         <div
                           key={`ap-${airport.icao}`}
                           onClick={() => {
+                            dispatchBirthdayCtfHint("search");
                             selectAirport(airport);
                             setSearchTerm("");
                             setShowMobileSearch(false);
@@ -1641,6 +1756,47 @@ function ATCPageContent() {
         />
       )}
 
+      {!isUiHidden && (
+        <div
+          className={`fixed left-1/2 z-[10014] w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 ${isPhone ? "bottom-20" : "bottom-5"}`}
+        >
+          <button
+            type="button"
+            onClick={() => setShowBirthdayHints((current) => !current)}
+            className="mx-auto flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-cyan-400/20 bg-black/75 px-4 font-mono text-[11px] tracking-[0.16em] text-cyan-100 uppercase shadow-[0_14px_45px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-colors hover:border-cyan-300/40 hover:bg-black/85"
+          >
+            <Flag className="h-3.5 w-3.5 text-cyan-300" />
+            Birthday Hints {seenBirthdayHints.size}/
+            {Object.keys(birthdayCtfHints).length}
+          </button>
+
+          {showBirthdayHints && (
+            <div className="animate-fade-in-up mt-2 max-h-64 overflow-y-auto rounded-lg border border-cyan-400/20 bg-black/85 p-3 shadow-[0_20px_70px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+              <div className="mb-2 font-mono text-[10px] tracking-[0.18em] text-white/40 uppercase">
+                Collected transmissions
+              </div>
+              <div className="space-y-2">
+                {Object.entries(birthdayCtfHints).map(([id, hint]) => {
+                  const seen = seenBirthdayHints.has(id as BirthdayCtfHintId);
+                  return (
+                    <div
+                      key={id}
+                      className={`rounded-md border px-3 py-2 text-xs leading-5 ${
+                        seen
+                          ? "border-cyan-400/20 bg-cyan-400/[0.08] text-cyan-50"
+                          : "border-white/8 bg-white/[0.03] text-white/25"
+                      }`}
+                    >
+                      {seen ? hint : "Undiscovered hint"}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {!isUiHidden && selectedAirport && (
         <div
           className={`animate-fade-in-up fixed left-1/2 z-[10012] -translate-x-1/2 ${isPhone ? "bottom-3" : "bottom-6"}`}
@@ -1663,7 +1819,10 @@ function ATCPageContent() {
 
             {canAccessSelectedAirportCharts ? (
               <button
-                onClick={() => setShowTaxiChart(true)}
+                onClick={() => {
+                  dispatchBirthdayCtfHint("charts");
+                  setShowTaxiChart(true);
+                }}
                 className={`cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 ${isPhone ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
               >
                 Charts
@@ -1896,6 +2055,7 @@ function ATCPageContent() {
           icao={selectedAirport.icao}
           onClose={() => setShowTaxiChart(false)}
           onOpenSideView={() => {
+            dispatchBirthdayCtfHint("charts-side-view");
             setChartOverlayIcao(selectedAirport.icao);
             setChartOverlayActive(true);
           }}
@@ -1943,6 +2103,37 @@ function ATCPageContent() {
         onClose={() => setShowShortcutsMenu(false)}
         isMobile={isMobile}
       />
+
+      {showBirthdayFlag && (
+        <div className="fixed inset-0 z-[10090] flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md overflow-hidden rounded-lg border border-cyan-400/30 bg-[#071019] text-white shadow-[0_24px_90px_rgba(0,0,0,0.75)]">
+            <div className="border-b border-white/10 px-5 py-4">
+              <div className="flex items-center gap-2">
+                <Flag className="h-5 w-5 text-cyan-300" />
+                <h2 className="font-mono text-sm tracking-[0.18em] text-cyan-100 uppercase">
+                  Flag Captured
+                </h2>
+              </div>
+            </div>
+            <div className="space-y-4 p-5">
+              <p className="text-sm leading-6 text-white/60">
+                Radar timer reached exactly 00:02:90. Birthday clearance
+                accepted.
+              </p>
+              <div className="rounded-md border border-cyan-400/20 bg-black/45 px-4 py-4 font-mono text-2xl text-cyan-200">
+                {BIRTHDAY_CTF_FLAG}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBirthdayFlag(false)}
+                className="w-full cursor-pointer rounded-md border border-white/10 bg-white/[0.08] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/[0.12]"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

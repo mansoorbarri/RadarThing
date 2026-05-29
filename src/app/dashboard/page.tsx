@@ -9,6 +9,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { useProStatus } from "~/hooks/useProStatus";
 import { Analytics } from "~/lib/analytics";
+import { dispatchBirthdayCtfHint } from "~/lib/birthdayCtf";
 import { createPortalSession } from "~/app/actions/create-portal";
 import { getCurrentUserDataExport } from "~/app/actions/export-user-data";
 import {
@@ -102,6 +103,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setMounted(true);
+    dispatchBirthdayCtfHint("dashboard");
   }, []);
 
   // Real-time queries
@@ -265,9 +267,7 @@ export default function DashboardPage() {
       setShowNameEditor(false);
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to update your name";
+        error instanceof Error ? error.message : "Failed to update your name";
       toast.error(message);
     } finally {
       setIsSavingName(false);
@@ -917,7 +917,7 @@ export default function DashboardPage() {
                   maxLength={64}
                   autoComplete="given-name"
                   disabled={isSavingName}
-                  className="w-full rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white shadow-inner shadow-black/10 outline-none transition focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white shadow-inner shadow-black/10 transition outline-none focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60"
                   placeholder="First name"
                 />
               </label>
@@ -932,7 +932,7 @@ export default function DashboardPage() {
                   maxLength={64}
                   autoComplete="family-name"
                   disabled={isSavingName}
-                  className="w-full rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white shadow-inner shadow-black/10 outline-none transition focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white shadow-inner shadow-black/10 transition outline-none focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60"
                   placeholder="Last name"
                 />
               </label>
@@ -1147,8 +1147,7 @@ function AccountActionButton({
   tone: "cyan" | "emerald" | "slate";
 }) {
   const toneClasses = {
-    cyan:
-      "border-cyan-500/25 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 focus-visible:ring-cyan-400/60",
+    cyan: "border-cyan-500/25 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 focus-visible:ring-cyan-400/60",
     emerald:
       "border-emerald-500/25 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 focus-visible:ring-emerald-400/60",
     slate:
@@ -1161,7 +1160,7 @@ function AccountActionButton({
         void onClick();
       }}
       disabled={disabled}
-      className={`group flex h-14 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border px-4 transition-all duration-300 ease-out md:min-w-0 md:flex-1 md:hover:flex-[6] md:focus-visible:flex-[6] focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${toneClasses[tone]}`}
+      className={`group flex h-14 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border px-4 transition-all duration-300 ease-out focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 md:min-w-0 md:flex-1 md:hover:flex-[6] md:focus-visible:flex-[6] ${toneClasses[tone]}`}
       title={title}
     >
       {icon}

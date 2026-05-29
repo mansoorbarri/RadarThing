@@ -1,10 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { PanelLeftClose } from "lucide-react";
 
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
 import { Button } from "~/components/ui/button";
+import { dispatchBirthdayCtfHint } from "~/lib/birthdayCtf";
 import { cn } from "~/lib/utils";
 
 interface MapSettingsSidebarProps {
@@ -20,6 +21,12 @@ export const MapSettingsSidebar = ({
   onClose,
   children,
 }: MapSettingsSidebarProps) => {
+  useEffect(() => {
+    if (isOpen) {
+      dispatchBirthdayCtfHint("settings");
+    }
+  }, [isOpen]);
+
   if (!isOpen) {
     return null;
   }
@@ -27,9 +34,7 @@ export const MapSettingsSidebar = ({
   if (isMobile) {
     return (
       <MobileSwipeSheet onClose={onClose} initialState="half">
-        <div className="min-h-full bg-[#050f14]/95 p-3 pb-4">
-          {children}
-        </div>
+        <div className="min-h-full bg-[#050f14]/95 p-3 pb-4">{children}</div>
       </MobileSwipeSheet>
     );
   }

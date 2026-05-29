@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { Analytics } from "~/lib/analytics";
+import { dispatchBirthdayCtfHint } from "~/lib/birthdayCtf";
 import {
   Select,
   SelectContent,
@@ -64,7 +65,10 @@ export default function LeaderboardPage() {
   const router = useRouter();
   const { user, isLoaded } = useUser();
   const leaderboard = useQuery(api.flights.getLeaderboard);
-  const challengeLeaderboard = useQuery(api.challenges.listActiveLeaderboard, {});
+  const challengeLeaderboard = useQuery(
+    api.challenges.listActiveLeaderboard,
+    {},
+  );
   const dbUser = useQuery(
     api.users.getByClerkId,
     user?.id ? { clerkId: user.id } : "skip",
@@ -100,6 +104,7 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     Analytics.leaderboardViewed();
+    dispatchBirthdayCtfHint("leaderboard");
   }, []);
 
   useEffect(() => {
@@ -126,7 +131,7 @@ export default function LeaderboardPage() {
       : 0;
   const currentUserEntry =
     isLoaded && sorted
-      ? sorted.find((entry) => entry.clerkId === user?.id) ?? null
+      ? (sorted.find((entry) => entry.clerkId === user?.id) ?? null)
       : null;
   const visibleSorted = sorted?.slice(0, 10) ?? null;
 
@@ -191,7 +196,8 @@ export default function LeaderboardPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="truncate font-mono text-xs font-bold text-white sm:text-sm">
-                  {currentUserEntry.discordUsername ?? currentUserEntry.callsign}
+                  {currentUserEntry.discordUsername ??
+                    currentUserEntry.callsign}
                 </span>
                 {currentUserEntry.currentStreak > 0 && sortBy === "streak" && (
                   <div className="flex shrink-0 items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 sm:px-2">
@@ -258,7 +264,7 @@ export default function LeaderboardPage() {
                 <div className="font-mono text-[10px] text-slate-600 uppercase">
                   Time
                 </div>
-                <div className="whitespace-nowrap font-mono text-sm font-bold text-white">
+                <div className="font-mono text-sm font-bold whitespace-nowrap text-white">
                   {formatFlightTime(currentUserEntry.totalFlightTimeMs)}
                 </div>
               </div>
@@ -432,7 +438,9 @@ export default function LeaderboardPage() {
                         return (
                           <button
                             key={entry.userId}
-                            onClick={() => router.push(`/pilot/${entry.userId}`)}
+                            onClick={() =>
+                              router.push(`/pilot/${entry.userId}`)
+                            }
                             className={`flex w-full cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition-all hover:border-cyan-500/30 hover:bg-white/10 sm:gap-4 sm:p-4 ${
                               isHighlighted
                                 ? "border-cyan-500/40 bg-cyan-500/[0.08] ring-1 ring-cyan-500/20"
@@ -501,7 +509,8 @@ export default function LeaderboardPage() {
                   No Pilots Yet
                 </h3>
                 <p className="text-slate-400">
-                  Be the first to record a flight or get an aircraft image approved.
+                  Be the first to record a flight or get an aircraft image
+                  approved.
                 </p>
               </div>
             ) : (
@@ -580,7 +589,8 @@ export default function LeaderboardPage() {
                                 YOU
                               </span>
                             )}
-                            {(entry.role === "PRO" || entry.role === "ADMIN") && (
+                            {(entry.role === "PRO" ||
+                              entry.role === "ADMIN") && (
                               <span className="shrink-0 rounded bg-emerald-500/20 px-1 py-0.5 font-mono text-[8px] font-bold text-emerald-400 sm:px-1.5 sm:text-[9px]">
                                 PRO
                               </span>
@@ -620,20 +630,24 @@ export default function LeaderboardPage() {
                         <div className="hidden shrink-0 items-center gap-6 sm:flex">
                           <div
                             className={`w-12 text-right font-mono text-sm font-bold ${
-                              sortBy === "flights" ? "text-cyan-400" : "text-white"
+                              sortBy === "flights"
+                                ? "text-cyan-400"
+                                : "text-white"
                             }`}
                           >
                             {entry.totalFlights}
                           </div>
                           <div
                             className={`w-16 text-right font-mono text-sm font-bold ${
-                              sortBy === "distance" ? "text-cyan-400" : "text-white"
+                              sortBy === "distance"
+                                ? "text-cyan-400"
+                                : "text-white"
                             }`}
                           >
                             {entry.totalDistanceNm.toLocaleString()}
                           </div>
                           <div
-                            className={`w-14 whitespace-nowrap text-right font-mono text-sm font-bold ${
+                            className={`w-14 text-right font-mono text-sm font-bold whitespace-nowrap ${
                               sortBy === "time" ? "text-cyan-400" : "text-white"
                             }`}
                           >
