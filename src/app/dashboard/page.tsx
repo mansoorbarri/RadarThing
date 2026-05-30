@@ -9,7 +9,6 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { useProStatus } from "~/hooks/useProStatus";
 import { Analytics } from "~/lib/analytics";
-import { dispatchBirthdayCtfHint } from "~/lib/birthdayCtf";
 import { createPortalSession } from "~/app/actions/create-portal";
 import { getCurrentUserDataExport } from "~/app/actions/export-user-data";
 import {
@@ -103,7 +102,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setMounted(true);
-    dispatchBirthdayCtfHint("dashboard");
   }, []);
 
   // Real-time queries

@@ -43,7 +43,6 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
 import { Analytics } from "~/lib/analytics";
-import { dispatchBirthdayCtfHint } from "~/lib/birthdayCtf";
 import {
   Select,
   SelectContent,
@@ -96,7 +95,6 @@ export default function AircraftImagesPage() {
       setFormData((prev) => ({ ...prev, discordUsername: savedUsername }));
     }
     Analytics.imageGalleryViewed();
-    dispatchBirthdayCtfHint("upload-image");
   }, []);
   const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
   const [error, setError] = useState<string | null>(null);

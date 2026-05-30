@@ -5,7 +5,6 @@ import {
   type SearchablePilot,
 } from "~/hooks/useAircraftSearch";
 import { type RecentSearch } from "~/hooks/useRecentSearches";
-import { dispatchBirthdayCtfHint } from "~/lib/birthdayCtf";
 
 interface Airport {
   name: string;
@@ -59,12 +58,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         type="text"
         placeholder="Search flight, pilot, or airport..."
         value={searchTerm}
-        onChange={(e) => {
-          if (!searchTerm && e.target.value.trim()) {
-            dispatchBirthdayCtfHint("search");
-          }
-          setSearchTerm(e.target.value);
-        }}
+        onChange={(e) => setSearchTerm(e.target.value)}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setTimeout(() => setIsFocused(false), 200)}
         autoFocus={autoFocus}

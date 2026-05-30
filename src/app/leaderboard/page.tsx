@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { Analytics } from "~/lib/analytics";
-import { dispatchBirthdayCtfHint } from "~/lib/birthdayCtf";
 import {
   Select,
   SelectContent,
@@ -104,7 +103,6 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     Analytics.leaderboardViewed();
-    dispatchBirthdayCtfHint("leaderboard");
   }, []);
 
   useEffect(() => {

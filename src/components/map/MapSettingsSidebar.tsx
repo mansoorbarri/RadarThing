@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import { PanelLeftClose } from "lucide-react";
 
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
 import { Button } from "~/components/ui/button";
-import { dispatchBirthdayCtfHint } from "~/lib/birthdayCtf";
 import { cn } from "~/lib/utils";
 
 interface MapSettingsSidebarProps {
@@ -21,12 +20,6 @@ export const MapSettingsSidebar = ({
   onClose,
   children,
 }: MapSettingsSidebarProps) => {
-  useEffect(() => {
-    if (isOpen) {
-      dispatchBirthdayCtfHint("settings");
-    }
-  }, [isOpen]);
-
   if (!isOpen) {
     return null;
   }
