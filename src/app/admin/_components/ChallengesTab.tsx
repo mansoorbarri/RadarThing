@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import {
+  AlertCircle,
   CalendarRange,
   CheckCircle2,
   ClipboardCheck,
@@ -106,6 +107,35 @@ function createInitialForm(): ChallengeForm {
   };
 }
 
+function formatMutationError(error: unknown, fallback: string) {
+  if (!(error instanceof Error)) {
+    return {
+      title: fallback,
+      detail: typeof error === "string" ? error : fallback,
+    };
+  }
+
+  const detail = error.message || fallback;
+  const uncaughtErrorMatch = detail.match(/Uncaught Error:\s*([^\n]+)/);
+  const firstMeaningfulLine =
+    uncaughtErrorMatch?.[1]?.trim() ??
+    detail
+      .split("\n")
+      .map((line) => line.trim())
+      .find(
+        (line) =>
+          line.length > 0 &&
+          !line.startsWith("[CONVEX ") &&
+          !line.startsWith("Called by client"),
+      ) ??
+    fallback;
+
+  return {
+    title: firstMeaningfulLine,
+    detail,
+  };
+}
+
 function formatChallengeWindow(startAt: number, endAt: number) {
   return `${new Date(startAt).toLocaleString("en-US", {
     month: "short",
@@ -170,6 +200,10 @@ export function ChallengesTab() {
   const [editingId, setEditingId] = useState<Id<"challenges"> | null>(null);
   const [form, setForm] = useState<ChallengeForm>(() => createInitialForm());
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<{
+    title: string;
+    detail: string;
+  } | null>(null);
   const [busyReviewId, setBusyReviewId] =
     useState<Id<"challengeCompletions"> | null>(null);
   const [busyChallengeId, setBusyChallengeId] =
@@ -267,6 +301,7 @@ export function ChallengesTab() {
     };
 
     setIsSaving(true);
+    setSaveError(null);
     try {
       if (editingId) {
         await updateChallenge({
@@ -287,9 +322,14 @@ export function ChallengesTab() {
 
       resetForm(form.cadence);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not save challenge";
-      toast.error(message);
+      const formattedError = formatMutationError(
+        error,
+        "Could not save challenge",
+      );
+      setSaveError(formattedError);
+      toast.error(formattedError.title, {
+        description: "Full Convex error details are shown below the form.",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -730,6 +770,23 @@ export function ChallengesTab() {
             {isEditing ? "Save challenge" : "Create challenge"}
           </button>
         </div>
+
+        {saveError && (
+          <div className="mt-5 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-100">
+            <div className="mb-2 flex items-start gap-2">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
+              <div>
+                <p className="font-medium text-red-100">{saveError.title}</p>
+                <p className="mt-1 text-xs text-red-200/80">
+                  Convex returned this while saving the challenge.
+                </p>
+              </div>
+            </div>
+            <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-red-400/20 bg-black/40 p-3 font-mono text-xs leading-relaxed text-red-50">
+              {saveError.detail}
+            </pre>
+          </div>
+        )}
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
