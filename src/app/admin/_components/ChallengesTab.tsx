@@ -115,7 +115,24 @@ function formatMutationError(error: unknown, fallback: string) {
     };
   }
 
+  const exposedData =
+    "data" in error && typeof error.data === "string" ? error.data : null;
   const detail = error.message || fallback;
+  if (exposedData) {
+    return {
+      title: exposedData,
+      detail: exposedData,
+    };
+  }
+
+  const convexErrorMatch = detail.match(/^ConvexError:\s*(.+)$/);
+  if (convexErrorMatch?.[1]) {
+    return {
+      title: convexErrorMatch[1].trim(),
+      detail,
+    };
+  }
+
   const uncaughtErrorMatch = detail.match(/Uncaught Error:\s*([^\n]+)/);
   const firstMeaningfulLine =
     uncaughtErrorMatch?.[1]?.trim() ??
