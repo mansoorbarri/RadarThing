@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Clock3, Loader2, Trophy, UserRound } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, Clock3, Loader2, Trophy, UserRound } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "~/components/ui/collapsible";
 
 interface ChallengeLeaderboardEntry {
   userId: Id<"users">;
@@ -126,8 +132,16 @@ export function ChallengeLeaderboardTab({
     );
   }
 
+  const shouldDefaultCollapseEntries = challenges.length > 2;
+
   return (
-    <div className="space-y-4">
+    <div
+      className={
+        challenges.length > 1
+          ? "flex flex-col gap-4 lg:flex-row lg:flex-wrap"
+          : "space-y-4"
+      }
+    >
       {challenges.map((challenge) => {
         const visibleEntries =
           typeof maxEntries === "number"
@@ -135,46 +149,88 @@ export function ChallengeLeaderboardTab({
             : challenge.entries;
 
         return (
-          <section
+          <ChallengeLeaderboardCard
             key={challenge.id}
-            className="rounded-2xl border border-white/10 bg-white/5 p-5"
-          >
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="mb-2 flex flex-wrap gap-2">
-                <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
-                  {challenge.cadence}
-                </span>
-                <span
-                  className={`rounded-full border px-2.5 py-1 font-mono text-[10px] tracking-wider uppercase ${
-                    challenge.mode === "auto"
-                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                      : "border-amber-500/30 bg-amber-500/10 text-amber-300"
-                  }`}
-                >
-                  {challenge.mode === "auto" ? "auto" : "manual"}
-                </span>
-                <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 font-mono text-[10px] tracking-wider text-cyan-200 uppercase">
-                  {visibleEntries.length} ranked
-                </span>
-              </div>
-              <h4 className="text-lg font-semibold text-white">
-                {challenge.title}
-              </h4>
-              <p className="mt-2 text-sm text-slate-300">
-                {challenge.description}
-              </p>
-              <p className="mt-2 font-mono text-xs text-cyan-300">
-                {getRuleSummary(challenge)}
-              </p>
-            </div>
+            allowCollapsing={shouldDefaultCollapseEntries}
+            challenge={challenge}
+            highlightedUserId={highlightedUserId}
+            initialEntriesOpen={!shouldDefaultCollapseEntries}
+            visibleEntries={visibleEntries}
+          />
+        );
+      })}
+    </div>
+  );
+}
 
-            <div className="flex items-center gap-1 text-xs text-slate-500">
-              <Clock3 className="h-3.5 w-3.5" />
-              <span>{formatWindow(challenge.startAt, challenge.endAt)}</span>
-            </div>
+function ChallengeLeaderboardCard({
+  allowCollapsing,
+  challenge,
+  highlightedUserId,
+  initialEntriesOpen,
+  visibleEntries,
+}: {
+  allowCollapsing: boolean;
+  challenge: ChallengeLeaderboard;
+  highlightedUserId?: Id<"users"> | null;
+  initialEntriesOpen: boolean;
+  visibleEntries: ChallengeLeaderboardEntry[];
+}) {
+  const [entriesOpen, setEntriesOpen] = useState(
+    initialEntriesOpen || visibleEntries.length === 0,
+  );
+
+  return (
+    <section className="min-w-0 rounded-2xl border border-white/10 bg-white/5 p-5 lg:basis-[calc(50%-0.5rem)]">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="mb-2 flex flex-wrap gap-2">
+            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
+              {challenge.cadence}
+            </span>
+            <span
+              className={`rounded-full border px-2.5 py-1 font-mono text-[10px] tracking-wider uppercase ${
+                challenge.mode === "auto"
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                  : "border-amber-500/30 bg-amber-500/10 text-amber-300"
+              }`}
+            >
+              {challenge.mode === "auto" ? "auto" : "manual"}
+            </span>
+            <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 font-mono text-[10px] tracking-wider text-cyan-200 uppercase">
+              {visibleEntries.length} ranked
+            </span>
           </div>
+          <h4 className="text-lg font-semibold text-white">
+            {challenge.title}
+          </h4>
+          <p className="mt-2 text-sm text-slate-300">
+            {challenge.description}
+          </p>
+          <p className="mt-2 font-mono text-xs text-cyan-300">
+            {getRuleSummary(challenge)}
+          </p>
+        </div>
 
+        <div className="flex items-center gap-1 text-xs text-slate-500">
+          <Clock3 className="h-3.5 w-3.5" />
+          <span>{formatWindow(challenge.startAt, challenge.endAt)}</span>
+        </div>
+      </div>
+
+      <Collapsible open={entriesOpen} onOpenChange={setEntriesOpen}>
+        {allowCollapsing && visibleEntries.length > 0 && (
+          <CollapsibleTrigger className="mb-3 flex w-full items-center justify-between rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-left font-mono text-[11px] tracking-wider text-slate-400 uppercase transition-colors hover:border-white/15 hover:bg-white/[0.06]">
+            <span>{entriesOpen ? "Hide rankings" : "Show rankings"}</span>
+            <ChevronDown
+              className={`h-4 w-4 transition-transform ${
+                entriesOpen ? "rotate-180" : ""
+              }`}
+            />
+          </CollapsibleTrigger>
+        )}
+
+        <CollapsibleContent>
           {visibleEntries.length > 0 ? (
             <div className="max-h-[28rem] space-y-2 overflow-y-auto pr-1">
               {visibleEntries.map((entry, index) => {
@@ -182,7 +238,8 @@ export function ChallengeLeaderboardTab({
                 const progressPercent = Math.min(
                   100,
                   Math.round(
-                    (entry.progressCurrent / Math.max(1, entry.progressTarget)) *
+                    (entry.progressCurrent /
+                      Math.max(1, entry.progressTarget)) *
                       100,
                   ),
                 );
@@ -210,11 +267,6 @@ export function ChallengeLeaderboardTab({
                           <span className="truncate text-sm font-semibold text-white">
                             {entry.displayName}
                           </span>
-                          {isHighlighted && (
-                            <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] tracking-wider text-cyan-200 uppercase">
-                              highlighted
-                            </span>
-                          )}
                         </div>
                         {entry.callsign &&
                           entry.callsign !== entry.displayName && (
@@ -227,7 +279,9 @@ export function ChallengeLeaderboardTab({
                           <div className="mt-3">
                             <div className="mb-1 flex items-center justify-between text-[11px] text-slate-500">
                               <span>{entry.progressLabel}</span>
-                              <span className="font-mono">{progressPercent}%</span>
+                              <span className="font-mono">
+                                {progressPercent}%
+                              </span>
                             </div>
                             <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
                               <div
@@ -274,9 +328,8 @@ export function ChallengeLeaderboardTab({
               </p>
             </div>
           )}
-          </section>
-        );
-      })}
-    </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </section>
   );
 }
