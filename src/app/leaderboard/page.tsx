@@ -383,7 +383,13 @@ export default function LeaderboardPage() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2">
+            <div
+              className={
+                challengeLeaderboard.length > 1
+                  ? "grid gap-6 md:grid-cols-2"
+                  : "space-y-6"
+              }
+            >
               {challengeLeaderboard.map((challenge) => {
                 const visibleEntries = challenge.entries
                   .filter(hasStartedChallengeEntry)
@@ -454,7 +460,7 @@ export default function LeaderboardPage() {
                             Pilot
                           </div>
                           <div className="w-20 shrink-0 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
-                          Progress
+                            Progress
                           </div>
                         </div>
 
