@@ -60,6 +60,20 @@ function formatChallengeWindow(startAt: number, endAt: number) {
   })}`;
 }
 
+function hasStartedChallengeEntry(entry: {
+  progressCurrent: number;
+  isComplete: boolean;
+  status: "completed" | "in_progress" | "pending" | "rejected";
+}) {
+  return (
+    entry.isComplete ||
+    entry.status === "completed" ||
+    entry.status === "pending" ||
+    entry.status === "rejected" ||
+    entry.progressCurrent > 0
+  );
+}
+
 export default function LeaderboardPage() {
   const router = useRouter();
   const { user, isLoaded } = useUser();
@@ -371,7 +385,9 @@ export default function LeaderboardPage() {
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
               {challengeLeaderboard.map((challenge) => {
-                const visibleEntries = challenge.entries.slice(0, 10);
+                const visibleEntries = challenge.entries
+                  .filter(hasStartedChallengeEntry)
+                  .slice(0, 10);
                 const shouldCollapseEntries = challengeLeaderboard.length > 2;
                 const entriesOpen =
                   !shouldCollapseEntries ||

@@ -685,47 +685,6 @@ function getChallengePilotDisplayName(
   return user?.discordUsername ?? userStats?.lastFlightCallsign ?? userId;
 }
 
-function compareGlobalLeaderboardUsers(
-  a: {
-    displayName: string;
-    totalFlights: number;
-    totalDistanceNm: number;
-    totalFlightTimeMs: number;
-    approvedAircraftImages: number;
-    currentStreak: number;
-  },
-  b: {
-    displayName: string;
-    totalFlights: number;
-    totalDistanceNm: number;
-    totalFlightTimeMs: number;
-    approvedAircraftImages: number;
-    currentStreak: number;
-  },
-) {
-  if (a.totalFlights !== b.totalFlights) {
-    return b.totalFlights - a.totalFlights;
-  }
-
-  if (a.totalDistanceNm !== b.totalDistanceNm) {
-    return b.totalDistanceNm - a.totalDistanceNm;
-  }
-
-  if (a.totalFlightTimeMs !== b.totalFlightTimeMs) {
-    return b.totalFlightTimeMs - a.totalFlightTimeMs;
-  }
-
-  if (a.approvedAircraftImages !== b.approvedAircraftImages) {
-    return b.approvedAircraftImages - a.approvedAircraftImages;
-  }
-
-  if (a.currentStreak !== b.currentStreak) {
-    return b.currentStreak - a.currentStreak;
-  }
-
-  return a.displayName.localeCompare(b.displayName);
-}
-
 function compareManualLeaderboardEntries(
   a: {
     status: "pending" | "completed" | "rejected" | "in_progress";
@@ -978,28 +937,6 @@ export const listActiveLeaderboard = query({
     const userStatsByUserId = new Map(
       userStats.map((stats) => [stats.userId, stats]),
     );
-    const globallyRankedUsers = users
-      .flatMap((user) => {
-        const stats = userStatsByUserId.get(user._id);
-        const approvedAircraftImages = stats?.approvedAircraftImages ?? 0;
-        if (!stats || (stats.totalFlights <= 0 && approvedAircraftImages <= 0)) {
-          return [];
-        }
-
-        return [
-          {
-            userId: user._id,
-            displayName: getChallengePilotDisplayName(user, stats, user._id),
-            callsign: stats.lastFlightCallsign ?? null,
-            totalFlights: stats.totalFlights,
-            totalDistanceNm: Math.round(stats.totalDistanceNm),
-            totalFlightTimeMs: Math.round(stats.totalFlightTimeMs),
-            approvedAircraftImages,
-            currentStreak: stats.streakAtLastFlight,
-          },
-        ];
-      })
-      .sort(compareGlobalLeaderboardUsers);
 
     const leaderboards: ChallengeLeaderboardResult[] = [];
 
@@ -1067,7 +1004,9 @@ export const listActiveLeaderboard = query({
         const entries: ChallengeLeaderboardEntryResult[] = [...entryByUserId.values()]
           .flatMap((entry) => {
             const user = usersById.get(entry.userId);
-            if (!user) return [];
+            if (!user || (!entry.isComplete && entry.progressCurrent <= 0)) {
+              return [];
+            }
 
             const stats = userStatsByUserId.get(entry.userId);
             return [
@@ -1089,30 +1028,6 @@ export const listActiveLeaderboard = query({
             ];
           })
           .sort(compareTopProgressUsers);
-
-        if (entries.length < DEFAULT_LEADERBOARD_ENTRY_LIMIT) {
-          const rankedUserIds = new Set(entries.map((entry) => entry.userId));
-          const fillerEntries = globallyRankedUsers
-            .flatMap((user) => {
-              if (rankedUserIds.has(user.userId)) return [];
-              return [
-                {
-                  userId: user.userId,
-                  displayName: user.displayName,
-                  callsign: user.callsign,
-                  progressCurrent: 0,
-                  progressTarget: 1,
-                  progressLabel: "Not started",
-                  isComplete: false,
-                  completedAt: null,
-                  status: "in_progress",
-                } satisfies ChallengeLeaderboardEntryResult,
-              ];
-            })
-            .slice(0, DEFAULT_LEADERBOARD_ENTRY_LIMIT - entries.length);
-
-          entries.push(...fillerEntries);
-        }
 
         leaderboards.push({
           ...serializeChallenge(challenge),
@@ -1158,32 +1073,6 @@ export const listActiveLeaderboard = query({
         })
         .sort(compareManualLeaderboardEntries)
         .map(({ sortAt, ...entry }) => entry);
-
-      if (entries.length < DEFAULT_LEADERBOARD_ENTRY_LIMIT) {
-        const rankedUserIds = new Set(entries.map((entry) => entry.userId));
-        const fillerEntries = globallyRankedUsers
-          .flatMap((user) => {
-            if (rankedUserIds.has(user.userId)) return [];
-            return [
-              {
-                userId: user.userId,
-                displayName: user.displayName,
-                callsign: user.callsign,
-                progressCurrent: 0,
-                progressTarget: 1,
-                progressLabel: "No submission yet",
-                isComplete: false,
-                completedAt: null,
-                status: "in_progress",
-                sortAt: Number.MAX_SAFE_INTEGER,
-              } satisfies ManualChallengeLeaderboardEntryResult,
-            ];
-          })
-          .slice(0, DEFAULT_LEADERBOARD_ENTRY_LIMIT - entries.length)
-          .map(({ sortAt, ...entry }) => entry);
-
-        entries.push(...fillerEntries);
-      }
 
       leaderboards.push({
         ...serializeChallenge(challenge),
