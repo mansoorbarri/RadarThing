@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { api } from "../../../../convex/_generated/api";
 import { Analytics } from "~/lib/analytics";
@@ -58,6 +59,176 @@ interface ChallengeForm {
   durationDays: string;
   isPublished: boolean;
 }
+
+const challengeCadenceSchema = z.union([
+  z.literal("weekly"),
+  z.literal("monthly"),
+  z.literal("custom"),
+]);
+const challengeModeSchema = z.union([z.literal("auto"), z.literal("manual")]);
+const challengeRuleTypeSchema = z.union([
+  z.literal("visit_airport"),
+  z.literal("visit_airport_count"),
+  z.literal("depart_airport"),
+  z.literal("arrive_airport"),
+  z.literal("route"),
+  z.literal("aircraft_type"),
+  z.literal("flight_count"),
+  z.literal("min_duration"),
+  z.literal("min_distance"),
+  z.literal("manual"),
+]);
+
+const optionalNumberSchema = z.preprocess(
+  (value) =>
+    typeof value === "number" && !Number.isFinite(value) ? undefined : value,
+  z.number().optional(),
+);
+
+const challengePayloadSchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(3, "Challenge title must be 3-80 characters")
+      .max(80, "Challenge title must be 3-80 characters"),
+    description: z
+      .string()
+      .trim()
+      .min(8, "Challenge description must be 8-300 characters")
+      .max(300, "Challenge description must be 8-300 characters"),
+    cadence: challengeCadenceSchema,
+    mode: challengeModeSchema,
+    ruleType: challengeRuleTypeSchema,
+    targetAirport: z.string().trim().toUpperCase().optional(),
+    targetDepartureAirport: z.string().trim().toUpperCase().optional(),
+    targetArrivalAirport: z.string().trim().toUpperCase().optional(),
+    targetAircraftType: z.string().trim().toUpperCase().optional(),
+    requiredAirportCount: optionalNumberSchema,
+    requiredFlightCount: optionalNumberSchema,
+    minDurationMinutes: optionalNumberSchema,
+    minDistanceNm: optionalNumberSchema,
+    startAt: z
+      .number({ invalid_type_error: "Challenge start time is invalid" })
+      .finite("Challenge start time is invalid"),
+    durationDays: optionalNumberSchema,
+    isPublished: z.boolean(),
+  })
+  .superRefine((value, ctx) => {
+    const durationDays =
+      value.cadence === "weekly"
+        ? 7
+        : value.cadence === "monthly"
+          ? 30
+          : value.durationDays;
+
+    if (
+      typeof durationDays !== "number" ||
+      !Number.isFinite(durationDays) ||
+      durationDays <= 0
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Custom challenges need a duration above 0 days",
+        path: ["durationDays"],
+      });
+    }
+
+    if (value.mode === "manual") {
+      if (value.ruleType !== "manual") {
+        ctx.addIssue({
+          code: "custom",
+          message: "Manual challenges must use the manual rule type",
+          path: ["ruleType"],
+        });
+      }
+      return;
+    }
+
+    if (value.ruleType === "manual") {
+      ctx.addIssue({
+        code: "custom",
+        message: "Automatic challenges need a concrete auto rule",
+        path: ["ruleType"],
+      });
+    }
+
+    if (
+      ["visit_airport", "depart_airport", "arrive_airport"].includes(
+        value.ruleType,
+      ) &&
+      !value.targetAirport
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "This challenge needs an airport code",
+        path: ["targetAirport"],
+      });
+    }
+
+    if (
+      value.ruleType === "route" &&
+      (!value.targetDepartureAirport || !value.targetArrivalAirport)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Route challenges need both departure and arrival airports",
+        path: ["targetDepartureAirport"],
+      });
+    }
+
+    if (value.ruleType === "aircraft_type" && !value.targetAircraftType) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Aircraft challenges need an aircraft type",
+        path: ["targetAircraftType"],
+      });
+    }
+
+    if (
+      value.ruleType === "visit_airport_count" &&
+      (!value.requiredAirportCount || value.requiredAirportCount <= 0)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Airport count challenges need a visit count above 0",
+        path: ["requiredAirportCount"],
+      });
+    }
+
+    if (
+      value.ruleType === "flight_count" &&
+      (!value.requiredFlightCount || value.requiredFlightCount <= 0)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Flight count challenges need a flight count above 0",
+        path: ["requiredFlightCount"],
+      });
+    }
+
+    if (
+      value.ruleType === "min_duration" &&
+      (!value.minDurationMinutes || value.minDurationMinutes <= 0)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Minimum duration challenges need a duration above 0",
+        path: ["minDurationMinutes"],
+      });
+    }
+
+    if (
+      value.ruleType === "min_distance" &&
+      (!value.minDistanceNm || value.minDistanceNm <= 0)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Minimum distance challenges need a distance above 0",
+        path: ["minDistanceNm"],
+      });
+    }
+  });
 
 function toLocalInputValue(timestamp: number) {
   const date = new Date(timestamp);
@@ -104,52 +275,6 @@ function createInitialForm(): ChallengeForm {
     startAt: window.startAt,
     durationDays: window.durationDays,
     isPublished: true,
-  };
-}
-
-function formatMutationError(error: unknown, fallback: string) {
-  if (!(error instanceof Error)) {
-    return {
-      title: fallback,
-      detail: typeof error === "string" ? error : fallback,
-    };
-  }
-
-  const exposedData =
-    "data" in error && typeof error.data === "string" ? error.data : null;
-  const detail = error.message || fallback;
-  if (exposedData) {
-    return {
-      title: exposedData,
-      detail: exposedData,
-    };
-  }
-
-  const convexErrorMatch = detail.match(/^ConvexError:\s*(.+)$/);
-  if (convexErrorMatch?.[1]) {
-    return {
-      title: convexErrorMatch[1].trim(),
-      detail,
-    };
-  }
-
-  const uncaughtErrorMatch = detail.match(/Uncaught Error:\s*([^\n]+)/);
-  const firstMeaningfulLine =
-    uncaughtErrorMatch?.[1]?.trim() ??
-    detail
-      .split("\n")
-      .map((line) => line.trim())
-      .find(
-        (line) =>
-          line.length > 0 &&
-          !line.startsWith("[CONVEX ") &&
-          !line.startsWith("Called by client"),
-      ) ??
-    fallback;
-
-  return {
-    title: firstMeaningfulLine,
-    detail,
   };
 }
 
@@ -217,10 +342,7 @@ export function ChallengesTab() {
   const [editingId, setEditingId] = useState<Id<"challenges"> | null>(null);
   const [form, setForm] = useState<ChallengeForm>(() => createInitialForm());
   const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<{
-    title: string;
-    detail: string;
-  } | null>(null);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [busyReviewId, setBusyReviewId] =
     useState<Id<"challengeCompletions"> | null>(null);
   const [busyChallengeId, setBusyChallengeId] =
@@ -240,12 +362,14 @@ export function ChallengesTab() {
       startAt: window.startAt,
       durationDays: window.durationDays,
     });
+    setValidationErrors([]);
   }
 
   function loadChallengeIntoForm(
     challenge: NonNullable<typeof challenges>[number],
   ) {
     setEditingId(challenge.id);
+    setValidationErrors([]);
     setForm({
       title: challenge.title,
       description: challenge.description,
@@ -280,16 +404,6 @@ export function ChallengesTab() {
     const startAt = new Date(form.startAt).getTime();
     const durationDays = Number(form.durationDays);
 
-    if (!Number.isFinite(startAt)) {
-      toast.error("Pick a valid start date");
-      return;
-    }
-
-    if (!Number.isFinite(durationDays) || durationDays <= 0) {
-      toast.error("Pick a valid duration");
-      return;
-    }
-
     const payload = {
       title: form.title,
       description: form.description,
@@ -317,36 +431,41 @@ export function ChallengesTab() {
       isPublished: form.isPublished,
     };
 
+    const parsedPayload = challengePayloadSchema.safeParse(payload);
+    if (!parsedPayload.success) {
+      const messages = Array.from(
+        new Set(parsedPayload.error.issues.map((issue) => issue.message)),
+      );
+      setValidationErrors(messages);
+      toast.error(messages[0] ?? "Fix the challenge fields before saving");
+      return;
+    }
+
     setIsSaving(true);
-    setSaveError(null);
+    setValidationErrors([]);
     try {
       if (editingId) {
         await updateChallenge({
           challengeId: editingId,
-          ...payload,
+          ...parsedPayload.data,
         });
         toast.success("Challenge updated");
       } else {
-        await createChallenge(payload);
+        await createChallenge(parsedPayload.data);
         Analytics.track("challenge_created", {
-          cadence: payload.cadence,
-          mode: payload.mode,
-          rule_type: payload.ruleType,
-          is_published: payload.isPublished,
+          cadence: parsedPayload.data.cadence,
+          mode: parsedPayload.data.mode,
+          rule_type: parsedPayload.data.ruleType,
+          is_published: parsedPayload.data.isPublished,
         });
         toast.success("Challenge created");
       }
 
       resetForm(form.cadence);
     } catch (error) {
-      const formattedError = formatMutationError(
-        error,
-        "Could not save challenge",
-      );
-      setSaveError(formattedError);
-      toast.error(formattedError.title, {
-        description: "Full Convex error details are shown below the form.",
-      });
+      const message =
+        error instanceof Error ? error.message : "Could not save challenge";
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }
@@ -788,20 +907,24 @@ export function ChallengesTab() {
           </button>
         </div>
 
-        {saveError && (
+        {validationErrors.length > 0 && (
           <div className="mt-5 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-100">
             <div className="mb-2 flex items-start gap-2">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
               <div>
-                <p className="font-medium text-red-100">{saveError.title}</p>
+                <p className="font-medium text-red-100">
+                  Fix these fields before saving the challenge
+                </p>
                 <p className="mt-1 text-xs text-red-200/80">
-                  Convex returned this while saving the challenge.
+                  These checks match the Convex challenge validation rules.
                 </p>
               </div>
             </div>
-            <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-red-400/20 bg-black/40 p-3 font-mono text-xs leading-relaxed text-red-50">
-              {saveError.detail}
-            </pre>
+            <ul className="space-y-1 rounded-lg border border-red-400/20 bg-black/40 p-3 text-sm text-red-50">
+              {validationErrors.map((message) => (
+                <li key={message}>{message}</li>
+              ))}
+            </ul>
           </div>
         )}
       </div>

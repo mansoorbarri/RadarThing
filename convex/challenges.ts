@@ -1,4 +1,4 @@
-import { ConvexError, v } from "convex/values";
+import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import {
   mutation,
@@ -19,10 +19,6 @@ import {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_LEADERBOARD_ENTRY_LIMIT = 10;
-
-function userFacingError(message: string): never {
-  throw new ConvexError(message);
-}
 
 function normalizeAirportCode(value?: string) {
   const normalized = value?.trim().toUpperCase() ?? "";
@@ -107,15 +103,15 @@ function validateChallengeInput(args: {
   const description = args.description.trim();
 
   if (title.length < 3 || title.length > 80) {
-    userFacingError("Challenge title must be 3-80 characters");
+    throw new Error("Challenge title must be 3-80 characters");
   }
 
   if (description.length < 8 || description.length > 300) {
-    userFacingError("Challenge description must be 8-300 characters");
+    throw new Error("Challenge description must be 8-300 characters");
   }
 
   if (!Number.isFinite(args.startAt)) {
-    userFacingError("Challenge start time is invalid");
+    throw new Error("Challenge start time is invalid");
   }
 
   const durationDays =
@@ -130,7 +126,7 @@ function validateChallengeInput(args: {
     !Number.isFinite(durationDays) ||
     durationDays <= 0
   ) {
-    userFacingError("Custom challenges need a duration above 0 days");
+    throw new Error("Custom challenges need a duration above 0 days");
   }
 
   const targetAirport = normalizeAirportCode(args.targetAirport);
@@ -142,10 +138,10 @@ function validateChallengeInput(args: {
 
   if (args.mode === "manual") {
     if (args.ruleType !== "manual") {
-      userFacingError("Manual challenges must use the manual rule type");
+      throw new Error("Manual challenges must use the manual rule type");
     }
   } else if (args.ruleType === "manual") {
-    userFacingError("Automatic challenges need a concrete auto rule");
+    throw new Error("Automatic challenges need a concrete auto rule");
   }
 
   if (args.mode === "auto") {
@@ -155,48 +151,48 @@ function validateChallengeInput(args: {
       ) &&
       !targetAirport
     ) {
-      userFacingError("This challenge needs an airport code");
+      throw new Error("This challenge needs an airport code");
     }
 
     if (
       args.ruleType === "route" &&
       (!targetDepartureAirport || !targetArrivalAirport)
     ) {
-      userFacingError(
+      throw new Error(
         "Route challenges need both departure and arrival airports",
       );
     }
 
     if (args.ruleType === "aircraft_type" && !targetAircraftType) {
-      userFacingError("Aircraft challenges need an aircraft type");
+      throw new Error("Aircraft challenges need an aircraft type");
     }
 
     if (
       args.ruleType === "visit_airport_count" &&
       (!args.requiredAirportCount || args.requiredAirportCount <= 0)
     ) {
-      userFacingError("Airport count challenges need a visit count above 0");
+      throw new Error("Airport count challenges need a visit count above 0");
     }
 
     if (
       args.ruleType === "flight_count" &&
       (!args.requiredFlightCount || args.requiredFlightCount <= 0)
     ) {
-      userFacingError("Flight count challenges need a flight count above 0");
+      throw new Error("Flight count challenges need a flight count above 0");
     }
 
     if (
       args.ruleType === "min_duration" &&
       (!args.minDurationMinutes || args.minDurationMinutes <= 0)
     ) {
-      userFacingError("Minimum duration challenges need a duration above 0");
+      throw new Error("Minimum duration challenges need a duration above 0");
     }
 
     if (
       args.ruleType === "min_distance" &&
       (!args.minDistanceNm || args.minDistanceNm <= 0)
     ) {
-      userFacingError("Minimum distance challenges need a distance above 0");
+      throw new Error("Minimum distance challenges need a distance above 0");
     }
   }
 
