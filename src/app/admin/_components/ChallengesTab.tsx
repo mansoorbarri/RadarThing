@@ -9,9 +9,11 @@ import {
   Flag,
   Loader2,
   Pencil,
+  Plus,
   Send,
   Trash2,
   Users,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -40,11 +42,7 @@ type ChallengeRuleType =
   | "min_distance"
   | "manual";
 
-interface ChallengeForm {
-  title: string;
-  description: string;
-  cadence: ChallengeCadence;
-  mode: ChallengeMode;
+interface ChallengeRuleForm {
   ruleType: ChallengeRuleType;
   targetAirport: string;
   targetDepartureAirport: string;
@@ -54,7 +52,14 @@ interface ChallengeForm {
   requiredFlightCount: string;
   minDurationMinutes: string;
   minDistanceNm: string;
-  additionalRulesJson: string;
+}
+
+interface ChallengeForm {
+  title: string;
+  description: string;
+  cadence: ChallengeCadence;
+  mode: ChallengeMode;
+  rules: ChallengeRuleForm[];
   startAt: string;
   durationDays: string;
   isPublished: boolean;
@@ -273,14 +278,11 @@ function defaultWindow(cadence: ChallengeCadence) {
   };
 }
 
-function createInitialForm(): ChallengeForm {
-  const window = defaultWindow("weekly");
+function createInitialRule(
+  ruleType: ChallengeRuleType = "visit_airport",
+): ChallengeRuleForm {
   return {
-    title: "",
-    description: "",
-    cadence: "weekly",
-    mode: "auto",
-    ruleType: "visit_airport",
+    ruleType,
     targetAirport: "",
     targetDepartureAirport: "",
     targetArrivalAirport: "",
@@ -289,7 +291,67 @@ function createInitialForm(): ChallengeForm {
     requiredFlightCount: "",
     minDurationMinutes: "",
     minDistanceNm: "",
-    additionalRulesJson: "",
+  };
+}
+
+function ruleFormFromChallengeRule(rule: {
+  ruleType: ChallengeRuleType;
+  targetAirport: string | null;
+  targetDepartureAirport: string | null;
+  targetArrivalAirport: string | null;
+  targetAircraftType: string | null;
+  requiredAirportCount: number | null;
+  requiredFlightCount: number | null;
+  minDurationMinutes: number | null;
+  minDistanceNm: number | null;
+}) {
+  return {
+    ruleType: rule.ruleType,
+    targetAirport: rule.targetAirport ?? "",
+    targetDepartureAirport: rule.targetDepartureAirport ?? "",
+    targetArrivalAirport: rule.targetArrivalAirport ?? "",
+    targetAircraftType: rule.targetAircraftType ?? "",
+    requiredAirportCount:
+      rule.requiredAirportCount !== null
+        ? String(rule.requiredAirportCount)
+        : "",
+    requiredFlightCount:
+      rule.requiredFlightCount !== null ? String(rule.requiredFlightCount) : "",
+    minDurationMinutes:
+      rule.minDurationMinutes !== null ? String(rule.minDurationMinutes) : "",
+    minDistanceNm:
+      rule.minDistanceNm !== null ? String(rule.minDistanceNm) : "",
+  };
+}
+
+function ruleFormToPayload(rule: ChallengeRuleForm) {
+  return {
+    ruleType: rule.ruleType,
+    targetAirport: rule.targetAirport || undefined,
+    targetDepartureAirport: rule.targetDepartureAirport || undefined,
+    targetArrivalAirport: rule.targetArrivalAirport || undefined,
+    targetAircraftType: rule.targetAircraftType || undefined,
+    requiredAirportCount: rule.requiredAirportCount
+      ? Number(rule.requiredAirportCount)
+      : undefined,
+    requiredFlightCount: rule.requiredFlightCount
+      ? Number(rule.requiredFlightCount)
+      : undefined,
+    minDurationMinutes: rule.minDurationMinutes
+      ? Number(rule.minDurationMinutes)
+      : undefined,
+    minDistanceNm: rule.minDistanceNm ? Number(rule.minDistanceNm) : undefined,
+  };
+}
+
+function createInitialForm(): ChallengeForm {
+  const window = defaultWindow("weekly");
+  return {
+    title: "",
+    description: "",
+    cadence: "weekly",
+    mode: "auto",
+    rules: [createInitialRule()],
     startAt: window.startAt,
     durationDays: window.durationDays,
     isPublished: true,
@@ -414,9 +476,22 @@ export function ChallengesTab() {
   function loadChallengeIntoForm(
     challenge: NonNullable<typeof challenges>[number],
   ) {
-    const rules = challenge.rules ?? [];
-    const primaryRule = rules[0];
-    const additionalRules = rules.slice(1);
+    const rules =
+      challenge.rules && challenge.rules.length > 0
+        ? challenge.rules
+        : [
+            {
+              ruleType: challenge.ruleType,
+              targetAirport: challenge.targetAirport,
+              targetDepartureAirport: challenge.targetDepartureAirport,
+              targetArrivalAirport: challenge.targetArrivalAirport,
+              targetAircraftType: challenge.targetAircraftType,
+              requiredAirportCount: challenge.requiredAirportCount,
+              requiredFlightCount: challenge.requiredFlightCount,
+              minDurationMinutes: challenge.minDurationMinutes,
+              minDistanceNm: challenge.minDistanceNm,
+            },
+          ];
 
     setEditingId(challenge.id);
     setForm({
@@ -424,49 +499,7 @@ export function ChallengesTab() {
       description: challenge.description,
       cadence: challenge.cadence,
       mode: challenge.mode,
-      ruleType: primaryRule?.ruleType ?? challenge.ruleType,
-      targetAirport:
-        primaryRule?.targetAirport ?? challenge.targetAirport ?? "",
-      targetDepartureAirport:
-        primaryRule?.targetDepartureAirport ??
-        challenge.targetDepartureAirport ??
-        "",
-      targetArrivalAirport:
-        primaryRule?.targetArrivalAirport ??
-        challenge.targetArrivalAirport ??
-        "",
-      targetAircraftType:
-        primaryRule?.targetAircraftType ?? challenge.targetAircraftType ?? "",
-      requiredAirportCount:
-        (primaryRule?.requiredAirportCount ??
-          challenge.requiredAirportCount) !== null
-          ? String(
-              primaryRule?.requiredAirportCount ??
-                challenge.requiredAirportCount,
-            )
-          : "",
-      requiredFlightCount:
-        (primaryRule?.requiredFlightCount ?? challenge.requiredFlightCount) !==
-        null
-          ? String(
-              primaryRule?.requiredFlightCount ?? challenge.requiredFlightCount,
-            )
-          : "",
-      minDurationMinutes:
-        (primaryRule?.minDurationMinutes ?? challenge.minDurationMinutes) !==
-        null
-          ? String(
-              primaryRule?.minDurationMinutes ?? challenge.minDurationMinutes,
-            )
-          : "",
-      minDistanceNm:
-        (primaryRule?.minDistanceNm ?? challenge.minDistanceNm) !== null
-          ? String(primaryRule?.minDistanceNm ?? challenge.minDistanceNm)
-          : "",
-      additionalRulesJson:
-        additionalRules.length > 0
-          ? JSON.stringify(additionalRules, null, 2)
-          : "",
+      rules: rules.map(ruleFormFromChallengeRule),
       startAt: toLocalInputValue(challenge.startAt),
       durationDays: String(challenge.durationDays),
       isPublished: challenge.isPublished,
@@ -476,41 +509,10 @@ export function ChallengesTab() {
   async function handleSubmit() {
     const startAt = new Date(form.startAt).getTime();
     const durationDays = Number(form.durationDays);
-    let additionalRules: unknown[] = [];
-
-    if (form.additionalRulesJson.trim()) {
-      try {
-        const parsedRules = JSON.parse(form.additionalRulesJson);
-        if (!Array.isArray(parsedRules)) {
-          toast.error("Additional rules must be a JSON array");
-          return;
-        }
-        additionalRules = parsedRules;
-      } catch {
-        toast.error("Additional rules must be valid JSON");
-        return;
-      }
-    }
-
-    const primaryRule = {
-      ruleType: form.mode === "manual" ? ("manual" as const) : form.ruleType,
-      targetAirport: form.targetAirport || undefined,
-      targetDepartureAirport: form.targetDepartureAirport || undefined,
-      targetArrivalAirport: form.targetArrivalAirport || undefined,
-      targetAircraftType: form.targetAircraftType || undefined,
-      requiredAirportCount: form.requiredAirportCount
-        ? Number(form.requiredAirportCount)
-        : undefined,
-      requiredFlightCount: form.requiredFlightCount
-        ? Number(form.requiredFlightCount)
-        : undefined,
-      minDurationMinutes: form.minDurationMinutes
-        ? Number(form.minDurationMinutes)
-        : undefined,
-      minDistanceNm: form.minDistanceNm
-        ? Number(form.minDistanceNm)
-        : undefined,
-    };
+    const ruleForms =
+      form.mode === "manual" ? [createInitialRule("manual")] : form.rules;
+    const rules = ruleForms.map(ruleFormToPayload);
+    const primaryRule = rules[0] ?? ruleFormToPayload(createInitialRule());
 
     const payload = {
       title: form.title,
@@ -518,10 +520,7 @@ export function ChallengesTab() {
       cadence: form.cadence,
       mode: form.mode,
       ...primaryRule,
-      rules:
-        form.mode === "manual"
-          ? [primaryRule]
-          : [primaryRule, ...additionalRules],
+      rules,
       startAt,
       durationDays,
       isPublished: form.isPublished,
@@ -628,6 +627,180 @@ export function ChallengesTab() {
     } finally {
       setBusyReviewId(null);
     }
+  }
+
+  function updateRule(index: number, values: Partial<ChallengeRuleForm>) {
+    setForm((current) => ({
+      ...current,
+      rules: current.rules.map((rule, ruleIndex) =>
+        ruleIndex === index ? { ...rule, ...values } : rule,
+      ),
+    }));
+  }
+
+  function addRule() {
+    setForm((current) => ({
+      ...current,
+      rules: [...current.rules, createInitialRule()],
+    }));
+  }
+
+  function removeRule(index: number) {
+    setForm((current) => ({
+      ...current,
+      rules: current.rules.filter((_, ruleIndex) => ruleIndex !== index),
+    }));
+  }
+
+  function renderRuleFields(rule: ChallengeRuleForm, index: number) {
+    if (
+      rule.ruleType === "visit_airport" ||
+      rule.ruleType === "depart_airport" ||
+      rule.ruleType === "arrive_airport"
+    ) {
+      return (
+        <label className="space-y-2">
+          <span className="text-sm text-slate-400">Airport</span>
+          <input
+            value={rule.targetAirport}
+            onChange={(event) =>
+              updateRule(index, {
+                targetAirport: event.target.value.toUpperCase(),
+              })
+            }
+            placeholder="LOWI"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+          />
+        </label>
+      );
+    }
+
+    if (rule.ruleType === "visit_airport_count") {
+      return (
+        <label className="space-y-2">
+          <span className="text-sm text-slate-400">
+            Unique airports to visit
+          </span>
+          <input
+            type="number"
+            min="1"
+            value={rule.requiredAirportCount}
+            onChange={(event) =>
+              updateRule(index, { requiredAirportCount: event.target.value })
+            }
+            placeholder="5"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+          />
+        </label>
+      );
+    }
+
+    if (rule.ruleType === "route") {
+      return (
+        <>
+          <label className="space-y-2">
+            <span className="text-sm text-slate-400">Departure airport</span>
+            <input
+              value={rule.targetDepartureAirport}
+              onChange={(event) =>
+                updateRule(index, {
+                  targetDepartureAirport: event.target.value.toUpperCase(),
+                })
+              }
+              placeholder="KJFK"
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+            />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm text-slate-400">Arrival airport</span>
+            <input
+              value={rule.targetArrivalAirport}
+              onChange={(event) =>
+                updateRule(index, {
+                  targetArrivalAirport: event.target.value.toUpperCase(),
+                })
+              }
+              placeholder="KLAX"
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+            />
+          </label>
+        </>
+      );
+    }
+
+    if (rule.ruleType === "aircraft_type") {
+      return (
+        <label className="space-y-2">
+          <span className="text-sm text-slate-400">Aircraft type</span>
+          <input
+            value={rule.targetAircraftType}
+            onChange={(event) =>
+              updateRule(index, {
+                targetAircraftType: event.target.value.toUpperCase(),
+              })
+            }
+            placeholder="A320"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+          />
+        </label>
+      );
+    }
+
+    if (rule.ruleType === "flight_count") {
+      return (
+        <label className="space-y-2">
+          <span className="text-sm text-slate-400">Flights required</span>
+          <input
+            type="number"
+            min="1"
+            value={rule.requiredFlightCount}
+            onChange={(event) =>
+              updateRule(index, { requiredFlightCount: event.target.value })
+            }
+            placeholder="3"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+          />
+        </label>
+      );
+    }
+
+    if (rule.ruleType === "min_duration") {
+      return (
+        <label className="space-y-2">
+          <span className="text-sm text-slate-400">Minimum minutes</span>
+          <input
+            type="number"
+            min="1"
+            value={rule.minDurationMinutes}
+            onChange={(event) =>
+              updateRule(index, { minDurationMinutes: event.target.value })
+            }
+            placeholder="90"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+          />
+        </label>
+      );
+    }
+
+    if (rule.ruleType === "min_distance") {
+      return (
+        <label className="space-y-2">
+          <span className="text-sm text-slate-400">Minimum nautical miles</span>
+          <input
+            type="number"
+            min="1"
+            value={rule.minDistanceNm}
+            onChange={(event) =>
+              updateRule(index, { minDistanceNm: event.target.value })
+            }
+            placeholder="500"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+          />
+        </label>
+      );
+    }
+
+    return null;
   }
 
   if (challenges === undefined || pendingReviews === undefined) {
@@ -743,12 +916,12 @@ export function ChallengesTab() {
                 setForm((current) => ({
                   ...current,
                   mode,
-                  ruleType:
+                  rules:
                     mode === "manual"
-                      ? "manual"
-                      : current.ruleType === "manual"
-                        ? "visit_airport"
-                        : current.ruleType,
+                      ? [createInitialRule("manual")]
+                      : current.rules[0]?.ruleType === "manual"
+                        ? [createInitialRule()]
+                        : current.rules,
                 }));
               }}
             >
@@ -772,261 +945,126 @@ export function ChallengesTab() {
             </Select>
           </label>
 
-          <label className="space-y-2">
-            <span className="text-sm text-slate-400">Rule</span>
-            <Select
-              value={form.mode === "manual" ? "manual" : form.ruleType}
-              disabled={form.mode === "manual"}
-              onValueChange={(value) =>
-                setForm((current) => ({
-                  ...current,
-                  ruleType: value as ChallengeRuleType,
-                }))
-              }
-            >
-              <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20 disabled:opacity-60">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="border-white/10 bg-[#0b1118] text-white">
-                <SelectItem
-                  value="visit_airport"
-                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                >
-                  Visit airport
-                </SelectItem>
-                <SelectItem
-                  value="visit_airport_count"
-                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                >
-                  Visit X airports
-                </SelectItem>
-                <SelectItem
-                  value="depart_airport"
-                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                >
-                  Depart airport
-                </SelectItem>
-                <SelectItem
-                  value="arrive_airport"
-                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                >
-                  Arrive airport
-                </SelectItem>
-                <SelectItem
-                  value="route"
-                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                >
-                  Specific route
-                </SelectItem>
-                <SelectItem
-                  value="aircraft_type"
-                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                >
-                  Specific aircraft
-                </SelectItem>
-                <SelectItem
-                  value="flight_count"
-                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                >
-                  Complete X flights
-                </SelectItem>
-                <SelectItem
-                  value="min_duration"
-                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                >
-                  Minimum duration
-                </SelectItem>
-                <SelectItem
-                  value="min_distance"
-                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                >
-                  Minimum distance
-                </SelectItem>
-                <SelectItem
-                  value="manual"
-                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                >
-                  Manual review
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </label>
-
-          {(form.ruleType === "visit_airport" ||
-            form.ruleType === "depart_airport" ||
-            form.ruleType === "arrive_airport") &&
-            form.mode === "auto" && (
-              <label className="space-y-2">
-                <span className="text-sm text-slate-400">Airport</span>
-                <input
-                  value={form.targetAirport}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      targetAirport: event.target.value.toUpperCase(),
-                    }))
-                  }
-                  placeholder="LOWI"
-                  className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
-                />
-              </label>
-            )}
-
-          {form.ruleType === "visit_airport_count" && form.mode === "auto" && (
-            <label className="space-y-2">
-              <span className="text-sm text-slate-400">
-                Unique airports to visit
-              </span>
-              <input
-                type="number"
-                min="1"
-                value={form.requiredAirportCount}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    requiredAirportCount: event.target.value,
-                  }))
-                }
-                placeholder="5"
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
-              />
-            </label>
-          )}
-
-          {form.ruleType === "route" && form.mode === "auto" && (
-            <>
-              <label className="space-y-2">
-                <span className="text-sm text-slate-400">
-                  Departure airport
-                </span>
-                <input
-                  value={form.targetDepartureAirport}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      targetDepartureAirport: event.target.value.toUpperCase(),
-                    }))
-                  }
-                  placeholder="KJFK"
-                  className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm text-slate-400">Arrival airport</span>
-                <input
-                  value={form.targetArrivalAirport}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      targetArrivalAirport: event.target.value.toUpperCase(),
-                    }))
-                  }
-                  placeholder="KLAX"
-                  className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
-                />
-              </label>
-            </>
-          )}
-
-          {form.ruleType === "aircraft_type" && form.mode === "auto" && (
-            <label className="space-y-2">
-              <span className="text-sm text-slate-400">Aircraft type</span>
-              <input
-                value={form.targetAircraftType}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    targetAircraftType: event.target.value.toUpperCase(),
-                  }))
-                }
-                placeholder="A320"
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
-              />
-            </label>
-          )}
-
-          {form.ruleType === "flight_count" && form.mode === "auto" && (
-            <label className="space-y-2">
-              <span className="text-sm text-slate-400">Flights required</span>
-              <input
-                type="number"
-                min="1"
-                value={form.requiredFlightCount}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    requiredFlightCount: event.target.value,
-                  }))
-                }
-                placeholder="3"
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
-              />
-            </label>
-          )}
-
-          {form.ruleType === "min_duration" && form.mode === "auto" && (
-            <label className="space-y-2">
-              <span className="text-sm text-slate-400">Minimum minutes</span>
-              <input
-                type="number"
-                min="1"
-                value={form.minDurationMinutes}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    minDurationMinutes: event.target.value,
-                  }))
-                }
-                placeholder="90"
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
-              />
-            </label>
-          )}
-
-          {form.ruleType === "min_distance" && form.mode === "auto" && (
-            <label className="space-y-2">
-              <span className="text-sm text-slate-400">
-                Minimum nautical miles
-              </span>
-              <input
-                type="number"
-                min="1"
-                value={form.minDistanceNm}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    minDistanceNm: event.target.value,
-                  }))
-                }
-                placeholder="500"
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
-              />
-            </label>
-          )}
-
           {form.mode === "auto" && (
-            <label className="space-y-2 md:col-span-2">
-              <span className="text-sm text-slate-400">Additional rules</span>
-              <textarea
-                value={form.additionalRulesJson}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    additionalRulesJson: event.target.value,
-                  }))
-                }
-                rows={5}
-                placeholder={`[
-  { "ruleType": "aircraft_type", "targetAircraftType": "A320" },
-  { "ruleType": "min_distance", "minDistanceNm": 250 }
-]`}
-                className="w-full rounded-xl border border-white/10 bg-black/30 p-3 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
-              />
-              <p className="text-xs text-slate-500">
-                These are added to the selected rule above. All rules must pass
-                before the challenge is complete.
-              </p>
-            </label>
+            <div className="space-y-3 md:col-span-2">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold text-white">Rules</h4>
+                  <p className="mt-1 text-xs text-slate-500">
+                    All rules below must pass before the challenge is complete.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addRule}
+                  disabled={form.rules.length >= 8}
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-200 transition-colors hover:bg-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add rule
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {form.rules.map((rule, index) => (
+                  <div
+                    key={index}
+                    className="border border-white/10 bg-black/20 p-4"
+                  >
+                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                      <label className="flex-1 space-y-2">
+                        <span className="text-sm text-slate-400">
+                          Rule {index + 1}
+                        </span>
+                        <Select
+                          value={rule.ruleType}
+                          onValueChange={(value) =>
+                            updateRule(index, {
+                              ...createInitialRule(value as ChallengeRuleType),
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+                            <SelectItem
+                              value="visit_airport"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Visit airport
+                            </SelectItem>
+                            <SelectItem
+                              value="visit_airport_count"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Visit X airports
+                            </SelectItem>
+                            <SelectItem
+                              value="depart_airport"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Depart airport
+                            </SelectItem>
+                            <SelectItem
+                              value="arrive_airport"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Arrive airport
+                            </SelectItem>
+                            <SelectItem
+                              value="route"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Specific route
+                            </SelectItem>
+                            <SelectItem
+                              value="aircraft_type"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Specific aircraft
+                            </SelectItem>
+                            <SelectItem
+                              value="flight_count"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Complete X flights
+                            </SelectItem>
+                            <SelectItem
+                              value="min_duration"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Minimum duration
+                            </SelectItem>
+                            <SelectItem
+                              value="min_distance"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Minimum distance
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => removeRule(index)}
+                        disabled={form.rules.length <= 1}
+                        className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition-colors hover:bg-red-500/10 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label={`Remove rule ${index + 1}`}
+                        title="Remove rule"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {renderRuleFields(rule, index)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           <label className="space-y-2">
