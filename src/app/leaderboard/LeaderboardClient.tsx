@@ -56,6 +56,20 @@ function formatChallengeWindow(startAt: number, endAt: number) {
   })}`;
 }
 
+function hasStartedChallengeEntry(entry: {
+  progressCurrent: number;
+  isComplete: boolean;
+  status: "completed" | "in_progress" | "pending" | "rejected";
+}) {
+  return (
+    entry.isComplete ||
+    entry.status === "completed" ||
+    entry.status === "pending" ||
+    entry.status === "rejected" ||
+    entry.progressCurrent > 0
+  );
+}
+
 export default function LeaderboardClient({
   initialSort,
 }: {
@@ -378,9 +392,17 @@ export default function LeaderboardClient({
               </p>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2">
+            <div
+              className={
+                challengeLeaderboard.length > 1
+                  ? "grid gap-6 md:grid-cols-2"
+                  : "space-y-6"
+              }
+            >
               {challengeLeaderboard.map((challenge) => {
-                const visibleEntries = challenge.entries.slice(0, 10);
+                const visibleEntries = challenge.entries
+                  .filter(hasStartedChallengeEntry)
+                  .slice(0, 10);
                 const shouldCollapseEntries = challengeLeaderboard.length > 2;
                 const entriesOpen =
                   !shouldCollapseEntries ||
@@ -447,7 +469,7 @@ export default function LeaderboardClient({
                             Pilot
                           </div>
                           <div className="w-20 shrink-0 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
-                          Progress
+                            Progress
                           </div>
                         </div>
 

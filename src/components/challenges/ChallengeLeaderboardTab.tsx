@@ -112,6 +112,16 @@ function getStatusLabel(entry: ChallengeLeaderboardEntry) {
   return entry.progressLabel;
 }
 
+function hasStartedChallengeEntry(entry: ChallengeLeaderboardEntry) {
+  return (
+    entry.isComplete ||
+    entry.status === "completed" ||
+    entry.status === "pending" ||
+    entry.status === "rejected" ||
+    entry.progressCurrent > 0
+  );
+}
+
 export function ChallengeLeaderboardTab({
   challenges,
   highlightedUserId,
@@ -143,10 +153,11 @@ export function ChallengeLeaderboardTab({
       }
     >
       {challenges.map((challenge) => {
+        const startedEntries = challenge.entries.filter(hasStartedChallengeEntry);
         const visibleEntries =
           typeof maxEntries === "number"
-            ? challenge.entries.slice(0, maxEntries)
-            : challenge.entries;
+            ? startedEntries.slice(0, maxEntries)
+            : startedEntries;
 
         return (
           <ChallengeLeaderboardCard
