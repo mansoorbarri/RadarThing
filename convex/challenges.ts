@@ -16,6 +16,7 @@ import {
   isChallengeActiveAt,
   sumFlightDistancesNm,
   sumFlightDurationsMinutes,
+  type ChallengeRule,
   type ChallengeRuleConfig,
   type ChallengeRuleType,
 } from "./lib/challengeRules";
@@ -782,6 +783,14 @@ function compareManualLeaderboardEntries(
   return a.displayName.localeCompare(b.displayName);
 }
 
+function requiresCollectionMatching(challenge: ChallengeRule) {
+  const rules = getChallengeRules(challenge);
+  return (
+    rules.length > 1 ||
+    rules.some((rule) => isAggregateChallengeRule(rule.ruleType))
+  );
+}
+
 export async function autoCompleteChallengesForFlight(
   ctx: MutationCtx,
   args: {
@@ -797,11 +806,8 @@ export async function autoCompleteChallengesForFlight(
 ) {
   const now = Date.now();
   const activeChallenges = await getActiveAutoChallenges(ctx, now);
-  const collectionChallenges = activeChallenges.filter(
-    (challenge) =>
-      getChallengeRules(challenge).some((rule) =>
-        isAggregateChallengeRule(rule.ruleType),
-      ) || getChallengeRules(challenge).length > 1,
+  const collectionChallenges = activeChallenges.filter((challenge) =>
+    requiresCollectionMatching(challenge),
   );
   const allFlights =
     collectionChallenges.length > 0
@@ -819,11 +825,7 @@ export async function autoCompleteChallengesForFlight(
   }[] = [];
 
   for (const challenge of activeChallenges) {
-    const needsCollection =
-      getChallengeRules(challenge).length > 1 ||
-      getChallengeRules(challenge).some((rule) =>
-        isAggregateChallengeRule(rule.ruleType),
-      );
+    const needsCollection = requiresCollectionMatching(challenge);
     const matches = needsCollection
       ? doesFlightCollectionMatchChallenge(challenge, allFlights)
       : doesFlightMatchChallenge(challenge, {

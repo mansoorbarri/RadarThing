@@ -173,7 +173,7 @@ const challengePayloadSchema = z
       });
     }
 
-    for (const rule of rules) {
+    for (const [index, rule] of rules.entries()) {
       if (
         ["visit_airport", "depart_airport", "arrive_airport"].includes(
           rule.ruleType,
@@ -183,7 +183,7 @@ const challengePayloadSchema = z
         ctx.addIssue({
           code: "custom",
           message: "This challenge needs an airport code",
-          path: ["targetAirport"],
+          path: ["rules", index, "targetAirport"],
         });
       }
 
@@ -1249,11 +1249,11 @@ export function ChallengesTab() {
                   <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="mb-2 flex flex-wrap gap-2">
-                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
+                        <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
                           {challenge.cadence}
                         </span>
                         <span
-                          className={`rounded-full px-2 py-0.5 font-mono text-[10px] tracking-wider uppercase ${
+                          className={`rounded px-2 py-0.5 font-mono text-[10px] tracking-wider uppercase ${
                             challenge.isPublished
                               ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
                               : "border border-slate-500/30 bg-slate-500/10 text-slate-300"
@@ -1261,7 +1261,7 @@ export function ChallengesTab() {
                         >
                           {challenge.isPublished ? "published" : "draft"}
                         </span>
-                        <span className="rounded-full border border-cyan-500/20 bg-cyan-500/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
+                        <span className="rounded border border-cyan-500/20 bg-cyan-500/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
                           {challenge.mode}
                         </span>
                       </div>
@@ -1363,7 +1363,7 @@ export function ChallengesTab() {
                                 </div>
                               </div>
                               <div
-                                className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-[10px] uppercase ${
+                                className={`shrink-0 rounded-lg px-2.5 py-1 font-mono text-[10px] uppercase ${
                                   pilot.isComplete
                                     ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
                                     : "border border-amber-500/25 bg-amber-500/10 text-amber-200"
@@ -1392,7 +1392,7 @@ export function ChallengesTab() {
                             <span
                               key={completedUser.userId}
                               title={completedUser.userId}
-                              className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-200"
+                              className="rounded border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-200"
                             >
                               {completedUser.displayName}
                             </span>

@@ -6,6 +6,7 @@ import { CheckCircle2, Clock3, Flag, Loader2 } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { ChallengeLeaderboardTab } from "~/components/challenges/ChallengeLeaderboardTab";
+import { getRuleSummary } from "~/components/challenges/ruleSummary";
 
 function formatWindow(startAt: number, endAt: number) {
   return `${new Date(startAt).toLocaleDateString("en-US", {
@@ -15,74 +16,6 @@ function formatWindow(startAt: number, endAt: number) {
     month: "short",
     day: "numeric",
   })}`;
-}
-
-function getRuleSummary(challenge: {
-  mode: "auto" | "manual";
-  ruleType: string;
-  targetAirport: string | null;
-  targetDepartureAirport: string | null;
-  targetArrivalAirport: string | null;
-  targetAircraftType: string | null;
-  requiredAirportCount: number | null;
-  requiredFlightCount: number | null;
-  minDurationMinutes: number | null;
-  minDistanceNm: number | null;
-  rules?: {
-    ruleType: string;
-    targetAirport: string | null;
-    targetDepartureAirport: string | null;
-    targetArrivalAirport: string | null;
-    targetAircraftType: string | null;
-    requiredAirportCount: number | null;
-    requiredFlightCount: number | null;
-    minDurationMinutes: number | null;
-    minDistanceNm: number | null;
-  }[];
-}) {
-  if (challenge.mode === "manual") return "Manual review required";
-
-  const rules =
-    challenge.rules && challenge.rules.length > 0
-      ? challenge.rules
-      : [challenge];
-
-  return rules.map((rule) => getSingleRuleSummary(rule)).join(" + ");
-}
-
-function getSingleRuleSummary(rule: {
-  ruleType: string;
-  targetAirport: string | null;
-  targetDepartureAirport: string | null;
-  targetArrivalAirport: string | null;
-  targetAircraftType: string | null;
-  requiredAirportCount: number | null;
-  requiredFlightCount: number | null;
-  minDurationMinutes: number | null;
-  minDistanceNm: number | null;
-}) {
-  switch (rule.ruleType) {
-    case "visit_airport":
-      return `Visit ${rule.targetAirport}`;
-    case "visit_airport_count":
-      return `Visit ${rule.requiredAirportCount} unique airports`;
-    case "depart_airport":
-      return `Depart ${rule.targetAirport}`;
-    case "arrive_airport":
-      return `Arrive at ${rule.targetAirport}`;
-    case "route":
-      return `Fly ${rule.targetDepartureAirport} to ${rule.targetArrivalAirport}`;
-    case "aircraft_type":
-      return `Use ${rule.targetAircraftType}`;
-    case "flight_count":
-      return `Complete ${rule.requiredFlightCount} flights`;
-    case "min_duration":
-      return `Fly at least ${rule.minDurationMinutes} minutes`;
-    case "min_distance":
-      return `Fly at least ${rule.minDistanceNm} nm`;
-    default:
-      return "Automatic challenge";
-  }
 }
 
 export function PilotChallengesPanel({ userId }: { userId: Id<"users"> }) {
