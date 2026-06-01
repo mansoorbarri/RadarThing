@@ -1,16 +1,17 @@
-export interface ChallengeRule {
-  mode: "auto" | "manual";
-  ruleType:
-    | "visit_airport"
-    | "visit_airport_count"
-    | "depart_airport"
-    | "arrive_airport"
-    | "route"
-    | "aircraft_type"
-    | "flight_count"
-    | "min_duration"
-    | "min_distance"
-    | "manual";
+export type ChallengeRuleType =
+  | "visit_airport"
+  | "visit_airport_count"
+  | "depart_airport"
+  | "arrive_airport"
+  | "route"
+  | "aircraft_type"
+  | "flight_count"
+  | "min_duration"
+  | "min_distance"
+  | "manual";
+
+export interface ChallengeRuleConfig {
+  ruleType: ChallengeRuleType;
   targetAirport?: string;
   targetDepartureAirport?: string;
   targetArrivalAirport?: string;
@@ -19,6 +20,11 @@ export interface ChallengeRule {
   requiredFlightCount?: number;
   minDurationMinutes?: number;
   minDistanceNm?: number;
+}
+
+export interface ChallengeRule extends ChallengeRuleConfig {
+  mode: "auto" | "manual";
+  rules?: ChallengeRuleConfig[];
   durationDays?: number;
   startAt: number;
   endAt: number;
@@ -101,7 +107,9 @@ export function isChallengeActiveAt(
 }
 
 export function doesFlightMatchChallenge(
-  challenge: ChallengeRule,
+  challenge:
+    | ChallengeRule
+    | (ChallengeRuleConfig & Pick<ChallengeRule, "mode" | "startAt" | "endAt">),
   flight: ChallengeFlight,
 ) {
   if (challenge.mode !== "auto") return false;
@@ -162,15 +170,31 @@ export function doesFlightMatchChallenge(
   }
 }
 
-export function isAggregateChallengeRule(
-  ruleType: ChallengeRule["ruleType"],
-): boolean {
+export function isAggregateChallengeRule(ruleType: ChallengeRuleType): boolean {
   return (
     ruleType === "visit_airport_count" ||
     ruleType === "flight_count" ||
     ruleType === "min_duration" ||
     ruleType === "min_distance"
   );
+}
+
+export function getChallengeRules(challenge: ChallengeRule) {
+  return challenge.rules && challenge.rules.length > 0
+    ? challenge.rules
+    : [
+        {
+          ruleType: challenge.ruleType,
+          targetAirport: challenge.targetAirport,
+          targetDepartureAirport: challenge.targetDepartureAirport,
+          targetArrivalAirport: challenge.targetArrivalAirport,
+          targetAircraftType: challenge.targetAircraftType,
+          requiredAirportCount: challenge.requiredAirportCount,
+          requiredFlightCount: challenge.requiredFlightCount,
+          minDurationMinutes: challenge.minDurationMinutes,
+          minDistanceNm: challenge.minDistanceNm,
+        },
+      ];
 }
 
 export function getFlightsInChallengeWindow<T extends ChallengeFlight>(
@@ -221,7 +245,21 @@ export function sumFlightDistancesNm(flights: ChallengeFlight[]) {
 export function doesFlightCollectionMatchChallenge(
   challenge: ChallengeRule,
   flights: ChallengeFlight[],
-) {
+): boolean {
+  const rules = getChallengeRules(challenge);
+  if (rules.length > 1) {
+    return rules.every((rule) =>
+      doesFlightCollectionMatchChallenge(
+        {
+          ...challenge,
+          ...rule,
+          rules: [rule],
+        },
+        flights,
+      ),
+    );
+  }
+
   const flightsInWindow = getFlightsInChallengeWindow(challenge, flights);
 
   switch (challenge.ruleType) {

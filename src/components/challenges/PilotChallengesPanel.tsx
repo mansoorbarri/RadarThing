@@ -28,28 +28,58 @@ function getRuleSummary(challenge: {
   requiredFlightCount: number | null;
   minDurationMinutes: number | null;
   minDistanceNm: number | null;
+  rules?: {
+    ruleType: string;
+    targetAirport: string | null;
+    targetDepartureAirport: string | null;
+    targetArrivalAirport: string | null;
+    targetAircraftType: string | null;
+    requiredAirportCount: number | null;
+    requiredFlightCount: number | null;
+    minDurationMinutes: number | null;
+    minDistanceNm: number | null;
+  }[];
 }) {
   if (challenge.mode === "manual") return "Manual review required";
 
-  switch (challenge.ruleType) {
+  const rules =
+    challenge.rules && challenge.rules.length > 0
+      ? challenge.rules
+      : [challenge];
+
+  return rules.map((rule) => getSingleRuleSummary(rule)).join(" + ");
+}
+
+function getSingleRuleSummary(rule: {
+  ruleType: string;
+  targetAirport: string | null;
+  targetDepartureAirport: string | null;
+  targetArrivalAirport: string | null;
+  targetAircraftType: string | null;
+  requiredAirportCount: number | null;
+  requiredFlightCount: number | null;
+  minDurationMinutes: number | null;
+  minDistanceNm: number | null;
+}) {
+  switch (rule.ruleType) {
     case "visit_airport":
-      return `Visit ${challenge.targetAirport}`;
+      return `Visit ${rule.targetAirport}`;
     case "visit_airport_count":
-      return `Visit ${challenge.requiredAirportCount} unique airports`;
+      return `Visit ${rule.requiredAirportCount} unique airports`;
     case "depart_airport":
-      return `Depart ${challenge.targetAirport}`;
+      return `Depart ${rule.targetAirport}`;
     case "arrive_airport":
-      return `Arrive at ${challenge.targetAirport}`;
+      return `Arrive at ${rule.targetAirport}`;
     case "route":
-      return `Fly ${challenge.targetDepartureAirport} to ${challenge.targetArrivalAirport}`;
+      return `Fly ${rule.targetDepartureAirport} to ${rule.targetArrivalAirport}`;
     case "aircraft_type":
-      return `Use ${challenge.targetAircraftType}`;
+      return `Use ${rule.targetAircraftType}`;
     case "flight_count":
-      return `Complete ${challenge.requiredFlightCount} flights`;
+      return `Complete ${rule.requiredFlightCount} flights`;
     case "min_duration":
-      return `Fly at least ${challenge.minDurationMinutes} minutes`;
+      return `Fly at least ${rule.minDurationMinutes} minutes`;
     case "min_distance":
-      return `Fly at least ${challenge.minDistanceNm} nm`;
+      return `Fly at least ${rule.minDistanceNm} nm`;
     default:
       return "Automatic challenge";
   }

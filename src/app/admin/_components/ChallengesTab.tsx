@@ -54,6 +54,7 @@ interface ChallengeForm {
   requiredFlightCount: string;
   minDurationMinutes: string;
   minDistanceNm: string;
+  additionalRulesJson: string;
   startAt: string;
   durationDays: string;
   isPublished: boolean;
@@ -84,6 +85,18 @@ const optionalNumberSchema = z.preprocess(
   z.number().optional(),
 );
 
+const challengeRulePayloadSchema = z.object({
+  ruleType: challengeRuleTypeSchema,
+  targetAirport: z.string().trim().toUpperCase().optional(),
+  targetDepartureAirport: z.string().trim().toUpperCase().optional(),
+  targetArrivalAirport: z.string().trim().toUpperCase().optional(),
+  targetAircraftType: z.string().trim().toUpperCase().optional(),
+  requiredAirportCount: optionalNumberSchema,
+  requiredFlightCount: optionalNumberSchema,
+  minDurationMinutes: optionalNumberSchema,
+  minDistanceNm: optionalNumberSchema,
+});
+
 const challengePayloadSchema = z
   .object({
     title: z
@@ -107,6 +120,7 @@ const challengePayloadSchema = z
     requiredFlightCount: optionalNumberSchema,
     minDurationMinutes: optionalNumberSchema,
     minDistanceNm: optionalNumberSchema,
+    rules: z.array(challengeRulePayloadSchema).min(1).max(8),
     startAt: z
       .number({ invalid_type_error: "Challenge start time is invalid" })
       .finite("Challenge start time is invalid"),
@@ -133,8 +147,10 @@ const challengePayloadSchema = z
       });
     }
 
+    const rules = value.rules.length > 0 ? value.rules : [value];
+
     if (value.mode === "manual") {
-      if (value.ruleType !== "manual") {
+      if (rules.length !== 1 || rules[0]?.ruleType !== "manual") {
         ctx.addIssue({
           code: "custom",
           message: "Manual challenges must use the manual rule type",
@@ -144,88 +160,90 @@ const challengePayloadSchema = z
       return;
     }
 
-    if (value.ruleType === "manual") {
+    if (rules.some((rule) => rule.ruleType === "manual")) {
       ctx.addIssue({
         code: "custom",
-        message: "Automatic challenges need a concrete auto rule",
+        message: "Automatic challenges need concrete auto rules",
         path: ["ruleType"],
       });
     }
 
-    if (
-      ["visit_airport", "depart_airport", "arrive_airport"].includes(
-        value.ruleType,
-      ) &&
-      !value.targetAirport
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "This challenge needs an airport code",
-        path: ["targetAirport"],
-      });
-    }
+    for (const rule of rules) {
+      if (
+        ["visit_airport", "depart_airport", "arrive_airport"].includes(
+          rule.ruleType,
+        ) &&
+        !rule.targetAirport
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "This challenge needs an airport code",
+          path: ["targetAirport"],
+        });
+      }
 
-    if (
-      value.ruleType === "route" &&
-      (!value.targetDepartureAirport || !value.targetArrivalAirport)
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Route challenges need both departure and arrival airports",
-        path: ["targetDepartureAirport"],
-      });
-    }
+      if (
+        rule.ruleType === "route" &&
+        (!rule.targetDepartureAirport || !rule.targetArrivalAirport)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Route challenges need both departure and arrival airports",
+          path: ["targetDepartureAirport"],
+        });
+      }
 
-    if (value.ruleType === "aircraft_type" && !value.targetAircraftType) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Aircraft challenges need an aircraft type",
-        path: ["targetAircraftType"],
-      });
-    }
+      if (rule.ruleType === "aircraft_type" && !rule.targetAircraftType) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Aircraft challenges need an aircraft type",
+          path: ["targetAircraftType"],
+        });
+      }
 
-    if (
-      value.ruleType === "visit_airport_count" &&
-      (!value.requiredAirportCount || value.requiredAirportCount <= 0)
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Airport count challenges need a visit count above 0",
-        path: ["requiredAirportCount"],
-      });
-    }
+      if (
+        rule.ruleType === "visit_airport_count" &&
+        (!rule.requiredAirportCount || rule.requiredAirportCount <= 0)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Airport count challenges need a visit count above 0",
+          path: ["requiredAirportCount"],
+        });
+      }
 
-    if (
-      value.ruleType === "flight_count" &&
-      (!value.requiredFlightCount || value.requiredFlightCount <= 0)
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Flight count challenges need a flight count above 0",
-        path: ["requiredFlightCount"],
-      });
-    }
+      if (
+        rule.ruleType === "flight_count" &&
+        (!rule.requiredFlightCount || rule.requiredFlightCount <= 0)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Flight count challenges need a flight count above 0",
+          path: ["requiredFlightCount"],
+        });
+      }
 
-    if (
-      value.ruleType === "min_duration" &&
-      (!value.minDurationMinutes || value.minDurationMinutes <= 0)
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Minimum duration challenges need a duration above 0",
-        path: ["minDurationMinutes"],
-      });
-    }
+      if (
+        rule.ruleType === "min_duration" &&
+        (!rule.minDurationMinutes || rule.minDurationMinutes <= 0)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Minimum duration challenges need a duration above 0",
+          path: ["minDurationMinutes"],
+        });
+      }
 
-    if (
-      value.ruleType === "min_distance" &&
-      (!value.minDistanceNm || value.minDistanceNm <= 0)
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Minimum distance challenges need a distance above 0",
-        path: ["minDistanceNm"],
-      });
+      if (
+        rule.ruleType === "min_distance" &&
+        (!rule.minDistanceNm || rule.minDistanceNm <= 0)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Minimum distance challenges need a distance above 0",
+          path: ["minDistanceNm"],
+        });
+      }
     }
   });
 
@@ -271,6 +289,7 @@ function createInitialForm(): ChallengeForm {
     requiredFlightCount: "",
     minDurationMinutes: "",
     minDistanceNm: "",
+    additionalRulesJson: "",
     startAt: window.startAt,
     durationDays: window.durationDays,
     isPublished: true,
@@ -302,28 +321,58 @@ function describeRule(challenge: {
   requiredFlightCount: number | null;
   minDurationMinutes: number | null;
   minDistanceNm: number | null;
+  rules?: {
+    ruleType: ChallengeRuleType;
+    targetAirport: string | null;
+    targetDepartureAirport: string | null;
+    targetArrivalAirport: string | null;
+    targetAircraftType: string | null;
+    requiredAirportCount: number | null;
+    requiredFlightCount: number | null;
+    minDurationMinutes: number | null;
+    minDistanceNm: number | null;
+  }[];
 }) {
   if (challenge.mode === "manual") return "Manual review challenge";
 
-  switch (challenge.ruleType) {
+  const rules =
+    challenge.rules && challenge.rules.length > 0
+      ? challenge.rules
+      : [challenge];
+
+  return rules.map((rule) => describeSingleRule(rule)).join(" + ");
+}
+
+function describeSingleRule(rule: {
+  ruleType: ChallengeRuleType;
+  targetAirport: string | null;
+  targetDepartureAirport: string | null;
+  targetArrivalAirport: string | null;
+  targetAircraftType: string | null;
+  requiredAirportCount: number | null;
+  requiredFlightCount: number | null;
+  minDurationMinutes: number | null;
+  minDistanceNm: number | null;
+}) {
+  switch (rule.ruleType) {
     case "visit_airport":
-      return `Visit ${challenge.targetAirport}`;
+      return `Visit ${rule.targetAirport}`;
     case "visit_airport_count":
-      return `Visit ${challenge.requiredAirportCount} unique airports`;
+      return `Visit ${rule.requiredAirportCount} unique airports`;
     case "depart_airport":
-      return `Depart ${challenge.targetAirport}`;
+      return `Depart ${rule.targetAirport}`;
     case "arrive_airport":
-      return `Arrive at ${challenge.targetAirport}`;
+      return `Arrive at ${rule.targetAirport}`;
     case "route":
-      return `Route ${challenge.targetDepartureAirport} -> ${challenge.targetArrivalAirport}`;
+      return `Route ${rule.targetDepartureAirport} -> ${rule.targetArrivalAirport}`;
     case "aircraft_type":
-      return `Aircraft ${challenge.targetAircraftType}`;
+      return `Aircraft ${rule.targetAircraftType}`;
     case "flight_count":
-      return `Complete ${challenge.requiredFlightCount} flights`;
+      return `Complete ${rule.requiredFlightCount} flights`;
     case "min_duration":
-      return `At least ${challenge.minDurationMinutes} minutes`;
+      return `At least ${rule.minDurationMinutes} minutes`;
     case "min_distance":
-      return `At least ${challenge.minDistanceNm} nm`;
+      return `At least ${rule.minDistanceNm} nm`;
     default:
       return "Manual review challenge";
   }
@@ -365,31 +414,59 @@ export function ChallengesTab() {
   function loadChallengeIntoForm(
     challenge: NonNullable<typeof challenges>[number],
   ) {
+    const rules = challenge.rules ?? [];
+    const primaryRule = rules[0];
+    const additionalRules = rules.slice(1);
+
     setEditingId(challenge.id);
     setForm({
       title: challenge.title,
       description: challenge.description,
       cadence: challenge.cadence,
       mode: challenge.mode,
-      ruleType: challenge.ruleType,
-      targetAirport: challenge.targetAirport ?? "",
-      targetDepartureAirport: challenge.targetDepartureAirport ?? "",
-      targetArrivalAirport: challenge.targetArrivalAirport ?? "",
-      targetAircraftType: challenge.targetAircraftType ?? "",
+      ruleType: primaryRule?.ruleType ?? challenge.ruleType,
+      targetAirport:
+        primaryRule?.targetAirport ?? challenge.targetAirport ?? "",
+      targetDepartureAirport:
+        primaryRule?.targetDepartureAirport ??
+        challenge.targetDepartureAirport ??
+        "",
+      targetArrivalAirport:
+        primaryRule?.targetArrivalAirport ??
+        challenge.targetArrivalAirport ??
+        "",
+      targetAircraftType:
+        primaryRule?.targetAircraftType ?? challenge.targetAircraftType ?? "",
       requiredAirportCount:
-        challenge.requiredAirportCount !== null
-          ? String(challenge.requiredAirportCount)
+        (primaryRule?.requiredAirportCount ??
+          challenge.requiredAirportCount) !== null
+          ? String(
+              primaryRule?.requiredAirportCount ??
+                challenge.requiredAirportCount,
+            )
           : "",
       requiredFlightCount:
-        challenge.requiredFlightCount !== null
-          ? String(challenge.requiredFlightCount)
+        (primaryRule?.requiredFlightCount ?? challenge.requiredFlightCount) !==
+        null
+          ? String(
+              primaryRule?.requiredFlightCount ?? challenge.requiredFlightCount,
+            )
           : "",
       minDurationMinutes:
-        challenge.minDurationMinutes !== null
-          ? String(challenge.minDurationMinutes)
+        (primaryRule?.minDurationMinutes ?? challenge.minDurationMinutes) !==
+        null
+          ? String(
+              primaryRule?.minDurationMinutes ?? challenge.minDurationMinutes,
+            )
           : "",
       minDistanceNm:
-        challenge.minDistanceNm !== null ? String(challenge.minDistanceNm) : "",
+        (primaryRule?.minDistanceNm ?? challenge.minDistanceNm) !== null
+          ? String(primaryRule?.minDistanceNm ?? challenge.minDistanceNm)
+          : "",
+      additionalRulesJson:
+        additionalRules.length > 0
+          ? JSON.stringify(additionalRules, null, 2)
+          : "",
       startAt: toLocalInputValue(challenge.startAt),
       durationDays: String(challenge.durationDays),
       isPublished: challenge.isPublished,
@@ -399,12 +476,23 @@ export function ChallengesTab() {
   async function handleSubmit() {
     const startAt = new Date(form.startAt).getTime();
     const durationDays = Number(form.durationDays);
+    let additionalRules: unknown[] = [];
 
-    const payload = {
-      title: form.title,
-      description: form.description,
-      cadence: form.cadence,
-      mode: form.mode,
+    if (form.additionalRulesJson.trim()) {
+      try {
+        const parsedRules = JSON.parse(form.additionalRulesJson);
+        if (!Array.isArray(parsedRules)) {
+          toast.error("Additional rules must be a JSON array");
+          return;
+        }
+        additionalRules = parsedRules;
+      } catch {
+        toast.error("Additional rules must be valid JSON");
+        return;
+      }
+    }
+
+    const primaryRule = {
       ruleType: form.mode === "manual" ? ("manual" as const) : form.ruleType,
       targetAirport: form.targetAirport || undefined,
       targetDepartureAirport: form.targetDepartureAirport || undefined,
@@ -422,6 +510,18 @@ export function ChallengesTab() {
       minDistanceNm: form.minDistanceNm
         ? Number(form.minDistanceNm)
         : undefined,
+    };
+
+    const payload = {
+      title: form.title,
+      description: form.description,
+      cadence: form.cadence,
+      mode: form.mode,
+      ...primaryRule,
+      rules:
+        form.mode === "manual"
+          ? [primaryRule]
+          : [primaryRule, ...additionalRules],
       startAt,
       durationDays,
       isPublished: form.isPublished,
@@ -453,6 +553,7 @@ export function ChallengesTab() {
           cadence: parsedPayload.data.cadence,
           mode: parsedPayload.data.mode,
           rule_type: parsedPayload.data.ruleType,
+          rule_count: parsedPayload.data.rules.length,
           is_published: parsedPayload.data.isPublished,
         });
         toast.success("Challenge created");
@@ -595,9 +696,24 @@ export function ChallengesTab() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="border-white/10 bg-[#0b1118] text-white">
-                <SelectItem value="weekly" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Weekly</SelectItem>
-                <SelectItem value="monthly" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Monthly</SelectItem>
-                <SelectItem value="custom" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Custom</SelectItem>
+                <SelectItem
+                  value="weekly"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Weekly
+                </SelectItem>
+                <SelectItem
+                  value="monthly"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Monthly
+                </SelectItem>
+                <SelectItem
+                  value="custom"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Custom
+                </SelectItem>
               </SelectContent>
             </Select>
           </label>
@@ -640,8 +756,18 @@ export function ChallengesTab() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="border-white/10 bg-[#0b1118] text-white">
-                <SelectItem value="auto" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Auto tracked</SelectItem>
-                <SelectItem value="manual" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Manual review</SelectItem>
+                <SelectItem
+                  value="auto"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Auto tracked
+                </SelectItem>
+                <SelectItem
+                  value="manual"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Manual review
+                </SelectItem>
               </SelectContent>
             </Select>
           </label>
@@ -662,16 +788,66 @@ export function ChallengesTab() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="border-white/10 bg-[#0b1118] text-white">
-                <SelectItem value="visit_airport" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Visit airport</SelectItem>
-                <SelectItem value="visit_airport_count" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Visit X airports</SelectItem>
-                <SelectItem value="depart_airport" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Depart airport</SelectItem>
-                <SelectItem value="arrive_airport" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Arrive airport</SelectItem>
-                <SelectItem value="route" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Specific route</SelectItem>
-                <SelectItem value="aircraft_type" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Specific aircraft</SelectItem>
-                <SelectItem value="flight_count" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Complete X flights</SelectItem>
-                <SelectItem value="min_duration" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Minimum duration</SelectItem>
-                <SelectItem value="min_distance" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Minimum distance</SelectItem>
-                <SelectItem value="manual" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Manual review</SelectItem>
+                <SelectItem
+                  value="visit_airport"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Visit airport
+                </SelectItem>
+                <SelectItem
+                  value="visit_airport_count"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Visit X airports
+                </SelectItem>
+                <SelectItem
+                  value="depart_airport"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Depart airport
+                </SelectItem>
+                <SelectItem
+                  value="arrive_airport"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Arrive airport
+                </SelectItem>
+                <SelectItem
+                  value="route"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Specific route
+                </SelectItem>
+                <SelectItem
+                  value="aircraft_type"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Specific aircraft
+                </SelectItem>
+                <SelectItem
+                  value="flight_count"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Complete X flights
+                </SelectItem>
+                <SelectItem
+                  value="min_duration"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Minimum duration
+                </SelectItem>
+                <SelectItem
+                  value="min_distance"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Minimum distance
+                </SelectItem>
+                <SelectItem
+                  value="manual"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Manual review
+                </SelectItem>
               </SelectContent>
             </Select>
           </label>
@@ -828,6 +1004,31 @@ export function ChallengesTab() {
             </label>
           )}
 
+          {form.mode === "auto" && (
+            <label className="space-y-2 md:col-span-2">
+              <span className="text-sm text-slate-400">Additional rules</span>
+              <textarea
+                value={form.additionalRulesJson}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    additionalRulesJson: event.target.value,
+                  }))
+                }
+                rows={5}
+                placeholder={`[
+  { "ruleType": "aircraft_type", "targetAircraftType": "A320" },
+  { "ruleType": "min_distance", "minDistanceNm": 250 }
+]`}
+                className="w-full rounded-xl border border-white/10 bg-black/30 p-3 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+              />
+              <p className="text-xs text-slate-500">
+                These are added to the selected rule above. All rules must pass
+                before the challenge is complete.
+              </p>
+            </label>
+          )}
+
           <label className="space-y-2">
             <span className="text-sm text-slate-400">Start</span>
             <input
@@ -903,7 +1104,6 @@ export function ChallengesTab() {
             {isEditing ? "Save challenge" : "Create challenge"}
           </button>
         </div>
-
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
@@ -1008,165 +1208,165 @@ export function ChallengesTab() {
                   key={challenge.id}
                   className="rounded-2xl border border-white/10 bg-black/30 p-4"
                 >
-                <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="mb-2 flex flex-wrap gap-2">
-                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
-                        {challenge.cadence}
-                      </span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 font-mono text-[10px] tracking-wider uppercase ${
-                          challenge.isPublished
-                            ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                            : "border border-slate-500/30 bg-slate-500/10 text-slate-300"
-                        }`}
+                  <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="mb-2 flex flex-wrap gap-2">
+                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
+                          {challenge.cadence}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 font-mono text-[10px] tracking-wider uppercase ${
+                            challenge.isPublished
+                              ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                              : "border border-slate-500/30 bg-slate-500/10 text-slate-300"
+                          }`}
+                        >
+                          {challenge.isPublished ? "published" : "draft"}
+                        </span>
+                        <span className="rounded-full border border-cyan-500/20 bg-cyan-500/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
+                          {challenge.mode}
+                        </span>
+                      </div>
+                      <h4 className="text-base font-semibold text-white">
+                        {challenge.title}
+                      </h4>
+                      <p className="mt-1 text-sm text-slate-400">
+                        {challenge.description}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => loadChallengeIntoForm(challenge)}
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10"
                       >
-                        {challenge.isPublished ? "published" : "draft"}
-                      </span>
-                      <span className="rounded-full border border-cyan-500/20 bg-cyan-500/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
-                        {challenge.mode}
-                      </span>
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleToggle(challenge.id, challenge.isPublished)
+                        }
+                        disabled={busyChallengeId === challenge.id}
+                        className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 disabled:opacity-60"
+                      >
+                        {challenge.isPublished ? "Unpublish" : "Publish"}
+                      </button>
+                      <button
+                        onClick={() => handleRemove(challenge.id)}
+                        disabled={busyChallengeId === challenge.id}
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </button>
                     </div>
-                    <h4 className="text-base font-semibold text-white">
-                      {challenge.title}
-                    </h4>
-                    <p className="mt-1 text-sm text-slate-400">
-                      {challenge.description}
-                    </p>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => loadChallengeIntoForm(challenge)}
-                      className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10"
-                    >
-                      <Pencil className="h-4 w-4" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleToggle(challenge.id, challenge.isPublished)
-                      }
-                      disabled={busyChallengeId === challenge.id}
-                      className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 disabled:opacity-60"
-                    >
-                      {challenge.isPublished ? "Unpublish" : "Publish"}
-                    </button>
-                    <button
-                      onClick={() => handleRemove(challenge.id)}
-                      disabled={busyChallengeId === challenge.id}
-                      className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Delete
-                    </button>
+                  <div className="grid gap-3 text-sm text-slate-400 md:grid-cols-3">
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        <CalendarRange className="h-3.5 w-3.5" />
+                        Window
+                      </div>
+                      <p>
+                        {formatChallengeWindow(
+                          challenge.startAt,
+                          challenge.endAt,
+                        )}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {challenge.durationDays} day
+                        {challenge.durationDays === 1 ? "" : "s"}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        Rule
+                      </div>
+                      <p>{describeRule(challenge)}</p>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        Progress
+                      </div>
+                      <p>
+                        {challenge.counts.completed} completed •{" "}
+                        {challenge.counts.pending} pending •{" "}
+                        {challenge.counts.rejected} rejected
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid gap-3 text-sm text-slate-400 md:grid-cols-3">
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                      <CalendarRange className="h-3.5 w-3.5" />
-                      Window
-                    </div>
-                    <p>
-                      {formatChallengeWindow(
-                        challenge.startAt,
-                        challenge.endAt,
-                      )}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {challenge.durationDays} day
-                      {challenge.durationDays === 1 ? "" : "s"}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                      Rule
-                    </div>
-                    <p>{describeRule(challenge)}</p>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                      Progress
-                    </div>
-                    <p>
-                      {challenge.counts.completed} completed •{" "}
-                      {challenge.counts.pending} pending •{" "}
-                      {challenge.counts.rejected} rejected
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-3 grid gap-3 xl:grid-cols-2">
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                      <Flag className="h-3.5 w-3.5" />
-                      Top 3 Progress
-                    </div>
-                    {topProgressUsers.length > 0 ? (
-                      <div className="space-y-2">
-                        {topProgressUsers.map((pilot, index) => (
-                          <div
-                            key={pilot.userId}
-                            className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2"
-                          >
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/25 bg-cyan-500/10 font-mono text-[10px] text-cyan-200">
-                                  {index + 1}
-                                </span>
-                                <span
-                                  title={pilot.userId}
-                                  className="truncate text-sm text-slate-200"
-                                >
-                                  {pilot.displayName}
-                                </span>
+                  <div className="mt-3 grid gap-3 xl:grid-cols-2">
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        <Flag className="h-3.5 w-3.5" />
+                        Top 3 Progress
+                      </div>
+                      {topProgressUsers.length > 0 ? (
+                        <div className="space-y-2">
+                          {topProgressUsers.map((pilot, index) => (
+                            <div
+                              key={pilot.userId}
+                              className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+                            >
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/25 bg-cyan-500/10 font-mono text-[10px] text-cyan-200">
+                                    {index + 1}
+                                  </span>
+                                  <span
+                                    title={pilot.userId}
+                                    className="truncate text-sm text-slate-200"
+                                  >
+                                    {pilot.displayName}
+                                  </span>
+                                </div>
+                              </div>
+                              <div
+                                className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-[10px] uppercase ${
+                                  pilot.isComplete
+                                    ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
+                                    : "border border-amber-500/25 bg-amber-500/10 text-amber-200"
+                                }`}
+                              >
+                                {pilot.progressLabel}
                               </div>
                             </div>
-                            <div
-                              className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-[10px] uppercase ${
-                                pilot.isComplete
-                                  ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
-                                  : "border border-amber-500/25 bg-amber-500/10 text-amber-200"
-                              }`}
-                            >
-                              {pilot.progressLabel}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-slate-500">
-                        No pilots are on the board yet.
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                      <Users className="h-3.5 w-3.5" />
-                      Completed Pilots
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-500">
+                          No pilots are on the board yet.
+                        </p>
+                      )}
                     </div>
-                    {challenge.completedUsers.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {challenge.completedUsers.map((completedUser) => (
-                          <span
-                            key={completedUser.userId}
-                            title={completedUser.userId}
-                            className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-200"
-                          >
-                            {completedUser.displayName}
-                          </span>
-                        ))}
+
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        <Users className="h-3.5 w-3.5" />
+                        Completed Pilots
                       </div>
-                    ) : (
-                      <p className="text-sm text-slate-500">
-                        No pilots have completed this challenge yet.
-                      </p>
-                    )}
+                      {challenge.completedUsers.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {challenge.completedUsers.map((completedUser) => (
+                            <span
+                              key={completedUser.userId}
+                              title={completedUser.userId}
+                              className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-200"
+                            >
+                              {completedUser.displayName}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-500">
+                          No pilots have completed this challenge yet.
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
                 </div>
               );
             })}
