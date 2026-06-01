@@ -9,9 +9,11 @@ import {
   Flag,
   Loader2,
   Pencil,
+  Plus,
   Send,
   Trash2,
   Users,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -40,11 +42,7 @@ type ChallengeRuleType =
   | "min_distance"
   | "manual";
 
-interface ChallengeForm {
-  title: string;
-  description: string;
-  cadence: ChallengeCadence;
-  mode: ChallengeMode;
+interface ChallengeRuleForm {
   ruleType: ChallengeRuleType;
   targetAirport: string;
   targetDepartureAirport: string;
@@ -54,6 +52,14 @@ interface ChallengeForm {
   requiredFlightCount: string;
   minDurationMinutes: string;
   minDistanceNm: string;
+}
+
+interface ChallengeForm {
+  title: string;
+  description: string;
+  cadence: ChallengeCadence;
+  mode: ChallengeMode;
+  rules: ChallengeRuleForm[];
   startAt: string;
   durationDays: string;
   isPublished: boolean;
@@ -84,6 +90,18 @@ const optionalNumberSchema = z.preprocess(
   z.number().optional(),
 );
 
+const challengeRulePayloadSchema = z.object({
+  ruleType: challengeRuleTypeSchema,
+  targetAirport: z.string().trim().toUpperCase().optional(),
+  targetDepartureAirport: z.string().trim().toUpperCase().optional(),
+  targetArrivalAirport: z.string().trim().toUpperCase().optional(),
+  targetAircraftType: z.string().trim().toUpperCase().optional(),
+  requiredAirportCount: optionalNumberSchema,
+  requiredFlightCount: optionalNumberSchema,
+  minDurationMinutes: optionalNumberSchema,
+  minDistanceNm: optionalNumberSchema,
+});
+
 const challengePayloadSchema = z
   .object({
     title: z
@@ -107,6 +125,7 @@ const challengePayloadSchema = z
     requiredFlightCount: optionalNumberSchema,
     minDurationMinutes: optionalNumberSchema,
     minDistanceNm: optionalNumberSchema,
+    rules: z.array(challengeRulePayloadSchema).min(1).max(8),
     startAt: z
       .number({ invalid_type_error: "Challenge start time is invalid" })
       .finite("Challenge start time is invalid"),
@@ -133,8 +152,10 @@ const challengePayloadSchema = z
       });
     }
 
+    const rules = value.rules.length > 0 ? value.rules : [value];
+
     if (value.mode === "manual") {
-      if (value.ruleType !== "manual") {
+      if (rules.length !== 1 || rules[0]?.ruleType !== "manual") {
         ctx.addIssue({
           code: "custom",
           message: "Manual challenges must use the manual rule type",
@@ -144,88 +165,90 @@ const challengePayloadSchema = z
       return;
     }
 
-    if (value.ruleType === "manual") {
+    if (rules.some((rule) => rule.ruleType === "manual")) {
       ctx.addIssue({
         code: "custom",
-        message: "Automatic challenges need a concrete auto rule",
+        message: "Automatic challenges need concrete auto rules",
         path: ["ruleType"],
       });
     }
 
-    if (
-      ["visit_airport", "depart_airport", "arrive_airport"].includes(
-        value.ruleType,
-      ) &&
-      !value.targetAirport
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "This challenge needs an airport code",
-        path: ["targetAirport"],
-      });
-    }
+    for (const [index, rule] of rules.entries()) {
+      if (
+        ["visit_airport", "depart_airport", "arrive_airport"].includes(
+          rule.ruleType,
+        ) &&
+        !rule.targetAirport
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "This challenge needs an airport code",
+          path: ["rules", index, "targetAirport"],
+        });
+      }
 
-    if (
-      value.ruleType === "route" &&
-      (!value.targetDepartureAirport || !value.targetArrivalAirport)
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Route challenges need both departure and arrival airports",
-        path: ["targetDepartureAirport"],
-      });
-    }
+      if (
+        rule.ruleType === "route" &&
+        (!rule.targetDepartureAirport || !rule.targetArrivalAirport)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Route challenges need both departure and arrival airports",
+          path: ["rules", index, "targetDepartureAirport"],
+        });
+      }
 
-    if (value.ruleType === "aircraft_type" && !value.targetAircraftType) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Aircraft challenges need an aircraft type",
-        path: ["targetAircraftType"],
-      });
-    }
+      if (rule.ruleType === "aircraft_type" && !rule.targetAircraftType) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Aircraft challenges need an aircraft type",
+          path: ["rules", index, "targetAircraftType"],
+        });
+      }
 
-    if (
-      value.ruleType === "visit_airport_count" &&
-      (!value.requiredAirportCount || value.requiredAirportCount <= 0)
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Airport count challenges need a visit count above 0",
-        path: ["requiredAirportCount"],
-      });
-    }
+      if (
+        rule.ruleType === "visit_airport_count" &&
+        (!rule.requiredAirportCount || rule.requiredAirportCount <= 0)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Airport count challenges need a visit count above 0",
+          path: ["rules", index, "requiredAirportCount"],
+        });
+      }
 
-    if (
-      value.ruleType === "flight_count" &&
-      (!value.requiredFlightCount || value.requiredFlightCount <= 0)
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Flight count challenges need a flight count above 0",
-        path: ["requiredFlightCount"],
-      });
-    }
+      if (
+        rule.ruleType === "flight_count" &&
+        (!rule.requiredFlightCount || rule.requiredFlightCount <= 0)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Flight count challenges need a flight count above 0",
+          path: ["rules", index, "requiredFlightCount"],
+        });
+      }
 
-    if (
-      value.ruleType === "min_duration" &&
-      (!value.minDurationMinutes || value.minDurationMinutes <= 0)
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Minimum duration challenges need a duration above 0",
-        path: ["minDurationMinutes"],
-      });
-    }
+      if (
+        rule.ruleType === "min_duration" &&
+        (!rule.minDurationMinutes || rule.minDurationMinutes <= 0)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Minimum duration challenges need a duration above 0",
+          path: ["rules", index, "minDurationMinutes"],
+        });
+      }
 
-    if (
-      value.ruleType === "min_distance" &&
-      (!value.minDistanceNm || value.minDistanceNm <= 0)
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Minimum distance challenges need a distance above 0",
-        path: ["minDistanceNm"],
-      });
+      if (
+        rule.ruleType === "min_distance" &&
+        (!rule.minDistanceNm || rule.minDistanceNm <= 0)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Minimum distance challenges need a distance above 0",
+          path: ["rules", index, "minDistanceNm"],
+        });
+      }
     }
   });
 
@@ -255,14 +278,11 @@ function defaultWindow(cadence: ChallengeCadence) {
   };
 }
 
-function createInitialForm(): ChallengeForm {
-  const window = defaultWindow("weekly");
+function createInitialRule(
+  ruleType: ChallengeRuleType = "visit_airport",
+): ChallengeRuleForm {
   return {
-    title: "",
-    description: "",
-    cadence: "weekly",
-    mode: "auto",
-    ruleType: "visit_airport",
+    ruleType,
     targetAirport: "",
     targetDepartureAirport: "",
     targetArrivalAirport: "",
@@ -271,6 +291,67 @@ function createInitialForm(): ChallengeForm {
     requiredFlightCount: "",
     minDurationMinutes: "",
     minDistanceNm: "",
+  };
+}
+
+function ruleFormFromChallengeRule(rule: {
+  ruleType: ChallengeRuleType;
+  targetAirport: string | null;
+  targetDepartureAirport: string | null;
+  targetArrivalAirport: string | null;
+  targetAircraftType: string | null;
+  requiredAirportCount: number | null;
+  requiredFlightCount: number | null;
+  minDurationMinutes: number | null;
+  minDistanceNm: number | null;
+}) {
+  return {
+    ruleType: rule.ruleType,
+    targetAirport: rule.targetAirport ?? "",
+    targetDepartureAirport: rule.targetDepartureAirport ?? "",
+    targetArrivalAirport: rule.targetArrivalAirport ?? "",
+    targetAircraftType: rule.targetAircraftType ?? "",
+    requiredAirportCount:
+      rule.requiredAirportCount !== null
+        ? String(rule.requiredAirportCount)
+        : "",
+    requiredFlightCount:
+      rule.requiredFlightCount !== null ? String(rule.requiredFlightCount) : "",
+    minDurationMinutes:
+      rule.minDurationMinutes !== null ? String(rule.minDurationMinutes) : "",
+    minDistanceNm:
+      rule.minDistanceNm !== null ? String(rule.minDistanceNm) : "",
+  };
+}
+
+function ruleFormToPayload(rule: ChallengeRuleForm) {
+  return {
+    ruleType: rule.ruleType,
+    targetAirport: rule.targetAirport || undefined,
+    targetDepartureAirport: rule.targetDepartureAirport || undefined,
+    targetArrivalAirport: rule.targetArrivalAirport || undefined,
+    targetAircraftType: rule.targetAircraftType || undefined,
+    requiredAirportCount: rule.requiredAirportCount
+      ? Number(rule.requiredAirportCount)
+      : undefined,
+    requiredFlightCount: rule.requiredFlightCount
+      ? Number(rule.requiredFlightCount)
+      : undefined,
+    minDurationMinutes: rule.minDurationMinutes
+      ? Number(rule.minDurationMinutes)
+      : undefined,
+    minDistanceNm: rule.minDistanceNm ? Number(rule.minDistanceNm) : undefined,
+  };
+}
+
+function createInitialForm(): ChallengeForm {
+  const window = defaultWindow("weekly");
+  return {
+    title: "",
+    description: "",
+    cadence: "weekly",
+    mode: "auto",
+    rules: [createInitialRule()],
     startAt: window.startAt,
     durationDays: window.durationDays,
     isPublished: true,
@@ -302,28 +383,58 @@ function describeRule(challenge: {
   requiredFlightCount: number | null;
   minDurationMinutes: number | null;
   minDistanceNm: number | null;
+  rules?: {
+    ruleType: ChallengeRuleType;
+    targetAirport: string | null;
+    targetDepartureAirport: string | null;
+    targetArrivalAirport: string | null;
+    targetAircraftType: string | null;
+    requiredAirportCount: number | null;
+    requiredFlightCount: number | null;
+    minDurationMinutes: number | null;
+    minDistanceNm: number | null;
+  }[];
 }) {
   if (challenge.mode === "manual") return "Manual review challenge";
 
-  switch (challenge.ruleType) {
+  const rules =
+    challenge.rules && challenge.rules.length > 0
+      ? challenge.rules
+      : [challenge];
+
+  return rules.map((rule) => describeSingleRule(rule)).join(" + ");
+}
+
+function describeSingleRule(rule: {
+  ruleType: ChallengeRuleType;
+  targetAirport: string | null;
+  targetDepartureAirport: string | null;
+  targetArrivalAirport: string | null;
+  targetAircraftType: string | null;
+  requiredAirportCount: number | null;
+  requiredFlightCount: number | null;
+  minDurationMinutes: number | null;
+  minDistanceNm: number | null;
+}) {
+  switch (rule.ruleType) {
     case "visit_airport":
-      return `Visit ${challenge.targetAirport}`;
+      return `Visit ${rule.targetAirport}`;
     case "visit_airport_count":
-      return `Visit ${challenge.requiredAirportCount} unique airports`;
+      return `Visit ${rule.requiredAirportCount} unique airports`;
     case "depart_airport":
-      return `Depart ${challenge.targetAirport}`;
+      return `Depart ${rule.targetAirport}`;
     case "arrive_airport":
-      return `Arrive at ${challenge.targetAirport}`;
+      return `Arrive at ${rule.targetAirport}`;
     case "route":
-      return `Route ${challenge.targetDepartureAirport} -> ${challenge.targetArrivalAirport}`;
+      return `Route ${rule.targetDepartureAirport} -> ${rule.targetArrivalAirport}`;
     case "aircraft_type":
-      return `Aircraft ${challenge.targetAircraftType}`;
+      return `Aircraft ${rule.targetAircraftType}`;
     case "flight_count":
-      return `Complete ${challenge.requiredFlightCount} flights`;
+      return `Complete ${rule.requiredFlightCount} flights`;
     case "min_duration":
-      return `At least ${challenge.minDurationMinutes} minutes`;
+      return `At least ${rule.minDurationMinutes} minutes`;
     case "min_distance":
-      return `At least ${challenge.minDistanceNm} nm`;
+      return `At least ${rule.minDistanceNm} nm`;
     default:
       return "Manual review challenge";
   }
@@ -365,31 +476,30 @@ export function ChallengesTab() {
   function loadChallengeIntoForm(
     challenge: NonNullable<typeof challenges>[number],
   ) {
+    const rules =
+      challenge.rules && challenge.rules.length > 0
+        ? challenge.rules
+        : [
+            {
+              ruleType: challenge.ruleType,
+              targetAirport: challenge.targetAirport,
+              targetDepartureAirport: challenge.targetDepartureAirport,
+              targetArrivalAirport: challenge.targetArrivalAirport,
+              targetAircraftType: challenge.targetAircraftType,
+              requiredAirportCount: challenge.requiredAirportCount,
+              requiredFlightCount: challenge.requiredFlightCount,
+              minDurationMinutes: challenge.minDurationMinutes,
+              minDistanceNm: challenge.minDistanceNm,
+            },
+          ];
+
     setEditingId(challenge.id);
     setForm({
       title: challenge.title,
       description: challenge.description,
       cadence: challenge.cadence,
       mode: challenge.mode,
-      ruleType: challenge.ruleType,
-      targetAirport: challenge.targetAirport ?? "",
-      targetDepartureAirport: challenge.targetDepartureAirport ?? "",
-      targetArrivalAirport: challenge.targetArrivalAirport ?? "",
-      targetAircraftType: challenge.targetAircraftType ?? "",
-      requiredAirportCount:
-        challenge.requiredAirportCount !== null
-          ? String(challenge.requiredAirportCount)
-          : "",
-      requiredFlightCount:
-        challenge.requiredFlightCount !== null
-          ? String(challenge.requiredFlightCount)
-          : "",
-      minDurationMinutes:
-        challenge.minDurationMinutes !== null
-          ? String(challenge.minDurationMinutes)
-          : "",
-      minDistanceNm:
-        challenge.minDistanceNm !== null ? String(challenge.minDistanceNm) : "",
+      rules: rules.map(ruleFormFromChallengeRule),
       startAt: toLocalInputValue(challenge.startAt),
       durationDays: String(challenge.durationDays),
       isPublished: challenge.isPublished,
@@ -399,29 +509,18 @@ export function ChallengesTab() {
   async function handleSubmit() {
     const startAt = new Date(form.startAt).getTime();
     const durationDays = Number(form.durationDays);
+    const ruleForms =
+      form.mode === "manual" ? [createInitialRule("manual")] : form.rules;
+    const rules = ruleForms.map(ruleFormToPayload);
+    const primaryRule = rules[0] ?? ruleFormToPayload(createInitialRule());
 
     const payload = {
       title: form.title,
       description: form.description,
       cadence: form.cadence,
       mode: form.mode,
-      ruleType: form.mode === "manual" ? ("manual" as const) : form.ruleType,
-      targetAirport: form.targetAirport || undefined,
-      targetDepartureAirport: form.targetDepartureAirport || undefined,
-      targetArrivalAirport: form.targetArrivalAirport || undefined,
-      targetAircraftType: form.targetAircraftType || undefined,
-      requiredAirportCount: form.requiredAirportCount
-        ? Number(form.requiredAirportCount)
-        : undefined,
-      requiredFlightCount: form.requiredFlightCount
-        ? Number(form.requiredFlightCount)
-        : undefined,
-      minDurationMinutes: form.minDurationMinutes
-        ? Number(form.minDurationMinutes)
-        : undefined,
-      minDistanceNm: form.minDistanceNm
-        ? Number(form.minDistanceNm)
-        : undefined,
+      ...primaryRule,
+      rules,
       startAt,
       durationDays,
       isPublished: form.isPublished,
@@ -453,6 +552,7 @@ export function ChallengesTab() {
           cadence: parsedPayload.data.cadence,
           mode: parsedPayload.data.mode,
           rule_type: parsedPayload.data.ruleType,
+          rule_count: parsedPayload.data.rules.length,
           is_published: parsedPayload.data.isPublished,
         });
         toast.success("Challenge created");
@@ -529,6 +629,180 @@ export function ChallengesTab() {
     }
   }
 
+  function updateRule(index: number, values: Partial<ChallengeRuleForm>) {
+    setForm((current) => ({
+      ...current,
+      rules: current.rules.map((rule, ruleIndex) =>
+        ruleIndex === index ? { ...rule, ...values } : rule,
+      ),
+    }));
+  }
+
+  function addRule() {
+    setForm((current) => ({
+      ...current,
+      rules: [...current.rules, createInitialRule()],
+    }));
+  }
+
+  function removeRule(index: number) {
+    setForm((current) => ({
+      ...current,
+      rules: current.rules.filter((_, ruleIndex) => ruleIndex !== index),
+    }));
+  }
+
+  function renderRuleFields(rule: ChallengeRuleForm, index: number) {
+    if (
+      rule.ruleType === "visit_airport" ||
+      rule.ruleType === "depart_airport" ||
+      rule.ruleType === "arrive_airport"
+    ) {
+      return (
+        <label className="space-y-2">
+          <span className="text-sm text-slate-400">Airport</span>
+          <input
+            value={rule.targetAirport}
+            onChange={(event) =>
+              updateRule(index, {
+                targetAirport: event.target.value.toUpperCase(),
+              })
+            }
+            placeholder="LOWI"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+          />
+        </label>
+      );
+    }
+
+    if (rule.ruleType === "visit_airport_count") {
+      return (
+        <label className="space-y-2">
+          <span className="text-sm text-slate-400">
+            Unique airports to visit
+          </span>
+          <input
+            type="number"
+            min="1"
+            value={rule.requiredAirportCount}
+            onChange={(event) =>
+              updateRule(index, { requiredAirportCount: event.target.value })
+            }
+            placeholder="5"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+          />
+        </label>
+      );
+    }
+
+    if (rule.ruleType === "route") {
+      return (
+        <>
+          <label className="space-y-2">
+            <span className="text-sm text-slate-400">Departure airport</span>
+            <input
+              value={rule.targetDepartureAirport}
+              onChange={(event) =>
+                updateRule(index, {
+                  targetDepartureAirport: event.target.value.toUpperCase(),
+                })
+              }
+              placeholder="KJFK"
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+            />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm text-slate-400">Arrival airport</span>
+            <input
+              value={rule.targetArrivalAirport}
+              onChange={(event) =>
+                updateRule(index, {
+                  targetArrivalAirport: event.target.value.toUpperCase(),
+                })
+              }
+              placeholder="KLAX"
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+            />
+          </label>
+        </>
+      );
+    }
+
+    if (rule.ruleType === "aircraft_type") {
+      return (
+        <label className="space-y-2">
+          <span className="text-sm text-slate-400">Aircraft type</span>
+          <input
+            value={rule.targetAircraftType}
+            onChange={(event) =>
+              updateRule(index, {
+                targetAircraftType: event.target.value.toUpperCase(),
+              })
+            }
+            placeholder="A320"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+          />
+        </label>
+      );
+    }
+
+    if (rule.ruleType === "flight_count") {
+      return (
+        <label className="space-y-2">
+          <span className="text-sm text-slate-400">Flights required</span>
+          <input
+            type="number"
+            min="1"
+            value={rule.requiredFlightCount}
+            onChange={(event) =>
+              updateRule(index, { requiredFlightCount: event.target.value })
+            }
+            placeholder="3"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+          />
+        </label>
+      );
+    }
+
+    if (rule.ruleType === "min_duration") {
+      return (
+        <label className="space-y-2">
+          <span className="text-sm text-slate-400">Minimum minutes</span>
+          <input
+            type="number"
+            min="1"
+            value={rule.minDurationMinutes}
+            onChange={(event) =>
+              updateRule(index, { minDurationMinutes: event.target.value })
+            }
+            placeholder="90"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+          />
+        </label>
+      );
+    }
+
+    if (rule.ruleType === "min_distance") {
+      return (
+        <label className="space-y-2">
+          <span className="text-sm text-slate-400">Minimum nautical miles</span>
+          <input
+            type="number"
+            min="1"
+            value={rule.minDistanceNm}
+            onChange={(event) =>
+              updateRule(index, { minDistanceNm: event.target.value })
+            }
+            placeholder="500"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+          />
+        </label>
+      );
+    }
+
+    return null;
+  }
+
   if (challenges === undefined || pendingReviews === undefined) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -595,9 +869,24 @@ export function ChallengesTab() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="border-white/10 bg-[#0b1118] text-white">
-                <SelectItem value="weekly" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Weekly</SelectItem>
-                <SelectItem value="monthly" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Monthly</SelectItem>
-                <SelectItem value="custom" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Custom</SelectItem>
+                <SelectItem
+                  value="weekly"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Weekly
+                </SelectItem>
+                <SelectItem
+                  value="monthly"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Monthly
+                </SelectItem>
+                <SelectItem
+                  value="custom"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Custom
+                </SelectItem>
               </SelectContent>
             </Select>
           </label>
@@ -627,12 +916,12 @@ export function ChallengesTab() {
                 setForm((current) => ({
                   ...current,
                   mode,
-                  ruleType:
+                  rules:
                     mode === "manual"
-                      ? "manual"
-                      : current.ruleType === "manual"
-                        ? "visit_airport"
-                        : current.ruleType,
+                      ? [createInitialRule("manual")]
+                      : current.rules[0]?.ruleType === "manual"
+                        ? [createInitialRule()]
+                        : current.rules,
                 }));
               }}
             >
@@ -640,192 +929,142 @@ export function ChallengesTab() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="border-white/10 bg-[#0b1118] text-white">
-                <SelectItem value="auto" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Auto tracked</SelectItem>
-                <SelectItem value="manual" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Manual review</SelectItem>
+                <SelectItem
+                  value="auto"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Auto tracked
+                </SelectItem>
+                <SelectItem
+                  value="manual"
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  Manual review
+                </SelectItem>
               </SelectContent>
             </Select>
           </label>
 
-          <label className="space-y-2">
-            <span className="text-sm text-slate-400">Rule</span>
-            <Select
-              value={form.mode === "manual" ? "manual" : form.ruleType}
-              disabled={form.mode === "manual"}
-              onValueChange={(value) =>
-                setForm((current) => ({
-                  ...current,
-                  ruleType: value as ChallengeRuleType,
-                }))
-              }
-            >
-              <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20 disabled:opacity-60">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="border-white/10 bg-[#0b1118] text-white">
-                <SelectItem value="visit_airport" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Visit airport</SelectItem>
-                <SelectItem value="visit_airport_count" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Visit X airports</SelectItem>
-                <SelectItem value="depart_airport" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Depart airport</SelectItem>
-                <SelectItem value="arrive_airport" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Arrive airport</SelectItem>
-                <SelectItem value="route" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Specific route</SelectItem>
-                <SelectItem value="aircraft_type" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Specific aircraft</SelectItem>
-                <SelectItem value="flight_count" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Complete X flights</SelectItem>
-                <SelectItem value="min_duration" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Minimum duration</SelectItem>
-                <SelectItem value="min_distance" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Minimum distance</SelectItem>
-                <SelectItem value="manual" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">Manual review</SelectItem>
-              </SelectContent>
-            </Select>
-          </label>
+          {form.mode === "auto" && (
+            <div className="space-y-3 md:col-span-2">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold text-white">Rules</h4>
+                  <p className="mt-1 text-xs text-slate-500">
+                    All rules below must pass before the challenge is complete.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addRule}
+                  disabled={form.rules.length >= 8}
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-200 transition-colors hover:bg-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add rule
+                </button>
+              </div>
 
-          {(form.ruleType === "visit_airport" ||
-            form.ruleType === "depart_airport" ||
-            form.ruleType === "arrive_airport") &&
-            form.mode === "auto" && (
-              <label className="space-y-2">
-                <span className="text-sm text-slate-400">Airport</span>
-                <input
-                  value={form.targetAirport}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      targetAirport: event.target.value.toUpperCase(),
-                    }))
-                  }
-                  placeholder="LOWI"
-                  className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
-                />
-              </label>
-            )}
+              <div className="space-y-3">
+                {form.rules.map((rule, index) => (
+                  <div
+                    key={index}
+                    className="border border-white/10 bg-black/20 p-4"
+                  >
+                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                      <label className="flex-1 space-y-2">
+                        <span className="text-sm text-slate-400">
+                          Rule {index + 1}
+                        </span>
+                        <Select
+                          value={rule.ruleType}
+                          onValueChange={(value) =>
+                            updateRule(index, {
+                              ...createInitialRule(value as ChallengeRuleType),
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+                            <SelectItem
+                              value="visit_airport"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Visit airport
+                            </SelectItem>
+                            <SelectItem
+                              value="visit_airport_count"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Visit X airports
+                            </SelectItem>
+                            <SelectItem
+                              value="depart_airport"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Depart airport
+                            </SelectItem>
+                            <SelectItem
+                              value="arrive_airport"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Arrive airport
+                            </SelectItem>
+                            <SelectItem
+                              value="route"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Specific route
+                            </SelectItem>
+                            <SelectItem
+                              value="aircraft_type"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Specific aircraft
+                            </SelectItem>
+                            <SelectItem
+                              value="flight_count"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Complete X flights
+                            </SelectItem>
+                            <SelectItem
+                              value="min_duration"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Minimum duration
+                            </SelectItem>
+                            <SelectItem
+                              value="min_distance"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Minimum distance
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </label>
 
-          {form.ruleType === "visit_airport_count" && form.mode === "auto" && (
-            <label className="space-y-2">
-              <span className="text-sm text-slate-400">
-                Unique airports to visit
-              </span>
-              <input
-                type="number"
-                min="1"
-                value={form.requiredAirportCount}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    requiredAirportCount: event.target.value,
-                  }))
-                }
-                placeholder="5"
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
-              />
-            </label>
-          )}
+                      <button
+                        type="button"
+                        onClick={() => removeRule(index)}
+                        disabled={form.rules.length <= 1}
+                        className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition-colors hover:bg-red-500/10 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label={`Remove rule ${index + 1}`}
+                        title="Remove rule"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
 
-          {form.ruleType === "route" && form.mode === "auto" && (
-            <>
-              <label className="space-y-2">
-                <span className="text-sm text-slate-400">
-                  Departure airport
-                </span>
-                <input
-                  value={form.targetDepartureAirport}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      targetDepartureAirport: event.target.value.toUpperCase(),
-                    }))
-                  }
-                  placeholder="KJFK"
-                  className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm text-slate-400">Arrival airport</span>
-                <input
-                  value={form.targetArrivalAirport}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      targetArrivalAirport: event.target.value.toUpperCase(),
-                    }))
-                  }
-                  placeholder="KLAX"
-                  className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
-                />
-              </label>
-            </>
-          )}
-
-          {form.ruleType === "aircraft_type" && form.mode === "auto" && (
-            <label className="space-y-2">
-              <span className="text-sm text-slate-400">Aircraft type</span>
-              <input
-                value={form.targetAircraftType}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    targetAircraftType: event.target.value.toUpperCase(),
-                  }))
-                }
-                placeholder="A320"
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
-              />
-            </label>
-          )}
-
-          {form.ruleType === "flight_count" && form.mode === "auto" && (
-            <label className="space-y-2">
-              <span className="text-sm text-slate-400">Flights required</span>
-              <input
-                type="number"
-                min="1"
-                value={form.requiredFlightCount}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    requiredFlightCount: event.target.value,
-                  }))
-                }
-                placeholder="3"
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
-              />
-            </label>
-          )}
-
-          {form.ruleType === "min_duration" && form.mode === "auto" && (
-            <label className="space-y-2">
-              <span className="text-sm text-slate-400">Minimum minutes</span>
-              <input
-                type="number"
-                min="1"
-                value={form.minDurationMinutes}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    minDurationMinutes: event.target.value,
-                  }))
-                }
-                placeholder="90"
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
-              />
-            </label>
-          )}
-
-          {form.ruleType === "min_distance" && form.mode === "auto" && (
-            <label className="space-y-2">
-              <span className="text-sm text-slate-400">
-                Minimum nautical miles
-              </span>
-              <input
-                type="number"
-                min="1"
-                value={form.minDistanceNm}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    minDistanceNm: event.target.value,
-                  }))
-                }
-                placeholder="500"
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
-              />
-            </label>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {renderRuleFields(rule, index)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           <label className="space-y-2">
@@ -903,7 +1142,6 @@ export function ChallengesTab() {
             {isEditing ? "Save challenge" : "Create challenge"}
           </button>
         </div>
-
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
@@ -1008,165 +1246,165 @@ export function ChallengesTab() {
                   key={challenge.id}
                   className="rounded-2xl border border-white/10 bg-black/30 p-4"
                 >
-                <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="mb-2 flex flex-wrap gap-2">
-                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
-                        {challenge.cadence}
-                      </span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 font-mono text-[10px] tracking-wider uppercase ${
-                          challenge.isPublished
-                            ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                            : "border border-slate-500/30 bg-slate-500/10 text-slate-300"
-                        }`}
+                  <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="mb-2 flex flex-wrap gap-2">
+                        <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
+                          {challenge.cadence}
+                        </span>
+                        <span
+                          className={`rounded px-2 py-0.5 font-mono text-[10px] tracking-wider uppercase ${
+                            challenge.isPublished
+                              ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                              : "border border-slate-500/30 bg-slate-500/10 text-slate-300"
+                          }`}
+                        >
+                          {challenge.isPublished ? "published" : "draft"}
+                        </span>
+                        <span className="rounded border border-cyan-500/20 bg-cyan-500/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
+                          {challenge.mode}
+                        </span>
+                      </div>
+                      <h4 className="text-base font-semibold text-white">
+                        {challenge.title}
+                      </h4>
+                      <p className="mt-1 text-sm text-slate-400">
+                        {challenge.description}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => loadChallengeIntoForm(challenge)}
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10"
                       >
-                        {challenge.isPublished ? "published" : "draft"}
-                      </span>
-                      <span className="rounded-full border border-cyan-500/20 bg-cyan-500/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
-                        {challenge.mode}
-                      </span>
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleToggle(challenge.id, challenge.isPublished)
+                        }
+                        disabled={busyChallengeId === challenge.id}
+                        className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 disabled:opacity-60"
+                      >
+                        {challenge.isPublished ? "Unpublish" : "Publish"}
+                      </button>
+                      <button
+                        onClick={() => handleRemove(challenge.id)}
+                        disabled={busyChallengeId === challenge.id}
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </button>
                     </div>
-                    <h4 className="text-base font-semibold text-white">
-                      {challenge.title}
-                    </h4>
-                    <p className="mt-1 text-sm text-slate-400">
-                      {challenge.description}
-                    </p>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => loadChallengeIntoForm(challenge)}
-                      className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10"
-                    >
-                      <Pencil className="h-4 w-4" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleToggle(challenge.id, challenge.isPublished)
-                      }
-                      disabled={busyChallengeId === challenge.id}
-                      className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 disabled:opacity-60"
-                    >
-                      {challenge.isPublished ? "Unpublish" : "Publish"}
-                    </button>
-                    <button
-                      onClick={() => handleRemove(challenge.id)}
-                      disabled={busyChallengeId === challenge.id}
-                      className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Delete
-                    </button>
+                  <div className="grid gap-3 text-sm text-slate-400 md:grid-cols-3">
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        <CalendarRange className="h-3.5 w-3.5" />
+                        Window
+                      </div>
+                      <p>
+                        {formatChallengeWindow(
+                          challenge.startAt,
+                          challenge.endAt,
+                        )}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {challenge.durationDays} day
+                        {challenge.durationDays === 1 ? "" : "s"}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        Rule
+                      </div>
+                      <p>{describeRule(challenge)}</p>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        Progress
+                      </div>
+                      <p>
+                        {challenge.counts.completed} completed •{" "}
+                        {challenge.counts.pending} pending •{" "}
+                        {challenge.counts.rejected} rejected
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid gap-3 text-sm text-slate-400 md:grid-cols-3">
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                      <CalendarRange className="h-3.5 w-3.5" />
-                      Window
-                    </div>
-                    <p>
-                      {formatChallengeWindow(
-                        challenge.startAt,
-                        challenge.endAt,
-                      )}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {challenge.durationDays} day
-                      {challenge.durationDays === 1 ? "" : "s"}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                      Rule
-                    </div>
-                    <p>{describeRule(challenge)}</p>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                      Progress
-                    </div>
-                    <p>
-                      {challenge.counts.completed} completed •{" "}
-                      {challenge.counts.pending} pending •{" "}
-                      {challenge.counts.rejected} rejected
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-3 grid gap-3 xl:grid-cols-2">
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                      <Flag className="h-3.5 w-3.5" />
-                      Top 3 Progress
-                    </div>
-                    {topProgressUsers.length > 0 ? (
-                      <div className="space-y-2">
-                        {topProgressUsers.map((pilot, index) => (
-                          <div
-                            key={pilot.userId}
-                            className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2"
-                          >
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/25 bg-cyan-500/10 font-mono text-[10px] text-cyan-200">
-                                  {index + 1}
-                                </span>
-                                <span
-                                  title={pilot.userId}
-                                  className="truncate text-sm text-slate-200"
-                                >
-                                  {pilot.displayName}
-                                </span>
+                  <div className="mt-3 grid gap-3 xl:grid-cols-2">
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        <Flag className="h-3.5 w-3.5" />
+                        Top 3 Progress
+                      </div>
+                      {topProgressUsers.length > 0 ? (
+                        <div className="space-y-2">
+                          {topProgressUsers.map((pilot, index) => (
+                            <div
+                              key={pilot.userId}
+                              className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+                            >
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/25 bg-cyan-500/10 font-mono text-[10px] text-cyan-200">
+                                    {index + 1}
+                                  </span>
+                                  <span
+                                    title={pilot.userId}
+                                    className="truncate text-sm text-slate-200"
+                                  >
+                                    {pilot.displayName}
+                                  </span>
+                                </div>
+                              </div>
+                              <div
+                                className={`shrink-0 rounded-lg px-2.5 py-1 font-mono text-[10px] uppercase ${
+                                  pilot.isComplete
+                                    ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
+                                    : "border border-amber-500/25 bg-amber-500/10 text-amber-200"
+                                }`}
+                              >
+                                {pilot.progressLabel}
                               </div>
                             </div>
-                            <div
-                              className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-[10px] uppercase ${
-                                pilot.isComplete
-                                  ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
-                                  : "border border-amber-500/25 bg-amber-500/10 text-amber-200"
-                              }`}
-                            >
-                              {pilot.progressLabel}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-slate-500">
-                        No pilots are on the board yet.
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                      <Users className="h-3.5 w-3.5" />
-                      Completed Pilots
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-500">
+                          No pilots are on the board yet.
+                        </p>
+                      )}
                     </div>
-                    {challenge.completedUsers.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {challenge.completedUsers.map((completedUser) => (
-                          <span
-                            key={completedUser.userId}
-                            title={completedUser.userId}
-                            className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-200"
-                          >
-                            {completedUser.displayName}
-                          </span>
-                        ))}
+
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        <Users className="h-3.5 w-3.5" />
+                        Completed Pilots
                       </div>
-                    ) : (
-                      <p className="text-sm text-slate-500">
-                        No pilots have completed this challenge yet.
-                      </p>
-                    )}
+                      {challenge.completedUsers.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {challenge.completedUsers.map((completedUser) => (
+                            <span
+                              key={completedUser.userId}
+                              title={completedUser.userId}
+                              className="rounded border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-200"
+                            >
+                              {completedUser.displayName}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-500">
+                          No pilots have completed this challenge yet.
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
                 </div>
               );
             })}

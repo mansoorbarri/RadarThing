@@ -6,6 +6,7 @@ import { CheckCircle2, Clock3, Flag, Loader2 } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { ChallengeLeaderboardTab } from "~/components/challenges/ChallengeLeaderboardTab";
+import { getRuleSummary } from "~/components/challenges/ruleSummary";
 
 function formatWindow(startAt: number, endAt: number) {
   return `${new Date(startAt).toLocaleDateString("en-US", {
@@ -15,44 +16,6 @@ function formatWindow(startAt: number, endAt: number) {
     month: "short",
     day: "numeric",
   })}`;
-}
-
-function getRuleSummary(challenge: {
-  mode: "auto" | "manual";
-  ruleType: string;
-  targetAirport: string | null;
-  targetDepartureAirport: string | null;
-  targetArrivalAirport: string | null;
-  targetAircraftType: string | null;
-  requiredAirportCount: number | null;
-  requiredFlightCount: number | null;
-  minDurationMinutes: number | null;
-  minDistanceNm: number | null;
-}) {
-  if (challenge.mode === "manual") return "Manual review required";
-
-  switch (challenge.ruleType) {
-    case "visit_airport":
-      return `Visit ${challenge.targetAirport}`;
-    case "visit_airport_count":
-      return `Visit ${challenge.requiredAirportCount} unique airports`;
-    case "depart_airport":
-      return `Depart ${challenge.targetAirport}`;
-    case "arrive_airport":
-      return `Arrive at ${challenge.targetAirport}`;
-    case "route":
-      return `Fly ${challenge.targetDepartureAirport} to ${challenge.targetArrivalAirport}`;
-    case "aircraft_type":
-      return `Use ${challenge.targetAircraftType}`;
-    case "flight_count":
-      return `Complete ${challenge.requiredFlightCount} flights`;
-    case "min_duration":
-      return `Fly at least ${challenge.minDurationMinutes} minutes`;
-    case "min_distance":
-      return `Fly at least ${challenge.minDistanceNm} nm`;
-    default:
-      return "Automatic challenge";
-  }
 }
 
 export function PilotChallengesPanel({ userId }: { userId: Id<"users"> }) {
