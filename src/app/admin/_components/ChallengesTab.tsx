@@ -194,7 +194,7 @@ const challengePayloadSchema = z
         ctx.addIssue({
           code: "custom",
           message: "Route challenges need both departure and arrival airports",
-          path: ["targetDepartureAirport"],
+          path: ["rules", index, "targetDepartureAirport"],
         });
       }
 
@@ -202,7 +202,7 @@ const challengePayloadSchema = z
         ctx.addIssue({
           code: "custom",
           message: "Aircraft challenges need an aircraft type",
-          path: ["targetAircraftType"],
+          path: ["rules", index, "targetAircraftType"],
         });
       }
 
@@ -213,7 +213,7 @@ const challengePayloadSchema = z
         ctx.addIssue({
           code: "custom",
           message: "Airport count challenges need a visit count above 0",
-          path: ["requiredAirportCount"],
+          path: ["rules", index, "requiredAirportCount"],
         });
       }
 
@@ -224,7 +224,7 @@ const challengePayloadSchema = z
         ctx.addIssue({
           code: "custom",
           message: "Flight count challenges need a flight count above 0",
-          path: ["requiredFlightCount"],
+          path: ["rules", index, "requiredFlightCount"],
         });
       }
 
@@ -235,7 +235,7 @@ const challengePayloadSchema = z
         ctx.addIssue({
           code: "custom",
           message: "Minimum duration challenges need a duration above 0",
-          path: ["minDurationMinutes"],
+          path: ["rules", index, "minDurationMinutes"],
         });
       }
 
@@ -246,7 +246,7 @@ const challengePayloadSchema = z
         ctx.addIssue({
           code: "custom",
           message: "Minimum distance challenges need a distance above 0",
-          path: ["minDistanceNm"],
+          path: ["rules", index, "minDistanceNm"],
         });
       }
     }
