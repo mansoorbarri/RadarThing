@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import {
-  AlertCircle,
   CalendarRange,
   CheckCircle2,
   ClipboardCheck,
@@ -342,7 +341,6 @@ export function ChallengesTab() {
   const [editingId, setEditingId] = useState<Id<"challenges"> | null>(null);
   const [form, setForm] = useState<ChallengeForm>(() => createInitialForm());
   const [isSaving, setIsSaving] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [busyReviewId, setBusyReviewId] =
     useState<Id<"challengeCompletions"> | null>(null);
   const [busyChallengeId, setBusyChallengeId] =
@@ -362,14 +360,12 @@ export function ChallengesTab() {
       startAt: window.startAt,
       durationDays: window.durationDays,
     });
-    setValidationErrors([]);
   }
 
   function loadChallengeIntoForm(
     challenge: NonNullable<typeof challenges>[number],
   ) {
     setEditingId(challenge.id);
-    setValidationErrors([]);
     setForm({
       title: challenge.title,
       description: challenge.description,
@@ -436,13 +432,14 @@ export function ChallengesTab() {
       const messages = Array.from(
         new Set(parsedPayload.error.issues.map((issue) => issue.message)),
       );
-      setValidationErrors(messages);
-      toast.error(messages[0] ?? "Fix the challenge fields before saving");
+      toast.error(messages[0] ?? "Fix the challenge fields before saving", {
+        description:
+          messages.length > 1 ? messages.slice(1).join("\n") : undefined,
+      });
       return;
     }
 
     setIsSaving(true);
-    setValidationErrors([]);
     try {
       if (editingId) {
         await updateChallenge({
@@ -907,26 +904,6 @@ export function ChallengesTab() {
           </button>
         </div>
 
-        {validationErrors.length > 0 && (
-          <div className="mt-5 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-100">
-            <div className="mb-2 flex items-start gap-2">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
-              <div>
-                <p className="font-medium text-red-100">
-                  Fix these fields before saving the challenge
-                </p>
-                <p className="mt-1 text-xs text-red-200/80">
-                  These checks match the Convex challenge validation rules.
-                </p>
-              </div>
-            </div>
-            <ul className="space-y-1 rounded-lg border border-red-400/20 bg-black/40 p-3 text-sm text-red-50">
-              {validationErrors.map((message) => (
-                <li key={message}>{message}</li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
