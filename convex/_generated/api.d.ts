@@ -9,6 +9,7 @@
  */
 
 import type * as activeTrackers from "../activeTrackers.js";
+import type * as adminTelemetry from "../adminTelemetry.js";
 import type * as aircraftImages from "../aircraftImages.js";
 import type * as airportCharts from "../airportCharts.js";
 import type * as challenges from "../challenges.js";
@@ -32,6 +33,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   activeTrackers: typeof activeTrackers;
+  adminTelemetry: typeof adminTelemetry;
   aircraftImages: typeof aircraftImages;
   airportCharts: typeof airportCharts;
   challenges: typeof challenges;

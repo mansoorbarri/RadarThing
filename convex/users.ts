@@ -1,12 +1,18 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
-import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
-import { hasEffectiveProAccess } from "../src/lib/proAccess";
 import {
-  REFERRAL_MIN_ACCOUNT_AGE_MS,
-} from "../src/lib/referrals";
+  mutation,
+  query,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server";
+import { hasEffectiveProAccess } from "../src/lib/proAccess";
+import { REFERRAL_MIN_ACCOUNT_AGE_MS } from "../src/lib/referrals";
 import { maybeCreateReferralClaimForNewUser } from "./referrals";
+import { logAdminTelemetry } from "./adminTelemetry";
+
+const SUPER_ADMIN_EMAIL = "mansoor.eb.ak@gmail.com";
 
 function normalizeDiscordUsername(value: string): string {
   return value.trim().toLowerCase();
@@ -23,20 +29,46 @@ async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
 }
 
 async function requireAdminForProManagement(ctx: QueryCtx | MutationCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity?.subject) {
+    throw new Error("Unauthorized");
+  }
+
   const user = await getCurrentUser(ctx);
-  if (!user) {
+  const isSuperAdmin =
+    identity?.email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL ||
+    user?.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL;
+  if (!isSuperAdmin) {
     throw new Error("Unauthorized");
   }
 
-  const isSuperAdmin = Boolean(
-    process.env.ADMIN_GOOGLE_ID && user.googleId === process.env.ADMIN_GOOGLE_ID,
+  return (
+    user ?? {
+      clerkId: identity.subject,
+      email: identity.email ?? SUPER_ADMIN_EMAIL,
+      discordUsername: undefined,
+    }
   );
+}
 
-  if (user.role !== "ADMIN" && !isSuperAdmin) {
-    throw new Error("Unauthorized");
-  }
+export const isSuperAdmin = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) return false;
 
-  return user;
+    const user = await getCurrentUser(ctx);
+    return (
+      identity.email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL ||
+      user?.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL
+    );
+  },
+});
+
+function getProAccessLabel(user: { email: string; discordUsername?: string }) {
+  return user.discordUsername
+    ? `${user.discordUsername} (${user.email})`
+    : user.email;
 }
 
 // Get user by Clerk ID
@@ -66,7 +98,9 @@ export const getDiscordUsernamesByGoogleIds = query({
   args: { googleIds: v.array(v.string()) },
   handler: async (ctx, args) => {
     const googleIds = Array.from(
-      new Set(args.googleIds.map((googleId) => googleId.trim()).filter(Boolean)),
+      new Set(
+        args.googleIds.map((googleId) => googleId.trim()).filter(Boolean),
+      ),
     );
 
     if (googleIds.length === 0) {
@@ -458,7 +492,7 @@ export const setPermanentProRole = mutation({
     enabled: v.boolean(),
   },
   handler: async (ctx, args) => {
-    await requireAdminForProManagement(ctx);
+    const actor = await requireAdminForProManagement(ctx);
 
     const user = await ctx.db.get(args.id);
     if (!user || user.isDeleted) {
@@ -473,6 +507,19 @@ export const setPermanentProRole = mutation({
       role: args.enabled ? "PRO" : "FREE",
       adminProExpiresAt: undefined,
     });
+
+    await logAdminTelemetry(ctx, {
+      actorClerkId: actor.clerkId,
+      action: args.enabled ? "grant_pro" : "revoke_pro",
+      resourceType: "pro_access",
+      resourceId: user._id,
+      resourceLabel: getProAccessLabel(user),
+      targetClerkId: user.clerkId,
+      metadata: {
+        grantType: args.enabled ? "permanent" : "permanent_revoked",
+        previousRole: user.role,
+      },
+    });
   },
 });
 
@@ -483,7 +530,7 @@ export const setTemporaryProGrant = mutation({
     clear: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireAdminForProManagement(ctx);
+    const actor = await requireAdminForProManagement(ctx);
 
     const user = await ctx.db.get(args.id);
     if (!user || user.isDeleted) {
@@ -496,6 +543,18 @@ export const setTemporaryProGrant = mutation({
 
     if (args.clear) {
       await ctx.db.patch(args.id, { adminProExpiresAt: undefined });
+      await logAdminTelemetry(ctx, {
+        actorClerkId: actor.clerkId,
+        action: "revoke_pro",
+        resourceType: "pro_access",
+        resourceId: user._id,
+        resourceLabel: getProAccessLabel(user),
+        targetClerkId: user.clerkId,
+        metadata: {
+          grantType: "temporary",
+          previousExpiresAt: user.adminProExpiresAt ?? null,
+        },
+      });
       return;
     }
 
@@ -513,6 +572,19 @@ export const setTemporaryProGrant = mutation({
 
     await ctx.db.patch(args.id, {
       adminProExpiresAt: args.expiresAt,
+    });
+
+    await logAdminTelemetry(ctx, {
+      actorClerkId: actor.clerkId,
+      action: "grant_pro",
+      resourceType: "pro_access",
+      resourceId: user._id,
+      resourceLabel: getProAccessLabel(user),
+      targetClerkId: user.clerkId,
+      metadata: {
+        grantType: "temporary",
+        expiresAt: args.expiresAt,
+      },
     });
   },
 });
@@ -538,7 +610,8 @@ export const getFreeUserUploadCounts = query({
           clerkId: user.clerkId,
           role: user.role,
           discordUsername: user.discordUsername ?? null,
-          displayName: user.discordUsername ?? `User ${user.clerkId.slice(0, 6)}`,
+          displayName:
+            user.discordUsername ?? `User ${user.clerkId.slice(0, 6)}`,
           aircraftImages,
           airportCharts: 0,
           total: aircraftImages,

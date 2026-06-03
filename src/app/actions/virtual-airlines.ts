@@ -218,9 +218,12 @@ async function validateVirtualAirlineInput(data: {
     };
   }
 
-  const existingByPrefix = await convex.query(api.virtualAirlines.getByCallsignPrefix, {
-    callsignPrefix,
-  });
+  const existingByPrefix = await convex.query(
+    api.virtualAirlines.getByCallsignPrefix,
+    {
+      callsignPrefix,
+    },
+  );
 
   if (existingByPrefix && existingByPrefix.id !== data.id) {
     return {
@@ -269,7 +272,11 @@ export async function createVirtualAirline(data: {
   callsignPrefix: string;
   adminClerkId: string;
   website?: string;
-}): Promise<{ success: boolean; error?: string; virtualAirline?: VirtualAirline }> {
+}): Promise<{
+  success: boolean;
+  error?: string;
+  virtualAirline?: VirtualAirline;
+}> {
   const access = await requireSiteAdmin();
   if (!access?.clerkId) {
     return { success: false, error: "Only ADMIN users can register VAs" };
@@ -301,7 +308,9 @@ export async function createVirtualAirline(data: {
 
   return {
     success: true,
-    virtualAirline: virtualAirline ? toVirtualAirline(virtualAirline) : undefined,
+    virtualAirline: virtualAirline
+      ? toVirtualAirline(virtualAirline)
+      : undefined,
   };
 }
 
@@ -312,7 +321,11 @@ export async function updateVirtualAirline(data: {
   adminClerkId: string;
   website?: string;
   isActive: boolean;
-}): Promise<{ success: boolean; error?: string; virtualAirline?: VirtualAirline }> {
+}): Promise<{
+  success: boolean;
+  error?: string;
+  virtualAirline?: VirtualAirline;
+}> {
   const access = await requireSiteAdmin();
   if (!access?.clerkId) {
     return { success: false, error: "Only ADMIN users can update VAs" };
@@ -338,6 +351,7 @@ export async function updateVirtualAirline(data: {
     adminClerkId: data.adminClerkId,
     website: validated.website ?? undefined,
     isActive: data.isActive,
+    actorClerkId: access.clerkId,
   });
 
   revalidatePath("/admin");
@@ -354,7 +368,9 @@ export async function updateVirtualAirline(data: {
 
   return {
     success: true,
-    virtualAirline: virtualAirline ? toVirtualAirline(virtualAirline) : undefined,
+    virtualAirline: virtualAirline
+      ? toVirtualAirline(virtualAirline)
+      : undefined,
   };
 }
 
@@ -363,7 +379,11 @@ export async function updateManagedVirtualAirline(data: {
   name: string;
   callsignPrefix: string;
   website?: string;
-}): Promise<{ success: boolean; error?: string; virtualAirline?: VirtualAirline }> {
+}): Promise<{
+  success: boolean;
+  error?: string;
+  virtualAirline?: VirtualAirline;
+}> {
   const { access, virtualAirline, allowed } = await canManageVirtualAirline(
     data.id,
   );
@@ -387,14 +407,18 @@ export async function updateManagedVirtualAirline(data: {
     return { success: false, error: validated.error };
   }
 
-  const updatedVirtualAirline = await convex.mutation(api.virtualAirlines.update, {
-    id: data.id as Id<"virtualAirlines">,
-    name: validated.name,
-    callsignPrefix: validated.callsignPrefix,
-    adminClerkId: virtualAirline.adminClerkId,
-    website: validated.website ?? undefined,
-    isActive: virtualAirline.isActive,
-  });
+  const updatedVirtualAirline = await convex.mutation(
+    api.virtualAirlines.update,
+    {
+      id: data.id as Id<"virtualAirlines">,
+      name: validated.name,
+      callsignPrefix: validated.callsignPrefix,
+      adminClerkId: virtualAirline.adminClerkId,
+      website: validated.website ?? undefined,
+      isActive: virtualAirline.isActive,
+      actorClerkId: access.clerkId,
+    },
+  );
 
   revalidatePath("/admin");
   revalidatePath("/va-admin");
@@ -408,9 +432,7 @@ export async function updateManagedVirtualAirline(data: {
   };
 }
 
-export async function deleteVirtualAirline(
-  id: string,
-): Promise<{
+export async function deleteVirtualAirline(id: string): Promise<{
   success: boolean;
   error?: string;
   deletedMemberCount?: number;
@@ -423,6 +445,7 @@ export async function deleteVirtualAirline(
 
   const removed = await convex.mutation(api.virtualAirlines.remove, {
     id: id as Id<"virtualAirlines">,
+    actorClerkId: access.clerkId,
   });
 
   if (!removed) {
@@ -474,9 +497,12 @@ export async function getVirtualAirlineMembers(
   const { allowed } = await canManageVirtualAirline(virtualAirlineId);
   if (!allowed) return [];
 
-  const members = await convex.query(api.virtualAirlineMembers.getByVirtualAirlineId, {
-    virtualAirlineId: virtualAirlineId as Id<"virtualAirlines">,
-  });
+  const members = await convex.query(
+    api.virtualAirlineMembers.getByVirtualAirlineId,
+    {
+      virtualAirlineId: virtualAirlineId as Id<"virtualAirlines">,
+    },
+  );
 
   return members.map(toVirtualAirlineMember);
 }
@@ -484,7 +510,11 @@ export async function getVirtualAirlineMembers(
 export async function addVirtualAirlineMember(data: {
   virtualAirlineId: string;
   userId: string;
-}): Promise<{ success: boolean; error?: string; member?: VirtualAirlineMember }> {
+}): Promise<{
+  success: boolean;
+  error?: string;
+  member?: VirtualAirlineMember;
+}> {
   const { access, virtualAirline, allowed } = await canManageVirtualAirline(
     data.virtualAirlineId,
   );
@@ -513,9 +543,12 @@ export async function addVirtualAirlineMember(data: {
     };
   }
 
-  const existingMembership = await convex.query(api.virtualAirlineMembers.getByUserId, {
-    userId: data.userId as Id<"users">,
-  });
+  const existingMembership = await convex.query(
+    api.virtualAirlineMembers.getByUserId,
+    {
+      userId: data.userId as Id<"users">,
+    },
+  );
 
   if (
     existingMembership &&
@@ -543,15 +576,20 @@ export async function addVirtualAirlineMember(data: {
     return { success: false, error: "Failed to add pilot to VA" };
   }
 
-  const refreshedMembers = await convex.query(api.virtualAirlineMembers.getByVirtualAirlineId, {
-    virtualAirlineId: data.virtualAirlineId as Id<"virtualAirlines">,
-  });
+  const refreshedMembers = await convex.query(
+    api.virtualAirlineMembers.getByVirtualAirlineId,
+    {
+      virtualAirlineId: data.virtualAirlineId as Id<"virtualAirlines">,
+    },
+  );
   const refreshedMember =
     refreshedMembers.find((entry) => entry.userId === data.userId) ?? null;
 
   return {
     success: true,
-    member: refreshedMember ? toVirtualAirlineMember(refreshedMember) : undefined,
+    member: refreshedMember
+      ? toVirtualAirlineMember(refreshedMember)
+      : undefined,
   };
 }
 
@@ -574,9 +612,12 @@ export async function removeVirtualAirlineMember(
     };
   }
 
-  const removedMember = await convex.mutation(api.virtualAirlineMembers.remove, {
-    id: id as Id<"virtualAirlineMembers">,
-  });
+  const removedMember = await convex.mutation(
+    api.virtualAirlineMembers.remove,
+    {
+      id: id as Id<"virtualAirlineMembers">,
+    },
+  );
 
   if (!removedMember) {
     return { success: false, error: "VA pilot not found" };
@@ -636,13 +677,16 @@ export async function createVirtualAirlineAircraftImage(data: {
   }
 
   try {
-    const result = await convex.mutation(api.virtualAirlineAircraftImages.upsert, {
-      virtualAirlineId: data.virtualAirlineId as Id<"virtualAirlines">,
-      aircraftType,
-      imageUrl: data.imageUrl,
-      imageKey: data.imageKey,
-      uploadedBy: access.clerkId,
-    });
+    const result = await convex.mutation(
+      api.virtualAirlineAircraftImages.upsert,
+      {
+        virtualAirlineId: data.virtualAirlineId as Id<"virtualAirlines">,
+        aircraftType,
+        imageUrl: data.imageUrl,
+        imageKey: data.imageKey,
+        uploadedBy: access.clerkId,
+      },
+    );
 
     if (result.replacedImageKey) {
       await utapi.deleteFiles(result.replacedImageKey).catch(() => undefined);
@@ -654,7 +698,9 @@ export async function createVirtualAirlineAircraftImage(data: {
 
     return {
       success: true,
-      image: result.image ? toVirtualAirlineAircraftImage(result.image) : undefined,
+      image: result.image
+        ? toVirtualAirlineAircraftImage(result.image)
+        : undefined,
     };
   } catch (error) {
     console.error("Error creating VA aircraft image:", error);

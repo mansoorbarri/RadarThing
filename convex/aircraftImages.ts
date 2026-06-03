@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { logAdminTelemetry } from "./adminTelemetry";
 
 async function incrementApprovedAircraftImages(ctx: any, uploadedBy: string) {
   const user = await ctx.db
@@ -312,6 +313,22 @@ export const create = mutation({
     const image = await ctx.db.get(id);
     if (!image) return null;
 
+    await logAdminTelemetry(ctx, {
+      actorClerkId: args.uploadedBy,
+      action: "upload",
+      resourceType: "aircraft_image",
+      resourceId: image._id,
+      resourceLabel: `${image.airlineIata}/${image.airlineIcao} ${image.aircraftType}`,
+      targetClerkId: image.uploadedBy,
+      metadata: {
+        airlineIata: image.airlineIata,
+        airlineIcao: image.airlineIcao,
+        aircraftType: image.aircraftType,
+        isMilitary: image.isMilitary ?? false,
+        discordUsername: image.discordUsername ?? null,
+      },
+    });
+
     return {
       id: image._id,
       airlineIata: image.airlineIata,
@@ -348,14 +365,54 @@ export const approve = mutation({
     });
 
     await incrementApprovedAircraftImages(ctx, image.uploadedBy);
+
+    await logAdminTelemetry(ctx, {
+      actorClerkId: args.approvedBy,
+      action: "approve",
+      resourceType: "aircraft_image",
+      resourceId: image._id,
+      resourceLabel: `${image.airlineIata}/${image.airlineIcao} ${image.aircraftType}`,
+      targetClerkId: image.uploadedBy,
+      metadata: {
+        airlineIata: image.airlineIata,
+        airlineIcao: image.airlineIcao,
+        aircraftType: image.aircraftType,
+      },
+    });
   },
 });
 
 // Delete aircraft image
 export const remove = mutation({
-  args: { id: v.id("aircraftImages") },
+  args: {
+    id: v.id("aircraftImages"),
+    actorClerkId: v.optional(v.string()),
+    action: v.optional(v.union(v.literal("reject"), v.literal("delete"))),
+    reason: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
+    const image = await ctx.db.get(args.id);
+    if (!image) return;
+
     await ctx.db.delete(args.id);
+
+    if (args.actorClerkId) {
+      await logAdminTelemetry(ctx, {
+        actorClerkId: args.actorClerkId,
+        action: args.action ?? "delete",
+        resourceType: "aircraft_image",
+        resourceId: image._id,
+        resourceLabel: `${image.airlineIata}/${image.airlineIcao} ${image.aircraftType}`,
+        targetClerkId: image.uploadedBy,
+        metadata: {
+          airlineIata: image.airlineIata,
+          airlineIcao: image.airlineIcao,
+          aircraftType: image.aircraftType,
+          wasApproved: image.isApproved,
+          reason: args.reason,
+        },
+      });
+    }
   },
 });
 
@@ -397,6 +454,18 @@ export const bulkApprove = mutation({
       if (existingApproved && existingApproved._id !== id) {
         existingImageKey = existingApproved.imageKey ?? undefined;
         await ctx.db.delete(existingApproved._id);
+        await logAdminTelemetry(ctx, {
+          actorClerkId: args.approvedBy,
+          action: "delete",
+          resourceType: "aircraft_image",
+          resourceId: existingApproved._id,
+          resourceLabel: `${existingApproved.airlineIata}/${existingApproved.airlineIcao} ${existingApproved.aircraftType}`,
+          targetClerkId: existingApproved.uploadedBy,
+          metadata: {
+            replacedByImageId: String(id),
+            reason: "Replaced by bulk approval",
+          },
+        });
       }
 
       // Approve the new image
@@ -410,6 +479,21 @@ export const bulkApprove = mutation({
         approvedAt: now,
       });
 
+      await logAdminTelemetry(ctx, {
+        actorClerkId: args.approvedBy,
+        action: "approve",
+        resourceType: "aircraft_image",
+        resourceId: image._id,
+        resourceLabel: `${image.airlineIata}/${image.airlineIcao} ${image.aircraftType}`,
+        targetClerkId: image.uploadedBy,
+        metadata: {
+          airlineIata: image.airlineIata,
+          airlineIcao: image.airlineIcao,
+          aircraftType: image.aircraftType,
+          bulk: true,
+        },
+      });
+
       results.push({ id, success: true, existingImageKey });
     }
 
@@ -421,6 +505,9 @@ export const bulkApprove = mutation({
 export const bulkRemove = mutation({
   args: {
     ids: v.array(v.id("aircraftImages")),
+    actorClerkId: v.optional(v.string()),
+    action: v.optional(v.union(v.literal("reject"), v.literal("delete"))),
+    reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const results: {
@@ -441,6 +528,24 @@ export const bulkRemove = mutation({
       }
 
       await ctx.db.delete(id);
+      if (args.actorClerkId) {
+        await logAdminTelemetry(ctx, {
+          actorClerkId: args.actorClerkId,
+          action: args.action ?? "delete",
+          resourceType: "aircraft_image",
+          resourceId: image._id,
+          resourceLabel: `${image.airlineIata}/${image.airlineIcao} ${image.aircraftType}`,
+          targetClerkId: image.uploadedBy,
+          metadata: {
+            airlineIata: image.airlineIata,
+            airlineIcao: image.airlineIcao,
+            aircraftType: image.aircraftType,
+            wasApproved: image.isApproved,
+            bulk: true,
+            reason: args.reason,
+          },
+        });
+      }
       results.push({
         id,
         success: true,
@@ -510,6 +615,7 @@ export const updateCodes = mutation({
     airlineIcao: v.string(),
     aircraftType: v.string(),
     isMilitary: v.optional(v.boolean()),
+    actorClerkId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const image = await ctx.db.get(args.id);
@@ -521,6 +627,31 @@ export const updateCodes = mutation({
       aircraftType: normalizeAircraftTypeKey(args.aircraftType),
       isMilitary: args.isMilitary,
     });
+
+    if (args.actorClerkId) {
+      await logAdminTelemetry(ctx, {
+        actorClerkId: args.actorClerkId,
+        action: "edit",
+        resourceType: "aircraft_image",
+        resourceId: image._id,
+        resourceLabel: `${args.airlineIata.toUpperCase()}/${args.airlineIcao.toUpperCase()} ${normalizeAircraftTypeKey(args.aircraftType)}`,
+        targetClerkId: image.uploadedBy,
+        metadata: {
+          before: {
+            airlineIata: image.airlineIata,
+            airlineIcao: image.airlineIcao,
+            aircraftType: image.aircraftType,
+            isMilitary: image.isMilitary ?? false,
+          },
+          after: {
+            airlineIata: args.airlineIata.toUpperCase(),
+            airlineIcao: args.airlineIcao.toUpperCase(),
+            aircraftType: normalizeAircraftTypeKey(args.aircraftType),
+            isMilitary: args.isMilitary ?? false,
+          },
+        },
+      });
+    }
 
     const updated = await ctx.db.get(args.id);
     if (!updated) return null;

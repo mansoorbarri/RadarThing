@@ -1,17 +1,23 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { convex, api } from "~/server/convex";
-import { env } from "~/env";
 import { hasEffectiveProAccess } from "~/lib/proAccess";
+
+const SUPER_ADMIN_EMAIL = "mansoor.eb.ak@gmail.com";
 
 export async function getCurrentAccessContext() {
   const { userId } = await auth();
+  const clerkUser = await currentUser();
+  const isSuperAdmin =
+    clerkUser?.emailAddresses.some(
+      (email) => email.emailAddress.trim().toLowerCase() === SUPER_ADMIN_EMAIL,
+    ) ?? false;
 
   if (!userId) {
     return {
       clerkId: null,
       user: null,
       isAdmin: false,
-      isSuperAdmin: false,
+      isSuperAdmin,
     };
   }
 
@@ -21,14 +27,11 @@ export async function getCurrentAccessContext() {
     return {
       clerkId: userId,
       user: null,
-      isAdmin: false,
-      isSuperAdmin: false,
+      isAdmin: isSuperAdmin,
+      isSuperAdmin,
+      isPro: isSuperAdmin,
     };
   }
-
-  const isSuperAdmin = Boolean(
-    env.ADMIN_GOOGLE_ID && user.googleId === env.ADMIN_GOOGLE_ID,
-  );
 
   return {
     clerkId: userId,

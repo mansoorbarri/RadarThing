@@ -374,6 +374,11 @@ export async function rejectAirportChart(
   }
 
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const chart = await convex.query(api.airportCharts.getById, {
       id: id as Id<"airportCharts">,
     });
@@ -405,6 +410,9 @@ export async function rejectAirportChart(
 
     await convex.mutation(api.airportCharts.remove, {
       id: id as Id<"airportCharts">,
+      actorClerkId: userId,
+      action: "reject",
+      reason,
     });
 
     revalidatePath("/airport-charts");
@@ -426,6 +434,11 @@ export async function deleteAirportChart(
   }
 
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const chart = await convex.query(api.airportCharts.getById, {
       id: id as Id<"airportCharts">,
     });
@@ -444,6 +457,8 @@ export async function deleteAirportChart(
 
     await convex.mutation(api.airportCharts.remove, {
       id: id as Id<"airportCharts">,
+      actorClerkId: userId,
+      action: "delete",
     });
 
     revalidatePath("/airport-charts");
@@ -486,12 +501,18 @@ export async function updateAirportChart(
   }
 
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     // Update the database
     const result = await convex.mutation(api.airportCharts.update, {
       id: id as Id<"airportCharts">,
       icao,
       chartType: newChartType,
       chartName,
+      actorClerkId: userId,
     });
 
     if (!result) {
@@ -603,8 +624,16 @@ export async function bulkRejectAirportCharts(
   }
 
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, rejected: 0, failed: ids.length };
+    }
+
     const results = await convex.mutation(api.airportCharts.bulkRemove, {
       ids: ids as Id<"airportCharts">[],
+      actorClerkId: userId,
+      action: "reject",
+      reason,
     });
 
     const deletePromises: Promise<void>[] = [];

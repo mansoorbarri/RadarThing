@@ -54,6 +54,39 @@ export default defineSchema({
     .index("by_referrerUserId_status", ["referrerUserId", "status"])
     .index("by_referredUserId", ["referredUserId"]),
 
+  adminTelemetry: defineTable({
+    actorClerkId: v.string(),
+    actorUserId: v.optional(v.id("users")),
+    actorEmail: v.optional(v.string()),
+    actorDiscordUsername: v.optional(v.string()),
+    action: v.union(
+      v.literal("upload"),
+      v.literal("approve"),
+      v.literal("reject"),
+      v.literal("edit"),
+      v.literal("delete"),
+      v.literal("create"),
+      v.literal("grant_pro"),
+      v.literal("revoke_pro"),
+    ),
+    resourceType: v.union(
+      v.literal("aircraft_image"),
+      v.literal("airport_chart"),
+      v.literal("virtual_airline"),
+      v.literal("pro_access"),
+    ),
+    resourceId: v.string(),
+    resourceLabel: v.string(),
+    targetClerkId: v.optional(v.string()),
+    targetEmail: v.optional(v.string()),
+    targetDiscordUsername: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+  })
+    .index("by_createdAt", ["createdAt"])
+    .index("by_actorClerkId_createdAt", ["actorClerkId", "createdAt"])
+    .index("by_resourceType_createdAt", ["resourceType", "createdAt"]),
+
   flights: defineTable({
     userId: v.id("users"),
     callsign: v.string(),

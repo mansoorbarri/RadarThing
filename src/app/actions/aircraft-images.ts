@@ -555,6 +555,9 @@ export async function resolveImageConflict(
     // Delete the image to remove from DB
     await convex.mutation(api.aircraftImages.remove, {
       id: removeImageId as Id<"aircraftImages">,
+      actorClerkId: userId,
+      action: "delete",
+      reason: "Conflict resolved with another image",
     });
 
     // If keeping the pending image, approve it
@@ -658,6 +661,11 @@ export async function rejectAircraftImage(
   }
 
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const image = await convex.query(api.aircraftImages.getById, {
       id: id as Id<"aircraftImages">,
     });
@@ -689,6 +697,9 @@ export async function rejectAircraftImage(
 
     await convex.mutation(api.aircraftImages.remove, {
       id: id as Id<"aircraftImages">,
+      actorClerkId: userId,
+      action: "reject",
+      reason,
     });
 
     revalidatePath("/aircraft-images");
@@ -710,6 +721,11 @@ export async function deleteAircraftImage(
   }
 
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const image = await convex.query(api.aircraftImages.getById, {
       id: id as Id<"aircraftImages">,
     });
@@ -729,6 +745,8 @@ export async function deleteAircraftImage(
 
     await convex.mutation(api.aircraftImages.remove, {
       id: id as Id<"aircraftImages">,
+      actorClerkId: userId,
+      action: "delete",
     });
 
     revalidatePath("/aircraft-images");
@@ -884,6 +902,11 @@ export async function updateAircraftImageCodes(
   }
 
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     // Update the database
     const result = await convex.mutation(api.aircraftImages.updateCodes, {
       id: id as Id<"aircraftImages">,
@@ -891,6 +914,7 @@ export async function updateAircraftImageCodes(
       airlineIcao: icao,
       aircraftType,
       isMilitary: effectiveIsMilitary || undefined,
+      actorClerkId: userId,
     });
 
     if (!result) {
@@ -943,9 +967,17 @@ export async function bulkRejectAircraftImages(
   }
 
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, rejected: 0, failed: ids.length };
+    }
+
     // Single batch mutation to delete all images and get their details
     const results = await convex.mutation(api.aircraftImages.bulkRemove, {
       ids: ids as Id<"aircraftImages">[],
+      actorClerkId: userId,
+      action: "reject",
+      reason,
     });
 
     // Delete from UploadThing and send rejection emails

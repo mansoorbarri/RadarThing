@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { logAdminTelemetry } from "./adminTelemetry";
 
 const chartTypeValidator = v.union(
   v.literal("TAXI"),
@@ -169,6 +170,23 @@ export const create = mutation({
     const chart = await ctx.db.get(id);
     if (!chart) return null;
 
+    if (chart.uploadedBy) {
+      await logAdminTelemetry(ctx, {
+        actorClerkId: chart.uploadedBy,
+        action: "upload",
+        resourceType: "airport_chart",
+        resourceId: chart._id,
+        resourceLabel: `${chart.icao} ${chart.chartType} ${chart.chartName}`,
+        targetClerkId: chart.uploadedBy,
+        metadata: {
+          icao: chart.icao,
+          chartType: chart.chartType,
+          chartName: chart.chartName,
+          discordUsername: chart.discordUsername ?? null,
+        },
+      });
+    }
+
     return {
       id: chart._id,
       icao: chart.icao,
@@ -193,10 +211,27 @@ export const approve = mutation({
     approvedBy: v.string(),
   },
   handler: async (ctx, args) => {
+    const chart = await ctx.db.get(args.id);
+    if (!chart) return;
+
     await ctx.db.patch(args.id, {
       isApproved: true,
       approvedBy: args.approvedBy,
       approvedAt: Date.now(),
+    });
+
+    await logAdminTelemetry(ctx, {
+      actorClerkId: args.approvedBy,
+      action: "approve",
+      resourceType: "airport_chart",
+      resourceId: chart._id,
+      resourceLabel: `${chart.icao} ${chart.chartType} ${chart.chartName}`,
+      targetClerkId: chart.uploadedBy,
+      metadata: {
+        icao: chart.icao,
+        chartType: chart.chartType,
+        chartName: chart.chartName,
+      },
     });
   },
 });
@@ -208,6 +243,7 @@ export const update = mutation({
     icao: v.string(),
     chartType: chartTypeValidator,
     chartName: v.string(),
+    actorClerkId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const chart = await ctx.db.get(args.id);
@@ -218,6 +254,29 @@ export const update = mutation({
       chartType: args.chartType,
       chartName: args.chartName,
     });
+
+    if (args.actorClerkId) {
+      await logAdminTelemetry(ctx, {
+        actorClerkId: args.actorClerkId,
+        action: "edit",
+        resourceType: "airport_chart",
+        resourceId: chart._id,
+        resourceLabel: `${args.icao.toUpperCase()} ${args.chartType} ${args.chartName}`,
+        targetClerkId: chart.uploadedBy,
+        metadata: {
+          before: {
+            icao: chart.icao,
+            chartType: chart.chartType,
+            chartName: chart.chartName,
+          },
+          after: {
+            icao: args.icao.toUpperCase(),
+            chartType: args.chartType,
+            chartName: args.chartName,
+          },
+        },
+      });
+    }
 
     return {
       id: chart._id,
@@ -231,9 +290,35 @@ export const update = mutation({
 
 // Delete airport chart
 export const remove = mutation({
-  args: { id: v.id("airportCharts") },
+  args: {
+    id: v.id("airportCharts"),
+    actorClerkId: v.optional(v.string()),
+    action: v.optional(v.union(v.literal("reject"), v.literal("delete"))),
+    reason: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
+    const chart = await ctx.db.get(args.id);
+    if (!chart) return;
+
     await ctx.db.delete(args.id);
+
+    if (args.actorClerkId) {
+      await logAdminTelemetry(ctx, {
+        actorClerkId: args.actorClerkId,
+        action: args.action ?? "delete",
+        resourceType: "airport_chart",
+        resourceId: chart._id,
+        resourceLabel: `${chart.icao} ${chart.chartType} ${chart.chartName}`,
+        targetClerkId: chart.uploadedBy,
+        metadata: {
+          icao: chart.icao,
+          chartType: chart.chartType,
+          chartName: chart.chartName,
+          wasApproved: chart.isApproved,
+          reason: args.reason,
+        },
+      });
+    }
   },
 });
 
@@ -260,6 +345,21 @@ export const bulkApprove = mutation({
         approvedAt: now,
       });
 
+      await logAdminTelemetry(ctx, {
+        actorClerkId: args.approvedBy,
+        action: "approve",
+        resourceType: "airport_chart",
+        resourceId: chart._id,
+        resourceLabel: `${chart.icao} ${chart.chartType} ${chart.chartName}`,
+        targetClerkId: chart.uploadedBy,
+        metadata: {
+          icao: chart.icao,
+          chartType: chart.chartType,
+          chartName: chart.chartName,
+          bulk: true,
+        },
+      });
+
       results.push({ id, success: true });
     }
 
@@ -271,6 +371,9 @@ export const bulkApprove = mutation({
 export const bulkRemove = mutation({
   args: {
     ids: v.array(v.id("airportCharts")),
+    actorClerkId: v.optional(v.string()),
+    action: v.optional(v.union(v.literal("reject"), v.literal("delete"))),
+    reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const results: {
@@ -291,6 +394,24 @@ export const bulkRemove = mutation({
       }
 
       await ctx.db.delete(id);
+      if (args.actorClerkId) {
+        await logAdminTelemetry(ctx, {
+          actorClerkId: args.actorClerkId,
+          action: args.action ?? "delete",
+          resourceType: "airport_chart",
+          resourceId: chart._id,
+          resourceLabel: `${chart.icao} ${chart.chartType} ${chart.chartName}`,
+          targetClerkId: chart.uploadedBy,
+          metadata: {
+            icao: chart.icao,
+            chartType: chart.chartType,
+            chartName: chart.chartName,
+            wasApproved: chart.isApproved,
+            bulk: true,
+            reason: args.reason,
+          },
+        });
+      }
       results.push({
         id,
         success: true,

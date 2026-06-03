@@ -2,40 +2,55 @@
 
 import { currentUser } from "@clerk/nextjs/server";
 import { convex, api } from "~/server/convex";
-import { env } from "~/env";
 import { hasEffectiveProAccess } from "~/lib/proAccess";
 
-// Helper to get user by email (consistent across Clerk dev/prod)
-async function getUserByEmail() {
-  const clerkUser = await currentUser();
+const SUPER_ADMIN_EMAIL = "mansoor.eb.ak@gmail.com";
+
+function isSuperAdminEmail(email: string | null | undefined) {
+  return email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL;
+}
+
+async function getUserByEmail(
+  clerkUser: Awaited<ReturnType<typeof currentUser>>,
+) {
   const email = clerkUser?.primaryEmailAddress?.emailAddress;
   if (!email) return null;
 
   return await convex.query(api.users.getByEmail, { email });
 }
 
+function isCurrentClerkUserSuperAdmin(
+  clerkUser: Awaited<ReturnType<typeof currentUser>>,
+) {
+  return (
+    clerkUser?.emailAddresses.some((email) =>
+      isSuperAdminEmail(email.emailAddress),
+    ) ?? false
+  );
+}
+
 export async function isPro() {
-  const user = await getUserByEmail();
-  if (!user) return false;
+  const clerkUser = await currentUser();
+  const isSuperAdmin = isCurrentClerkUserSuperAdmin(clerkUser);
+  const user = await getUserByEmail(clerkUser);
+  if (!user) return isSuperAdmin;
 
   // Admins also have PRO access
   if (hasEffectiveProAccess(user)) return true;
 
-  // Fallback: env-based super admin
-  const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
-  return Boolean(superAdminGoogleId && user.googleId === superAdminGoogleId);
+  return isSuperAdmin;
 }
 
 export async function isAdmin() {
-  const user = await getUserByEmail();
-  if (!user) return false;
+  const clerkUser = await currentUser();
+  const isSuperAdmin = isCurrentClerkUserSuperAdmin(clerkUser);
+  const user = await getUserByEmail(clerkUser);
+  if (!user) return isSuperAdmin;
 
   // Role-based admin check
   if (user.role === "ADMIN") return true;
 
-  // Fallback: env-based super admin (break-glass access)
-  const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
-  return Boolean(superAdminGoogleId && user.googleId === superAdminGoogleId);
+  return isSuperAdmin;
 }
 
 // Combined query to get both pro and admin status with a single DB call
@@ -45,17 +60,19 @@ export async function getProAndAdminStatus(): Promise<{
   isAdmin: boolean;
   isSuperAdmin: boolean;
 }> {
-  const user = await getUserByEmail();
-  if (!user) return { isPro: false, isAdmin: false, isSuperAdmin: false };
+  const clerkUser = await currentUser();
+  const isSuperAdminUser = isCurrentClerkUserSuperAdmin(clerkUser);
+  const user = await getUserByEmail(clerkUser);
+  if (!user) {
+    return {
+      isPro: isSuperAdminUser,
+      isAdmin: isSuperAdminUser,
+      isSuperAdmin: isSuperAdminUser,
+    };
+  }
 
   // Role-based admin check
   const isRoleAdmin = user.role === "ADMIN";
-
-  // Fallback: env-based super admin
-  const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
-  const isSuperAdminUser = Boolean(
-    superAdminGoogleId && user.googleId === superAdminGoogleId,
-  );
 
   const isAdminUser = isRoleAdmin || isSuperAdminUser;
   const isProUser = hasEffectiveProAccess(user) || isSuperAdminUser;
@@ -63,31 +80,21 @@ export async function getProAndAdminStatus(): Promise<{
   return {
     isPro: isProUser,
     isAdmin: isAdminUser,
-    isSuperAdmin: isRoleAdmin || isSuperAdminUser,
+    isSuperAdmin: isSuperAdminUser,
   };
 }
 
-// Check if the current logged-in user is the env-based super admin
+// Check if the current logged-in user is the configured super admin
 export async function isSuperAdminUser(): Promise<boolean> {
-  const user = await getUserByEmail();
-  if (!user) return false;
-  const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
-  return Boolean(superAdminGoogleId && user.googleId === superAdminGoogleId);
+  return isCurrentClerkUserSuperAdmin(await currentUser());
 }
 
-// Check for env-based super admin (break-glass access)
-// This is separate from role-based admin - it's for emergency access via env var
-export async function checkIsSuperAdmin(
-  googleId: string | null | undefined,
-): Promise<boolean> {
-  await Promise.resolve();
-  if (!googleId) return false;
-  const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
-  return Boolean(superAdminGoogleId && googleId === superAdminGoogleId);
+export async function checkIsSuperAdmin(): Promise<boolean> {
+  return isCurrentClerkUserSuperAdmin(await currentUser());
 }
 
 export async function getSupportId(): Promise<string | null> {
-  const user = await getUserByEmail();
+  const user = await getUserByEmail(await currentUser());
   if (!user) return null;
 
   return user.googleId ?? user._id ?? null;
