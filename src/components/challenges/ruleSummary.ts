@@ -9,9 +9,11 @@ export type ChallengeRuleType =
   | "min_duration"
   | "min_distance"
   | "manual";
+export type ChallengeRuleScope = "challenge" | "each_flight";
 
 export interface ChallengeRuleSummaryRule {
   ruleType: ChallengeRuleType;
+  scope?: ChallengeRuleScope | null;
   targetAirport: string | null;
   targetDepartureAirport: string | null;
   targetArrivalAirport: string | null;
@@ -39,25 +41,26 @@ export function getRuleSummary(challenge: ChallengeRuleSummaryChallenge) {
 }
 
 function getSingleRuleSummary(rule: ChallengeRuleSummaryRule) {
+  const prefix = rule.scope === "each_flight" ? "Each counted flight: " : "";
   switch (rule.ruleType) {
     case "visit_airport":
-      return `Visit ${rule.targetAirport}`;
+      return `${prefix}Visit ${rule.targetAirport}`;
     case "visit_airport_count":
-      return `Visit ${rule.requiredAirportCount} unique airports`;
+      return `${prefix}Visit ${rule.requiredAirportCount} unique airports`;
     case "depart_airport":
-      return `Depart ${rule.targetAirport}`;
+      return `${prefix}Depart ${rule.targetAirport}`;
     case "arrive_airport":
-      return `Arrive at ${rule.targetAirport}`;
+      return `${prefix}Arrive at ${rule.targetAirport}`;
     case "route":
-      return `Fly ${rule.targetDepartureAirport} to ${rule.targetArrivalAirport}`;
+      return `${prefix}Fly ${rule.targetDepartureAirport} to ${rule.targetArrivalAirport}`;
     case "aircraft_type":
-      return `Use ${rule.targetAircraftType}`;
+      return `${prefix}Use ${rule.targetAircraftType}`;
     case "flight_count":
-      return `Complete ${rule.requiredFlightCount} flights`;
+      return `${prefix}Complete ${rule.requiredFlightCount} flights`;
     case "min_duration":
-      return `Fly at least ${rule.minDurationMinutes} minutes`;
+      return `${prefix}Fly at least ${rule.minDurationMinutes} minutes`;
     case "min_distance":
-      return `Fly at least ${rule.minDistanceNm} nm`;
+      return `${prefix}Fly at least ${rule.minDistanceNm} nm`;
     case "manual":
       return "Manual review required";
   }

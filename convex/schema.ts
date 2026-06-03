@@ -268,6 +268,9 @@ export default defineSchema({
             v.literal("min_distance"),
             v.literal("manual"),
           ),
+          scope: v.optional(
+            v.union(v.literal("challenge"), v.literal("each_flight")),
+          ),
           targetAirport: v.optional(v.string()),
           targetDepartureAirport: v.optional(v.string()),
           targetArrivalAirport: v.optional(v.string()),

@@ -41,9 +41,11 @@ type ChallengeRuleType =
   | "min_duration"
   | "min_distance"
   | "manual";
+type ChallengeRuleScope = "challenge" | "each_flight";
 
 interface ChallengeRuleForm {
   ruleType: ChallengeRuleType;
+  scope: ChallengeRuleScope;
   targetAirport: string;
   targetDepartureAirport: string;
   targetArrivalAirport: string;
@@ -92,6 +94,7 @@ const optionalNumberSchema = z.preprocess(
 
 const challengeRulePayloadSchema = z.object({
   ruleType: challengeRuleTypeSchema,
+  scope: z.union([z.literal("challenge"), z.literal("each_flight")]).optional(),
   targetAirport: z.string().trim().toUpperCase().optional(),
   targetDepartureAirport: z.string().trim().toUpperCase().optional(),
   targetArrivalAirport: z.string().trim().toUpperCase().optional(),
@@ -152,7 +155,7 @@ const challengePayloadSchema = z
       });
     }
 
-    const rules = value.rules.length > 0 ? value.rules : [value];
+    const rules = value.rules;
 
     if (value.mode === "manual") {
       if (rules.length !== 1 || rules[0]?.ruleType !== "manual") {
@@ -174,6 +177,18 @@ const challengePayloadSchema = z
     }
 
     for (const [index, rule] of rules.entries()) {
+      if (
+        rule.scope === "each_flight" &&
+        (rule.ruleType === "visit_airport_count" ||
+          rule.ruleType === "flight_count")
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Count rules must apply to the whole challenge",
+          path: ["rules", index, "scope"],
+        });
+      }
+
       if (
         ["visit_airport", "depart_airport", "arrive_airport"].includes(
           rule.ruleType,
@@ -283,6 +298,7 @@ function createInitialRule(
 ): ChallengeRuleForm {
   return {
     ruleType,
+    scope: "challenge",
     targetAirport: "",
     targetDepartureAirport: "",
     targetArrivalAirport: "",
@@ -294,8 +310,13 @@ function createInitialRule(
   };
 }
 
+function canRuleApplyToEachFlight(ruleType: ChallengeRuleType) {
+  return ruleType !== "visit_airport_count" && ruleType !== "flight_count";
+}
+
 function ruleFormFromChallengeRule(rule: {
   ruleType: ChallengeRuleType;
+  scope?: ChallengeRuleScope | null;
   targetAirport: string | null;
   targetDepartureAirport: string | null;
   targetArrivalAirport: string | null;
@@ -307,6 +328,7 @@ function ruleFormFromChallengeRule(rule: {
 }) {
   return {
     ruleType: rule.ruleType,
+    scope: rule.scope ?? "challenge",
     targetAirport: rule.targetAirport ?? "",
     targetDepartureAirport: rule.targetDepartureAirport ?? "",
     targetArrivalAirport: rule.targetArrivalAirport ?? "",
@@ -327,6 +349,7 @@ function ruleFormFromChallengeRule(rule: {
 function ruleFormToPayload(rule: ChallengeRuleForm) {
   return {
     ruleType: rule.ruleType,
+    scope: canRuleApplyToEachFlight(rule.ruleType) ? rule.scope : "challenge",
     targetAirport: rule.targetAirport || undefined,
     targetDepartureAirport: rule.targetDepartureAirport || undefined,
     targetArrivalAirport: rule.targetArrivalAirport || undefined,
@@ -385,6 +408,7 @@ function describeRule(challenge: {
   minDistanceNm: number | null;
   rules?: {
     ruleType: ChallengeRuleType;
+    scope?: ChallengeRuleScope | null;
     targetAirport: string | null;
     targetDepartureAirport: string | null;
     targetArrivalAirport: string | null;
@@ -407,6 +431,7 @@ function describeRule(challenge: {
 
 function describeSingleRule(rule: {
   ruleType: ChallengeRuleType;
+  scope?: ChallengeRuleScope | null;
   targetAirport: string | null;
   targetDepartureAirport: string | null;
   targetArrivalAirport: string | null;
@@ -416,25 +441,26 @@ function describeSingleRule(rule: {
   minDurationMinutes: number | null;
   minDistanceNm: number | null;
 }) {
+  const prefix = rule.scope === "each_flight" ? "Each counted flight: " : "";
   switch (rule.ruleType) {
     case "visit_airport":
-      return `Visit ${rule.targetAirport}`;
+      return `${prefix}Visit ${rule.targetAirport}`;
     case "visit_airport_count":
-      return `Visit ${rule.requiredAirportCount} unique airports`;
+      return `${prefix}Visit ${rule.requiredAirportCount} unique airports`;
     case "depart_airport":
-      return `Depart ${rule.targetAirport}`;
+      return `${prefix}Depart ${rule.targetAirport}`;
     case "arrive_airport":
-      return `Arrive at ${rule.targetAirport}`;
+      return `${prefix}Arrive at ${rule.targetAirport}`;
     case "route":
-      return `Route ${rule.targetDepartureAirport} -> ${rule.targetArrivalAirport}`;
+      return `${prefix}Route ${rule.targetDepartureAirport} -> ${rule.targetArrivalAirport}`;
     case "aircraft_type":
-      return `Aircraft ${rule.targetAircraftType}`;
+      return `${prefix}Aircraft ${rule.targetAircraftType}`;
     case "flight_count":
-      return `Complete ${rule.requiredFlightCount} flights`;
+      return `${prefix}Complete ${rule.requiredFlightCount} flights`;
     case "min_duration":
-      return `At least ${rule.minDurationMinutes} minutes`;
+      return `${prefix}At least ${rule.minDurationMinutes} minutes`;
     case "min_distance":
-      return `At least ${rule.minDistanceNm} nm`;
+      return `${prefix}At least ${rule.minDistanceNm} nm`;
     default:
       return "Manual review challenge";
   }
@@ -1041,6 +1067,43 @@ export function ChallengesTab() {
                               className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
                             >
                               Minimum distance
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </label>
+
+                      <label className="flex-1 space-y-2">
+                        <span className="text-sm text-slate-400">
+                          Applies to
+                        </span>
+                        <Select
+                          value={
+                            canRuleApplyToEachFlight(rule.ruleType)
+                              ? rule.scope
+                              : "challenge"
+                          }
+                          disabled={!canRuleApplyToEachFlight(rule.ruleType)}
+                          onValueChange={(value) =>
+                            updateRule(index, {
+                              scope: value as ChallengeRuleScope,
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20 disabled:opacity-60">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+                            <SelectItem
+                              value="challenge"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Whole challenge
+                            </SelectItem>
+                            <SelectItem
+                              value="each_flight"
+                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                            >
+                              Each counted flight
                             </SelectItem>
                           </SelectContent>
                         </Select>

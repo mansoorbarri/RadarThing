@@ -10,8 +10,11 @@ import {
   countUniqueVisitedAirports,
   doesFlightCollectionMatchChallenge,
   doesFlightMatchChallenge,
+  getChallengeScopedRules,
   getChallengeRules,
+  getPerFlightChallengeRules,
   getFlightsInChallengeWindow,
+  getRuleScope,
   isAggregateChallengeRule,
   isChallengeActiveAt,
   sumFlightDistancesNm,
@@ -37,6 +40,7 @@ const challengeRuleValidator = v.object({
     v.literal("min_distance"),
     v.literal("manual"),
   ),
+  scope: v.optional(v.union(v.literal("challenge"), v.literal("each_flight"))),
   targetAirport: v.optional(v.string()),
   targetDepartureAirport: v.optional(v.string()),
   targetArrivalAirport: v.optional(v.string()),
@@ -150,6 +154,7 @@ function validateChallengeInput(args: {
   function normalizeRule(rule: ChallengeRuleConfig) {
     return {
       ruleType: rule.ruleType,
+      scope: rule.scope ?? "challenge",
       targetAirport: normalizeAirportCode(rule.targetAirport),
       targetDepartureAirport: normalizeAirportCode(rule.targetDepartureAirport),
       targetArrivalAirport: normalizeAirportCode(rule.targetArrivalAirport),
@@ -192,6 +197,14 @@ function validateChallengeInput(args: {
 
   if (args.mode === "auto") {
     for (const rule of rules) {
+      if (
+        rule.scope === "each_flight" &&
+        (rule.ruleType === "visit_airport_count" ||
+          rule.ruleType === "flight_count")
+      ) {
+        throw new Error("Count rules must apply to the whole challenge");
+      }
+
       if (
         ["visit_airport", "depart_airport", "arrive_airport"].includes(
           rule.ruleType,
@@ -311,6 +324,7 @@ function serializeChallenge(challenge: {
     minDistanceNm: challenge.minDistanceNm ?? null,
     rules: getChallengeRules(challenge).map((rule) => ({
       ruleType: rule.ruleType,
+      scope: getRuleScope(rule),
       targetAirport: rule.targetAirport ?? null,
       targetDepartureAirport: rule.targetDepartureAirport ?? null,
       targetArrivalAirport: rule.targetArrivalAirport ?? null,
@@ -573,17 +587,80 @@ function getAutoProgress(
   const flightsInWindow = getFlightsInChallengeWindow(challenge, flights);
   const isComplete = doesFlightCollectionMatchChallenge(challenge, flights);
   const rules = getChallengeRules(challenge);
+  const perFlightRules = getPerFlightChallengeRules(challenge);
+  const flightsForProgress =
+    perFlightRules.length > 0
+      ? flightsInWindow.filter((flight) =>
+          perFlightRules.every((rule) =>
+            doesFlightMatchChallenge(
+              { ...challenge, ...rule, rules: [rule] },
+              flight,
+            ),
+          ),
+        )
+      : flightsInWindow;
+  const challengeRules = getChallengeScopedRules(challenge);
+  const progressRule =
+    challengeRules.find((rule) => isAggregateChallengeRule(rule.ruleType)) ??
+    (challengeRules.length === 1 ? challengeRules[0] : undefined);
+
+  if (progressRule && isAggregateChallengeRule(progressRule.ruleType)) {
+    switch (progressRule.ruleType) {
+      case "visit_airport_count": {
+        const current = countUniqueVisitedAirports(flightsForProgress);
+        const target = progressRule.requiredAirportCount ?? 1;
+        return {
+          progressCurrent: Math.min(current, target),
+          progressTarget: target,
+          progressLabel: `${Math.min(current, target)} / ${target} airports`,
+          isComplete,
+        };
+      }
+      case "flight_count": {
+        const target = progressRule.requiredFlightCount ?? 1;
+        const current = flightsForProgress.length;
+        return {
+          progressCurrent: Math.min(current, target),
+          progressTarget: target,
+          progressLabel: `${Math.min(current, target)} / ${target} flights`,
+          isComplete,
+        };
+      }
+      case "min_duration": {
+        const target = progressRule.minDurationMinutes ?? 1;
+        const totalMinutes = sumFlightDurationsMinutes(flightsForProgress);
+        return {
+          progressCurrent: Math.min(Math.floor(totalMinutes), target),
+          progressTarget: target,
+          progressLabel: `${Math.min(Math.floor(totalMinutes), target)} / ${target} minutes`,
+          isComplete,
+        };
+      }
+      case "min_distance": {
+        const target = progressRule.minDistanceNm ?? 1;
+        const totalDistance = sumFlightDistancesNm(flightsForProgress);
+        return {
+          progressCurrent: Math.min(Math.floor(totalDistance), target),
+          progressTarget: target,
+          progressLabel: `${Math.min(Math.floor(totalDistance), target)} / ${target} nm`,
+          isComplete,
+        };
+      }
+    }
+  }
 
   if (rules.length > 1) {
     const completedRules = rules.filter((rule) =>
-      doesFlightCollectionMatchChallenge(
-        {
-          ...challenge,
-          ...rule,
-          rules: [rule],
-        },
-        flights,
-      ),
+      getRuleScope(rule) === "each_flight"
+        ? flightsForProgress.length > 0
+        : doesFlightCollectionMatchChallenge(
+            {
+              ...challenge,
+              ...rule,
+              rules: [rule],
+            },
+            flights,
+          ),
     ).length;
 
     return {
@@ -596,7 +673,7 @@ function getAutoProgress(
 
   switch (challenge.ruleType) {
     case "visit_airport_count": {
-      const current = countUniqueVisitedAirports(flightsInWindow);
+      const current = countUniqueVisitedAirports(flightsForProgress);
       const target = challenge.requiredAirportCount ?? 1;
       return {
         progressCurrent: Math.min(current, target),
@@ -607,7 +684,7 @@ function getAutoProgress(
     }
     case "flight_count": {
       const target = challenge.requiredFlightCount ?? 1;
-      const current = flightsInWindow.length;
+      const current = flightsForProgress.length;
       return {
         progressCurrent: Math.min(current, target),
         progressTarget: target,
@@ -617,7 +694,7 @@ function getAutoProgress(
     }
     case "min_duration": {
       const target = challenge.minDurationMinutes ?? 1;
-      const totalMinutes = sumFlightDurationsMinutes(flightsInWindow);
+      const totalMinutes = sumFlightDurationsMinutes(flightsForProgress);
       return {
         progressCurrent: Math.min(Math.floor(totalMinutes), target),
         progressTarget: target,
@@ -627,7 +704,7 @@ function getAutoProgress(
     }
     case "min_distance": {
       const target = challenge.minDistanceNm ?? 1;
-      const totalDistance = sumFlightDistancesNm(flightsInWindow);
+      const totalDistance = sumFlightDistancesNm(flightsForProgress);
       return {
         progressCurrent: Math.min(Math.floor(totalDistance), target),
         progressTarget: target,

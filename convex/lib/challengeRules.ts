@@ -10,8 +10,11 @@ export type ChallengeRuleType =
   | "min_distance"
   | "manual";
 
+export type ChallengeRuleScope = "challenge" | "each_flight";
+
 export interface ChallengeRuleConfig {
   ruleType: ChallengeRuleType;
+  scope?: ChallengeRuleScope;
   targetAirport?: string;
   targetDepartureAirport?: string;
   targetArrivalAirport?: string;
@@ -185,6 +188,7 @@ export function getChallengeRules(challenge: ChallengeRule) {
     : [
         {
           ruleType: challenge.ruleType,
+          scope: challenge.scope,
           targetAirport: challenge.targetAirport,
           targetDepartureAirport: challenge.targetDepartureAirport,
           targetArrivalAirport: challenge.targetArrivalAirport,
@@ -195,6 +199,22 @@ export function getChallengeRules(challenge: ChallengeRule) {
           minDistanceNm: challenge.minDistanceNm,
         },
       ];
+}
+
+export function getRuleScope(rule: ChallengeRuleConfig): ChallengeRuleScope {
+  return rule.scope ?? "challenge";
+}
+
+export function getPerFlightChallengeRules(challenge: ChallengeRule) {
+  return getChallengeRules(challenge).filter(
+    (rule) => getRuleScope(rule) === "each_flight",
+  );
+}
+
+export function getChallengeScopedRules(challenge: ChallengeRule) {
+  return getChallengeRules(challenge).filter(
+    (rule) => getRuleScope(rule) === "challenge",
+  );
 }
 
 export function getFlightsInChallengeWindow<T extends ChallengeFlight>(
@@ -247,47 +267,70 @@ export function doesFlightCollectionMatchChallenge(
   flights: ChallengeFlight[],
 ): boolean {
   const rules = getChallengeRules(challenge);
-  if (rules.length > 1) {
-    return rules.every((rule) =>
+  const flightsInWindow = getFlightsInChallengeWindow(challenge, flights);
+  const perFlightRules = rules.filter(
+    (rule) => getRuleScope(rule) === "each_flight",
+  );
+  const challengeRules = rules.filter(
+    (rule) => getRuleScope(rule) === "challenge",
+  );
+  const eligibleFlights =
+    perFlightRules.length > 0
+      ? flightsInWindow.filter((flight) =>
+          perFlightRules.every((rule) =>
+            doesFlightMatchChallenge(
+              { ...challenge, ...rule, rules: [rule] },
+              flight,
+            ),
+          ),
+        )
+      : flightsInWindow;
+
+  if (challengeRules.length > 1) {
+    return challengeRules.every((rule) =>
       doesFlightCollectionMatchChallenge(
         {
           ...challenge,
           ...rule,
           rules: [rule],
         },
-        flights,
+        eligibleFlights,
       ),
     );
   }
 
-  const flightsInWindow = getFlightsInChallengeWindow(challenge, flights);
+  if (challengeRules.length === 0) {
+    return eligibleFlights.length > 0;
+  }
 
-  switch (challenge.ruleType) {
+  const [rule] = challengeRules;
+  if (!rule) return false;
+  const ruleChallenge = { ...challenge, ...rule, rules: [rule] };
+
+  switch (rule.ruleType) {
     case "visit_airport_count":
       return (
-        typeof challenge.requiredAirportCount === "number" &&
-        countUniqueVisitedAirports(flightsInWindow) >=
-          challenge.requiredAirportCount
+        typeof rule.requiredAirportCount === "number" &&
+        countUniqueVisitedAirports(eligibleFlights) >= rule.requiredAirportCount
       );
     case "flight_count":
       return (
-        typeof challenge.requiredFlightCount === "number" &&
-        flightsInWindow.length >= challenge.requiredFlightCount
+        typeof rule.requiredFlightCount === "number" &&
+        eligibleFlights.length >= rule.requiredFlightCount
       );
     case "min_duration":
       return (
-        typeof challenge.minDurationMinutes === "number" &&
-        sumFlightDurationsMinutes(flightsInWindow) >=
-          challenge.minDurationMinutes
+        typeof rule.minDurationMinutes === "number" &&
+        sumFlightDurationsMinutes(eligibleFlights) >= rule.minDurationMinutes
       );
     case "min_distance":
       return (
-        typeof challenge.minDistanceNm === "number" &&
-        sumFlightDistancesNm(flightsInWindow) >= challenge.minDistanceNm
+        typeof rule.minDistanceNm === "number" &&
+        sumFlightDistancesNm(eligibleFlights) >= rule.minDistanceNm
       );
     default:
-      return flightsInWindow.some((flight) =>
-        doesFlightMatchChallenge(challenge, flight),
+      return eligibleFlights.some((flight) =>
+        doesFlightMatchChallenge(ruleChallenge, flight),
       );
   }
 }
