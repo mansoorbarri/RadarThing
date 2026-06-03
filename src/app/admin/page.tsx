@@ -6,7 +6,16 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Plane, ImageIcon, Map, Crown, Users, Upload, Flag } from "lucide-react";
+import {
+  Plane,
+  ImageIcon,
+  Map,
+  Crown,
+  Users,
+  Upload,
+  Flag,
+  Activity,
+} from "lucide-react";
 import { useProStatus } from "~/hooks/useProStatus";
 import {
   Select,
@@ -72,6 +81,16 @@ const VirtualAirlinesTab = dynamic(
   },
 );
 
+const AdminTelemetryTab = dynamic(
+  () =>
+    import("./_components/AdminTelemetryTab").then(
+      (mod) => mod.AdminTelemetryTab,
+    ),
+  {
+    loading: () => <AdminTabSkeleton />,
+  },
+);
+
 const ChartUploadModal = dynamic(
   () =>
     import("./_components/ChartUploadModal").then(
@@ -100,6 +119,7 @@ export default function AdminPage() {
   const mainTab = getAdminTabFromPath(pathname ?? "/admin");
   const {
     isAdminUser,
+    isSuperAdmin,
     isLoading: proStatusLoading,
   } = useProStatus();
 
@@ -112,10 +132,10 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!isLoaded || proStatusLoading || !isAdminUser) return;
-    if (mainTab === "pro" && !isAdminUser) {
+    if ((mainTab === "pro" || mainTab === "activity") && !isSuperAdmin) {
       router.replace("/admin");
     }
-  }, [isLoaded, proStatusLoading, isAdminUser, mainTab, router]);
+  }, [isLoaded, proStatusLoading, isAdminUser, isSuperAdmin, mainTab, router]);
 
   if (loading) {
     return <AdminSkeleton />;
@@ -125,7 +145,7 @@ export default function AdminPage() {
     return <AdminAccessDenied />;
   }
 
-  if (mainTab === "pro" && !isAdminUser) {
+  if (mainTab === "pro" && !isSuperAdmin) {
     return <AdminSkeleton />;
   }
 
@@ -134,11 +154,18 @@ export default function AdminPage() {
     label: string;
     badge?: number;
   }[] = [
-    { value: "images", label: "Aircraft Images", badge: pendingCount || undefined },
+    {
+      value: "images",
+      label: "Aircraft Images",
+      badge: pendingCount || undefined,
+    },
     { value: "charts", label: "Airport Charts" },
     { value: "virtual-airlines", label: "Virtual Airlines" },
     { value: "challenges", label: "Challenges" },
-    ...(isAdminUser ? [{ value: "pro" as const, label: "Pro" }] : []),
+    ...(isSuperAdmin ? [{ value: "pro" as const, label: "Pro" }] : []),
+    ...(isSuperAdmin
+      ? [{ value: "activity" as const, label: "Activity" }]
+      : []),
   ];
 
   return (
@@ -160,7 +187,9 @@ export default function AdminPage() {
         <div className="mb-4 sm:hidden">
           <Select
             value={mainTab}
-            onValueChange={(value) => router.push(getAdminTabHref(value as MainTab))}
+            onValueChange={(value) =>
+              router.push(getAdminTabHref(value as MainTab))
+            }
           >
             <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-white/5 font-mono text-sm text-white shadow-none hover:bg-white/[0.07] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
               <SelectValue placeholder="Choose admin section" />
@@ -229,7 +258,7 @@ export default function AdminPage() {
             <Flag className="h-4 w-4" />
             Challenges
           </button>
-          {isAdminUser && (
+          {isSuperAdmin && (
             <button
               onClick={() => router.push(getAdminTabHref("pro"))}
               className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-all ${
@@ -242,6 +271,19 @@ export default function AdminPage() {
               Pro
             </button>
           )}
+          {isSuperAdmin && (
+            <button
+              onClick={() => router.push(getAdminTabHref("activity"))}
+              className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-all ${
+                mainTab === "activity"
+                  ? "bg-cyan-500/20 text-cyan-400"
+                  : "bg-white/5 text-slate-400 hover:bg-white/10"
+              }`}
+            >
+              <Activity className="h-4 w-4" />
+              Activity
+            </button>
+          )}
         </div>
 
         {mainTab === "images" && <AircraftImagesTab />}
@@ -250,7 +292,8 @@ export default function AdminPage() {
         )}
         {mainTab === "challenges" && <ChallengesTab />}
         {mainTab === "virtual-airlines" && <VirtualAirlinesTab />}
-        {mainTab === "pro" && <ProManagementTab />}
+        {mainTab === "pro" && isSuperAdmin && <ProManagementTab />}
+        {mainTab === "activity" && isSuperAdmin && <AdminTelemetryTab />}
       </main>
 
       {/* Floating Upload Button */}

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { logAdminTelemetry } from "./adminTelemetry";
 import type { Doc } from "./_generated/dataModel";
 
 function normalizeCallsignPrefix(prefix: string): string {
@@ -52,10 +53,7 @@ function toVirtualAirlineImageSummary(
   };
 }
 
-async function getMatchingVirtualAirline(
-  ctx: any,
-  callsign: string,
-) {
+async function getMatchingVirtualAirline(ctx: any, callsign: string) {
   const normalizedCallsign = normalizeCallsign(callsign);
   if (!normalizedCallsign) return null;
 
@@ -284,6 +282,21 @@ export const create = mutation({
     });
 
     const virtualAirline = await ctx.db.get(id);
+    if (virtualAirline) {
+      await logAdminTelemetry(ctx, {
+        actorClerkId: args.createdBy,
+        action: "create",
+        resourceType: "virtual_airline",
+        resourceId: virtualAirline._id,
+        resourceLabel: `${virtualAirline.name} (${virtualAirline.callsignPrefix})`,
+        targetClerkId: virtualAirline.adminClerkId,
+        metadata: {
+          callsignPrefix: virtualAirline.callsignPrefix,
+          adminClerkId: virtualAirline.adminClerkId,
+          website: virtualAirline.website ?? null,
+        },
+      });
+    }
     return virtualAirline ? toVirtualAirlineSummary(virtualAirline) : null;
   },
 });
@@ -296,8 +309,12 @@ export const update = mutation({
     adminClerkId: v.string(),
     website: v.optional(v.string()),
     isActive: v.boolean(),
+    actorClerkId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const existing = await ctx.db.get(args.id);
+    if (!existing) return null;
+
     await ctx.db.patch(args.id, {
       name: args.name.trim(),
       callsignPrefix: normalizeCallsignPrefix(args.callsignPrefix),
@@ -308,6 +325,32 @@ export const update = mutation({
     });
 
     const virtualAirline = await ctx.db.get(args.id);
+    if (virtualAirline && args.actorClerkId) {
+      await logAdminTelemetry(ctx, {
+        actorClerkId: args.actorClerkId,
+        action: "edit",
+        resourceType: "virtual_airline",
+        resourceId: virtualAirline._id,
+        resourceLabel: `${virtualAirline.name} (${virtualAirline.callsignPrefix})`,
+        targetClerkId: virtualAirline.adminClerkId,
+        metadata: {
+          before: {
+            name: existing.name,
+            callsignPrefix: existing.callsignPrefix,
+            adminClerkId: existing.adminClerkId,
+            website: existing.website ?? null,
+            isActive: existing.isActive,
+          },
+          after: {
+            name: virtualAirline.name,
+            callsignPrefix: virtualAirline.callsignPrefix,
+            adminClerkId: virtualAirline.adminClerkId,
+            website: virtualAirline.website ?? null,
+            isActive: virtualAirline.isActive,
+          },
+        },
+      });
+    }
     return virtualAirline ? toVirtualAirlineSummary(virtualAirline) : null;
   },
 });
@@ -316,14 +359,32 @@ export const setActive = mutation({
   args: {
     id: v.id("virtualAirlines"),
     isActive: v.boolean(),
+    actorClerkId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const existing = await ctx.db.get(args.id);
+    if (!existing) return null;
+
     await ctx.db.patch(args.id, {
       isActive: args.isActive,
       updatedAt: Date.now(),
     });
 
     const virtualAirline = await ctx.db.get(args.id);
+    if (virtualAirline && args.actorClerkId) {
+      await logAdminTelemetry(ctx, {
+        actorClerkId: args.actorClerkId,
+        action: "edit",
+        resourceType: "virtual_airline",
+        resourceId: virtualAirline._id,
+        resourceLabel: `${virtualAirline.name} (${virtualAirline.callsignPrefix})`,
+        targetClerkId: virtualAirline.adminClerkId,
+        metadata: {
+          before: { isActive: existing.isActive },
+          after: { isActive: virtualAirline.isActive },
+        },
+      });
+    }
     return virtualAirline ? toVirtualAirlineSummary(virtualAirline) : null;
   },
 });
@@ -331,6 +392,7 @@ export const setActive = mutation({
 export const remove = mutation({
   args: {
     id: v.id("virtualAirlines"),
+    actorClerkId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const virtualAirline = await ctx.db.get(args.id);
@@ -357,6 +419,23 @@ export const remove = mutation({
     ]);
 
     await ctx.db.delete(args.id);
+
+    if (args.actorClerkId) {
+      await logAdminTelemetry(ctx, {
+        actorClerkId: args.actorClerkId,
+        action: "delete",
+        resourceType: "virtual_airline",
+        resourceId: virtualAirline._id,
+        resourceLabel: `${virtualAirline.name} (${virtualAirline.callsignPrefix})`,
+        targetClerkId: virtualAirline.adminClerkId,
+        metadata: {
+          callsignPrefix: virtualAirline.callsignPrefix,
+          adminClerkId: virtualAirline.adminClerkId,
+          memberCount: members.length,
+          imageCount: images.length,
+        },
+      });
+    }
 
     return {
       id: virtualAirline._id,

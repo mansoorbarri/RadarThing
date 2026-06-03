@@ -1,7 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { convex, api } from "~/server/convex";
-import { env } from "~/env";
 import { hasEffectiveProAccess } from "~/lib/proAccess";
+
+const SUPER_ADMIN_EMAIL = "mansoor.eb.ak@gmail.com";
 
 export async function getCurrentAccessContext() {
   const { userId } = await auth();
@@ -26,9 +27,7 @@ export async function getCurrentAccessContext() {
     };
   }
 
-  const isSuperAdmin = Boolean(
-    env.ADMIN_GOOGLE_ID && user.googleId === env.ADMIN_GOOGLE_ID,
-  );
+  const isSuperAdmin = user.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL;
 
   return {
     clerkId: userId,
