@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
   mutation,
   query,
@@ -379,6 +379,79 @@ async function clearChallengeLeaderboardEntries(
   for (const entry of entries) {
     await ctx.db.delete(entry._id);
   }
+}
+
+async function rebuildChallengeLeaderboardEntries(
+  ctx: MutationCtx,
+  challenge: Doc<"challenges">,
+  now: number,
+) {
+  await clearChallengeLeaderboardEntries(ctx, challenge._id);
+
+  if (challenge.mode !== "auto" || !isChallengeActiveAt(challenge, now)) {
+    return 0;
+  }
+
+  const [flights, completions] = await Promise.all([
+    ctx.db
+      .query("flights")
+      .withIndex("by_startTime", (q) =>
+        q.gte("startTime", challenge.startAt).lt("startTime", challenge.endAt),
+      )
+      .collect(),
+    ctx.db
+      .query("challengeCompletions")
+      .withIndex("by_challengeId", (q) => q.eq("challengeId", challenge._id))
+      .collect(),
+  ]);
+
+  const flightsByUserId = new Map<Id<"users">, typeof flights>();
+  for (const flight of flights) {
+    const userFlights = flightsByUserId.get(flight.userId) ?? [];
+    userFlights.push(flight);
+    flightsByUserId.set(flight.userId, userFlights);
+  }
+
+  const completionByUserId = new Map(
+    completions.map((completion) => [completion.userId, completion]),
+  );
+  const userIds = new Set<Id<"users">>([
+    ...flightsByUserId.keys(),
+    ...completionByUserId.keys(),
+  ]);
+
+  let rebuiltEntries = 0;
+
+  for (const userId of userIds) {
+    const userFlights = flightsByUserId.get(userId) ?? [];
+    const completion = completionByUserId.get(userId);
+    const progress = getAutoProgress(challenge, userFlights);
+    const isComplete =
+      completion?.status === "completed" || progress.isComplete;
+    const progressCurrent =
+      isComplete && progress.progressCurrent === 0
+        ? 1
+        : progress.progressCurrent;
+    const progressTarget = Math.max(1, progress.progressTarget);
+    const shouldKeep = isComplete || progressCurrent > 0;
+
+    if (!shouldKeep) continue;
+
+    await ctx.db.insert("challengeLeaderboardEntries", {
+      challengeId: challenge._id,
+      userId,
+      progressCurrent,
+      progressTarget,
+      progressLabel: isComplete ? "Completed" : progress.progressLabel,
+      isComplete,
+      status: isComplete ? "completed" : "in_progress",
+      completedAt: completion?.completedAt,
+      updatedAt: now,
+    });
+    rebuiltEntries += 1;
+  }
+
+  return rebuiltEntries;
 }
 
 async function syncAutoLeaderboardEntriesForUser(
@@ -1549,13 +1622,21 @@ export const update = mutation({
 
     const values = validateChallengeInput(args);
 
+    const now = Date.now();
+
     await ctx.db.patch(args.challengeId, {
       ...values,
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
-    await clearChallengeLeaderboardEntries(ctx, args.challengeId);
 
-    return await ctx.db.get(args.challengeId);
+    const updatedChallenge = await ctx.db.get(args.challengeId);
+    if (!updatedChallenge) {
+      throw new Error("Challenge not found");
+    }
+
+    await rebuildChallengeLeaderboardEntries(ctx, updatedChallenge, now);
+
+    return updatedChallenge;
   },
 });
 
@@ -1567,11 +1648,24 @@ export const togglePublished = mutation({
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
 
+    const challenge = await ctx.db.get(args.challengeId);
+    if (!challenge) {
+      throw new Error("Challenge not found");
+    }
+
+    const now = Date.now();
+
     await ctx.db.patch(args.challengeId, {
       isPublished: args.isPublished,
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
-    await clearChallengeLeaderboardEntries(ctx, args.challengeId);
+
+    const updatedChallenge = await ctx.db.get(args.challengeId);
+    if (!updatedChallenge) {
+      throw new Error("Challenge not found");
+    }
+
+    await rebuildChallengeLeaderboardEntries(ctx, updatedChallenge, now);
   },
 });
 
