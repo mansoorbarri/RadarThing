@@ -30,6 +30,10 @@ async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
 
 async function requireAdminForProManagement(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
+  if (!identity?.subject) {
+    throw new Error("Unauthorized");
+  }
+
   const user = await getCurrentUser(ctx);
   const isSuperAdmin =
     identity?.email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL ||
@@ -38,12 +42,28 @@ async function requireAdminForProManagement(ctx: QueryCtx | MutationCtx) {
     throw new Error("Unauthorized");
   }
 
-  if (!user) {
-    throw new Error("Unauthorized");
-  }
-
-  return user;
+  return (
+    user ?? {
+      clerkId: identity.subject,
+      email: identity.email ?? SUPER_ADMIN_EMAIL,
+      discordUsername: undefined,
+    }
+  );
 }
+
+export const isSuperAdmin = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.subject) return false;
+
+    const user = await getCurrentUser(ctx);
+    return (
+      identity.email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL ||
+      user?.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL
+    );
+  },
+});
 
 function getProAccessLabel(user: { email: string; discordUsername?: string }) {
   return user.discordUsername

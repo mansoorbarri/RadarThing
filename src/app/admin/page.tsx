@@ -145,7 +145,7 @@ export default function AdminPage() {
     return <AdminAccessDenied />;
   }
 
-  if (mainTab === "pro" && !isSuperAdmin) {
+  if ((mainTab === "pro" || mainTab === "activity") && !isSuperAdmin) {
     return <AdminSkeleton />;
   }
 

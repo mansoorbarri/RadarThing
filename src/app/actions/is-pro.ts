@@ -10,9 +10,9 @@ function isSuperAdminEmail(email: string | null | undefined) {
   return email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL;
 }
 
-// Helper to get user by email (consistent across Clerk dev/prod)
-async function getUserByEmail() {
-  const clerkUser = await currentUser();
+async function getUserByEmail(
+  clerkUser: Awaited<ReturnType<typeof currentUser>>,
+) {
   const email = clerkUser?.primaryEmailAddress?.emailAddress;
   if (!email) return null;
 
@@ -30,23 +30,27 @@ function isCurrentClerkUserSuperAdmin(
 }
 
 export async function isPro() {
-  const user = await getUserByEmail();
-  if (!user) return false;
+  const clerkUser = await currentUser();
+  const isSuperAdmin = isCurrentClerkUserSuperAdmin(clerkUser);
+  const user = await getUserByEmail(clerkUser);
+  if (!user) return isSuperAdmin;
 
   // Admins also have PRO access
   if (hasEffectiveProAccess(user)) return true;
 
-  return isSuperAdminEmail(user.email);
+  return isSuperAdmin;
 }
 
 export async function isAdmin() {
-  const user = await getUserByEmail();
-  if (!user) return false;
+  const clerkUser = await currentUser();
+  const isSuperAdmin = isCurrentClerkUserSuperAdmin(clerkUser);
+  const user = await getUserByEmail(clerkUser);
+  if (!user) return isSuperAdmin;
 
   // Role-based admin check
   if (user.role === "ADMIN") return true;
 
-  return isSuperAdminEmail(user.email);
+  return isSuperAdmin;
 }
 
 // Combined query to get both pro and admin status with a single DB call
@@ -56,13 +60,19 @@ export async function getProAndAdminStatus(): Promise<{
   isAdmin: boolean;
   isSuperAdmin: boolean;
 }> {
-  const user = await getUserByEmail();
-  if (!user) return { isPro: false, isAdmin: false, isSuperAdmin: false };
+  const clerkUser = await currentUser();
+  const isSuperAdminUser = isCurrentClerkUserSuperAdmin(clerkUser);
+  const user = await getUserByEmail(clerkUser);
+  if (!user) {
+    return {
+      isPro: isSuperAdminUser,
+      isAdmin: isSuperAdminUser,
+      isSuperAdmin: isSuperAdminUser,
+    };
+  }
 
   // Role-based admin check
   const isRoleAdmin = user.role === "ADMIN";
-
-  const isSuperAdminUser = isSuperAdminEmail(user.email);
 
   const isAdminUser = isRoleAdmin || isSuperAdminUser;
   const isProUser = hasEffectiveProAccess(user) || isSuperAdminUser;
@@ -84,7 +94,7 @@ export async function checkIsSuperAdmin(): Promise<boolean> {
 }
 
 export async function getSupportId(): Promise<string | null> {
-  const user = await getUserByEmail();
+  const user = await getUserByEmail(await currentUser());
   if (!user) return null;
 
   return user.googleId ?? user._id ?? null;

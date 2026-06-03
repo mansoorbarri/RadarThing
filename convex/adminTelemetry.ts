@@ -39,7 +39,7 @@ async function requireSuperAdmin(ctx: QueryCtx) {
     user?.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL;
   if (!isSuperAdmin) return null;
 
-  return user;
+  return user ?? { clerkId: identity.subject, email: identity.email ?? null };
 }
 
 export async function logAdminTelemetry(
