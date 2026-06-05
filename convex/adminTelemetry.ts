@@ -29,6 +29,17 @@ async function getUserByClerkId(ctx: QueryCtx | MutationCtx, clerkId?: string) {
     .first();
 }
 
+function isAdminTelemetryActor(
+  user: Awaited<ReturnType<typeof getUserByClerkId>>,
+  email?: string | null,
+) {
+  return (
+    user?.role === "ADMIN" ||
+    user?.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL ||
+    email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL
+  );
+}
+
 async function requireSuperAdmin(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity?.subject) return null;
@@ -54,15 +65,22 @@ export async function logAdminTelemetry(
     metadata?: Record<string, unknown>;
   },
 ) {
+  const identity = await ctx.auth.getUserIdentity();
   const [actor, target] = await Promise.all([
     getUserByClerkId(ctx, args.actorClerkId),
     getUserByClerkId(ctx, args.targetClerkId),
   ]);
+  const identityActorEmail =
+    identity?.subject === args.actorClerkId ? identity.email : null;
+
+  if (!isAdminTelemetryActor(actor, identityActorEmail)) {
+    return;
+  }
 
   await ctx.db.insert("adminTelemetry", {
     actorClerkId: args.actorClerkId,
     actorUserId: actor?._id,
-    actorEmail: actor?.email,
+    actorEmail: actor?.email ?? identityActorEmail ?? undefined,
     actorDiscordUsername: actor?.discordUsername,
     action: args.action,
     resourceType: args.resourceType,
@@ -98,22 +116,40 @@ export const getRecent = query({
       .query("adminTelemetry")
       .withIndex("by_createdAt")
       .order("desc")
-      .take(limit);
+      .take(Math.min(limit * 5, 1000));
 
-    return events.map((event) => ({
-      id: event._id,
-      actorClerkId: event.actorClerkId,
-      actorEmail: event.actorEmail ?? null,
-      actorDiscordUsername: event.actorDiscordUsername ?? null,
-      action: event.action,
-      resourceType: event.resourceType,
-      resourceId: event.resourceId,
-      resourceLabel: event.resourceLabel,
-      targetClerkId: event.targetClerkId ?? null,
-      targetEmail: event.targetEmail ?? null,
-      targetDiscordUsername: event.targetDiscordUsername ?? null,
-      metadata: event.metadata ?? null,
-      createdAt: event.createdAt,
-    }));
+    const actorClerkIds = Array.from(
+      new Set(events.map((event) => event.actorClerkId)),
+    );
+    const actors = await Promise.all(
+      actorClerkIds.map((clerkId) => getUserByClerkId(ctx, clerkId)),
+    );
+    const actorsByClerkId = new Map(
+      actors.flatMap((actor) => (actor ? [[actor.clerkId, actor]] : [])),
+    );
+
+    return events
+      .filter((event) =>
+        isAdminTelemetryActor(
+          actorsByClerkId.get(event.actorClerkId) ?? null,
+          event.actorEmail,
+        ),
+      )
+      .slice(0, limit)
+      .map((event) => ({
+        id: event._id,
+        actorClerkId: event.actorClerkId,
+        actorEmail: event.actorEmail ?? null,
+        actorDiscordUsername: event.actorDiscordUsername ?? null,
+        action: event.action,
+        resourceType: event.resourceType,
+        resourceId: event.resourceId,
+        resourceLabel: event.resourceLabel,
+        targetClerkId: event.targetClerkId ?? null,
+        targetEmail: event.targetEmail ?? null,
+        targetDiscordUsername: event.targetDiscordUsername ?? null,
+        metadata: event.metadata ?? null,
+        createdAt: event.createdAt,
+      }));
   },
 });
