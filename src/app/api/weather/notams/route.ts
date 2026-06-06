@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isPro } from "~/app/actions/is-pro";
 
 // In-memory cache for NOTAMs (1 day TTL)
 const notamCache = new Map<string, { data: unknown; timestamp: number }>();
@@ -18,8 +19,7 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const icao = searchParams.get("icao");
-  const isPro = searchParams.get("pro") === "true";
+  const icao = searchParams.get("icao")?.trim().toUpperCase();
 
   if (!icao) {
     return NextResponse.json(
@@ -28,7 +28,27 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const cacheKey = icao.toUpperCase();
+  if (!/^[A-Z0-9]{3,4}$/.test(icao)) {
+    return NextResponse.json(
+      { error: "Invalid icao parameter" },
+      { status: 400 },
+    );
+  }
+
+  const hasProAccess = await isPro();
+  if (!hasProAccess) {
+    return NextResponse.json(
+      { type: "FeatureCollection", features: [] },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "private, no-store",
+        },
+      },
+    );
+  }
+
+  const cacheKey = icao;
   const cached = notamCache.get(cacheKey);
 
   // Return cached data if still valid
@@ -41,17 +61,9 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Free users can only see cached data - don't fetch from API
-  if (!isPro) {
-    return NextResponse.json(
-      { type: "FeatureCollection", features: [] },
-      { status: 200 },
-    );
-  }
-
   try {
     const response = await fetch(
-      `https://dir.aviapages.com/api/notams/?icao=${icao.toUpperCase()}&decode=true`,
+      `https://dir.aviapages.com/api/notams/?icao=${encodeURIComponent(icao)}&decode=true`,
       {
         headers: {
           Authorization: `Token ${apiKey}`,

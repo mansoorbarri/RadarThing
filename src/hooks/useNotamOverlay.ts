@@ -23,8 +23,13 @@ export const useNotamOverlay = (icao: string | undefined, isPro = false) => {
     const fetchNotams = async () => {
       setLoading(true);
       try {
+        if (!isPro) {
+          setNotamData({ notams: [], count: 0 });
+          return;
+        }
+
         const res = await fetch(
-          `/api/weather/notams?icao=${icao}&pro=${isPro}`,
+          `/api/weather/notams?icao=${encodeURIComponent(icao)}`,
         );
         if (!res.ok) throw new Error("Failed to fetch NOTAMs");
 

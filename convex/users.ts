@@ -11,7 +11,7 @@ import { hasEffectiveProAccess } from "../src/lib/proAccess";
 import { REFERRAL_MIN_ACCOUNT_AGE_MS } from "../src/lib/referrals";
 import { maybeCreateReferralClaimForNewUser } from "./referrals";
 import { logAdminTelemetry } from "./adminTelemetry";
-import { requireAuthenticatedClerkId, requireSystem } from "./lib/auth";
+import { requireAdmin, requireAuthenticatedClerkId, requireSystem } from "./lib/auth";
 
 const SUPER_ADMIN_EMAIL = "mansoor.eb.ak@gmail.com";
 
@@ -507,10 +507,31 @@ export const updateDiscordUsername = mutation({
 export const getAll = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
+
     return await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("isDeleted"), false))
       .collect();
+  },
+});
+
+export const getAssignablePilots = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAuthenticatedClerkId(ctx);
+
+    const users = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("isDeleted"), false))
+      .collect();
+
+    return users
+      .filter((user) => Boolean(user.googleId))
+      .map((user) => ({
+        _id: user._id,
+        discordUsername: user.discordUsername ?? null,
+      }));
   },
 });
 

@@ -97,7 +97,7 @@ export default function VirtualAirlineAdminPage() {
   const [memberActionId, setMemberActionId] = useState<string | null>(null);
   const uploadedDataRef = useRef<{ url: string; key: string } | null>(null);
   const uploaderRef = useRef<ImageUploaderRef>(null);
-  const allUsers = useQuery(api.users.getAll);
+  const allUsers = useQuery(api.users.getAssignablePilots);
 
   const virtualAirlines = useMemo(
     () => managedVirtualAirlines ?? [],
@@ -161,13 +161,11 @@ export default function VirtualAirlineAdminPage() {
 
     return users
       .filter((candidate) => {
-        if (!candidate.googleId) return false;
         if (existingUserIds.has(candidate._id)) return false;
         if (!query) return true;
 
         return (
           String(candidate._id).toLowerCase().includes(query) ||
-          candidate.clerkId.toLowerCase().includes(query) ||
           candidate.discordUsername?.toLowerCase().includes(query)
         );
       })

@@ -23,19 +23,16 @@ export const getByVirtualAirlineId = query({
           id: member._id,
           virtualAirlineId: member.virtualAirlineId,
           userId: member.userId,
-          clerkId: member.clerkId,
-          googleId: member.googleId,
           addedBy: member.addedBy,
           createdAt: member._creationTime,
-          email: user?.email ?? null,
           discordUsername: user?.discordUsername ?? null,
         };
       }),
     );
 
     return results.sort((a, b) =>
-      (a.email ?? a.discordUsername ?? a.clerkId).localeCompare(
-        b.email ?? b.discordUsername ?? b.clerkId,
+      (a.discordUsername ?? a.userId).localeCompare(
+        b.discordUsername ?? b.userId,
       ),
     );
   },
@@ -57,8 +54,6 @@ export const getByUserId = query({
       id: membership._id,
       virtualAirlineId: membership.virtualAirlineId,
       userId: membership.userId,
-      clerkId: membership.clerkId,
-      googleId: membership.googleId,
       addedBy: membership.addedBy,
       createdAt: membership._creationTime,
     };
@@ -81,11 +76,8 @@ export const getById = query({
       id: membership._id,
       virtualAirlineId: membership.virtualAirlineId,
       userId: membership.userId,
-      clerkId: membership.clerkId,
-      googleId: membership.googleId,
       addedBy: membership.addedBy,
       createdAt: membership._creationTime,
-      email: user?.email ?? null,
       discordUsername: user?.discordUsername ?? null,
     };
   },
@@ -95,8 +87,6 @@ export const add = mutation({
   args: {
     virtualAirlineId: v.id("virtualAirlines"),
     userId: v.id("users"),
-    clerkId: v.string(),
-    googleId: v.string(),
     addedBy: v.string(),
   },
   handler: async (ctx, args) => {
@@ -105,6 +95,11 @@ export const add = mutation({
       args.virtualAirlineId,
       { actorClerkId: args.addedBy },
     );
+
+    const selectedUser = await ctx.db.get(args.userId);
+    if (!selectedUser || selectedUser.isDeleted || !selectedUser.googleId) {
+      throw new Error("Pilot not found");
+    }
 
     const existingMembership = await ctx.db
       .query("virtualAirlineMembers")
@@ -120,18 +115,25 @@ export const add = mutation({
         id: existingMembership._id,
         virtualAirlineId: existingMembership.virtualAirlineId,
         userId: existingMembership.userId,
-        clerkId: existingMembership.clerkId,
-        googleId: existingMembership.googleId,
         addedBy: existingMembership.addedBy,
         createdAt: existingMembership._creationTime,
       };
     }
 
+    const existingUserMembership = await ctx.db
+      .query("virtualAirlineMembers")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .first();
+
+    if (existingUserMembership) {
+      throw new Error("Pilot is already assigned to another VA");
+    }
+
     const id = await ctx.db.insert("virtualAirlineMembers", {
       virtualAirlineId: args.virtualAirlineId,
       userId: args.userId,
-      clerkId: args.clerkId,
-      googleId: args.googleId,
+      clerkId: selectedUser.clerkId,
+      googleId: selectedUser.googleId,
       addedBy: actor.clerkId,
     });
 
@@ -142,8 +144,6 @@ export const add = mutation({
       id: membership._id,
       virtualAirlineId: membership.virtualAirlineId,
       userId: membership.userId,
-      clerkId: membership.clerkId,
-      googleId: membership.googleId,
       addedBy: membership.addedBy,
       createdAt: membership._creationTime,
     };
@@ -166,8 +166,6 @@ export const remove = mutation({
       id: membership._id,
       virtualAirlineId: membership.virtualAirlineId,
       userId: membership.userId,
-      clerkId: membership.clerkId,
-      googleId: membership.googleId,
     };
   },
 });
