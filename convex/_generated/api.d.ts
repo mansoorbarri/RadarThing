@@ -16,6 +16,7 @@ import type * as challenges from "../challenges.js";
 import type * as crons from "../crons.js";
 import type * as flights from "../flights.js";
 import type * as lib_airlineCodes from "../lib/airlineCodes.js";
+import type * as lib_auth from "../lib/auth.js";
 import type * as lib_challengeRules from "../lib/challengeRules.js";
 import type * as lib_icaoRegions from "../lib/icaoRegions.js";
 import type * as referrals from "../referrals.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   flights: typeof flights;
   "lib/airlineCodes": typeof lib_airlineCodes;
+  "lib/auth": typeof lib_auth;
   "lib/challengeRules": typeof lib_challengeRules;
   "lib/icaoRegions": typeof lib_icaoRegions;
   referrals: typeof referrals;

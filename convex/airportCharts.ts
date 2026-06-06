@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { logAdminTelemetry } from "./adminTelemetry";
+import { requireAdmin, requireAuthenticatedClerkId } from "./lib/auth";
 
 const chartTypeValidator = v.union(
   v.literal("TAXI"),
@@ -58,6 +59,8 @@ export const getChartsForAirport = query({
 export const getPending = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
+
     const charts = await ctx.db
       .query("airportCharts")
       .withIndex("by_isApproved", (q) => q.eq("isApproved", false))
@@ -155,6 +158,8 @@ export const create = mutation({
     isApproved: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    const uploadedBy = await requireAuthenticatedClerkId(ctx, args.uploadedBy);
+
     const id = await ctx.db.insert("airportCharts", {
       icao: args.icao.toUpperCase(),
       chartType: args.chartType,
@@ -162,8 +167,8 @@ export const create = mutation({
       chartUrl: args.chartUrl,
       imageKey: args.imageKey,
       source: "COMMUNITY",
-      isApproved: args.isApproved ?? false,
-      uploadedBy: args.uploadedBy,
+      isApproved: false,
+      uploadedBy,
       discordUsername: args.discordUsername,
     });
 
@@ -211,17 +216,18 @@ export const approve = mutation({
     approvedBy: v.string(),
   },
   handler: async (ctx, args) => {
+    const actor = await requireAdmin(ctx, { actorClerkId: args.approvedBy });
     const chart = await ctx.db.get(args.id);
     if (!chart) return;
 
     await ctx.db.patch(args.id, {
       isApproved: true,
-      approvedBy: args.approvedBy,
+      approvedBy: actor.clerkId,
       approvedAt: Date.now(),
     });
 
     await logAdminTelemetry(ctx, {
-      actorClerkId: args.approvedBy,
+      actorClerkId: actor.clerkId,
       action: "approve",
       resourceType: "airport_chart",
       resourceId: chart._id,
@@ -246,6 +252,7 @@ export const update = mutation({
     actorClerkId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const actor = await requireAdmin(ctx, { actorClerkId: args.actorClerkId });
     const chart = await ctx.db.get(args.id);
     if (!chart) return null;
 
@@ -255,28 +262,26 @@ export const update = mutation({
       chartName: args.chartName,
     });
 
-    if (args.actorClerkId) {
-      await logAdminTelemetry(ctx, {
-        actorClerkId: args.actorClerkId,
-        action: "edit",
-        resourceType: "airport_chart",
-        resourceId: chart._id,
-        resourceLabel: `${args.icao.toUpperCase()} ${args.chartType} ${args.chartName}`,
-        targetClerkId: chart.uploadedBy,
-        metadata: {
-          before: {
-            icao: chart.icao,
-            chartType: chart.chartType,
-            chartName: chart.chartName,
-          },
-          after: {
-            icao: args.icao.toUpperCase(),
-            chartType: args.chartType,
-            chartName: args.chartName,
-          },
+    await logAdminTelemetry(ctx, {
+      actorClerkId: actor.clerkId,
+      action: "edit",
+      resourceType: "airport_chart",
+      resourceId: chart._id,
+      resourceLabel: `${args.icao.toUpperCase()} ${args.chartType} ${args.chartName}`,
+      targetClerkId: chart.uploadedBy,
+      metadata: {
+        before: {
+          icao: chart.icao,
+          chartType: chart.chartType,
+          chartName: chart.chartName,
         },
-      });
-    }
+        after: {
+          icao: args.icao.toUpperCase(),
+          chartType: args.chartType,
+          chartName: args.chartName,
+        },
+      },
+    });
 
     return {
       id: chart._id,
@@ -297,28 +302,27 @@ export const remove = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const actor = await requireAdmin(ctx, { actorClerkId: args.actorClerkId });
     const chart = await ctx.db.get(args.id);
     if (!chart) return;
 
     await ctx.db.delete(args.id);
 
-    if (args.actorClerkId) {
-      await logAdminTelemetry(ctx, {
-        actorClerkId: args.actorClerkId,
-        action: args.action ?? "delete",
-        resourceType: "airport_chart",
-        resourceId: chart._id,
-        resourceLabel: `${chart.icao} ${chart.chartType} ${chart.chartName}`,
-        targetClerkId: chart.uploadedBy,
-        metadata: {
-          icao: chart.icao,
-          chartType: chart.chartType,
-          chartName: chart.chartName,
-          wasApproved: chart.isApproved,
-          reason: args.reason,
-        },
-      });
-    }
+    await logAdminTelemetry(ctx, {
+      actorClerkId: actor.clerkId,
+      action: args.action ?? "delete",
+      resourceType: "airport_chart",
+      resourceId: chart._id,
+      resourceLabel: `${chart.icao} ${chart.chartType} ${chart.chartName}`,
+      targetClerkId: chart.uploadedBy,
+      metadata: {
+        icao: chart.icao,
+        chartType: chart.chartType,
+        chartName: chart.chartName,
+        wasApproved: chart.isApproved,
+        reason: args.reason,
+      },
+    });
   },
 });
 
@@ -329,6 +333,7 @@ export const bulkApprove = mutation({
     approvedBy: v.string(),
   },
   handler: async (ctx, args) => {
+    const actor = await requireAdmin(ctx, { actorClerkId: args.approvedBy });
     const results: { id: string; success: boolean }[] = [];
     const now = Date.now();
 
@@ -341,12 +346,12 @@ export const bulkApprove = mutation({
 
       await ctx.db.patch(id, {
         isApproved: true,
-        approvedBy: args.approvedBy,
+        approvedBy: actor.clerkId,
         approvedAt: now,
       });
 
       await logAdminTelemetry(ctx, {
-        actorClerkId: args.approvedBy,
+        actorClerkId: actor.clerkId,
         action: "approve",
         resourceType: "airport_chart",
         resourceId: chart._id,
@@ -376,6 +381,7 @@ export const bulkRemove = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const actor = await requireAdmin(ctx, { actorClerkId: args.actorClerkId });
     const results: {
       id: string;
       success: boolean;
@@ -394,24 +400,22 @@ export const bulkRemove = mutation({
       }
 
       await ctx.db.delete(id);
-      if (args.actorClerkId) {
-        await logAdminTelemetry(ctx, {
-          actorClerkId: args.actorClerkId,
-          action: args.action ?? "delete",
-          resourceType: "airport_chart",
-          resourceId: chart._id,
-          resourceLabel: `${chart.icao} ${chart.chartType} ${chart.chartName}`,
-          targetClerkId: chart.uploadedBy,
-          metadata: {
-            icao: chart.icao,
-            chartType: chart.chartType,
-            chartName: chart.chartName,
-            wasApproved: chart.isApproved,
-            bulk: true,
-            reason: args.reason,
-          },
-        });
-      }
+      await logAdminTelemetry(ctx, {
+        actorClerkId: actor.clerkId,
+        action: args.action ?? "delete",
+        resourceType: "airport_chart",
+        resourceId: chart._id,
+        resourceLabel: `${chart.icao} ${chart.chartType} ${chart.chartName}`,
+        targetClerkId: chart.uploadedBy,
+        metadata: {
+          icao: chart.icao,
+          chartType: chart.chartType,
+          chartName: chart.chartName,
+          wasApproved: chart.isApproved,
+          bulk: true,
+          reason: args.reason,
+        },
+      });
       results.push({
         id,
         success: true,

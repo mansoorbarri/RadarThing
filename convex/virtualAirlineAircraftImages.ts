@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireVirtualAirlineManager } from "./lib/auth";
 
 function normalizeAircraftTypeKey(aircraftType: string): string {
   const cleaned = aircraftType.trim().toUpperCase();
@@ -22,6 +23,8 @@ export const getById = query({
     const image = await ctx.db.get(args.id);
     if (!image) return null;
 
+    await requireVirtualAirlineManager(ctx, image.virtualAirlineId);
+
     return {
       id: image._id,
       virtualAirlineId: image.virtualAirlineId,
@@ -40,6 +43,8 @@ export const getByVirtualAirlineId = query({
     virtualAirlineId: v.id("virtualAirlines"),
   },
   handler: async (ctx, args) => {
+    await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+
     const images = await ctx.db
       .query("virtualAirlineAircraftImages")
       .withIndex("by_virtualAirlineId", (q) =>
@@ -71,6 +76,11 @@ export const upsert = mutation({
     uploadedBy: v.string(),
   },
   handler: async (ctx, args) => {
+    const { user: actor } = await requireVirtualAirlineManager(
+      ctx,
+      args.virtualAirlineId,
+      { actorClerkId: args.uploadedBy },
+    );
     const aircraftType = normalizeAircraftTypeKey(args.aircraftType);
     const existingImage = await ctx.db
       .query("virtualAirlineAircraftImages")
@@ -87,7 +97,7 @@ export const upsert = mutation({
       await ctx.db.patch(existingImage._id, {
         imageUrl: args.imageUrl,
         imageKey: args.imageKey,
-        uploadedBy: args.uploadedBy,
+        uploadedBy: actor.clerkId,
         updatedAt: now,
       });
 
@@ -118,7 +128,7 @@ export const upsert = mutation({
       aircraftType,
       imageUrl: args.imageUrl,
       imageKey: args.imageKey,
-      uploadedBy: args.uploadedBy,
+      uploadedBy: actor.clerkId,
       updatedAt: now,
     });
 
@@ -149,6 +159,8 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const image = await ctx.db.get(args.id);
     if (!image) return null;
+
+    await requireVirtualAirlineManager(ctx, image.virtualAirlineId);
 
     await ctx.db.delete(args.id);
 

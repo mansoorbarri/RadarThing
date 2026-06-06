@@ -35,6 +35,7 @@ export async function POST(req: Request) {
   if (type === "user.deleted") {
     await convex.mutation(api.users.softDelete, {
       clerkId: data.id,
+      systemSecret: process.env.BOT_API_SECRET,
     });
   }
 
@@ -63,6 +64,7 @@ export async function POST(req: Request) {
         await convex.mutation(api.users.updateByClerkId, {
           clerkId: userId,
           role,
+          systemSecret: process.env.BOT_API_SECRET,
         });
         console.log("ROLE UPDATE by clerkId:", userId, role);
         return NextResponse.json({ ok: true });
@@ -76,6 +78,7 @@ export async function POST(req: Request) {
         await convex.mutation(api.users.update, {
           id: userByEmail._id,
           role,
+          systemSecret: process.env.BOT_API_SECRET,
         });
         console.log("ROLE UPDATE by email:", email, role);
       }

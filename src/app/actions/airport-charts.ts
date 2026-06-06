@@ -4,7 +4,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { UTApi } from "uploadthing/server";
 import { Resend } from "resend";
-import { convex, api } from "~/server/convex";
+import { api, convex, getAuthenticatedConvex } from "~/server/convex";
 import { env } from "~/env";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { ChartType, ChartSource } from "~/types/airportCharts";
@@ -167,7 +167,8 @@ export async function getPendingAirportCharts(): Promise<AirportChartRecord[]> {
   if (!admin) return [];
 
   try {
-    const charts = await convex.query(api.airportCharts.getPending, {});
+    const authedConvex = await getAuthenticatedConvex();
+    const charts = await authedConvex.query(api.airportCharts.getPending, {});
     return charts.map(toAirportChartRecord);
   } catch (error) {
     console.error("Error fetching pending airport charts:", error);
@@ -208,6 +209,7 @@ export async function validateChartUploadEligibility(data: {
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     const eligibility = await convex.query(
       api.airportCharts.checkUploadEligibility,
       {
@@ -248,6 +250,7 @@ export async function createAirportChart(data: {
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     const eligibility = await convex.query(
       api.airportCharts.checkUploadEligibility,
       {
@@ -273,7 +276,7 @@ export async function createAirportChart(data: {
       };
     }
 
-    const chart = await convex.mutation(api.airportCharts.create, {
+    const chart = await authedConvex.mutation(api.airportCharts.create, {
       icao: data.icao.toUpperCase(),
       chartType: data.chartType,
       chartName: data.chartName,
@@ -287,7 +290,7 @@ export async function createAirportChart(data: {
     // Auto-approve if uploaded by admin
     const isAdmin = await isAdminUser();
     if (isAdmin && chart) {
-      await convex.mutation(api.airportCharts.approve, {
+      await authedConvex.mutation(api.airportCharts.approve, {
         id: chart.id as Id<"airportCharts">,
         approvedBy: userId,
       });
@@ -329,6 +332,7 @@ export async function approveAirportChart(
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     const chart = await convex.query(api.airportCharts.getById, {
       id: id as Id<"airportCharts">,
     });
@@ -337,7 +341,7 @@ export async function approveAirportChart(
       return { success: false, error: "Chart not found" };
     }
 
-    await convex.mutation(api.airportCharts.approve, {
+    await authedConvex.mutation(api.airportCharts.approve, {
       id: id as Id<"airportCharts">,
       approvedBy: userId,
     });
@@ -374,6 +378,7 @@ export async function rejectAirportChart(
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     const userId = await getCurrentUserId();
     if (!userId) {
       return { success: false, error: "Unauthorized" };
@@ -408,7 +413,7 @@ export async function rejectAirportChart(
       );
     }
 
-    await convex.mutation(api.airportCharts.remove, {
+    await authedConvex.mutation(api.airportCharts.remove, {
       id: id as Id<"airportCharts">,
       actorClerkId: userId,
       action: "reject",
@@ -434,6 +439,7 @@ export async function deleteAirportChart(
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     const userId = await getCurrentUserId();
     if (!userId) {
       return { success: false, error: "Unauthorized" };
@@ -455,7 +461,7 @@ export async function deleteAirportChart(
       }
     }
 
-    await convex.mutation(api.airportCharts.remove, {
+    await authedConvex.mutation(api.airportCharts.remove, {
       id: id as Id<"airportCharts">,
       actorClerkId: userId,
       action: "delete",
@@ -501,13 +507,14 @@ export async function updateAirportChart(
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     const userId = await getCurrentUserId();
     if (!userId) {
       return { success: false, error: "Unauthorized" };
     }
 
     // Update the database
-    const result = await convex.mutation(api.airportCharts.update, {
+    const result = await authedConvex.mutation(api.airportCharts.update, {
       id: id as Id<"airportCharts">,
       icao,
       chartType: newChartType,
@@ -564,6 +571,7 @@ export async function bulkApproveAirportCharts(
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     const charts = await Promise.all(
       ids.map((id) =>
         convex.query(api.airportCharts.getById, {
@@ -572,10 +580,13 @@ export async function bulkApproveAirportCharts(
       ),
     );
 
-    const results = await convex.mutation(api.airportCharts.bulkApprove, {
-      ids: ids as Id<"airportCharts">[],
-      approvedBy: userId,
-    });
+    const results = await authedConvex.mutation(
+      api.airportCharts.bulkApprove,
+      {
+        ids: ids as Id<"airportCharts">[],
+        approvedBy: userId,
+      },
+    );
 
     const emailPromises: Promise<void>[] = [];
 
@@ -624,17 +635,21 @@ export async function bulkRejectAirportCharts(
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     const userId = await getCurrentUserId();
     if (!userId) {
       return { success: false, rejected: 0, failed: ids.length };
     }
 
-    const results = await convex.mutation(api.airportCharts.bulkRemove, {
-      ids: ids as Id<"airportCharts">[],
-      actorClerkId: userId,
-      action: "reject",
-      reason,
-    });
+    const results = await authedConvex.mutation(
+      api.airportCharts.bulkRemove,
+      {
+        ids: ids as Id<"airportCharts">[],
+        actorClerkId: userId,
+        action: "reject",
+        reason,
+      },
+    );
 
     const deletePromises: Promise<void>[] = [];
     const emailPromises: Promise<void>[] = [];

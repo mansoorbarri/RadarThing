@@ -35,6 +35,7 @@ export async function createCheckoutSession() {
     await convex.mutation(api.users.updateByClerkId, {
       clerkId: userId,
       stripeCustomerId: customer.id,
+      systemSecret: process.env.BOT_API_SECRET,
     });
   }
 
@@ -77,6 +78,7 @@ export async function createCheckoutSession() {
       await convex.mutation(api.users.updateByClerkId, {
         clerkId: userId,
         stripeCustomerId: customer.id,
+        systemSecret: process.env.BOT_API_SECRET,
       });
 
       const session = await stripe.checkout.sessions.create({

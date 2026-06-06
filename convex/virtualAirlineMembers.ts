@@ -1,11 +1,14 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireVirtualAirlineManager } from "./lib/auth";
 
 export const getByVirtualAirlineId = query({
   args: {
     virtualAirlineId: v.id("virtualAirlines"),
   },
   handler: async (ctx, args) => {
+    await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+
     const members = await ctx.db
       .query("virtualAirlineMembers")
       .withIndex("by_virtualAirlineId", (q) =>
@@ -70,6 +73,8 @@ export const getById = query({
     const membership = await ctx.db.get(args.id);
     if (!membership) return null;
 
+    await requireVirtualAirlineManager(ctx, membership.virtualAirlineId);
+
     const user = await ctx.db.get(membership.userId);
 
     return {
@@ -95,6 +100,12 @@ export const add = mutation({
     addedBy: v.string(),
   },
   handler: async (ctx, args) => {
+    const { user: actor } = await requireVirtualAirlineManager(
+      ctx,
+      args.virtualAirlineId,
+      { actorClerkId: args.addedBy },
+    );
+
     const existingMembership = await ctx.db
       .query("virtualAirlineMembers")
       .withIndex("by_virtualAirlineId_userId", (q) =>
@@ -121,7 +132,7 @@ export const add = mutation({
       userId: args.userId,
       clerkId: args.clerkId,
       googleId: args.googleId,
-      addedBy: args.addedBy,
+      addedBy: actor.clerkId,
     });
 
     const membership = await ctx.db.get(id);
@@ -146,6 +157,8 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const membership = await ctx.db.get(args.id);
     if (!membership) return null;
+
+    await requireVirtualAirlineManager(ctx, membership.virtualAirlineId);
 
     await ctx.db.delete(args.id);
 

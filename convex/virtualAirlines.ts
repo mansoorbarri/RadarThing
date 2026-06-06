@@ -2,6 +2,11 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { logAdminTelemetry } from "./adminTelemetry";
 import type { Doc } from "./_generated/dataModel";
+import {
+  requireAdmin,
+  requireAuthenticatedClerkId,
+  requireVirtualAirlineManager,
+} from "./lib/auth";
 
 function normalizeCallsignPrefix(prefix: string): string {
   return prefix.trim().toUpperCase().replace(/\s+/g, "");
@@ -123,6 +128,8 @@ export const getManagedByAdmin = query({
     adminClerkId: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireAuthenticatedClerkId(ctx, args.adminClerkId);
+
     const virtualAirlines = await ctx.db
       .query("virtualAirlines")
       .withIndex("by_adminClerkId", (q) =>
@@ -270,6 +277,7 @@ export const create = mutation({
     createdBy: v.string(),
   },
   handler: async (ctx, args) => {
+    const actor = await requireAdmin(ctx, { actorClerkId: args.createdBy });
     const now = Date.now();
     const id = await ctx.db.insert("virtualAirlines", {
       name: args.name.trim(),
@@ -277,14 +285,14 @@ export const create = mutation({
       adminClerkId: args.adminClerkId,
       website: args.website,
       isActive: true,
-      createdBy: args.createdBy,
+      createdBy: actor.clerkId,
       updatedAt: now,
     });
 
     const virtualAirline = await ctx.db.get(id);
     if (virtualAirline) {
       await logAdminTelemetry(ctx, {
-        actorClerkId: args.createdBy,
+        actorClerkId: actor.clerkId,
         action: "create",
         resourceType: "virtual_airline",
         resourceId: virtualAirline._id,
@@ -312,8 +320,20 @@ export const update = mutation({
     actorClerkId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const { user: actor } = await requireVirtualAirlineManager(ctx, args.id, {
+      actorClerkId: args.actorClerkId,
+    });
     const existing = await ctx.db.get(args.id);
     if (!existing) return null;
+
+    const isSiteAdmin = actor.role === "ADMIN";
+    if (
+      !isSiteAdmin &&
+      (args.adminClerkId !== existing.adminClerkId ||
+        args.isActive !== existing.isActive)
+    ) {
+      throw new Error("Unauthorized");
+    }
 
     await ctx.db.patch(args.id, {
       name: args.name.trim(),
@@ -325,9 +345,9 @@ export const update = mutation({
     });
 
     const virtualAirline = await ctx.db.get(args.id);
-    if (virtualAirline && args.actorClerkId) {
+    if (virtualAirline) {
       await logAdminTelemetry(ctx, {
-        actorClerkId: args.actorClerkId,
+        actorClerkId: actor.clerkId,
         action: "edit",
         resourceType: "virtual_airline",
         resourceId: virtualAirline._id,
@@ -362,6 +382,7 @@ export const setActive = mutation({
     actorClerkId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const actor = await requireAdmin(ctx, { actorClerkId: args.actorClerkId });
     const existing = await ctx.db.get(args.id);
     if (!existing) return null;
 
@@ -371,9 +392,9 @@ export const setActive = mutation({
     });
 
     const virtualAirline = await ctx.db.get(args.id);
-    if (virtualAirline && args.actorClerkId) {
+    if (virtualAirline) {
       await logAdminTelemetry(ctx, {
-        actorClerkId: args.actorClerkId,
+        actorClerkId: actor.clerkId,
         action: "edit",
         resourceType: "virtual_airline",
         resourceId: virtualAirline._id,
@@ -395,6 +416,7 @@ export const remove = mutation({
     actorClerkId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const actor = await requireAdmin(ctx, { actorClerkId: args.actorClerkId });
     const virtualAirline = await ctx.db.get(args.id);
     if (!virtualAirline) return null;
 
@@ -420,22 +442,20 @@ export const remove = mutation({
 
     await ctx.db.delete(args.id);
 
-    if (args.actorClerkId) {
-      await logAdminTelemetry(ctx, {
-        actorClerkId: args.actorClerkId,
-        action: "delete",
-        resourceType: "virtual_airline",
-        resourceId: virtualAirline._id,
-        resourceLabel: `${virtualAirline.name} (${virtualAirline.callsignPrefix})`,
-        targetClerkId: virtualAirline.adminClerkId,
-        metadata: {
-          callsignPrefix: virtualAirline.callsignPrefix,
-          adminClerkId: virtualAirline.adminClerkId,
-          memberCount: members.length,
-          imageCount: images.length,
-        },
-      });
-    }
+    await logAdminTelemetry(ctx, {
+      actorClerkId: actor.clerkId,
+      action: "delete",
+      resourceType: "virtual_airline",
+      resourceId: virtualAirline._id,
+      resourceLabel: `${virtualAirline.name} (${virtualAirline.callsignPrefix})`,
+      targetClerkId: virtualAirline.adminClerkId,
+      metadata: {
+        callsignPrefix: virtualAirline.callsignPrefix,
+        adminClerkId: virtualAirline.adminClerkId,
+        memberCount: members.length,
+        imageCount: images.length,
+      },
+    });
 
     return {
       id: virtualAirline._id,
