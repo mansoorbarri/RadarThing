@@ -485,9 +485,14 @@ export const updateDiscordUsername = mutation({
   args: {
     clerkId: v.string(),
     discordUsername: v.optional(v.string()),
+    systemSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAuthenticatedClerkId(ctx, args.clerkId);
+    if (args.systemSecret) {
+      requireSystem(ctx, args.systemSecret);
+    } else {
+      await requireAuthenticatedClerkId(ctx, args.clerkId);
+    }
 
     const user = await ctx.db
       .query("users")

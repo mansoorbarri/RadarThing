@@ -5,6 +5,34 @@ import { convex, api } from "~/server/convex";
 
 const CLERK_WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET!;
 
+function getDiscordConnection(data: any):
+  | { hasDiscord: boolean; username?: string }
+  | null {
+  if (!Array.isArray(data.external_accounts)) return null;
+
+  const discordAccount = data.external_accounts.find((account: any) => {
+    const provider =
+      typeof account.provider === "string"
+        ? account.provider.replace(/^oauth_/, "")
+        : "";
+    return provider === "discord";
+  });
+
+  if (!discordAccount) {
+    return { hasDiscord: false };
+  }
+
+  const username =
+    typeof discordAccount.username === "string"
+      ? discordAccount.username.trim()
+      : "";
+
+  return {
+    hasDiscord: true,
+    username: username || undefined,
+  };
+}
+
 export async function POST(req: Request) {
   const headerList = await headers();
   const payload = await req.text();
@@ -31,6 +59,20 @@ export async function POST(req: Request) {
   }
 
   const { type, data } = evt;
+
+  if (type === "user.created" || type === "user.updated") {
+    const discordConnection = getDiscordConnection(data);
+
+    if (discordConnection) {
+      await convex.mutation(api.users.updateDiscordUsername, {
+        clerkId: data.id,
+        discordUsername: discordConnection.hasDiscord
+          ? discordConnection.username
+          : undefined,
+        systemSecret: process.env.BOT_API_SECRET,
+      });
+    }
+  }
 
   if (type === "user.deleted") {
     await convex.mutation(api.users.softDelete, {

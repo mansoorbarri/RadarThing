@@ -131,6 +131,7 @@ export default function DashboardPage() {
 
   // Track page view and stats (only once per page load)
   const hasTracked = useRef(false);
+  const hasReloadedDiscordOAuth = useRef(false);
   useEffect(() => {
     if (!loading && isSignedIn && !hasTracked.current) {
       hasTracked.current = true;
@@ -150,18 +151,36 @@ export default function DashboardPage() {
   const discordAccount = user?.externalAccounts?.find(
     (a) => a.provider === "discord",
   );
-  const discordUsername = discordAccount?.username ?? null;
+  const discordUsername = discordAccount?.username?.trim() || null;
+  const discordConnected = Boolean(discordAccount);
+
+  useEffect(() => {
+    if (!user || hasReloadedDiscordOAuth.current) return;
+    if (sessionStorage.getItem("radarthing:discord-oauth-pending") !== "1") {
+      return;
+    }
+
+    hasReloadedDiscordOAuth.current = true;
+    sessionStorage.removeItem("radarthing:discord-oauth-pending");
+    void user.reload();
+  }, [user]);
 
   // Auto-sync Discord username to Convex
   useEffect(() => {
     if (!clerkId || dbUser === undefined) return;
     const convexDiscord = dbUser?.discordUsername ?? null;
-    if (discordUsername && convexDiscord !== discordUsername) {
+    if (discordConnected && discordUsername && convexDiscord !== discordUsername) {
       void updateDiscordUsername({ clerkId, discordUsername });
-    } else if (!discordUsername && convexDiscord) {
+    } else if (!discordConnected && convexDiscord) {
       void updateDiscordUsername({ clerkId, discordUsername: undefined });
     }
-  }, [clerkId, discordUsername, dbUser, updateDiscordUsername]);
+  }, [
+    clerkId,
+    discordConnected,
+    discordUsername,
+    dbUser,
+    updateDiscordUsername,
+  ]);
 
   const connectDiscord = async () => {
     if (!user) return;
@@ -173,6 +192,7 @@ export default function DashboardPage() {
       });
       const url = res.verification?.externalVerificationRedirectURL;
       if (url) {
+        sessionStorage.setItem("radarthing:discord-oauth-pending", "1");
         window.location.href = url.toString();
       }
     } catch {
@@ -403,11 +423,11 @@ export default function DashboardPage() {
                 </div>
               )}
               <div className="mt-1.5 flex items-center gap-3">
-                {discordUsername ? (
+                {discordConnected ? (
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 font-mono text-xs text-indigo-400">
                       <DiscordIcon className="h-3.5 w-3.5" />
-                      <span>{discordUsername}</span>
+                      <span>{discordUsername ?? "Discord connected"}</span>
                     </div>
                     <button
                       onClick={disconnectDiscord}
