@@ -11,7 +11,12 @@ import { hasEffectiveProAccess } from "../src/lib/proAccess";
 import { REFERRAL_MIN_ACCOUNT_AGE_MS } from "../src/lib/referrals";
 import { maybeCreateReferralClaimForNewUser } from "./referrals";
 import { logAdminTelemetry } from "./adminTelemetry";
-import { requireAdmin, requireAuthenticatedClerkId, requireSystem } from "./lib/auth";
+import {
+  requireAdmin,
+  requireAnyVirtualAirlineManager,
+  requireAuthenticatedClerkId,
+  requireSystem,
+} from "./lib/auth";
 
 const SUPER_ADMIN_EMAIL = "mansoor.eb.ak@gmail.com";
 
@@ -519,7 +524,7 @@ export const getAll = query({
 export const getAssignablePilots = query({
   args: {},
   handler: async (ctx) => {
-    await requireAuthenticatedClerkId(ctx);
+    await requireAnyVirtualAirlineManager(ctx);
 
     const users = await ctx.db
       .query("users")

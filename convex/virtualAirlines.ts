@@ -320,13 +320,16 @@ export const update = mutation({
     actorClerkId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { user: actor } = await requireVirtualAirlineManager(ctx, args.id, {
-      actorClerkId: args.actorClerkId,
-    });
+    const { user: actor, isSiteAdmin } = await requireVirtualAirlineManager(
+      ctx,
+      args.id,
+      {
+        actorClerkId: args.actorClerkId,
+      },
+    );
     const existing = await ctx.db.get(args.id);
     if (!existing) return null;
 
-    const isSiteAdmin = actor.role === "ADMIN";
     if (
       !isSiteAdmin &&
       (args.adminClerkId !== existing.adminClerkId ||

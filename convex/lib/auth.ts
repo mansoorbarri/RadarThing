@@ -17,7 +17,18 @@ export async function getCurrentUser(ctx: AuthCtx) {
 
 export function isSystemSecretValid(systemSecret?: string) {
   const expected = process.env.BOT_API_SECRET;
-  return Boolean(expected && systemSecret && systemSecret === expected);
+  if (!expected || !systemSecret) return false;
+
+  const encoder = new TextEncoder();
+  const expectedBytes = encoder.encode(expected);
+  const providedBytes = encoder.encode(systemSecret);
+  if (expectedBytes.length !== providedBytes.length) return false;
+
+  let diff = 0;
+  for (let i = 0; i < expectedBytes.length; i++) {
+    diff |= (expectedBytes[i] ?? 0) ^ (providedBytes[i] ?? 0);
+  }
+  return diff === 0;
 }
 
 export async function requireAuthenticatedClerkId(
@@ -65,8 +76,8 @@ export async function requireAdmin(
   const actorEmail =
     actorClerkId === identity?.subject ? identity.email : undefined;
   const isSuperAdmin =
-    actorEmail?.trim().toLowerCase() === SUPER_ADMIN_EMAIL ||
-    user?.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL ||
+    actorEmail?.trim()?.toLowerCase() === SUPER_ADMIN_EMAIL ||
+    user?.email?.trim()?.toLowerCase() === SUPER_ADMIN_EMAIL ||
     (process.env.ADMIN_GOOGLE_ID !== undefined &&
       user?.googleId === process.env.ADMIN_GOOGLE_ID);
 
@@ -102,15 +113,50 @@ export async function requireVirtualAirlineManager(
     .withIndex("by_clerkId", (q) => q.eq("clerkId", actorClerkId))
     .first();
 
-  const isAdmin =
+  const isSiteAdmin =
     user?.role === "ADMIN" ||
-    user?.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL ||
+    user?.email?.trim()?.toLowerCase() === SUPER_ADMIN_EMAIL ||
     (process.env.ADMIN_GOOGLE_ID !== undefined &&
       user?.googleId === process.env.ADMIN_GOOGLE_ID);
 
-  if (!user || user.isDeleted || (!isAdmin && actorClerkId !== virtualAirline.adminClerkId)) {
+  if (
+    !user ||
+    user.isDeleted ||
+    (!isSiteAdmin && actorClerkId !== virtualAirline.adminClerkId)
+  ) {
     throw new Error("Unauthorized");
   }
 
-  return { user, virtualAirline };
+  return { user, virtualAirline, isSiteAdmin };
+}
+
+export async function requireAnyVirtualAirlineManager(ctx: AuthCtx) {
+  const actorClerkId = await requireAuthenticatedClerkId(ctx);
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_clerkId", (q) => q.eq("clerkId", actorClerkId))
+    .first();
+
+  const isSiteAdmin =
+    user?.role === "ADMIN" ||
+    user?.email?.trim()?.toLowerCase() === SUPER_ADMIN_EMAIL ||
+    (process.env.ADMIN_GOOGLE_ID !== undefined &&
+      user?.googleId === process.env.ADMIN_GOOGLE_ID);
+
+  if (user?.isDeleted) {
+    throw new Error("Unauthorized");
+  }
+
+  if (isSiteAdmin) return user;
+
+  const managedVirtualAirline = await ctx.db
+    .query("virtualAirlines")
+    .withIndex("by_adminClerkId", (q) => q.eq("adminClerkId", actorClerkId))
+    .first();
+
+  if (!managedVirtualAirline) {
+    throw new Error("Unauthorized");
+  }
+
+  return user;
 }

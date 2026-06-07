@@ -524,11 +524,11 @@ export async function addVirtualAirlineMember(data: {
     return { success: false, error: "This VA is currently disabled" };
   }
 
-  const selectedUser = await convex.query(api.users.getByClerkId, {
+  const currentUser = await convex.query(api.users.getByClerkId, {
     clerkId: access.clerkId,
   });
 
-  if (!selectedUser || selectedUser.isDeleted) {
+  if (!currentUser || currentUser.isDeleted) {
     return {
       success: false,
       error: "Your RadarThing account could not be verified",
@@ -578,12 +578,14 @@ export async function addVirtualAirlineMember(data: {
   };
 }
 
-export async function removeVirtualAirlineMember(
-  id: string,
-): Promise<{ success: boolean; error?: string }> {
+export async function removeVirtualAirlineMember(data: {
+  id: string;
+  virtualAirlineId: string;
+}): Promise<{ success: boolean; error?: string }> {
   const authedConvex = await getAuthenticatedConvex();
   const member = await authedConvex.query(api.virtualAirlineMembers.getById, {
-    id: id as Id<"virtualAirlineMembers">,
+    id: data.id as Id<"virtualAirlineMembers">,
+    virtualAirlineId: data.virtualAirlineId as Id<"virtualAirlines">,
   });
 
   if (!member) {
@@ -601,7 +603,8 @@ export async function removeVirtualAirlineMember(
   const removedMember = await authedConvex.mutation(
     api.virtualAirlineMembers.remove,
     {
-      id: id as Id<"virtualAirlineMembers">,
+      id: data.id as Id<"virtualAirlineMembers">,
+      virtualAirlineId: member.virtualAirlineId as Id<"virtualAirlines">,
     },
   );
 
@@ -704,13 +707,14 @@ export async function createVirtualAirlineAircraftImage(data: {
 }
 
 export async function deleteVirtualAirlineAircraftImage(
-  id: string,
+  data: { id: string; virtualAirlineId: string },
 ): Promise<{ success: boolean; error?: string }> {
   const authedConvex = await getAuthenticatedConvex();
   const image = await authedConvex.query(
     api.virtualAirlineAircraftImages.getById,
     {
-    id: id as Id<"virtualAirlineAircraftImages">,
+      id: data.id as Id<"virtualAirlineAircraftImages">,
+      virtualAirlineId: data.virtualAirlineId as Id<"virtualAirlines">,
     },
   );
 
@@ -732,7 +736,8 @@ export async function deleteVirtualAirlineAircraftImage(
   }
 
   await authedConvex.mutation(api.virtualAirlineAircraftImages.remove, {
-    id: id as Id<"virtualAirlineAircraftImages">,
+    id: data.id as Id<"virtualAirlineAircraftImages">,
+    virtualAirlineId: image.virtualAirlineId as Id<"virtualAirlines">,
   });
 
   revalidatePath("/admin");

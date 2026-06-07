@@ -63,12 +63,15 @@ export const getByUserId = query({
 export const getById = query({
   args: {
     id: v.id("virtualAirlineMembers"),
+    virtualAirlineId: v.id("virtualAirlines"),
   },
   handler: async (ctx, args) => {
+    await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+
     const membership = await ctx.db.get(args.id);
     if (!membership) return null;
 
-    await requireVirtualAirlineManager(ctx, membership.virtualAirlineId);
+    if (membership.virtualAirlineId !== args.virtualAirlineId) return null;
 
     const user = await ctx.db.get(membership.userId);
 
@@ -153,12 +156,15 @@ export const add = mutation({
 export const remove = mutation({
   args: {
     id: v.id("virtualAirlineMembers"),
+    virtualAirlineId: v.id("virtualAirlines"),
   },
   handler: async (ctx, args) => {
+    await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+
     const membership = await ctx.db.get(args.id);
     if (!membership) return null;
 
-    await requireVirtualAirlineManager(ctx, membership.virtualAirlineId);
+    if (membership.virtualAirlineId !== args.virtualAirlineId) return null;
 
     await ctx.db.delete(args.id);
 

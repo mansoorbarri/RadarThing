@@ -210,7 +210,7 @@ export async function validateChartUploadEligibility(data: {
 
   try {
     const authedConvex = await getAuthenticatedConvex();
-    const eligibility = await convex.query(
+    const eligibility = await authedConvex.query(
       api.airportCharts.checkUploadEligibility,
       {
         icao: data.icao.toUpperCase(),

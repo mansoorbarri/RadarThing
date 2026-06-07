@@ -18,12 +18,15 @@ function normalizeAircraftTypeKey(aircraftType: string): string {
 export const getById = query({
   args: {
     id: v.id("virtualAirlineAircraftImages"),
+    virtualAirlineId: v.id("virtualAirlines"),
   },
   handler: async (ctx, args) => {
+    await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+
     const image = await ctx.db.get(args.id);
     if (!image) return null;
 
-    await requireVirtualAirlineManager(ctx, image.virtualAirlineId);
+    if (image.virtualAirlineId !== args.virtualAirlineId) return null;
 
     return {
       id: image._id,
@@ -155,12 +158,15 @@ export const upsert = mutation({
 export const remove = mutation({
   args: {
     id: v.id("virtualAirlineAircraftImages"),
+    virtualAirlineId: v.id("virtualAirlines"),
   },
   handler: async (ctx, args) => {
+    await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+
     const image = await ctx.db.get(args.id);
     if (!image) return null;
 
-    await requireVirtualAirlineManager(ctx, image.virtualAirlineId);
+    if (image.virtualAirlineId !== args.virtualAirlineId) return null;
 
     await ctx.db.delete(args.id);
 

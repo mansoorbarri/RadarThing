@@ -254,9 +254,12 @@ export default function VirtualAirlineAdminPage() {
     }, 900);
   };
 
-  const handleDelete = async (id: string) => {
-    setDeletingId(id);
-    const result = await deleteVirtualAirlineAircraftImage(id);
+  const handleDelete = async (image: (typeof images)[number]) => {
+    setDeletingId(image.id);
+    const result = await deleteVirtualAirlineAircraftImage({
+      id: image.id,
+      virtualAirlineId: image.virtualAirlineId,
+    });
     setDeletingId(null);
 
     if (!result.success) {
@@ -286,9 +289,12 @@ export default function VirtualAirlineAdminPage() {
     toast.success("Pilot added to VA");
   };
 
-  const handleRemoveMember = async (memberId: string) => {
-    setMemberActionId(memberId);
-    const result = await removeVirtualAirlineMember(memberId);
+  const handleRemoveMember = async (member: (typeof members)[number]) => {
+    setMemberActionId(member.id);
+    const result = await removeVirtualAirlineMember({
+      id: member.id,
+      virtualAirlineId: member.virtualAirlineId,
+    });
     setMemberActionId(null);
 
     if (!result.success) {
@@ -752,7 +758,7 @@ export default function VirtualAirlineAdminPage() {
                     <button
                       type="button"
                       disabled={memberActionId === member.id}
-                      onClick={() => handleRemoveMember(member.id)}
+                      onClick={() => handleRemoveMember(member)}
                       className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {memberActionId === member.id ? (
@@ -854,7 +860,7 @@ export default function VirtualAirlineAdminPage() {
                       <button
                         type="button"
                         disabled={deletingId === image.id}
-                        onClick={() => handleDelete(image.id)}
+                        onClick={() => handleDelete(image)}
                         className="cursor-pointer rounded-lg border border-red-500/20 bg-red-500/10 p-2 text-red-300 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {deletingId === image.id ? (
