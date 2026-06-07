@@ -158,5 +158,9 @@ export async function requireAnyVirtualAirlineManager(ctx: AuthCtx) {
     throw new Error("Unauthorized");
   }
 
+  if (!user || user.isDeleted) {
+    throw new Error("Unauthorized");
+  }
+
   return user;
 }
