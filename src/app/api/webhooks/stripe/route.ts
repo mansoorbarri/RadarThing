@@ -34,6 +34,7 @@ async function syncStripeSubscription(stripeCustomerId: string) {
     await convex.mutation(api.users.updateByStripeCustomerId, {
       stripeCustomerId,
       role: "FREE",
+      systemSecret: process.env.BOT_API_SECRET,
     });
     return { status: "none" };
   }
@@ -47,6 +48,7 @@ async function syncStripeSubscription(stripeCustomerId: string) {
   await convex.mutation(api.users.updateByStripeCustomerId, {
     stripeCustomerId,
     role: shouldBePro ? "PRO" : "FREE",
+    systemSecret: process.env.BOT_API_SECRET,
   });
 
   return {
@@ -97,6 +99,7 @@ export async function POST(req: Request) {
           clerkId,
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscriptionId,
+          systemSecret: process.env.BOT_API_SECRET,
         });
 
         // Sync subscription state

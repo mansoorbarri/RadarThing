@@ -290,7 +290,7 @@ function EditableCodes({
 export function AircraftImagesTab() {
   const pendingQuery = useQuery(api.aircraftImages.getPending);
   const approvedQuery = useQuery(api.aircraftImages.getApproved);
-  const allUsersQuery = useQuery(api.users.getAll);
+  const allUsersQuery = useQuery(api.users.getAllForProManagement);
   const pendingImages = useMemo(() => pendingQuery ?? [], [pendingQuery]);
   const approvedImages = useMemo(() => approvedQuery ?? [], [approvedQuery]);
   const [imageSubTab, setImageSubTab] = useState<ImageSubTab>("pending");

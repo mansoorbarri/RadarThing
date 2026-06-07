@@ -25,6 +25,7 @@ export async function syncStripeSubscription(stripeCustomerId: string) {
     await convex.mutation(api.users.updateByStripeCustomerId, {
       stripeCustomerId,
       role: "FREE",
+      systemSecret: process.env.BOT_API_SECRET,
     });
     return { status: "none" as const };
   }
@@ -37,6 +38,7 @@ export async function syncStripeSubscription(stripeCustomerId: string) {
   await convex.mutation(api.users.updateByStripeCustomerId, {
     stripeCustomerId,
     role: shouldBePro ? "PRO" : "FREE",
+    systemSecret: process.env.BOT_API_SECRET,
   });
 
   return {
@@ -68,6 +70,7 @@ export async function syncAfterCheckout() {
       await convex.mutation(api.users.updateByClerkId, {
         clerkId: userId,
         stripeCustomerId,
+        systemSecret: process.env.BOT_API_SECRET,
       });
     }
   }

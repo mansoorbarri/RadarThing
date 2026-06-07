@@ -4,7 +4,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { UTApi } from "uploadthing/server";
 import { Resend } from "resend";
-import { convex, api } from "~/server/convex";
+import { api, convex, getAuthenticatedConvex } from "~/server/convex";
 import { env } from "~/env";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { hasEffectiveProAccess } from "~/lib/proAccess";
@@ -209,7 +209,8 @@ export async function getPendingAircraftImages(): Promise<AircraftImage[]> {
   if (!admin) return [];
 
   try {
-    const images = await convex.query(api.aircraftImages.getPending, {});
+    const authedConvex = await getAuthenticatedConvex();
+    const images = await authedConvex.query(api.aircraftImages.getPending, {});
     return images.map(toAircraftImage);
   } catch (error) {
     console.error("Error fetching pending aircraft images:", error);
@@ -223,7 +224,8 @@ export async function getAllAircraftImages(): Promise<AircraftImage[]> {
   if (!admin) return [];
 
   try {
-    const images = await convex.query(api.aircraftImages.getAll, {});
+    const authedConvex = await getAuthenticatedConvex();
+    const images = await authedConvex.query(api.aircraftImages.getAll, {});
     return images.map(toAircraftImage);
   } catch (error) {
     console.error("Error fetching aircraft images:", error);
@@ -355,6 +357,7 @@ export async function createAircraftImage(data: {
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     const aircraftType = normalizeAircraftTypeInput(data.aircraftType);
     const airlineIata = data.isMilitary ? "MIL" : data.airlineIata;
     const airlineIcao = data.airlineIcao;
@@ -407,7 +410,7 @@ export async function createAircraftImage(data: {
       };
     }
 
-    const image = await convex.mutation(api.aircraftImages.create, {
+    const image = await authedConvex.mutation(api.aircraftImages.create, {
       airlineIata,
       airlineIcao,
       aircraftType,
@@ -421,7 +424,7 @@ export async function createAircraftImage(data: {
     // Auto-approve if uploaded by admin
     const isAdmin = await isAdminUser();
     if (isAdmin && image) {
-      await convex.mutation(api.aircraftImages.approve, {
+      await authedConvex.mutation(api.aircraftImages.approve, {
         id: image.id as Id<"aircraftImages">,
         approvedBy: userId,
       });
@@ -516,6 +519,7 @@ export async function resolveImageConflict(
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     // Get both images
     const keepImage = await convex.query(api.aircraftImages.getById, {
       id: keepImageId as Id<"aircraftImages">,
@@ -553,7 +557,7 @@ export async function resolveImageConflict(
     }
 
     // Delete the image to remove from DB
-    await convex.mutation(api.aircraftImages.remove, {
+    await authedConvex.mutation(api.aircraftImages.remove, {
       id: removeImageId as Id<"aircraftImages">,
       actorClerkId: userId,
       action: "delete",
@@ -562,7 +566,7 @@ export async function resolveImageConflict(
 
     // If keeping the pending image, approve it
     if (!keepImage.isApproved) {
-      await convex.mutation(api.aircraftImages.approve, {
+      await authedConvex.mutation(api.aircraftImages.approve, {
         id: keepImageId as Id<"aircraftImages">,
         approvedBy: userId,
       });
@@ -599,6 +603,7 @@ export async function approveAircraftImage(
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     // Get the image to approve
     const imageToApprove = await convex.query(api.aircraftImages.getById, {
       id: id as Id<"aircraftImages">,
@@ -625,7 +630,7 @@ export async function approveAircraftImage(
     }
 
     // Approve the new image (no conflict)
-    await convex.mutation(api.aircraftImages.approve, {
+    await authedConvex.mutation(api.aircraftImages.approve, {
       id: id as Id<"aircraftImages">,
       approvedBy: userId,
     });
@@ -661,6 +666,7 @@ export async function rejectAircraftImage(
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     const userId = await getCurrentUserId();
     if (!userId) {
       return { success: false, error: "Unauthorized" };
@@ -695,7 +701,7 @@ export async function rejectAircraftImage(
       reason,
     );
 
-    await convex.mutation(api.aircraftImages.remove, {
+    await authedConvex.mutation(api.aircraftImages.remove, {
       id: id as Id<"aircraftImages">,
       actorClerkId: userId,
       action: "reject",
@@ -721,6 +727,7 @@ export async function deleteAircraftImage(
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     const userId = await getCurrentUserId();
     if (!userId) {
       return { success: false, error: "Unauthorized" };
@@ -743,7 +750,7 @@ export async function deleteAircraftImage(
       }
     }
 
-    await convex.mutation(api.aircraftImages.remove, {
+    await authedConvex.mutation(api.aircraftImages.remove, {
       id: id as Id<"aircraftImages">,
       actorClerkId: userId,
       action: "delete",
@@ -803,6 +810,7 @@ export async function bulkApproveAircraftImages(
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     // Get image details before approval (for notifications)
     const images = await Promise.all(
       ids.map((id) =>
@@ -813,10 +821,13 @@ export async function bulkApproveAircraftImages(
     );
 
     // Single batch mutation for all approvals
-    const results = await convex.mutation(api.aircraftImages.bulkApprove, {
-      ids: ids as Id<"aircraftImages">[],
-      approvedBy: userId,
-    });
+    const results = await authedConvex.mutation(
+      api.aircraftImages.bulkApprove,
+      {
+        ids: ids as Id<"aircraftImages">[],
+        approvedBy: userId,
+      },
+    );
 
     // Delete old images from UploadThing and send emails
     const deletePromises: Promise<void>[] = [];
@@ -902,13 +913,14 @@ export async function updateAircraftImageCodes(
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     const userId = await getCurrentUserId();
     if (!userId) {
       return { success: false, error: "Unauthorized" };
     }
 
     // Update the database
-    const result = await convex.mutation(api.aircraftImages.updateCodes, {
+    const result = await authedConvex.mutation(api.aircraftImages.updateCodes, {
       id: id as Id<"aircraftImages">,
       airlineIata: iata,
       airlineIcao: icao,
@@ -967,13 +979,14 @@ export async function bulkRejectAircraftImages(
   }
 
   try {
+    const authedConvex = await getAuthenticatedConvex();
     const userId = await getCurrentUserId();
     if (!userId) {
       return { success: false, rejected: 0, failed: ids.length };
     }
 
     // Single batch mutation to delete all images and get their details
-    const results = await convex.mutation(api.aircraftImages.bulkRemove, {
+    const results = await authedConvex.mutation(api.aircraftImages.bulkRemove, {
       ids: ids as Id<"aircraftImages">[],
       actorClerkId: userId,
       action: "reject",

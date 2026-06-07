@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { UTApi } from "uploadthing/server";
-import { convex, api } from "~/server/convex";
+import { api, convex, getAuthenticatedConvex } from "~/server/convex";
 import { getCurrentAccessContext } from "~/server/access";
 import { getAircraftTypeLookupCandidates } from "~/lib/utils";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -53,11 +53,8 @@ export interface VirtualAirlineMember {
   id: string;
   virtualAirlineId: string;
   userId: string;
-  clerkId: string;
-  googleId: string;
   addedBy: string;
   createdAt: Date;
-  email: string | null;
   discordUsername: string | null;
 }
 
@@ -137,22 +134,16 @@ function toVirtualAirlineMember(item: {
   id: string;
   virtualAirlineId: string;
   userId: string;
-  clerkId: string;
-  googleId: string;
   addedBy: string;
   createdAt: number;
-  email: string | null;
   discordUsername: string | null;
 }): VirtualAirlineMember {
   return {
     id: item.id,
     virtualAirlineId: item.virtualAirlineId,
     userId: item.userId,
-    clerkId: item.clerkId,
-    googleId: item.googleId,
     addedBy: item.addedBy,
     createdAt: new Date(item.createdAt),
-    email: item.email,
     discordUsername: item.discordUsername,
   };
 }
@@ -258,11 +249,10 @@ async function ensureVirtualAirlineAdminMembership(data: {
     return;
   }
 
-  await convex.mutation(api.virtualAirlineMembers.add, {
+  const authedConvex = await getAuthenticatedConvex();
+  await authedConvex.mutation(api.virtualAirlineMembers.add, {
     virtualAirlineId: data.virtualAirlineId as Id<"virtualAirlines">,
     userId: adminUser._id,
-    clerkId: adminUser.clerkId,
-    googleId: adminUser.googleId,
     addedBy: data.addedBy,
   });
 }
@@ -287,7 +277,8 @@ export async function createVirtualAirline(data: {
     return { success: false, error: validated.error };
   }
 
-  const virtualAirline = await convex.mutation(api.virtualAirlines.create, {
+  const authedConvex = await getAuthenticatedConvex();
+  const virtualAirline = await authedConvex.mutation(api.virtualAirlines.create, {
     name: validated.name,
     callsignPrefix: validated.callsignPrefix,
     adminClerkId: data.adminClerkId,
@@ -344,7 +335,8 @@ export async function updateVirtualAirline(data: {
     return { success: false, error: "VA not found" };
   }
 
-  const virtualAirline = await convex.mutation(api.virtualAirlines.update, {
+  const authedConvex = await getAuthenticatedConvex();
+  const virtualAirline = await authedConvex.mutation(api.virtualAirlines.update, {
     id: data.id as Id<"virtualAirlines">,
     name: validated.name,
     callsignPrefix: validated.callsignPrefix,
@@ -407,7 +399,8 @@ export async function updateManagedVirtualAirline(data: {
     return { success: false, error: validated.error };
   }
 
-  const updatedVirtualAirline = await convex.mutation(
+  const authedConvex = await getAuthenticatedConvex();
+  const updatedVirtualAirline = await authedConvex.mutation(
     api.virtualAirlines.update,
     {
       id: data.id as Id<"virtualAirlines">,
@@ -443,7 +436,8 @@ export async function deleteVirtualAirline(id: string): Promise<{
     return { success: false, error: "Only ADMIN users can delete VAs" };
   }
 
-  const removed = await convex.mutation(api.virtualAirlines.remove, {
+  const authedConvex = await getAuthenticatedConvex();
+  const removed = await authedConvex.mutation(api.virtualAirlines.remove, {
     id: id as Id<"virtualAirlines">,
     actorClerkId: access.clerkId,
   });
@@ -497,7 +491,8 @@ export async function getVirtualAirlineMembers(
   const { allowed } = await canManageVirtualAirline(virtualAirlineId);
   if (!allowed) return [];
 
-  const members = await convex.query(
+  const authedConvex = await getAuthenticatedConvex();
+  const members = await authedConvex.query(
     api.virtualAirlineMembers.getByVirtualAirlineId,
     {
       virtualAirlineId: virtualAirlineId as Id<"virtualAirlines">,
@@ -529,44 +524,34 @@ export async function addVirtualAirlineMember(data: {
     return { success: false, error: "This VA is currently disabled" };
   }
 
-  const user = await convex.query(api.users.getAll, {});
-  const selectedUser = user.find((entry) => entry._id === data.userId);
-
-  if (!selectedUser || selectedUser.isDeleted) {
-    return { success: false, error: "Pilot not found" };
-  }
-
-  if (!selectedUser.googleId) {
-    return {
-      success: false,
-      error: "That pilot does not have a linked Google ID yet",
-    };
-  }
-
-  const existingMembership = await convex.query(
-    api.virtualAirlineMembers.getByUserId,
-    {
-      userId: data.userId as Id<"users">,
-    },
-  );
-
-  if (
-    existingMembership &&
-    existingMembership.virtualAirlineId !== data.virtualAirlineId
-  ) {
-    return {
-      success: false,
-      error: "That pilot is already assigned to another VA",
-    };
-  }
-
-  const member = await convex.mutation(api.virtualAirlineMembers.add, {
-    virtualAirlineId: data.virtualAirlineId as Id<"virtualAirlines">,
-    userId: data.userId as Id<"users">,
-    clerkId: selectedUser.clerkId,
-    googleId: selectedUser.googleId,
-    addedBy: access.clerkId,
+  const currentUser = await convex.query(api.users.getByClerkId, {
+    clerkId: access.clerkId,
   });
+
+  if (!currentUser || currentUser.isDeleted) {
+    return {
+      success: false,
+      error: "Your RadarThing account could not be verified",
+    };
+  }
+
+  const authedConvex = await getAuthenticatedConvex();
+  let member;
+  try {
+    member = await authedConvex.mutation(api.virtualAirlineMembers.add, {
+      virtualAirlineId: data.virtualAirlineId as Id<"virtualAirlines">,
+      userId: data.userId as Id<"users">,
+      addedBy: access.clerkId,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    return {
+      success: false,
+      error: message.includes("already assigned")
+        ? "That pilot is already assigned to another VA"
+        : "Failed to add pilot to VA",
+    };
+  }
 
   revalidatePath("/admin");
   revalidatePath("/va-admin");
@@ -576,7 +561,7 @@ export async function addVirtualAirlineMember(data: {
     return { success: false, error: "Failed to add pilot to VA" };
   }
 
-  const refreshedMembers = await convex.query(
+  const refreshedMembers = await authedConvex.query(
     api.virtualAirlineMembers.getByVirtualAirlineId,
     {
       virtualAirlineId: data.virtualAirlineId as Id<"virtualAirlines">,
@@ -593,11 +578,14 @@ export async function addVirtualAirlineMember(data: {
   };
 }
 
-export async function removeVirtualAirlineMember(
-  id: string,
-): Promise<{ success: boolean; error?: string }> {
-  const member = await convex.query(api.virtualAirlineMembers.getById, {
-    id: id as Id<"virtualAirlineMembers">,
+export async function removeVirtualAirlineMember(data: {
+  id: string;
+  virtualAirlineId: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const authedConvex = await getAuthenticatedConvex();
+  const member = await authedConvex.query(api.virtualAirlineMembers.getById, {
+    id: data.id as Id<"virtualAirlineMembers">,
+    virtualAirlineId: data.virtualAirlineId as Id<"virtualAirlines">,
   });
 
   if (!member) {
@@ -612,10 +600,11 @@ export async function removeVirtualAirlineMember(
     };
   }
 
-  const removedMember = await convex.mutation(
+  const removedMember = await authedConvex.mutation(
     api.virtualAirlineMembers.remove,
     {
-      id: id as Id<"virtualAirlineMembers">,
+      id: data.id as Id<"virtualAirlineMembers">,
+      virtualAirlineId: member.virtualAirlineId as Id<"virtualAirlines">,
     },
   );
 
@@ -677,7 +666,8 @@ export async function createVirtualAirlineAircraftImage(data: {
   }
 
   try {
-    const result = await convex.mutation(
+    const authedConvex = await getAuthenticatedConvex();
+    const result = await authedConvex.mutation(
       api.virtualAirlineAircraftImages.upsert,
       {
         virtualAirlineId: data.virtualAirlineId as Id<"virtualAirlines">,
@@ -717,11 +707,16 @@ export async function createVirtualAirlineAircraftImage(data: {
 }
 
 export async function deleteVirtualAirlineAircraftImage(
-  id: string,
+  data: { id: string; virtualAirlineId: string },
 ): Promise<{ success: boolean; error?: string }> {
-  const image = await convex.query(api.virtualAirlineAircraftImages.getById, {
-    id: id as Id<"virtualAirlineAircraftImages">,
-  });
+  const authedConvex = await getAuthenticatedConvex();
+  const image = await authedConvex.query(
+    api.virtualAirlineAircraftImages.getById,
+    {
+      id: data.id as Id<"virtualAirlineAircraftImages">,
+      virtualAirlineId: data.virtualAirlineId as Id<"virtualAirlines">,
+    },
+  );
 
   if (!image) {
     return { success: false, error: "Image not found" };
@@ -740,8 +735,9 @@ export async function deleteVirtualAirlineAircraftImage(
     await utapi.deleteFiles(image.imageKey).catch(() => undefined);
   }
 
-  await convex.mutation(api.virtualAirlineAircraftImages.remove, {
-    id: id as Id<"virtualAirlineAircraftImages">,
+  await authedConvex.mutation(api.virtualAirlineAircraftImages.remove, {
+    id: data.id as Id<"virtualAirlineAircraftImages">,
+    virtualAirlineId: image.virtualAirlineId as Id<"virtualAirlines">,
   });
 
   revalidatePath("/admin");

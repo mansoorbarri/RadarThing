@@ -20,6 +20,11 @@ import {
   hasEffectiveProAccess,
 } from "../src/lib/proAccess";
 import { maybeQualifyReferralForUser } from "./referrals";
+import {
+  isSystemSecretValid,
+  requireAdmin,
+  requireAuthenticatedClerkId,
+} from "./lib/auth";
 
 const DEFAULT_STATS_MAX_SPEED_KTS = 750;
 const HIGH_PERFORMANCE_STATS_MAX_SPEED_KTS = 1100;
@@ -347,8 +352,17 @@ export const create = mutation({
     routeData: v.optional(v.any()),
     startTime: v.number(),
     endTime: v.optional(v.number()),
+    systemSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    if (!isSystemSecretValid(args.systemSecret)) {
+      const user = await ctx.db.get(args.userId);
+      if (!user || user.isDeleted) {
+        throw new Error("User not found");
+      }
+      await requireAuthenticatedClerkId(ctx, user.clerkId);
+    }
+
     const statsExcludedReason = getStatsExcludedReason(args);
     const flightId = await ctx.db.insert("flights", {
       userId: args.userId,
@@ -505,8 +519,13 @@ export const getById = query({
 
 // Delete all flights for a user (for cascading delete)
 export const deleteByUserId = mutation({
-  args: { userId: v.id("users") },
+  args: {
+    userId: v.id("users"),
+    actorClerkId: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx, { actorClerkId: args.actorClerkId });
+
     const flights = await ctx.db
       .query("flights")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
@@ -570,6 +589,8 @@ export const backfillUserStatsPage = mutation({
     reset: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
     let stats = await ctx.db
       .query("userStats")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))

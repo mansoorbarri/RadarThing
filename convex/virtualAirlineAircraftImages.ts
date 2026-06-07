@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireVirtualAirlineManager } from "./lib/auth";
 
 function normalizeAircraftTypeKey(aircraftType: string): string {
   const cleaned = aircraftType.trim().toUpperCase();
@@ -17,10 +18,15 @@ function normalizeAircraftTypeKey(aircraftType: string): string {
 export const getById = query({
   args: {
     id: v.id("virtualAirlineAircraftImages"),
+    virtualAirlineId: v.id("virtualAirlines"),
   },
   handler: async (ctx, args) => {
+    await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+
     const image = await ctx.db.get(args.id);
     if (!image) return null;
+
+    if (image.virtualAirlineId !== args.virtualAirlineId) return null;
 
     return {
       id: image._id,
@@ -40,6 +46,8 @@ export const getByVirtualAirlineId = query({
     virtualAirlineId: v.id("virtualAirlines"),
   },
   handler: async (ctx, args) => {
+    await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+
     const images = await ctx.db
       .query("virtualAirlineAircraftImages")
       .withIndex("by_virtualAirlineId", (q) =>
@@ -71,6 +79,11 @@ export const upsert = mutation({
     uploadedBy: v.string(),
   },
   handler: async (ctx, args) => {
+    const { user: actor } = await requireVirtualAirlineManager(
+      ctx,
+      args.virtualAirlineId,
+      { actorClerkId: args.uploadedBy },
+    );
     const aircraftType = normalizeAircraftTypeKey(args.aircraftType);
     const existingImage = await ctx.db
       .query("virtualAirlineAircraftImages")
@@ -87,7 +100,7 @@ export const upsert = mutation({
       await ctx.db.patch(existingImage._id, {
         imageUrl: args.imageUrl,
         imageKey: args.imageKey,
-        uploadedBy: args.uploadedBy,
+        uploadedBy: actor.clerkId,
         updatedAt: now,
       });
 
@@ -118,7 +131,7 @@ export const upsert = mutation({
       aircraftType,
       imageUrl: args.imageUrl,
       imageKey: args.imageKey,
-      uploadedBy: args.uploadedBy,
+      uploadedBy: actor.clerkId,
       updatedAt: now,
     });
 
@@ -145,10 +158,15 @@ export const upsert = mutation({
 export const remove = mutation({
   args: {
     id: v.id("virtualAirlineAircraftImages"),
+    virtualAirlineId: v.id("virtualAirlines"),
   },
   handler: async (ctx, args) => {
+    await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+
     const image = await ctx.db.get(args.id);
     if (!image) return null;
+
+    if (image.virtualAirlineId !== args.virtualAirlineId) return null;
 
     await ctx.db.delete(args.id);
 

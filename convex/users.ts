@@ -11,6 +11,12 @@ import { hasEffectiveProAccess } from "../src/lib/proAccess";
 import { REFERRAL_MIN_ACCOUNT_AGE_MS } from "../src/lib/referrals";
 import { maybeCreateReferralClaimForNewUser } from "./referrals";
 import { logAdminTelemetry } from "./adminTelemetry";
+import {
+  requireAdmin,
+  requireAnyVirtualAirlineManager,
+  requireAuthenticatedClerkId,
+  requireSystem,
+} from "./lib/auth";
 
 const SUPER_ADMIN_EMAIL = "mansoor.eb.ak@gmail.com";
 
@@ -353,14 +359,32 @@ export const update = mutation({
     stripeSubscriptionId: v.optional(v.string()),
     isDeleted: v.optional(v.boolean()),
     deletedAt: v.optional(v.number()),
+    systemSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { id, ...updates } = args;
+    const { id, systemSecret, ...updates } = args;
+    const user = await ctx.db.get(id);
+    if (!user) return null;
+
+    const requiresSystem =
+      updates.role !== undefined ||
+      updates.stripeCustomerId !== undefined ||
+      updates.stripeSubscriptionId !== undefined ||
+      updates.isDeleted !== undefined ||
+      updates.deletedAt !== undefined;
+
+    if (requiresSystem) {
+      requireSystem(ctx, systemSecret);
+    } else {
+      await requireAuthenticatedClerkId(ctx, user.clerkId);
+    }
+
     // Filter out undefined values
     const filteredUpdates = Object.fromEntries(
       Object.entries(updates).filter(([_, v]) => v !== undefined),
     );
     await ctx.db.patch(id, filteredUpdates);
+    return id;
   },
 });
 
@@ -375,15 +399,29 @@ export const updateByClerkId = mutation({
     stripeSubscriptionId: v.optional(v.string()),
     isDeleted: v.optional(v.boolean()),
     deletedAt: v.optional(v.number()),
+    systemSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { clerkId, ...updates } = args;
+    const { clerkId, systemSecret, ...updates } = args;
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
       .first();
 
     if (!user) return null;
+
+    const requiresSystem =
+      updates.role !== undefined ||
+      updates.stripeCustomerId !== undefined ||
+      updates.stripeSubscriptionId !== undefined ||
+      updates.isDeleted !== undefined ||
+      updates.deletedAt !== undefined;
+
+    if (requiresSystem) {
+      requireSystem(ctx, systemSecret);
+    } else {
+      await requireAuthenticatedClerkId(ctx, clerkId);
+    }
 
     const filteredUpdates = Object.fromEntries(
       Object.entries(updates).filter(([_, v]) => v !== undefined),
@@ -398,9 +436,12 @@ export const updateByStripeCustomerId = mutation({
   args: {
     stripeCustomerId: v.string(),
     role: v.optional(v.union(v.literal("FREE"), v.literal("PRO"))),
+    systemSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { stripeCustomerId, ...updates } = args;
+    requireSystem(ctx, args.systemSecret);
+
+    const { stripeCustomerId, systemSecret: _systemSecret, ...updates } = args;
     const user = await ctx.db
       .query("users")
       .withIndex("by_stripeCustomerId", (q) =>
@@ -420,8 +461,10 @@ export const updateByStripeCustomerId = mutation({
 
 // Soft delete user (for Clerk user.deleted event)
 export const softDelete = mutation({
-  args: { clerkId: v.string() },
+  args: { clerkId: v.string(), systemSecret: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    requireSystem(ctx, args.systemSecret);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -444,6 +487,8 @@ export const updateDiscordUsername = mutation({
     discordUsername: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAuthenticatedClerkId(ctx, args.clerkId);
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -467,10 +512,31 @@ export const updateDiscordUsername = mutation({
 export const getAll = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
+
     return await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("isDeleted"), false))
       .collect();
+  },
+});
+
+export const getAssignablePilots = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAnyVirtualAirlineManager(ctx);
+
+    const users = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("isDeleted"), false))
+      .collect();
+
+    return users
+      .filter((user) => Boolean(user.googleId))
+      .map((user) => ({
+        _id: user._id,
+        discordUsername: user.discordUsername ?? null,
+      }));
   },
 });
 
