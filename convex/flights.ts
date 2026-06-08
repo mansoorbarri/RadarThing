@@ -30,6 +30,12 @@ const DEFAULT_STATS_MAX_SPEED_KTS = 750;
 const HIGH_PERFORMANCE_STATS_MAX_SPEED_KTS = 1100;
 const STATS_EXCLUDED_SPEED_REASON = "speed_over_stats_limit";
 const LEGACY_STATS_EXCLUDED_SPEED_REASON = "speed_over_750_kts";
+const MIN_UNREALISTIC_REPAIR_DURATION_MS = 6 * 60 * 60 * 1000;
+const MIN_UNREALISTIC_REPAIR_DISTANCE_NM = 25;
+const DEFAULT_UNREALISTIC_REPAIR_RATIO = 3;
+const DEFAULT_REPAIR_SPEED_KTS = 450;
+const MIN_REPAIR_SPEED_KTS = 90;
+const MAX_REPAIR_SPEED_KTS = 900;
 
 function isHighPerformanceStatsAircraft(aircraftType?: string) {
   const normalized = aircraftType?.trim().toUpperCase() ?? "";
@@ -177,6 +183,70 @@ function getRecordedFlightDurationMs(flight: {
   }
 
   return 0;
+}
+
+function estimateRouteDurationMs(flight: {
+  aircraftType?: string;
+  maxSpeed?: number;
+  routeData?: unknown;
+}) {
+  const distanceNm = calculateRouteDistanceNm(flight.routeData);
+  if (distanceNm <= 0) {
+    return { distanceNm, estimatedDurationMs: 0, repairSpeedKts: 0 };
+  }
+
+  const observedMaxSpeedKts =
+    typeof flight.maxSpeed === "number" && Number.isFinite(flight.maxSpeed)
+      ? flight.maxSpeed
+      : undefined;
+  const speedFromObservedMax =
+    observedMaxSpeedKts !== undefined ? observedMaxSpeedKts * 0.75 : undefined;
+  const repairSpeedKts = Math.min(
+    MAX_REPAIR_SPEED_KTS,
+    Math.max(
+      MIN_REPAIR_SPEED_KTS,
+      speedFromObservedMax ?? DEFAULT_REPAIR_SPEED_KTS,
+    ),
+  );
+  const estimatedDurationMs = (distanceNm / repairSpeedKts) * 60 * 60 * 1000;
+
+  return { distanceNm, estimatedDurationMs, repairSpeedKts };
+}
+
+function getUnrealisticDurationRepair(flight: {
+  duration?: number;
+  startTime: number;
+  endTime?: number;
+  aircraftType?: string;
+  maxSpeed?: number;
+  routeData?: unknown;
+}) {
+  const recordedDurationMs = getRecordedFlightDurationMs(flight);
+  const { distanceNm, estimatedDurationMs, repairSpeedKts } =
+    estimateRouteDurationMs(flight);
+  const minRepairDurationMs = MIN_UNREALISTIC_REPAIR_DURATION_MS;
+  const minRepairRatio = DEFAULT_UNREALISTIC_REPAIR_RATIO;
+
+  if (
+    recordedDurationMs < minRepairDurationMs ||
+    distanceNm < MIN_UNREALISTIC_REPAIR_DISTANCE_NM ||
+    estimatedDurationMs <= 0
+  ) {
+    return null;
+  }
+
+  const ratio = recordedDurationMs / estimatedDurationMs;
+  if (ratio < minRepairRatio) {
+    return null;
+  }
+
+  return {
+    recordedDurationMs,
+    repairedDurationMs: Math.round(estimatedDurationMs),
+    distanceNm,
+    repairSpeedKts,
+    ratio,
+  };
 }
 
 async function getCurrentViewer(ctx: QueryCtx) {
@@ -598,9 +668,16 @@ export const deleteFlight = mutation({
 });
 
 export const recalculateStatsForUser = mutation({
-  args: { userId: v.id("users") },
+  args: {
+    userId: v.id("users"),
+    actorClerkId: v.optional(v.string()),
+    systemSecret: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, {
+      actorClerkId: args.actorClerkId,
+      systemSecret: args.systemSecret,
+    });
     await recalculateUserStats(ctx, args.userId);
 
     return { success: true, userId: args.userId };
@@ -608,9 +685,16 @@ export const recalculateStatsForUser = mutation({
 });
 
 export const recalculateStatsForAllUsersPage = mutation({
-  args: { paginationOpts: paginationOptsValidator },
+  args: {
+    paginationOpts: paginationOptsValidator,
+    actorClerkId: v.optional(v.string()),
+    systemSecret: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, {
+      actorClerkId: args.actorClerkId,
+      systemSecret: args.systemSecret,
+    });
 
     const page = await ctx.db
       .query("users")
@@ -633,9 +717,14 @@ export const repairFlightDuration = mutation({
   args: {
     flightId: v.id("flights"),
     durationMs: v.number(),
+    actorClerkId: v.optional(v.string()),
+    systemSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, {
+      actorClerkId: args.actorClerkId,
+      systemSecret: args.systemSecret,
+    });
 
     if (!Number.isFinite(args.durationMs) || args.durationMs < 0) {
       throw new Error("Duration must be a non-negative finite number");
@@ -660,6 +749,85 @@ export const repairFlightDuration = mutation({
       userId: flight.userId,
       previousDurationMs,
       durationMs: nextDurationMs,
+    };
+  },
+});
+
+export const repairUnrealisticDurationsPage = mutation({
+  args: {
+    paginationOpts: paginationOptsValidator,
+    dryRun: v.optional(v.boolean()),
+    actorClerkId: v.optional(v.string()),
+    systemSecret: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, {
+      actorClerkId: args.actorClerkId,
+      systemSecret: args.systemSecret,
+    });
+
+    const page = await ctx.db
+      .query("flights")
+      .withIndex("by_startTime")
+      .paginate(args.paginationOpts);
+
+    const dryRun = args.dryRun ?? true;
+    const repairedUserIds = new Set<Id<"users">>();
+    const candidates: {
+      flightId: Id<"flights">;
+      userId: Id<"users">;
+      callsign: string;
+      aircraftType: string;
+      startTime: number;
+      endTime?: number;
+      recordedDurationMs: number;
+      repairedDurationMs: number;
+      distanceNm: number;
+      repairSpeedKts: number;
+      ratio: number;
+    }[] = [];
+
+    for (const flight of page.page) {
+      const repair = getUnrealisticDurationRepair(flight);
+      if (!repair) continue;
+
+      candidates.push({
+        flightId: flight._id,
+        userId: flight.userId,
+        callsign: flight.callsign,
+        aircraftType: flight.aircraftType,
+        startTime: flight.startTime,
+        endTime: flight.endTime,
+        recordedDurationMs: repair.recordedDurationMs,
+        repairedDurationMs: repair.repairedDurationMs,
+        distanceNm: Math.round(repair.distanceNm * 10) / 10,
+        repairSpeedKts: Math.round(repair.repairSpeedKts),
+        ratio: Math.round(repair.ratio * 100) / 100,
+      });
+
+      if (!dryRun) {
+        await ctx.db.patch(flight._id, {
+          duration: repair.repairedDurationMs,
+        });
+        repairedUserIds.add(flight.userId);
+      }
+    }
+
+    if (!dryRun) {
+      for (const userId of repairedUserIds) {
+        await recalculateUserStats(ctx, userId);
+      }
+    }
+
+    return {
+      dryRun,
+      processedFlights: page.page.length,
+      candidateCount: candidates.length,
+      repairedFlightCount: dryRun ? 0 : candidates.length,
+      recalculatedUserCount: dryRun ? 0 : repairedUserIds.size,
+      candidates,
+      isDone: page.isDone,
+      continueCursor: page.continueCursor,
     };
   },
 });
