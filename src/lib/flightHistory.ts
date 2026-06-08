@@ -8,6 +8,7 @@ export interface FlightHistorySearchable {
   arrICAO?: string;
   startTime: number;
   endTime?: number;
+  duration?: number;
   maxAltitude?: number;
   maxSpeed?: number;
   routeData?: [number, number][];
@@ -56,10 +57,21 @@ function formatSearchDateVariants(timestamp: number) {
   ];
 }
 
-function formatSearchDuration(startTime: number, endTime?: number) {
-  if (!endTime) return ["in progress", "active", "ongoing"];
+function formatSearchDuration(
+  startTime: number,
+  endTime?: number,
+  duration?: number,
+) {
+  if (!endTime && duration === undefined)
+    return ["in progress", "active", "ongoing"];
 
-  const totalMinutes = Math.max(0, Math.round((endTime - startTime) / 60000));
+  const durationMs =
+    typeof duration === "number" && Number.isFinite(duration)
+      ? duration
+      : endTime !== undefined
+        ? endTime - startTime
+        : 0;
+  const totalMinutes = Math.max(0, Math.round(durationMs / 60000));
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
 
@@ -86,7 +98,7 @@ export function buildFlightSearchCandidates(flight: FlightHistorySearchable) {
       ? `${flight.depICAO} ${flight.arrICAO}`
       : undefined,
     ...formatSearchDateVariants(flight.startTime),
-    ...formatSearchDuration(flight.startTime, flight.endTime),
+    ...formatSearchDuration(flight.startTime, flight.endTime, flight.duration),
     typeof flight.maxAltitude === "number"
       ? `${Math.round(flight.maxAltitude)}`
       : undefined,

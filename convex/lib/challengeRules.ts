@@ -40,6 +40,7 @@ export interface ChallengeFlight {
   arrICAO?: string;
   startTime: number;
   endTime?: number;
+  duration?: number;
   routeData?: unknown;
 }
 
@@ -79,6 +80,22 @@ function haversineDistance(
 
 function toRad(value: number) {
   return value * (Math.PI / 180);
+}
+
+function getRecordedFlightDurationMs(flight: ChallengeFlight) {
+  if (typeof flight.duration === "number" && Number.isFinite(flight.duration)) {
+    return Math.max(0, flight.duration);
+  }
+
+  if (
+    typeof flight.endTime === "number" &&
+    Number.isFinite(flight.endTime) &&
+    flight.endTime > flight.startTime
+  ) {
+    return flight.endTime - flight.startTime;
+  }
+
+  return 0;
 }
 
 export function calculateRouteDistanceNm(routeData: unknown) {
@@ -158,9 +175,7 @@ export function doesFlightMatchChallenge(
     case "min_duration":
       return (
         typeof challenge.minDurationMinutes === "number" &&
-        typeof flight.endTime === "number" &&
-        flight.endTime > flight.startTime &&
-        flight.endTime - flight.startTime >=
+        getRecordedFlightDurationMs(flight) >=
           challenge.minDurationMinutes * 60 * 1000
       );
     case "min_distance":
@@ -243,15 +258,7 @@ export function countUniqueVisitedAirports(flights: ChallengeFlight[]) {
 
 export function sumFlightDurationsMinutes(flights: ChallengeFlight[]) {
   return flights.reduce((total, flight) => {
-    if (
-      typeof flight.endTime !== "number" ||
-      !Number.isFinite(flight.endTime) ||
-      flight.endTime <= flight.startTime
-    ) {
-      return total;
-    }
-
-    return total + (flight.endTime - flight.startTime) / 60000;
+    return total + getRecordedFlightDurationMs(flight) / 60000;
   }, 0);
 }
 

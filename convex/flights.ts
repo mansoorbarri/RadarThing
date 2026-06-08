@@ -163,6 +163,22 @@ function isFlightStatsEligible(flight: {
   return getStatsExcludedReason(flight) === undefined;
 }
 
+function getRecordedFlightDurationMs(flight: {
+  duration?: number;
+  startTime: number;
+  endTime?: number;
+}) {
+  if (typeof flight.duration === "number" && Number.isFinite(flight.duration)) {
+    return Math.max(0, flight.duration);
+  }
+
+  if (flight.endTime !== undefined) {
+    return Math.max(0, flight.endTime - flight.startTime);
+  }
+
+  return 0;
+}
+
 async function getCurrentViewer(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity?.subject) return null;
@@ -199,6 +215,7 @@ function serializeFlightHistoryFlight(flight: {
   arrICAO?: string;
   startTime: number;
   endTime?: number;
+  duration?: number;
   maxAltitude?: number;
   maxSpeed?: number;
   routeData?: [number, number][];
@@ -211,6 +228,7 @@ function serializeFlightHistoryFlight(flight: {
     arrICAO: flight.arrICAO,
     startTime: flight.startTime,
     endTime: flight.endTime,
+    duration: flight.duration,
     maxAltitude: flight.maxAltitude,
     maxSpeed: flight.maxSpeed,
     routeData: flight.routeData,
@@ -252,9 +270,7 @@ async function recalculateUserStats(ctx: MutationCtx, userId: Id<"users">) {
   let totalDistanceNm = 0;
 
   for (const flight of eligibleFlights) {
-    if (flight.endTime !== undefined) {
-      totalFlightTimeMs += Math.max(0, flight.endTime - flight.startTime);
-    }
+    totalFlightTimeMs += getRecordedFlightDurationMs(flight);
     totalDistanceNm += calculateRouteDistanceNm(flight.routeData);
   }
 
@@ -389,10 +405,7 @@ export const create = mutation({
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .first();
 
-    const flightTimeMs =
-      args.endTime !== undefined
-        ? Math.max(0, args.endTime - args.startTime)
-        : 0;
+    const flightTimeMs = getRecordedFlightDurationMs(args);
     const distanceNm = calculateRouteDistanceNm(args.routeData);
     const flightDate = utcDateStringFromTimestamp(args.startTime);
 
@@ -420,6 +433,7 @@ export const create = mutation({
         arrICAO: args.arrICAO,
         startTime: args.startTime,
         endTime: args.endTime,
+        duration: args.duration,
         routeData: args.routeData,
       });
 
@@ -475,6 +489,7 @@ export const create = mutation({
       arrICAO: args.arrICAO,
       startTime: args.startTime,
       endTime: args.endTime,
+      duration: args.duration,
       routeData: args.routeData,
     });
 
@@ -582,6 +597,73 @@ export const deleteFlight = mutation({
   },
 });
 
+export const recalculateStatsForUser = mutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    await recalculateUserStats(ctx, args.userId);
+
+    return { success: true, userId: args.userId };
+  },
+});
+
+export const recalculateStatsForAllUsersPage = mutation({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
+    const page = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("isDeleted"), false))
+      .paginate(args.paginationOpts);
+
+    for (const user of page.page) {
+      await recalculateUserStats(ctx, user._id);
+    }
+
+    return {
+      processedUsers: page.page.length,
+      isDone: page.isDone,
+      continueCursor: page.continueCursor,
+    };
+  },
+});
+
+export const repairFlightDuration = mutation({
+  args: {
+    flightId: v.id("flights"),
+    durationMs: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
+    if (!Number.isFinite(args.durationMs) || args.durationMs < 0) {
+      throw new Error("Duration must be a non-negative finite number");
+    }
+
+    const flight = await ctx.db.get(args.flightId);
+    if (!flight) {
+      throw new Error("Flight not found");
+    }
+
+    const previousDurationMs = getRecordedFlightDurationMs(flight);
+    const nextDurationMs = Math.round(args.durationMs);
+
+    await ctx.db.patch(flight._id, {
+      duration: nextDurationMs,
+    });
+    await recalculateUserStats(ctx, flight.userId);
+
+    return {
+      success: true,
+      flightId: flight._id,
+      userId: flight.userId,
+      previousDurationMs,
+      durationMs: nextDurationMs,
+    };
+  },
+});
+
 export const backfillUserStatsPage = mutation({
   args: {
     userId: v.id("users"),
@@ -657,9 +739,7 @@ export const backfillUserStatsPage = mutation({
       if (!isFlightStatsEligible(flight)) continue;
 
       totalFlights += 1;
-      if (flight.endTime !== undefined) {
-        totalFlightTimeMs += Math.max(0, flight.endTime - flight.startTime);
-      }
+      totalFlightTimeMs += getRecordedFlightDurationMs(flight);
       totalDistanceNm += calculateRouteDistanceNm(flight.routeData);
 
       if (
@@ -760,12 +840,7 @@ export const getStatsByClerkId = query({
 
     for (const flight of eligibleFlights) {
       if (!stats) {
-        if (flight.endTime !== undefined) {
-          fallbackTotalFlightTimeMs += Math.max(
-            0,
-            flight.endTime - flight.startTime,
-          );
-        }
+        fallbackTotalFlightTimeMs += getRecordedFlightDurationMs(flight);
         fallbackTotalDistanceNm += calculateRouteDistanceNm(flight.routeData);
       }
 
@@ -1010,12 +1085,7 @@ export const getStatsById = query({
 
     for (const flight of eligibleFlights) {
       if (!stats) {
-        if (flight.endTime !== undefined) {
-          fallbackTotalFlightTimeMs += Math.max(
-            0,
-            flight.endTime - flight.startTime,
-          );
-        }
+        fallbackTotalFlightTimeMs += getRecordedFlightDurationMs(flight);
         fallbackTotalDistanceNm += calculateRouteDistanceNm(flight.routeData);
       }
 

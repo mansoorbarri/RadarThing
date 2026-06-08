@@ -951,6 +951,7 @@ export async function autoCompleteChallengesForFlight(
     arrICAO?: string;
     startTime: number;
     endTime?: number;
+    duration?: number;
     routeData?: unknown;
   },
 ) {
@@ -984,6 +985,7 @@ export async function autoCompleteChallengesForFlight(
           arrICAO: args.arrICAO,
           startTime: args.startTime,
           endTime: args.endTime,
+          duration: args.duration,
           routeData: args.routeData,
         });
 
