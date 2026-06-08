@@ -35,6 +35,7 @@ export interface FlightHistoryPanelFlight {
   arrICAO?: string;
   startTime: number;
   endTime?: number;
+  duration?: number;
   maxAltitude?: number;
   maxSpeed?: number;
   routeData?: [number, number][];
@@ -63,9 +64,14 @@ function formatDate(timestamp: number) {
   });
 }
 
-function formatDuration(start: number, end?: number) {
-  if (!end) return "In Progress";
-  const ms = end - start;
+function formatDuration(start: number, end?: number, duration?: number) {
+  if (!end && duration === undefined) return "In Progress";
+  const ms =
+    typeof duration === "number" && Number.isFinite(duration)
+      ? duration
+      : end !== undefined
+        ? end - start
+        : 0;
   const hours = Math.floor(ms / (1000 * 60 * 60));
   const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
   if (hours === 0) return `${minutes}m`;
@@ -302,6 +308,7 @@ export function FlightHistoryPanel({
                                   {formatDuration(
                                     flight.startTime,
                                     flight.endTime,
+                                    flight.duration,
                                   )}
                                 </span>
                               </div>
@@ -309,35 +316,36 @@ export function FlightHistoryPanel({
                           </div>
 
                           <div className="hidden flex-wrap items-center gap-2 sm:ml-auto sm:flex sm:justify-end">
-                            {flight.routeData && flight.routeData.length > 1 && (
-                              <>
-                                <button
-                                  onClick={() => onShareFlight(flight)}
-                                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400 sm:h-8 sm:w-8 sm:text-white/40 sm:opacity-0 sm:group-hover:opacity-100"
-                                  title="Copy share link"
-                                >
-                                  <Share2 className="h-3.5 w-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => onGenerateFlightCard(flight)}
-                                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-all hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400 sm:h-8 sm:w-8 sm:text-white/40 sm:opacity-0 sm:group-hover:opacity-100"
-                                  title={
-                                    canGenerateFlightCard
-                                      ? "Generate flight card"
-                                      : "Unlock PRO to generate a flight card"
-                                  }
-                                >
-                                  <Camera className="h-3.5 w-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => onReplayFlight(flight)}
-                                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 transition-all hover:bg-amber-500/20 sm:h-8 sm:w-8 sm:opacity-0 sm:group-hover:opacity-100"
-                                  title="Replay this flight"
-                                >
-                                  <Play className="h-4 w-4" />
-                                </button>
-                              </>
-                            )}
+                            {flight.routeData &&
+                              flight.routeData.length > 1 && (
+                                <>
+                                  <button
+                                    onClick={() => onShareFlight(flight)}
+                                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400 sm:h-8 sm:w-8 sm:text-white/40 sm:opacity-0 sm:group-hover:opacity-100"
+                                    title="Copy share link"
+                                  >
+                                    <Share2 className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => onGenerateFlightCard(flight)}
+                                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-all hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400 sm:h-8 sm:w-8 sm:text-white/40 sm:opacity-0 sm:group-hover:opacity-100"
+                                    title={
+                                      canGenerateFlightCard
+                                        ? "Generate flight card"
+                                        : "Unlock PRO to generate a flight card"
+                                    }
+                                  >
+                                    <Camera className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => onReplayFlight(flight)}
+                                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 transition-all hover:bg-amber-500/20 sm:h-8 sm:w-8 sm:opacity-0 sm:group-hover:opacity-100"
+                                    title="Replay this flight"
+                                  >
+                                    <Play className="h-4 w-4" />
+                                  </button>
+                                </>
+                              )}
                             {canDeleteFlights && onDeleteFlight && (
                               <button
                                 onClick={() => onDeleteFlight(flight)}
