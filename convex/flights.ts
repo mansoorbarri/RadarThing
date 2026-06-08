@@ -757,6 +757,8 @@ export const repairUnrealisticDurationsPage = mutation({
   args: {
     paginationOpts: paginationOptsValidator,
     dryRun: v.optional(v.boolean()),
+    includeCandidates: v.optional(v.boolean()),
+    recalculateStats: v.optional(v.boolean()),
     actorClerkId: v.optional(v.string()),
     systemSecret: v.optional(v.string()),
   },
@@ -772,7 +774,10 @@ export const repairUnrealisticDurationsPage = mutation({
       .paginate(args.paginationOpts);
 
     const dryRun = args.dryRun ?? true;
+    const includeCandidates = args.includeCandidates ?? dryRun;
+    const shouldRecalculateStats = args.recalculateStats ?? true;
     const repairedUserIds = new Set<Id<"users">>();
+    let matchedFlightCount = 0;
     const candidates: {
       flightId: Id<"flights">;
       userId: Id<"users">;
@@ -791,19 +796,22 @@ export const repairUnrealisticDurationsPage = mutation({
       const repair = getUnrealisticDurationRepair(flight);
       if (!repair) continue;
 
-      candidates.push({
-        flightId: flight._id,
-        userId: flight.userId,
-        callsign: flight.callsign,
-        aircraftType: flight.aircraftType,
-        startTime: flight.startTime,
-        endTime: flight.endTime,
-        recordedDurationMs: repair.recordedDurationMs,
-        repairedDurationMs: repair.repairedDurationMs,
-        distanceNm: Math.round(repair.distanceNm * 10) / 10,
-        repairSpeedKts: Math.round(repair.repairSpeedKts),
-        ratio: Math.round(repair.ratio * 100) / 100,
-      });
+      matchedFlightCount += 1;
+      if (includeCandidates) {
+        candidates.push({
+          flightId: flight._id,
+          userId: flight.userId,
+          callsign: flight.callsign,
+          aircraftType: flight.aircraftType,
+          startTime: flight.startTime,
+          endTime: flight.endTime,
+          recordedDurationMs: repair.recordedDurationMs,
+          repairedDurationMs: repair.repairedDurationMs,
+          distanceNm: Math.round(repair.distanceNm * 10) / 10,
+          repairSpeedKts: Math.round(repair.repairSpeedKts),
+          ratio: Math.round(repair.ratio * 100) / 100,
+        });
+      }
 
       if (!dryRun) {
         await ctx.db.patch(flight._id, {
@@ -813,7 +821,7 @@ export const repairUnrealisticDurationsPage = mutation({
       }
     }
 
-    if (!dryRun) {
+    if (!dryRun && shouldRecalculateStats) {
       for (const userId of repairedUserIds) {
         await recalculateUserStats(ctx, userId);
       }
@@ -822,9 +830,10 @@ export const repairUnrealisticDurationsPage = mutation({
     return {
       dryRun,
       processedFlights: page.page.length,
-      candidateCount: candidates.length,
-      repairedFlightCount: dryRun ? 0 : candidates.length,
-      recalculatedUserCount: dryRun ? 0 : repairedUserIds.size,
+      candidateCount: matchedFlightCount,
+      repairedFlightCount: dryRun ? 0 : matchedFlightCount,
+      recalculatedUserCount:
+        dryRun || !shouldRecalculateStats ? 0 : repairedUserIds.size,
       candidates,
       isDone: page.isDone,
       continueCursor: page.continueCursor,
