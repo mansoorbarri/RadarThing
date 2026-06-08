@@ -16,7 +16,7 @@ export async function getCurrentUser(ctx: AuthCtx) {
 }
 
 export function isSystemSecretValid(systemSecret?: string) {
-  const expected = process.env.BOT_API_SECRET;
+  const expected = process.env.CONVEX_SYSTEM_SECRET;
   if (!expected || !systemSecret) return false;
 
   const encoder = new TextEncoder();

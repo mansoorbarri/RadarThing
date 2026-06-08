@@ -14,7 +14,7 @@ type BotAction =
   | "markFailed";
 
 function isAuthorized(request: Request): boolean {
-  return request.headers.get("x-bot-secret") === env.BOT_API_SECRET;
+  return request.headers.get("x-bot-secret") === env.CONVEX_SYSTEM_SECRET;
 }
 
 function unauthorized() {

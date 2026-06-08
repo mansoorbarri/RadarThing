@@ -19,7 +19,7 @@ export const env = createEnv({
     AVIAPAGES_API_KEY: z.string().optional(),
     AVWX_TOKEN: z.string(),
     OPENWEATHERMAP_API_KEY: z.string(),
-    BOT_API_SECRET: z.string(),
+    CONVEX_SYSTEM_SECRET: z.string(),
   },
 
   /**
@@ -63,7 +63,7 @@ export const env = createEnv({
     AVIAPAGES_API_KEY: process.env.AVIAPAGES_API_KEY,
     AVWX_TOKEN: process.env.AVWX_TOKEN,
     OPENWEATHERMAP_API_KEY: process.env.OPENWEATHERMAP_API_KEY,
-    BOT_API_SECRET: process.env.BOT_API_SECRET,
+    CONVEX_SYSTEM_SECRET: process.env.CONVEX_SYSTEM_SECRET,
   },
   /**
    * Skip validation explicitly via `SKIP_ENV_VALIDATION`, or automatically on Vercel preview
