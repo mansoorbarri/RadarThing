@@ -73,7 +73,7 @@ function truncateConvexId(id: string) {
 }
 
 export function VirtualAirlinesTab() {
-  const allUsers = useQuery(api.users.getAllForProManagement);
+  const allUsers = useQuery(api.users.getAll);
   const virtualAirlines = useQuery(api.virtualAirlines.getAll);
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [isModalOpen, setIsModalOpen] = useState(false);
