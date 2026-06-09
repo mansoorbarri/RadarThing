@@ -47,7 +47,7 @@ function isHighPerformanceStatsAircraft(aircraftType?: string) {
     /\bF\/?A-?\d{1,3}[A-Z]?\b/.test(normalized) ||
     /\bF-?\d{1,3}[A-Z]?\b/.test(normalized) ||
     /\b[ABT]-\d{1,3}[A-Z]?\b/.test(normalized) ||
-    /\bSR-?71\b/.test(normalized) ||
+    /\bSR-?71[A-Z]?\b/.test(normalized) ||
     /\bYF-?\d{1,3}[A-Z]?\b/.test(normalized) ||
     /\bMIG-?\d{1,3}[A-Z]?\b/.test(normalized) ||
     /\bSU-?\d{1,3}[A-Z]?\b/.test(normalized) ||
