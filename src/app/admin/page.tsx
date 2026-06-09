@@ -123,12 +123,20 @@ export default function AdminPage() {
     isLoading: proStatusLoading,
   } = useProStatus();
 
+  const canRunAdminQueries =
+    isLoaded && Boolean(isSignedIn) && !proStatusLoading && isAdminUser;
+
   // Queries for counts in tab badges
-  const pendingQuery = useQuery(api.aircraftImages.getPending);
-  const approvedChartsQuery = useQuery(api.airportCharts.getApproved);
+  const pendingQuery = useQuery(
+    api.aircraftImages.getPending,
+    canRunAdminQueries ? {} : "skip",
+  );
   const pendingCount = pendingQuery?.length ?? 0;
 
-  const loading = !isLoaded || proStatusLoading || pendingQuery === undefined;
+  const loading =
+    !isLoaded ||
+    proStatusLoading ||
+    (canRunAdminQueries && pendingQuery === undefined);
 
   useEffect(() => {
     if (!isLoaded || proStatusLoading || !isAdminUser) return;
@@ -287,9 +295,7 @@ export default function AdminPage() {
         </div>
 
         {mainTab === "images" && <AircraftImagesTab />}
-        {mainTab === "charts" && (
-          <AirportChartsTab approvedCharts={approvedChartsQuery} />
-        )}
+        {mainTab === "charts" && <AirportChartsTab />}
         {mainTab === "challenges" && <ChallengesTab />}
         {mainTab === "virtual-airlines" && <VirtualAirlinesTab />}
         {mainTab === "pro" && isSuperAdmin && <ProManagementTab />}
