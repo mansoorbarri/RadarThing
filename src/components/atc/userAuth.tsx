@@ -3,19 +3,20 @@
 import React, { useState, useEffect, useRef } from "react";
 import { SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
 import Image from "next/image";
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import Link from "next/link";
 import { LogOut, Ticket, User } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 
 export const UserAuth = () => {
   const { isSignedIn, isLoaded, user } = useUser();
+  const { isAuthenticated } = useConvexAuth();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const managedVirtualAirlines = useQuery(
     api.virtualAirlines.getManagedByAdmin,
-    user?.id ? { adminClerkId: user.id } : "skip",
+    user?.id && isAuthenticated ? { adminClerkId: user.id } : "skip",
   );
 
   useEffect(() => {

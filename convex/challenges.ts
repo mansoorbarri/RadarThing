@@ -102,6 +102,15 @@ async function requireAdmin(ctx: QueryCtx | MutationCtx) {
   return viewer;
 }
 
+async function canReadAdminChallenges(ctx: QueryCtx) {
+  try {
+    await requireAdmin(ctx);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function validateChallengeInput(args: {
   title: string;
   description: string;
@@ -1318,7 +1327,9 @@ export const listActiveLeaderboard = query({
 export const listAdmin = query({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    if (!(await canReadAdminChallenges(ctx))) {
+      return [];
+    }
 
     const [challenges, completions, leaderboardEntries, users] =
       await Promise.all([
@@ -1479,7 +1490,9 @@ export const listAdmin = query({
 export const listPendingReviews = query({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    if (!(await canReadAdminChallenges(ctx))) {
+      return [];
+    }
 
     const pending = await ctx.db
       .query("challengeCompletions")

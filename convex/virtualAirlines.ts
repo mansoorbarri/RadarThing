@@ -128,7 +128,11 @@ export const getManagedByAdmin = query({
     adminClerkId: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireAuthenticatedClerkId(ctx, args.adminClerkId);
+    try {
+      await requireAuthenticatedClerkId(ctx, args.adminClerkId);
+    } catch {
+      return [];
+    }
 
     const virtualAirlines = await ctx.db
       .query("virtualAirlines")

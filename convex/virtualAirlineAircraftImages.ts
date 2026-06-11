@@ -21,7 +21,11 @@ export const getById = query({
     virtualAirlineId: v.id("virtualAirlines"),
   },
   handler: async (ctx, args) => {
-    await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+    try {
+      await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+    } catch {
+      return null;
+    }
 
     const image = await ctx.db.get(args.id);
     if (!image) return null;
@@ -46,7 +50,11 @@ export const getByVirtualAirlineId = query({
     virtualAirlineId: v.id("virtualAirlines"),
   },
   handler: async (ctx, args) => {
-    await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+    try {
+      await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+    } catch {
+      return [];
+    }
 
     const images = await ctx.db
       .query("virtualAirlineAircraftImages")

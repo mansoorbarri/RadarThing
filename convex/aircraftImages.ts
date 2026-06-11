@@ -141,7 +141,11 @@ export const getApproved = query({
 export const getPending = query({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    try {
+      await requireAdmin(ctx);
+    } catch {
+      return [];
+    }
 
     const images = await ctx.db
       .query("aircraftImages")
@@ -172,7 +176,11 @@ export const getPending = query({
 export const getAll = query({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    try {
+      await requireAdmin(ctx);
+    } catch {
+      return [];
+    }
 
     const images = await ctx.db.query("aircraftImages").collect();
 

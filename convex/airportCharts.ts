@@ -59,7 +59,11 @@ export const getChartsForAirport = query({
 export const getPending = query({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    try {
+      await requireAdmin(ctx);
+    } catch {
+      return [];
+    }
 
     const charts = await ctx.db
       .query("airportCharts")

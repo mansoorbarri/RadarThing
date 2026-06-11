@@ -7,7 +7,11 @@ export const getByVirtualAirlineId = query({
     virtualAirlineId: v.id("virtualAirlines"),
   },
   handler: async (ctx, args) => {
-    await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+    try {
+      await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+    } catch {
+      return [];
+    }
 
     const members = await ctx.db
       .query("virtualAirlineMembers")
@@ -66,7 +70,11 @@ export const getById = query({
     virtualAirlineId: v.id("virtualAirlines"),
   },
   handler: async (ctx, args) => {
-    await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+    try {
+      await requireVirtualAirlineManager(ctx, args.virtualAirlineId);
+    } catch {
+      return null;
+    }
 
     const membership = await ctx.db.get(args.id);
     if (!membership) return null;

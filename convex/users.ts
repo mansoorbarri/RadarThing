@@ -526,7 +526,11 @@ export const updateDiscordUsername = mutation({
 export const getAll = query({
   args: {},
   handler: async (ctx) => {
-    await requireAdmin(ctx);
+    try {
+      await requireAdmin(ctx);
+    } catch {
+      return [];
+    }
 
     return await ctx.db
       .query("users")
@@ -538,7 +542,11 @@ export const getAll = query({
 export const getAssignablePilots = query({
   args: {},
   handler: async (ctx) => {
-    await requireAnyVirtualAirlineManager(ctx);
+    try {
+      await requireAnyVirtualAirlineManager(ctx);
+    } catch {
+      return [];
+    }
 
     const users = await ctx.db
       .query("users")

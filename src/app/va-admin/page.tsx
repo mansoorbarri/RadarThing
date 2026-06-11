@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser, SignInButton } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -75,9 +75,10 @@ function VaAdminHeader() {
 
 export default function VirtualAirlineAdminPage() {
   const { isLoaded, isSignedIn, user } = useUser();
+  const { isAuthenticated, isLoading: isConvexAuthLoading } = useConvexAuth();
   const managedVirtualAirlines = useQuery(
     api.virtualAirlines.getManagedByAdmin,
-    user?.id ? { adminClerkId: user.id } : "skip",
+    user?.id && isAuthenticated ? { adminClerkId: user.id } : "skip",
   );
 
   const [selectedVaId, setSelectedVaId] = useState<string>("");
@@ -97,7 +98,10 @@ export default function VirtualAirlineAdminPage() {
   const [memberActionId, setMemberActionId] = useState<string | null>(null);
   const uploadedDataRef = useRef<{ url: string; key: string } | null>(null);
   const uploaderRef = useRef<ImageUploaderRef>(null);
-  const allUsers = useQuery(api.users.getAssignablePilots);
+  const allUsers = useQuery(
+    api.users.getAssignablePilots,
+    isAuthenticated ? {} : "skip",
+  );
 
   const virtualAirlines = useMemo(
     () => managedVirtualAirlines ?? [],
@@ -114,7 +118,9 @@ export default function VirtualAirlineAdminPage() {
     if (
       selectedVaId &&
       virtualAirlines.length > 0 &&
-      !virtualAirlines.some((virtualAirline) => virtualAirline.id === selectedVaId)
+      !virtualAirlines.some(
+        (virtualAirline) => virtualAirline.id === selectedVaId,
+      )
     ) {
       setSelectedVaId(virtualAirlines[0]!.id);
     }
@@ -140,13 +146,13 @@ export default function VirtualAirlineAdminPage() {
 
   const vaImages = useQuery(
     api.virtualAirlineAircraftImages.getByVirtualAirlineId,
-    selectedVaId
+    selectedVaId && isAuthenticated
       ? { virtualAirlineId: selectedVaId as Id<"virtualAirlines"> }
       : "skip",
   );
   const vaMembers = useQuery(
     api.virtualAirlineMembers.getByVirtualAirlineId,
-    selectedVaId
+    selectedVaId && isAuthenticated
       ? { virtualAirlineId: selectedVaId as Id<"virtualAirlines"> }
       : "skip",
   );
@@ -225,7 +231,10 @@ export default function VirtualAirlineAdminPage() {
 
     setSubmitStage("submitting");
 
-    const uploadedData = uploadedDataRef.current as { url: string; key: string } | null;
+    const uploadedData = uploadedDataRef.current as {
+      url: string;
+      key: string;
+    } | null;
     if (!uploadedData) {
       setError("Failed to upload image");
       setSubmitStage("idle");
@@ -334,6 +343,7 @@ export default function VirtualAirlineAdminPage() {
 
   if (
     !isLoaded ||
+    isConvexAuthLoading ||
     (isSignedIn &&
       (managedVirtualAirlines === undefined ||
         allUsers === undefined ||
@@ -388,10 +398,25 @@ export default function VirtualAirlineAdminPage() {
     );
   }
 
-  const tabItems: { key: Tab; label: string; count?: number; icon: React.ReactNode }[] = [
+  const tabItems: {
+    key: Tab;
+    label: string;
+    count?: number;
+    icon: React.ReactNode;
+  }[] = [
     { key: "settings", label: "Settings", icon: <Plane className="h-4 w-4" /> },
-    { key: "pilots", label: "Pilots", count: members.length, icon: <Users className="h-4 w-4" /> },
-    { key: "fleet", label: "Fleet", count: images.length, icon: <ImageIcon className="h-4 w-4" /> },
+    {
+      key: "pilots",
+      label: "Pilots",
+      count: members.length,
+      icon: <Users className="h-4 w-4" />,
+    },
+    {
+      key: "fleet",
+      label: "Fleet",
+      count: images.length,
+      icon: <ImageIcon className="h-4 w-4" />,
+    },
     { key: "upload", label: "Upload", icon: <Upload className="h-4 w-4" /> },
   ];
 
@@ -416,7 +441,7 @@ export default function VirtualAirlineAdminPage() {
                 {selectedVirtualAirline?.callsignPrefix}
               </span>
               {!selectedVirtualAirline?.isActive && (
-                <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-400">
+                <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-slate-400 uppercase">
                   Disabled
                 </span>
               )}
@@ -441,10 +466,14 @@ export default function VirtualAirlineAdminPage() {
                     : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
                 }`}
               >
-                <span className="mr-1.5 font-mono text-xs">{va.callsignPrefix}</span>
+                <span className="mr-1.5 font-mono text-xs">
+                  {va.callsignPrefix}
+                </span>
                 {va.name}
                 {!va.isActive && (
-                  <span className="ml-1.5 text-[10px] text-slate-500">(disabled)</span>
+                  <span className="ml-1.5 text-[10px] text-slate-500">
+                    (disabled)
+                  </span>
                 )}
               </button>
             ))}
@@ -522,7 +551,7 @@ export default function VirtualAirlineAdminPage() {
                 </span>
               )}
               {activeTab === tab.key && (
-                <span className="absolute bottom-0 left-2 right-2 h-px bg-cyan-400" />
+                <span className="absolute right-2 bottom-0 left-2 h-px bg-cyan-400" />
               )}
             </button>
           ))}
@@ -556,7 +585,7 @@ export default function VirtualAirlineAdminPage() {
                     }
                     placeholder="Example Virtual"
                     disabled={isSavingSettings}
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
                   />
                 </div>
 
@@ -578,7 +607,7 @@ export default function VirtualAirlineAdminPage() {
                     placeholder="RVA"
                     maxLength={8}
                     disabled={isSavingSettings}
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 font-mono text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 font-mono text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
                   />
                   <p className="mt-1.5 text-xs text-slate-500">
                     Flights starting with this prefix get VA status.
@@ -600,7 +629,7 @@ export default function VirtualAirlineAdminPage() {
                     }
                     placeholder="https://example.com or discord.gg/your-va"
                     disabled={isSavingSettings}
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
                   />
                   <p className="mt-1.5 text-xs text-slate-500">
                     Used for the VA link in the radar sidebar.
@@ -662,11 +691,13 @@ export default function VirtualAirlineAdminPage() {
                   <input
                     type="text"
                     value={aircraftType}
-                    onChange={(event) => setAircraftType(event.target.value.toUpperCase())}
+                    onChange={(event) =>
+                      setAircraftType(event.target.value.toUpperCase())
+                    }
                     placeholder="B737"
                     maxLength={12}
                     disabled={isProcessing}
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 font-mono text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 font-mono text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
                   />
                 </div>
 
@@ -749,7 +780,8 @@ export default function VirtualAirlineAdminPage() {
                   >
                     <div className="min-w-0">
                       <div className="truncate text-sm font-medium text-white">
-                        {member.discordUsername ?? truncateConvexId(member.userId)}
+                        {member.discordUsername ??
+                          truncateConvexId(member.userId)}
                       </div>
                       <div className="mt-0.5 truncate text-xs text-slate-500">
                         {member.userId}
@@ -791,7 +823,7 @@ export default function VirtualAirlineAdminPage() {
                   value={memberSearch}
                   onChange={(event) => setMemberSearch(event.target.value)}
                   placeholder="Search by Discord or Convex ID"
-                  className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                  className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
                 />
               </div>
               <div className="mt-2 space-y-1">
@@ -811,7 +843,7 @@ export default function VirtualAirlineAdminPage() {
                         {getUserIdentifier(candidate)}
                       </div>
                     </div>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase text-cyan-300">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/15 px-2.5 py-1 text-[10px] font-semibold text-cyan-300 uppercase">
                       <UserPlus className="h-3 w-3" />
                       Add
                     </span>
@@ -875,7 +907,8 @@ export default function VirtualAirlineAdminPage() {
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-white/10 px-4 py-12 text-center text-sm text-slate-500">
-                No fleet images uploaded yet. Use the Upload tab to add liveries.
+                No fleet images uploaded yet. Use the Upload tab to add
+                liveries.
               </div>
             )}
           </div>
