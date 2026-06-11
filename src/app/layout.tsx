@@ -52,8 +52,8 @@ export default function RootLayout({
   return (
     <ClerkProvider
       afterSignOutUrl="/radar"
-      signInForceRedirectUrl="/radar"
-      signUpForceRedirectUrl="/radar"
+      signInFallbackRedirectUrl="/radar"
+      signUpFallbackRedirectUrl="/radar"
       appearance={{
         baseTheme: dark,
         variables: {
