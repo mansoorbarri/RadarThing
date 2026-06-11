@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { StyleSpecification } from "maplibre-gl";
 import Image from "next/image";
 import { toast } from "sonner";
-import {
-  Crosshair,
-  Globe2,
-  Minus,
-  Plus,
-  Settings2,
-} from "lucide-react";
+import { Crosshair, Globe2, Minus, Plus, Settings2 } from "lucide-react";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type OnlineAirport } from "~/hooks/useAircraftStream";
@@ -63,6 +63,7 @@ import { MapSettingsSidebar } from "~/components/map/MapSettingsSidebar";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
 import { formatAltitude, formatSpeed, speedSuffix } from "~/lib/units";
 import { getCompactAircraftType } from "~/lib/utils";
+import { filterNavFixesInBounds, loadNavFixes } from "~/lib/navFixes";
 
 interface Airport {
   name: string;
@@ -156,6 +157,9 @@ const DESKTOP_DEFAULT_ZOOM = 3;
 const MOBILE_MIN_ZOOM = 0;
 const DESKTOP_MIN_ZOOM = 3;
 const MAX_ZOOM = 18;
+const MIN_WAYPOINT_ZOOM = 7;
+const WAYPOINT_QUERY_DEBOUNCE_MS = 250;
+const MAX_RENDERED_WAYPOINTS = 2500;
 const MOBILE_USER_LOCATION_RESET_ZOOM = 3.6;
 const DESKTOP_USER_LOCATION_RESET_ZOOM = 5.5;
 const FLIGHT_PATH_COLORS = [
@@ -218,6 +222,7 @@ const SOURCE_IDS = {
   importedFlightPlan: "mobile-globe-imported-flight-plan",
   headingLine: "mobile-globe-heading-line",
   headingStart: "mobile-globe-heading-start",
+  worldWaypoints: "mobile-globe-world-waypoints",
 } as const;
 
 function emptyFeatureCollection(): FeatureCollection {
@@ -265,6 +270,19 @@ function buildPointFeature(
   };
 }
 
+function buildWaypointBoundsParams(map: maplibregl.Map) {
+  const bounds = map.getBounds();
+  const west = Math.max(-180, bounds.getWest());
+  const east = Math.min(180, bounds.getEast());
+
+  return {
+    south: bounds.getSouth(),
+    west,
+    north: bounds.getNorth(),
+    east,
+  };
+}
+
 function buildLineFeature(
   coordinates: [number, number][],
   properties: Record<string, string | number | boolean | null> = {},
@@ -304,9 +322,7 @@ function getBaseSourceSpec(mode: GlobeBaseLayer) {
     tiles: getBaseTiles(mode),
     tileSize: 256,
     maxzoom: mode === "osm" ? 19 : 18,
-    ...(mode === "osm"
-      ? { attribution: "© OpenStreetMap contributors" }
-      : {}),
+    ...(mode === "osm" ? { attribution: "© OpenStreetMap contributors" } : {}),
     ...(mode === "satellite" ? { scheme: "xyz" as const } : {}),
   };
 }
@@ -773,7 +789,10 @@ function buildSelectedFlightData(aircrafts: PositionUpdate[]) {
 
   aircrafts.forEach((aircraft, index) => {
     const color = FLIGHT_PATH_COLORS[index % FLIGHT_PATH_COLORS.length]!;
-    const history = preparePathForWorldCopy(aircraft.flightPath ?? [], aircraft.lon);
+    const history = preparePathForWorldCopy(
+      aircraft.flightPath ?? [],
+      aircraft.lon,
+    );
     const historyCoords = toLngLatCoords(history);
 
     const historyLine = buildLineFeature(historyCoords, {
@@ -792,7 +811,9 @@ function buildSelectedFlightData(aircrafts: PositionUpdate[]) {
     if (!aircraft.flightPlan) return;
 
     try {
-      const waypoints = JSON.parse(aircraft.flightPlan) as FlightPlanWaypointLike[];
+      const waypoints = JSON.parse(
+        aircraft.flightPlan,
+      ) as FlightPlanWaypointLike[];
       if (waypoints.length === 0) return;
 
       const activeWaypointIndex = findActiveWaypointIndex(aircraft, waypoints);
@@ -800,7 +821,9 @@ function buildSelectedFlightData(aircrafts: PositionUpdate[]) {
         waypoints,
         aircraft.lon,
       );
-      const routeCoords = coords.map(([lat, lon]) => [lon, lat] as [number, number]);
+      const routeCoords = coords.map(
+        ([lat, lon]) => [lon, lat] as [number, number],
+      );
       const routeLine = buildLineFeature(routeCoords, {
         callsign: aircraft.flightNo || aircraft.callsign,
         color,
@@ -896,6 +919,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   const hasReportedBaseLayerRef = useRef(false);
   const headingStartPointRef = useRef<maplibregl.LngLat | null>(null);
   const headingPopupRef = useRef<maplibregl.Popup | null>(null);
+  const waypointSignatureRef = useRef("");
   const [mapReady, setMapReady] = useState(false);
   const [isMapVisible, setIsMapVisible] = useState(false);
   const [isRadarMode, setIsRadarMode] = useState(() =>
@@ -906,6 +930,9 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   );
   const [isOpenAIPEnabled, setIsOpenAIPEnabled] = useState(() =>
     getBooleanCookie("map_openaip", false),
+  );
+  const [showWaypoints, setShowWaypoints] = useState(() =>
+    getBooleanCookie("map_waypoints", false),
   );
   const [showPrecipitation, setShowPrecipitation] = useState(() =>
     getBooleanCookie("weather_precipitation", false),
@@ -938,12 +965,16 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   const { speedUnit, altitudeUnit } = useUnitPreferences();
   const canUseRadarMode = isProUser;
   const shouldShowLeftControls = showLeftControls;
-  const defaultZoom = isDesktopGlobe ? DESKTOP_DEFAULT_ZOOM : MOBILE_DEFAULT_ZOOM;
+  const defaultZoom = isDesktopGlobe
+    ? DESKTOP_DEFAULT_ZOOM
+    : MOBILE_DEFAULT_ZOOM;
   const minZoom = isDesktopGlobe ? DESKTOP_MIN_ZOOM : MOBILE_MIN_ZOOM;
   const userLocationResetZoom = isDesktopGlobe
     ? DESKTOP_USER_LOCATION_RESET_ZOOM
     : MOBILE_USER_LOCATION_RESET_ZOOM;
-  const zoomCookieKey = isDesktopGlobe ? DESKTOP_COOKIE_ZOOM : MOBILE_COOKIE_ZOOM;
+  const zoomCookieKey = isDesktopGlobe
+    ? DESKTOP_COOKIE_ZOOM
+    : MOBILE_COOKIE_ZOOM;
   const latCookieKey = isDesktopGlobe ? DESKTOP_COOKIE_LAT : MOBILE_COOKIE_LAT;
   const lngCookieKey = isDesktopGlobe ? DESKTOP_COOKIE_LNG : MOBILE_COOKIE_LNG;
 
@@ -962,6 +993,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       baseLayer: isRadarMode ? "radar" : isOSMMode ? "osm" : "satellite",
       mapRenderer,
       openAIP: isOpenAIPEnabled,
+      waypoints: showWaypoints,
       precipitation: showPrecipitation,
       airmets: showAirmets,
       sigmets: showSigmets,
@@ -972,6 +1004,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       isOSMMode,
       isRadarMode,
       mapRenderer,
+      showWaypoints,
       showAirmets,
       showConflicts,
       showPrecipitation,
@@ -1138,6 +1171,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       setBooleanCookie("map_radar_mode", preset.baseLayer === "radar");
       setBooleanCookie("map_osm_mode", preset.baseLayer === "osm");
       setBooleanCookie("map_openaip", preset.openAIP);
+      setBooleanCookie("map_waypoints", preset.waypoints ?? false);
       setBooleanCookie("weather_precipitation", preset.precipitation);
       setBooleanCookie("weather_airmets", preset.airmets);
       setBooleanCookie("weather_sigmets", preset.sigmets);
@@ -1146,6 +1180,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       setIsRadarMode(preset.baseLayer === "radar");
       setIsOSMMode(preset.baseLayer === "osm");
       setIsOpenAIPEnabled(preset.openAIP);
+      setShowWaypoints(preset.waypoints ?? false);
       setShowPrecipitation(preset.precipitation);
       setShowAirmets(preset.airmets);
       setShowSigmets(preset.sigmets);
@@ -1163,55 +1198,64 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     [layerPresets, mapRenderer, onMapRendererChange],
   );
 
-  const saveLayerPreset = useCallback((name: string) => {
-    const normalizedName = name.trim();
-    if (!normalizedName) {
-      return { ok: false as const, error: "Enter a preset name" };
-    }
+  const saveLayerPreset = useCallback(
+    (name: string) => {
+      const normalizedName = name.trim();
+      if (!normalizedName) {
+        return { ok: false as const, error: "Enter a preset name" };
+      }
 
-    const duplicateState = layerPresets.find((preset) =>
-      mapLayerPresetStateEquals(preset, currentLayerState),
-    );
-    if (duplicateState) {
-      return {
-        ok: false as const,
-        error: `Current setup already matches ${duplicateState.name}`,
-      };
-    }
+      const duplicateState = layerPresets.find((preset) =>
+        mapLayerPresetStateEquals(preset, currentLayerState),
+      );
+      if (duplicateState) {
+        return {
+          ok: false as const,
+          error: `Current setup already matches ${duplicateState.name}`,
+        };
+      }
 
-    const preset = createMapLayerPreset(normalizedName, currentLayerState);
-    setLayerPresets((prev) =>
-      [...prev, preset].sort((left, right) =>
-        left.name.localeCompare(right.name),
-      ),
-    );
-    setSelectedPresetId(preset.id);
-    toast.success(`Saved preset: ${preset.name}`);
-    return { ok: true as const };
-  }, [currentLayerState, layerPresets]);
+      const preset = createMapLayerPreset(normalizedName, currentLayerState);
+      setLayerPresets((prev) =>
+        [...prev, preset].sort((left, right) =>
+          left.name.localeCompare(right.name),
+        ),
+      );
+      setSelectedPresetId(preset.id);
+      toast.success(`Saved preset: ${preset.name}`);
+      return { ok: true as const };
+    },
+    [currentLayerState, layerPresets],
+  );
 
-  const updateLayerPreset = useCallback((presetId: string) => {
-    const preset = layerPresets.find((entry) => entry.id === presetId);
-    if (!preset) return;
+  const updateLayerPreset = useCallback(
+    (presetId: string) => {
+      const preset = layerPresets.find((entry) => entry.id === presetId);
+      if (!preset) return;
 
-    setLayerPresets((prev) =>
-      prev.map((entry) =>
-        entry.id === presetId
-          ? { ...entry, ...currentLayerState, updatedAt: Date.now() }
-          : entry,
-      ),
-    );
-    toast.success(`Updated preset: ${preset.name}`);
-  }, [currentLayerState, layerPresets]);
+      setLayerPresets((prev) =>
+        prev.map((entry) =>
+          entry.id === presetId
+            ? { ...entry, ...currentLayerState, updatedAt: Date.now() }
+            : entry,
+        ),
+      );
+      toast.success(`Updated preset: ${preset.name}`);
+    },
+    [currentLayerState, layerPresets],
+  );
 
-  const deleteLayerPreset = useCallback((presetId: string) => {
-    const preset = layerPresets.find((entry) => entry.id === presetId);
-    if (!preset) return;
+  const deleteLayerPreset = useCallback(
+    (presetId: string) => {
+      const preset = layerPresets.find((entry) => entry.id === presetId);
+      if (!preset) return;
 
-    setLayerPresets((prev) => prev.filter((entry) => entry.id !== presetId));
-    setSelectedPresetId((current) => (current === presetId ? null : current));
-    toast.success(`Deleted preset: ${preset.name}`);
-  }, [layerPresets]);
+      setLayerPresets((prev) => prev.filter((entry) => entry.id !== presetId));
+      setSelectedPresetId((current) => (current === presetId ? null : current));
+      toast.success(`Deleted preset: ${preset.name}`);
+    },
+    [layerPresets],
+  );
 
   const resetMapView = useCallback(
     (targetLocation?: MapResetLocation | null) => {
@@ -1234,7 +1278,13 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       setCookie(latCookieKey, String(center[1]));
       setCookie(lngCookieKey, String(center[0]));
     },
-    [defaultZoom, latCookieKey, lngCookieKey, userLocationResetZoom, zoomCookieKey],
+    [
+      defaultZoom,
+      latCookieKey,
+      lngCookieKey,
+      userLocationResetZoom,
+      zoomCookieKey,
+    ],
   );
 
   useEffect(() => {
@@ -1252,6 +1302,10 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   useEffect(() => {
     setBooleanCookie("map_openaip", isOpenAIPEnabled);
   }, [isOpenAIPEnabled]);
+
+  useEffect(() => {
+    setBooleanCookie("map_waypoints", showWaypoints);
+  }, [showWaypoints]);
 
   useEffect(() => {
     setBooleanCookie("weather_precipitation", showPrecipitation);
@@ -1288,7 +1342,11 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       if ((event.key === "l" || event.key === "L") && !isInputFocused) {
         setShowTags((prev) => !prev);
       }
-      if (!hideUi && (event.key === "t" || event.key === "T") && !isInputFocused) {
+      if (
+        !hideUi &&
+        (event.key === "t" || event.key === "T") &&
+        !isInputFocused
+      ) {
         setIsHeadingMode(true);
       }
     };
@@ -1389,6 +1447,10 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
         data: emptyFeatureCollection(),
       });
       map.addSource(SOURCE_IDS.headingStart, {
+        type: "geojson",
+        data: emptyFeatureCollection(),
+      });
+      map.addSource(SOURCE_IDS.worldWaypoints, {
         type: "geojson",
         data: emptyFeatureCollection(),
       });
@@ -1530,12 +1592,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
         type: "circle",
         source: SOURCE_IDS.selectedWaypoints,
         paint: {
-          "circle-radius": [
-            "case",
-            ["==", ["get", "active"], true],
-            7,
-            5,
-          ],
+          "circle-radius": ["case", ["==", ["get", "active"], true], 7, 5],
           "circle-color": [
             "case",
             ["==", ["get", "active"], true],
@@ -1550,6 +1607,41 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
           ],
           "circle-stroke-color": "#f8fafc",
           "circle-opacity": 0.95,
+        },
+      });
+
+      map.addLayer({
+        id: "mobile-globe-world-waypoints",
+        type: "circle",
+        source: SOURCE_IDS.worldWaypoints,
+        minzoom: MIN_WAYPOINT_ZOOM,
+        paint: {
+          "circle-radius": 4,
+          "circle-color": "#7df9ff",
+          "circle-stroke-color": "rgba(0, 10, 15, 0.9)",
+          "circle-stroke-width": 1.4,
+          "circle-opacity": 0.9,
+        },
+      });
+
+      map.addLayer({
+        id: "mobile-globe-world-waypoint-labels",
+        type: "symbol",
+        source: SOURCE_IDS.worldWaypoints,
+        minzoom: MIN_WAYPOINT_ZOOM,
+        layout: {
+          "text-field": ["get", "ident"],
+          "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+          "text-size": 10,
+          "text-offset": [0.8, 0],
+          "text-anchor": "left",
+          "text-allow-overlap": false,
+          "text-ignore-placement": false,
+        },
+        paint: {
+          "text-color": "#d2fcff",
+          "text-halo-color": "rgba(0, 10, 15, 0.95)",
+          "text-halo-width": 1.4,
         },
       });
 
@@ -1609,7 +1701,10 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
 
     map.on("click", (event) => {
       const target = event.originalEvent.target;
-      if (target instanceof HTMLElement && target.closest("[data-aircraft-marker]")) {
+      if (
+        target instanceof HTMLElement &&
+        target.closest("[data-aircraft-marker]")
+      ) {
         return;
       }
       setIsSettingsOpen(false);
@@ -1656,6 +1751,73 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       isOpenAIPEnabled ? 0.9 : 0,
     );
   }, [isOpenAIPEnabled, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+
+    const clearWaypoints = () => {
+      waypointSignatureRef.current = "";
+      setSourceData(map, SOURCE_IDS.worldWaypoints, emptyFeatureCollection());
+    };
+
+    const loadWaypoints = () => {
+      if (!showWaypoints || map.getZoom() < MIN_WAYPOINT_ZOOM) {
+        clearWaypoints();
+        return;
+      }
+
+      const bounds = map.getBounds();
+      const signature = `${bounds.getSouth().toFixed(2)}:${bounds.getWest().toFixed(2)}:${bounds.getNorth().toFixed(2)}:${bounds.getEast().toFixed(2)}:${Math.floor(map.getZoom())}`;
+      if (signature === waypointSignatureRef.current) return;
+      waypointSignatureRef.current = signature;
+
+      loadNavFixes()
+        .then((fixes) => {
+          const features = filterNavFixesInBounds(
+            fixes,
+            buildWaypointBoundsParams(map),
+            MAX_RENDERED_WAYPOINTS,
+          )
+            .filter((fix) => isValidCoordinate(fix.lat, fix.lon))
+            .map((fix) =>
+              buildPointFeature(fix.lon, fix.lat, {
+                ident: fix.ident,
+              }),
+            );
+
+          setSourceData(map, SOURCE_IDS.worldWaypoints, {
+            type: "FeatureCollection",
+            features,
+          });
+        })
+        .catch(() => {
+          setSourceData(
+            map,
+            SOURCE_IDS.worldWaypoints,
+            emptyFeatureCollection(),
+          );
+        });
+    };
+
+    const scheduleLoad = () => {
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(loadWaypoints, WAYPOINT_QUERY_DEBOUNCE_MS);
+    };
+
+    scheduleLoad();
+    map.on("moveend", scheduleLoad);
+    map.on("zoomend", scheduleLoad);
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+      map.off("moveend", scheduleLoad);
+      map.off("zoomend", scheduleLoad);
+      clearWaypoints();
+    };
+  }, [mapReady, showWaypoints]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1788,7 +1950,10 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
             const target = event.currentTarget as HTMLButtonElement;
             const key = target.dataset.aircraftKey;
             if (!key) return;
-            onAircraftSelectRef.current(aircraftLookupRef.current.get(key) ?? null, false);
+            onAircraftSelectRef.current(
+              aircraftLookupRef.current.get(key) ?? null,
+              false,
+            );
           });
 
           const marker = new maplibregl.Marker({
@@ -1845,7 +2010,10 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     const map = mapRef.current;
     if (!mapReady || !map) return;
 
-    if (!selectedAirport || !isValidCoordinate(selectedAirport.lat, selectedAirport.lon)) {
+    if (
+      !selectedAirport ||
+      !isValidCoordinate(selectedAirport.lat, selectedAirport.lon)
+    ) {
       setSourceData(map, SOURCE_IDS.selectedAirport, emptyFeatureCollection());
       return;
     }
@@ -1888,8 +2056,13 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     const features = aircrafts.flatMap((aircraft) => {
       const aircraftKey = aircraft.callsign || aircraft.id;
       const line = buildLineFeature(
-        toLngLatCoords(buildRadarModeLinePath(aircraft, radarModeLinePreferences)),
-        getRadarModeLineStyle(aircraft, selectedAircraftKeySet.has(aircraftKey)),
+        toLngLatCoords(
+          buildRadarModeLinePath(aircraft, radarModeLinePreferences),
+        ),
+        getRadarModeLineStyle(
+          aircraft,
+          selectedAircraftKeySet.has(aircraftKey),
+        ),
       );
       return line ? [line] : [];
     });
@@ -1990,7 +2163,11 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     if (!mapReady || !map) return;
 
     if (!importedFlightPlan || importedFlightPlan.waypoints.length < 2) {
-      setSourceData(map, SOURCE_IDS.importedFlightPlan, emptyFeatureCollection());
+      setSourceData(
+        map,
+        SOURCE_IDS.importedFlightPlan,
+        emptyFeatureCollection(),
+      );
       return;
     }
 
@@ -2182,6 +2359,8 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
                 onSavePreset={saveLayerPreset}
                 onUpdatePreset={updateLayerPreset}
                 onDeletePreset={deleteLayerPreset}
+                showWaypoints={showWaypoints}
+                setShowWaypoints={setShowWaypoints}
                 showPrecipitation={showPrecipitation}
                 setShowPrecipitation={setShowPrecipitation}
                 showAirmets={showAirmets}

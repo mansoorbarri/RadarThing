@@ -5,6 +5,7 @@ export interface MapLayerPresetState {
   baseLayer: MapBaseLayer;
   mapRenderer?: MapRenderer;
   openAIP: boolean;
+  waypoints?: boolean;
   precipitation: boolean;
   airmets: boolean;
   sigmets: boolean;
@@ -51,6 +52,7 @@ function isMapLayerPreset(value: unknown): value is MapLayerPreset {
     isMapBaseLayer(preset.baseLayer) &&
     (preset.mapRenderer === undefined || isMapRenderer(preset.mapRenderer)) &&
     typeof preset.openAIP === "boolean" &&
+    (preset.waypoints === undefined || typeof preset.waypoints === "boolean") &&
     typeof preset.precipitation === "boolean" &&
     typeof preset.airmets === "boolean" &&
     typeof preset.sigmets === "boolean" &&
@@ -110,6 +112,7 @@ export function mapLayerPresetStateEquals(
     left.baseLayer === right.baseLayer &&
     rendererMatches &&
     left.openAIP === right.openAIP &&
+    (left.waypoints ?? false) === (right.waypoints ?? false) &&
     left.precipitation === right.precipitation &&
     left.airmets === right.airmets &&
     left.sigmets === right.sigmets &&

@@ -211,6 +211,44 @@ export const MapGlobalStyles = ({ hideUi = false }: { hideUi?: boolean }) => (
       filter: hue-rotate(90deg) saturate(1.4);
     }
 
+    .leaflet-rnav-waypoint-icon {
+      pointer-events: auto;
+    }
+
+    .rnav-waypoint {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 18px;
+      white-space: nowrap;
+      font-family:
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0;
+      color: rgba(210, 252, 255, 0.9);
+      text-shadow:
+        0 0 4px rgba(0, 0, 0, 0.95),
+        0 0 8px rgba(0, 255, 255, 0.5);
+    }
+
+    .rnav-waypoint-symbol {
+      width: 7px;
+      height: 7px;
+      border: 1px solid rgba(125, 249, 255, 0.95);
+      background: rgba(0, 10, 15, 0.78);
+      box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+      transform: rotate(45deg);
+    }
+
+    .rnav-waypoint-label {
+      padding: 2px 4px;
+      border-radius: 3px;
+      background: rgba(0, 10, 15, 0.44);
+    }
+
     ${hideUi
       ? `
     .leaflet-top,

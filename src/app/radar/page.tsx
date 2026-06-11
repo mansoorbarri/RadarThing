@@ -981,20 +981,16 @@ function ATCPageContent() {
             if (newState) setSelectedAircrafts([]);
           },
         },
-        ...(!isMobile
-          ? [
-              {
-                id: "shortcuts",
-                label: "Shortcuts",
-                icon: ShortcutsIcon,
-                active: showShortcutsMenu,
-                onClick: () => {
-                  setShowShortcutsMenu(true);
-                  Analytics.shortcutsOpened({ source: "dock" });
-                },
-              },
-            ]
-          : []),
+        {
+          id: "shortcuts",
+          label: "Shortcuts",
+          icon: ShortcutsIcon,
+          active: showShortcutsMenu,
+          onClick: () => {
+            setShowShortcutsMenu(true);
+            Analytics.shortcutsOpened({ source: "dock" });
+          },
+        },
       ],
     },
     {

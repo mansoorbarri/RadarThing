@@ -54,6 +54,9 @@ interface RadarSettingsProps {
   onUpdatePreset: (presetId: string) => void;
   onDeletePreset: (presetId: string) => void;
 
+  showWaypoints: boolean;
+  setShowWaypoints: (v: boolean) => void;
+
   showPrecipitation: boolean;
   setShowPrecipitation: (v: boolean) => void;
 
@@ -82,6 +85,8 @@ export const RadarSettings = ({
   onSavePreset,
   onUpdatePreset,
   onDeletePreset,
+  showWaypoints,
+  setShowWaypoints,
   showPrecipitation,
   setShowPrecipitation,
   showAirmets,
@@ -287,7 +292,7 @@ export const RadarSettings = ({
           }
         >
           <p className="text-[11px] leading-5 text-white/45">
-            Saves your current renderer, base layer, OpenAIP overlay, weather
+            Saves your current renderer, base layer, OpenAIP overlays, weather
             layers, and conflict monitor state.
           </p>
 
@@ -384,10 +389,19 @@ export const RadarSettings = ({
         </SettingsSection>
 
         <SettingsSection
-          title="Weather Layers"
+          title="Map Layers"
           isOpen={openSections.weather}
           onToggle={() => toggleSection("weather")}
         >
+          <SettingsToggle
+            label="Waypoints"
+            checked={showWaypoints}
+            onChange={(v) => {
+              setShowWaypoints(v);
+              Analytics.track("map_waypoints_toggled", { enabled: v });
+            }}
+          />
+
           <SettingsToggle
             label="Precipitation"
             checked={showPrecipitation}
@@ -445,18 +459,16 @@ export const RadarSettings = ({
               label="History Trails"
               description="Show radar history dots behind aircraft in radar mode."
               checked={radarTrailPreferences.enabled}
-              onChange={(enabled) =>
-                updateRadarTrailPreferences({ enabled })
-              }
+              onChange={(enabled) => updateRadarTrailPreferences({ enabled })}
             />
 
             <div
               className={`space-y-3 ${!radarTrailPreferences.enabled ? "opacity-50" : ""}`}
             >
               <p className="text-[11px] leading-5 text-white/45">
-                Choose whether each radar trail dot represents elapsed seconds or
-                distance flown. Dots step out at that interval: 1x, 2x, 3x, and
-                4x.
+                Choose whether each radar trail dot represents elapsed seconds
+                or distance flown. Dots step out at that interval: 1x, 2x, 3x,
+                and 4x.
               </p>
 
               <TrailModeSelector
@@ -548,9 +560,7 @@ export const RadarSettings = ({
 
                 <TrailModeSelector
                   value={radarModeLinePreferences.mode}
-                  onChange={(mode) =>
-                    updateRadarModeLinePreferences({ mode })
-                  }
+                  onChange={(mode) => updateRadarModeLinePreferences({ mode })}
                   disabled={!radarModeLinePreferences.enabled}
                 />
 
@@ -754,7 +764,9 @@ function SettingsToggle({
       <div className="min-w-0">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
           {label}
-          {disabled && <ProBadge source={proBadgeSource} />}
+          {disabled && proBadgeSource ? (
+            <ProBadge source={proBadgeSource} />
+          ) : null}
         </span>
         {description ? (
           <p className="mt-1 max-w-[220px] text-[11px] leading-5 text-white/45">
