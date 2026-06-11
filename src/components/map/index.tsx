@@ -42,6 +42,7 @@ import { useMetarOverlay } from "~/hooks/useMetarOverlay";
 import { useAtisOverlay } from "~/hooks/useAtisOverlay";
 import { useNotamOverlay } from "~/hooks/useNotamOverlay";
 import { useWeatherOverlayLayer } from "~/hooks/useWeatherOverlayLayer";
+import { useWaypointOverlayLayer } from "~/hooks/useWaypointOverlayLayer";
 import { MetarPanel } from "./MetarPanel";
 import { RadarSettings } from "~/components/atc/radarSettings";
 import { MapSettingsSidebar } from "~/components/map/MapSettingsSidebar";
@@ -163,6 +164,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [isOpenAIPEnabled, setIsOpenAIPEnabled] = useState(() =>
     getBooleanCookie("map_openaip", false),
   );
+  const [showWaypoints, setShowWaypoints] = useState(() =>
+    getBooleanCookie("map_waypoints", false),
+  );
 
   const [showPrecipitation, setShowPrecipitation] = useState(() =>
     getBooleanCookie("weather_precipitation", false),
@@ -190,9 +194,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [conflictAlerts, setConflictAlerts] = useState<ConflictAlertSummary[]>(
     [],
   );
-  const [conflictHistory, setConflictHistory] = useState<ConflictHistoryEvent[]>(
-    [],
-  );
+  const [conflictHistory, setConflictHistory] = useState<
+    ConflictHistoryEvent[]
+  >([]);
   const lastConflictSnapshotRef = useRef<string>("");
   const lastConflictHistorySignatureRef = useRef<string>("");
 
@@ -226,6 +230,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       baseLayer: isRadarMode ? "radar" : isOSMMode ? "osm" : "satellite",
       mapRenderer,
       openAIP: isOpenAIPEnabled,
+      waypoints: showWaypoints,
       precipitation: showPrecipitation,
       airmets: showAirmets,
       sigmets: showSigmets,
@@ -236,6 +241,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       isOSMMode,
       isRadarMode,
       mapRenderer,
+      showWaypoints,
       showAirmets,
       showConflicts,
       showPrecipitation,
@@ -256,7 +262,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const selectedPreset = useMemo(
     () =>
       selectedPresetId
-        ? layerPresets.find((preset) => preset.id === selectedPresetId) ?? null
+        ? (layerPresets.find((preset) => preset.id === selectedPresetId) ??
+          null)
         : null,
     [layerPresets, selectedPresetId],
   );
@@ -341,6 +348,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       setBooleanCookie("map_radar_mode", nextBaseLayer === "radar");
       setBooleanCookie("map_osm_mode", nextBaseLayer === "osm");
       setBooleanCookie("map_openaip", preset.openAIP);
+      setBooleanCookie("map_waypoints", preset.waypoints ?? false);
       setBooleanCookie("weather_precipitation", preset.precipitation);
       setBooleanCookie("weather_airmets", nextAirmets);
       setBooleanCookie("weather_sigmets", nextSigmets);
@@ -348,6 +356,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       applyBaseLayer(nextBaseLayer);
       setIsOpenAIPEnabled(preset.openAIP);
+      setShowWaypoints(preset.waypoints ?? false);
       setShowPrecipitation(preset.precipitation);
       setShowAirmets(nextAirmets);
       setShowSigmets(nextSigmets);
@@ -369,7 +378,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
       });
 
       if (skipped.length > 0) {
-        toast.warning(`Applied ${preset.name} with ${skipped.join(", ")} skipped`);
+        toast.warning(
+          `Applied ${preset.name} with ${skipped.join(", ")} skipped`,
+        );
       }
     },
     [
@@ -510,6 +521,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
   useEffect(() => {
     setBooleanCookie("map_openaip", isOpenAIPEnabled);
   }, [isOpenAIPEnabled]);
+
+  useEffect(() => {
+    setBooleanCookie("map_waypoints", showWaypoints);
+  }, [showWaypoints]);
 
   // Persist weather layer settings to cookies
   useEffect(() => {
@@ -793,6 +808,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
     showPrecipitation,
     showAirmets: canUseAdvancedWeather && showAirmets,
     showSigmets: canUseAdvancedWeather && showSigmets,
+  });
+
+  useWaypointOverlayLayer({
+    mapInstance: mapRefs.mapInstance,
+    enabled: showWaypoints,
   });
 
   useEffect(() => {
@@ -1102,6 +1122,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
             onSavePreset={saveLayerPreset}
             onUpdatePreset={updateLayerPreset}
             onDeletePreset={deleteLayerPreset}
+            showWaypoints={showWaypoints}
+            setShowWaypoints={setShowWaypoints}
             showPrecipitation={showPrecipitation}
             setShowPrecipitation={setShowPrecipitation}
             showAirmets={showAirmets}
@@ -1242,13 +1264,15 @@ function ConflictMonitorPanel({
               No predicted conflicts in current traffic.
             </div>
           ) : (
-            alerts.slice(0, 5).map((alert) => (
-              <ConflictAlertCard
-                key={alert.id}
-                alert={alert}
-                onReview={() => onReviewAlert(alert)}
-              />
-            ))
+            alerts
+              .slice(0, 5)
+              .map((alert) => (
+                <ConflictAlertCard
+                  key={alert.id}
+                  alert={alert}
+                  onReview={() => onReviewAlert(alert)}
+                />
+              ))
           )}
         </div>
 
