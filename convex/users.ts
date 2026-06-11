@@ -34,10 +34,10 @@ async function getCurrentUser(ctx: QueryCtx | MutationCtx) {
     .first();
 }
 
-async function requireAdminForProManagement(ctx: QueryCtx | MutationCtx) {
+async function getAdminForProManagement(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity?.subject) {
-    throw new Error("Unauthorized");
+    return null;
   }
 
   const user = await getCurrentUser(ctx);
@@ -45,7 +45,7 @@ async function requireAdminForProManagement(ctx: QueryCtx | MutationCtx) {
     identity?.email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL ||
     user?.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL;
   if (!isSuperAdmin) {
-    throw new Error("Unauthorized");
+    return null;
   }
 
   return (
@@ -55,6 +55,15 @@ async function requireAdminForProManagement(ctx: QueryCtx | MutationCtx) {
       discordUsername: undefined,
     }
   );
+}
+
+async function requireAdminForProManagement(ctx: QueryCtx | MutationCtx) {
+  const actor = await getAdminForProManagement(ctx);
+  if (!actor) {
+    throw new Error("Unauthorized");
+  }
+
+  return actor;
 }
 
 export const isSuperAdmin = query({
@@ -548,7 +557,10 @@ export const getAssignablePilots = query({
 export const getAllForProManagement = query({
   args: {},
   handler: async (ctx) => {
-    await requireAdminForProManagement(ctx);
+    const actor = await getAdminForProManagement(ctx);
+    if (!actor) {
+      return null;
+    }
 
     return await ctx.db
       .query("users")

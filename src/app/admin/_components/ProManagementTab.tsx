@@ -85,6 +85,14 @@ export function ProManagementTab({
     return { temporaryPros, purchasedPros, otherUsers };
   }, [filteredUsers]);
 
+  if (!canRunSuperAdminQueries || allUsers === null) {
+    return (
+      <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+        Super-admin access is required to manage PRO access.
+      </div>
+    );
+  }
+
   if (allUsers === undefined) {
     return (
       <div className="flex items-center justify-center py-20">
