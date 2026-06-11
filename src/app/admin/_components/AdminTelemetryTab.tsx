@@ -121,8 +121,15 @@ function getActionIcon(action: TelemetryEvent["action"]) {
   return Plane;
 }
 
-export function AdminTelemetryTab() {
-  const events = useQuery(api.adminTelemetry.getRecent, { limit: 100 });
+export function AdminTelemetryTab({
+  canRunSuperAdminQueries,
+}: {
+  canRunSuperAdminQueries: boolean;
+}) {
+  const events = useQuery(
+    api.adminTelemetry.getRecent,
+    canRunSuperAdminQueries ? { limit: 100 } : "skip",
+  );
 
   const groupedStats = useMemo(() => {
     if (!events) return null;

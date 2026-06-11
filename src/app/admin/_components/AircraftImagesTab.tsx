@@ -287,10 +287,20 @@ function EditableCodes({
   );
 }
 
-export function AircraftImagesTab() {
-  const pendingQuery = useQuery(api.aircraftImages.getPending);
+export function AircraftImagesTab({
+  canRunAdminQueries,
+}: {
+  canRunAdminQueries: boolean;
+}) {
+  const pendingQuery = useQuery(
+    api.aircraftImages.getPending,
+    canRunAdminQueries ? {} : "skip",
+  );
   const approvedQuery = useQuery(api.aircraftImages.getApproved);
-  const allUsersQuery = useQuery(api.users.getAll);
+  const allUsersQuery = useQuery(
+    api.users.getAll,
+    canRunAdminQueries ? {} : "skip",
+  );
   const pendingImages = useMemo(() => pendingQuery ?? [], [pendingQuery]);
   const approvedImages = useMemo(() => approvedQuery ?? [], [approvedQuery]);
   const [imageSubTab, setImageSubTab] = useState<ImageSubTab>("pending");
@@ -839,16 +849,17 @@ export function AircraftImagesTab() {
           <Select
             value={imageAirlineFilter || "__all_airlines__"}
             onValueChange={(value) =>
-              setImageAirlineFilter(
-                value === "__all_airlines__" ? "" : value,
-              )
+              setImageAirlineFilter(value === "__all_airlines__" ? "" : value)
             }
           >
             <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
               <SelectValue placeholder="All Airlines" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
-              <SelectItem value="__all_airlines__" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">
+              <SelectItem
+                value="__all_airlines__"
+                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+              >
                 All Airlines
               </SelectItem>
               {uniqueImageAirlines.map((airline) => (
@@ -867,16 +878,17 @@ export function AircraftImagesTab() {
           <Select
             value={imageAircraftFilter || "__all_aircraft__"}
             onValueChange={(value) =>
-              setImageAircraftFilter(
-                value === "__all_aircraft__" ? "" : value,
-              )
+              setImageAircraftFilter(value === "__all_aircraft__" ? "" : value)
             }
           >
             <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
               <SelectValue placeholder="All Aircraft" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
-              <SelectItem value="__all_aircraft__" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">
+              <SelectItem
+                value="__all_aircraft__"
+                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+              >
                 All Aircraft
               </SelectItem>
               {uniqueImageAircraftTypes.map((type) => (
@@ -893,16 +905,17 @@ export function AircraftImagesTab() {
           <Select
             value={imageUploaderFilter || "__all_uploaders__"}
             onValueChange={(value) =>
-              setImageUploaderFilter(
-                value === "__all_uploaders__" ? "" : value,
-              )
+              setImageUploaderFilter(value === "__all_uploaders__" ? "" : value)
             }
           >
             <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
               <SelectValue placeholder="All Uploaders" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
-              <SelectItem value="__all_uploaders__" className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200">
+              <SelectItem
+                value="__all_uploaders__"
+                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+              >
                 All Uploaders
               </SelectItem>
               {uniqueImageUploaders.map((uploader) => (

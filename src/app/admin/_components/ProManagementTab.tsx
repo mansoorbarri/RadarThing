@@ -28,14 +28,21 @@ interface GrantModalState {
   email: string;
 }
 
-export function ProManagementTab() {
+export function ProManagementTab({
+  canRunSuperAdminQueries,
+}: {
+  canRunSuperAdminQueries: boolean;
+}) {
   const [search, setSearch] = useState("");
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [grantModal, setGrantModal] = useState<GrantModalState | null>(null);
   const [grantOption, setGrantOption] = useState<GrantOption>("1w");
   const [tempProsOpen, setTempProsOpen] = useState(false);
 
-  const allUsers = useQuery(api.users.getAllForProManagement);
+  const allUsers = useQuery(
+    api.users.getAllForProManagement,
+    canRunSuperAdminQueries ? {} : "skip",
+  );
   const setPermanentProRole = useMutation(api.users.setPermanentProRole);
   const setTemporaryProGrant = useMutation(api.users.setTemporaryProGrant);
 
@@ -281,8 +288,7 @@ export function ProManagementTab() {
                       Temporary PRO
                     </h3>
                     <p className="mt-0.5 text-xs text-amber-100/60">
-                      {groupedUsers.temporaryPros.length} active temporary
-                      grant
+                      {groupedUsers.temporaryPros.length} active temporary grant
                       {groupedUsers.temporaryPros.length !== 1 ? "s" : ""}
                     </p>
                   </div>

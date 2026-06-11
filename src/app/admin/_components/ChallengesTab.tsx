@@ -466,9 +466,19 @@ function describeSingleRule(rule: {
   }
 }
 
-export function ChallengesTab() {
-  const challenges = useQuery(api.challenges.listAdmin, {});
-  const pendingReviews = useQuery(api.challenges.listPendingReviews, {});
+export function ChallengesTab({
+  canRunAdminQueries,
+}: {
+  canRunAdminQueries: boolean;
+}) {
+  const challenges = useQuery(
+    api.challenges.listAdmin,
+    canRunAdminQueries ? {} : "skip",
+  );
+  const pendingReviews = useQuery(
+    api.challenges.listPendingReviews,
+    canRunAdminQueries ? {} : "skip",
+  );
   const createChallenge = useMutation(api.challenges.create);
   const updateChallenge = useMutation(api.challenges.update);
   const togglePublished = useMutation(api.challenges.togglePublished);

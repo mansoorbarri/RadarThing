@@ -72,9 +72,16 @@ function truncateConvexId(id: string) {
   return `${id.slice(0, 15)}...`;
 }
 
-export function VirtualAirlinesTab() {
-  const allUsers = useQuery(api.users.getAll);
-  const virtualAirlines = useQuery(api.virtualAirlines.getAll);
+export function VirtualAirlinesTab({
+  canRunAdminQueries,
+}: {
+  canRunAdminQueries: boolean;
+}) {
+  const allUsers = useQuery(api.users.getAll, canRunAdminQueries ? {} : "skip");
+  const virtualAirlines = useQuery(
+    api.virtualAirlines.getAll,
+    canRunAdminQueries ? {} : "skip",
+  );
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState<ModalTab>("details");
@@ -92,25 +99,34 @@ export function VirtualAirlinesTab() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeletingVirtualAirline, setIsDeletingVirtualAirline] =
     useState(false);
-  const fleetUploadedDataRef = useRef<{ url: string; key: string } | null>(null);
+  const fleetUploadedDataRef = useRef<{ url: string; key: string } | null>(
+    null,
+  );
   const fleetUploaderRef = useRef<ImageUploaderRef>(null);
 
   const users = useMemo(() => allUsers ?? [], [allUsers]);
   const airlines = useMemo(() => virtualAirlines ?? [], [virtualAirlines]);
   const selectedMembers = useQuery(
     api.virtualAirlineMembers.getByVirtualAirlineId,
-    form.id ? { virtualAirlineId: form.id as Id<"virtualAirlines"> } : "skip",
+    canRunAdminQueries && form.id
+      ? { virtualAirlineId: form.id as Id<"virtualAirlines"> }
+      : "skip",
   );
   const selectedFleetImages = useQuery(
     api.virtualAirlineAircraftImages.getByVirtualAirlineId,
-    form.id ? { virtualAirlineId: form.id as Id<"virtualAirlines"> } : "skip",
+    canRunAdminQueries && form.id
+      ? { virtualAirlineId: form.id as Id<"virtualAirlines"> }
+      : "skip",
   );
 
   const selectedAdmin = useMemo(
     () => users.find((user) => user.clerkId === form.adminClerkId) ?? null,
     [form.adminClerkId, users],
   );
-  const fleetImages = useMemo(() => selectedFleetImages ?? [], [selectedFleetImages]);
+  const fleetImages = useMemo(
+    () => selectedFleetImages ?? [],
+    [selectedFleetImages],
+  );
 
   const filteredUsers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -175,8 +191,13 @@ export function VirtualAirlinesTab() {
     });
 
     const adminUser =
-      users.find((user) => user.clerkId === virtualAirline.adminClerkId) ?? null;
-    setSearch(adminUser ? adminUser.discordUsername ?? getUserIdentifier(adminUser) : "");
+      users.find((user) => user.clerkId === virtualAirline.adminClerkId) ??
+      null;
+    setSearch(
+      adminUser
+        ? (adminUser.discordUsername ?? getUserIdentifier(adminUser))
+        : "",
+    );
     setMemberSearch("");
     setModalTab("details");
     setIsModalOpen(true);
@@ -257,7 +278,9 @@ export function VirtualAirlinesTab() {
     toast.success("Pilot added to VA");
   };
 
-  const handleRemoveMember = async (member: NonNullable<typeof selectedMembers>[number]) => {
+  const handleRemoveMember = async (
+    member: NonNullable<typeof selectedMembers>[number],
+  ) => {
     setMemberActionId(member.id);
     const result = await removeVirtualAirlineMember({
       id: member.id,
@@ -311,7 +334,10 @@ export function VirtualAirlinesTab() {
     }
 
     setFleetSubmitStage("submitting");
-    const uploadedData = fleetUploadedDataRef.current as { url: string; key: string } | null;
+    const uploadedData = fleetUploadedDataRef.current as {
+      url: string;
+      key: string;
+    } | null;
     if (!uploadedData) {
       setFleetError("Failed to upload image");
       setFleetSubmitStage("idle");
@@ -337,7 +363,9 @@ export function VirtualAirlinesTab() {
     setTimeout(() => resetFleetForm(), 900);
   };
 
-  const handleDeleteFleetImage = async (image: (typeof fleetImages)[number]) => {
+  const handleDeleteFleetImage = async (
+    image: (typeof fleetImages)[number],
+  ) => {
     setDeletingImageId(image.id);
     const result = await deleteVirtualAirlineAircraftImage({
       id: image.id,
@@ -379,10 +407,29 @@ export function VirtualAirlinesTab() {
   const pilotCount = (selectedMembers ?? []).length;
   const fleetCount = fleetImages.length;
 
-  const tabs: { key: ModalTab; label: string; count?: number; icon: React.ReactNode }[] = [
-    { key: "details", label: "Details", icon: <Plane className="h-3.5 w-3.5" /> },
-    { key: "pilots", label: "Pilots", count: pilotCount, icon: <Users className="h-3.5 w-3.5" /> },
-    { key: "fleet", label: "Fleet", count: fleetCount, icon: <ImageIcon className="h-3.5 w-3.5" /> },
+  const tabs: {
+    key: ModalTab;
+    label: string;
+    count?: number;
+    icon: React.ReactNode;
+  }[] = [
+    {
+      key: "details",
+      label: "Details",
+      icon: <Plane className="h-3.5 w-3.5" />,
+    },
+    {
+      key: "pilots",
+      label: "Pilots",
+      count: pilotCount,
+      icon: <Users className="h-3.5 w-3.5" />,
+    },
+    {
+      key: "fleet",
+      label: "Fleet",
+      count: fleetCount,
+      icon: <ImageIcon className="h-3.5 w-3.5" />,
+    },
   ];
 
   return (
@@ -415,8 +462,9 @@ export function VirtualAirlinesTab() {
           <div className="grid gap-4 lg:grid-cols-2">
             {airlines.map((virtualAirline) => {
               const adminUser =
-                users.find((user) => user.clerkId === virtualAirline.adminClerkId) ??
-                null;
+                users.find(
+                  (user) => user.clerkId === virtualAirline.adminClerkId,
+                ) ?? null;
 
               return (
                 <button
@@ -520,7 +568,7 @@ export function VirtualAirlinesTab() {
                       </span>
                     )}
                     {modalTab === tab.key && (
-                      <span className="absolute bottom-0 left-2 right-2 h-px bg-cyan-400" />
+                      <span className="absolute right-2 bottom-0 left-2 h-px bg-cyan-400" />
                     )}
                   </button>
                 ))}
@@ -548,7 +596,7 @@ export function VirtualAirlinesTab() {
                         }
                         placeholder="Example Virtual"
                         disabled={submitting}
-                        className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                        className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
                       />
                     </div>
 
@@ -570,7 +618,7 @@ export function VirtualAirlinesTab() {
                         placeholder="RVA"
                         maxLength={8}
                         disabled={submitting}
-                        className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 font-mono text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                        className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 font-mono text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
                       />
                       <p className="mt-1.5 text-xs text-slate-500">
                         Flights starting with this prefix get VA status.
@@ -593,7 +641,7 @@ export function VirtualAirlinesTab() {
                       }
                       placeholder="https://example.com or discord.gg/your-va"
                       disabled={submitting}
-                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
                     />
                     <p className="mt-1.5 text-xs text-slate-500">
                       Used for the VA link in the radar sidebar.
@@ -612,7 +660,7 @@ export function VirtualAirlinesTab() {
                         onChange={(event) => setSearch(event.target.value)}
                         placeholder="Search by Discord or Convex ID"
                         disabled={submitting}
-                        className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                        className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
                       />
                     </div>
 
@@ -626,7 +674,7 @@ export function VirtualAirlinesTab() {
                             {getUserIdentifier(selectedAdmin)}
                           </div>
                         </div>
-                        <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-cyan-300">
+                        <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-semibold text-cyan-300 uppercase">
                           Selected
                         </span>
                       </div>
@@ -699,7 +747,11 @@ export function VirtualAirlinesTab() {
                     disabled={submitting}
                     className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-3 font-medium text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {form.id ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                    {form.id ? (
+                      <Save className="h-4 w-4" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
                     {form.id ? "Save Changes" : "Create VA"}
                   </button>
 
@@ -786,7 +838,7 @@ export function VirtualAirlinesTab() {
                           setMemberSearch(event.target.value)
                         }
                         placeholder="Search by Discord or Convex ID"
-                        className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                        className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
                       />
                     </div>
                     <div className="mt-2 space-y-1">
@@ -806,7 +858,7 @@ export function VirtualAirlinesTab() {
                               {getUserIdentifier(user)}
                             </div>
                           </div>
-                          <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase text-cyan-300">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/15 px-2.5 py-1 text-[10px] font-semibold text-cyan-300 uppercase">
                             <UserPlus className="h-3 w-3" />
                             Add
                           </span>
@@ -852,7 +904,7 @@ export function VirtualAirlinesTab() {
                             fleetSubmitStage === "uploading" ||
                             fleetSubmitStage === "submitting"
                           }
-                          className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 font-mono text-sm text-white placeholder-slate-500 outline-none transition-colors focus:border-cyan-500/50"
+                          className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 font-mono text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
                         />
                       </div>
                       <div>
@@ -885,7 +937,8 @@ export function VirtualAirlinesTab() {
                           }
                           className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2.5 text-sm font-medium text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {fleetSubmitStage === "uploading" || fleetSubmitStage === "submitting" ? (
+                          {fleetSubmitStage === "uploading" ||
+                          fleetSubmitStage === "submitting" ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : fleetSubmitStage === "success" ? (
                             <CheckCircle2 className="h-4 w-4" />
@@ -902,7 +955,8 @@ export function VirtualAirlinesTab() {
                       </div>
                     )}
                     <p className="mt-2 text-xs text-slate-500">
-                      Uploading the same aircraft type replaces the existing image.
+                      Uploading the same aircraft type replaces the existing
+                      image.
                     </p>
                   </form>
 
@@ -944,7 +998,9 @@ export function VirtualAirlinesTab() {
                                 <div className="mt-1.5 text-xs text-slate-400">
                                   by{" "}
                                   {uploader
-                                    ? truncateConvexId(getUserIdentifier(uploader))
+                                    ? truncateConvexId(
+                                        getUserIdentifier(uploader),
+                                      )
                                     : "Unknown user"}
                                 </div>
                               </div>

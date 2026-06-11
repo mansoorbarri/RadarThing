@@ -1,9 +1,9 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useSignIn, useUser } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import {
@@ -113,9 +113,12 @@ const ImageUploadModal = dynamic(
 
 export default function AdminPage() {
   const { isSignedIn, isLoaded } = useUser();
+  const { signIn, isLoaded: isSignInLoaded } = useSignIn();
   const router = useRouter();
   const pathname = usePathname();
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [oauthRedirectFailed, setOauthRedirectFailed] = useState(false);
+  const oauthRedirectStarted = useRef(false);
   const mainTab = getAdminTabFromPath(pathname ?? "/admin");
   const {
     isAdminUser,
@@ -135,8 +138,36 @@ export default function AdminPage() {
 
   const loading =
     !isLoaded ||
+    (!isSignedIn && !oauthRedirectFailed) ||
     proStatusLoading ||
     (canRunAdminQueries && pendingQuery === undefined);
+
+  useEffect(() => {
+    if (
+      !isLoaded ||
+      !isSignInLoaded ||
+      isSignedIn ||
+      !signIn ||
+      oauthRedirectStarted.current
+    ) {
+      return;
+    }
+
+    oauthRedirectStarted.current = true;
+    setOauthRedirectFailed(false);
+
+    void signIn
+      .authenticateWithRedirect({
+        strategy: "oauth_google",
+        redirectUrl: "/sso-callback",
+        redirectUrlComplete: pathname ?? "/admin",
+      })
+      .catch((error) => {
+        console.error("Failed to start Google OAuth", error);
+        oauthRedirectStarted.current = false;
+        setOauthRedirectFailed(true);
+      });
+  }, [isLoaded, isSignInLoaded, isSignedIn, pathname, signIn]);
 
   useEffect(() => {
     if (!isLoaded || proStatusLoading || !isAdminUser) return;
@@ -294,12 +325,26 @@ export default function AdminPage() {
           )}
         </div>
 
-        {mainTab === "images" && <AircraftImagesTab />}
+        {mainTab === "images" && (
+          <AircraftImagesTab canRunAdminQueries={canRunAdminQueries} />
+        )}
         {mainTab === "charts" && <AirportChartsTab />}
-        {mainTab === "challenges" && <ChallengesTab />}
-        {mainTab === "virtual-airlines" && <VirtualAirlinesTab />}
-        {mainTab === "pro" && isSuperAdmin && <ProManagementTab />}
-        {mainTab === "activity" && isSuperAdmin && <AdminTelemetryTab />}
+        {mainTab === "challenges" && (
+          <ChallengesTab canRunAdminQueries={canRunAdminQueries} />
+        )}
+        {mainTab === "virtual-airlines" && (
+          <VirtualAirlinesTab canRunAdminQueries={canRunAdminQueries} />
+        )}
+        {mainTab === "pro" && isSuperAdmin && (
+          <ProManagementTab
+            canRunSuperAdminQueries={canRunAdminQueries && isSuperAdmin}
+          />
+        )}
+        {mainTab === "activity" && isSuperAdmin && (
+          <AdminTelemetryTab
+            canRunSuperAdminQueries={canRunAdminQueries && isSuperAdmin}
+          />
+        )}
       </main>
 
       {/* Floating Upload Button */}
