@@ -11,6 +11,7 @@ import { hasEffectiveProAccess } from "~/lib/proAccess";
 
 const utapi = new UTApi();
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
+const SUPER_ADMIN_GOOGLE_ID = "101233162035372298523";
 
 async function sendImageNotificationEmail(
   uploadedBy: string,
@@ -135,9 +136,7 @@ async function isProUser(): Promise<boolean> {
   // Admin or PRO role
   if (hasEffectiveProAccess(user)) return true;
 
-  // Fallback: env-based super admin
-  const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
-  return Boolean(superAdminGoogleId && user.googleId === superAdminGoogleId);
+  return user.googleId === SUPER_ADMIN_GOOGLE_ID;
 }
 
 async function isAdminUser(): Promise<boolean> {
@@ -150,9 +149,7 @@ async function isAdminUser(): Promise<boolean> {
   // Role-based admin
   if (user.role === "ADMIN") return true;
 
-  // Fallback: env-based super admin
-  const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
-  return Boolean(superAdminGoogleId && user.googleId === superAdminGoogleId);
+  return user.googleId === SUPER_ADMIN_GOOGLE_ID;
 }
 
 async function getCurrentUserId(): Promise<string | null> {

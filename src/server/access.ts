@@ -1,27 +1,23 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { convex, api } from "~/server/convex";
 import { hasEffectiveProAccess } from "~/lib/proAccess";
 
-const SUPER_ADMIN_EMAIL = "mansoor.eb.ak@gmail.com";
+const SUPER_ADMIN_GOOGLE_ID = "101233162035372298523";
 
 export async function getCurrentAccessContext() {
   const { userId } = await auth();
-  const clerkUser = await currentUser();
-  const isSuperAdmin =
-    clerkUser?.emailAddresses.some(
-      (email) => email.emailAddress.trim().toLowerCase() === SUPER_ADMIN_EMAIL,
-    ) ?? false;
 
   if (!userId) {
     return {
       clerkId: null,
       user: null,
       isAdmin: false,
-      isSuperAdmin,
+      isSuperAdmin: false,
     };
   }
 
   const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
+  const isSuperAdmin = user?.googleId === SUPER_ADMIN_GOOGLE_ID;
 
   if (!user) {
     return {

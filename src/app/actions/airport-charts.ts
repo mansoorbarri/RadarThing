@@ -11,6 +11,7 @@ import type { ChartType, ChartSource } from "~/types/airportCharts";
 
 const utapi = new UTApi();
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
+const SUPER_ADMIN_GOOGLE_ID = "101233162035372298523";
 
 async function sendChartNotificationEmail(
   uploadedBy: string,
@@ -122,8 +123,7 @@ async function isAdminUser(): Promise<boolean> {
 
   if (user.role === "ADMIN") return true;
 
-  const superAdminGoogleId = env.ADMIN_GOOGLE_ID;
-  return Boolean(superAdminGoogleId && user.googleId === superAdminGoogleId);
+  return user.googleId === SUPER_ADMIN_GOOGLE_ID;
 }
 
 async function getCurrentUserId(): Promise<string | null> {
@@ -580,13 +580,10 @@ export async function bulkApproveAirportCharts(
       ),
     );
 
-    const results = await authedConvex.mutation(
-      api.airportCharts.bulkApprove,
-      {
-        ids: ids as Id<"airportCharts">[],
-        approvedBy: userId,
-      },
-    );
+    const results = await authedConvex.mutation(api.airportCharts.bulkApprove, {
+      ids: ids as Id<"airportCharts">[],
+      approvedBy: userId,
+    });
 
     const emailPromises: Promise<void>[] = [];
 
@@ -641,15 +638,12 @@ export async function bulkRejectAirportCharts(
       return { success: false, rejected: 0, failed: ids.length };
     }
 
-    const results = await authedConvex.mutation(
-      api.airportCharts.bulkRemove,
-      {
-        ids: ids as Id<"airportCharts">[],
-        actorClerkId: userId,
-        action: "reject",
-        reason,
-      },
-    );
+    const results = await authedConvex.mutation(api.airportCharts.bulkRemove, {
+      ids: ids as Id<"airportCharts">[],
+      actorClerkId: userId,
+      action: "reject",
+      reason,
+    });
 
     const deletePromises: Promise<void>[] = [];
     const emailPromises: Promise<void>[] = [];

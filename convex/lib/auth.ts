@@ -1,7 +1,7 @@
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 
-const SUPER_ADMIN_EMAIL = "mansoor.eb.ak@gmail.com";
+const SUPER_ADMIN_GOOGLE_ID = "101233162035372298523";
 
 type AuthCtx = QueryCtx | MutationCtx;
 
@@ -73,13 +73,7 @@ export async function requireAdmin(
     .withIndex("by_clerkId", (q) => q.eq("clerkId", actorClerkId))
     .first();
 
-  const actorEmail =
-    actorClerkId === identity?.subject ? identity.email : undefined;
-  const isSuperAdmin =
-    actorEmail?.trim()?.toLowerCase() === SUPER_ADMIN_EMAIL ||
-    user?.email?.trim()?.toLowerCase() === SUPER_ADMIN_EMAIL ||
-    (process.env.ADMIN_GOOGLE_ID !== undefined &&
-      user?.googleId === process.env.ADMIN_GOOGLE_ID);
+  const isSuperAdmin = user?.googleId === SUPER_ADMIN_GOOGLE_ID;
 
   if (!user || user.isDeleted || (user.role !== "ADMIN" && !isSuperAdmin)) {
     throw new Error("Unauthorized");
@@ -114,10 +108,7 @@ export async function requireVirtualAirlineManager(
     .first();
 
   const isSiteAdmin =
-    user?.role === "ADMIN" ||
-    user?.email?.trim()?.toLowerCase() === SUPER_ADMIN_EMAIL ||
-    (process.env.ADMIN_GOOGLE_ID !== undefined &&
-      user?.googleId === process.env.ADMIN_GOOGLE_ID);
+    user?.role === "ADMIN" || user?.googleId === SUPER_ADMIN_GOOGLE_ID;
 
   if (
     !user ||
@@ -138,10 +129,7 @@ export async function requireAnyVirtualAirlineManager(ctx: AuthCtx) {
     .first();
 
   const isSiteAdmin =
-    user?.role === "ADMIN" ||
-    user?.email?.trim()?.toLowerCase() === SUPER_ADMIN_EMAIL ||
-    (process.env.ADMIN_GOOGLE_ID !== undefined &&
-      user?.googleId === process.env.ADMIN_GOOGLE_ID);
+    user?.role === "ADMIN" || user?.googleId === SUPER_ADMIN_GOOGLE_ID;
 
   if (user?.isDeleted) {
     throw new Error("Unauthorized");

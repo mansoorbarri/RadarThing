@@ -18,7 +18,7 @@ import {
   requireSystem,
 } from "./lib/auth";
 
-const SUPER_ADMIN_EMAIL = "mansoor.eb.ak@gmail.com";
+const SUPER_ADMIN_GOOGLE_ID = "101233162035372298523";
 
 function normalizeDiscordUsername(value: string): string {
   return value.trim().toLowerCase();
@@ -41,20 +41,12 @@ async function getAdminForProManagement(ctx: QueryCtx | MutationCtx) {
   }
 
   const user = await getCurrentUser(ctx);
-  const isSuperAdmin =
-    identity?.email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL ||
-    user?.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL;
+  const isSuperAdmin = user?.googleId === SUPER_ADMIN_GOOGLE_ID;
   if (!isSuperAdmin) {
     return null;
   }
 
-  return (
-    user ?? {
-      clerkId: identity.subject,
-      email: identity.email ?? SUPER_ADMIN_EMAIL,
-      discordUsername: undefined,
-    }
-  );
+  return user;
 }
 
 async function requireAdminForProManagement(ctx: QueryCtx | MutationCtx) {
@@ -73,10 +65,7 @@ export const isSuperAdmin = query({
     if (!identity?.subject) return false;
 
     const user = await getCurrentUser(ctx);
-    return (
-      identity.email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL ||
-      user?.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL
-    );
+    return user?.googleId === SUPER_ADMIN_GOOGLE_ID;
   },
 });
 

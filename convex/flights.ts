@@ -30,6 +30,7 @@ const DEFAULT_STATS_MAX_SPEED_KTS = 750;
 const HIGH_PERFORMANCE_STATS_MAX_SPEED_KTS = 1100;
 const STATS_EXCLUDED_SPEED_REASON = "speed_over_stats_limit";
 const LEGACY_STATS_EXCLUDED_SPEED_REASON = "speed_over_750_kts";
+const SUPER_ADMIN_GOOGLE_ID = "101233162035372298523";
 const MIN_UNREALISTIC_REPAIR_DURATION_MS = 6 * 60 * 60 * 1000;
 const MIN_UNREALISTIC_REPAIR_DISTANCE_NM = 25;
 const DEFAULT_UNREALISTIC_REPAIR_RATIO = 3;
@@ -269,10 +270,7 @@ function canViewerAccessFullFlightHistory(
     | null
     | undefined,
 ) {
-  const isSuperAdmin = Boolean(
-    process.env.ADMIN_GOOGLE_ID &&
-    viewer?.googleId === process.env.ADMIN_GOOGLE_ID,
-  );
+  const isSuperAdmin = viewer?.googleId === SUPER_ADMIN_GOOGLE_ID;
 
   return isSuperAdmin || hasEffectiveProAccess(viewer);
 }
@@ -402,8 +400,7 @@ async function recalculateUserStats(ctx: MutationCtx, userId: Id<"users">) {
 function canDeleteAnyFlight(role: string, googleId?: string) {
   if (role === "ADMIN") return true;
 
-  const superAdminGoogleId = process.env.ADMIN_GOOGLE_ID;
-  if (superAdminGoogleId && googleId === superAdminGoogleId) return true;
+  if (googleId === SUPER_ADMIN_GOOGLE_ID) return true;
 
   return isFlightModeratorGoogleId(googleId);
 }

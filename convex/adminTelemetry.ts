@@ -18,7 +18,7 @@ type AuditResourceType =
   | "virtual_airline"
   | "pro_access";
 
-const SUPER_ADMIN_EMAIL = "mansoor.eb.ak@gmail.com";
+const SUPER_ADMIN_GOOGLE_ID = "101233162035372298523";
 
 async function getUserByClerkId(ctx: QueryCtx | MutationCtx, clerkId?: string) {
   if (!clerkId) return null;
@@ -31,13 +31,8 @@ async function getUserByClerkId(ctx: QueryCtx | MutationCtx, clerkId?: string) {
 
 function isAdminTelemetryActor(
   user: Awaited<ReturnType<typeof getUserByClerkId>>,
-  email?: string | null,
 ) {
-  return (
-    user?.role === "ADMIN" ||
-    user?.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL ||
-    email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL
-  );
+  return user?.role === "ADMIN" || user?.googleId === SUPER_ADMIN_GOOGLE_ID;
 }
 
 async function requireSuperAdmin(ctx: QueryCtx) {
@@ -45,12 +40,10 @@ async function requireSuperAdmin(ctx: QueryCtx) {
   if (!identity?.subject) return null;
 
   const user = await getUserByClerkId(ctx, identity.subject);
-  const isSuperAdmin =
-    identity.email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL ||
-    user?.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL;
+  const isSuperAdmin = user?.googleId === SUPER_ADMIN_GOOGLE_ID;
   if (!isSuperAdmin) return null;
 
-  return user ?? { clerkId: identity.subject, email: identity.email ?? null };
+  return user;
 }
 
 export async function logAdminTelemetry(
@@ -73,7 +66,7 @@ export async function logAdminTelemetry(
   const identityActorEmail =
     identity?.subject === args.actorClerkId ? identity.email : null;
 
-  if (!isAdminTelemetryActor(actor, identityActorEmail)) {
+  if (!isAdminTelemetryActor(actor)) {
     return;
   }
 
@@ -130,10 +123,7 @@ export const getRecent = query({
 
     return events
       .filter((event) =>
-        isAdminTelemetryActor(
-          actorsByClerkId.get(event.actorClerkId) ?? null,
-          event.actorEmail,
-        ),
+        isAdminTelemetryActor(actorsByClerkId.get(event.actorClerkId) ?? null),
       )
       .slice(0, limit)
       .map((event) => ({

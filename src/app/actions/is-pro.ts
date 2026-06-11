@@ -4,11 +4,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { convex, api } from "~/server/convex";
 import { hasEffectiveProAccess } from "~/lib/proAccess";
 
-const SUPER_ADMIN_EMAIL = "mansoor.eb.ak@gmail.com";
-
-function isSuperAdminEmail(email: string | null | undefined) {
-  return email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL;
-}
+const SUPER_ADMIN_GOOGLE_ID = "101233162035372298523";
 
 async function getUserByEmail(
   clerkUser: Awaited<ReturnType<typeof currentUser>>,
@@ -19,20 +15,16 @@ async function getUserByEmail(
   return await convex.query(api.users.getByEmail, { email });
 }
 
-function isCurrentClerkUserSuperAdmin(
-  clerkUser: Awaited<ReturnType<typeof currentUser>>,
+function isSuperAdminUserRecord(
+  user: Awaited<ReturnType<typeof getUserByEmail>>,
 ) {
-  return (
-    clerkUser?.emailAddresses.some((email) =>
-      isSuperAdminEmail(email.emailAddress),
-    ) ?? false
-  );
+  return user?.googleId === SUPER_ADMIN_GOOGLE_ID;
 }
 
 export async function isPro() {
   const clerkUser = await currentUser();
-  const isSuperAdmin = isCurrentClerkUserSuperAdmin(clerkUser);
   const user = await getUserByEmail(clerkUser);
+  const isSuperAdmin = isSuperAdminUserRecord(user);
   if (!user) return isSuperAdmin;
 
   // Admins also have PRO access
@@ -43,8 +35,8 @@ export async function isPro() {
 
 export async function isAdmin() {
   const clerkUser = await currentUser();
-  const isSuperAdmin = isCurrentClerkUserSuperAdmin(clerkUser);
   const user = await getUserByEmail(clerkUser);
+  const isSuperAdmin = isSuperAdminUserRecord(user);
   if (!user) return isSuperAdmin;
 
   // Role-based admin check
@@ -61,8 +53,8 @@ export async function getProAndAdminStatus(): Promise<{
   isSuperAdmin: boolean;
 }> {
   const clerkUser = await currentUser();
-  const isSuperAdminUser = isCurrentClerkUserSuperAdmin(clerkUser);
   const user = await getUserByEmail(clerkUser);
+  const isSuperAdminUser = isSuperAdminUserRecord(user);
   if (!user) {
     return {
       isPro: isSuperAdminUser,
@@ -86,11 +78,11 @@ export async function getProAndAdminStatus(): Promise<{
 
 // Check if the current logged-in user is the configured super admin
 export async function isSuperAdminUser(): Promise<boolean> {
-  return isCurrentClerkUserSuperAdmin(await currentUser());
+  return isSuperAdminUserRecord(await getUserByEmail(await currentUser()));
 }
 
 export async function checkIsSuperAdmin(): Promise<boolean> {
-  return isCurrentClerkUserSuperAdmin(await currentUser());
+  return isSuperAdminUser();
 }
 
 export async function getSupportId(): Promise<string | null> {

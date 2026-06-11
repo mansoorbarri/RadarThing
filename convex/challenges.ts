@@ -26,6 +26,7 @@ import {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_LEADERBOARD_ENTRY_LIMIT = 10;
+const SUPER_ADMIN_GOOGLE_ID = "101233162035372298523";
 
 const challengeRuleValidator = v.object({
   ruleType: v.union(
@@ -77,11 +78,7 @@ async function getViewer(ctx: QueryCtx | MutationCtx) {
   }
 
   const isAdmin =
-    user.role === "ADMIN" ||
-    Boolean(
-      process.env.ADMIN_GOOGLE_ID &&
-      user.googleId === process.env.ADMIN_GOOGLE_ID,
-    );
+    user.role === "ADMIN" || user.googleId === SUPER_ADMIN_GOOGLE_ID;
 
   return { identity, user, isAdmin };
 }
