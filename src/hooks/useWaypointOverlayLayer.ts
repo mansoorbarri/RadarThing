@@ -8,6 +8,7 @@ import {
 
 interface UseWaypointOverlayLayerProps {
   mapInstance: React.MutableRefObject<L.Map | null>;
+  mapReady: boolean;
   enabled: boolean;
 }
 
@@ -55,12 +56,15 @@ function getBounds(map: L.Map) {
 
 export function useWaypointOverlayLayer({
   mapInstance,
+  mapReady,
   enabled,
 }: UseWaypointOverlayLayerProps) {
   const layerRef = useRef<L.LayerGroup | null>(null);
   const requestSignatureRef = useRef("");
 
   useEffect(() => {
+    if (!mapReady) return;
+
     const map = mapInstance.current;
     if (!map) return;
 
@@ -140,5 +144,5 @@ export function useWaypointOverlayLayer({
       map.off("zoomend", scheduleLoad);
       clearLayer();
     };
-  }, [enabled, mapInstance]);
+  }, [enabled, mapInstance, mapReady]);
 }

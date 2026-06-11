@@ -58,10 +58,13 @@ export function loadNavFixes() {
 }
 
 async function loadNavFixText() {
+  const cacheFresh = isNavFixCacheFresh();
   const cachedText = await getCachedNavFixText();
   if (cachedText !== null) return cachedText;
 
-  const response = await fetch(NAV_FIX_URL, { cache: "force-cache" });
+  const response = await fetch(NAV_FIX_URL, {
+    cache: cacheFresh ? "force-cache" : "reload",
+  });
   if (!response.ok) {
     throw new Error(`Failed to load ${NAV_FIX_URL}`);
   }
@@ -70,28 +73,45 @@ async function loadNavFixText() {
   return response.text();
 }
 
+function isNavFixCacheFresh() {
+  if (typeof window === "undefined") return false;
+
+  try {
+    const cachedAt = Number(
+      window.localStorage.getItem(NAV_FIX_CACHE_META_KEY),
+    );
+    return (
+      Number.isFinite(cachedAt) && Date.now() - cachedAt <= NAV_FIX_CACHE_TTL_MS
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function getCachedNavFixText() {
   if (typeof window === "undefined" || !("caches" in window)) return null;
 
-  const cachedAt = Number(window.localStorage.getItem(NAV_FIX_CACHE_META_KEY));
-  if (
-    !Number.isFinite(cachedAt) ||
-    Date.now() - cachedAt > NAV_FIX_CACHE_TTL_MS
-  ) {
+  try {
+    if (!isNavFixCacheFresh()) return null;
+
+    const cache = await window.caches.open(NAV_FIX_CACHE_NAME);
+    const response = await cache.match(NAV_FIX_URL);
+    return response ? response.text() : null;
+  } catch {
     return null;
   }
-
-  const cache = await window.caches.open(NAV_FIX_CACHE_NAME);
-  const response = await cache.match(NAV_FIX_URL);
-  return response ? response.text() : null;
 }
 
 async function storeNavFixResponse(response: Response) {
   if (typeof window === "undefined" || !("caches" in window)) return;
 
-  const cache = await window.caches.open(NAV_FIX_CACHE_NAME);
-  await cache.put(NAV_FIX_URL, response);
-  window.localStorage.setItem(NAV_FIX_CACHE_META_KEY, String(Date.now()));
+  try {
+    const cache = await window.caches.open(NAV_FIX_CACHE_NAME);
+    await cache.put(NAV_FIX_URL, response);
+    window.localStorage.setItem(NAV_FIX_CACHE_META_KEY, String(Date.now()));
+  } catch {
+    // Cache persistence is best-effort; navdata loading should still succeed.
+  }
 }
 
 export function filterNavFixesInBounds(

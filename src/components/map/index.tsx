@@ -812,6 +812,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   useWaypointOverlayLayer({
     mapInstance: mapRefs.mapInstance,
+    mapReady: mapRefs.mapReady,
     enabled: showWaypoints,
   });
 
