@@ -66,6 +66,7 @@ import { ChartSidePanel } from "~/components/map/ChartOverlayPanel";
 import { AtcPlayer } from "~/components/atc/AtcPlayer";
 import { AirportActivityPanel } from "~/components/atc/AirportActivityPanel";
 import { ImportedFlightPlanPanel } from "~/components/atc/ImportedFlightPlanPanel";
+import { VstripsFileFlightModal } from "~/components/atc/VstripsFileFlightModal";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { WhatsNew } from "~/components/ui/WhatsNew";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
@@ -82,7 +83,7 @@ import {
   UploadIcon,
   AdminIcon,
 } from "~/utils/dockIcons";
-import { RotateCcw, Route, X } from "lucide-react";
+import { FileText, RotateCcw, Route, X } from "lucide-react";
 import { UnitPreferencesProvider } from "~/hooks/useUnitPreferences";
 import { TimeDisplayPreferenceProvider } from "~/hooks/useTimeDisplayPreference";
 
@@ -104,6 +105,25 @@ const DESKTOP_MAP_RENDERER_COOKIE = "desktop_map_renderer";
 
 type RightPanel = "fids" | "filter" | "airports" | null;
 type DesktopMapRenderer = "flat" | "globe";
+interface VstripsEventSettings {
+  isEventLive: boolean;
+  airportMode: string;
+  fixedAirport?: string;
+  departureMode: string;
+  fixedDeparture?: string;
+  arrivalMode: string;
+  fixedArrival?: string;
+  timeMode: string;
+  fixedTime?: string;
+  altitudeMode?: string;
+  fixedAltitude?: string;
+  speedMode?: string;
+  fixedSpeed?: string;
+  routeMode: string;
+  fixedRoute?: string;
+  activeAirports: string[];
+  airportData: { id: string; name: string }[];
+}
 
 export default function ATCPage() {
   return (
@@ -223,6 +243,53 @@ function ATCPageContent() {
   ] = useState(() => !normalizedAirportParam);
 
   const [activeRightPanel, setActiveRightPanel] = useState<RightPanel>(null);
+  const [vstripsSettings, setVstripsSettings] =
+    useState<VstripsEventSettings | null>(null);
+  const [showFileFlightModal, setShowFileFlightModal] = useState(false);
+
+  const loadVstripsSettings = useCallback(async () => {
+    try {
+      const response = await fetch("/api/vstrips/flight-filing", {
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        setVstripsSettings(null);
+        return;
+      }
+
+      const data = (await response.json()) as {
+        settings?: VstripsEventSettings;
+      };
+      setVstripsSettings(data.settings?.isEventLive ? data.settings : null);
+    } catch {
+      setVstripsSettings(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadVstripsSettings();
+  }, [loadVstripsSettings]);
+
+  useEffect(() => {
+    if (showFileFlightModal) {
+      void loadVstripsSettings();
+    }
+  }, [loadVstripsSettings, showFileFlightModal]);
+
+  useEffect(() => {
+    const refreshOnFocus = () => {
+      if (document.visibilityState === "visible") {
+        void loadVstripsSettings();
+      }
+    };
+
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnFocus);
+    return () => {
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnFocus);
+    };
+  }, [loadVstripsSettings]);
 
   useEffect(() => {
     if (activeRightPanel === "airports") {
@@ -925,6 +992,17 @@ function ATCPageContent() {
           active: Boolean(importedFlightPlan),
           onClick: handleFlightPlanImportClick,
         },
+        ...(vstripsSettings?.isEventLive
+          ? [
+              {
+                id: "file-flight",
+                label: "File Flight",
+                icon: <FileText size={18} strokeWidth={1.8} />,
+                active: showFileFlightModal,
+                onClick: () => setShowFileFlightModal(true),
+              },
+            ]
+          : []),
         ...(importedFlightPlan
           ? [
               {
@@ -1065,6 +1143,11 @@ function ATCPageContent() {
         accept=".json,application/json"
         className="hidden"
         onChange={handleFlightPlanFileChange}
+      />
+      <VstripsFileFlightModal
+        open={showFileFlightModal}
+        settings={vstripsSettings}
+        onClose={() => setShowFileFlightModal(false)}
       />
 
       <div
