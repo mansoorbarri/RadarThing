@@ -4,8 +4,6 @@
   const API_BASE = "https://geofs-flightradar.duckdns.org";
   const SEND_INTERVAL_MS = 3000;
 
-  let loggedSpeedMode = false;
-  let loggedPayloadSpeed = false;
   let lastAircraftId = null;
   let wasOnGround = true;
   let takeoffTimeUTC = "";
@@ -28,10 +26,6 @@
   };
 
   const flightInfo = window.geofsFlightInfo;
-
-  function log(...args) {
-    console.log("[ATC-Reporter]", ...args);
-  }
 
   function reportUrl(path) {
     return `${API_BASE}${path}`;
@@ -192,22 +186,6 @@
     const groundSpeed = legacyKias ? null : readGeoFSGroundSpeed(inst);
     const airspeed = readGeoFSAirspeedKnots();
     const speedType = groundSpeed ? "ground" : "air";
-
-    if (!loggedSpeedMode) {
-      log(
-        "Speed mode:",
-        legacyKias ? "GeoFS 3.9 legacy speed" : `GeoFS 4.x ${speedType} speed`,
-        {
-          geofsVersion: readGeoFSVersionString(),
-          geofsMajorMinor: getGeoFSMajorMinorVersion(),
-          groundSpeedRaw: groundSpeed?.raw ?? null,
-          groundSpeedKnots: groundSpeed?.knots ?? null,
-          groundSpeedSource: groundSpeed?.source ?? null,
-          airspeedKnots: airspeed,
-        },
-      );
-      loggedSpeedMode = true;
-    }
 
     return {
       knots: groundSpeed?.knots ?? airspeed ?? 0,
@@ -418,20 +396,11 @@
 
   function reportLanding(vertSpeedFpm, groundSpeedKts, gForce, rollDeg) {
     if (!shouldReportLandingQuality()) {
-      log(
-        "Landing detected, but flight is not confirmed. Skipping landing quality report.",
-      );
       return;
     }
 
     const quality = classifyLanding(vertSpeedFpm);
     const landingTime = new Date().toISOString();
-    log("Landing detected:", quality, {
-      vertSpeedFpm,
-      groundSpeedKts,
-      gForce,
-      rollDeg,
-    });
 
     safeSend({
       type: "landing_report",
@@ -472,7 +441,6 @@
 
     if (wasOnGround && !onGround) {
       takeoffTimeUTC = new Date().toISOString();
-      log("Takeoff at", takeoffTimeUTC);
     }
 
     if (!wasOnGround && onGround && !landingDetected) {
@@ -604,25 +572,12 @@
     if (!snap) return;
 
     const payload = buildPayload(snap);
-    if (!loggedPayloadSpeed) {
-      log("Position payload speed:", {
-        speed: payload.speed,
-        speedType: payload.speedType,
-        speedSource: payload.speedSource,
-        speedUnit: payload.speedUnit,
-        speedRaw: payload.speedRaw,
-        geofsMajorMinor: payload.geofsMajorMinor,
-      });
-      loggedPayloadSpeed = true;
-    }
-
     safeSend({ type: "position_update", payload });
   }, SEND_INTERVAL_MS);
 
   const wait = setInterval(() => {
     if (window.geofs?.aircraft?.instance) {
       clearInterval(wait);
-      log("HTTP reporting enabled");
     }
   }, 500);
 })();
