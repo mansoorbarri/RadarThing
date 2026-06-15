@@ -26,11 +26,6 @@
   const RADAR_SETTINGS_ARROW_ID = "atc-radar-settings-arrow";
   const SEABUS_TOGGLE_ID = "atc-toggle-seabus";
   const CHARTS_BTN_ID = "atc-charts-btn";
-  const FOLLOW_SECTION_ID = "atc-follow-section";
-  const FOLLOW_BTN_ID = "atc-follow-btn";
-  const FOLLOW_STATUS_ID = "atc-follow-status";
-  const FOLLOW_LIST_ID = "atc-follow-list";
-  const FOLLOW_SEARCH_ID = "atc-follow-search";
   const AF_INPUT_ID = "atc-afInput";
   const IDENT_BTN_ID = "atc-ident-btn";
   const IDENT_REQUEST_WINDOW_MS = 60000;
@@ -40,10 +35,6 @@
   let flightUI;
   let keybindMode = null;
   let lastSyncedPlan = "";
-  let followOpen = false;
-  let followActive = false;
-  let followLeaderInfo = null;
-  let cachedAircraftList = [];
   let identRequestUntil = 0;
   let identRequestDurationSeconds = 15;
   let identActiveUntil = 0;
@@ -1795,44 +1786,6 @@
         </div>
       </div>
 
-      <div id="${FOLLOW_SECTION_ID}" style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;">
-        <div id="${FOLLOW_STATUS_ID}"></div>
-        <button id="${FOLLOW_BTN_ID}" style="
-          width:100%;
-          height:34px;
-          border-radius:10px;
-          border:1px solid rgba(34,211,238,0.2);
-          background:rgba(34,211,238,0.08);
-          color:#22d3ee;
-          font-size:10px;
-          font-weight:600;
-          letter-spacing:0.12em;
-          text-transform:uppercase;
-          cursor:pointer;
-          transition:background 0.15s;
-        ">AP Follow</button>
-        <input id="${FOLLOW_SEARCH_ID}" placeholder="Search callsign..." style="
-          display:none;
-          width:100%;
-          height:30px;
-          margin-top:6px;
-          border-radius:8px;
-          background:rgba(255,255,255,0.08);
-          border:1px solid rgba(255,255,255,0.1);
-          color:#e5e7eb;
-          padding:0 8px;
-          font-size:11px;
-          outline:none;
-          box-sizing:border-box;
-        " />
-        <div id="${FOLLOW_LIST_ID}" style="
-          display:none;
-          max-height:160px;
-          overflow-y:auto;
-          margin-top:4px;
-        "></div>
-      </div>
-
       <div style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.06); padding-top:10px;">
         <button id="${CHARTS_BTN_ID}" style="
           width:100%;
@@ -1998,182 +1951,6 @@
     });
 
     document.getElementById(CHARTS_BTN_ID).onclick = toggleChartsPanel;
-
-    // ---- Follow UI logic ----
-
-    const followBtn = document.getElementById(FOLLOW_BTN_ID);
-    const followSearch = document.getElementById(FOLLOW_SEARCH_ID);
-    const followList = document.getElementById(FOLLOW_LIST_ID);
-    const followStatus = document.getElementById(FOLLOW_STATUS_ID);
-
-    function renderFollowStatus() {
-      if (!followActive) {
-        followStatus.innerHTML = "";
-        followBtn.textContent = "AP Follow";
-        followBtn.style.borderColor = "rgba(34,211,238,0.2)";
-        followBtn.style.background = "rgba(34,211,238,0.08)";
-        followBtn.style.color = "#22d3ee";
-        return;
-      }
-
-      const ldr = followLeaderInfo || {};
-      followBtn.textContent = "Stop Following";
-      followBtn.style.borderColor = "rgba(239,68,68,0.3)";
-      followBtn.style.background = "rgba(239,68,68,0.12)";
-      followBtn.style.color = "#fca5a5";
-
-      followStatus.innerHTML = `
-        <div style="
-          margin-bottom:6px;
-          padding:8px;
-          border-radius:8px;
-          border:1px solid rgba(34,211,238,0.2);
-          background:rgba(34,211,238,0.06);
-        ">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-            <div style="width:6px;height:6px;border-radius:50%;background:#22d3ee;box-shadow:0 0 6px #22d3ee;"></div>
-            <span style="font-size:9px;letter-spacing:0.1em;color:#67e8f9;text-transform:uppercase;font-weight:600;">Following</span>
-          </div>
-          <div style="font-size:12px;font-weight:700;color:#fff;">${ldr.flightNo || ldr.callsign || "---"}</div>
-          <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:2px;">${ldr.type || ""}</div>
-          <div style="display:flex;gap:4px;margin-top:6px;">
-            <div style="flex:1;text-align:center;padding:4px;border-radius:6px;background:rgba(0,0,0,0.3);">
-              <div style="font-size:7px;color:rgba(255,255,255,0.35);">SPD</div>
-              <div style="font-size:10px;font-weight:700;color:#fff;">${ldr.speed ?? "---"}</div>
-            </div>
-            <div style="flex:1;text-align:center;padding:4px;border-radius:6px;background:rgba(0,0,0,0.3);">
-              <div style="font-size:7px;color:rgba(255,255,255,0.35);">ALT</div>
-              <div style="font-size:10px;font-weight:700;color:#fff;">${ldr.altMSL ?? "---"}</div>
-            </div>
-            <div style="flex:1;text-align:center;padding:4px;border-radius:6px;background:rgba(0,0,0,0.3);">
-              <div style="font-size:7px;color:rgba(255,255,255,0.35);">V/S</div>
-              <div style="font-size:10px;font-weight:700;color:#fff;">${ldr.vspeed ?? "---"}</div>
-            </div>
-          </div>
-          <div style="font-size:7px;color:rgba(255,255,255,0.2);margin-top:4px;">Heading not synced — use your own NAV.</div>
-          <div style="font-size:7px;color:rgba(239,185,68,0.6);margin-top:2px;">⚠ Speed syncs in knots only. Set AP to KTS, not Mach.</div>
-        </div>
-      `;
-    }
-
-    function fetchAircraftList() {
-      const es = new EventSource("https://sse.radarthing.com/api/stream");
-      const timeout = setTimeout(() => {
-        es.close();
-      }, 6000);
-      es.onmessage = (event) => {
-        clearTimeout(timeout);
-        es.close();
-        try {
-          const data = JSON.parse(event.data);
-          cachedAircraftList = (data.aircraft || []).filter((ac) => {
-            const myId =
-              geofs?.userRecord?.googleid || geofs?.userRecord?.callsign;
-            return ac.googleId && ac.id !== myId && ac.callsign !== myId;
-          });
-          renderFollowList("");
-        } catch (_) {}
-      };
-      es.onerror = () => {
-        clearTimeout(timeout);
-        es.close();
-      };
-    }
-
-    function renderFollowList(query) {
-      const q = (query || "").toUpperCase();
-      const filtered = cachedAircraftList
-        .filter((ac) => {
-          if (!q) return true;
-          return (
-            (ac.flightNo || "").toUpperCase().includes(q) ||
-            (ac.callsign || "").toUpperCase().includes(q)
-          );
-        })
-        .slice(0, 15);
-
-      if (filtered.length === 0) {
-        followList.innerHTML = `<div style="padding:8px;text-align:center;font-size:10px;color:rgba(255,255,255,0.25);">
-          ${q ? "No matches" : "No other aircraft online"}
-        </div>`;
-        return;
-      }
-
-      followList.innerHTML = filtered
-        .map((ac) => {
-          const key = ac.callsign || ac.id;
-          const label = ac.flightNo || ac.callsign || key;
-          const sub = `${ac.type || "?"} · ${ac.departure || "?"}→${ac.arrival || "?"}`;
-          return `<div data-follow-id="${key}" style="
-          padding:6px 8px;
-          margin-bottom:2px;
-          border-radius:6px;
-          border:1px solid rgba(255,255,255,0.05);
-          background:rgba(0,0,0,0.2);
-          cursor:pointer;
-          transition:background 0.15s;
-        " onmouseover="this.style.background='rgba(34,211,238,0.08)';this.style.borderColor='rgba(34,211,238,0.25)'"
-           onmouseout="this.style.background='rgba(0,0,0,0.2)';this.style.borderColor='rgba(255,255,255,0.05)'">
-          <div style="font-size:11px;font-weight:700;color:#e5e7eb;">${label}</div>
-          <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:1px;">${sub} · ${ac.speed || 0} kts · FL${Math.round((ac.altMSL || 0) / 100)}</div>
-        </div>`;
-        })
-        .join("");
-
-      followList.querySelectorAll("[data-follow-id]").forEach((el) => {
-        el.onclick = () => {
-          const targetId = el.getAttribute("data-follow-id");
-          window.dispatchEvent(
-            new CustomEvent("radarthing-follow-start", {
-              detail: { targetId },
-            }),
-          );
-          followOpen = false;
-          followSearch.style.display = "none";
-          followList.style.display = "none";
-          followSearch.value = "";
-          showToast(
-            "Following " + (el.querySelector("div").textContent || targetId),
-          );
-        };
-      });
-    }
-
-    followBtn.onclick = () => {
-      if (followActive) {
-        // Stop following
-        window.dispatchEvent(new CustomEvent("radarthing-follow-stop"));
-        showToast("Stopped following");
-        return;
-      }
-
-      // Toggle picker
-      followOpen = !followOpen;
-      followSearch.style.display = followOpen ? "block" : "none";
-      followList.style.display = followOpen ? "block" : "none";
-
-      if (followOpen) {
-        followSearch.value = "";
-        followList.innerHTML = `<div style="padding:8px;text-align:center;font-size:10px;color:rgba(255,255,255,0.25);">Loading...</div>`;
-        fetchAircraftList();
-        followSearch.focus();
-      }
-    };
-
-    followSearch.addEventListener("input", () => {
-      renderFollowList(followSearch.value);
-    });
-
-    ["keydown", "keyup", "keypress"].forEach((evt) => {
-      followSearch.addEventListener(evt, (e) => e.stopPropagation());
-    });
-
-    // Listen for follow status updates from userscript.js
-    window.addEventListener("radarthing-follow-update", (e) => {
-      followActive = !!e.detail?.following;
-      followLeaderInfo = e.detail?.leader || null;
-      renderFollowStatus();
-    });
 
     updateIdentUI();
   }
