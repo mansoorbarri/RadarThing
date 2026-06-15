@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent, MouseEvent } from "react";
-import { SignInButton, useUser } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { AlertCircle, CheckCircle, Loader2, X } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
+import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 
 interface EventSettings {
   isEventLive: boolean;
@@ -249,11 +250,11 @@ export function VstripsFileFlightModal({
           {!isSignedIn ? (
             <div className="rounded-lg border border-amber-400/25 bg-amber-400/10 p-4 text-sm text-amber-100">
               <p className="mb-3 font-medium">Sign in to file a flight.</p>
-              <SignInButton mode="modal">
+              <GoogleSignInButton>
                 <button className="rounded-md border border-amber-300/40 bg-amber-300/15 px-3 py-2 text-xs font-semibold text-amber-100">
                   Sign In
                 </button>
-              </SignInButton>
+              </GoogleSignInButton>
             </div>
           ) : !settings?.isEventLive ? (
             <div className="rounded-lg border border-cyan-400/25 bg-cyan-400/10 p-4 text-sm text-cyan-100">

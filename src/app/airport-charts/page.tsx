@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useUser, SignInButton } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -23,6 +23,7 @@ import {
 import { toast } from "sonner";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
+import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 import type { ChartType } from "~/types/airportCharts";
 import { useProStatus } from "~/hooks/useProStatus";
 
@@ -327,11 +328,11 @@ export default function AirportChartsPage() {
             {isSignedIn ? (
               <UserAuth />
             ) : (
-              <SignInButton mode="modal">
+              <GoogleSignInButton>
                 <button className="cursor-pointer rounded-lg bg-cyan-500/20 px-4 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-cyan-500/30">
                   Sign In
                 </button>
-              </SignInButton>
+              </GoogleSignInButton>
             )}
           </div>
         </div>
@@ -361,12 +362,12 @@ export default function AirportChartsPage() {
               Upload Chart
             </button>
           ) : (
-            <SignInButton mode="modal">
+            <GoogleSignInButton>
               <button className="flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40">
                 <Upload className="h-5 w-5" />
                 Sign in to Upload
               </button>
-            </SignInButton>
+            </GoogleSignInButton>
           )}
         </div>
 

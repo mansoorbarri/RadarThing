@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useUser, SignInButton } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { useProStatus } from "~/hooks/useProStatus";
+import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 import { Analytics } from "~/lib/analytics";
 import { createPortalSession } from "~/app/actions/create-portal";
 import { getCurrentUserDataExport } from "~/app/actions/export-user-data";
@@ -339,11 +340,11 @@ export default function DashboardPage() {
           <p className="mb-12 text-xl text-slate-400">
             Sign in to view your account, flight statistics, and history
           </p>
-          <SignInButton mode="modal">
+          <GoogleSignInButton>
             <button className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-8 py-4 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40">
               Sign In / Sign Up
             </button>
-          </SignInButton>
+          </GoogleSignInButton>
         </main>
       </div>
     );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useUser, SignInButton } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import { createCheckoutSession } from "~/app/actions/create-checkout";
 import { createPortalSession } from "~/app/actions/create-portal";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -10,6 +10,7 @@ import { Check, Zap, ArrowLeft } from "lucide-react";
 import Loading from "~/components/loading";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
+import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 import { Analytics } from "~/lib/analytics";
 import { FREE_RECENT_FLIGHTS_LIMIT } from "~/lib/flightHistory";
 
@@ -221,10 +222,7 @@ export default function PricingPage() {
               </p>
 
               {!isSignedIn && (
-                <SignInButton
-                  mode="modal"
-                  forceRedirectUrl="/pricing?checkout=1"
-                >
+                <GoogleSignInButton redirectTo="/pricing?checkout=1">
                   <button
                     onClick={() =>
                       Analytics.upgradeButtonClicked({
@@ -236,7 +234,7 @@ export default function PricingPage() {
                   >
                     Continue with Google
                   </button>
-                </SignInButton>
+                </GoogleSignInButton>
               )}
 
               {isSignedIn && (

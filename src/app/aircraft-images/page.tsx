@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useUser, SignInButton } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -13,6 +13,7 @@ import {
   ImageUploader,
   type ImageUploaderRef,
 } from "~/components/ui/image-uploader";
+import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 
 // Cookie helpers
 function getCookie(name: string): string {
@@ -433,11 +434,11 @@ export default function AircraftImagesPage() {
             {isSignedIn ? (
               <UserAuth />
             ) : (
-              <SignInButton mode="modal">
+              <GoogleSignInButton>
                 <button className="cursor-pointer rounded-lg bg-cyan-500/20 px-3 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-cyan-500/30 sm:px-4">
                   Sign In
                 </button>
-              </SignInButton>
+              </GoogleSignInButton>
             )}
           </div>
         </div>
@@ -468,12 +469,12 @@ export default function AircraftImagesPage() {
               Upload Image
             </button>
           ) : (
-            <SignInButton mode="modal">
+            <GoogleSignInButton>
               <button className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40 sm:w-auto sm:px-6">
                 <Upload className="h-5 w-5" />
                 Sign in to Upload
               </button>
-            </SignInButton>
+            </GoogleSignInButton>
           )}
         </div>
 

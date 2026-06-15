@@ -1,6 +1,6 @@
 "use client";
 
-import { SignInButton, useUser } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
 import { UserAuth } from "~/components/atc/userAuth";
+import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 import Loading from "~/components/loading";
 import { Button } from "~/components/ui/button";
 import { Analytics } from "~/lib/analytics";
@@ -327,12 +328,12 @@ export default function ReferralPageClient({
               </div>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <SignInButton mode="modal">
+                <GoogleSignInButton>
                   <Button className="h-12 cursor-pointer rounded-none bg-cyan-400 px-6 text-sm font-semibold text-black transition-colors hover:bg-cyan-300">
                     {publicSummary ? "Join with Google" : "Sign in to get your code"}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
-                </SignInButton>
+                </GoogleSignInButton>
                 <Link
                   href="/pricing"
                   className="inline-flex h-12 items-center justify-center border border-white/12 px-6 text-sm font-medium text-white transition-colors hover:border-white/20 hover:bg-white/5"

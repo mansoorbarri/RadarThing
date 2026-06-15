@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
+import { SignOutButton, useUser } from "@clerk/nextjs";
 import Image from "next/image";
 import { useConvexAuth, useQuery } from "convex/react";
 import Link from "next/link";
 import { LogOut, Ticket, User } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
+import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 
 export const UserAuth = () => {
   const { isSignedIn, isLoaded, user } = useUser();
@@ -104,8 +105,8 @@ export const UserAuth = () => {
   }
 
   return (
-    <SignInButton mode="modal">
+    <GoogleSignInButton>
       <button className={`${baseStyle} ${cyanStyle}`}>SIGN IN</button>
-    </SignInButton>
+    </GoogleSignInButton>
   );
 };

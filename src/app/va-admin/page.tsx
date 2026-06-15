@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useUser, SignInButton } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import { useConvexAuth, useQuery } from "convex/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -30,6 +30,7 @@ import {
   ImageUploader,
   type ImageUploaderRef,
 } from "~/components/ui/image-uploader";
+import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 
 type SubmitStage = "idle" | "uploading" | "submitting" | "success";
 type Tab = "settings" | "upload" | "pilots" | "fleet";
@@ -368,11 +369,11 @@ export default function VirtualAirlineAdminPage() {
               airline.
             </p>
             <div className="mt-6">
-              <SignInButton mode="modal">
+              <GoogleSignInButton>
                 <button className="cursor-pointer rounded-xl bg-cyan-500 px-5 py-3 font-medium text-black">
                   Sign In
                 </button>
-              </SignInButton>
+              </GoogleSignInButton>
             </div>
           </div>
         </div>
