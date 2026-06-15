@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import {
   CalendarRange,
@@ -471,6 +471,7 @@ export function ChallengesTab({
 }: {
   canRunAdminQueries: boolean;
 }) {
+  const formSectionRef = useRef<HTMLDivElement>(null);
   const challenges = useQuery(
     api.challenges.listAdmin,
     canRunAdminQueries ? {} : "skip",
@@ -539,6 +540,10 @@ export function ChallengesTab({
       startAt: toLocalInputValue(challenge.startAt),
       durationDays: String(challenge.durationDays),
       isPublished: challenge.isPublished,
+    });
+    formSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
     });
   }
 
@@ -849,7 +854,10 @@ export function ChallengesTab({
 
   return (
     <div className="space-y-8">
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-6">
+      <div
+        ref={formSectionRef}
+        className="scroll-mt-24 rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-6"
+      >
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="text-lg font-semibold text-white">
