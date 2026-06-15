@@ -67,6 +67,7 @@ import { AtcPlayer } from "~/components/atc/AtcPlayer";
 import { AirportActivityPanel } from "~/components/atc/AirportActivityPanel";
 import { ImportedFlightPlanPanel } from "~/components/atc/ImportedFlightPlanPanel";
 import { VstripsFileFlightModal } from "~/components/atc/VstripsFileFlightModal";
+import { StatsExclusionsModal } from "~/components/atc/StatsExclusionsModal";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { WhatsNew } from "~/components/ui/WhatsNew";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
@@ -83,7 +84,7 @@ import {
   UploadIcon,
   AdminIcon,
 } from "~/utils/dockIcons";
-import { FileText, RotateCcw, Route, X } from "lucide-react";
+import { CircleHelp, FileText, RotateCcw, Route, X } from "lucide-react";
 import { UnitPreferencesProvider } from "~/hooks/useUnitPreferences";
 import { TimeDisplayPreferenceProvider } from "~/hooks/useTimeDisplayPreference";
 
@@ -246,6 +247,8 @@ function ATCPageContent() {
   const [vstripsSettings, setVstripsSettings] =
     useState<VstripsEventSettings | null>(null);
   const [showFileFlightModal, setShowFileFlightModal] = useState(false);
+  const [showStatsExclusionsModal, setShowStatsExclusionsModal] =
+    useState(false);
 
   const loadVstripsSettings = useCallback(async () => {
     try {
@@ -1114,6 +1117,13 @@ function ATCPageContent() {
       label: "Help",
       items: [
         {
+          id: "stats-rules",
+          label: "Stats Rules",
+          icon: <CircleHelp size={18} strokeWidth={1.8} />,
+          active: showStatsExclusionsModal,
+          onClick: () => setShowStatsExclusionsModal(true),
+        },
+        {
           id: "install",
           label: "Install",
           icon: InstallIcon,
@@ -1148,6 +1158,10 @@ function ATCPageContent() {
         open={showFileFlightModal}
         settings={vstripsSettings}
         onClose={() => setShowFileFlightModal(false)}
+      />
+      <StatsExclusionsModal
+        open={showStatsExclusionsModal}
+        onClose={() => setShowStatsExclusionsModal(false)}
       />
 
       <div

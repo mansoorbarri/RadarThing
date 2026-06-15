@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "stats-rules-modal",
+    date: "2026-06-15",
+    title: "Stats Rules in the Radar Dock",
+    description:
+      "The radar dock now includes a Stats Rules modal explaining why a flight may stay in history but not count toward user stats.",
+    type: "new",
+  },
+  {
     id: "referral-program",
     date: "2026-05-15",
     title: "Referral Program",
