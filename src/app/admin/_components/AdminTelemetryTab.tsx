@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "convex/react";
 import {
   Activity,
@@ -8,11 +8,19 @@ import {
   Crown,
   FilePenLine,
   Plane,
+  Search,
   Trash2,
   Upload,
   XCircle,
 } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
 
 const ACTION_LABELS = {
   upload: "Uploaded",
@@ -45,6 +53,7 @@ const ACTION_STYLES = {
 
 type TelemetryAction = keyof typeof ACTION_LABELS;
 type TelemetryResourceType = keyof typeof RESOURCE_LABELS;
+const ALL_ACTIONS_VALUE = "__all_actions__";
 
 interface TelemetryEvent {
   id: string;
@@ -126,23 +135,58 @@ export function AdminTelemetryTab({
 }: {
   canRunSuperAdminQueries: boolean;
 }) {
+  const [userFilter, setUserFilter] = useState("");
+  const [actionFilter, setActionFilter] =
+    useState<typeof ALL_ACTIONS_VALUE | TelemetryAction>(ALL_ACTIONS_VALUE);
   const events = useQuery(
     api.adminTelemetry.getRecent,
     canRunSuperAdminQueries ? { limit: 100 } : "skip",
   );
 
-  const groupedStats = useMemo(() => {
+  const filteredEvents = useMemo(() => {
     if (!events) return null;
 
+    const normalizedUserFilter = userFilter.trim().toLowerCase();
+
+    return events.filter((event) => {
+      const matchesUser =
+        !normalizedUserFilter ||
+        [
+          formatActor(event),
+          event.actorEmail,
+          event.actorDiscordUsername,
+          event.actorClerkId,
+          formatTarget(event),
+          event.targetEmail,
+          event.targetDiscordUsername,
+          event.targetClerkId,
+        ]
+          .filter((value): value is string => Boolean(value))
+          .some((value) => value.toLowerCase().includes(normalizedUserFilter));
+
+      const matchesAction =
+        actionFilter === ALL_ACTIONS_VALUE || event.action === actionFilter;
+
+      return matchesUser && matchesAction;
+    });
+  }, [actionFilter, events, userFilter]);
+
+  const groupedStats = useMemo(() => {
+    if (!filteredEvents) return null;
+
     return {
-      total: events.length,
-      approvals: events.filter((event) => event.action === "approve").length,
-      removals: events.filter(
+      total: filteredEvents.length,
+      approvals: filteredEvents.filter((event) => event.action === "approve")
+        .length,
+      removals: filteredEvents.filter(
         (event) => event.action === "reject" || event.action === "delete",
       ).length,
-      edits: events.filter((event) => event.action === "edit").length,
+      edits: filteredEvents.filter((event) => event.action === "edit").length,
     };
-  }, [events]);
+  }, [filteredEvents]);
+
+  const hasActiveFilters =
+    userFilter.trim().length > 0 || actionFilter !== ALL_ACTIONS_VALUE;
 
   if (events === undefined) {
     return (
@@ -169,14 +213,70 @@ export function AdminTelemetryTab({
         <TelemetryStat label="Removals" value={groupedStats?.removals ?? 0} />
       </div>
 
+      <div className="flex flex-col gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <input
+            type="text"
+            value={userFilter}
+            onChange={(event) => setUserFilter(event.target.value)}
+            placeholder="Filter by user, email, Discord, or Clerk ID..."
+            className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus:bg-white/[0.07]"
+          />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <Select
+            value={actionFilter}
+            onValueChange={(value: string) =>
+              setActionFilter(value as typeof ALL_ACTIONS_VALUE | TelemetryAction)
+            }
+          >
+            <SelectTrigger className="h-11 w-full rounded-lg border-white/10 bg-white/5 font-mono text-sm text-white shadow-none hover:bg-white/[0.07] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+              <SelectValue placeholder="All Processes" />
+            </SelectTrigger>
+            <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+              <SelectItem
+                value={ALL_ACTIONS_VALUE}
+                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+              >
+                All Processes
+              </SelectItem>
+              {Object.entries(ACTION_LABELS).map(([value, label]) => (
+                <SelectItem
+                  key={value}
+                  value={value}
+                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                >
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={() => {
+                setUserFilter("");
+                setActionFilter(ALL_ACTIONS_VALUE);
+              }}
+              className="rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-slate-400 transition-colors hover:border-red-500/30 hover:text-red-400"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="border-y border-white/10">
-        {events.length === 0 ? (
+        {filteredEvents?.length === 0 ? (
           <div className="py-16 text-center text-sm text-slate-500">
-            No admin activity has been recorded yet.
+            {events.length === 0
+              ? "No admin activity has been recorded yet."
+              : "No admin activity matches the current filters."}
           </div>
         ) : (
           <div className="divide-y divide-white/10">
-            {events.map((event) => {
+            {filteredEvents?.map((event) => {
               const Icon = getActionIcon(event.action);
               const target = formatTarget(event);
               const note = formatMetadata(event.metadata);
