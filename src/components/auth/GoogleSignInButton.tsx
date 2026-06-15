@@ -8,16 +8,16 @@ import {
   type ReactElement,
 } from "react";
 
-type ClickableChildProps = {
+interface ClickableChildProps {
   onClick?: MouseEventHandler<HTMLElement>;
   disabled?: boolean;
   "aria-busy"?: boolean;
-};
+}
 
-type GoogleSignInButtonProps = {
+interface GoogleSignInButtonProps {
   children: ReactElement<ClickableChildProps>;
   redirectTo?: string;
-};
+}
 
 export function GoogleSignInButton({
   children,
