@@ -19,7 +19,6 @@ import {
   getEffectiveAccessRole,
   hasEffectiveProAccess,
 } from "../src/lib/proAccess";
-import { maybeQualifyReferralForUser } from "./referrals";
 import {
   isSystemSecretValid,
   requireAdmin,
@@ -490,8 +489,6 @@ export const create = mutation({
         lastFlightCallsign: args.callsign,
       });
 
-      await maybeQualifyReferralForUser(ctx, args.userId);
-
       await autoCompleteChallengesForFlight(ctx, {
         userId: args.userId,
         flightId,
@@ -545,8 +542,6 @@ export const create = mutation({
         ? args.callsign
         : stats.lastFlightCallsign,
     });
-
-    await maybeQualifyReferralForUser(ctx, args.userId);
 
     await autoCompleteChallengesForFlight(ctx, {
       userId: args.userId,

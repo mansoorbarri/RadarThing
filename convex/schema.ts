@@ -22,38 +22,6 @@ export default defineSchema({
     .index("by_stripeCustomerId", ["stripeCustomerId"])
     .index("by_discordUsernameLower", ["discordUsernameLower"]),
 
-  referralCodes: defineTable({
-    ownerUserId: v.id("users"),
-    code: v.string(),
-    createdAt: v.number(),
-    qualifiedCount: v.number(),
-    rewardGrantedAt: v.optional(v.number()),
-  })
-    .index("by_ownerUserId", ["ownerUserId"])
-    .index("by_code", ["code"]),
-
-  referralClaims: defineTable({
-    referralCodeId: v.id("referralCodes"),
-    referralCode: v.string(),
-    referrerUserId: v.id("users"),
-    referredUserId: v.id("users"),
-    status: v.union(
-      v.literal("pending"),
-      v.literal("qualified"),
-      v.literal("rejected"),
-    ),
-    createdAt: v.number(),
-    qualifiedAt: v.optional(v.number()),
-    rejectedAt: v.optional(v.number()),
-    rejectionReason: v.optional(v.string()),
-    qualifyingFlightCount: v.optional(v.number()),
-  })
-    .index("by_referralCodeId", ["referralCodeId"])
-    .index("by_referralCodeId_status", ["referralCodeId", "status"])
-    .index("by_referrerUserId", ["referrerUserId"])
-    .index("by_referrerUserId_status", ["referrerUserId", "status"])
-    .index("by_referredUserId", ["referredUserId"]),
-
   adminTelemetry: defineTable({
     actorClerkId: v.string(),
     actorUserId: v.optional(v.id("users")),

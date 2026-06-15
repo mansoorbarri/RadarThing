@@ -5,7 +5,7 @@ import { SignOutButton, useUser } from "@clerk/nextjs";
 import Image from "next/image";
 import { useConvexAuth, useQuery } from "convex/react";
 import Link from "next/link";
-import { LogOut, Ticket, User } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 
@@ -73,14 +73,6 @@ export const UserAuth = () => {
             >
               <User className="h-4 w-4" />
               Dashboard
-            </Link>
-            <Link
-              href="/referral"
-              onClick={() => setOpen(false)}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-cyan-400/10 hover:text-cyan-400"
-            >
-              <Ticket className="h-4 w-4" />
-              Referral
             </Link>
             {(managedVirtualAirlines?.length ?? 0) > 0 && (
               <Link

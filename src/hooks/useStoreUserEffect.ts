@@ -5,12 +5,6 @@ import { useMutation } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { api } from "../../convex/_generated/api";
-import {
-  clearPersistedReferralCode,
-  persistReferralCode,
-  readPersistedReferralCode,
-} from "~/lib/referralAttribution";
-import { isReferralCode, normalizeReferralCode } from "~/lib/referrals";
 
 export function useStoreUserEffect() {
   const { isAuthenticated } = useConvexAuth();
@@ -32,29 +26,14 @@ export function StoreUserProvider({ children }: { children: React.ReactNode }) {
   const storeUser = useMutation(api.users.storeUser);
 
   useEffect(() => {
-    const referralCode = normalizeReferralCode(
-      typeof window === "undefined"
-        ? null
-        : new URLSearchParams(window.location.search).get("ref"),
-    );
-    if (user || !isReferralCode(referralCode)) return;
-    persistReferralCode(referralCode);
-  }, [user]);
-
-  useEffect(() => {
     if (!isAuthenticated || !user || storedRef.current) return;
 
     const googleId =
       user.externalAccounts?.find((acc) => acc.provider === "google")
         ?.providerUserId ?? undefined;
-    const persistedReferralCode = readPersistedReferralCode() ?? undefined;
 
     storedRef.current = true;
-    void storeUser({ googleId, referralCode: persistedReferralCode })
-      .then(() => {
-        clearPersistedReferralCode();
-      })
-      .catch(() => {
+    void storeUser({ googleId }).catch(() => {
         storedRef.current = false;
       });
   }, [isAuthenticated, user, storeUser, storedRef]);
