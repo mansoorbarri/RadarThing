@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { env } from "~/env";
 
 const DEFAULT_VSTRIPS_BASE_URL =
@@ -37,11 +38,13 @@ async function proxyVstrips(init?: RequestInit) {
 export async function GET() {
   try {
     return await proxyVstrips();
-  } catch (error) {
-    console.error("Failed to proxy vstrips filing settings:", error);
+  } catch {
     return NextResponse.json(
-      { error: "Unable to reach vstrips" },
-      { status: 502 },
+      { settings: null, unavailable: true },
+      {
+        status: 200,
+        headers: { "Cache-Control": "no-store" },
+      },
     );
   }
 }
