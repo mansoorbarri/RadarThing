@@ -19,7 +19,6 @@ export const env = createEnv({
     AVWX_TOKEN: z.string(),
     OPENWEATHERMAP_API_KEY: z.string(),
     CONVEX_SYSTEM_SECRET: z.string(),
-    VSTRIPS_BASE_URL: z.string().url().optional(),
     VSTRIPS_INTEGRATION_SECRET: z.string().optional(),
   },
 
@@ -64,7 +63,6 @@ export const env = createEnv({
     AVWX_TOKEN: process.env.AVWX_TOKEN,
     OPENWEATHERMAP_API_KEY: process.env.OPENWEATHERMAP_API_KEY,
     CONVEX_SYSTEM_SECRET: process.env.CONVEX_SYSTEM_SECRET,
-    VSTRIPS_BASE_URL: process.env.VSTRIPS_BASE_URL,
     VSTRIPS_INTEGRATION_SECRET: process.env.VSTRIPS_INTEGRATION_SECRET,
   },
   /**

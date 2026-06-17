@@ -4,14 +4,11 @@ import { env } from "~/env";
 
 const DEFAULT_VSTRIPS_BASE_URL =
   process.env.NODE_ENV === "production"
-    ? "https://vstrips.vercel.app"
+    ? "https://vstrips.xyzmani.com"
     : "http://localhost:3001";
 
 function getEndpoint() {
-  const baseUrl = (env.VSTRIPS_BASE_URL || DEFAULT_VSTRIPS_BASE_URL).replace(
-    /\/$/,
-    "",
-  );
+  const baseUrl = DEFAULT_VSTRIPS_BASE_URL.replace(/\/$/, "");
   return `${baseUrl}/api/public/flight-filing`;
 }
 
