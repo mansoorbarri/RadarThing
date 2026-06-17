@@ -60,10 +60,12 @@ const INITIAL_FORM: FlightForm = {
 
 export function VstripsFileFlightModal({
   open,
+  isLoading,
   settings,
   onClose,
 }: {
   open: boolean;
+  isLoading: boolean;
   settings: EventSettings | null;
   onClose: () => void;
 }) {
@@ -255,6 +257,14 @@ export function VstripsFileFlightModal({
                   Sign In
                 </button>
               </GoogleSignInButton>
+            </div>
+          ) : isLoading ? (
+            <div className="rounded-lg border border-cyan-400/25 bg-cyan-400/10 p-4 text-sm text-cyan-100">
+              <Loader2 className="mb-2 h-5 w-5 animate-spin" />
+              <p className="font-medium">Loading vstrips event settings.</p>
+              <p className="mt-1 text-cyan-100/75">
+                Please wait while filing availability is checked.
+              </p>
             </div>
           ) : !settings?.isEventLive ? (
             <div className="rounded-lg border border-cyan-400/25 bg-cyan-400/10 p-4 text-sm text-cyan-100">

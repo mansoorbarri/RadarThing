@@ -246,11 +246,14 @@ function ATCPageContent() {
   const [activeRightPanel, setActiveRightPanel] = useState<RightPanel>(null);
   const [vstripsSettings, setVstripsSettings] =
     useState<VstripsEventSettings | null>(null);
+  const [isLoadingVstripsSettings, setIsLoadingVstripsSettings] =
+    useState(false);
   const [showFileFlightModal, setShowFileFlightModal] = useState(false);
   const [showStatsExclusionsModal, setShowStatsExclusionsModal] =
     useState(false);
 
   const loadVstripsSettings = useCallback(async () => {
+    setIsLoadingVstripsSettings(true);
     try {
       const response = await fetch("/api/vstrips/flight-filing", {
         cache: "no-store",
@@ -266,33 +269,19 @@ function ATCPageContent() {
       setVstripsSettings(data.settings?.isEventLive ? data.settings : null);
     } catch {
       setVstripsSettings(null);
+    } finally {
+      setIsLoadingVstripsSettings(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadVstripsSettings();
-  }, [loadVstripsSettings]);
-
-  useEffect(() => {
     if (showFileFlightModal) {
       void loadVstripsSettings();
+      return;
     }
+    setVstripsSettings(null);
+    setIsLoadingVstripsSettings(false);
   }, [loadVstripsSettings, showFileFlightModal]);
-
-  useEffect(() => {
-    const refreshOnFocus = () => {
-      if (document.visibilityState === "visible") {
-        void loadVstripsSettings();
-      }
-    };
-
-    window.addEventListener("focus", refreshOnFocus);
-    document.addEventListener("visibilitychange", refreshOnFocus);
-    return () => {
-      window.removeEventListener("focus", refreshOnFocus);
-      document.removeEventListener("visibilitychange", refreshOnFocus);
-    };
-  }, [loadVstripsSettings]);
 
   useEffect(() => {
     if (activeRightPanel === "airports") {
@@ -995,17 +984,13 @@ function ATCPageContent() {
           active: Boolean(importedFlightPlan),
           onClick: handleFlightPlanImportClick,
         },
-        ...(vstripsSettings?.isEventLive
-          ? [
-              {
-                id: "file-flight",
-                label: "File Flight",
-                icon: <FileText size={18} strokeWidth={1.8} />,
-                active: showFileFlightModal,
-                onClick: () => setShowFileFlightModal(true),
-              },
-            ]
-          : []),
+        {
+          id: "file-flight",
+          label: "File Flight",
+          icon: <FileText size={18} strokeWidth={1.8} />,
+          active: showFileFlightModal,
+          onClick: () => setShowFileFlightModal(true),
+        },
         ...(importedFlightPlan
           ? [
               {
@@ -1156,6 +1141,7 @@ function ATCPageContent() {
       />
       <VstripsFileFlightModal
         open={showFileFlightModal}
+        isLoading={isLoadingVstripsSettings}
         settings={vstripsSettings}
         onClose={() => setShowFileFlightModal(false)}
       />
