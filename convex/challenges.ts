@@ -6,6 +6,7 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
+import { isSystemSecretValid } from "./lib/auth";
 import {
   countUniqueVisitedAirports,
   doesFlightCollectionMatchChallenge,
@@ -97,6 +98,17 @@ async function requireAdmin(ctx: QueryCtx | MutationCtx) {
     throw new Error("You do not have permission to manage challenges");
   }
   return viewer;
+}
+
+async function requireAdminOrSystem(
+  ctx: QueryCtx | MutationCtx,
+  systemSecret?: string,
+) {
+  if (isSystemSecretValid(systemSecret)) {
+    return null;
+  }
+
+  return await requireAdmin(ctx);
 }
 
 async function canReadAdminChallenges(ctx: QueryCtx) {
@@ -373,6 +385,43 @@ async function getActiveAutoChallenges(
   );
 }
 
+function aggregateManualChallengeCompletions(
+  completions: {
+    _id: Id<"challengeCompletions">;
+    challengeId: Id<"challenges">;
+    userId: Id<"users">;
+    status: "pending" | "completed" | "rejected";
+    completedAt?: number;
+    submissionNote?: string;
+    createdAt: number;
+    updatedAt: number;
+  }[],
+) {
+  if (completions.length === 0) return null;
+
+  const sorted = [...completions].sort((a, b) => b.updatedAt - a.updatedAt);
+  const latest = sorted[0]!;
+  const hasPending = sorted.some((completion) => completion.status === "pending");
+  const latestCompleted = sorted.find(
+    (completion) => completion.status === "completed",
+  );
+
+  return {
+    id: latest._id,
+    status: hasPending
+      ? ("pending" as const)
+      : latestCompleted
+        ? ("completed" as const)
+        : ("rejected" as const),
+    completedAt: latestCompleted?.completedAt,
+    submissionNote: latest.submissionNote,
+    canSubmitManual: !hasPending,
+    approvedCount: sorted.filter((completion) => completion.status === "completed")
+      .length,
+    latestActivityAt: sorted[0]!.updatedAt,
+  };
+}
+
 async function clearChallengeLeaderboardEntries(
   ctx: MutationCtx,
   challengeId: Id<"challenges">,
@@ -391,10 +440,17 @@ async function rebuildChallengeLeaderboardEntries(
   ctx: MutationCtx,
   challenge: Doc<"challenges">,
   now: number,
+  options?: {
+    requireActive?: boolean;
+  },
 ) {
   await clearChallengeLeaderboardEntries(ctx, challenge._id);
 
-  if (challenge.mode !== "auto" || !isChallengeActiveAt(challenge, now)) {
+  const requireActive = options?.requireActive ?? true;
+  if (
+    challenge.mode !== "auto" ||
+    (requireActive && !isChallengeActiveAt(challenge, now))
+  ) {
     return 0;
   }
 
@@ -458,6 +514,96 @@ async function rebuildChallengeLeaderboardEntries(
   }
 
   return rebuiltEntries;
+}
+
+async function backfillAutoChallengeCompletions(
+  ctx: MutationCtx,
+  challenge: Doc<"challenges">,
+  now: number,
+) {
+  if (challenge.mode !== "auto") {
+    return {
+      insertedCompletions: 0,
+      leaderboardEntries: 0,
+      completionCount: 0,
+      matchedUsers: 0,
+      flightsInWindow: 0,
+    };
+  }
+
+  const [flights, existingCompletions] = await Promise.all([
+    ctx.db
+      .query("flights")
+      .withIndex("by_startTime", (q) =>
+        q.gte("startTime", challenge.startAt).lt("startTime", challenge.endAt),
+      )
+      .collect(),
+    ctx.db
+      .query("challengeCompletions")
+      .withIndex("by_challengeId", (q) => q.eq("challengeId", challenge._id))
+      .collect(),
+  ]);
+
+  const existingCompletionUserIds = new Set(
+    existingCompletions.map((completion) => completion.userId),
+  );
+  const flightsByUserId = new Map<Id<"users">, typeof flights>();
+  for (const flight of flights) {
+    const userFlights = flightsByUserId.get(flight.userId) ?? [];
+    userFlights.push(flight);
+    flightsByUserId.set(flight.userId, userFlights);
+  }
+
+  let insertedCompletions = 0;
+  let matchedUsers = 0;
+
+  for (const [userId, userFlights] of flightsByUserId.entries()) {
+    if (!doesFlightCollectionMatchChallenge(challenge, userFlights)) {
+      continue;
+    }
+
+    matchedUsers += 1;
+    if (existingCompletionUserIds.has(userId)) {
+      continue;
+    }
+
+    const supportingFlightId = findSupportingFlightId(challenge, userFlights);
+    if (!supportingFlightId) {
+      continue;
+    }
+
+    const inserted = await insertAutoCompletionIfMissing(ctx, {
+      challengeId: challenge._id,
+      userId,
+      flightId: supportingFlightId,
+      now,
+    });
+    if (!inserted) {
+      continue;
+    }
+
+    existingCompletionUserIds.add(userId);
+    insertedCompletions += 1;
+  }
+
+  const leaderboardEntries = await rebuildChallengeLeaderboardEntries(
+    ctx,
+    challenge,
+    now,
+    { requireActive: false },
+  );
+  const finalCompletions = await ctx.db
+    .query("challengeCompletions")
+    .withIndex("by_challengeId", (q) => q.eq("challengeId", challenge._id))
+    .collect();
+
+  return {
+    insertedCompletions,
+    leaderboardEntries,
+    completionCount: finalCompletions.length,
+    matchedUsers,
+    flightsInWindow: flights.length,
+  };
 }
 
 async function syncAutoLeaderboardEntriesForUser(
@@ -1042,41 +1188,33 @@ export const listActiveForViewer = query({
       .filter((challenge) => isChallengeActiveAt(challenge, now))
       .sort((a, b) => a.endAt - b.endAt);
 
-    const completionByChallengeId = new Map<
-      string,
-      {
-        id: Id<"challengeCompletions">;
-        status: "pending" | "completed" | "rejected";
-        completedAt?: number;
-        submissionNote?: string;
-      }
-    >();
     const flights = viewer.user
       ? await ctx.db
           .query("flights")
           .withIndex("by_userId", (q) => q.eq("userId", viewer.user._id))
           .collect()
       : [];
+    const completions = viewer.user
+      ? await ctx.db
+          .query("challengeCompletions")
+          .withIndex("by_userId", (q) => q.eq("userId", viewer.user!._id))
+          .collect()
+      : [];
+    const completionsByChallengeId = new Map<
+      string,
+      (typeof completions)[number][]
+    >();
 
-    if (viewer.user) {
-      const user = viewer.user;
-      const completions = await ctx.db
-        .query("challengeCompletions")
-        .withIndex("by_userId", (q) => q.eq("userId", user._id))
-        .collect();
-
-      for (const completion of completions) {
-        completionByChallengeId.set(completion.challengeId, {
-          id: completion._id,
-          status: completion.status,
-          completedAt: completion.completedAt,
-          submissionNote: completion.submissionNote,
-        });
-      }
+    for (const completion of completions) {
+      const entries = completionsByChallengeId.get(completion.challengeId) ?? [];
+      entries.push(completion);
+      completionsByChallengeId.set(completion.challengeId, entries);
     }
 
     return challenges.map((challenge) => {
-      const completion = completionByChallengeId.get(challenge._id);
+      const completion = aggregateManualChallengeCompletions(
+        completionsByChallengeId.get(challenge._id) ?? [],
+      );
       const autoProgress = getAutoProgress(challenge, flights);
       const computedStatus =
         challenge.mode === "auto" && autoProgress.isComplete
@@ -1095,8 +1233,7 @@ export const listActiveForViewer = query({
         canSubmitManual:
           Boolean(viewer.user) &&
           challenge.mode === "manual" &&
-          completion?.status !== "pending" &&
-          completion?.status !== "completed",
+          (completion?.canSubmitManual ?? true),
       };
     });
   },
@@ -1126,12 +1263,20 @@ export const listActiveForUser = query({
         .collect(),
     ]);
 
-    const completionByChallengeId = new Map(
-      completions.map((completion) => [completion.challengeId, completion]),
-    );
+    const completionsByChallengeId = new Map<
+      string,
+      (typeof completions)[number][]
+    >();
+    for (const completion of completions) {
+      const entries = completionsByChallengeId.get(completion.challengeId) ?? [];
+      entries.push(completion);
+      completionsByChallengeId.set(completion.challengeId, entries);
+    }
 
     return challenges.map((challenge) => {
-      const completion = completionByChallengeId.get(challenge._id);
+      const completion = aggregateManualChallengeCompletions(
+        completionsByChallengeId.get(challenge._id) ?? [],
+      );
       const autoProgress = getAutoProgress(challenge, flights);
       const computedStatus =
         challenge.mode === "auto" && autoProgress.isComplete
@@ -1140,7 +1285,7 @@ export const listActiveForUser = query({
 
       return {
         ...serializeChallenge(challenge),
-        userCompletionId: completion?._id ?? null,
+        userCompletionId: completion?.id ?? null,
         userStatus: completion?.status ?? computedStatus,
         completedAt: completion?.completedAt ?? null,
         submissionNote: completion?.submissionNote ?? null,
@@ -1278,33 +1423,41 @@ export const listActiveLeaderboard = query({
         .withIndex("by_challengeId", (q) => q.eq("challengeId", challenge._id))
         .collect();
 
-      const entries: ChallengeLeaderboardEntryResult[] = completions
-        .flatMap((completion) => {
-          const user = usersById.get(completion.userId);
+      const completionsByUserId = new Map<Id<"users">, typeof completions>();
+      for (const completion of completions) {
+        const entries = completionsByUserId.get(completion.userId) ?? [];
+        entries.push(completion);
+        completionsByUserId.set(completion.userId, entries);
+      }
+
+      const entries: ChallengeLeaderboardEntryResult[] = [...completionsByUserId]
+        .flatMap(([userId, userCompletions]) => {
+          const user = usersById.get(userId);
           if (!user) return [];
 
-          const stats = userStatsByUserId.get(completion.userId);
+          const aggregate = aggregateManualChallengeCompletions(userCompletions);
+          if (!aggregate) return [];
+
+          const stats = userStatsByUserId.get(userId);
           return [
             {
-              userId: completion.userId,
-              displayName: getChallengePilotDisplayName(
-                user,
-                stats,
-                completion.userId,
-              ),
+              userId,
+              displayName: getChallengePilotDisplayName(user, stats, userId),
               callsign: stats?.lastFlightCallsign ?? null,
-              progressCurrent: completion.status === "completed" ? 1 : 0,
+              progressCurrent: aggregate.approvedCount > 0 ? aggregate.approvedCount : 0,
               progressTarget: 1,
               progressLabel:
-                completion.status === "completed"
-                  ? "Approved"
-                  : completion.status === "pending"
+                aggregate.status === "completed"
+                  ? aggregate.approvedCount > 1
+                    ? `${aggregate.approvedCount} approved`
+                    : "Approved"
+                  : aggregate.status === "pending"
                     ? "Pending review"
                     : "Needs resubmission",
-              isComplete: completion.status === "completed",
-              completedAt: completion.completedAt ?? null,
-              status: completion.status,
-              sortAt: completion.completedAt ?? completion.createdAt,
+              isComplete: aggregate.approvedCount > 0,
+              completedAt: aggregate.completedAt ?? null,
+              status: aggregate.status,
+              sortAt: aggregate.completedAt ?? aggregate.latestActivityAt,
             } satisfies ManualChallengeLeaderboardEntryResult,
           ];
         })
@@ -1491,23 +1644,27 @@ export const listPendingReviews = query({
       return [];
     }
 
-    const pending = await ctx.db
-      .query("challengeCompletions")
-      .withIndex("by_status", (q) => q.eq("status", "pending"))
-      .collect();
+    const completions = await ctx.db.query("challengeCompletions").collect();
 
     const results = [];
 
-    for (const completion of pending) {
-      const [challenge, user, flight] = await Promise.all([
+    for (const completion of completions) {
+      const attachedFlightIds =
+        completion.flightIds && completion.flightIds.length > 0
+          ? completion.flightIds
+          : completion.flightId
+            ? [completion.flightId]
+            : [];
+
+      const [challenge, user, flights] = await Promise.all([
         ctx.db.get(completion.challengeId),
         ctx.db.get(completion.userId),
-        completion.flightId
-          ? ctx.db.get(completion.flightId)
-          : Promise.resolve(null),
+        Promise.all(attachedFlightIds.map((flightId) => ctx.db.get(flightId))),
       ]);
 
-      if (!challenge || !user || user.isDeleted) continue;
+      if (!challenge || challenge.mode !== "manual" || !user || user.isDeleted) {
+        continue;
+      }
 
       results.push({
         id: completion._id,
@@ -1517,23 +1674,29 @@ export const listPendingReviews = query({
         userId: user._id,
         userDisplay: user.discordUsername ?? user.email,
         userEmail: user.email,
+        status: completion.status,
         submissionNote: completion.submissionNote ?? null,
         createdAt: completion.createdAt,
-        flight: flight
-          ? {
-              id: flight._id,
-              callsign: flight.callsign,
-              aircraftType: flight.aircraftType,
-              depICAO: flight.depICAO ?? null,
-              arrICAO: flight.arrICAO ?? null,
-              startTime: flight.startTime,
-              endTime: flight.endTime ?? null,
-            }
-          : null,
+        reviewedAt: completion.reviewedAt ?? null,
+        flights: flights
+          .filter((flight): flight is NonNullable<typeof flight> => flight !== null)
+          .map((flight) => ({
+            id: flight._id,
+            callsign: flight.callsign,
+            aircraftType: flight.aircraftType,
+            depICAO: flight.depICAO ?? null,
+            arrICAO: flight.arrICAO ?? null,
+            startTime: flight.startTime,
+            endTime: flight.endTime ?? null,
+          })),
       });
     }
 
-    return results.sort((a, b) => a.createdAt - b.createdAt);
+    return results.sort((a, b) => {
+      if (a.status === "pending" && b.status !== "pending") return -1;
+      if (a.status !== "pending" && b.status === "pending") return 1;
+      return b.createdAt - a.createdAt;
+    });
   },
 });
 
@@ -1707,6 +1870,7 @@ export const submitManualClaim = mutation({
     challengeId: v.id("challenges"),
     submissionNote: v.optional(v.string()),
     flightId: v.optional(v.id("flights")),
+    flightIds: v.optional(v.array(v.id("flights"))),
   },
   handler: async (ctx, args) => {
     const viewer = await requireViewer(ctx);
@@ -1731,39 +1895,26 @@ export const submitManualClaim = mutation({
       throw new Error("Submission note must be 400 characters or fewer");
     }
 
+    const normalizedFlightIds = Array.from(
+      new Set([...(args.flightIds ?? []), ...(args.flightId ? [args.flightId] : [])]),
+    );
+
     const existing = await ctx.db
       .query("challengeCompletions")
       .withIndex("by_challengeId_userId", (q) =>
         q.eq("challengeId", args.challengeId).eq("userId", user._id),
       )
-      .first();
+      .collect();
 
-    if (existing?.status === "pending") {
+    if (existing.some((completion) => completion.status === "pending")) {
       throw new Error("This challenge is already pending review");
     }
 
-    if (existing?.status === "completed") {
-      throw new Error("You already completed this challenge");
-    }
-
-    if (args.flightId) {
-      const flight = await ctx.db.get(args.flightId);
+    for (const flightId of normalizedFlightIds) {
+      const flight = await ctx.db.get(flightId);
       if (flight?.userId !== user._id) {
-        throw new Error("You can only attach your own flight");
+        throw new Error("You can only attach your own flights");
       }
-    }
-
-    if (existing) {
-      await ctx.db.patch(existing._id, {
-        status: "pending",
-        submissionNote,
-        flightId: args.flightId,
-        reviewedBy: undefined,
-        reviewedAt: undefined,
-        completedAt: undefined,
-        updatedAt: now,
-      });
-      return existing._id;
     }
 
     return await ctx.db.insert("challengeCompletions", {
@@ -1771,17 +1922,51 @@ export const submitManualClaim = mutation({
       userId: user._id,
       status: "pending",
       submissionNote,
-      flightId: args.flightId,
+      flightId: normalizedFlightIds[0],
+      flightIds: normalizedFlightIds.length > 0 ? normalizedFlightIds : undefined,
       createdAt: now,
       updatedAt: now,
     });
   },
 });
 
-export const reviewSubmission = mutation({
+export const withdrawManualClaim = mutation({
+  args: {
+    challengeId: v.id("challenges"),
+  },
+  handler: async (ctx, args) => {
+    const viewer = await requireViewer(ctx);
+    const user = viewer.user;
+
+    const completions = await ctx.db
+      .query("challengeCompletions")
+      .withIndex("by_challengeId_userId", (q) =>
+        q.eq("challengeId", args.challengeId).eq("userId", user._id),
+      )
+      .collect();
+    const pendingCompletions = completions.filter(
+      (completion) => completion.status === "pending",
+    );
+
+    if (pendingCompletions.length === 0) {
+      throw new Error("Submission not found");
+    }
+
+    for (const completion of pendingCompletions) {
+      await ctx.db.delete(completion._id);
+    }
+    return { success: true, withdrawnCount: pendingCompletions.length };
+  },
+});
+
+export const updateSubmissionStatus = mutation({
   args: {
     completionId: v.id("challengeCompletions"),
-    decision: v.union(v.literal("approve"), v.literal("reject")),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("completed"),
+      v.literal("rejected"),
+    ),
   },
   handler: async (ctx, args) => {
     const viewer = await requireAdmin(ctx);
@@ -1792,18 +1977,68 @@ export const reviewSubmission = mutation({
       throw new Error("Submission not found");
     }
 
-    if (completion.status !== "pending") {
-      throw new Error("This submission has already been reviewed");
-    }
-
     const now = Date.now();
     await ctx.db.patch(args.completionId, {
-      status: args.decision === "approve" ? "completed" : "rejected",
-      completedAt: args.decision === "approve" ? now : undefined,
-      reviewedBy: user.clerkId,
-      reviewedAt: now,
+      status: args.status,
+      completedAt: args.status === "completed" ? now : undefined,
+      reviewedBy: args.status === "pending" ? undefined : user.clerkId,
+      reviewedAt: args.status === "pending" ? undefined : now,
       updatedAt: now,
     });
+    return { success: true };
+  },
+});
+
+export const recomputeAutoChallengeProgress = mutation({
+  args: {
+    challengeId: v.optional(v.id("challenges")),
+    systemSecret: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdminOrSystem(ctx, args.systemSecret);
+
+    const challenges = args.challengeId
+      ? [await ctx.db.get(args.challengeId)]
+      : await ctx.db.query("challenges").collect();
+    const existingChallenges = challenges.filter(
+      (challenge): challenge is Doc<"challenges"> => challenge !== null,
+    );
+    const now = Date.now();
+
+    const results: {
+      challengeId: Id<"challenges">;
+      title: string;
+      insertedCompletions: number;
+      leaderboardEntries: number;
+      completionCount: number;
+      matchedUsers: number;
+      flightsInWindow: number;
+    }[] = [];
+
+    for (const challenge of existingChallenges) {
+      if (challenge.mode !== "auto") {
+        continue;
+      }
+      const result = await backfillAutoChallengeCompletions(ctx, challenge, now);
+      results.push({
+        challengeId: challenge._id,
+        title: challenge.title,
+        ...result,
+      });
+    }
+
+    return {
+      challengeCount: results.length,
+      insertedCompletions: results.reduce(
+        (total, challenge) => total + challenge.insertedCompletions,
+        0,
+      ),
+      leaderboardEntries: results.reduce(
+        (total, challenge) => total + challenge.leaderboardEntries,
+        0,
+      ),
+      results,
+    };
   },
 });
 

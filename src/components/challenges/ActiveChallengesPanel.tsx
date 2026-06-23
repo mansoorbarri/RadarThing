@@ -49,6 +49,7 @@ export function ActiveChallengesPanel({
   const challenges = userId ? userChallenges : viewerChallenges;
   const syncForCurrentUser = useMutation(api.challenges.syncForCurrentUser);
   const submitManualClaim = useMutation(api.challenges.submitManualClaim);
+  const withdrawManualClaim = useMutation(api.challenges.withdrawManualClaim);
   const [noteByChallengeId, setNoteByChallengeId] = useState<
     Record<string, string>
   >({});
@@ -92,6 +93,23 @@ export function ActiveChallengesPanel({
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Could not submit challenge";
+      toast.error(message);
+    } finally {
+      setSubmittingChallengeId(null);
+    }
+  }
+
+  async function handleWithdraw(challengeId: string) {
+    setSubmittingChallengeId(challengeId);
+
+    try {
+      await withdrawManualClaim({
+        challengeId: challengeId as Id<"challenges">,
+      });
+      toast.success("Submission withdrawn");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not withdraw submission";
       toast.error(message);
     } finally {
       setSubmittingChallengeId(null);
@@ -389,6 +407,18 @@ export function ActiveChallengesPanel({
                         {status === "rejected" &&
                           "You can update your note and resubmit this challenge."}
                       </div>
+                    )}
+                    {status === "pending" && (
+                      <button
+                        onClick={() => handleWithdraw(challenge.id)}
+                        disabled={isSubmitting}
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-2.5 text-sm font-medium text-yellow-100 transition-colors hover:bg-yellow-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSubmitting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : null}
+                        Withdraw submission
+                      </button>
                     )}
                   </div>
                 )}
