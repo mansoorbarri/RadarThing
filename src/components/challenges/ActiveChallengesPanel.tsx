@@ -3,7 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
-import { CheckCircle2, Clock3, Flag, Loader2, Send } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock3,
+  Flag,
+  Loader2,
+  Route,
+  Send,
+} from "lucide-react";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
@@ -25,9 +32,48 @@ function formatWindow(startAt: number, endAt: number) {
   })}`;
 }
 
+interface SuggestedManualSubmission {
+  matchedCount: number;
+  totalCount: number;
+  cappedAt: number;
+  flights: {
+    id: Id<"flights">;
+    callsign: string;
+    aircraftType: string;
+    depICAO: string | null;
+    arrICAO: string | null;
+    startTime: number;
+    endTime: number | null;
+    scheduledMonth: number;
+    scheduledDay: number;
+  }[];
+}
+
+function getSuggestedManualSubmission(
+  challenge: unknown,
+): SuggestedManualSubmission | null {
+  if (
+    !challenge ||
+    typeof challenge !== "object" ||
+    !("suggestedManualSubmission" in challenge)
+  ) {
+    return null;
+  }
+
+  const suggestion = challenge.suggestedManualSubmission;
+  if (!suggestion || typeof suggestion !== "object") return null;
+  if (!("flights" in suggestion) || !Array.isArray(suggestion.flights)) {
+    return null;
+  }
+
+  return suggestion as SuggestedManualSubmission;
+}
+
 export function ActiveChallengesPanel({
+  highlightedUserId,
   userId,
 }: {
+  highlightedUserId?: Id<"users"> | null;
   userId?: Id<"users"> | null;
 }) {
   const [activeTab, setActiveTab] = useState<"challenges" | "leaderboard">(
@@ -99,6 +145,42 @@ export function ActiveChallengesPanel({
     }
   }
 
+  async function handleSubmitSuggestedFlights(
+    challengeId: string,
+    flightIds: Id<"flights">[],
+  ) {
+    if (flightIds.length === 0) {
+      toast.error("No matching flights found to submit");
+      return;
+    }
+
+    setSubmittingChallengeId(challengeId);
+
+    try {
+      await submitManualClaim({
+        challengeId: challengeId as Id<"challenges">,
+        flightIds,
+        submissionNote:
+          "Suggested submission: matching recorded flights for the atwi60 schedule.",
+      });
+      Analytics.track("challenge_claim_submitted", {
+        challenge_id: challengeId,
+        flight_count: flightIds.length,
+        has_note: true,
+        source: "atwi60_suggestion",
+      });
+      toast.success(
+        `${flightIds.length} suggested flight${flightIds.length === 1 ? "" : "s"} submitted for review`,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not submit challenge";
+      toast.error(message);
+    } finally {
+      setSubmittingChallengeId(null);
+    }
+  }
+
   async function handleWithdraw(challengeId: string) {
     setSubmittingChallengeId(challengeId);
 
@@ -128,23 +210,6 @@ export function ActiveChallengesPanel({
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading challenges...
-        </div>
-      </div>
-    );
-  }
-
-  if (isSignedIn && !userId) {
-    return (
-      <div className="mb-8 rounded-2xl border border-white/10 bg-black/40 p-4 backdrop-blur-xl sm:p-6">
-        <div className="mb-4 flex items-center gap-2">
-          <Flag className="h-4 w-4 text-cyan-400" />
-          <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
-            ACTIVE CHALLENGES
-          </h3>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-slate-500">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading your challenge progress...
         </div>
       </div>
     );
@@ -214,7 +279,7 @@ export function ActiveChallengesPanel({
       {activeTab === "leaderboard" ? (
         <ChallengeLeaderboardTab
           challenges={leaderboard}
-          highlightedUserId={userId ?? null}
+          highlightedUserId={highlightedUserId ?? userId ?? null}
           isLoading={leaderboard === undefined}
           maxEntries={10}
         />
@@ -228,6 +293,11 @@ export function ActiveChallengesPanel({
               "canSubmitManual" in challenge
                 ? challenge.canSubmitManual
                 : false;
+            const suggestedManualSubmission =
+              getSuggestedManualSubmission(challenge);
+            const suggestedFlightIds =
+              suggestedManualSubmission?.flights.map((flight) => flight.id) ??
+              [];
             const progressTarget = Math.max(1, challenge.progressTarget ?? 1);
             const progressCurrent = challenge.progressCurrent ?? 0;
             const progressPercent = Math.min(
@@ -365,6 +435,71 @@ export function ActiveChallengesPanel({
                   <div className="space-y-3">
                     {canSubmitManual ? (
                       <>
+                        {suggestedManualSubmission &&
+                          suggestedManualSubmission.matchedCount > 0 && (
+                            <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3">
+                              <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                  <p className="flex items-center gap-2 font-mono text-[10px] tracking-wider text-cyan-200 uppercase">
+                                    <Route className="h-3.5 w-3.5" />
+                                    Suggested flights
+                                  </p>
+                                  <p className="mt-1 text-sm text-cyan-50">
+                                    {suggestedManualSubmission.matchedCount} of{" "}
+                                    {suggestedManualSubmission.totalCount}{" "}
+                                    scheduled flights match your recorded
+                                    history. The first{" "}
+                                    {suggestedFlightIds.length} will be attached
+                                    for review.
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    void handleSubmitSuggestedFlights(
+                                      challenge.id,
+                                      suggestedFlightIds,
+                                    )
+                                  }
+                                  disabled={
+                                    isSubmitting ||
+                                    suggestedFlightIds.length === 0
+                                  }
+                                  className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {isSubmitting ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Send className="h-4 w-4" />
+                                  )}
+                                  Submit suggested
+                                </button>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {suggestedManualSubmission.flights
+                                  .slice(0, 8)
+                                  .map((flight) => (
+                                    <span
+                                      key={flight.id}
+                                      className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 font-mono text-[10px] tracking-wider text-cyan-100"
+                                    >
+                                      {flight.scheduledMonth}/
+                                      {flight.scheduledDay}{" "}
+                                      {flight.depICAO ?? "???"}-
+                                      {flight.arrICAO ?? "???"}
+                                    </span>
+                                  ))}
+                                {suggestedManualSubmission.flights.length >
+                                  8 && (
+                                  <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 font-mono text-[10px] tracking-wider text-slate-300">
+                                    +
+                                    {suggestedManualSubmission.flights.length -
+                                      8}{" "}
+                                    more
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         <textarea
                           value={noteByChallengeId[challenge.id] ?? ""}
                           onChange={(event) =>

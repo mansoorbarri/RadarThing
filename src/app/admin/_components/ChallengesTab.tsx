@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ClipboardCheck,
+  ExternalLink,
   Flag,
   Loader2,
   Pencil,
@@ -540,6 +541,32 @@ export function ChallengesTab({
       (pendingReviews ?? []).filter((review) => review.status === "pending"),
     [pendingReviews],
   );
+  const pendingManualReviewGroups = useMemo(() => {
+    const groups = new Map<
+      string,
+      {
+        userId: Id<"users">;
+        userDisplay: string;
+        userEmail: string;
+        reviews: typeof pendingManualReviews;
+      }
+    >();
+
+    for (const review of pendingManualReviews) {
+      const current = groups.get(review.userId) ?? {
+        userId: review.userId,
+        userDisplay: review.userDisplay,
+        userEmail: review.userEmail,
+        reviews: [],
+      };
+      current.reviews.push(review);
+      groups.set(review.userId, current);
+    }
+
+    return [...groups.values()].sort((a, b) =>
+      a.userDisplay.localeCompare(b.userDisplay),
+    );
+  }, [pendingManualReviews]);
   const reviewedManualReviews = useMemo(
     () =>
       (pendingReviews ?? []).filter((review) => review.status !== "pending"),
@@ -1336,91 +1363,129 @@ export function ChallengesTab({
               No manual challenge submissions need review.
             </p>
           ) : (
-            <div className="space-y-3">
-              {pendingManualReviews.map((review) =>
-                (() => {
-                  const attachedFlights = Array.isArray(review.flights)
-                    ? review.flights
-                    : [];
+            <div className="space-y-4">
+              {pendingManualReviewGroups.map((group) => (
+                <div
+                  key={group.userId}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                >
+                  <div className="mb-4 flex flex-col gap-1 border-b border-white/10 pb-3">
+                    <h4 className="text-sm font-semibold text-white">
+                      {group.userDisplay}
+                    </h4>
+                    <p className="font-mono text-xs break-all text-slate-500">
+                      User ID: {group.userId}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {group.userEmail} • {group.reviews.length} pending
+                      submission
+                      {group.reviews.length === 1 ? "" : "s"}
+                    </p>
+                  </div>
 
-                  return (
-                    <div
-                      key={review.id}
-                      className="rounded-2xl border border-white/10 bg-black/30 p-4"
-                    >
-                      <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <h4 className="text-sm font-semibold text-white">
-                            {review.challengeTitle}
-                          </h4>
-                          <p className="text-xs text-slate-400">
-                            {review.userDisplay} • submitted{" "}
-                            {new Date(review.createdAt).toLocaleString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                hour: "numeric",
-                                minute: "2-digit",
-                              },
-                            )}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() =>
-                              handleReviewStatus(review.id, "completed")
-                            }
-                            disabled={busyReviewId === review.id}
-                            className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-emerald-500/15 px-3 py-2 text-sm text-emerald-300 transition-colors hover:bg-emerald-500/25 disabled:opacity-60"
-                          >
-                            {busyReviewId === review.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <CheckCircle2 className="h-4 w-4" />
-                            )}
-                            Approve
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleReviewStatus(review.id, "rejected")
-                            }
-                            disabled={busyReviewId === review.id}
-                            className="cursor-pointer rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      </div>
+                  <div className="space-y-3">
+                    {group.reviews.map((review) =>
+                      (() => {
+                        const attachedFlights = Array.isArray(review.flights)
+                          ? review.flights
+                          : [];
 
-                      <p className="mb-3 text-sm text-slate-300">
-                        {review.challengeDescription}
-                      </p>
-                      {review.submissionNote && (
-                        <p className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">
-                          {review.submissionNote}
-                        </p>
-                      )}
-                      {attachedFlights.length > 0 && (
-                        <div className="space-y-2 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-cyan-100">
-                          <p className="font-mono tracking-wider text-cyan-200 uppercase">
-                            Attached Flights ({attachedFlights.length})
-                          </p>
-                          {attachedFlights.map((flight) => (
-                            <div
-                              key={flight.id}
-                              className="rounded-lg border border-white/10 bg-black/20 px-3 py-2"
-                            >
-                              {flight.callsign} • {flight.depICAO ?? "???"} to{" "}
-                              {flight.arrICAO ?? "???"} • {flight.aircraftType}
+                        return (
+                          <div
+                            key={review.id}
+                            className="rounded-2xl border border-white/10 bg-black/30 p-4"
+                          >
+                            <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <h5 className="text-sm font-semibold text-white">
+                                  {review.challengeTitle}
+                                </h5>
+                                <p className="text-xs text-slate-400">
+                                  Submitted{" "}
+                                  {new Date(review.createdAt).toLocaleString(
+                                    "en-US",
+                                    {
+                                      month: "short",
+                                      day: "numeric",
+                                      hour: "numeric",
+                                      minute: "2-digit",
+                                    },
+                                  )}
+                                </p>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleReviewStatus(review.id, "completed")
+                                  }
+                                  disabled={busyReviewId === review.id}
+                                  className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-emerald-500/15 px-3 py-2 text-sm text-emerald-300 transition-colors hover:bg-emerald-500/25 disabled:opacity-60"
+                                >
+                                  {busyReviewId === review.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <CheckCircle2 className="h-4 w-4" />
+                                  )}
+                                  Approve
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleReviewStatus(review.id, "rejected")
+                                  }
+                                  disabled={busyReviewId === review.id}
+                                  className="cursor-pointer rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
+                                >
+                                  Reject
+                                </button>
+                              </div>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })(),
-              )}
+
+                            <p className="mb-3 text-sm text-slate-300">
+                              {review.challengeDescription}
+                            </p>
+                            {review.submissionNote && (
+                              <p className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">
+                                {review.submissionNote}
+                              </p>
+                            )}
+                            {attachedFlights.length > 0 && (
+                              <div className="space-y-2 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-cyan-100">
+                                <p className="font-mono tracking-wider text-cyan-200 uppercase">
+                                  Attached Flights ({attachedFlights.length})
+                                </p>
+                                {attachedFlights.map((flight) => (
+                                  <div
+                                    key={flight.id}
+                                    className="flex flex-col gap-2 rounded-lg border border-white/10 bg-black/20 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                                  >
+                                    <span>
+                                      {flight.callsign} •{" "}
+                                      {flight.depICAO ?? "???"} to{" "}
+                                      {flight.arrICAO ?? "???"} •{" "}
+                                      {flight.aircraftType}
+                                    </span>
+                                    <a
+                                      href={`/radar?replay=${flight.id}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-1.5 self-start rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1.5 font-mono text-[10px] tracking-wider text-cyan-200 uppercase transition-colors hover:bg-cyan-500/20 sm:self-auto"
+                                    >
+                                      <ExternalLink className="h-3 w-3" />
+                                      Replay
+                                    </a>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })(),
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
