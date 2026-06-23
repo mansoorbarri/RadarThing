@@ -30,6 +30,69 @@ const DEFAULT_LEADERBOARD_ENTRY_LIMIT = 10;
 const MAX_MANUAL_SUBMISSION_FLIGHTS = 25;
 const ADMIN_MANUAL_REVIEW_STATUS_LIMIT = 100;
 const SUPER_ADMIN_GOOGLE_ID = "101233162035372298523";
+const ATWI60_CHALLENGE_TITLE = "Fly all flights from atwi60";
+const ATWI60_SCHEDULED_ROUTES = [
+  { month: 5, day: 1, depICAO: "KPHX", arrICAO: "KLAX" },
+  { month: 5, day: 2, depICAO: "KLAX", arrICAO: "KSFO" },
+  { month: 5, day: 3, depICAO: "KSFO", arrICAO: "KSEA" },
+  { month: 5, day: 4, depICAO: "KSEA", arrICAO: "CYYC" },
+  { month: 5, day: 5, depICAO: "CYYC", arrICAO: "CYEG" },
+  { month: 5, day: 6, depICAO: "CYEG", arrICAO: "CYUL" },
+  { month: 5, day: 7, depICAO: "CYUL", arrICAO: "KBOS" },
+  { month: 5, day: 8, depICAO: "KBOS", arrICAO: "KLGA" },
+  { month: 5, day: 9, depICAO: "KLGA", arrICAO: "KEWR" },
+  { month: 5, day: 10, depICAO: "KEWR", arrICAO: "CYYZ" },
+  { month: 5, day: 11, depICAO: "CYYZ", arrICAO: "KORD" },
+  { month: 5, day: 12, depICAO: "KORD", arrICAO: "KDEN" },
+  { month: 5, day: 13, depICAO: "KDEN", arrICAO: "KDFW" },
+  { month: 5, day: 14, depICAO: "KDFW", arrICAO: "MMUN" },
+  { month: 5, day: 15, depICAO: "MMUN", arrICAO: "MMMX" },
+  { month: 5, day: 16, depICAO: "MMMX", arrICAO: "MMTJ" },
+  { month: 5, day: 17, depICAO: "MMTJ", arrICAO: "MGGT" },
+  { month: 5, day: 18, depICAO: "MGGT", arrICAO: "MHLM" },
+  { month: 5, day: 19, depICAO: "MHLM", arrICAO: "MROC" },
+  { month: 5, day: 20, depICAO: "MROC", arrICAO: "MPTO" },
+  { month: 5, day: 21, depICAO: "MPTO", arrICAO: "TNCM" },
+  { month: 5, day: 22, depICAO: "TNCM", arrICAO: "TIST" },
+  { month: 5, day: 23, depICAO: "TIST", arrICAO: "MKJP" },
+  { month: 5, day: 24, depICAO: "MKJP", arrICAO: "MUHA" },
+  { month: 5, day: 25, depICAO: "MUHA", arrICAO: "TJSJ" },
+  { month: 5, day: 26, depICAO: "TJSJ", arrICAO: "SBEG" },
+  { month: 5, day: 27, depICAO: "SBEG", arrICAO: "SBBR" },
+  { month: 5, day: 28, depICAO: "SBBR", arrICAO: "SKCL" },
+  { month: 5, day: 29, depICAO: "SKCL", arrICAO: "TNCC" },
+  { month: 5, day: 30, depICAO: "TNCC", arrICAO: "TAPA" },
+  { month: 6, day: 1, depICAO: "TAPA", arrICAO: "GCLP" },
+  { month: 6, day: 2, depICAO: "GCLP", arrICAO: "LFMN" },
+  { month: 6, day: 3, depICAO: "LFMN", arrICAO: "LEIB" },
+  { month: 6, day: 4, depICAO: "LEIB", arrICAO: "LEMD" },
+  { month: 6, day: 5, depICAO: "LEMD", arrICAO: "EGLL" },
+  { month: 6, day: 6, depICAO: "EGLL", arrICAO: "EIDW" },
+  { month: 6, day: 7, depICAO: "EIDW", arrICAO: "EHAM" },
+  { month: 6, day: 8, depICAO: "EHAM", arrICAO: "EDDF" },
+  { month: 6, day: 9, depICAO: "EDDF", arrICAO: "LOWW" },
+  { month: 6, day: 10, depICAO: "LOWW", arrICAO: "LIRF" },
+  { month: 6, day: 11, depICAO: "LIRF", arrICAO: "LTFM" },
+  { month: 6, day: 12, depICAO: "LTFM", arrICAO: "OTHH" },
+  { month: 6, day: 13, depICAO: "OTHH", arrICAO: "OMAA" },
+  { month: 6, day: 14, depICAO: "OMAA", arrICAO: "VTBS" },
+  { month: 6, day: 15, depICAO: "VTBS", arrICAO: "VHHH" },
+  { month: 6, day: 16, depICAO: "VHHH", arrICAO: "RJTT" },
+  { month: 6, day: 17, depICAO: "RJTT", arrICAO: "RPLL" },
+  { month: 6, day: 18, depICAO: "RPLL", arrICAO: "WSSS" },
+  { month: 6, day: 19, depICAO: "WSSS", arrICAO: "YPPH" },
+  { month: 6, day: 20, depICAO: "YPPH", arrICAO: "WMKK" },
+  { month: 6, day: 21, depICAO: "WMKK", arrICAO: "VVVH" },
+  { month: 6, day: 22, depICAO: "VVVH", arrICAO: "VOMM" },
+  { month: 6, day: 23, depICAO: "VOMM", arrICAO: "OTHH" },
+  { month: 6, day: 24, depICAO: "OTHH", arrICAO: "EDDM" },
+  { month: 6, day: 25, depICAO: "EDDM", arrICAO: "LPPT" },
+  { month: 6, day: 26, depICAO: "LPPT", arrICAO: "CYYR" },
+  { month: 6, day: 27, depICAO: "CYYR", arrICAO: "CYHZ" },
+  { month: 6, day: 28, depICAO: "CYHZ", arrICAO: "KIAD" },
+  { month: 6, day: 29, depICAO: "KIAD", arrICAO: "KOKC" },
+  { month: 6, day: 30, depICAO: "KOKC", arrICAO: "KPHX" },
+] as const;
 
 const challengeRuleValidator = v.object({
   ruleType: v.union(
@@ -1089,6 +1152,94 @@ function compareManualLeaderboardEntries(
   return a.displayName.localeCompare(b.displayName);
 }
 
+function normalizeRouteAirport(value?: string | null) {
+  return value?.trim().toUpperCase() ?? "";
+}
+
+function isAtwi60ManualChallenge(challenge: {
+  title: string;
+  mode: "auto" | "manual";
+}) {
+  return (
+    challenge.mode === "manual" &&
+    challenge.title.trim().toLowerCase() ===
+      ATWI60_CHALLENGE_TITLE.toLowerCase()
+  );
+}
+
+function getUtcDateKey(timestamp: number) {
+  const date = new Date(timestamp);
+  return `${date.getUTCMonth()}-${date.getUTCDate()}`;
+}
+
+function getAtwi60FlightSuggestions(
+  challenge: {
+    title: string;
+    mode: "auto" | "manual";
+    startAt: number;
+    endAt: number;
+  },
+  flights: {
+    _id: Id<"flights">;
+    callsign: string;
+    aircraftType: string;
+    depICAO?: string;
+    arrICAO?: string;
+    startTime: number;
+    endTime?: number;
+  }[],
+) {
+  if (!isAtwi60ManualChallenge(challenge)) return null;
+
+  const flightsByScheduleKey = new Map<string, typeof flights>();
+  for (const flight of flights) {
+    if (
+      flight.startTime < challenge.startAt ||
+      flight.startTime >= challenge.endAt
+    ) {
+      continue;
+    }
+
+    const depICAO = normalizeRouteAirport(flight.depICAO);
+    const arrICAO = normalizeRouteAirport(flight.arrICAO);
+    if (!depICAO || !arrICAO) continue;
+
+    const key = `${getUtcDateKey(flight.startTime)}-${depICAO}-${arrICAO}`;
+    const entries = flightsByScheduleKey.get(key) ?? [];
+    entries.push(flight);
+    flightsByScheduleKey.set(key, entries);
+  }
+
+  const suggestedFlights = ATWI60_SCHEDULED_ROUTES.flatMap((route) => {
+    const key = `${route.month}-${route.day}-${route.depICAO}-${route.arrICAO}`;
+    const matches = flightsByScheduleKey.get(key) ?? [];
+    const selectedFlight = matches.sort((a, b) => a.startTime - b.startTime)[0];
+    if (!selectedFlight) return [];
+
+    return [
+      {
+        id: selectedFlight._id,
+        callsign: selectedFlight.callsign,
+        aircraftType: selectedFlight.aircraftType,
+        depICAO: selectedFlight.depICAO ?? null,
+        arrICAO: selectedFlight.arrICAO ?? null,
+        startTime: selectedFlight.startTime,
+        endTime: selectedFlight.endTime ?? null,
+        scheduledMonth: route.month + 1,
+        scheduledDay: route.day,
+      },
+    ];
+  });
+
+  return {
+    title: ATWI60_CHALLENGE_TITLE,
+    matchedCount: suggestedFlights.length,
+    totalCount: ATWI60_SCHEDULED_ROUTES.length,
+    flights: suggestedFlights.slice(0, MAX_MANUAL_SUBMISSION_FLIGHTS),
+    cappedAt: MAX_MANUAL_SUBMISSION_FLIGHTS,
+  };
+}
+
 function requiresCollectionMatching(challenge: ChallengeRule) {
   const rules = getChallengeRules(challenge);
   return (
@@ -1232,6 +1383,10 @@ export const listActiveForViewer = query({
         userStatus: completion?.status ?? computedStatus,
         completedAt: completion?.completedAt ?? null,
         submissionNote: completion?.submissionNote ?? null,
+        suggestedManualSubmission:
+          viewerUser && challenge.mode === "manual"
+            ? getAtwi60FlightSuggestions(challenge, flights)
+            : null,
         progressCurrent: autoProgress.progressCurrent,
         progressTarget: autoProgress.progressTarget,
         progressLabel: autoProgress.progressLabel,
