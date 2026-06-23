@@ -13,7 +13,7 @@ const exclusionRules = [
   {
     icon: <Gauge className="h-4 w-4" />,
     title: "Speed over the high-performance limit",
-    body: "Concorde and recognized military/high-performance aircraft use a higher 1100 kt limit.",
+    body: "Concorde and recognized military/high-performance aircraft use a higher 1333 kt limit.",
   },
   {
     icon: <ShieldAlert className="h-4 w-4" />,
