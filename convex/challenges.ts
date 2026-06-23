@@ -400,25 +400,27 @@ function aggregateManualChallengeCompletions(
   if (completions.length === 0) return null;
 
   const sorted = [...completions].sort((a, b) => b.updatedAt - a.updatedAt);
-  const latest = sorted[0]!;
+  const latest = sorted[0];
+  if (!latest) return null;
   const hasPending = sorted.some((completion) => completion.status === "pending");
   const latestCompleted = sorted.find(
     (completion) => completion.status === "completed",
   );
+  const status: "pending" | "completed" | "rejected" = hasPending
+    ? "pending"
+    : latestCompleted
+      ? "completed"
+      : "rejected";
 
   return {
     id: latest._id,
-    status: hasPending
-      ? ("pending" as const)
-      : latestCompleted
-        ? ("completed" as const)
-        : ("rejected" as const),
+    status,
     completedAt: latestCompleted?.completedAt,
     submissionNote: latest.submissionNote,
     canSubmitManual: !hasPending,
     approvedCount: sorted.filter((completion) => completion.status === "completed")
       .length,
-    latestActivityAt: sorted[0]!.updatedAt,
+    latestActivityAt: latest.updatedAt,
   };
 }
 
@@ -1188,16 +1190,17 @@ export const listActiveForViewer = query({
       .filter((challenge) => isChallengeActiveAt(challenge, now))
       .sort((a, b) => a.endAt - b.endAt);
 
-    const flights = viewer.user
+    const viewerUser = viewer.user;
+    const flights = viewerUser
       ? await ctx.db
           .query("flights")
-          .withIndex("by_userId", (q) => q.eq("userId", viewer.user._id))
+          .withIndex("by_userId", (q) => q.eq("userId", viewerUser._id))
           .collect()
       : [];
-    const completions = viewer.user
+    const completions = viewerUser
       ? await ctx.db
           .query("challengeCompletions")
-          .withIndex("by_userId", (q) => q.eq("userId", viewer.user!._id))
+          .withIndex("by_userId", (q) => q.eq("userId", viewerUser._id))
           .collect()
       : [];
     const completionsByChallengeId = new Map<
@@ -1662,7 +1665,7 @@ export const listPendingReviews = query({
         Promise.all(attachedFlightIds.map((flightId) => ctx.db.get(flightId))),
       ]);
 
-      if (!challenge || challenge.mode !== "manual" || !user || user.isDeleted) {
+      if (challenge?.mode !== "manual" || user?.isDeleted !== false) {
         continue;
       }
 
