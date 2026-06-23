@@ -27,6 +27,8 @@ import {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_LEADERBOARD_ENTRY_LIMIT = 10;
+const MAX_MANUAL_SUBMISSION_FLIGHTS = 25;
+const ADMIN_MANUAL_REVIEW_STATUS_LIMIT = 100;
 const SUPER_ADMIN_GOOGLE_ID = "101233162035372298523";
 
 const challengeRuleValidator = v.object({
@@ -1647,7 +1649,26 @@ export const listPendingReviews = query({
       return [];
     }
 
-    const completions = await ctx.db.query("challengeCompletions").collect();
+    const [pendingCompletions, completedCompletions, rejectedCompletions] =
+      await Promise.all([
+        ctx.db
+          .query("challengeCompletions")
+          .withIndex("by_status", (q) => q.eq("status", "pending"))
+          .take(ADMIN_MANUAL_REVIEW_STATUS_LIMIT),
+        ctx.db
+          .query("challengeCompletions")
+          .withIndex("by_status", (q) => q.eq("status", "completed"))
+          .take(ADMIN_MANUAL_REVIEW_STATUS_LIMIT),
+        ctx.db
+          .query("challengeCompletions")
+          .withIndex("by_status", (q) => q.eq("status", "rejected"))
+          .take(ADMIN_MANUAL_REVIEW_STATUS_LIMIT),
+      ]);
+    const completions = [
+      ...pendingCompletions,
+      ...completedCompletions,
+      ...rejectedCompletions,
+    ];
 
     const results = [];
 
@@ -1898,6 +1919,14 @@ export const submitManualClaim = mutation({
       throw new Error("Submission note must be 400 characters or fewer");
     }
 
+    const requestedFlightCount =
+      (args.flightIds?.length ?? 0) + (args.flightId ? 1 : 0);
+    if (requestedFlightCount > MAX_MANUAL_SUBMISSION_FLIGHTS) {
+      throw new Error(
+        `You can attach up to ${MAX_MANUAL_SUBMISSION_FLIGHTS} flights per submission`,
+      );
+    }
+
     const normalizedFlightIds = Array.from(
       new Set([...(args.flightIds ?? []), ...(args.flightId ? [args.flightId] : [])]),
     );
@@ -1978,6 +2007,34 @@ export const updateSubmissionStatus = mutation({
 
     if (!completion) {
       throw new Error("Submission not found");
+    }
+
+    const challenge = await ctx.db.get(completion.challengeId);
+    if (challenge?.mode !== "manual") {
+      throw new Error("Only manual challenge submissions can be reviewed");
+    }
+
+    if (args.status === "pending") {
+      const existingPending = await ctx.db
+        .query("challengeCompletions")
+        .withIndex("by_challengeId_userId", (q) =>
+          q
+            .eq("challengeId", completion.challengeId)
+            .eq("userId", completion.userId),
+        )
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("status"), "pending"),
+            q.neq(q.field("_id"), args.completionId),
+          ),
+        )
+        .first();
+
+      if (existingPending) {
+        throw new Error(
+          "This pilot already has a pending submission for this challenge",
+        );
+      }
     }
 
     const now = Date.now();
