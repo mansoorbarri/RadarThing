@@ -1415,6 +1415,7 @@ export function ChallengesTab({
                               </div>
                               <div className="flex gap-2">
                                 <button
+                                  type="button"
                                   onClick={() =>
                                     handleReviewStatus(review.id, "completed")
                                   }
@@ -1429,6 +1430,7 @@ export function ChallengesTab({
                                   Approve
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={() =>
                                     handleReviewStatus(review.id, "rejected")
                                   }

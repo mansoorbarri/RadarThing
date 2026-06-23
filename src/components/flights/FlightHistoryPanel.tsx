@@ -209,7 +209,6 @@ export function FlightHistoryPanel({
       });
       Analytics.track("challenge_claim_submitted", {
         challenge_id: selectedChallengeId,
-        flight_ids: selectedChallengeFlightIds,
         flight_count: selectedChallengeFlightIds.length,
         has_note: Boolean(submissionNote),
         source: "flight_history",

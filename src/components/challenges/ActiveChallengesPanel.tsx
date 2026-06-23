@@ -62,13 +62,18 @@ function getSuggestedManualSubmission(
 
   const suggestion = challenge.suggestedManualSubmission;
   if (!suggestion || typeof suggestion !== "object") return null;
+  if (!("flights" in suggestion) || !Array.isArray(suggestion.flights)) {
+    return null;
+  }
 
   return suggestion as SuggestedManualSubmission;
 }
 
 export function ActiveChallengesPanel({
+  highlightedUserId,
   userId,
 }: {
+  highlightedUserId?: Id<"users"> | null;
   userId?: Id<"users"> | null;
 }) {
   const [activeTab, setActiveTab] = useState<"challenges" | "leaderboard">(
@@ -160,7 +165,6 @@ export function ActiveChallengesPanel({
       });
       Analytics.track("challenge_claim_submitted", {
         challenge_id: challengeId,
-        flight_ids: flightIds,
         flight_count: flightIds.length,
         has_note: true,
         source: "atwi60_suggestion",
@@ -275,7 +279,7 @@ export function ActiveChallengesPanel({
       {activeTab === "leaderboard" ? (
         <ChallengeLeaderboardTab
           challenges={leaderboard}
-          highlightedUserId={userId ?? null}
+          highlightedUserId={highlightedUserId ?? userId ?? null}
           isLoading={leaderboard === undefined}
           maxEntries={10}
         />

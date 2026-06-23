@@ -463,7 +463,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <ActiveChallengesPanel />
+        <ActiveChallengesPanel highlightedUserId={supportId} />
 
         {statsLoading ? (
           <StatsSkeleton />
