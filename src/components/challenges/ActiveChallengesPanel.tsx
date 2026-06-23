@@ -121,57 +121,27 @@ export function ActiveChallengesPanel({
     });
   }, [challenges]);
 
-  async function handleSubmit(challengeId: string) {
+  async function handleSubmit(
+    challengeId: string,
+    flightIds?: Id<"flights">[],
+  ) {
     const submissionNote = noteByChallengeId[challengeId]?.trim();
     setSubmittingChallengeId(challengeId);
 
     try {
       await submitManualClaim({
         challengeId: challengeId as Id<"challenges">,
+        flightIds: flightIds && flightIds.length > 0 ? flightIds : undefined,
         submissionNote: submissionNote || undefined,
       });
       Analytics.track("challenge_claim_submitted", {
         challenge_id: challengeId,
+        flight_count: flightIds?.length ?? 0,
         has_note: Boolean(submissionNote),
+        source: flightIds && flightIds.length > 0 ? "atwi60_suggestion" : "manual_note",
       });
       toast.success("Challenge submitted for review");
       setNoteByChallengeId((current) => ({ ...current, [challengeId]: "" }));
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not submit challenge";
-      toast.error(message);
-    } finally {
-      setSubmittingChallengeId(null);
-    }
-  }
-
-  async function handleSubmitSuggestedFlights(
-    challengeId: string,
-    flightIds: Id<"flights">[],
-  ) {
-    if (flightIds.length === 0) {
-      toast.error("No matching flights found to submit");
-      return;
-    }
-
-    setSubmittingChallengeId(challengeId);
-
-    try {
-      await submitManualClaim({
-        challengeId: challengeId as Id<"challenges">,
-        flightIds,
-        submissionNote:
-          "Suggested submission: matching recorded flights for the atwi60 schedule.",
-      });
-      Analytics.track("challenge_claim_submitted", {
-        challenge_id: challengeId,
-        flight_count: flightIds.length,
-        has_note: true,
-        source: "atwi60_suggestion",
-      });
-      toast.success(
-        `${flightIds.length} suggested flight${flightIds.length === 1 ? "" : "s"} submitted for review`,
-      );
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Could not submit challenge";
@@ -438,41 +408,18 @@ export function ActiveChallengesPanel({
                         {suggestedManualSubmission &&
                           suggestedManualSubmission.matchedCount > 0 && (
                             <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3">
-                              <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                <div>
-                                  <p className="flex items-center gap-2 font-mono text-[10px] tracking-wider text-cyan-200 uppercase">
-                                    <Route className="h-3.5 w-3.5" />
-                                    Suggested flights
-                                  </p>
-                                  <p className="mt-1 text-sm text-cyan-50">
-                                    {suggestedManualSubmission.matchedCount} of{" "}
-                                    {suggestedManualSubmission.totalCount}{" "}
-                                    scheduled flights match your recorded
-                                    history. The first{" "}
-                                    {suggestedFlightIds.length} will be attached
-                                    for review.
-                                  </p>
-                                </div>
-                                <button
-                                  onClick={() =>
-                                    void handleSubmitSuggestedFlights(
-                                      challenge.id,
-                                      suggestedFlightIds,
-                                    )
-                                  }
-                                  disabled={
-                                    isSubmitting ||
-                                    suggestedFlightIds.length === 0
-                                  }
-                                  className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                  {isSubmitting ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Send className="h-4 w-4" />
-                                  )}
-                                  Submit suggested
-                                </button>
+                              <div className="mb-3">
+                                <p className="flex items-center gap-2 font-mono text-[10px] tracking-wider text-cyan-200 uppercase">
+                                  <Route className="h-3.5 w-3.5" />
+                                  Suggested flights
+                                </p>
+                                <p className="mt-1 text-sm text-cyan-50">
+                                  {suggestedManualSubmission.matchedCount} of{" "}
+                                  {suggestedManualSubmission.totalCount}{" "}
+                                  scheduled flights match your recorded history.
+                                  The first {suggestedFlightIds.length} will be
+                                  attached for review.
+                                </p>
                               </div>
                               <div className="flex flex-wrap gap-2">
                                 {suggestedManualSubmission.flights
@@ -513,7 +460,14 @@ export function ActiveChallengesPanel({
                           className="w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white placeholder-slate-500 outline-none focus:border-cyan-500/50"
                         />
                         <button
-                          onClick={() => handleSubmit(challenge.id)}
+                          onClick={() =>
+                            handleSubmit(
+                              challenge.id,
+                              suggestedFlightIds.length > 0
+                                ? suggestedFlightIds
+                                : undefined,
+                            )
+                          }
                           disabled={isSubmitting}
                           className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
                         >
