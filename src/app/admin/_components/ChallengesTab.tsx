@@ -1,10 +1,12 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import {
   CalendarRange,
   CheckCircle2,
+  ChevronDown,
   ClipboardCheck,
   Flag,
   Loader2,
@@ -27,6 +29,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "~/components/ui/collapsible";
 
 type ChallengeCadence = "weekly" | "monthly" | "custom";
 type ChallengeMode = "auto" | "manual";
@@ -42,6 +49,28 @@ type ChallengeRuleType =
   | "min_distance"
   | "manual";
 type ChallengeRuleScope = "challenge" | "each_flight";
+type ChallengeAdminSectionId =
+  | "form"
+  | "pendingReviews"
+  | "reviewedSubmissions"
+  | "allChallenges";
+
+const CHALLENGE_ADMIN_SECTION_IDS: ChallengeAdminSectionId[] = [
+  "form",
+  "pendingReviews",
+  "reviewedSubmissions",
+  "allChallenges",
+];
+
+const COLLAPSED_CHALLENGE_ADMIN_SECTIONS: Record<
+  ChallengeAdminSectionId,
+  boolean
+> = {
+  form: false,
+  pendingReviews: false,
+  reviewedSubmissions: false,
+  allChallenges: false,
+};
 
 interface ChallengeRuleForm {
   ruleType: ChallengeRuleType;
@@ -495,14 +524,25 @@ export function ChallengesTab({
     useState<Id<"challengeCompletions"> | null>(null);
   const [busyChallengeId, setBusyChallengeId] =
     useState<Id<"challenges"> | null>(null);
+  const [openSections, setOpenSections] = useState(
+    COLLAPSED_CHALLENGE_ADMIN_SECTIONS,
+  );
 
   const isEditing = editingId !== null;
+  const allSectionsExpanded = CHALLENGE_ADMIN_SECTION_IDS.every(
+    (id) => openSections[id],
+  );
+  const allSectionsCollapsed = CHALLENGE_ADMIN_SECTION_IDS.every(
+    (id) => !openSections[id],
+  );
   const pendingManualReviews = useMemo(
-    () => (pendingReviews ?? []).filter((review) => review.status === "pending"),
+    () =>
+      (pendingReviews ?? []).filter((review) => review.status === "pending"),
     [pendingReviews],
   );
   const reviewedManualReviews = useMemo(
-    () => (pendingReviews ?? []).filter((review) => review.status !== "pending"),
+    () =>
+      (pendingReviews ?? []).filter((review) => review.status !== "pending"),
     [pendingReviews],
   );
 
@@ -540,6 +580,7 @@ export function ChallengesTab({
           ];
 
     setEditingId(challenge.id);
+    setOpenSections((current) => ({ ...current, form: true }));
     setForm({
       title: challenge.title,
       description: challenge.description,
@@ -706,6 +747,15 @@ export function ChallengesTab({
     }));
   }
 
+  function setAllSections(open: boolean) {
+    setOpenSections({
+      form: open,
+      pendingReviews: open,
+      reviewedSubmissions: open,
+      allChallenges: open,
+    });
+  }
+
   function renderRuleFields(rule: ChallengeRuleForm, index: number) {
     if (
       rule.ruleType === "visit_airport" ||
@@ -867,785 +917,885 @@ export function ChallengesTab({
 
   return (
     <div className="space-y-8">
-      <div
-        ref={formSectionRef}
-        className="scroll-mt-24 rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-6"
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => setAllSections(false)}
+          disabled={allSectionsCollapsed}
+          className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Collapse all
+        </button>
+        <button
+          type="button"
+          onClick={() => setAllSections(true)}
+          disabled={allSectionsExpanded}
+          className="cursor-pointer rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-200 transition-colors hover:bg-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Expand all
+        </button>
+      </div>
+
+      <AdminChallengeSection
+        icon={<Send className="h-4 w-4 text-cyan-400" />}
+        title={isEditing ? "Edit Challenge" : "Create Challenge"}
+        countLabel={isEditing ? "editing" : undefined}
+        open={openSections.form}
+        onOpenChange={(open) =>
+          setOpenSections((current) => ({ ...current, form: open }))
+        }
       >
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-white">
-              {isEditing ? "Edit Challenge" : "Create Challenge"}
-            </h3>
-            <p className="mt-1 text-sm text-slate-400">
-              Weekly and monthly challenges can be auto-tracked from flights or
-              manually reviewed by admins.
-            </p>
-          </div>
-          {isEditing && (
-            <button
-              onClick={() => resetForm(form.cadence)}
-              className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10"
-            >
-              Cancel edit
-            </button>
-          )}
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="space-y-2">
-            <span className="text-sm text-slate-400">Title</span>
-            <input
-              value={form.title}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  title: event.target.value,
-                }))
-              }
-              placeholder="Visit Innsbruck in the next 24 hours"
-              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
-            />
-          </label>
-
-          <label className="space-y-2">
-            <span className="text-sm text-slate-400">Cadence</span>
-            <Select
-              value={form.cadence}
-              onValueChange={(value) => {
-                const cadence = value as ChallengeCadence;
-                const window = defaultWindow(cadence);
-                setForm((current) => ({
-                  ...current,
-                  cadence,
-                  startAt: window.startAt,
-                  durationDays: window.durationDays,
-                }));
-              }}
-            >
-              <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="border-white/10 bg-[#0b1118] text-white">
-                <SelectItem
-                  value="weekly"
-                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                >
-                  Weekly
-                </SelectItem>
-                <SelectItem
-                  value="monthly"
-                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                >
-                  Monthly
-                </SelectItem>
-                <SelectItem
-                  value="custom"
-                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                >
-                  Custom
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </label>
-
-          <label className="space-y-2 md:col-span-2">
-            <span className="text-sm text-slate-400">Description</span>
-            <textarea
-              value={form.description}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  description: event.target.value,
-                }))
-              }
-              rows={3}
-              placeholder="Admins can describe the target and what counts as completion."
-              className="w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white outline-none focus:border-cyan-500/50"
-            />
-          </label>
-
-          <label className="space-y-2">
-            <span className="text-sm text-slate-400">Mode</span>
-            <Select
-              value={form.mode}
-              onValueChange={(value) => {
-                const mode = value as ChallengeMode;
-                setForm((current) => ({
-                  ...current,
-                  mode,
-                  rules:
-                    mode === "manual"
-                      ? [createInitialRule("manual")]
-                      : current.rules[0]?.ruleType === "manual"
-                        ? [createInitialRule()]
-                        : current.rules,
-                }));
-              }}
-            >
-              <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="border-white/10 bg-[#0b1118] text-white">
-                <SelectItem
-                  value="auto"
-                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                >
-                  Auto tracked
-                </SelectItem>
-                <SelectItem
-                  value="manual"
-                  className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                >
-                  Manual review
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </label>
-
-          {form.mode === "auto" && (
-            <div className="space-y-3 md:col-span-2">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h4 className="text-sm font-semibold text-white">Rules</h4>
-                  <p className="mt-1 text-xs text-slate-500">
-                    All rules below must pass before the challenge is complete.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={addRule}
-                  disabled={form.rules.length >= 8}
-                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-200 transition-colors hover:bg-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add rule
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {form.rules.map((rule, index) => (
-                  <div
-                    key={index}
-                    className="border border-white/10 bg-black/20 p-4"
-                  >
-                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                      <label className="flex-1 space-y-2">
-                        <span className="text-sm text-slate-400">
-                          Rule {index + 1}
-                        </span>
-                        <Select
-                          value={rule.ruleType}
-                          onValueChange={(value) =>
-                            updateRule(index, {
-                              ...createInitialRule(value as ChallengeRuleType),
-                            })
-                          }
-                        >
-                          <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="border-white/10 bg-[#0b1118] text-white">
-                            <SelectItem
-                              value="visit_airport"
-                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                            >
-                              Visit airport
-                            </SelectItem>
-                            <SelectItem
-                              value="visit_airport_count"
-                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                            >
-                              Visit X airports
-                            </SelectItem>
-                            <SelectItem
-                              value="depart_airport"
-                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                            >
-                              Depart airport
-                            </SelectItem>
-                            <SelectItem
-                              value="arrive_airport"
-                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                            >
-                              Arrive airport
-                            </SelectItem>
-                            <SelectItem
-                              value="route"
-                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                            >
-                              Specific route
-                            </SelectItem>
-                            <SelectItem
-                              value="aircraft_type"
-                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                            >
-                              Specific aircraft
-                            </SelectItem>
-                            <SelectItem
-                              value="flight_count"
-                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                            >
-                              Complete X flights
-                            </SelectItem>
-                            <SelectItem
-                              value="min_duration"
-                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                            >
-                              Minimum duration
-                            </SelectItem>
-                            <SelectItem
-                              value="min_distance"
-                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                            >
-                              Minimum distance
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </label>
-
-                      <label className="flex-1 space-y-2">
-                        <span className="text-sm text-slate-400">
-                          Applies to
-                        </span>
-                        <Select
-                          value={
-                            canRuleApplyToEachFlight(rule.ruleType)
-                              ? rule.scope
-                              : "challenge"
-                          }
-                          disabled={!canRuleApplyToEachFlight(rule.ruleType)}
-                          onValueChange={(value) =>
-                            updateRule(index, {
-                              scope: value as ChallengeRuleScope,
-                            })
-                          }
-                        >
-                          <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20 disabled:opacity-60">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="border-white/10 bg-[#0b1118] text-white">
-                            <SelectItem
-                              value="challenge"
-                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                            >
-                              Whole challenge
-                            </SelectItem>
-                            <SelectItem
-                              value="each_flight"
-                              className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
-                            >
-                              Each counted flight
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </label>
-
-                      <button
-                        type="button"
-                        onClick={() => removeRule(index)}
-                        disabled={form.rules.length <= 1}
-                        className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition-colors hover:bg-red-500/10 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label={`Remove rule ${index + 1}`}
-                        title="Remove rule"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {renderRuleFields(rule, index)}
-                    </div>
-                  </div>
-                ))}
-              </div>
+        <div ref={formSectionRef} className="scroll-mt-24 p-4 sm:p-6">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-white">
+                {isEditing ? "Edit Challenge" : "Create Challenge"}
+              </h3>
+              <p className="mt-1 text-sm text-slate-400">
+                Weekly and monthly challenges can be auto-tracked from flights
+                or manually reviewed by admins.
+              </p>
             </div>
-          )}
-
-          <label className="space-y-2">
-            <span className="text-sm text-slate-400">Start</span>
-            <input
-              type="datetime-local"
-              value={form.startAt}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  startAt: event.target.value,
-                }))
-              }
-              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
-            />
-          </label>
-
-          <label className="space-y-2">
-            <span className="text-sm text-slate-400">
-              {form.cadence === "weekly"
-                ? "Duration"
-                : form.cadence === "monthly"
-                  ? "Duration"
-                  : "Custom days"}
-            </span>
-            <input
-              type="number"
-              min="1"
-              disabled={form.cadence !== "custom"}
-              value={form.durationDays}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  durationDays: event.target.value,
-                }))
-              }
-              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 disabled:opacity-60"
-            />
-            <p className="text-xs text-slate-500">
-              {form.cadence === "weekly" &&
-                "Weekly challenges always run for 7 days."}
-              {form.cadence === "monthly" &&
-                "Monthly challenges always run for 30 days."}
-              {form.cadence === "custom" &&
-                "Use this for one-off challenges without manually setting an end date."}
-            </p>
-          </label>
-        </div>
-
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-          <label className="flex items-center gap-2 text-sm text-slate-300">
-            <input
-              type="checkbox"
-              checked={form.isPublished}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  isPublished: event.target.checked,
-                }))
-              }
-              className="h-4 w-4 rounded border-white/20 bg-black/30"
-            />
-            Publish immediately
-          </label>
-          <button
-            onClick={handleSubmit}
-            disabled={isSaving}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isSaving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-            {isEditing ? "Save challenge" : "Create challenge"}
-          </button>
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-        <div className="mb-5 flex items-center gap-2">
-          <ClipboardCheck className="h-4 w-4 text-yellow-400" />
-          <h3 className="text-lg font-semibold text-white">
-            Pending Manual Reviews
-          </h3>
-          {pendingManualReviews.length > 0 && (
-            <span className="rounded-full border border-yellow-500/30 bg-yellow-500/10 px-2 py-0.5 font-mono text-[10px] tracking-wider text-yellow-300 uppercase">
-              {pendingManualReviews.length}
-            </span>
-          )}
-        </div>
-
-        {pendingManualReviews.length === 0 ? (
-          <p className="text-sm text-slate-500">
-            No manual challenge submissions need review.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {pendingManualReviews.map((review) => (
-              (() => {
-                const attachedFlights = Array.isArray(review.flights)
-                  ? review.flights
-                  : [];
-
-                return (
-              <div
-                key={review.id}
-                className="rounded-2xl border border-white/10 bg-black/30 p-4"
+            {isEditing && (
+              <button
+                onClick={() => resetForm(form.cadence)}
+                className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10"
               >
-                <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                Cancel edit
+              </button>
+            )}
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="space-y-2">
+              <span className="text-sm text-slate-400">Title</span>
+              <input
+                value={form.title}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    title: event.target.value,
+                  }))
+                }
+                placeholder="Visit Innsbruck in the next 24 hours"
+                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+              />
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-sm text-slate-400">Cadence</span>
+              <Select
+                value={form.cadence}
+                onValueChange={(value) => {
+                  const cadence = value as ChallengeCadence;
+                  const window = defaultWindow(cadence);
+                  setForm((current) => ({
+                    ...current,
+                    cadence,
+                    startAt: window.startAt,
+                    durationDays: window.durationDays,
+                  }));
+                }}
+              >
+                <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+                  <SelectItem
+                    value="weekly"
+                    className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                  >
+                    Weekly
+                  </SelectItem>
+                  <SelectItem
+                    value="monthly"
+                    className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                  >
+                    Monthly
+                  </SelectItem>
+                  <SelectItem
+                    value="custom"
+                    className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                  >
+                    Custom
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+
+            <label className="space-y-2 md:col-span-2">
+              <span className="text-sm text-slate-400">Description</span>
+              <textarea
+                value={form.description}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    description: event.target.value,
+                  }))
+                }
+                rows={3}
+                placeholder="Admins can describe the target and what counts as completion."
+                className="w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white outline-none focus:border-cyan-500/50"
+              />
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-sm text-slate-400">Mode</span>
+              <Select
+                value={form.mode}
+                onValueChange={(value) => {
+                  const mode = value as ChallengeMode;
+                  setForm((current) => ({
+                    ...current,
+                    mode,
+                    rules:
+                      mode === "manual"
+                        ? [createInitialRule("manual")]
+                        : current.rules[0]?.ruleType === "manual"
+                          ? [createInitialRule()]
+                          : current.rules,
+                  }));
+                }}
+              >
+                <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+                  <SelectItem
+                    value="auto"
+                    className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                  >
+                    Auto tracked
+                  </SelectItem>
+                  <SelectItem
+                    value="manual"
+                    className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                  >
+                    Manual review
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+
+            {form.mode === "auto" && (
+              <div className="space-y-3 md:col-span-2">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h4 className="text-sm font-semibold text-white">
-                      {review.challengeTitle}
-                    </h4>
-                    <p className="text-xs text-slate-400">
-                      {review.userDisplay} • submitted{" "}
-                      {new Date(review.createdAt).toLocaleString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
+                    <h4 className="text-sm font-semibold text-white">Rules</h4>
+                    <p className="mt-1 text-xs text-slate-500">
+                      All rules below must pass before the challenge is
+                      complete.
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() =>
-                        handleReviewStatus(review.id, "completed")
-                      }
-                      disabled={busyReviewId === review.id}
-                      className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-emerald-500/15 px-3 py-2 text-sm text-emerald-300 transition-colors hover:bg-emerald-500/25 disabled:opacity-60"
-                    >
-                      {busyReviewId === review.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="h-4 w-4" />
-                      )}
-                      Approve
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleReviewStatus(review.id, "rejected")
-                      }
-                      disabled={busyReviewId === review.id}
-                      className="cursor-pointer rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
-                    >
-                      Reject
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={addRule}
+                    disabled={form.rules.length >= 8}
+                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-200 transition-colors hover:bg-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add rule
+                  </button>
                 </div>
 
-                <p className="mb-3 text-sm text-slate-300">
-                  {review.challengeDescription}
-                </p>
-                {review.submissionNote && (
-                  <p className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">
-                    {review.submissionNote}
-                  </p>
-                )}
-                {attachedFlights.length > 0 && (
-                  <div className="space-y-2 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-cyan-100">
-                    <p className="font-mono tracking-wider text-cyan-200 uppercase">
-                      Attached Flights ({attachedFlights.length})
-                    </p>
-                    {attachedFlights.map((flight) => (
-                      <div
-                        key={flight.id}
-                        className="rounded-lg border border-white/10 bg-black/20 px-3 py-2"
-                      >
-                        {flight.callsign} • {flight.depICAO ?? "???"} to{" "}
-                        {flight.arrICAO ?? "???"} • {flight.aircraftType}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-                );
-              })()
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-        <div className="mb-5 flex items-center gap-2">
-          <ClipboardCheck className="h-4 w-4 text-cyan-400" />
-          <h3 className="text-lg font-semibold text-white">
-            Reviewed Manual Submissions
-          </h3>
-          {reviewedManualReviews.length > 0 && (
-            <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
-              {reviewedManualReviews.length}
-            </span>
-          )}
-        </div>
-
-        {reviewedManualReviews.length === 0 ? (
-          <p className="text-sm text-slate-500">
-            No reviewed manual submissions yet.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {reviewedManualReviews.map((review) => {
-              const attachedFlights = Array.isArray(review.flights)
-                ? review.flights
-                : [];
-              const isApproved = review.status === "completed";
-
-              return (
-                <div
-                  key={review.id}
-                  className="rounded-2xl border border-white/10 bg-black/30 p-4"
-                >
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <h4 className="text-sm font-semibold text-white">
-                        {review.challengeTitle}
-                      </h4>
-                      <p className="text-xs text-slate-400">
-                        {review.userDisplay} •{" "}
-                        {review.reviewedAt
-                          ? `reviewed ${new Date(review.reviewedAt).toLocaleString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              hour: "numeric",
-                              minute: "2-digit",
-                            })}`
-                          : "reviewed"}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <span
-                        className={`rounded-full px-2.5 py-1 font-mono text-[10px] tracking-wider uppercase ${
-                          isApproved
-                            ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                            : "border border-red-500/30 bg-red-500/10 text-red-300"
-                        }`}
-                      >
-                        {isApproved ? "approved" : "rejected"}
-                      </span>
-                      <button
-                        onClick={() =>
-                          handleReviewStatus(review.id, "pending")
-                        }
-                        disabled={busyReviewId === review.id}
-                        className="rounded-lg bg-white/10 px-3 py-2 text-sm text-slate-200 transition-colors hover:bg-white/15 disabled:opacity-60"
-                      >
-                        Reopen
-                      </button>
-                      {isApproved ? (
-                        <button
-                          onClick={() =>
-                            handleReviewStatus(review.id, "rejected")
-                          }
-                          disabled={busyReviewId === review.id}
-                          className="rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
-                        >
-                          Mark rejected
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() =>
-                            handleReviewStatus(review.id, "completed")
-                          }
-                          disabled={busyReviewId === review.id}
-                          className="rounded-lg bg-emerald-500/15 px-3 py-2 text-sm text-emerald-300 transition-colors hover:bg-emerald-500/25 disabled:opacity-60"
-                        >
-                          Approve
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <p className="mb-3 text-sm text-slate-300">
-                    {review.challengeDescription}
-                  </p>
-                  {review.submissionNote && (
-                    <p className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">
-                      {review.submissionNote}
-                    </p>
-                  )}
-                  {attachedFlights.length > 0 && (
-                    <div className="space-y-2 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-cyan-100">
-                      <p className="font-mono tracking-wider text-cyan-200 uppercase">
-                        Attached Flights ({attachedFlights.length})
-                      </p>
-                      {attachedFlights.map((flight) => (
-                        <div
-                          key={flight.id}
-                          className="rounded-lg border border-white/10 bg-black/20 px-3 py-2"
-                        >
-                          {flight.callsign} • {flight.depICAO ?? "???"} to{" "}
-                          {flight.arrICAO ?? "???"} • {flight.aircraftType}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-        <div className="mb-5 flex items-center gap-2">
-          <Flag className="h-4 w-4 text-cyan-400" />
-          <h3 className="text-lg font-semibold text-white">All Challenges</h3>
-        </div>
-
-        {sortedChallenges.length === 0 ? (
-          <p className="text-sm text-slate-500">No challenges yet.</p>
-        ) : (
-          <div className="space-y-3">
-            {sortedChallenges.map((challenge) => {
-              const topProgressUsers = challenge.topProgressUsers ?? [];
-
-              return (
-                <div
-                  key={challenge.id}
-                  className="rounded-2xl border border-white/10 bg-black/30 p-4"
-                >
-                  <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="mb-2 flex flex-wrap gap-2">
-                        <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
-                          {challenge.cadence}
-                        </span>
-                        <span
-                          className={`rounded px-2 py-0.5 font-mono text-[10px] tracking-wider uppercase ${
-                            challenge.isPublished
-                              ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                              : "border border-slate-500/30 bg-slate-500/10 text-slate-300"
-                          }`}
-                        >
-                          {challenge.isPublished ? "published" : "draft"}
-                        </span>
-                        <span className="rounded border border-cyan-500/20 bg-cyan-500/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
-                          {challenge.mode}
-                        </span>
-                      </div>
-                      <h4 className="text-base font-semibold text-white">
-                        {challenge.title}
-                      </h4>
-                      <p className="mt-1 text-sm text-slate-400">
-                        {challenge.description}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => loadChallengeIntoForm(challenge)}
-                        className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10"
-                      >
-                        <Pencil className="h-4 w-4" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleToggle(challenge.id, challenge.isPublished)
-                        }
-                        disabled={busyChallengeId === challenge.id}
-                        className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 disabled:opacity-60"
-                      >
-                        {challenge.isPublished ? "Unpublish" : "Publish"}
-                      </button>
-                      <button
-                        onClick={() => handleRemove(challenge.id)}
-                        disabled={busyChallengeId === challenge.id}
-                        className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 text-sm text-slate-400 md:grid-cols-3">
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                      <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                        <CalendarRange className="h-3.5 w-3.5" />
-                        Window
-                      </div>
-                      <p>
-                        {formatChallengeWindow(
-                          challenge.startAt,
-                          challenge.endAt,
-                        )}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {challenge.durationDays} day
-                        {challenge.durationDays === 1 ? "" : "s"}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                      <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                        Rule
-                      </div>
-                      <p>{describeRule(challenge)}</p>
-                    </div>
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                      <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                        Progress
-                      </div>
-                      <p>
-                        {challenge.counts.completed} completed •{" "}
-                        {challenge.counts.pending} pending •{" "}
-                        {challenge.counts.rejected} rejected
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 grid gap-3 xl:grid-cols-2">
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                      <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                        <Flag className="h-3.5 w-3.5" />
-                        Top 3 Progress
-                      </div>
-                      {topProgressUsers.length > 0 ? (
-                        <div className="space-y-2">
-                          {topProgressUsers.map((pilot, index) => (
-                            <div
-                              key={pilot.userId}
-                              className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2"
-                            >
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/25 bg-cyan-500/10 font-mono text-[10px] text-cyan-200">
-                                    {index + 1}
-                                  </span>
-                                  <span
-                                    title={pilot.userId}
-                                    className="truncate text-sm text-slate-200"
-                                  >
-                                    {pilot.displayName}
-                                  </span>
-                                </div>
-                              </div>
-                              <div
-                                className={`shrink-0 rounded-lg px-2.5 py-1 font-mono text-[10px] uppercase ${
-                                  pilot.isComplete
-                                    ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
-                                    : "border border-amber-500/25 bg-amber-500/10 text-amber-200"
-                                }`}
+                <div className="space-y-3">
+                  {form.rules.map((rule, index) => (
+                    <div
+                      key={index}
+                      className="border border-white/10 bg-black/20 p-4"
+                    >
+                      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                        <label className="flex-1 space-y-2">
+                          <span className="text-sm text-slate-400">
+                            Rule {index + 1}
+                          </span>
+                          <Select
+                            value={rule.ruleType}
+                            onValueChange={(value) =>
+                              updateRule(index, {
+                                ...createInitialRule(
+                                  value as ChallengeRuleType,
+                                ),
+                              })
+                            }
+                          >
+                            <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+                              <SelectItem
+                                value="visit_airport"
+                                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
                               >
-                                {pilot.progressLabel}
-                              </div>
+                                Visit airport
+                              </SelectItem>
+                              <SelectItem
+                                value="visit_airport_count"
+                                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                              >
+                                Visit X airports
+                              </SelectItem>
+                              <SelectItem
+                                value="depart_airport"
+                                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                              >
+                                Depart airport
+                              </SelectItem>
+                              <SelectItem
+                                value="arrive_airport"
+                                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                              >
+                                Arrive airport
+                              </SelectItem>
+                              <SelectItem
+                                value="route"
+                                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                              >
+                                Specific route
+                              </SelectItem>
+                              <SelectItem
+                                value="aircraft_type"
+                                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                              >
+                                Specific aircraft
+                              </SelectItem>
+                              <SelectItem
+                                value="flight_count"
+                                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                              >
+                                Complete X flights
+                              </SelectItem>
+                              <SelectItem
+                                value="min_duration"
+                                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                              >
+                                Minimum duration
+                              </SelectItem>
+                              <SelectItem
+                                value="min_distance"
+                                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                              >
+                                Minimum distance
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </label>
+
+                        <label className="flex-1 space-y-2">
+                          <span className="text-sm text-slate-400">
+                            Applies to
+                          </span>
+                          <Select
+                            value={
+                              canRuleApplyToEachFlight(rule.ruleType)
+                                ? rule.scope
+                                : "challenge"
+                            }
+                            disabled={!canRuleApplyToEachFlight(rule.ruleType)}
+                            onValueChange={(value) =>
+                              updateRule(index, {
+                                scope: value as ChallengeRuleScope,
+                              })
+                            }
+                          >
+                            <SelectTrigger className="h-11 w-full rounded-xl border-white/10 bg-black/30 text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20 disabled:opacity-60">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="border-white/10 bg-[#0b1118] text-white">
+                              <SelectItem
+                                value="challenge"
+                                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                              >
+                                Whole challenge
+                              </SelectItem>
+                              <SelectItem
+                                value="each_flight"
+                                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                              >
+                                Each counted flight
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={() => removeRule(index)}
+                          disabled={form.rules.length <= 1}
+                          className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition-colors hover:bg-red-500/10 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-40"
+                          aria-label={`Remove rule ${index + 1}`}
+                          title="Remove rule"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {renderRuleFields(rule, index)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <label className="space-y-2">
+              <span className="text-sm text-slate-400">Start</span>
+              <input
+                type="datetime-local"
+                value={form.startAt}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    startAt: event.target.value,
+                  }))
+                }
+                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+              />
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-sm text-slate-400">
+                {form.cadence === "weekly"
+                  ? "Duration"
+                  : form.cadence === "monthly"
+                    ? "Duration"
+                    : "Custom days"}
+              </span>
+              <input
+                type="number"
+                min="1"
+                disabled={form.cadence !== "custom"}
+                value={form.durationDays}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    durationDays: event.target.value,
+                  }))
+                }
+                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 disabled:opacity-60"
+              />
+              <p className="text-xs text-slate-500">
+                {form.cadence === "weekly" &&
+                  "Weekly challenges always run for 7 days."}
+                {form.cadence === "monthly" &&
+                  "Monthly challenges always run for 30 days."}
+                {form.cadence === "custom" &&
+                  "Use this for one-off challenges without manually setting an end date."}
+              </p>
+            </label>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <label className="flex items-center gap-2 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                checked={form.isPublished}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    isPublished: event.target.checked,
+                  }))
+                }
+                className="h-4 w-4 rounded border-white/20 bg-black/30"
+              />
+              Publish immediately
+            </label>
+            <button
+              onClick={handleSubmit}
+              disabled={isSaving}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              {isEditing ? "Save challenge" : "Create challenge"}
+            </button>
+          </div>
+        </div>
+      </AdminChallengeSection>
+
+      <AdminChallengeSection
+        icon={<ClipboardCheck className="h-4 w-4 text-yellow-400" />}
+        title="Pending Manual Reviews"
+        countLabel={
+          pendingManualReviews.length > 0
+            ? String(pendingManualReviews.length)
+            : undefined
+        }
+        open={openSections.pendingReviews}
+        onOpenChange={(open) =>
+          setOpenSections((current) => ({ ...current, pendingReviews: open }))
+        }
+      >
+        <div className="p-6">
+          {pendingManualReviews.length === 0 ? (
+            <p className="text-sm text-slate-500">
+              No manual challenge submissions need review.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {pendingManualReviews.map((review) =>
+                (() => {
+                  const attachedFlights = Array.isArray(review.flights)
+                    ? review.flights
+                    : [];
+
+                  return (
+                    <div
+                      key={review.id}
+                      className="rounded-2xl border border-white/10 bg-black/30 p-4"
+                    >
+                      <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <h4 className="text-sm font-semibold text-white">
+                            {review.challengeTitle}
+                          </h4>
+                          <p className="text-xs text-slate-400">
+                            {review.userDisplay} • submitted{" "}
+                            {new Date(review.createdAt).toLocaleString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                hour: "numeric",
+                                minute: "2-digit",
+                              },
+                            )}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() =>
+                              handleReviewStatus(review.id, "completed")
+                            }
+                            disabled={busyReviewId === review.id}
+                            className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-emerald-500/15 px-3 py-2 text-sm text-emerald-300 transition-colors hover:bg-emerald-500/25 disabled:opacity-60"
+                          >
+                            {busyReviewId === review.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="h-4 w-4" />
+                            )}
+                            Approve
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleReviewStatus(review.id, "rejected")
+                            }
+                            disabled={busyReviewId === review.id}
+                            className="cursor-pointer rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+
+                      <p className="mb-3 text-sm text-slate-300">
+                        {review.challengeDescription}
+                      </p>
+                      {review.submissionNote && (
+                        <p className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">
+                          {review.submissionNote}
+                        </p>
+                      )}
+                      {attachedFlights.length > 0 && (
+                        <div className="space-y-2 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-cyan-100">
+                          <p className="font-mono tracking-wider text-cyan-200 uppercase">
+                            Attached Flights ({attachedFlights.length})
+                          </p>
+                          {attachedFlights.map((flight) => (
+                            <div
+                              key={flight.id}
+                              className="rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+                            >
+                              {flight.callsign} • {flight.depICAO ?? "???"} to{" "}
+                              {flight.arrICAO ?? "???"} • {flight.aircraftType}
                             </div>
                           ))}
                         </div>
-                      ) : (
-                        <p className="text-sm text-slate-500">
-                          No pilots are on the board yet.
-                        </p>
                       )}
+                    </div>
+                  );
+                })(),
+              )}
+            </div>
+          )}
+        </div>
+      </AdminChallengeSection>
+
+      <AdminChallengeSection
+        icon={<ClipboardCheck className="h-4 w-4 text-cyan-400" />}
+        title="Reviewed Manual Submissions"
+        countLabel={
+          reviewedManualReviews.length > 0
+            ? String(reviewedManualReviews.length)
+            : undefined
+        }
+        open={openSections.reviewedSubmissions}
+        onOpenChange={(open) =>
+          setOpenSections((current) => ({
+            ...current,
+            reviewedSubmissions: open,
+          }))
+        }
+      >
+        <div className="p-6">
+          {reviewedManualReviews.length === 0 ? (
+            <p className="text-sm text-slate-500">
+              No reviewed manual submissions yet.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {reviewedManualReviews.map((review) => {
+                const attachedFlights = Array.isArray(review.flights)
+                  ? review.flights
+                  : [];
+                const isApproved = review.status === "completed";
+
+                return (
+                  <div
+                    key={review.id}
+                    className="rounded-2xl border border-white/10 bg-black/30 p-4"
+                  >
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-white">
+                          {review.challengeTitle}
+                        </h4>
+                        <p className="text-xs text-slate-400">
+                          {review.userDisplay} •{" "}
+                          {review.reviewedAt
+                            ? `reviewed ${new Date(
+                                review.reviewedAt,
+                              ).toLocaleString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                hour: "numeric",
+                                minute: "2-digit",
+                              })}`
+                            : "reviewed"}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <span
+                          className={`rounded-full px-2.5 py-1 font-mono text-[10px] tracking-wider uppercase ${
+                            isApproved
+                              ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                              : "border border-red-500/30 bg-red-500/10 text-red-300"
+                          }`}
+                        >
+                          {isApproved ? "approved" : "rejected"}
+                        </span>
+                        <button
+                          onClick={() =>
+                            handleReviewStatus(review.id, "pending")
+                          }
+                          disabled={busyReviewId === review.id}
+                          className="rounded-lg bg-white/10 px-3 py-2 text-sm text-slate-200 transition-colors hover:bg-white/15 disabled:opacity-60"
+                        >
+                          Reopen
+                        </button>
+                        {isApproved ? (
+                          <button
+                            onClick={() =>
+                              handleReviewStatus(review.id, "rejected")
+                            }
+                            disabled={busyReviewId === review.id}
+                            className="rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
+                          >
+                            Mark rejected
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              handleReviewStatus(review.id, "completed")
+                            }
+                            disabled={busyReviewId === review.id}
+                            className="rounded-lg bg-emerald-500/15 px-3 py-2 text-sm text-emerald-300 transition-colors hover:bg-emerald-500/25 disabled:opacity-60"
+                          >
+                            Approve
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                      <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
-                        <Users className="h-3.5 w-3.5" />
-                        Completed Pilots
-                      </div>
-                      {challenge.completedUsers.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {challenge.completedUsers.map((completedUser) => (
-                            <span
-                              key={completedUser.userId}
-                              title={completedUser.userId}
-                              className="rounded border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-200"
-                            >
-                              {completedUser.displayName}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-slate-500">
-                          No pilots have completed this challenge yet.
+                    <p className="mb-3 text-sm text-slate-300">
+                      {review.challengeDescription}
+                    </p>
+                    {review.submissionNote && (
+                      <p className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">
+                        {review.submissionNote}
+                      </p>
+                    )}
+                    {attachedFlights.length > 0 && (
+                      <div className="space-y-2 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-cyan-100">
+                        <p className="font-mono tracking-wider text-cyan-200 uppercase">
+                          Attached Flights ({attachedFlights.length})
                         </p>
-                      )}
+                        {attachedFlights.map((flight) => (
+                          <div
+                            key={flight.id}
+                            className="rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+                          >
+                            {flight.callsign} • {flight.depICAO ?? "???"} to{" "}
+                            {flight.arrICAO ?? "???"} • {flight.aircraftType}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </AdminChallengeSection>
+
+      <AdminChallengeSection
+        icon={<Flag className="h-4 w-4 text-cyan-400" />}
+        title="All Challenges"
+        countLabel={
+          sortedChallenges.length > 0
+            ? String(sortedChallenges.length)
+            : undefined
+        }
+        open={openSections.allChallenges}
+        onOpenChange={(open) =>
+          setOpenSections((current) => ({ ...current, allChallenges: open }))
+        }
+      >
+        <div className="p-6">
+          {sortedChallenges.length === 0 ? (
+            <p className="text-sm text-slate-500">No challenges yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {sortedChallenges.map((challenge) => {
+                const topProgressUsers = challenge.topProgressUsers ?? [];
+
+                return (
+                  <div
+                    key={challenge.id}
+                    className="rounded-2xl border border-white/10 bg-black/30 p-4"
+                  >
+                    <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="mb-2 flex flex-wrap gap-2">
+                          <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
+                            {challenge.cadence}
+                          </span>
+                          <span
+                            className={`rounded px-2 py-0.5 font-mono text-[10px] tracking-wider uppercase ${
+                              challenge.isPublished
+                                ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                                : "border border-slate-500/30 bg-slate-500/10 text-slate-300"
+                            }`}
+                          >
+                            {challenge.isPublished ? "published" : "draft"}
+                          </span>
+                          <span className="rounded border border-cyan-500/20 bg-cyan-500/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
+                            {challenge.mode}
+                          </span>
+                        </div>
+                        <h4 className="text-base font-semibold text-white">
+                          {challenge.title}
+                        </h4>
+                        <p className="mt-1 text-sm text-slate-400">
+                          {challenge.description}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => loadChallengeIntoForm(challenge)}
+                          className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10"
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleToggle(challenge.id, challenge.isPublished)
+                          }
+                          disabled={busyChallengeId === challenge.id}
+                          className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 disabled:opacity-60"
+                        >
+                          {challenge.isPublished ? "Unpublish" : "Publish"}
+                        </button>
+                        <button
+                          onClick={() => handleRemove(challenge.id)}
+                          disabled={busyChallengeId === challenge.id}
+                          className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 text-sm text-slate-400 md:grid-cols-3">
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                        <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                          <CalendarRange className="h-3.5 w-3.5" />
+                          Window
+                        </div>
+                        <p>
+                          {formatChallengeWindow(
+                            challenge.startAt,
+                            challenge.endAt,
+                          )}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {challenge.durationDays} day
+                          {challenge.durationDays === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                        <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                          Rule
+                        </div>
+                        <p>{describeRule(challenge)}</p>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                        <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                          Progress
+                        </div>
+                        <p>
+                          {challenge.counts.completed} completed •{" "}
+                          {challenge.counts.pending} pending •{" "}
+                          {challenge.counts.rejected} rejected
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid gap-3 xl:grid-cols-2">
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                        <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                          <Flag className="h-3.5 w-3.5" />
+                          Top 3 Progress
+                        </div>
+                        {topProgressUsers.length > 0 ? (
+                          <div className="space-y-2">
+                            {topProgressUsers.map((pilot, index) => (
+                              <div
+                                key={pilot.userId}
+                                className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+                              >
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/25 bg-cyan-500/10 font-mono text-[10px] text-cyan-200">
+                                      {index + 1}
+                                    </span>
+                                    <span
+                                      title={pilot.userId}
+                                      className="truncate text-sm text-slate-200"
+                                    >
+                                      {pilot.displayName}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div
+                                  className={`shrink-0 rounded-lg px-2.5 py-1 font-mono text-[10px] uppercase ${
+                                    pilot.isComplete
+                                      ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
+                                      : "border border-amber-500/25 bg-amber-500/10 text-amber-200"
+                                  }`}
+                                >
+                                  {pilot.progressLabel}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-slate-500">
+                            No pilots are on the board yet.
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                        <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                          <Users className="h-3.5 w-3.5" />
+                          Completed Pilots
+                        </div>
+                        {challenge.completedUsers.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {challenge.completedUsers.map((completedUser) => (
+                              <span
+                                key={completedUser.userId}
+                                title={completedUser.userId}
+                                className="rounded border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-200"
+                              >
+                                {completedUser.displayName}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-slate-500">
+                            No pilots have completed this challenge yet.
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </AdminChallengeSection>
     </div>
+  );
+}
+
+function AdminChallengeSection({
+  icon,
+  title,
+  countLabel,
+  open,
+  onOpenChange,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  countLabel?: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: ReactNode;
+}) {
+  return (
+    <Collapsible open={open} onOpenChange={onOpenChange}>
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="flex w-full cursor-pointer items-center justify-between gap-4 px-4 py-4 text-left transition-colors hover:bg-white/[0.04] sm:px-6"
+            aria-expanded={open}
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              {icon}
+              <span className="truncate text-lg font-semibold text-white">
+                {title}
+              </span>
+              {countLabel ? (
+                <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
+                  {countLabel}
+                </span>
+              ) : null}
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-slate-300 transition-transform ${
+                open ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="border-t border-white/10">
+          {children}
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   );
 }
