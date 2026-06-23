@@ -484,7 +484,9 @@ export function ChallengesTab({
   const updateChallenge = useMutation(api.challenges.update);
   const togglePublished = useMutation(api.challenges.togglePublished);
   const removeChallenge = useMutation(api.challenges.remove);
-  const reviewSubmission = useMutation(api.challenges.reviewSubmission);
+  const updateSubmissionStatus = useMutation(
+    api.challenges.updateSubmissionStatus,
+  );
 
   const [editingId, setEditingId] = useState<Id<"challenges"> | null>(null);
   const [form, setForm] = useState<ChallengeForm>(() => createInitialForm());
@@ -494,8 +496,15 @@ export function ChallengesTab({
   const [busyChallengeId, setBusyChallengeId] =
     useState<Id<"challenges"> | null>(null);
 
-  const reviewCount = pendingReviews?.length ?? 0;
   const isEditing = editingId !== null;
+  const pendingManualReviews = useMemo(
+    () => (pendingReviews ?? []).filter((review) => review.status === "pending"),
+    [pendingReviews],
+  );
+  const reviewedManualReviews = useMemo(
+    () => (pendingReviews ?? []).filter((review) => review.status !== "pending"),
+    [pendingReviews],
+  );
 
   const sortedChallenges = useMemo(() => challenges ?? [], [challenges]);
 
@@ -648,18 +657,22 @@ export function ChallengesTab({
     }
   }
 
-  async function handleReview(
+  async function handleReviewStatus(
     completionId: Id<"challengeCompletions">,
-    decision: "approve" | "reject",
+    status: "pending" | "completed" | "rejected",
   ) {
     setBusyReviewId(completionId);
     try {
-      await reviewSubmission({ completionId, decision });
+      await updateSubmissionStatus({ completionId, status });
       Analytics.track("challenge_submission_reviewed", {
-        decision,
+        status,
       });
       toast.success(
-        decision === "approve" ? "Submission approved" : "Submission rejected",
+        status === "completed"
+          ? "Submission approved"
+          : status === "rejected"
+            ? "Submission rejected"
+            : "Submission reopened for review",
       );
     } catch (error) {
       const message =
@@ -1231,20 +1244,26 @@ export function ChallengesTab({
           <h3 className="text-lg font-semibold text-white">
             Pending Manual Reviews
           </h3>
-          {reviewCount > 0 && (
+          {pendingManualReviews.length > 0 && (
             <span className="rounded-full border border-yellow-500/30 bg-yellow-500/10 px-2 py-0.5 font-mono text-[10px] tracking-wider text-yellow-300 uppercase">
-              {reviewCount}
+              {pendingManualReviews.length}
             </span>
           )}
         </div>
 
-        {pendingReviews.length === 0 ? (
+        {pendingManualReviews.length === 0 ? (
           <p className="text-sm text-slate-500">
             No manual challenge submissions need review.
           </p>
         ) : (
           <div className="space-y-3">
-            {pendingReviews.map((review) => (
+            {pendingManualReviews.map((review) => (
+              (() => {
+                const attachedFlights = Array.isArray(review.flights)
+                  ? review.flights
+                  : [];
+
+                return (
               <div
                 key={review.id}
                 className="rounded-2xl border border-white/10 bg-black/30 p-4"
@@ -1266,7 +1285,9 @@ export function ChallengesTab({
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleReview(review.id, "approve")}
+                      onClick={() =>
+                        handleReviewStatus(review.id, "completed")
+                      }
                       disabled={busyReviewId === review.id}
                       className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-emerald-500/15 px-3 py-2 text-sm text-emerald-300 transition-colors hover:bg-emerald-500/25 disabled:opacity-60"
                     >
@@ -1278,7 +1299,9 @@ export function ChallengesTab({
                       Approve
                     </button>
                     <button
-                      onClick={() => handleReview(review.id, "reject")}
+                      onClick={() =>
+                        handleReviewStatus(review.id, "rejected")
+                      }
                       disabled={busyReviewId === review.id}
                       className="cursor-pointer rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
                     >
@@ -1295,16 +1318,147 @@ export function ChallengesTab({
                     {review.submissionNote}
                   </p>
                 )}
-                {review.flight && (
-                  <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-cyan-100">
-                    Flight: {review.flight.callsign} •{" "}
-                    {review.flight.depICAO ?? "???"} to{" "}
-                    {review.flight.arrICAO ?? "???"} •{" "}
-                    {review.flight.aircraftType}
+                {attachedFlights.length > 0 && (
+                  <div className="space-y-2 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-cyan-100">
+                    <p className="font-mono tracking-wider text-cyan-200 uppercase">
+                      Attached Flights ({attachedFlights.length})
+                    </p>
+                    {attachedFlights.map((flight) => (
+                      <div
+                        key={flight.id}
+                        className="rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+                      >
+                        {flight.callsign} • {flight.depICAO ?? "???"} to{" "}
+                        {flight.arrICAO ?? "???"} • {flight.aircraftType}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
+                );
+              })()
             ))}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+        <div className="mb-5 flex items-center gap-2">
+          <ClipboardCheck className="h-4 w-4 text-cyan-400" />
+          <h3 className="text-lg font-semibold text-white">
+            Reviewed Manual Submissions
+          </h3>
+          {reviewedManualReviews.length > 0 && (
+            <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
+              {reviewedManualReviews.length}
+            </span>
+          )}
+        </div>
+
+        {reviewedManualReviews.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            No reviewed manual submissions yet.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {reviewedManualReviews.map((review) => {
+              const attachedFlights = Array.isArray(review.flights)
+                ? review.flights
+                : [];
+              const isApproved = review.status === "completed";
+
+              return (
+                <div
+                  key={review.id}
+                  className="rounded-2xl border border-white/10 bg-black/30 p-4"
+                >
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h4 className="text-sm font-semibold text-white">
+                        {review.challengeTitle}
+                      </h4>
+                      <p className="text-xs text-slate-400">
+                        {review.userDisplay} •{" "}
+                        {review.reviewedAt
+                          ? `reviewed ${new Date(review.reviewedAt).toLocaleString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}`
+                          : "reviewed"}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <span
+                        className={`rounded-full px-2.5 py-1 font-mono text-[10px] tracking-wider uppercase ${
+                          isApproved
+                            ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                            : "border border-red-500/30 bg-red-500/10 text-red-300"
+                        }`}
+                      >
+                        {isApproved ? "approved" : "rejected"}
+                      </span>
+                      <button
+                        onClick={() =>
+                          handleReviewStatus(review.id, "pending")
+                        }
+                        disabled={busyReviewId === review.id}
+                        className="rounded-lg bg-white/10 px-3 py-2 text-sm text-slate-200 transition-colors hover:bg-white/15 disabled:opacity-60"
+                      >
+                        Reopen
+                      </button>
+                      {isApproved ? (
+                        <button
+                          onClick={() =>
+                            handleReviewStatus(review.id, "rejected")
+                          }
+                          disabled={busyReviewId === review.id}
+                          className="rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-60"
+                        >
+                          Mark rejected
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() =>
+                            handleReviewStatus(review.id, "completed")
+                          }
+                          disabled={busyReviewId === review.id}
+                          className="rounded-lg bg-emerald-500/15 px-3 py-2 text-sm text-emerald-300 transition-colors hover:bg-emerald-500/25 disabled:opacity-60"
+                        >
+                          Approve
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="mb-3 text-sm text-slate-300">
+                    {review.challengeDescription}
+                  </p>
+                  {review.submissionNote && (
+                    <p className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">
+                      {review.submissionNote}
+                    </p>
+                  )}
+                  {attachedFlights.length > 0 && (
+                    <div className="space-y-2 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-cyan-100">
+                      <p className="font-mono tracking-wider text-cyan-200 uppercase">
+                        Attached Flights ({attachedFlights.length})
+                      </p>
+                      {attachedFlights.map((flight) => (
+                        <div
+                          key={flight.id}
+                          className="rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+                        >
+                          {flight.callsign} • {flight.depICAO ?? "???"} to{" "}
+                          {flight.arrICAO ?? "???"} • {flight.aircraftType}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

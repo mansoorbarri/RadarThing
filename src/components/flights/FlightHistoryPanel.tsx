@@ -1,7 +1,7 @@
 "use client";
 
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import {
@@ -13,18 +13,23 @@ import {
   Clock,
   X,
   Lock,
+  Loader2,
   Plane,
   Play,
   Search,
+  Send,
   Share2,
   Trash2,
   Route,
+  Flag,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   FLIGHT_HISTORY_PAGE_SIZE,
   FREE_RECENT_FLIGHTS_LIMIT,
   matchesFlightHistorySearch,
 } from "~/lib/flightHistory";
+import { Analytics } from "~/lib/analytics";
 import { cn } from "~/lib/utils";
 
 export interface FlightHistoryPanelFlight {
@@ -47,6 +52,7 @@ interface FlightHistoryPanelProps {
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
   canGenerateFlightCard: boolean;
+  canSubmitChallengeFlights?: boolean;
   canDeleteFlights?: boolean;
   deletingFlightId?: string | null;
   onShareFlight: (flight: FlightHistoryPanelFlight) => void;
@@ -84,6 +90,7 @@ export function FlightHistoryPanel({
   expanded = true,
   onExpandedChange,
   canGenerateFlightCard,
+  canSubmitChallengeFlights = false,
   canDeleteFlights = false,
   deletingFlightId,
   onShareFlight,
@@ -95,6 +102,13 @@ export function FlightHistoryPanel({
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [page, setPage] = useState(1);
+  const [selectedChallengeFlightIds, setSelectedChallengeFlightIds] = useState<
+    string[]
+  >([]);
+  const [selectedChallengeId, setSelectedChallengeId] = useState<string>("");
+  const [challengeSubmissionNote, setChallengeSubmissionNote] = useState("");
+  const [isSubmittingChallengeFlights, setIsSubmittingChallengeFlights] =
+    useState(false);
 
   useEffect(() => {
     setPage(1);
@@ -103,6 +117,11 @@ export function FlightHistoryPanel({
   const historyPage = useQuery(api.flights.getFlightHistoryPage, {
     userId,
   });
+  const viewerChallenges = useQuery(
+    api.challenges.listActiveForViewer,
+    canSubmitChallengeFlights ? {} : "skip",
+  );
+  const submitManualClaim = useMutation(api.challenges.submitManualClaim);
 
   const isExpanded = variant === "static" ? true : expanded;
   const hasSearchQuery = searchQuery.trim().length > 0;
@@ -136,6 +155,81 @@ export function FlightHistoryPanel({
   const canAccessFullHistory = historyPage?.canAccessFullHistory ?? false;
   const totalRecordedFlights = historyPage?.totalRecordedFlights ?? 0;
   const hiddenFlightCount = historyPage?.hiddenFlightCount ?? 0;
+  const flightsById = useMemo(
+    () =>
+      new Map((historyPage?.flights ?? []).map((flight) => [flight.id, flight])),
+    [historyPage?.flights],
+  );
+  const availableManualChallenges =
+    viewerChallenges?.filter(
+      (challenge) =>
+        challenge.mode === "manual" && "canSubmitManual" in challenge
+          ? challenge.canSubmitManual
+          : false,
+    ) ?? [];
+  const selectedChallengeFlights = selectedChallengeFlightIds
+    .map((flightId) => flightsById.get(flightId as Id<"flights">))
+    .filter((flight): flight is NonNullable<typeof flight> => Boolean(flight));
+
+  function toggleFlightChallengeSelection(flight: FlightHistoryPanelFlight) {
+    if (availableManualChallenges.length === 0) {
+      toast.error("No active manual challenges are accepting submissions");
+      return;
+    }
+
+    setSelectedChallengeFlightIds((current) =>
+      current.includes(flight.id)
+        ? current.filter((flightId) => flightId !== flight.id)
+        : [...current, flight.id],
+    );
+    setSelectedChallengeId((current) =>
+      current || availableManualChallenges[0]?.id || "",
+    );
+  }
+
+  async function handleSubmitChallengeReview() {
+    if (selectedChallengeFlightIds.length === 0) {
+      toast.error("Select at least one flight first");
+      return;
+    }
+
+    if (!selectedChallengeId) {
+      toast.error("Choose a challenge first");
+      return;
+    }
+
+    const submissionNote = challengeSubmissionNote.trim() || undefined;
+    setIsSubmittingChallengeFlights(true);
+
+    try {
+      await submitManualClaim({
+        challengeId: selectedChallengeId as Id<"challenges">,
+        flightIds: selectedChallengeFlightIds as Id<"flights">[],
+        submissionNote,
+      });
+      Analytics.track("challenge_claim_submitted", {
+        challenge_id: selectedChallengeId,
+        flight_ids: selectedChallengeFlightIds,
+        flight_count: selectedChallengeFlightIds.length,
+        has_note: Boolean(submissionNote),
+        source: "flight_history",
+      });
+      toast.success(
+        `${selectedChallengeFlightIds.length} flight${selectedChallengeFlightIds.length === 1 ? "" : "s"} submitted for challenge review`,
+      );
+      setSelectedChallengeFlightIds([]);
+      setSelectedChallengeId("");
+      setChallengeSubmissionNote("");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not submit flights for review",
+      );
+    } finally {
+      setIsSubmittingChallengeFlights(false);
+    }
+  }
 
   return (
     <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
@@ -254,6 +348,98 @@ export function FlightHistoryPanel({
                   )}
                 </div>
 
+                {canSubmitChallengeFlights &&
+                  availableManualChallenges.length > 0 &&
+                  selectedChallengeFlightIds.length > 0 && (
+                    <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-4">
+                      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="flex items-center gap-2 font-mono text-xs tracking-wide text-cyan-200 uppercase">
+                            <Flag className="h-3.5 w-3.5" />
+                            Challenge Submission
+                          </p>
+                          <p className="mt-1 text-sm text-cyan-100">
+                            {selectedChallengeFlightIds.length} flight
+                            {selectedChallengeFlightIds.length === 1 ? "" : "s"} selected for admin review.
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedChallengeFlightIds([]);
+                            setChallengeSubmissionNote("");
+                          }}
+                          disabled={isSubmittingChallengeFlights}
+                          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300 transition-colors hover:bg-white/10 disabled:opacity-60"
+                        >
+                          Clear selection
+                        </button>
+                      </div>
+
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        {selectedChallengeFlights.map((flight) => (
+                          <span
+                            key={flight.id}
+                            className="rounded-full border border-white/10 bg-black/20 px-3 py-1 font-mono text-[10px] tracking-wider text-cyan-100"
+                          >
+                            {(flight.depICAO ?? "???") + "-" + (flight.arrICAO ?? "???")}{" "}
+                            {flight.callsign ? `• ${flight.callsign}` : ""}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="block">
+                          <span className="mb-2 block font-mono text-[10px] tracking-wider text-cyan-200 uppercase">
+                            Challenge
+                          </span>
+                          <select
+                            value={selectedChallengeId}
+                            onChange={(event) =>
+                              setSelectedChallengeId(event.target.value)
+                            }
+                            className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+                          >
+                            {availableManualChallenges.map((challenge) => (
+                              <option key={challenge.id} value={challenge.id}>
+                                {challenge.title}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="block">
+                          <span className="mb-2 block font-mono text-[10px] tracking-wider text-cyan-200 uppercase">
+                            Note for admins
+                          </span>
+                          <textarea
+                            value={challengeSubmissionNote}
+                            onChange={(event) =>
+                              setChallengeSubmissionNote(event.target.value)
+                            }
+                            rows={3}
+                            placeholder="Explain how these flights satisfy the challenge."
+                            className="w-full rounded-xl border border-white/10 bg-black/40 p-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-cyan-500/50"
+                          />
+                        </label>
+
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <button
+                            onClick={() => void handleSubmitChallengeReview()}
+                            disabled={isSubmittingChallengeFlights}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isSubmittingChallengeFlights ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Send className="h-4 w-4" />
+                            )}
+                            Submit selected flights
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                 {paginatedFlights.length === 0 ? (
                   <div className="rounded-2xl border border-white/10 bg-black/30 p-10 text-center">
                     <Search className="mx-auto mb-3 h-10 w-10 text-slate-600" />
@@ -316,6 +502,31 @@ export function FlightHistoryPanel({
                           </div>
 
                           <div className="hidden flex-wrap items-center gap-2 sm:ml-auto sm:flex sm:justify-end">
+                            {canSubmitChallengeFlights &&
+                              availableManualChallenges.length > 0 && (
+                                <button
+                                  onClick={() =>
+                                    toggleFlightChallengeSelection(flight)
+                                  }
+                                  className={`flex h-9 items-center justify-center gap-1 rounded-lg border px-2.5 transition-all sm:h-8 sm:opacity-0 sm:group-hover:opacity-100 ${
+                                    selectedChallengeFlightIds.includes(flight.id)
+                                      ? "border-cyan-400/40 bg-cyan-500/15 text-cyan-200"
+                                      : "border-white/10 bg-white/5 text-white/60 hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400 sm:text-white/40"
+                                  }`}
+                                  title={
+                                    selectedChallengeFlightIds.includes(flight.id)
+                                      ? "Remove this flight from the challenge submission"
+                                      : "Add this flight to a challenge submission"
+                                  }
+                                >
+                                  <Flag className="h-3.5 w-3.5" />
+                                  <span className="font-mono text-[10px] tracking-wider uppercase">
+                                    {selectedChallengeFlightIds.includes(flight.id)
+                                      ? "Selected"
+                                      : "Challenge"}
+                                  </span>
+                                </button>
+                              )}
                             {flight.routeData &&
                               flight.routeData.length > 1 && (
                                 <>
@@ -369,6 +580,29 @@ export function FlightHistoryPanel({
                         </div>
 
                         <div className="mt-4 grid grid-cols-2 gap-2 sm:hidden">
+                          {canSubmitChallengeFlights &&
+                            availableManualChallenges.length > 0 && (
+                              <button
+                                onClick={() =>
+                                  toggleFlightChallengeSelection(flight)
+                                }
+                                className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 font-mono text-[10px] tracking-wider uppercase transition-colors ${
+                                  selectedChallengeFlightIds.includes(flight.id)
+                                    ? "border-cyan-400/40 bg-cyan-500/20 text-cyan-100"
+                                    : "border-cyan-500/30 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20"
+                                }`}
+                                title={
+                                  selectedChallengeFlightIds.includes(flight.id)
+                                    ? "Remove this flight from the challenge submission"
+                                    : "Add this flight to a challenge submission"
+                                }
+                              >
+                                <Flag className="h-3.5 w-3.5" />
+                                {selectedChallengeFlightIds.includes(flight.id)
+                                  ? "Selected"
+                                  : "Challenge"}
+                              </button>
+                            )}
                           {flight.routeData && flight.routeData.length > 1 && (
                             <>
                               <button
@@ -422,6 +656,7 @@ export function FlightHistoryPanel({
                             </button>
                           )}
                         </div>
+
                       </div>
                     ))}
                   </div>

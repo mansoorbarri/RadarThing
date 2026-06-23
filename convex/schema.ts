@@ -305,6 +305,7 @@ export default defineSchema({
     ),
     completedAt: v.optional(v.number()),
     flightId: v.optional(v.id("flights")),
+    flightIds: v.optional(v.array(v.id("flights"))),
     submissionNote: v.optional(v.string()),
     reviewedBy: v.optional(v.string()),
     reviewedAt: v.optional(v.number()),

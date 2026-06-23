@@ -659,6 +659,7 @@ export default function DashboardPage() {
                 expanded={flightsExpanded}
                 onExpandedChange={setFlightsExpanded}
                 canGenerateFlightCard={isPro}
+                canSubmitChallengeFlights
                 canDeleteFlights
                 deletingFlightId={deletingFlightId}
                 onShareFlight={(flight) => {
