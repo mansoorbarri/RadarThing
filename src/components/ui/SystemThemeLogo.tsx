@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 type SystemThemeLogoProps = Omit<
   React.ComponentProps<typeof Image>,
@@ -15,6 +16,13 @@ export function SystemThemeLogo({
   ...props
 }: SystemThemeLogoProps) {
   const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   return (
     <Image
