@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
+import { SystemThemeLogo } from "~/components/ui/SystemThemeLogo";
 import { ActiveChallengesPanel } from "~/components/challenges/ActiveChallengesPanel";
 import { FlightCardDialog } from "~/components/flight-card/FlightCardDialog";
 import type { FlightCardData } from "~/components/flight-card/FlightCard";
@@ -335,8 +336,8 @@ export default function DashboardPage() {
 
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen bg-black text-white">
-        <Header router={router} hidePersonalInfo={hidePersonalInfo} />
+      <div className="dashboard-theme-surface min-h-screen bg-black text-white">
+        <Header router={router} />
         <main className="mx-auto max-w-2xl px-6 py-20 text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
             <Plane className="h-4 w-4 text-cyan-400" />
@@ -361,7 +362,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="dashboard-theme-surface min-h-screen bg-black text-white">
       <Header router={router} />
 
       <main className="mx-auto max-w-6xl px-6 py-12">
@@ -1130,12 +1131,7 @@ function Header({
           onClick={() => router.push("/radar")}
           className="cursor-pointer"
         >
-          <Image
-            src="/logo-white.svg"
-            alt="RadarThing"
-            width={100}
-            height={30}
-          />
+          <SystemThemeLogo alt="RadarThing" width={100} height={30} />
         </button>
         <div className="flex items-center gap-4">
           <button
@@ -1352,7 +1348,7 @@ function DiscordIcon({ className }: { className?: string }) {
 
 function DashboardSkeleton() {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="dashboard-theme-surface min-h-screen bg-black text-white">
       {/* Header */}
       <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
