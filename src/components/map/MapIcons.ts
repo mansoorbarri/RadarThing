@@ -10,20 +10,60 @@ import {
 import { getCompactAircraftType, normalizeAircraftType } from "~/lib/utils";
 
 const EMERGENCY_SQUAWKS = new Set(["7700", "7600", "7500"]);
-const DEFAULT_AIRCRAFT_ICON = "/icons/e195.svg";
+const ADSB_RADAR_ICON_BASE = "/icons/aircraft/adsb-radar";
+const ADSB_RADAR_ICON_URLS = {
+  a0: `${ADSB_RADAR_ICON_BASE}/a0.svg`,
+  a1: `${ADSB_RADAR_ICON_BASE}/a1.svg`,
+  a2: `${ADSB_RADAR_ICON_BASE}/a2.svg`,
+  a3: `${ADSB_RADAR_ICON_BASE}/a3.svg`,
+  a320: `${ADSB_RADAR_ICON_BASE}/a320.svg`,
+  a330: `${ADSB_RADAR_ICON_BASE}/a330.svg`,
+  a340: `${ADSB_RADAR_ICON_BASE}/a340.svg`,
+  a380: `${ADSB_RADAR_ICON_BASE}/a380.svg`,
+  a4: `${ADSB_RADAR_ICON_BASE}/a4.svg`,
+  a5: `${ADSB_RADAR_ICON_BASE}/a5.svg`,
+  a6: `${ADSB_RADAR_ICON_BASE}/a6.svg`,
+  a7: `${ADSB_RADAR_ICON_BASE}/a7.svg`,
+  b0: `${ADSB_RADAR_ICON_BASE}/b0.svg`,
+  b1: `${ADSB_RADAR_ICON_BASE}/b1.svg`,
+  b2: `${ADSB_RADAR_ICON_BASE}/b2.svg`,
+  b3: `${ADSB_RADAR_ICON_BASE}/b3.svg`,
+  b4: `${ADSB_RADAR_ICON_BASE}/b4.svg`,
+  b737: `${ADSB_RADAR_ICON_BASE}/b737.svg`,
+  b747: `${ADSB_RADAR_ICON_BASE}/b747.svg`,
+  b767: `${ADSB_RADAR_ICON_BASE}/b767.svg`,
+  b777: `${ADSB_RADAR_ICON_BASE}/b777.svg`,
+  b787: `${ADSB_RADAR_ICON_BASE}/b787.svg`,
+  c0: `${ADSB_RADAR_ICON_BASE}/c0.svg`,
+  c130: `${ADSB_RADAR_ICON_BASE}/c130.svg`,
+  cessna: `${ADSB_RADAR_ICON_BASE}/cessna.svg`,
+  crjx: `${ADSB_RADAR_ICON_BASE}/crjx.svg`,
+  dh8a: `${ADSB_RADAR_ICON_BASE}/dh8a.svg`,
+  e195: `${ADSB_RADAR_ICON_BASE}/e195.svg`,
+  erj: `${ADSB_RADAR_ICON_BASE}/erj.svg`,
+  f100: `${ADSB_RADAR_ICON_BASE}/f100.svg`,
+  f11: `${ADSB_RADAR_ICON_BASE}/f11.svg`,
+  f15: `${ADSB_RADAR_ICON_BASE}/f15.svg`,
+  f5: `${ADSB_RADAR_ICON_BASE}/f5.svg`,
+  fa7x: `${ADSB_RADAR_ICON_BASE}/fa7x.svg`,
+  glf5: `${ADSB_RADAR_ICON_BASE}/glf5.svg`,
+  learjet: `${ADSB_RADAR_ICON_BASE}/learjet.svg`,
+  md11: `${ADSB_RADAR_ICON_BASE}/md11.svg`,
+} as const;
+const DEFAULT_AIRCRAFT_ICON = ADSB_RADAR_ICON_URLS.e195;
 const AIRCRAFT_ICONS = {
-  helicopter: "/icons/a7.svg",
-  military: "/icons/a6.svg",
-  militaryTransport: "/icons/c130.svg",
-  heavy: "/icons/md11.svg",
-  largeBusiness: "/icons/glf5.svg",
-  trijetBusiness: "/icons/fa7x.svg",
-  lightBusiness: "/icons/learjet.svg",
-  generalAviation: "/icons/cessna.svg",
-  regionalJet: "/icons/crjx.svg",
-  smallRegional: "/icons/erj.svg",
-  narrowbody: "/icons/e195.svg",
-  rearEngineJet: "/icons/f100.svg",
+  helicopter: ADSB_RADAR_ICON_URLS.a7,
+  military: ADSB_RADAR_ICON_URLS.a6,
+  militaryTransport: ADSB_RADAR_ICON_URLS.c130,
+  heavy: ADSB_RADAR_ICON_URLS.md11,
+  largeBusiness: ADSB_RADAR_ICON_URLS.glf5,
+  trijetBusiness: ADSB_RADAR_ICON_URLS.fa7x,
+  lightBusiness: ADSB_RADAR_ICON_URLS.learjet,
+  generalAviation: ADSB_RADAR_ICON_URLS.cessna,
+  regionalJet: ADSB_RADAR_ICON_URLS.crjx,
+  smallRegional: ADSB_RADAR_ICON_URLS.erj,
+  narrowbody: ADSB_RADAR_ICON_URLS.e195,
+  rearEngineJet: ADSB_RADAR_ICON_URLS.f100,
 } as const;
 const MILITARY_AF_CODES = new Set([
   "usaf",
@@ -159,6 +199,102 @@ function isBusinessType(rawType: string) {
   );
 }
 
+function getSpecificAircraftIconUrl(normalizedType: string, rawType: string) {
+  if (
+    /^(A318|A319|A320|A321|A20N|A21N|A19N|A32N|A320NEO|A321NEO)$/.test(
+      normalizedType,
+    )
+  ) {
+    return ADSB_RADAR_ICON_URLS.a320;
+  }
+  if (/^(A300|A310|A330|A332|A333|A338|A339)$/.test(normalizedType)) {
+    return ADSB_RADAR_ICON_URLS.a330;
+  }
+  if (/^(A340|A342|A343|A345|A346)$/.test(normalizedType)) {
+    return ADSB_RADAR_ICON_URLS.a340;
+  }
+  if (/^(A380|A388)$/.test(normalizedType)) {
+    return ADSB_RADAR_ICON_URLS.a380;
+  }
+
+  if (
+    /^(B737|B732|B733|B734|B735|B736|B738|B739|B37M|B38M|B39M)$/.test(
+      normalizedType,
+    )
+  ) {
+    return ADSB_RADAR_ICON_URLS.b737;
+  }
+  if (/^(B747|B742|B743|B744|B748)$/.test(normalizedType)) {
+    return ADSB_RADAR_ICON_URLS.b747;
+  }
+  if (/^(B767|B762|B763|B764)$/.test(normalizedType)) {
+    return ADSB_RADAR_ICON_URLS.b767;
+  }
+  if (/^(B777|B772|B773|B77L|B77W|B77F)$/.test(normalizedType)) {
+    return ADSB_RADAR_ICON_URLS.b777;
+  }
+  if (/^(B787|B788|B789|B78X)$/.test(normalizedType)) {
+    return ADSB_RADAR_ICON_URLS.b787;
+  }
+
+  if (/^(C130|L100)$/.test(normalizedType)) return ADSB_RADAR_ICON_URLS.c130;
+  if (/^(MD11|DC10|L1011|IL96)$/.test(normalizedType)) {
+    return ADSB_RADAR_ICON_URLS.md11;
+  }
+  if (/^(F70|F100|B717|B727|DC8|DC9|MD80|MD90)$/.test(normalizedType)) {
+    return ADSB_RADAR_ICON_URLS.f100;
+  }
+  if (/^(CRJ|CRJ100|CRJ200|CRJ700|CRJ900|CRJ1000|CL65)$/.test(normalizedType)) {
+    return ADSB_RADAR_ICON_URLS.crjx;
+  }
+  if (
+    /^(DH8A|DH8B|DH8C|DH8D|DHC8|Q400|ATR42|ATR72|SF34|SW4)$/.test(
+      normalizedType,
+    )
+  ) {
+    return ADSB_RADAR_ICON_URLS.dh8a;
+  }
+  if (/^(ERJ|ERJ135|ERJ140|ERJ145|E135|E140|E145)$/.test(normalizedType)) {
+    return ADSB_RADAR_ICON_URLS.erj;
+  }
+  if (/^(E170|E175|E190|E195|A220|BCS1|BCS3)$/.test(normalizedType)) {
+    return ADSB_RADAR_ICON_URLS.e195;
+  }
+
+  if (/^(FA7X|FA8X)$/.test(normalizedType)) return ADSB_RADAR_ICON_URLS.fa7x;
+  if (
+    /^(GLF3|GLF4|GLF5|GLF6|G400|G500|G600|G650|G700|G800|GLEX|GALX)$/.test(
+      normalizedType,
+    )
+  ) {
+    return ADSB_RADAR_ICON_URLS.glf5;
+  }
+  if (/^(LJ|LJ\d{2}|C25[A-Z]?|C56X|CL30|CL35|H25B)$/.test(normalizedType)) {
+    return ADSB_RADAR_ICON_URLS.learjet;
+  }
+  if (isGeneralAviationType(rawType, normalizedType)) {
+    return ADSB_RADAR_ICON_URLS.cessna;
+  }
+
+  if (
+    /^(A4|A6|A7|F5|F11|F15|F16|F18|F22|F35|B1|B2|B21|B52|T38)$/.test(
+      normalizedType,
+    )
+  ) {
+    if (normalizedType === "A4") return ADSB_RADAR_ICON_URLS.a4;
+    if (normalizedType === "A6") return ADSB_RADAR_ICON_URLS.a6;
+    if (normalizedType === "A7") return ADSB_RADAR_ICON_URLS.a7;
+    if (normalizedType === "F5" || normalizedType === "T38") {
+      return ADSB_RADAR_ICON_URLS.f5;
+    }
+    if (normalizedType === "F11") return ADSB_RADAR_ICON_URLS.f11;
+    if (normalizedType === "F15") return ADSB_RADAR_ICON_URLS.f15;
+    return ADSB_RADAR_ICON_URLS.a6;
+  }
+
+  return null;
+}
+
 export function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
   const rawType = aircraftClass?.trim().toLowerCase() ?? "";
   const af = airForce?.trim().toLowerCase() ?? "";
@@ -173,8 +309,18 @@ export function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
       : DEFAULT_AIRCRAFT_ICON;
   }
 
+  const isMilitaryOperator = isMilitaryAirForce(af);
   const isMilitary =
-    isMilitaryAirForce(af) || isMilitaryCombatType(rawType, normalizedType);
+    isMilitaryOperator || isMilitaryCombatType(rawType, normalizedType);
+  if (isMilitaryOperator) {
+    return isMilitaryTransportType(rawType, normalizedType)
+      ? AIRCRAFT_ICONS.militaryTransport
+      : AIRCRAFT_ICONS.military;
+  }
+
+  const specificIcon = getSpecificAircraftIconUrl(normalizedType, rawType);
+  if (specificIcon) return specificIcon;
+
   if (isMilitary) {
     return isMilitaryTransportType(rawType, normalizedType)
       ? AIRCRAFT_ICONS.militaryTransport
@@ -321,13 +467,7 @@ export const getAircraftDivIcon = (
   const iconUrl = getAircraftIconUrl(aircraft.type, aircraft.af);
   const planeSize = isMobile ? 24 : 28;
   const callsignDisplay = aircraft.callsign || "";
-  const tagHeight = callsignDisplay
-    ? isMobile
-      ? 46
-      : 56
-    : isMobile
-      ? 38
-      : 52;
+  const tagHeight = callsignDisplay ? (isMobile ? 46 : 56) : isMobile ? 38 : 52;
   const tagWidth = isMobile ? 104 : 132;
   const tagOffsetFromPlane = isMobile ? 6 : 8;
 
@@ -487,7 +627,10 @@ export const getRadarAircraftDivIcon = (
   const dotLeft = compactPadding;
   const dotCenterX = dotLeft + dotSize / 2;
   const labelTop = shouldShowLabel
-    ? Math.max(0, Math.min(totalHeight - labelHeight, centerY - labelHeight + 6))
+    ? Math.max(
+        0,
+        Math.min(totalHeight - labelHeight, centerY - labelHeight + 6),
+      )
     : centerY - dotSize / 2;
   const labelLeft = shouldShowLabel ? dotCenterX + labelOffsetFromDot : dotLeft;
   const connectorWidth = shouldShowLabel

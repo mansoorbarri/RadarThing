@@ -26,7 +26,7 @@ Tampermonkey installs are persistent. Console installs use the same hosted loade
 - **Most-tracked flights** panel showing what other users are watching.
 - **Follow mode** for keeping a selected aircraft centered.
 - **Radar Mode** map styling for a cleaner controller view.
-- **Aircraft class icons** for light, regional, heavy, business, military, and helicopter traffic.
+- **Aircraft type icons** for common airline, regional, business, general aviation, military, and helicopter traffic.
 
 ### Pilot and Controller Tools
 
@@ -98,6 +98,10 @@ The public install flow is:
 2. The installer loads `/loader`.
 3. The loader reads `/userscript/latest.json`.
 4. The current runtime bundle is loaded, with a stable bundle fallback.
+
+## Attribution
+
+Aircraft SVG icons in `public/icons/aircraft/adsb-radar/` are by ADS-B Radar for macOS: [https://adsb-radar.com](https://adsb-radar.com), [App Store listing](https://apps.apple.com/app/id1538149835).
 
 ## Technical Details
 
