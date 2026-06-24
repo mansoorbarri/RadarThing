@@ -9,7 +9,11 @@ import { LogOut, User } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 
-export const UserAuth = () => {
+export const UserAuth = ({
+  hidePersonalInfo = false,
+}: {
+  hidePersonalInfo?: boolean;
+}) => {
   const { isSignedIn, isLoaded, user } = useUser();
   const { isAuthenticated } = useConvexAuth();
   const [mounted, setMounted] = useState(false);
@@ -57,7 +61,9 @@ export const UserAuth = () => {
               width={32}
               height={32}
               sizes="32px"
-              className="rounded-full border border-cyan-400/50 transition-all hover:border-cyan-400 hover:shadow-[0_0_8px_rgba(0,255,255,0.4)]"
+              className={`rounded-full border border-cyan-400/50 transition-all hover:border-cyan-400 hover:shadow-[0_0_8px_rgba(0,255,255,0.4)] ${
+                hidePersonalInfo ? "blur-[5px] select-none" : ""
+              }`}
             />
           ) : (
             <div className="h-8 w-8 rounded-full border border-cyan-400/50 bg-cyan-400/10" />
