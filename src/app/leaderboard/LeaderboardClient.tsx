@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
-import Image from "next/image";
 import {
   ArrowLeft,
   ChevronDown,
@@ -25,10 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import {
-  getLeaderboardTabHref,
-  type SortKey,
-} from "./leaderboardTabs";
+import { SystemThemeLogo } from "~/components/ui/SystemThemeLogo";
+import { getLeaderboardTabHref, type SortKey } from "./leaderboardTabs";
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -87,9 +84,9 @@ export default function LeaderboardClient({
     user?.id ? { clerkId: user.id } : "skip",
   );
   const [sortBy, setSortBy] = useState<SortKey>(initialSort);
-  const [expandedChallengeIds, setExpandedChallengeIds] = useState<
-    Set<string>
-  >(new Set());
+  const [expandedChallengeIds, setExpandedChallengeIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   const currentUserRef = useRef<HTMLButtonElement>(null);
   const hasActiveChallenge =
@@ -180,19 +177,14 @@ export default function LeaderboardClient({
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="leaderboard-theme-surface min-h-screen bg-[#0a0a0f] text-white">
       <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
           <button
             onClick={() => router.push("/radar")}
             className="cursor-pointer"
           >
-            <Image
-              src="/logo-white.svg"
-              alt="RadarThing"
-              width={100}
-              height={30}
-            />
+            <SystemThemeLogo alt="RadarThing" width={100} height={30} />
           </button>
           <button
             onClick={() => router.push("/radar")}

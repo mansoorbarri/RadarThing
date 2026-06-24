@@ -63,7 +63,9 @@
 
 .light .dashboard-theme-surface,
 .light .admin-theme-surface,
-.light .pilot-theme-surface {
+.light .pilot-theme-surface,
+.light .leaderboard-theme-surface,
+.light .aircraft-images-theme-surface {
   --background: oklch(0.975 0.008 235);
   --foreground: oklch(0.18 0.035 240);
   --card: oklch(0.995 0.004 230);
@@ -139,61 +141,175 @@ body {
 }
 
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-black,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-black\/25,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-black\/35,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-black\/40,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-black\/50,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-black\/55,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-black\/60,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-black\/65,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-black\/70,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-black\/80,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-black\/85,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-black\/86,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-black\/90,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-\[\#050b10\]\/96,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-\[\#050f14\]\/90,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-\[\#0a0f14\],
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-\[\#0a1219\],
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-\[\#0a1219\]\/95,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-\[\#0d1218\] {
   background-color: var(--radar-panel) !important;
 }
@@ -208,10 +324,22 @@ body {
 }
 
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-slate-900,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-slate-800 {
   background-color: var(--radar-panel-strong) !important;
 }
@@ -223,293 +351,791 @@ body {
     .pilot-theme-surface
   ).text-white,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-white,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-slate-100,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-slate-200,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-cyan-100,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-cyan-200,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-cyan-300,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-cyan-400 {
   color: var(--radar-text) !important;
 }
 
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-slate-300,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-slate-400,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-slate-500,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-cyan-200\/60,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-cyan-300\/80,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-cyan-400\/60,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-cyan-500\/50 {
   color: var(--radar-muted) !important;
 }
 
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-white\/6,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-white\/8,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-white\/10,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-white\/20,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-cyan-400\/10,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-cyan-400\/15,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-cyan-400\/20,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-cyan-400\/25,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-cyan-400\/30,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-cyan-500\/30 {
   border-color: var(--radar-border) !important;
 }
 
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-white\/5,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-white\/10,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-white\/12,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-cyan-400\/6,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-cyan-400\/10,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-cyan-500\/10,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-cyan-950\/50 {
   background-color: rgba(2, 132, 199, 0.08) !important;
 }
 
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-emerald-100,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-emerald-200,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-emerald-300,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-emerald-400,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-green-100,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-green-200,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-green-300,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-green-400 {
   color: rgb(4, 120, 87) !important;
 }
 
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-yellow-100,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-yellow-200,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-yellow-300,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-yellow-400,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-amber-100,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-amber-200,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-amber-300,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .text-amber-400 {
   color: rgb(180, 83, 9) !important;
 }
 
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-emerald-400,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-emerald-500,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-green-400,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-green-500 {
   background-color: rgb(16, 185, 129) !important;
 }
 
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-yellow-400,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-yellow-500,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-amber-400,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-amber-500 {
   background-color: rgb(245, 158, 11) !important;
 }
 
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-emerald-500\/10,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-emerald-500\/15,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-emerald-500\/20,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-green-500\/10,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-green-500\/20 {
   background-color: rgba(16, 185, 129, 0.14) !important;
 }
 
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-yellow-500\/10,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-yellow-500\/15,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-yellow-500\/20,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-amber-500\/10,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-amber-500\/20,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .bg-amber-500\/\[0\.06\] {
   background-color: rgba(245, 158, 11, 0.14) !important;
 }
 
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-emerald-500\/20,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-emerald-500\/25,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-emerald-500\/30,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-green-500\/20,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-green-500\/30 {
   border-color: rgba(4, 120, 87, 0.34) !important;
 }
 
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-yellow-500\/20,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-yellow-500\/25,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-yellow-500\/30,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-amber-500\/20,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-amber-500\/25,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .border-amber-500\/30 {
   border-color: rgba(180, 83, 9, 0.36) !important;
 }
 
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   input,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   textarea,
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   select {
   color: var(--radar-text);
   caret-color: var(--radar-accent);
 }
 
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .shadow-\[0_0_15px_rgba\(0\,255\,255\,0\.1\)\],
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .shadow-\[0_20px_80px_rgba\(0\,0\,0\,0\.55\)\],
 .light
-  :is(.dashboard-theme-surface, .admin-theme-surface, .pilot-theme-surface)
+  :is(
+    .dashboard-theme-surface,
+    .admin-theme-surface,
+    .pilot-theme-surface,
+    .leaderboard-theme-surface,
+    .aircraft-images-theme-surface
+  )
   .shadow-\[0_24px_90px_rgba\(0\,0\,0\,0\.7\)\] {
   box-shadow: 0 18px 50px rgba(15, 23, 42, 0.14) !important;
 }
