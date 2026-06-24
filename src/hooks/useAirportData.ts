@@ -1,7 +1,7 @@
 // hooks/useAirportData.ts
 import { useState, useCallback, useRef } from "react";
 
-interface Airport {
+export interface Airport {
   name: string;
   lat: number;
   lon: number;
@@ -9,19 +9,33 @@ interface Airport {
   frequencies?: { type: string; frequency: string }[];
 }
 
+export interface Runway {
+  airportIdent: string;
+  leIdent: string;
+  heIdent: string;
+  leLat: number;
+  leLon: number;
+  heLat: number;
+  heLon: number;
+}
+
 // Cache key for localStorage
 const AIRPORT_CACHE_KEY = "radarthing_airports_cache";
-const AIRPORT_CACHE_VERSION = "v1";
+const AIRPORT_CACHE_VERSION = "v2";
 const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 interface CachedAirportData {
   version: string;
   timestamp: number;
   airports: Airport[];
+  runways?: Runway[];
 }
 
 // Try to get cached data from localStorage
-function getCachedAirports(): Airport[] | null {
+function getCachedAirportData(): {
+  airports: Airport[];
+  runways: Runway[];
+} | null {
   try {
     const cached = localStorage.getItem(AIRPORT_CACHE_KEY);
     if (!cached) return null;
@@ -30,19 +44,23 @@ function getCachedAirports(): Airport[] | null {
     if (data.version !== AIRPORT_CACHE_VERSION) return null;
     if (Date.now() - data.timestamp > CACHE_EXPIRY_MS) return null;
 
-    return data.airports;
+    return {
+      airports: data.airports,
+      runways: data.runways ?? [],
+    };
   } catch {
     return null;
   }
 }
 
 // Save airports to localStorage
-function setCachedAirports(airports: Airport[]) {
+function setCachedAirportData(airports: Airport[], runways: Runway[]) {
   try {
     const data: CachedAirportData = {
       version: AIRPORT_CACHE_VERSION,
       timestamp: Date.now(),
       airports,
+      runways,
     };
     localStorage.setItem(AIRPORT_CACHE_KEY, JSON.stringify(data));
   } catch {
@@ -50,8 +68,44 @@ function setCachedAirports(airports: Airport[]) {
   }
 }
 
+function parseCsvLine(line: string) {
+  const fields: string[] = [];
+  let currentField = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const nextChar = line[index + 1];
+
+    if (char === '"' && inQuotes && nextChar === '"') {
+      currentField += '"';
+      index += 1;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === "," && !inQuotes) {
+      fields.push(currentField);
+      currentField = "";
+    } else {
+      currentField += char;
+    }
+  }
+
+  fields.push(currentField);
+  return fields;
+}
+
+function cleanCsvField(value: string | undefined) {
+  return value?.replace(/"/g, "").trim() ?? "";
+}
+
+function parseCsvNumber(value: string | undefined) {
+  const parsed = Number.parseFloat(cleanCsvField(value));
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
 export const useAirportData = () => {
   const [airports, setAirports] = useState<Airport[]>([]);
+  const [runways, setRunways] = useState<Runway[]>([]);
   const [airportFetchError, setAirportFetchError] = useState<string | null>(
     null,
   );
@@ -64,9 +118,10 @@ export const useAirportData = () => {
     if (hasFetchedRef.current || isFetchingRef.current) return;
 
     // Check cache first
-    const cached = getCachedAirports();
-    if (cached && cached.length > 0) {
-      setAirports(cached);
+    const cached = getCachedAirportData();
+    if (cached && cached.airports.length > 0) {
+      setAirports(cached.airports);
+      setRunways(cached.runways);
       hasFetchedRef.current = true;
       return;
     }
@@ -76,18 +131,25 @@ export const useAirportData = () => {
 
     try {
       // Fetch from OurAirports public dataset (CSV format)
-      const response = await fetch(
-        "https://davidmegginson.github.io/ourairports-data/airports.csv",
-      );
+      const [airportsResponse, runwaysResponse] = await Promise.all([
+        fetch("https://davidmegginson.github.io/ourairports-data/airports.csv"),
+        fetch("https://davidmegginson.github.io/ourairports-data/runways.csv"),
+      ]);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (!airportsResponse.ok) {
+        throw new Error(`Airports HTTP error: ${airportsResponse.status}`);
+      }
+      if (!runwaysResponse.ok) {
+        throw new Error(`Runways HTTP error: ${runwaysResponse.status}`);
       }
 
-      const csvText = await response.text();
+      const [airportsCsvText, runwaysCsvText] = await Promise.all([
+        airportsResponse.text(),
+        runwaysResponse.text(),
+      ]);
 
       // Parse CSV manually (simple parser for this specific format)
-      const lines = csvText.split("\n");
+      const lines = airportsCsvText.split("\n");
       const headers = lines[0]?.split(",") || [];
 
       // Find column indices
@@ -104,28 +166,13 @@ export const useAirportData = () => {
         const line = lines[i];
         if (!line?.trim()) continue;
 
-        // Handle quoted fields in CSV
-        const fields: string[] = [];
-        let currentField = "";
-        let inQuotes = false;
+        const fields = parseCsvLine(line);
 
-        for (const char of line) {
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === "," && !inQuotes) {
-            fields.push(currentField);
-            currentField = "";
-          } else {
-            currentField += char;
-          }
-        }
-        fields.push(currentField); // Add last field
-
-        const icao = fields[icaoIdx]?.replace(/"/g, "").trim() || "";
-        const name = fields[nameIdx]?.replace(/"/g, "").trim() || "";
-        const lat = parseFloat(fields[latIdx]?.replace(/"/g, "").trim() || "0");
-        const lon = parseFloat(fields[lonIdx]?.replace(/"/g, "").trim() || "0");
-        const type = fields[typeIdx]?.replace(/"/g, "").trim() || "";
+        const icao = cleanCsvField(fields[icaoIdx]);
+        const name = cleanCsvField(fields[nameIdx]);
+        const lat = parseCsvNumber(fields[latIdx]);
+        const lon = parseCsvNumber(fields[lonIdx]);
+        const type = cleanCsvField(fields[typeIdx]);
 
         // Only include medium/large airports with valid ICAO codes
         if (
@@ -144,22 +191,84 @@ export const useAirportData = () => {
         }
       }
 
+      const airportIdentSet = new Set(
+        airportArray.map((airport) => airport.icao),
+      );
+      const runwayLines = runwaysCsvText.split("\n");
+      const runwayHeaders = runwayLines[0]?.split(",") || [];
+      const airportIdentIdx = runwayHeaders.findIndex((h) =>
+        h?.includes("airport_ident"),
+      );
+      const leIdentIdx = runwayHeaders.findIndex((h) =>
+        h?.includes("le_ident"),
+      );
+      const heIdentIdx = runwayHeaders.findIndex((h) =>
+        h?.includes("he_ident"),
+      );
+      const leLatIdx = runwayHeaders.findIndex((h) =>
+        h?.includes("le_latitude_deg"),
+      );
+      const leLonIdx = runwayHeaders.findIndex((h) =>
+        h?.includes("le_longitude_deg"),
+      );
+      const heLatIdx = runwayHeaders.findIndex((h) =>
+        h?.includes("he_latitude_deg"),
+      );
+      const heLonIdx = runwayHeaders.findIndex((h) =>
+        h?.includes("he_longitude_deg"),
+      );
+      const runwayArray: Runway[] = [];
+
+      for (let i = 1; i < runwayLines.length; i++) {
+        const line = runwayLines[i];
+        if (!line?.trim()) continue;
+
+        const fields = parseCsvLine(line);
+        const airportIdent = cleanCsvField(fields[airportIdentIdx]);
+        const leLat = parseCsvNumber(fields[leLatIdx]);
+        const leLon = parseCsvNumber(fields[leLonIdx]);
+        const heLat = parseCsvNumber(fields[heLatIdx]);
+        const heLon = parseCsvNumber(fields[heLonIdx]);
+
+        if (
+          !airportIdentSet.has(airportIdent) ||
+          !Number.isFinite(leLat) ||
+          !Number.isFinite(leLon) ||
+          !Number.isFinite(heLat) ||
+          !Number.isFinite(heLon)
+        ) {
+          continue;
+        }
+
+        runwayArray.push({
+          airportIdent,
+          leIdent: cleanCsvField(fields[leIdentIdx]),
+          heIdent: cleanCsvField(fields[heIdentIdx]),
+          leLat,
+          leLon,
+          heLat,
+          heLon,
+        });
+      }
+
       console.log(
-        `Loaded ${airportArray.length} airports from OurAirports API`,
+        `Loaded ${airportArray.length} airports and ${runwayArray.length} runways from OurAirports API`,
       );
       setAirports(airportArray);
-      setCachedAirports(airportArray);
+      setRunways(runwayArray);
+      setCachedAirportData(airportArray, runwayArray);
       setAirportFetchError(null);
       hasFetchedRef.current = true;
     } catch (e) {
       console.error("Could not load airport data:", e);
       setAirportFetchError("Failed to load airport data from API.");
       setAirports([]);
+      setRunways([]);
     } finally {
       setIsLoading(false);
       isFetchingRef.current = false;
     }
   }, []);
 
-  return { airports, airportFetchError, isLoading, fetchAirports };
+  return { airports, runways, airportFetchError, isLoading, fetchAirports };
 };

@@ -16,6 +16,7 @@ import { Crosshair, Globe2, Minus, Plus, Settings2 } from "lucide-react";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type OnlineAirport } from "~/hooks/useAircraftStream";
+import { type Runway } from "~/hooks/useAirportData";
 import { useProStatus } from "~/hooks/useProStatus";
 import { type ImportedFlightPlan } from "~/lib/flightPlanImport";
 import { type MapResetLocation } from "~/lib/mapResetLocation";
@@ -54,6 +55,11 @@ import {
   setStoredRadarTrailPreferences,
 } from "~/lib/radarTrailPreferences";
 import {
+  getStoredRunwayCenterlinePreferences,
+  setStoredRunwayCenterlinePreferences,
+} from "~/lib/runwayCenterlinePreferences";
+import { buildRunwayCenterlinePaths } from "~/lib/runwayCenterlines";
+import {
   getAircraftIconFilter,
   getAircraftIconUrl,
 } from "~/components/map/MapIcons";
@@ -84,6 +90,7 @@ interface ReplayState {
 interface MapComponentProps {
   aircrafts: PositionUpdate[];
   airports: Airport[];
+  runways?: Runway[];
   onlineAirports?: OnlineAirport[];
   onAircraftSelect: (
     aircraft: PositionUpdate | null,
@@ -211,6 +218,7 @@ const OPENAIP_TILES = `https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y
 const SOURCE_IDS = {
   radarTrails: "mobile-globe-radar-trails",
   radarModeLines: "mobile-globe-radar-mode-lines",
+  runwayCenterlines: "mobile-globe-runway-centerlines",
   selectedHistory: "mobile-globe-selected-history",
   selectedRoutes: "mobile-globe-selected-routes",
   selectedWaypoints: "mobile-globe-selected-waypoints",
@@ -886,6 +894,7 @@ function GlobeControlButton({
 
 const MobileGlobeMap: React.FC<MapComponentProps> = ({
   aircrafts,
+  runways = [],
   selectedAircraftIds = [],
   selectedAirport,
   onAircraftSelect,
@@ -953,6 +962,8 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   const [radarModeLinePreferences, setRadarModeLinePreferences] = useState(() =>
     getStoredRadarModeLinePreferences(),
   );
+  const [runwayCenterlinePreferences, setRunwayCenterlinePreferences] =
+    useState(() => getStoredRunwayCenterlinePreferences());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHeadingMode, setIsHeadingMode] = useState(false);
   const [layerPresets, setLayerPresets] = useState(() =>
@@ -960,6 +971,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   );
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [isDesktopGlobe] = useState(showDesktopControls);
+  const [viewportRevision, setViewportRevision] = useState(0);
 
   const { isProUser } = useProStatus();
   const { speedUnit, altitudeUnit } = useUnitPreferences();
@@ -1410,6 +1422,10 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
         type: "geojson",
         data: emptyFeatureCollection(),
       });
+      map.addSource(SOURCE_IDS.runwayCenterlines, {
+        type: "geojson",
+        data: emptyFeatureCollection(),
+      });
       map.addSource(SOURCE_IDS.selectedRoutes, {
         type: "geojson",
         data: emptyFeatureCollection(),
@@ -1486,6 +1502,23 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
           "line-color": ["coalesce", ["get", "color"], "#22d3ee"],
           "line-width": ["coalesce", ["get", "width"], 1.5],
           "line-opacity": ["coalesce", ["get", "opacity"], 0.72],
+        },
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
+        },
+      });
+
+      map.addLayer({
+        id: "mobile-globe-runway-centerlines",
+        type: "line",
+        source: SOURCE_IDS.runwayCenterlines,
+        minzoom: minZoom,
+        paint: {
+          "line-color": "#f8fafc",
+          "line-width": 1.2,
+          "line-opacity": 0.45,
+          "line-dasharray": [7, 9],
         },
         layout: {
           "line-cap": "round",
@@ -1697,6 +1730,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       setCookie(zoomCookieKey, String(map.getZoom()));
       setCookie(latCookieKey, String(center.lat));
       setCookie(lngCookieKey, String(center.lng));
+      setViewportRevision((current) => current + 1);
     });
 
     map.on("click", (event) => {
@@ -2048,6 +2082,66 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     const map = mapRef.current;
     if (!mapReady || !map) return;
 
+    if (
+      !isRadarMode ||
+      !runwayCenterlinePreferences.enabled ||
+      map.getZoom() < minZoom
+    ) {
+      setSourceData(
+        map,
+        SOURCE_IDS.runwayCenterlines,
+        emptyFeatureCollection(),
+      );
+      return;
+    }
+
+    const bounds = map.getBounds();
+    const south = bounds.getSouth();
+    const north = bounds.getNorth();
+    const west = bounds.getWest();
+    const east = bounds.getEast();
+    const lonInBounds = (lon: number) =>
+      west <= east ? lon >= west && lon <= east : lon >= west || lon <= east;
+    const pointInBounds = (lat: number, lon: number) =>
+      lat >= south && lat <= north && lonInBounds(lon);
+
+    const features = runways.flatMap((runway) => {
+      if (
+        !pointInBounds(runway.leLat, runway.leLon) &&
+        !pointInBounds(runway.heLat, runway.heLon)
+      ) {
+        return [];
+      }
+
+      return buildRunwayCenterlinePaths(
+        runway,
+        runwayCenterlinePreferences,
+      ).flatMap((path) => {
+        const line = buildLineFeature(toLngLatCoords(path), {
+          airport: runway.airportIdent,
+          runway: `${runway.leIdent}/${runway.heIdent}`,
+        });
+        return line ? [line] : [];
+      });
+    });
+
+    setSourceData(map, SOURCE_IDS.runwayCenterlines, {
+      type: "FeatureCollection",
+      features,
+    });
+  }, [
+    isRadarMode,
+    mapReady,
+    minZoom,
+    runwayCenterlinePreferences,
+    runways,
+    viewportRevision,
+  ]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+
     if (!isRadarMode || !radarModeLinePreferences.enabled) {
       setSourceData(map, SOURCE_IDS.radarModeLines, emptyFeatureCollection());
       return;
@@ -2342,6 +2436,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
                 onMapRendererChange={onMapRendererChange}
                 radarTrailPreferences={radarTrailPreferences}
                 radarModeLinePreferences={radarModeLinePreferences}
+                runwayCenterlinePreferences={runwayCenterlinePreferences}
                 onRadarTrailPreferencesChange={(nextPreferences) => {
                   setRadarTrailPreferences(
                     setStoredRadarTrailPreferences(nextPreferences),
@@ -2350,6 +2445,11 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
                 onRadarModeLinePreferencesChange={(nextPreferences) => {
                   setRadarModeLinePreferences(
                     setStoredRadarModeLinePreferences(nextPreferences),
+                  );
+                }}
+                onRunwayCenterlinePreferencesChange={(nextPreferences) => {
+                  setRunwayCenterlinePreferences(
+                    setStoredRunwayCenterlinePreferences(nextPreferences),
                   );
                 }}
                 presets={layerPresets}

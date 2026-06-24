@@ -35,6 +35,7 @@ interface MapRefs {
   mapInstance: React.MutableRefObject<L.Map | null>;
   radarTrailsLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
   radarModeLineLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
+  runwayCenterlineLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
   flightPlanLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
   importedFlightPlanLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
   aircraftMarkersLayer: React.MutableRefObject<L.LayerGroup | null>;
@@ -70,7 +71,7 @@ const MOBILE_LAT_COOKIE = "mobile_map_center_lat";
 const MOBILE_LNG_COOKIE = "mobile_map_center_lng";
 
 function normalizeLng(lng: number) {
-  return ((lng + 180) % 360 + 360) % 360 - 180;
+  return ((((lng + 180) % 360) + 360) % 360) - 180;
 }
 
 function clampLat(lat: number) {
@@ -97,6 +98,7 @@ export const useMapInitialization = ({
   const mapInstance = useRef<L.Map | null>(null);
   const radarTrailsLayerGroup = useRef<L.LayerGroup | null>(null);
   const radarModeLineLayerGroup = useRef<L.LayerGroup | null>(null);
+  const runwayCenterlineLayerGroup = useRef<L.LayerGroup | null>(null);
   const flightPlanLayerGroup = useRef<L.LayerGroup | null>(null);
   const importedFlightPlanLayerGroup = useRef<L.LayerGroup | null>(null);
   const aircraftMarkersLayer = useRef<L.LayerGroup | null>(null);
@@ -117,26 +119,33 @@ export const useMapInitialization = ({
   const tileLayerMinZoom = isMobileMapMode
     ? Math.floor(mapMinZoom)
     : mapMinZoom;
-  const defaultCenter = isMobileMapMode ? MOBILE_DEFAULT_CENTER : DEFAULT_CENTER;
+  const defaultCenter = isMobileMapMode
+    ? MOBILE_DEFAULT_CENTER
+    : DEFAULT_CENTER;
   const defaultZoom = isMobileMapMode ? MOBILE_DEFAULT_ZOOM : DEFAULT_ZOOM;
-  const zoomCookieKey = isMobileMapMode ? MOBILE_ZOOM_COOKIE : DESKTOP_ZOOM_COOKIE;
+  const zoomCookieKey = isMobileMapMode
+    ? MOBILE_ZOOM_COOKIE
+    : DESKTOP_ZOOM_COOKIE;
   const latCookieKey = isMobileMapMode ? MOBILE_LAT_COOKIE : DESKTOP_LAT_COOKIE;
   const lngCookieKey = isMobileMapMode ? MOBILE_LNG_COOKIE : DESKTOP_LNG_COOKIE;
 
-  const resetMapView = useCallback((targetLocation?: MapResetLocation | null) => {
-    if (!mapInstance.current) return;
-    const center: [number, number] = targetLocation
-      ? [clampLat(targetLocation.lat), normalizeLng(targetLocation.lng)]
-      : defaultCenter;
-    const zoom = targetLocation ? USER_LOCATION_RESET_ZOOM : defaultZoom;
+  const resetMapView = useCallback(
+    (targetLocation?: MapResetLocation | null) => {
+      if (!mapInstance.current) return;
+      const center: [number, number] = targetLocation
+        ? [clampLat(targetLocation.lat), normalizeLng(targetLocation.lng)]
+        : defaultCenter;
+      const zoom = targetLocation ? USER_LOCATION_RESET_ZOOM : defaultZoom;
 
-    mapInstance.current.setView(center, zoom, {
-      animate: true,
-    });
-    setCookie(zoomCookieKey, String(zoom));
-    setCookie(latCookieKey, String(center[0]));
-    setCookie(lngCookieKey, String(center[1]));
-  }, [defaultCenter, defaultZoom, latCookieKey, lngCookieKey, zoomCookieKey]);
+      mapInstance.current.setView(center, zoom, {
+        animate: true,
+      });
+      setCookie(zoomCookieKey, String(zoom));
+      setCookie(latCookieKey, String(center[0]));
+      setCookie(lngCookieKey, String(center[1]));
+    },
+    [defaultCenter, defaultZoom, latCookieKey, lngCookieKey, zoomCookieKey],
+  );
 
   useEffect(() => {
     if (mapInstance.current) return;
@@ -225,6 +234,7 @@ export const useMapInitialization = ({
 
     radarTrailsLayerGroup.current = L.layerGroup().addTo(map);
     radarModeLineLayerGroup.current = L.layerGroup().addTo(map);
+    runwayCenterlineLayerGroup.current = L.layerGroup().addTo(map);
     flightPlanLayerGroup.current = L.layerGroup().addTo(map);
     importedFlightPlanLayerGroup.current = L.layerGroup().addTo(map);
     aircraftMarkersLayer.current = L.layerGroup().addTo(map);
@@ -406,6 +416,7 @@ export const useMapInitialization = ({
     mapInstance,
     radarTrailsLayerGroup,
     radarModeLineLayerGroup,
+    runwayCenterlineLayerGroup,
     flightPlanLayerGroup,
     importedFlightPlanLayerGroup,
     aircraftMarkersLayer,
