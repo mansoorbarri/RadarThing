@@ -36,6 +36,7 @@ import {
   Flame,
   User,
   Pencil,
+  EyeOff,
 } from "lucide-react";
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
@@ -58,7 +59,9 @@ import {
   AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
 import { Button } from "~/components/ui/button";
+import { Switch } from "~/components/ui/switch";
 import { downloadAccountDataExport } from "~/lib/account-data-export";
+import { usePrivacyPreferences } from "~/hooks/usePrivacyPreferences";
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -78,6 +81,8 @@ function getDisplayName(
     null
   );
 }
+
+const personalInfoBlurClass = "blur-[5px] select-none transition-[filter]";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -101,6 +106,7 @@ export default function DashboardPage() {
   const [deletingFlightId, setDeletingFlightId] = useState<string | null>(null);
   const updateDiscordUsername = useMutation(api.users.updateDiscordUsername);
   const deleteFlight = useMutation(api.flights.deleteFlight);
+  const { hidePersonalInfo, setHidePersonalInfo } = usePrivacyPreferences();
 
   useEffect(() => {
     setMounted(true);
@@ -374,7 +380,9 @@ export default function DashboardPage() {
                   alt="Profile"
                   width={56}
                   height={56}
-                  className="rounded-full transition-opacity group-hover/icon:opacity-20"
+                  className={`rounded-full transition-all group-hover/icon:opacity-20 ${
+                    hidePersonalInfo ? personalInfoBlurClass : ""
+                  }`}
                 />
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover/icon:opacity-100">
                   {profileCopied ? (
@@ -401,7 +409,11 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold text-white">
-                  {displayName ? `${displayName}'s Account` : "Your Account"}
+                  <span
+                    className={hidePersonalInfo ? personalInfoBlurClass : ""}
+                  >
+                    {displayName ? `${displayName}'s Account` : "Your Account"}
+                  </span>
                 </h1>
                 <button
                   onClick={openNameEditor}
@@ -763,7 +775,11 @@ export default function DashboardPage() {
                       <User className="h-3.5 w-3.5" />
                       Name
                     </div>
-                    <div className="truncate text-sm text-slate-300">
+                    <div
+                      className={`truncate text-sm text-slate-300 ${
+                        hidePersonalInfo ? personalInfoBlurClass : ""
+                      }`}
+                    >
                       {displayName ?? "Not set"}
                     </div>
                   </div>
@@ -772,7 +788,11 @@ export default function DashboardPage() {
                       <Mail className="h-3.5 w-3.5" />
                       Email
                     </div>
-                    <div className="truncate text-sm text-slate-300">
+                    <div
+                      className={`truncate text-sm text-slate-300 ${
+                        hidePersonalInfo ? personalInfoBlurClass : ""
+                      }`}
+                    >
                       {user?.primaryEmailAddress?.emailAddress ?? "No email"}
                     </div>
                   </div>
@@ -807,6 +827,28 @@ export default function DashboardPage() {
               </div>
 
               <div className="border-t border-white/10 bg-white/[0.02] p-4 lg:border-t-0 lg:border-l">
+                <h4 className="mb-3 px-2 font-mono text-xs font-bold tracking-widest text-slate-500 uppercase">
+                  Settings
+                </h4>
+                <div className="mb-3 rounded-xl border border-white/10 bg-black/20 p-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 text-sm font-medium text-slate-200">
+                        <EyeOff className="h-4 w-4 text-cyan-300" />
+                        Hide personal information
+                      </div>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        Mask your name, email, and avatar on this dashboard.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={hidePersonalInfo}
+                      onCheckedChange={setHidePersonalInfo}
+                      aria-label="Hide personal information"
+                      className="data-[state=checked]:bg-cyan-500"
+                    />
+                  </div>
+                </div>
                 <h4 className="mb-3 px-2 font-mono text-xs font-bold tracking-widest text-slate-500 uppercase">
                   Account Actions
                 </h4>
@@ -1075,7 +1117,13 @@ export default function DashboardPage() {
   );
 }
 
-function Header({ router }: { router: ReturnType<typeof useRouter> }) {
+function Header({
+  router,
+  hidePersonalInfo = false,
+}: {
+  router: ReturnType<typeof useRouter>;
+  hidePersonalInfo?: boolean;
+}) {
   return (
     <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
@@ -1092,7 +1140,7 @@ function Header({ router }: { router: ReturnType<typeof useRouter> }) {
           >
             Back to Map
           </button>
-          <UserAuth />
+          <UserAuth hidePersonalInfo={hidePersonalInfo} />
         </div>
       </div>
     </header>
