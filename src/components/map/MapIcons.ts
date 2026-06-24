@@ -302,9 +302,6 @@ export function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
     ? normalizeAircraftTypeForIcon(aircraftClass)
     : "";
 
-  const specificIcon = getSpecificAircraftIconUrl(normalizedType, rawType);
-  if (specificIcon) return specificIcon;
-
   if (isHelicopterType(rawType)) return AIRCRAFT_ICONS.helicopter;
   if (!rawType) {
     return isMilitaryAirForce(af)
@@ -312,8 +309,18 @@ export function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
       : DEFAULT_AIRCRAFT_ICON;
   }
 
+  const isMilitaryOperator = isMilitaryAirForce(af);
   const isMilitary =
-    isMilitaryAirForce(af) || isMilitaryCombatType(rawType, normalizedType);
+    isMilitaryOperator || isMilitaryCombatType(rawType, normalizedType);
+  if (isMilitaryOperator) {
+    return isMilitaryTransportType(rawType, normalizedType)
+      ? AIRCRAFT_ICONS.militaryTransport
+      : AIRCRAFT_ICONS.military;
+  }
+
+  const specificIcon = getSpecificAircraftIconUrl(normalizedType, rawType);
+  if (specificIcon) return specificIcon;
+
   if (isMilitary) {
     return isMilitaryTransportType(rawType, normalizedType)
       ? AIRCRAFT_ICONS.militaryTransport
