@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "dashboard-privacy-blur",
+    date: "2026-06-24",
+    title: "Dashboard Privacy Blur",
+    description: "Blur your dashboard name, email, and avatar from Account settings.",
+    type: "new",
+  },
+  {
     id: "stats-rules-modal",
     date: "2026-06-15",
     title: "Stats Rules in the Radar Dock",
