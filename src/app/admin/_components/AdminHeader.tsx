@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
+import { SystemThemeLogo } from "~/components/ui/SystemThemeLogo";
 
 export function AdminHeader() {
   const router = useRouter();
@@ -14,8 +14,7 @@ export function AdminHeader() {
           onClick={() => router.push("/radar")}
           className="cursor-pointer font-mono text-xl text-cyan-400"
         >
-          <Image
-            src="/logo-white.svg"
+          <SystemThemeLogo
             alt="RadarThing"
             width={100}
             height={30}

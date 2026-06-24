@@ -10,6 +10,7 @@ import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { ConvexProvider } from "~/components/providers/ConvexProvider";
 import { PostHogProvider } from "~/components/providers/PostHogProvider";
+import { ThemeProvider } from "~/components/providers/ThemeProvider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://radarthing.com"),
@@ -71,30 +72,32 @@ export default function RootLayout({
     >
       <html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
         <body suppressHydrationWarning>
-          <ConvexProvider>
-            <PostHogProvider>
-              <Suspense fallback={null}>
-                <Toaster
-                  theme="dark"
-                  position="top-center"
-                  toastOptions={{
-                    className:
-                      "!bg-black/40 !backdrop-blur-md !border !border-cyan-400/30 !text-white !rounded-sm",
-                    classNames: {
-                      success:
-                        "!bg-black/40 !backdrop-blur-md !border-emerald-500/30 !text-emerald-200",
-                      error:
-                        "!bg-black/40 !backdrop-blur-md !border-red-500/30 !text-red-200",
-                      warning:
-                        "!bg-black/40 !backdrop-blur-md !border-yellow-500/30 !text-yellow-200",
-                      info: "!bg-black/40 !backdrop-blur-md !border-cyan-400/30 !text-cyan-200",
-                    },
-                  }}
-                />
-                {children}
-              </Suspense>
-            </PostHogProvider>
-          </ConvexProvider>
+          <ThemeProvider>
+            <ConvexProvider>
+              <PostHogProvider>
+                <Suspense fallback={null}>
+                  <Toaster
+                    theme="system"
+                    position="top-center"
+                    toastOptions={{
+                      className:
+                        "!bg-black/40 !backdrop-blur-md !border !border-cyan-400/30 !text-white !rounded-sm",
+                      classNames: {
+                        success:
+                          "!bg-black/40 !backdrop-blur-md !border-emerald-500/30 !text-emerald-200",
+                        error:
+                          "!bg-black/40 !backdrop-blur-md !border-red-500/30 !text-red-200",
+                        warning:
+                          "!bg-black/40 !backdrop-blur-md !border-yellow-500/30 !text-yellow-200",
+                        info: "!bg-black/40 !backdrop-blur-md !border-cyan-400/30 !text-cyan-200",
+                      },
+                    }}
+                  />
+                  {children}
+                </Suspense>
+              </PostHogProvider>
+            </ConvexProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>
