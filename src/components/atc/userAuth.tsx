@@ -61,7 +61,7 @@ export const UserAuth = ({
               width={32}
               height={32}
               sizes="32px"
-              className={`rounded-full border border-cyan-400/50 transition-all hover:border-cyan-400 hover:shadow-[0_0_8px_rgba(0,255,255,0.4)] ${
+              className={`rounded-full border border-cyan-400/50 transition-all duration-300 ease-out will-change-[filter] hover:border-cyan-400 hover:shadow-[0_0_8px_rgba(0,255,255,0.4)] ${
                 hidePersonalInfo ? "blur-[5px] select-none" : ""
               }`}
             />

@@ -82,7 +82,9 @@ function getDisplayName(
   );
 }
 
-const personalInfoBlurClass = "blur-[5px] select-none transition-[filter]";
+const personalInfoTransitionClass =
+  "transition-[filter] duration-300 ease-out will-change-[filter]";
+const personalInfoBlurClass = "blur-[5px] select-none";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -380,7 +382,7 @@ export default function DashboardPage() {
                   alt="Profile"
                   width={56}
                   height={56}
-                  className={`rounded-full transition-all group-hover/icon:opacity-20 ${
+                  className={`rounded-full transition-all duration-300 ease-out will-change-[filter,opacity] group-hover/icon:opacity-20 ${
                     hidePersonalInfo ? personalInfoBlurClass : ""
                   }`}
                 />
@@ -410,7 +412,9 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold text-white">
                   <span
-                    className={hidePersonalInfo ? personalInfoBlurClass : ""}
+                    className={`${personalInfoTransitionClass} ${
+                      hidePersonalInfo ? personalInfoBlurClass : ""
+                    }`}
                   >
                     {displayName ? `${displayName}'s Account` : "Your Account"}
                   </span>
@@ -776,7 +780,7 @@ export default function DashboardPage() {
                       Name
                     </div>
                     <div
-                      className={`truncate text-sm text-slate-300 ${
+                      className={`truncate text-sm text-slate-300 ${personalInfoTransitionClass} ${
                         hidePersonalInfo ? personalInfoBlurClass : ""
                       }`}
                     >
@@ -789,7 +793,7 @@ export default function DashboardPage() {
                       Email
                     </div>
                     <div
-                      className={`truncate text-sm text-slate-300 ${
+                      className={`truncate text-sm text-slate-300 ${personalInfoTransitionClass} ${
                         hidePersonalInfo ? personalInfoBlurClass : ""
                       }`}
                     >
