@@ -19,7 +19,6 @@ import {
   Link,
   Trash2,
 } from "lucide-react";
-import Image from "next/image";
 import { useProStatus } from "~/hooks/useProStatus";
 import { Suspense } from "react";
 import { PilotChallengesPanel } from "~/components/challenges/PilotChallengesPanel";
@@ -32,6 +31,7 @@ import {
 import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
 import { isFlightModeratorGoogleId } from "~/lib/flight-moderation";
 import { ConfirmModal } from "~/app/admin/_components/ConfirmModal";
+import { SystemThemeLogo } from "~/components/ui/SystemThemeLogo";
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -118,7 +118,7 @@ function PilotPageContent() {
 
   if (stats === null) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="pilot-theme-surface min-h-screen bg-black text-white">
         <Header router={router} />
         <main className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6 sm:py-20">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2">
@@ -146,7 +146,7 @@ function PilotPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="pilot-theme-surface min-h-screen bg-black text-white">
       <Header router={router} />
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
@@ -166,7 +166,7 @@ function PilotPageContent() {
               )}
             </button>
             <div className="min-w-0">
-              <h1 className="break-words text-2xl leading-tight font-bold text-white sm:text-3xl">
+              <h1 className="text-2xl leading-tight font-bold break-words text-white sm:text-3xl">
                 {stats.discordUsername ??
                   callsignFromUrl ??
                   stats.pilotCallsign ??
@@ -174,7 +174,7 @@ function PilotPageContent() {
               </h1>
               {stats.discordUsername &&
                 (callsignFromUrl || stats.pilotCallsign) && (
-                  <p className="mt-1 break-all font-mono text-[11px] text-slate-500 sm:text-xs">
+                  <p className="mt-1 font-mono text-[11px] break-all text-slate-500 sm:text-xs">
                     {callsignFromUrl ?? stats.pilotCallsign}
                   </p>
                 )}
@@ -440,12 +440,7 @@ function Header({ router }: { router: ReturnType<typeof useRouter> }) {
           onClick={() => router.push("/radar")}
           className="cursor-pointer"
         >
-          <Image
-            src="/logo-white.svg"
-            alt="RadarThing"
-            width={100}
-            height={30}
-          />
+          <SystemThemeLogo alt="RadarThing" width={100} height={30} />
         </button>
         <button
           onClick={() => router.push("/radar")}
@@ -549,7 +544,7 @@ function EmptyState() {
 
 function PilotPageSkeleton({ callsign }: { callsign: string | null }) {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="pilot-theme-surface min-h-screen bg-black text-white">
       {/* Header */}
       <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
