@@ -11,9 +11,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Gauge,
   X,
   Lock,
   Loader2,
+  Mountain,
   Plane,
   Play,
   Search,
@@ -82,6 +84,48 @@ function formatDuration(start: number, end?: number, duration?: number) {
   const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
   if (hours === 0) return `${minutes}m`;
   return `${hours}h ${minutes}m`;
+}
+
+function formatTopSpeed(speed?: number) {
+  if (typeof speed !== "number" || !Number.isFinite(speed)) return null;
+  return `${Math.round(speed).toLocaleString()} kt`;
+}
+
+function formatMaxAltitude(altitude?: number) {
+  if (typeof altitude !== "number" || !Number.isFinite(altitude)) return null;
+  return altitude >= 18000
+    ? `FL${Math.round(altitude / 100)}`
+    : `${Math.round(altitude).toLocaleString()} ft`;
+}
+
+function FlightMetadataRow({ flight }: { flight: FlightHistoryPanelFlight }) {
+  const topSpeed = formatTopSpeed(flight.maxSpeed);
+  const maxAltitude = formatMaxAltitude(flight.maxAltitude);
+
+  return (
+    <div className="flex flex-col gap-1 text-xs text-slate-500 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+      <span className="flex items-center gap-1">
+        <Calendar className="h-3 w-3" />
+        {formatDate(flight.startTime)}
+      </span>
+      <span className="flex items-center gap-1">
+        <Clock className="h-3 w-3" />
+        {formatDuration(flight.startTime, flight.endTime, flight.duration)}
+      </span>
+      {topSpeed && (
+        <span className="flex items-center gap-1">
+          <Gauge className="h-3 w-3" />
+          {topSpeed}
+        </span>
+      )}
+      {maxAltitude && (
+        <span className="flex items-center gap-1">
+          <Mountain className="h-3 w-3" />
+          {maxAltitude}
+        </span>
+      )}
+    </div>
+  );
 }
 
 export function FlightHistoryPanel({
@@ -157,15 +201,16 @@ export function FlightHistoryPanel({
   const hiddenFlightCount = historyPage?.hiddenFlightCount ?? 0;
   const flightsById = useMemo(
     () =>
-      new Map((historyPage?.flights ?? []).map((flight) => [flight.id, flight])),
+      new Map(
+        (historyPage?.flights ?? []).map((flight) => [flight.id, flight]),
+      ),
     [historyPage?.flights],
   );
   const availableManualChallenges =
-    viewerChallenges?.filter(
-      (challenge) =>
-        challenge.mode === "manual" && "canSubmitManual" in challenge
-          ? challenge.canSubmitManual
-          : false,
+    viewerChallenges?.filter((challenge) =>
+      challenge.mode === "manual" && "canSubmitManual" in challenge
+        ? challenge.canSubmitManual
+        : false,
     ) ?? [];
   const selectedChallengeFlights = selectedChallengeFlightIds
     .map((flightId) => flightsById.get(flightId as Id<"flights">))
@@ -182,8 +227,8 @@ export function FlightHistoryPanel({
         ? current.filter((flightId) => flightId !== flight.id)
         : [...current, flight.id],
     );
-    setSelectedChallengeId((current) =>
-      current || availableManualChallenges[0]?.id || "",
+    setSelectedChallengeId(
+      (current) => current || availableManualChallenges[0]?.id || "",
     );
   }
 
@@ -359,7 +404,10 @@ export function FlightHistoryPanel({
                           </p>
                           <p className="mt-1 text-sm text-cyan-100">
                             {selectedChallengeFlightIds.length} flight
-                            {selectedChallengeFlightIds.length === 1 ? "" : "s"} selected for admin review.
+                            {selectedChallengeFlightIds.length === 1
+                              ? ""
+                              : "s"}{" "}
+                            selected for admin review.
                           </p>
                         </div>
                         <button
@@ -380,7 +428,9 @@ export function FlightHistoryPanel({
                             key={flight.id}
                             className="rounded-full border border-white/10 bg-black/20 px-3 py-1 font-mono text-[10px] tracking-wider text-cyan-100"
                           >
-                            {(flight.depICAO ?? "???") + "-" + (flight.arrICAO ?? "???")}{" "}
+                            {(flight.depICAO ?? "???") +
+                              "-" +
+                              (flight.arrICAO ?? "???")}{" "}
                             {flight.callsign ? `• ${flight.callsign}` : ""}
                           </span>
                         ))}
@@ -417,7 +467,7 @@ export function FlightHistoryPanel({
                             }
                             rows={3}
                             placeholder="Explain how these flights satisfy the challenge."
-                            className="w-full rounded-xl border border-white/10 bg-black/40 p-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-cyan-500/50"
+                            className="w-full rounded-xl border border-white/10 bg-black/40 p-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-500/50"
                           />
                         </label>
 
@@ -483,20 +533,7 @@ export function FlightHistoryPanel({
                                   </span>
                                 )}
                               </div>
-                              <div className="flex flex-col gap-1 text-xs text-slate-500 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {formatDate(flight.startTime)}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {formatDuration(
-                                    flight.startTime,
-                                    flight.endTime,
-                                    flight.duration,
-                                  )}
-                                </span>
-                              </div>
+                              <FlightMetadataRow flight={flight} />
                             </div>
                           </div>
 
@@ -508,19 +545,25 @@ export function FlightHistoryPanel({
                                     toggleFlightChallengeSelection(flight)
                                   }
                                   className={`flex h-9 items-center justify-center gap-1 rounded-lg border px-2.5 transition-all sm:h-8 sm:opacity-0 sm:group-hover:opacity-100 ${
-                                    selectedChallengeFlightIds.includes(flight.id)
+                                    selectedChallengeFlightIds.includes(
+                                      flight.id,
+                                    )
                                       ? "border-cyan-400/40 bg-cyan-500/15 text-cyan-200"
                                       : "border-white/10 bg-white/5 text-white/60 hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400 sm:text-white/40"
                                   }`}
                                   title={
-                                    selectedChallengeFlightIds.includes(flight.id)
+                                    selectedChallengeFlightIds.includes(
+                                      flight.id,
+                                    )
                                       ? "Remove this flight from the challenge submission"
                                       : "Add this flight to a challenge submission"
                                   }
                                 >
                                   <Flag className="h-3.5 w-3.5" />
                                   <span className="font-mono text-[10px] tracking-wider uppercase">
-                                    {selectedChallengeFlightIds.includes(flight.id)
+                                    {selectedChallengeFlightIds.includes(
+                                      flight.id,
+                                    )
                                       ? "Selected"
                                       : "Challenge"}
                                   </span>
@@ -655,7 +698,6 @@ export function FlightHistoryPanel({
                             </button>
                           )}
                         </div>
-
                       </div>
                     ))}
                   </div>
