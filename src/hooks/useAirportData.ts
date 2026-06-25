@@ -103,6 +103,21 @@ function parseCsvNumber(value: string | undefined) {
   return Number.isFinite(parsed) ? parsed : NaN;
 }
 
+function assertRequiredHeaders(
+  headers: string[],
+  requiredHeaders: Record<string, number>,
+) {
+  const missingHeaders = Object.entries(requiredHeaders)
+    .filter(([, index]) => index < 0)
+    .map(([name]) => name);
+
+  if (missingHeaders.length > 0) {
+    throw new Error(
+      `Missing required OurAirports CSV columns: ${missingHeaders.join(", ")}`,
+    );
+  }
+}
+
 export const useAirportData = () => {
   const [airports, setAirports] = useState<Airport[]>([]);
   const [runways, setRunways] = useState<Runway[]>([]);
@@ -131,22 +146,15 @@ export const useAirportData = () => {
 
     try {
       // Fetch from OurAirports public dataset (CSV format)
-      const [airportsResponse, runwaysResponse] = await Promise.all([
-        fetch("https://davidmegginson.github.io/ourairports-data/airports.csv"),
-        fetch("https://davidmegginson.github.io/ourairports-data/runways.csv"),
-      ]);
+      const airportsResponse = await fetch(
+        "https://davidmegginson.github.io/ourairports-data/airports.csv",
+      );
 
       if (!airportsResponse.ok) {
         throw new Error(`Airports HTTP error: ${airportsResponse.status}`);
       }
-      if (!runwaysResponse.ok) {
-        throw new Error(`Runways HTTP error: ${runwaysResponse.status}`);
-      }
 
-      const [airportsCsvText, runwaysCsvText] = await Promise.all([
-        airportsResponse.text(),
-        runwaysResponse.text(),
-      ]);
+      const airportsCsvText = await airportsResponse.text();
 
       // Parse CSV manually (simple parser for this specific format)
       const lines = airportsCsvText.split("\n");
@@ -158,8 +166,16 @@ export const useAirportData = () => {
       const latIdx = headers.findIndex((h) => h?.includes("latitude_deg"));
       const lonIdx = headers.findIndex((h) => h?.includes("longitude_deg"));
       const typeIdx = headers.findIndex((h) => h?.includes("type"));
+      assertRequiredHeaders(headers, {
+        ident: icaoIdx,
+        name: nameIdx,
+        latitude_deg: latIdx,
+        longitude_deg: lonIdx,
+        type: typeIdx,
+      });
 
       const airportArray: Airport[] = [];
+      const runwayAirportIdentSet = new Set<string>();
 
       // Parse each line (skip header)
       for (let i = 1; i < lines.length; i++) {
@@ -173,6 +189,15 @@ export const useAirportData = () => {
         const lat = parseCsvNumber(fields[latIdx]);
         const lon = parseCsvNumber(fields[lonIdx]);
         const type = cleanCsvField(fields[typeIdx]);
+
+        if (
+          icao &&
+          icao.length >= 3 &&
+          Number.isFinite(lat) &&
+          Number.isFinite(lon)
+        ) {
+          runwayAirportIdentSet.add(icao);
+        }
 
         // Only include medium/large airports with valid ICAO codes
         if (
@@ -191,64 +216,82 @@ export const useAirportData = () => {
         }
       }
 
-      const airportIdentSet = new Set(
-        airportArray.map((airport) => airport.icao),
-      );
-      const runwayLines = runwaysCsvText.split("\n");
-      const runwayHeaders = runwayLines[0]?.split(",") || [];
-      const airportIdentIdx = runwayHeaders.findIndex((h) =>
-        h?.includes("airport_ident"),
-      );
-      const leIdentIdx = runwayHeaders.findIndex((h) =>
-        h?.includes("le_ident"),
-      );
-      const heIdentIdx = runwayHeaders.findIndex((h) =>
-        h?.includes("he_ident"),
-      );
-      const leLatIdx = runwayHeaders.findIndex((h) =>
-        h?.includes("le_latitude_deg"),
-      );
-      const leLonIdx = runwayHeaders.findIndex((h) =>
-        h?.includes("le_longitude_deg"),
-      );
-      const heLatIdx = runwayHeaders.findIndex((h) =>
-        h?.includes("he_latitude_deg"),
-      );
-      const heLonIdx = runwayHeaders.findIndex((h) =>
-        h?.includes("he_longitude_deg"),
-      );
       const runwayArray: Runway[] = [];
-
-      for (let i = 1; i < runwayLines.length; i++) {
-        const line = runwayLines[i];
-        if (!line?.trim()) continue;
-
-        const fields = parseCsvLine(line);
-        const airportIdent = cleanCsvField(fields[airportIdentIdx]);
-        const leLat = parseCsvNumber(fields[leLatIdx]);
-        const leLon = parseCsvNumber(fields[leLonIdx]);
-        const heLat = parseCsvNumber(fields[heLatIdx]);
-        const heLon = parseCsvNumber(fields[heLonIdx]);
-
-        if (
-          !airportIdentSet.has(airportIdent) ||
-          !Number.isFinite(leLat) ||
-          !Number.isFinite(leLon) ||
-          !Number.isFinite(heLat) ||
-          !Number.isFinite(heLon)
-        ) {
-          continue;
+      try {
+        const runwaysResponse = await fetch(
+          "https://davidmegginson.github.io/ourairports-data/runways.csv",
+        );
+        if (!runwaysResponse.ok) {
+          throw new Error(`Runways HTTP error: ${runwaysResponse.status}`);
         }
 
-        runwayArray.push({
-          airportIdent,
-          leIdent: cleanCsvField(fields[leIdentIdx]),
-          heIdent: cleanCsvField(fields[heIdentIdx]),
-          leLat,
-          leLon,
-          heLat,
-          heLon,
+        const runwayLines = (await runwaysResponse.text()).split("\n");
+        const runwayHeaders = runwayLines[0]?.split(",") || [];
+        const airportIdentIdx = runwayHeaders.findIndex((h) =>
+          h?.includes("airport_ident"),
+        );
+        const leIdentIdx = runwayHeaders.findIndex((h) =>
+          h?.includes("le_ident"),
+        );
+        const heIdentIdx = runwayHeaders.findIndex((h) =>
+          h?.includes("he_ident"),
+        );
+        const leLatIdx = runwayHeaders.findIndex((h) =>
+          h?.includes("le_latitude_deg"),
+        );
+        const leLonIdx = runwayHeaders.findIndex((h) =>
+          h?.includes("le_longitude_deg"),
+        );
+        const heLatIdx = runwayHeaders.findIndex((h) =>
+          h?.includes("he_latitude_deg"),
+        );
+        const heLonIdx = runwayHeaders.findIndex((h) =>
+          h?.includes("he_longitude_deg"),
+        );
+        assertRequiredHeaders(runwayHeaders, {
+          airport_ident: airportIdentIdx,
+          le_ident: leIdentIdx,
+          he_ident: heIdentIdx,
+          le_latitude_deg: leLatIdx,
+          le_longitude_deg: leLonIdx,
+          he_latitude_deg: heLatIdx,
+          he_longitude_deg: heLonIdx,
         });
+
+        for (let i = 1; i < runwayLines.length; i++) {
+          const line = runwayLines[i];
+          if (!line?.trim()) continue;
+
+          const fields = parseCsvLine(line);
+          const airportIdent = cleanCsvField(fields[airportIdentIdx]);
+          const leLat = parseCsvNumber(fields[leLatIdx]);
+          const leLon = parseCsvNumber(fields[leLonIdx]);
+          const heLat = parseCsvNumber(fields[heLatIdx]);
+          const heLon = parseCsvNumber(fields[heLonIdx]);
+
+          if (
+            !runwayAirportIdentSet.has(airportIdent) ||
+            !Number.isFinite(leLat) ||
+            !Number.isFinite(leLon) ||
+            !Number.isFinite(heLat) ||
+            !Number.isFinite(heLon)
+          ) {
+            continue;
+          }
+
+          runwayArray.push({
+            airportIdent,
+            leIdent: cleanCsvField(fields[leIdentIdx]),
+            heIdent: cleanCsvField(fields[heIdentIdx]),
+            leLat,
+            leLon,
+            heLat,
+            heLon,
+          });
+        }
+      } catch (runwayError) {
+        console.error("Could not load runway data:", runwayError);
+        setRunways([]);
       }
 
       console.log(

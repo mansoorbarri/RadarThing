@@ -2104,19 +2104,35 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       west <= east ? lon >= west && lon <= east : lon >= west || lon <= east;
     const pointInBounds = (lat: number, lon: number) =>
       lat >= south && lat <= north && lonInBounds(lon);
+    const pathInBounds = (path: [number, number][]) => {
+      if (path.some(([lat, lon]) => pointInBounds(lat, lon))) return true;
+
+      const lats = path.map(([lat]) => lat);
+      const lons = path.map(([, lon]) => lon);
+      const pathSouth = Math.min(...lats);
+      const pathNorth = Math.max(...lats);
+      const pathWest = Math.min(...lons);
+      const pathEast = Math.max(...lons);
+
+      return (
+        pathNorth >= south &&
+        pathSouth <= north &&
+        pathEast >= west &&
+        pathWest <= east
+      );
+    };
 
     const features = runways.flatMap((runway) => {
-      if (
-        !pointInBounds(runway.leLat, runway.leLon) &&
-        !pointInBounds(runway.heLat, runway.heLon)
-      ) {
+      const centerlinePaths = buildRunwayCenterlinePaths(
+        runway,
+        runwayCenterlinePreferences,
+      );
+
+      if (!centerlinePaths.some(pathInBounds)) {
         return [];
       }
 
-      return buildRunwayCenterlinePaths(
-        runway,
-        runwayCenterlinePreferences,
-      ).flatMap((path) => {
+      return centerlinePaths.flatMap((path) => {
         const line = buildLineFeature(toLngLatCoords(path), {
           airport: runway.airportIdent,
           runway: `${runway.leIdent}/${runway.heIdent}`,

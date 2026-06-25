@@ -702,28 +702,30 @@ export const useMapLayersAndMarkers = ({
     const bounds = map.getBounds().pad(0.25);
 
     runways.forEach((runway) => {
-      if (
-        !bounds.contains([runway.leLat, runway.leLon]) &&
-        !bounds.contains([runway.heLat, runway.heLon])
-      ) {
-        return;
-      }
+      const displayPaths = buildRunwayCenterlinePaths(
+        runway,
+        runwayCenterlinePreferences,
+      ).map((path, index) => {
+        const referenceLon = index === 0 ? runway.leLon : runway.heLon;
+        return preparePathForWorldCopy(path, referenceLon);
+      });
+      const hasVisibleCenterline = displayPaths.some((displayPath) => {
+        if (displayPath.some((point) => bounds.contains(point))) return true;
+        return L.latLngBounds(displayPath).intersects(bounds);
+      });
 
-      buildRunwayCenterlinePaths(runway, runwayCenterlinePreferences).forEach(
-        (path, index) => {
-          const referenceLon = index === 0 ? runway.leLon : runway.heLon;
-          const displayPath = preparePathForWorldCopy(path, referenceLon);
+      if (!hasVisibleCenterline) return;
 
-          L.polyline(displayPath, {
-            color: "#f8fafc",
-            opacity: 0.45,
-            weight: 1.2,
-            dashArray: "7, 9",
-            interactive: false,
-            renderer,
-          }).addTo(centerlineLayer);
-        },
-      );
+      displayPaths.forEach((displayPath) => {
+        L.polyline(displayPath, {
+          color: "#f8fafc",
+          opacity: 0.45,
+          weight: 1.2,
+          dashArray: "7, 9",
+          interactive: false,
+          renderer,
+        }).addTo(centerlineLayer);
+      });
     });
   }, [
     isRadarMode,
