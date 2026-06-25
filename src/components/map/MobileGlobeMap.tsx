@@ -58,7 +58,10 @@ import {
   getStoredRunwayCenterlinePreferences,
   setStoredRunwayCenterlinePreferences,
 } from "~/lib/runwayCenterlinePreferences";
-import { buildRunwayCenterlinePaths } from "~/lib/runwayCenterlines";
+import {
+  buildRunwayCenterlinePaths,
+  RUNWAY_CENTERLINE_MIN_ZOOM,
+} from "~/lib/runwayCenterlines";
 import {
   getAircraftIconFilter,
   getAircraftIconUrl,
@@ -1513,7 +1516,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
         id: "mobile-globe-runway-centerlines",
         type: "line",
         source: SOURCE_IDS.runwayCenterlines,
-        minzoom: minZoom,
+        minzoom: RUNWAY_CENTERLINE_MIN_ZOOM,
         paint: {
           "line-color": "#f8fafc",
           "line-width": 1.2,
@@ -2085,7 +2088,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     if (
       !isRadarMode ||
       !runwayCenterlinePreferences.enabled ||
-      map.getZoom() < minZoom
+      map.getZoom() < RUNWAY_CENTERLINE_MIN_ZOOM
     ) {
       setSourceData(
         map,
@@ -2148,7 +2151,6 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   }, [
     isRadarMode,
     mapReady,
-    minZoom,
     runwayCenterlinePreferences,
     runways,
     viewportRevision,

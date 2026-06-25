@@ -2,6 +2,7 @@ import { type Runway } from "~/hooks/useAirportData";
 import { calculateBearing } from "~/lib/map-utils";
 
 const EARTH_RADIUS_NM = 3440.065;
+export const RUNWAY_CENTERLINE_MIN_ZOOM = 7;
 
 export interface RunwayCenterlinePreferences {
   enabled: boolean;

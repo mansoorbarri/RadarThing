@@ -24,6 +24,7 @@ import {
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
 import {
   buildRunwayCenterlinePaths,
+  RUNWAY_CENTERLINE_MIN_ZOOM,
   type RunwayCenterlinePreferences,
 } from "~/lib/runwayCenterlines";
 
@@ -695,7 +696,7 @@ export const useMapLayersAndMarkers = ({
 
     centerlineLayer.clearLayers();
     if (!isRadarMode || !runwayCenterlinePreferences.enabled) return;
-    if (map.getZoom() < Number(openAIPLayer.current?.options.minZoom ?? 0)) {
+    if (map.getZoom() < RUNWAY_CENTERLINE_MIN_ZOOM) {
       return;
     }
 
@@ -731,7 +732,6 @@ export const useMapLayersAndMarkers = ({
     isRadarMode,
     mapInstance,
     mapReady,
-    openAIPLayer,
     runwayCenterlineLayer,
     runwayCenterlinePreferences,
     runways,
