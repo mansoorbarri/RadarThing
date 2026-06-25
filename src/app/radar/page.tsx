@@ -155,16 +155,17 @@ function ATCPageContent() {
   } = useAircraftStream();
   const {
     airports,
+    runways,
     fetchAirports,
     isLoading: isAirportDataLoading,
   } = useAirportData();
 
-  // Fetch airports when online ATC data arrives so markers can render
+  // Fetch airports/runways once live traffic arrives so radar overlays can render.
   useEffect(() => {
-    if (onlineAirports.length > 0) {
+    if (aircrafts.length > 0 || onlineAirports.length > 0) {
       fetchAirports();
     }
-  }, [onlineAirports, fetchAirports]);
+  }, [aircrafts.length, onlineAirports.length, fetchAirports]);
 
   const { isProUser, isAdminUser, isLoading: proLoading } = useProStatus();
 
@@ -1551,6 +1552,7 @@ function ATCPageContent() {
             <DynamicGlobeMapComponent
               aircrafts={visibleAircrafts}
               airports={airports}
+              runways={runways}
               onlineAirports={onlineAirports}
               selectedAirport={selectedAirport}
               selectedAircraftIds={selectedAircraftIds}
@@ -1586,6 +1588,7 @@ function ATCPageContent() {
             <DynamicMapComponent
               aircrafts={visibleAircrafts}
               airports={airports}
+              runways={runways}
               onlineAirports={onlineAirports}
               isMobile={isPhone}
               selectedAirport={selectedAirport}

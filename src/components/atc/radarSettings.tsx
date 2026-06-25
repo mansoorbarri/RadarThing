@@ -17,6 +17,7 @@ import {
   type RadarTrailMode,
   type RadarTrailPreferences,
 } from "~/lib/radarTrailPreferences";
+import { type RunwayCenterlinePreferences } from "~/lib/runwayCenterlines";
 
 const SETTINGS_SECTION_IDS = [
   "presets",
@@ -42,9 +43,13 @@ interface RadarSettingsProps {
   onMapRendererChange?: (renderer: "flat" | "globe") => void;
   radarTrailPreferences?: RadarTrailPreferences;
   radarModeLinePreferences?: RadarModeLinePreferences;
+  runwayCenterlinePreferences?: RunwayCenterlinePreferences;
   onRadarTrailPreferencesChange?: (preferences: RadarTrailPreferences) => void;
   onRadarModeLinePreferencesChange?: (
     preferences: RadarModeLinePreferences,
+  ) => void;
+  onRunwayCenterlinePreferencesChange?: (
+    preferences: RunwayCenterlinePreferences,
   ) => void;
   presets: MapLayerPreset[];
   activePresetId: string | null;
@@ -76,8 +81,10 @@ export const RadarSettings = ({
   onMapRendererChange,
   radarTrailPreferences,
   radarModeLinePreferences,
+  runwayCenterlinePreferences,
   onRadarTrailPreferencesChange,
   onRadarModeLinePreferencesChange,
+  onRunwayCenterlinePreferencesChange,
   presets,
   activePresetId,
   selectedPresetId,
@@ -128,6 +135,9 @@ export const RadarSettings = ({
     ? radarModeLinePreferences.mode === "minutes"
       ? `${Math.round(radarModeLinePreferences.minutes / 60)} min`
       : `${radarModeLinePreferences.distanceNm} NM`
+    : null;
+  const currentRunwayCenterlineLengthLabel = runwayCenterlinePreferences
+    ? `${runwayCenterlinePreferences.lengthNm} NM`
     : null;
 
   const handleSavePreset = () => {
@@ -195,6 +205,26 @@ export const RadarSettings = ({
         mode: nextPreferences.mode,
         seconds: nextPreferences.minutes,
         distance_nm: nextPreferences.distanceNm,
+      });
+    }
+  };
+
+  const updateRunwayCenterlinePreferences = (
+    updates: Partial<RunwayCenterlinePreferences>,
+    trackChange = true,
+  ) => {
+    if (!runwayCenterlinePreferences || !onRunwayCenterlinePreferencesChange)
+      return;
+
+    const nextPreferences = {
+      ...runwayCenterlinePreferences,
+      ...updates,
+    };
+    onRunwayCenterlinePreferencesChange(nextPreferences);
+    if (trackChange) {
+      Analytics.track("runway_centerline_preference_changed", {
+        enabled: nextPreferences.enabled,
+        length_nm: nextPreferences.lengthNm,
       });
     }
   };
@@ -448,10 +478,12 @@ export const RadarSettings = ({
         {isPRO &&
         radarTrailPreferences &&
         radarModeLinePreferences &&
+        runwayCenterlinePreferences &&
         onRadarTrailPreferencesChange &&
-        onRadarModeLinePreferencesChange ? (
+        onRadarModeLinePreferencesChange &&
+        onRunwayCenterlinePreferencesChange ? (
           <SettingsSection
-            title="Radar Trail"
+            title="Radar Overlays"
             isOpen={openSections.trail}
             onToggle={() => toggleSection("trail")}
           >
@@ -624,6 +656,64 @@ export const RadarSettings = ({
                     <span className="text-right">
                       {radarModeLinePreferences.mode === "minutes" ? "5" : "10"}
                     </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 rounded-lg border border-white/10 bg-black/20 p-3">
+              <SettingsToggle
+                label="Runway Centerlines"
+                description="Show dashed runway extended centerlines in radar mode."
+                checked={runwayCenterlinePreferences.enabled}
+                onChange={(enabled) =>
+                  updateRunwayCenterlinePreferences({ enabled })
+                }
+              />
+
+              <div
+                className={`space-y-3 ${!runwayCenterlinePreferences.enabled ? "opacity-50" : ""}`}
+              >
+                <div className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-3">
+                  <div>
+                    <div className="text-[11px] font-semibold tracking-[0.14em] text-white uppercase">
+                      Extension
+                    </div>
+                    <p className="mt-1 text-[11px] text-white/45">
+                      Draw this many nautical miles outward from each runway
+                      threshold.
+                    </p>
+                  </div>
+
+                  <Slider
+                    disabled={!runwayCenterlinePreferences.enabled}
+                    min={3}
+                    max={25}
+                    step={1}
+                    value={[runwayCenterlinePreferences.lengthNm]}
+                    onValueChange={([value]) => {
+                      if (!value) return;
+                      updateRunwayCenterlinePreferences(
+                        { lengthNm: value },
+                        false,
+                      );
+                    }}
+                    onValueCommit={([value]) => {
+                      if (!value) return;
+                      Analytics.track("runway_centerline_preference_changed", {
+                        enabled: runwayCenterlinePreferences.enabled,
+                        length_nm: value,
+                      });
+                    }}
+                    aria-label="Runway centerline extension length"
+                  />
+
+                  <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/35 uppercase">
+                    <span>3</span>
+                    <span className="text-center text-[11px] font-semibold tracking-[0.14em] text-cyan-200">
+                      {currentRunwayCenterlineLengthLabel}
+                    </span>
+                    <span className="text-right">25</span>
                   </div>
                 </div>
               </div>

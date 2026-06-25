@@ -13,6 +13,7 @@ import { toast } from "sonner";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type OnlineAirport } from "~/hooks/useAircraftStream";
+import { type Runway } from "~/hooks/useAirportData";
 import { preparePathForWorldCopy } from "~/lib/map-utils";
 import { type ImportedFlightPlan } from "~/lib/flightPlanImport";
 import { type MapResetLocation } from "~/lib/mapResetLocation";
@@ -61,6 +62,10 @@ import {
   setStoredRadarModeLinePreferences,
   setStoredRadarTrailPreferences,
 } from "~/lib/radarTrailPreferences";
+import {
+  getStoredRunwayCenterlinePreferences,
+  setStoredRunwayCenterlinePreferences,
+} from "~/lib/runwayCenterlinePreferences";
 
 export interface Airport {
   name: string;
@@ -87,6 +92,7 @@ interface ConflictHistoryEvent extends ConflictAlertSummary {
 interface MapComponentProps {
   aircrafts: PositionUpdate[];
   airports: Airport[];
+  runways?: Runway[];
   onlineAirports?: OnlineAirport[];
   isMobile?: boolean;
   onAircraftSelect: (
@@ -124,6 +130,7 @@ const MAX_CONFLICT_HISTORY = 12;
 const MapComponent: React.FC<MapComponentProps> = ({
   aircrafts,
   airports,
+  runways = [],
   onlineAirports,
   isMobile: isMobileProp,
   onAircraftSelect,
@@ -191,6 +198,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [radarModeLinePreferences, setRadarModeLinePreferences] = useState(() =>
     getStoredRadarModeLinePreferences(),
   );
+  const [runwayCenterlinePreferences, setRunwayCenterlinePreferences] =
+    useState(() => getStoredRunwayCenterlinePreferences());
   const [conflictAlerts, setConflictAlerts] = useState<ConflictAlertSummary[]>(
     [],
   );
@@ -764,6 +773,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     mapInstance: mapRefs.mapInstance,
     radarTrailsLayer: mapRefs.radarTrailsLayerGroup,
     radarModeLineLayer: mapRefs.radarModeLineLayerGroup,
+    runwayCenterlineLayer: mapRefs.runwayCenterlineLayerGroup,
     aircraftMarkersLayer: mapRefs.aircraftMarkersLayer,
     airportMarkersLayer: mapRefs.airportMarkersLayer,
     osmLayer: mapRefs.osmLayer,
@@ -772,6 +782,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     openAIPLayer: mapRefs.openAIPLayer,
     aircrafts,
     airports,
+    runways,
     onlineAirports,
     isOSMMode,
     isRadarMode,
@@ -783,6 +794,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     showTags,
     radarTrailPreferences,
     radarModeLinePreferences,
+    runwayCenterlinePreferences,
     showConflicts: canUseConflictAlerts && showConflicts,
     onConflictsChange: setConflictAlerts,
     onInitialTrafficPaint,
@@ -1106,6 +1118,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             onMapRendererChange={onMapRendererChange}
             radarTrailPreferences={radarTrailPreferences}
             radarModeLinePreferences={radarModeLinePreferences}
+            runwayCenterlinePreferences={runwayCenterlinePreferences}
             onRadarTrailPreferencesChange={(nextPreferences) => {
               setRadarTrailPreferences(
                 setStoredRadarTrailPreferences(nextPreferences),
@@ -1114,6 +1127,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
             onRadarModeLinePreferencesChange={(nextPreferences) => {
               setRadarModeLinePreferences(
                 setStoredRadarModeLinePreferences(nextPreferences),
+              );
+            }}
+            onRunwayCenterlinePreferencesChange={(nextPreferences) => {
+              setRunwayCenterlinePreferences(
+                setStoredRunwayCenterlinePreferences(nextPreferences),
               );
             }}
             presets={layerPresets}

@@ -1,9 +1,10 @@
 // components/map/useMapLayersAndMarkers.ts
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type Airport } from "~/components/map"; // Adjusted path
 import { type OnlineAirport } from "~/hooks/useAircraftStream";
+import { type Runway } from "~/hooks/useAirportData";
 import { preparePathForWorldCopy } from "~/lib/map-utils";
 import {
   RADAR_TRAIL_COLOR,
@@ -21,6 +22,10 @@ import {
   RadarAirportIcon,
 } from "./MapIcons";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
+import {
+  buildRunwayCenterlinePaths,
+  type RunwayCenterlinePreferences,
+} from "~/lib/runwayCenterlines";
 
 // Track active animations to cancel them when new position arrives
 const activeAnimations = new Map<L.Marker, number>();
@@ -131,6 +136,7 @@ interface UseMapLayersAndMarkersProps {
   mapInstance: React.MutableRefObject<L.Map | null>;
   radarTrailsLayer: React.MutableRefObject<L.LayerGroup | null>;
   radarModeLineLayer: React.MutableRefObject<L.LayerGroup | null>;
+  runwayCenterlineLayer: React.MutableRefObject<L.LayerGroup | null>;
   aircraftMarkersLayer: React.MutableRefObject<L.LayerGroup | null>;
   airportMarkersLayer: React.MutableRefObject<L.LayerGroup | null>;
   osmLayer: React.MutableRefObject<L.TileLayer | null>;
@@ -139,6 +145,7 @@ interface UseMapLayersAndMarkersProps {
   openAIPLayer: React.MutableRefObject<L.TileLayer | null>;
   aircrafts: PositionUpdate[];
   airports: Airport[];
+  runways: Runway[];
   onlineAirports?: OnlineAirport[];
   isOSMMode: boolean;
   isRadarMode: boolean;
@@ -153,6 +160,7 @@ interface UseMapLayersAndMarkersProps {
   showTags: boolean;
   radarTrailPreferences: RadarTrailPreferences;
   radarModeLinePreferences: RadarModeLinePreferences;
+  runwayCenterlinePreferences: RunwayCenterlinePreferences;
   showConflicts: boolean;
   onConflictsChange?: (conflicts: ConflictAlertSummary[]) => void;
   onInitialTrafficPaint?: () => void;
@@ -490,6 +498,7 @@ export const useMapLayersAndMarkers = ({
   mapInstance,
   radarTrailsLayer,
   radarModeLineLayer,
+  runwayCenterlineLayer,
   aircraftMarkersLayer,
   airportMarkersLayer,
   osmLayer,
@@ -498,6 +507,7 @@ export const useMapLayersAndMarkers = ({
   openAIPLayer,
   aircrafts,
   airports,
+  runways,
   onlineAirports,
   isOSMMode,
   isRadarMode,
@@ -509,6 +519,7 @@ export const useMapLayersAndMarkers = ({
   showTags,
   radarTrailPreferences,
   radarModeLinePreferences,
+  runwayCenterlinePreferences,
   showConflicts,
   onConflictsChange,
   onInitialTrafficPaint,
@@ -516,6 +527,7 @@ export const useMapLayersAndMarkers = ({
   isMobile,
 }: UseMapLayersAndMarkersProps) => {
   const { speedUnit, altitudeUnit } = useUnitPreferences();
+  const [viewportRevision, setViewportRevision] = useState(0);
 
   // Track existing markers by aircraft ID for smooth updates
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -577,6 +589,23 @@ export const useMapLayersAndMarkers = ({
   }, [mapInstance, mapReady]);
 
   useEffect(() => {
+    const map = mapInstance.current;
+    if (!map || !mapReady) return;
+
+    const updateViewportRevision = () => {
+      setViewportRevision((current) => current + 1);
+    };
+
+    map.on("moveend", updateViewportRevision);
+    map.on("zoomend", updateViewportRevision);
+
+    return () => {
+      map.off("moveend", updateViewportRevision);
+      map.off("zoomend", updateViewportRevision);
+    };
+  }, [mapInstance, mapReady]);
+
+  useEffect(() => {
     const trailLayer = radarTrailsLayer.current;
     const renderer = radarTrailRendererRef.current;
     if (!trailLayer || !renderer || !mapReady) return;
@@ -609,7 +638,13 @@ export const useMapLayersAndMarkers = ({
         }).addTo(trailLayer);
       });
     });
-  }, [aircrafts, isRadarMode, mapReady, radarTrailsLayer, radarTrailPreferences]);
+  }, [
+    aircrafts,
+    isRadarMode,
+    mapReady,
+    radarTrailsLayer,
+    radarTrailPreferences,
+  ]);
 
   useEffect(() => {
     const lineLayer = radarModeLineLayer.current;
@@ -622,12 +657,18 @@ export const useMapLayersAndMarkers = ({
     const selectedIdsSet = new Set(selectedAircraftIds);
 
     aircrafts.forEach((aircraft) => {
-      const linePath = buildRadarModeLinePath(aircraft, radarModeLinePreferences);
+      const linePath = buildRadarModeLinePath(
+        aircraft,
+        radarModeLinePreferences,
+      );
       if (linePath.length < 2) return;
 
       const displayPath = preparePathForWorldCopy(linePath, aircraft.lon);
       const aircraftKey = aircraft.callsign || aircraft.id;
-      const style = getRadarLineStyle(aircraft, selectedIdsSet.has(aircraftKey));
+      const style = getRadarLineStyle(
+        aircraft,
+        selectedIdsSet.has(aircraftKey),
+      );
 
       L.polyline(displayPath, {
         color: style.color,
@@ -644,6 +685,57 @@ export const useMapLayersAndMarkers = ({
     radarModeLineLayer,
     radarModeLinePreferences,
     selectedAircraftIds,
+  ]);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    const centerlineLayer = runwayCenterlineLayer.current;
+    const renderer = radarTrailRendererRef.current;
+    if (!map || !centerlineLayer || !renderer || !mapReady) return;
+
+    centerlineLayer.clearLayers();
+    if (!isRadarMode || !runwayCenterlinePreferences.enabled) return;
+    if (map.getZoom() < Number(openAIPLayer.current?.options.minZoom ?? 0)) {
+      return;
+    }
+
+    const bounds = map.getBounds().pad(0.25);
+
+    runways.forEach((runway) => {
+      const displayPaths = buildRunwayCenterlinePaths(
+        runway,
+        runwayCenterlinePreferences,
+      ).map((path, index) => {
+        const referenceLon = index === 0 ? runway.leLon : runway.heLon;
+        return preparePathForWorldCopy(path, referenceLon);
+      });
+      const hasVisibleCenterline = displayPaths.some((displayPath) => {
+        if (displayPath.some((point) => bounds.contains(point))) return true;
+        return L.latLngBounds(displayPath).intersects(bounds);
+      });
+
+      if (!hasVisibleCenterline) return;
+
+      displayPaths.forEach((displayPath) => {
+        L.polyline(displayPath, {
+          color: "#f8fafc",
+          opacity: 0.45,
+          weight: 1.2,
+          dashArray: "7, 9",
+          interactive: false,
+          renderer,
+        }).addTo(centerlineLayer);
+      });
+    });
+  }, [
+    isRadarMode,
+    mapInstance,
+    mapReady,
+    openAIPLayer,
+    runwayCenterlineLayer,
+    runwayCenterlinePreferences,
+    runways,
+    viewportRevision,
   ]);
 
   // Effect for managing base layers (OSM/Satellite/Radar)
