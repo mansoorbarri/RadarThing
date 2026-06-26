@@ -128,33 +128,33 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/10 bg-[#0a0f14] p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-2xl">
         <button
           onClick={() => !isProcessing && onClose()}
           disabled={isProcessing}
-          className="absolute top-4 right-4 cursor-pointer text-slate-400 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="absolute top-4 right-4 cursor-pointer text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
         >
           <X className="h-5 w-5" />
         </button>
 
-        <h2 className="mb-2 text-xl font-bold text-white">
+        <h2 className="mb-2 text-xl font-bold text-foreground">
           Upload Aircraft Image
         </h2>
-        <p className="mb-6 text-sm text-slate-400">
+        <p className="mb-6 text-sm text-muted-foreground">
           Image will be published immediately.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
               {error}
             </div>
           )}
 
           <label className="flex cursor-pointer items-center gap-3">
             <div
-              className={`relative h-5 w-9 rounded-full transition-colors ${isMilitary ? "bg-cyan-500/40" : "bg-white/12"}`}
+              className={`relative h-5 w-9 rounded-full transition-colors ${isMilitary ? "bg-cyan-500/40" : "bg-muted"}`}
               onClick={() => {
                 setIsMilitary(!isMilitary);
                 setFormData((prev) => ({
@@ -168,7 +168,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                 className={`absolute top-0.5 h-4 w-4 rounded-full bg-slate-200 transition-[left] ${isMilitary ? "left-[18px]" : "left-0.5"}`}
               />
             </div>
-            <span className="font-mono text-xs text-slate-400">
+            <span className="font-mono text-xs text-muted-foreground">
               MILITARY AIRCRAFT
             </span>
           </label>
@@ -176,7 +176,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
           {isMilitary ? (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-2 block font-mono text-xs text-slate-400">
+                <label className="mb-2 block font-mono text-xs text-muted-foreground">
                   AIR FORCE *
                 </label>
                 <input
@@ -192,11 +192,11 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   maxLength={10}
                   required
                   disabled={isProcessing}
-                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
                 />
               </div>
               <div>
-                <label className="mb-2 block font-mono text-xs text-slate-400">
+                <label className="mb-2 block font-mono text-xs text-muted-foreground">
                   AIRCRAFT *
                 </label>
                 <input
@@ -213,14 +213,14 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   required
                   disabled={isProcessing}
                   title="Use base model only (e.g., F16, C130)"
-                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
                 />
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="mb-2 block font-mono text-xs text-slate-400">
+                <label className="mb-2 block font-mono text-xs text-muted-foreground">
                   IATA CODE *
                 </label>
                 <input
@@ -236,11 +236,11 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   maxLength={2}
                   required
                   disabled={isProcessing}
-                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
                 />
               </div>
               <div>
-                <label className="mb-2 block font-mono text-xs text-slate-400">
+                <label className="mb-2 block font-mono text-xs text-muted-foreground">
                   ICAO CODE *
                 </label>
                 <input
@@ -256,11 +256,11 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   maxLength={4}
                   required
                   disabled={isProcessing}
-                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
                 />
               </div>
               <div>
-                <label className="mb-2 block font-mono text-xs text-slate-400">
+                <label className="mb-2 block font-mono text-xs text-muted-foreground">
                   AIRCRAFT *
                 </label>
                 <input
@@ -277,19 +277,19 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   required
                   disabled={isProcessing}
                   title="Use base model only (e.g., B777, A350) — not variants"
-                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
                 />
               </div>
             </div>
           )}
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             {isMilitary
               ? "Enter the air force name (e.g., USAF, PAF, RAF) and aircraft model."
               : "Aircraft should be base model only, not the variant. Like: B777. Not: B77W."}
           </p>
 
           <div>
-            <label className="mb-2 block font-mono text-xs text-slate-400">
+            <label className="mb-2 block font-mono text-xs text-muted-foreground">
               SELECT IMAGE
             </label>
             <ImageUploader

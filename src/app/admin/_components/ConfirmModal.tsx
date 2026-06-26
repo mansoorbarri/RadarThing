@@ -32,8 +32,8 @@ export function ConfirmModal({
   const isDanger = variant === "danger";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-900 p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-2xl">
         {/* Icon */}
         <div className="mb-4 flex justify-center">
           <div
@@ -50,19 +50,21 @@ export function ConfirmModal({
         </div>
 
         {/* Title */}
-        <h3 className="mb-2 text-center text-lg font-semibold text-white">
+        <h3 className="mb-2 text-center text-lg font-semibold text-foreground">
           {title}
         </h3>
 
         {/* Message */}
-        <p className="mb-6 text-center text-sm text-slate-400">{message}</p>
+        <p className="mb-6 text-center text-sm text-muted-foreground">
+          {message}
+        </p>
 
         {/* Buttons */}
         <div className="flex gap-3">
           <button
             onClick={onCancel}
             disabled={isLoading}
-            className="flex-1 cursor-pointer rounded-lg border border-white/10 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 cursor-pointer rounded-lg border border-border py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
           >
             {cancelLabel}
           </button>
@@ -71,8 +73,8 @@ export function ConfirmModal({
             disabled={isLoading}
             className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
               isDanger
-                ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                : "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30"
+                ? "bg-red-500/15 text-red-600 hover:bg-red-500/25 dark:text-red-400"
+                : "bg-yellow-500/20 text-yellow-700 hover:bg-yellow-500/30 dark:text-yellow-400"
             }`}
           >
             {isLoading ? (
