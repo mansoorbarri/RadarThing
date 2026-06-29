@@ -4,6 +4,18 @@ import { requireVirtualAirlineManager } from "./lib/auth";
 
 function normalizeAircraftTypeKey(aircraftType: string): string {
   const cleaned = aircraftType.trim().toUpperCase();
+  const learjetMatch =
+    /\b(?:LEARJET|LEAR\s+JET)\s*(\d{2})\b/.exec(cleaned) ||
+    /\bLJ[-\s]?(\d{2})\b/.exec(cleaned);
+  if (learjetMatch) {
+    return `LJ${learjetMatch[1]}`;
+  }
+  if (
+    /\bCHALLENGER\b.*\b6(?:00|01|04|05|50)\b/.test(cleaned) ||
+    /\bCL[-\s]?6(?:00|01|04|05|50)\b/.test(cleaned)
+  ) {
+    return "CL60";
+  }
   const atrMatch = /\bATR?[\s-]?(\d{2})\b/.exec(cleaned);
   if (atrMatch) return `ATR${atrMatch[1]}`;
   const poseidonMatch = /\bP-?8(?:I)?\b/.exec(cleaned);

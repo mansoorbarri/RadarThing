@@ -11,10 +11,31 @@ export function normalizeCallsign(callsign: string | undefined): string {
     .replace(/\s+/g, "");
 }
 
+function normalizeBombardierAircraftType(cleaned: string): string | null {
+  const learjetMatch =
+    /\b(?:LEARJET|LEAR\s+JET)\s*(\d{2})\b/.exec(cleaned) ||
+    /\bLJ[-\s]?(\d{2})\b/.exec(cleaned);
+  if (learjetMatch) {
+    return `LJ${learjetMatch[1]}`;
+  }
+
+  if (
+    /\bCHALLENGER\b.*\b6(?:00|01|04|05|50)\b/.test(cleaned) ||
+    /\bCL[-\s]?6(?:00|01|04|05|50)\b/.test(cleaned)
+  ) {
+    return "CL60";
+  }
+
+  return null;
+}
+
 /** Normalize aircraft type (e.g., "Boeing 777-300ER" -> "B777", "Airbus A350-900" -> "A350") */
 export function normalizeAircraftType(type: string | undefined): string | null {
   if (!type) return null;
   const cleaned = type.trim().toUpperCase();
+
+  const bombardierMatch = normalizeBombardierAircraftType(cleaned);
+  if (bombardierMatch) return bombardierMatch;
 
   const poseidonMatch = /\bP-?8(?:I)?\b/.exec(cleaned);
   if (poseidonMatch) return "P8";
