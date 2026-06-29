@@ -3,6 +3,7 @@
  * for Docker builds.
  */
 import "./src/env.js";
+import { withPostHogConfig } from "@posthog/nextjs-config";
 
 /** @type {import("next").NextConfig} */
 const config = {
@@ -67,4 +68,8 @@ const config = {
   },
 };
 
-export default config;
+export default withPostHogConfig(config, {
+  personalApiKey: process.env.POSTHOG_API_KEY,
+  projectId: process.env.POSTHOG_PROJECT_ID,
+  host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+});

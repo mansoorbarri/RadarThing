@@ -493,6 +493,178 @@ export const updateDiscordUsername = mutation({
   },
 });
 
+export const transferUserData = mutation({
+  args: {
+    fromUserId: v.id("users"),
+    toUserId: v.id("users"),
+    systemSecret: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    requireSystem(ctx, args.systemSecret);
+
+    if (args.fromUserId === args.toUserId) {
+      throw new Error("Cannot transfer a user to itself");
+    }
+
+    const [fromUser, toUser] = await Promise.all([
+      ctx.db.get(args.fromUserId),
+      ctx.db.get(args.toUserId),
+    ]);
+
+    if (!fromUser) throw new Error("Source user not found");
+    if (!toUser) throw new Error("Target user not found");
+    if (toUser.isDeleted) throw new Error("Target user is deleted");
+
+    const moved = {
+      flights: 0,
+      virtualAirlineMembers: 0,
+      waypointReminders: 0,
+      challengeCompletions: 0,
+      challengeLeaderboardEntries: 0,
+    };
+
+    const oldStats = await ctx.db
+      .query("userStats")
+      .withIndex("by_userId", (q) => q.eq("userId", args.fromUserId))
+      .first();
+    const targetStats = await ctx.db
+      .query("userStats")
+      .withIndex("by_userId", (q) => q.eq("userId", args.toUserId))
+      .first();
+    const approvedAircraftImages =
+      (oldStats?.approvedAircraftImages ?? 0) +
+      (targetStats?.approvedAircraftImages ?? 0);
+
+    if (targetStats) {
+      await ctx.db.patch(targetStats._id, { approvedAircraftImages });
+    } else if (oldStats) {
+      await ctx.db.insert("userStats", {
+        userId: args.toUserId,
+        totalFlights: 0,
+        totalFlightTimeMs: 0,
+        totalDistanceNm: 0,
+        approvedAircraftImages,
+        streakAtLastFlight: 0,
+        longestStreak: 0,
+      });
+    }
+
+    if (oldStats) {
+      await ctx.db.delete(oldStats._id);
+    }
+
+    const flights = await ctx.db
+      .query("flights")
+      .withIndex("by_userId", (q) => q.eq("userId", args.fromUserId))
+      .collect();
+    for (const flight of flights) {
+      await ctx.db.patch(flight._id, { userId: args.toUserId });
+      moved.flights += 1;
+    }
+
+    const memberships = await ctx.db
+      .query("virtualAirlineMembers")
+      .withIndex("by_userId", (q) => q.eq("userId", args.fromUserId))
+      .collect();
+    for (const membership of memberships) {
+      const existing = await ctx.db
+        .query("virtualAirlineMembers")
+        .withIndex("by_virtualAirlineId_userId", (q) =>
+          q
+            .eq("virtualAirlineId", membership.virtualAirlineId)
+            .eq("userId", args.toUserId),
+        )
+        .first();
+
+      if (existing) {
+        await ctx.db.delete(membership._id);
+      } else {
+        await ctx.db.patch(membership._id, {
+          userId: args.toUserId,
+          clerkId: toUser.clerkId,
+          googleId: toUser.googleId ?? membership.googleId,
+        });
+        moved.virtualAirlineMembers += 1;
+      }
+    }
+
+    const reminders = await ctx.db
+      .query("waypointReminders")
+      .withIndex("by_userId", (q) => q.eq("userId", args.fromUserId))
+      .collect();
+    for (const reminder of reminders) {
+      await ctx.db.patch(reminder._id, {
+        userId: args.toUserId,
+        googleId: toUser.googleId ?? reminder.googleId,
+        discordUsername: toUser.discordUsername ?? reminder.discordUsername,
+      });
+      moved.waypointReminders += 1;
+    }
+
+    const completions = await ctx.db
+      .query("challengeCompletions")
+      .withIndex("by_userId", (q) => q.eq("userId", args.fromUserId))
+      .collect();
+    for (const completion of completions) {
+      const existing = await ctx.db
+        .query("challengeCompletions")
+        .withIndex("by_challengeId_userId", (q) =>
+          q
+            .eq("challengeId", completion.challengeId)
+            .eq("userId", args.toUserId),
+        )
+        .first();
+
+      if (existing) {
+        await ctx.db.delete(completion._id);
+      } else {
+        await ctx.db.patch(completion._id, { userId: args.toUserId });
+        moved.challengeCompletions += 1;
+      }
+    }
+
+    const leaderboardEntries = await ctx.db
+      .query("challengeLeaderboardEntries")
+      .withIndex("by_userId", (q) => q.eq("userId", args.fromUserId))
+      .collect();
+    for (const entry of leaderboardEntries) {
+      const existing = await ctx.db
+        .query("challengeLeaderboardEntries")
+        .withIndex("by_challengeId_userId", (q) =>
+          q.eq("challengeId", entry.challengeId).eq("userId", args.toUserId),
+        )
+        .first();
+
+      if (existing) {
+        await ctx.db.delete(entry._id);
+      } else {
+        await ctx.db.patch(entry._id, { userId: args.toUserId });
+        moved.challengeLeaderboardEntries += 1;
+      }
+    }
+
+    await ctx.db.patch(args.fromUserId, {
+      isDeleted: true,
+      deletedAt: Date.now(),
+      role: "FREE",
+      googleId: undefined,
+      discordUsername: undefined,
+      discordUsernameLower: undefined,
+      stripeCustomerId: undefined,
+      stripeSubscriptionId: undefined,
+      adminProExpiresAt: undefined,
+    });
+
+    return {
+      success: true,
+      fromUserId: args.fromUserId,
+      toUserId: args.toUserId,
+      moved,
+      approvedAircraftImages,
+    };
+  },
+});
+
 // Get all non-deleted users (admin only)
 export const getAll = query({
   args: {},
