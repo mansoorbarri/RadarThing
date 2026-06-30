@@ -1800,6 +1800,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       waypointSignatureRef.current = "";
       setSourceData(map, SOURCE_IDS.worldWaypoints, emptyFeatureCollection());
     };
+    const isStaleWaypointLoad = () => cancelled || mapRef.current !== map;
 
     const loadWaypoints = () => {
       if (!showWaypoints || map.getZoom() < MIN_WAYPOINT_ZOOM) {
@@ -1814,7 +1815,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
 
       loadNavFixes()
         .then((fixes) => {
-          if (cancelled || mapRef.current !== map) return;
+          if (isStaleWaypointLoad()) return;
 
           const features = filterNavFixesInBounds(
             fixes,
@@ -1834,7 +1835,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
           });
         })
         .catch(() => {
-          if (cancelled || mapRef.current !== map) return;
+          if (isStaleWaypointLoad()) return;
 
           setSourceData(
             map,
@@ -1856,9 +1857,9 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     return () => {
       cancelled = true;
       if (timeout) clearTimeout(timeout);
-      map.off("moveend", scheduleLoad);
-      map.off("zoomend", scheduleLoad);
       if (mapRef.current === map) {
+        map.off("moveend", scheduleLoad);
+        map.off("zoomend", scheduleLoad);
         clearWaypoints();
       } else {
         waypointSignatureRef.current = "";
