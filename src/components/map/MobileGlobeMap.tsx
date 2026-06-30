@@ -1794,11 +1794,13 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     if (!mapReady || !map) return;
 
     let timeout: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
 
     const clearWaypoints = () => {
       waypointSignatureRef.current = "";
       setSourceData(map, SOURCE_IDS.worldWaypoints, emptyFeatureCollection());
     };
+    const isStaleWaypointLoad = () => cancelled || mapRef.current !== map;
 
     const loadWaypoints = () => {
       if (!showWaypoints || map.getZoom() < MIN_WAYPOINT_ZOOM) {
@@ -1813,6 +1815,8 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
 
       loadNavFixes()
         .then((fixes) => {
+          if (isStaleWaypointLoad()) return;
+
           const features = filterNavFixesInBounds(
             fixes,
             buildWaypointBoundsParams(map),
@@ -1831,6 +1835,8 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
           });
         })
         .catch(() => {
+          if (isStaleWaypointLoad()) return;
+
           setSourceData(
             map,
             SOURCE_IDS.worldWaypoints,
@@ -1849,10 +1855,15 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     map.on("zoomend", scheduleLoad);
 
     return () => {
+      cancelled = true;
       if (timeout) clearTimeout(timeout);
-      map.off("moveend", scheduleLoad);
-      map.off("zoomend", scheduleLoad);
-      clearWaypoints();
+      if (mapRef.current === map) {
+        map.off("moveend", scheduleLoad);
+        map.off("zoomend", scheduleLoad);
+        clearWaypoints();
+      } else {
+        waypointSignatureRef.current = "";
+      }
     };
   }, [mapReady, showWaypoints]);
 
