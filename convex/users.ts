@@ -726,11 +726,6 @@ export const backfillApprovedAircraftImageStats = mutation({
     const stats = await ctx.db.query("userStats").collect();
     const statsByUserId = new Map(stats.map((entry) => [entry.userId, entry]));
     const usersByClerkId = new Map(users.map((user) => [user.clerkId, user]));
-    const usersByDiscordUsername = new Map(
-      users
-        .filter((user) => user.discordUsername)
-        .map((user) => [user.discordUsername!, user]),
-    );
 
     const approvedImages = await ctx.db
       .query("aircraftImages")
@@ -740,11 +735,7 @@ export const backfillApprovedAircraftImageStats = mutation({
     const approvedCountsByUserId = new Map<Id<"users">, number>();
 
     for (const image of approvedImages) {
-      const matchedUser =
-        usersByClerkId.get(image.uploadedBy) ??
-        (image.discordUsername
-          ? usersByDiscordUsername.get(image.discordUsername)
-          : undefined);
+      const matchedUser = usersByClerkId.get(image.uploadedBy);
 
       if (!matchedUser) continue;
 
