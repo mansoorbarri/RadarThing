@@ -80,10 +80,39 @@ async function getUploaderDiscordUsername(
   return user?.discordUsername ?? null;
 }
 
+async function getUploaderDiscordUsernames(
+  ctx: QueryCtx | MutationCtx,
+  images: Doc<"aircraftImages">[],
+) {
+  const uploadedByValues = Array.from(
+    new Set(images.map((image) => image.uploadedBy)),
+  );
+  const users = await Promise.all(
+    uploadedByValues.map((uploadedBy) =>
+      ctx.db
+        .query("users")
+        .withIndex("by_clerkId", (q) => q.eq("clerkId", uploadedBy))
+        .first(),
+    ),
+  );
+
+  return new Map(
+    uploadedByValues.map((uploadedBy, index) => [
+      uploadedBy,
+      users[index]?.discordUsername ?? null,
+    ]),
+  );
+}
+
 async function aircraftImageResponse(
   ctx: QueryCtx | MutationCtx,
   image: Doc<"aircraftImages">,
+  uploaderDiscordUsernames?: Map<string, string | null>,
 ) {
+  const discordUsername = uploaderDiscordUsernames?.has(image.uploadedBy)
+    ? (uploaderDiscordUsernames.get(image.uploadedBy) ?? null)
+    : await getUploaderDiscordUsername(ctx, image.uploadedBy);
+
   return {
     id: image._id,
     airlineIata: image.airlineIata,
@@ -91,7 +120,7 @@ async function aircraftImageResponse(
     aircraftType: image.aircraftType,
     imageUrl: image.imageUrl,
     imageKey: image.imageKey ?? null,
-    discordUsername: await getUploaderDiscordUsername(ctx, image.uploadedBy),
+    discordUsername,
     isMilitary: image.isMilitary ?? false,
     isApproved: image.isApproved,
     uploadedBy: image.uploadedBy,
@@ -158,9 +187,15 @@ export const getApproved = query({
       if (airlineCompare !== 0) return airlineCompare;
       return a.aircraftType.localeCompare(b.aircraftType);
     });
+    const uploaderDiscordUsernames = await getUploaderDiscordUsernames(
+      ctx,
+      sortedImages,
+    );
 
     return await Promise.all(
-      sortedImages.map((image) => aircraftImageResponse(ctx, image)),
+      sortedImages.map((image) =>
+        aircraftImageResponse(ctx, image, uploaderDiscordUsernames),
+      ),
     );
   },
 });
@@ -180,9 +215,15 @@ export const getPending = query({
       .withIndex("by_isApproved", (q) => q.eq("isApproved", false))
       .order("desc")
       .collect();
+    const uploaderDiscordUsernames = await getUploaderDiscordUsernames(
+      ctx,
+      images,
+    );
 
     return await Promise.all(
-      images.map((image) => aircraftImageResponse(ctx, image)),
+      images.map((image) =>
+        aircraftImageResponse(ctx, image, uploaderDiscordUsernames),
+      ),
     );
   },
 });
@@ -208,9 +249,15 @@ export const getAll = query({
       // Then by creation time descending
       return b._creationTime - a._creationTime;
     });
+    const uploaderDiscordUsernames = await getUploaderDiscordUsernames(
+      ctx,
+      sortedImages,
+    );
 
     return await Promise.all(
-      sortedImages.map((image) => aircraftImageResponse(ctx, image)),
+      sortedImages.map((image) =>
+        aircraftImageResponse(ctx, image, uploaderDiscordUsernames),
+      ),
     );
   },
 });
@@ -702,11 +749,16 @@ export const getApprovedCountByUser = query({
 export const clearLegacySubmittedDiscordUsernames = mutation({
   args: {
     systemSecret: v.string(),
+    batchSize: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     requireSystem(ctx, args.systemSecret);
 
-    const images = await ctx.db.query("aircraftImages").collect();
+    const batchSize = Math.max(1, Math.min(args.batchSize ?? 100, 200));
+    const images = await ctx.db
+      .query("aircraftImages")
+      .filter((q) => q.neq(q.field("discordUsername"), undefined))
+      .take(batchSize);
     let cleared = 0;
 
     for (const image of images) {
@@ -719,6 +771,7 @@ export const clearLegacySubmittedDiscordUsernames = mutation({
     return {
       scanned: images.length,
       cleared,
+      hasMore: images.length === batchSize,
     };
   },
 });
