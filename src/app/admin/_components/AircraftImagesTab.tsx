@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
+import Link from "next/link";
 import { RejectModal } from "./RejectModal";
 import { ConflictModal } from "./ConflictModal";
 import { ConfirmModal } from "./ConfirmModal";
@@ -69,6 +70,48 @@ function getUploaderDisplay(
     uploader?.discordUsername ??
     uploader?._id ??
     image.uploadedBy
+  );
+}
+
+function getUploaderPilotHref(
+  image: ImageType,
+  usersByClerkId?: Map<
+    string,
+    { _id: string; discordUsername?: string | null }
+  >,
+) {
+  const uploader = image.uploadedBy
+    ? usersByClerkId?.get(image.uploadedBy)
+    : undefined;
+  return uploader?._id ? `/pilot/${uploader._id}` : null;
+}
+
+function UploaderLink({
+  image,
+  usersByClerkId,
+}: {
+  image: ImageType;
+  usersByClerkId: Map<
+    string,
+    { _id: string; discordUsername?: string | null }
+  >;
+}) {
+  const uploaderDisplay = getUploaderDisplay(image, usersByClerkId);
+  const pilotHref = getUploaderPilotHref(image, usersByClerkId);
+
+  if (!uploaderDisplay) return null;
+
+  if (!pilotHref) {
+    return <span className="text-cyan-400">{uploaderDisplay}</span>;
+  }
+
+  return (
+    <Link
+      href={pilotHref}
+      className="text-cyan-400 transition-colors hover:text-cyan-300 hover:underline"
+    >
+      {uploaderDisplay}
+    </Link>
   );
 }
 
@@ -1155,9 +1198,10 @@ export function AircraftImagesTab({
                     </div>
                     <p className="mb-1 text-xs text-slate-500">
                       Uploaded by{" "}
-                      <span className="text-cyan-400">
-                        {getUploaderDisplay(image, usersByClerkId)}
-                      </span>
+                      <UploaderLink
+                        image={image}
+                        usersByClerkId={usersByClerkId}
+                      />
                     </p>
                     <p className="mb-3 text-xs text-slate-600">
                       {new Date(image.createdAt).toLocaleDateString()}
@@ -1265,9 +1309,10 @@ export function AircraftImagesTab({
                     </div>
                     <p className="mt-1 text-xs text-slate-500">
                       Uploaded by{" "}
-                      <span className="text-cyan-400">
-                        {getUploaderDisplay(image, usersByClerkId)}
-                      </span>
+                      <UploaderLink
+                        image={image}
+                        usersByClerkId={usersByClerkId}
+                      />
                     </p>
                     {image.approvedAt && (
                       <p className="mt-1 text-xs text-slate-600">
