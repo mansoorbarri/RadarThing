@@ -91,10 +91,7 @@ function UploaderLink({
   usersByClerkId,
 }: {
   image: ImageType;
-  usersByClerkId: Map<
-    string,
-    { _id: string; discordUsername?: string | null }
-  >;
+  usersByClerkId: Map<string, { _id: string; discordUsername?: string | null }>;
 }) {
   const uploaderDisplay = getUploaderDisplay(image, usersByClerkId);
   const pilotHref = getUploaderPilotHref(image, usersByClerkId);
@@ -427,11 +424,7 @@ export function AircraftImagesTab({
         img.airlineIcao !== imageAirlineFilter
       )
         return;
-      if (
-        imageUploaderFilter &&
-        getUploaderDisplay(img, usersByClerkId) !== imageUploaderFilter
-      )
-        return;
+      if (imageUploaderFilter && img.uploadedBy !== imageUploaderFilter) return;
       types.add(img.aircraftType);
     });
     return Array.from(types).sort();
@@ -444,8 +437,10 @@ export function AircraftImagesTab({
   ]);
 
   const uniqueImageUploaders = useMemo(() => {
-    const uploaders = new Set<string>();
-    allImages.forEach((img) => {
+    const uploadersMap = new Map<string, string>();
+    pendingImages.forEach((img) => {
+      const uploaderId = img.uploadedBy;
+      if (!uploaderId) return;
       const uploader = getUploaderDisplay(img, usersByClerkId);
       if (!uploader) return;
       if (!matchesImageSearch(img, imageSearchQuery, usersByClerkId)) return;
@@ -458,16 +453,13 @@ export function AircraftImagesTab({
       if (imageAircraftFilter && img.aircraftType !== imageAircraftFilter)
         return;
 
-      const hasDiscordUsername =
-        Boolean(img.discordUsername) ||
-        Boolean(usersByClerkId.get(img.uploadedBy ?? "")?.discordUsername);
-      if (!hasDiscordUsername) return;
-
-      uploaders.add(uploader);
+      uploadersMap.set(uploaderId, uploader);
     });
-    return Array.from(uploaders).sort((a, b) => a.localeCompare(b));
+    return Array.from(uploadersMap.entries())
+      .map(([id, label]) => ({ id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   }, [
-    allImages,
+    pendingImages,
     imageSearchQuery,
     imageAirlineFilter,
     imageAircraftFilter,
@@ -497,7 +489,9 @@ export function AircraftImagesTab({
   useEffect(() => {
     if (
       imageUploaderFilter &&
-      !uniqueImageUploaders.includes(imageUploaderFilter)
+      !uniqueImageUploaders.some(
+        (uploader) => uploader.id === imageUploaderFilter,
+      )
     ) {
       setImageUploaderFilter("");
     }
@@ -520,10 +514,7 @@ export function AircraftImagesTab({
           return false;
         if (imageAircraftFilter && image.aircraftType !== imageAircraftFilter)
           return false;
-        if (
-          imageUploaderFilter &&
-          getUploaderDisplay(image, usersByClerkId) !== imageUploaderFilter
-        )
+        if (imageUploaderFilter && image.uploadedBy !== imageUploaderFilter)
           return false;
         if (!matchesImageSearch(image, imageSearchQuery, usersByClerkId))
           return false;
@@ -963,11 +954,11 @@ export function AircraftImagesTab({
               </SelectItem>
               {uniqueImageUploaders.map((uploader) => (
                 <SelectItem
-                  key={uploader}
-                  value={uploader}
+                  key={uploader.id}
+                  value={uploader.id}
                   className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
                 >
-                  {uploader}
+                  {uploader.label}
                 </SelectItem>
               ))}
             </SelectContent>
