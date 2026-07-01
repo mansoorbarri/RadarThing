@@ -15,21 +15,6 @@ import {
 } from "~/components/ui/image-uploader";
 import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 
-// Cookie helpers
-function getCookie(name: string): string {
-  if (typeof document === "undefined") return "";
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2)
-    return decodeURIComponent(parts.pop()?.split(";").shift() || "");
-  return "";
-}
-
-function setCookie(name: string, value: string, days = 365) {
-  if (typeof document === "undefined") return;
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
-}
 import {
   Upload,
   Plane,
@@ -87,15 +72,12 @@ export default function AircraftImagesPage() {
     aircraftType: "",
     imageUrl: "",
     imageKey: "",
-    discordUsername: "",
   });
 
-  // Load Discord username from cookie on mount and track page view
+  // Track page view
   useEffect(() => {
-    const savedUsername = getCookie("radarthing_discord");
-    if (savedUsername) {
-      setFormData((prev) => ({ ...prev, discordUsername: savedUsername }));
-    }
+    document.cookie =
+      "radarthing_discord=; Max-Age=0; path=/; SameSite=Lax";
     Analytics.imageGalleryViewed();
   }, []);
   const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
@@ -306,7 +288,6 @@ export default function AircraftImagesPage() {
       aircraftType: formData.aircraftType,
       imageUrl,
       imageKey,
-      discordUsername: formData.discordUsername || undefined,
       isMilitary,
     });
 
@@ -317,11 +298,6 @@ export default function AircraftImagesPage() {
         airlineIcao: formData.airlineIcao,
         aircraftType: formData.aircraftType,
       });
-
-      // Save Discord username to cookie for next time
-      if (formData.discordUsername) {
-        setCookie("radarthing_discord", formData.discordUsername);
-      }
 
       // Stage 4: Success animation
       setSubmitStage("success");
@@ -335,15 +311,13 @@ export default function AircraftImagesPage() {
         uploadedDataRef.current = null;
         uploaderRef.current?.reset();
         setIsMilitary(false);
-        // Keep Discord username when resetting form
-        setFormData((prev) => ({
+        setFormData({
           airlineIata: "",
           airlineIcao: "",
           aircraftType: "",
           imageUrl: "",
           imageKey: "",
-          discordUsername: prev.discordUsername,
-        }));
+        });
       }, 1500);
     } else {
       toast.error(result.error || "Failed to submit image");
@@ -701,15 +675,13 @@ export default function AircraftImagesPage() {
                 setHasSelectedFile(false);
                 uploadedDataRef.current = null;
                 uploaderRef.current?.reset();
-                // Keep Discord username when closing modal
-                setFormData((prev) => ({
+                setFormData({
                   airlineIata: "",
                   airlineIcao: "",
                   aircraftType: "",
                   imageUrl: "",
                   imageKey: "",
-                  discordUsername: prev.discordUsername,
-                }));
+                });
               }}
               disabled={isProcessing}
               className="absolute top-4 right-4 cursor-pointer text-slate-400 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
@@ -870,25 +842,6 @@ export default function AircraftImagesPage() {
                   ? "Enter the air force name (e.g., USAF, PAF, RAF) and aircraft model."
                   : "Aircraft should be base model only, not the varient. Like: B777. Not: B77W."}
               </p>
-
-              <div>
-                <label className="mb-2 block font-mono text-xs text-slate-400">
-                  YOUR DISCORD USERNAME (OPTIONAL)
-                </label>
-                <input
-                  type="text"
-                  value={formData.discordUsername}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      discordUsername: e.target.value,
-                    })
-                  }
-                  placeholder="e.g., xyzmani"
-                  disabled={isProcessing}
-                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
-                />
-              </div>
 
               <div>
                 <label className="mb-2 block font-mono text-xs text-slate-400">

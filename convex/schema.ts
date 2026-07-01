@@ -93,7 +93,7 @@ export default defineSchema({
     aircraftType: v.string(),
     imageUrl: v.string(),
     imageKey: v.optional(v.string()), // UploadThing file key for deletion
-    discordUsername: v.optional(v.string()),
+    discordUsername: v.optional(v.string()), // Legacy submitted value; no new writes.
     isMilitary: v.optional(v.boolean()), // true for military aircraft (AF name stored in airlineIcao)
     isApproved: v.boolean(),
     uploadedBy: v.string(), // Clerk user ID

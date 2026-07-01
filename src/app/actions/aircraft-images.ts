@@ -331,7 +331,6 @@ export async function createAircraftImage(data: {
   aircraftType: string;
   imageUrl: string;
   imageKey?: string;
-  discordUsername?: string;
   isMilitary?: boolean;
 }): Promise<{ success: boolean; error?: string; image?: AircraftImage }> {
   const userId = await getCurrentUserId();
@@ -413,7 +412,6 @@ export async function createAircraftImage(data: {
       aircraftType,
       imageUrl: data.imageUrl,
       imageKey: data.imageKey,
-      discordUsername: data.discordUsername,
       isMilitary: data.isMilitary || undefined,
       uploadedBy: userId,
     });

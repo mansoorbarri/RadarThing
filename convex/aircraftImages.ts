@@ -1,7 +1,17 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
+import {
+  mutation,
+  query,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server";
 import { logAdminTelemetry } from "./adminTelemetry";
-import { requireAdmin, requireAuthenticatedClerkId } from "./lib/auth";
+import {
+  requireAdmin,
+  requireAuthenticatedClerkId,
+  requireSystem,
+} from "./lib/auth";
 
 async function incrementApprovedAircraftImages(ctx: any, uploadedBy: string) {
   const user = await ctx.db
@@ -58,6 +68,40 @@ function normalizeAircraftTypeKey(aircraftType: string): string {
   return cleaned;
 }
 
+async function getUploaderDiscordUsername(
+  ctx: QueryCtx | MutationCtx,
+  uploadedBy: string,
+) {
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_clerkId", (q) => q.eq("clerkId", uploadedBy))
+    .first();
+
+  return user?.discordUsername ?? null;
+}
+
+async function aircraftImageResponse(
+  ctx: QueryCtx | MutationCtx,
+  image: Doc<"aircraftImages">,
+) {
+  return {
+    id: image._id,
+    airlineIata: image.airlineIata,
+    airlineIcao: image.airlineIcao,
+    aircraftType: image.aircraftType,
+    imageUrl: image.imageUrl,
+    imageKey: image.imageKey ?? null,
+    discordUsername: await getUploaderDiscordUsername(ctx, image.uploadedBy),
+    isMilitary: image.isMilitary ?? false,
+    isApproved: image.isApproved,
+    uploadedBy: image.uploadedBy,
+    approvedBy: image.approvedBy ?? null,
+    approvedAt: image.approvedAt ?? null,
+    createdAt: image._creationTime,
+    updatedAt: image._creationTime,
+  };
+}
+
 // Get approved image for a specific airline + aircraft type
 // Accepts either IATA (2-letter) or ICAO (3-letter) code
 export const getApprovedImage = query({
@@ -95,22 +139,7 @@ export const getApprovedImage = query({
 
     if (!image) return null;
 
-    return {
-      id: image._id,
-      airlineIata: image.airlineIata,
-      airlineIcao: image.airlineIcao,
-      aircraftType: image.aircraftType,
-      imageUrl: image.imageUrl,
-      imageKey: image.imageKey ?? null,
-      discordUsername: image.discordUsername ?? null,
-      isMilitary: image.isMilitary ?? false,
-      isApproved: image.isApproved,
-      uploadedBy: image.uploadedBy,
-      approvedBy: image.approvedBy ?? null,
-      approvedAt: image.approvedAt ?? null,
-      createdAt: image._creationTime,
-      updatedAt: image._creationTime,
-    };
+    return await aircraftImageResponse(ctx, image);
   },
 });
 
@@ -124,28 +153,15 @@ export const getApproved = query({
       .collect();
 
     // Sort by IATA code then aircraft type
-    return images
-      .sort((a, b) => {
-        const airlineCompare = a.airlineIata.localeCompare(b.airlineIata);
-        if (airlineCompare !== 0) return airlineCompare;
-        return a.aircraftType.localeCompare(b.aircraftType);
-      })
-      .map((image) => ({
-        id: image._id,
-        airlineIata: image.airlineIata,
-        airlineIcao: image.airlineIcao,
-        aircraftType: image.aircraftType,
-        imageUrl: image.imageUrl,
-        imageKey: image.imageKey ?? null,
-        discordUsername: image.discordUsername ?? null,
-        isMilitary: image.isMilitary ?? false,
-        isApproved: image.isApproved,
-        uploadedBy: image.uploadedBy,
-        approvedBy: image.approvedBy ?? null,
-        approvedAt: image.approvedAt ?? null,
-        createdAt: image._creationTime,
-        updatedAt: image._creationTime,
-      }));
+    const sortedImages = images.sort((a, b) => {
+      const airlineCompare = a.airlineIata.localeCompare(b.airlineIata);
+      if (airlineCompare !== 0) return airlineCompare;
+      return a.aircraftType.localeCompare(b.aircraftType);
+    });
+
+    return await Promise.all(
+      sortedImages.map((image) => aircraftImageResponse(ctx, image)),
+    );
   },
 });
 
@@ -165,22 +181,9 @@ export const getPending = query({
       .order("desc")
       .collect();
 
-    return images.map((image) => ({
-      id: image._id,
-      airlineIata: image.airlineIata,
-      airlineIcao: image.airlineIcao,
-      aircraftType: image.aircraftType,
-      imageUrl: image.imageUrl,
-      imageKey: image.imageKey ?? null,
-      discordUsername: image.discordUsername ?? null,
-      isMilitary: image.isMilitary ?? false,
-      isApproved: image.isApproved,
-      uploadedBy: image.uploadedBy,
-      approvedBy: image.approvedBy ?? null,
-      approvedAt: image.approvedAt ?? null,
-      createdAt: image._creationTime,
-      updatedAt: image._creationTime,
-    }));
+    return await Promise.all(
+      images.map((image) => aircraftImageResponse(ctx, image)),
+    );
   },
 });
 
@@ -197,31 +200,18 @@ export const getAll = query({
     const images = await ctx.db.query("aircraftImages").collect();
 
     // Sort: pending first (isApproved: false), then by createdAt descending
-    return images
-      .sort((a, b) => {
-        // Pending first
-        if (a.isApproved !== b.isApproved) {
-          return a.isApproved ? 1 : -1;
-        }
-        // Then by creation time descending
-        return b._creationTime - a._creationTime;
-      })
-      .map((image) => ({
-        id: image._id,
-        airlineIata: image.airlineIata,
-        airlineIcao: image.airlineIcao,
-        aircraftType: image.aircraftType,
-        imageUrl: image.imageUrl,
-        imageKey: image.imageKey ?? null,
-        discordUsername: image.discordUsername ?? null,
-        isMilitary: image.isMilitary ?? false,
-        isApproved: image.isApproved,
-        uploadedBy: image.uploadedBy,
-        approvedBy: image.approvedBy ?? null,
-        approvedAt: image.approvedAt ?? null,
-        createdAt: image._creationTime,
-        updatedAt: image._creationTime,
-      }));
+    const sortedImages = images.sort((a, b) => {
+      // Pending first
+      if (a.isApproved !== b.isApproved) {
+        return a.isApproved ? 1 : -1;
+      }
+      // Then by creation time descending
+      return b._creationTime - a._creationTime;
+    });
+
+    return await Promise.all(
+      sortedImages.map((image) => aircraftImageResponse(ctx, image)),
+    );
   },
 });
 
@@ -232,22 +222,7 @@ export const getById = query({
     const image = await ctx.db.get(args.id);
     if (!image) return null;
 
-    return {
-      id: image._id,
-      airlineIata: image.airlineIata,
-      airlineIcao: image.airlineIcao,
-      aircraftType: image.aircraftType,
-      imageUrl: image.imageUrl,
-      imageKey: image.imageKey ?? null,
-      discordUsername: image.discordUsername ?? null,
-      isMilitary: image.isMilitary ?? false,
-      isApproved: image.isApproved,
-      uploadedBy: image.uploadedBy,
-      approvedBy: image.approvedBy ?? null,
-      approvedAt: image.approvedAt ?? null,
-      createdAt: image._creationTime,
-      updatedAt: image._creationTime,
-    };
+    return await aircraftImageResponse(ctx, image);
   },
 });
 
@@ -318,7 +293,6 @@ export const create = mutation({
     aircraftType: v.string(),
     imageUrl: v.string(),
     imageKey: v.optional(v.string()),
-    discordUsername: v.optional(v.string()),
     isMilitary: v.optional(v.boolean()),
     uploadedBy: v.string(),
   },
@@ -331,7 +305,6 @@ export const create = mutation({
       aircraftType: normalizeAircraftTypeKey(args.aircraftType),
       imageUrl: args.imageUrl,
       imageKey: args.imageKey,
-      discordUsername: args.discordUsername,
       isMilitary: args.isMilitary,
       isApproved: false,
       uploadedBy,
@@ -352,26 +325,11 @@ export const create = mutation({
         airlineIcao: image.airlineIcao,
         aircraftType: image.aircraftType,
         isMilitary: image.isMilitary ?? false,
-        discordUsername: image.discordUsername ?? null,
+        discordUsername: await getUploaderDiscordUsername(ctx, image.uploadedBy),
       },
     });
 
-    return {
-      id: image._id,
-      airlineIata: image.airlineIata,
-      airlineIcao: image.airlineIcao,
-      aircraftType: image.aircraftType,
-      imageUrl: image.imageUrl,
-      imageKey: image.imageKey ?? null,
-      discordUsername: image.discordUsername ?? null,
-      isMilitary: image.isMilitary ?? false,
-      isApproved: image.isApproved,
-      uploadedBy: image.uploadedBy,
-      approvedBy: image.approvedBy ?? null,
-      approvedAt: image.approvedAt ?? null,
-      createdAt: image._creationTime,
-      updatedAt: image._creationTime,
-    };
+    return await aircraftImageResponse(ctx, image);
   },
 });
 
@@ -741,6 +699,30 @@ export const getApprovedCountByUser = query({
   },
 });
 
+export const clearLegacySubmittedDiscordUsernames = mutation({
+  args: {
+    systemSecret: v.string(),
+  },
+  handler: async (ctx, args) => {
+    requireSystem(ctx, args.systemSecret);
+
+    const images = await ctx.db.query("aircraftImages").collect();
+    let cleared = 0;
+
+    for (const image of images) {
+      if ("discordUsername" in image) {
+        await ctx.db.patch(image._id, { discordUsername: undefined } as any);
+        cleared += 1;
+      }
+    }
+
+    return {
+      scanned: images.length,
+      cleared,
+    };
+  },
+});
+
 // Find existing approved image with full details (for conflict resolution modal)
 export const findExistingApprovedFull = query({
   args: {
@@ -769,21 +751,6 @@ export const findExistingApprovedFull = query({
     if (!image) return null;
     if (args.excludeId && image._id === args.excludeId) return null;
 
-    return {
-      id: image._id,
-      airlineIata: image.airlineIata,
-      airlineIcao: image.airlineIcao,
-      aircraftType: image.aircraftType,
-      imageUrl: image.imageUrl,
-      imageKey: image.imageKey ?? null,
-      discordUsername: image.discordUsername ?? null,
-      isMilitary: image.isMilitary ?? false,
-      isApproved: image.isApproved,
-      uploadedBy: image.uploadedBy,
-      approvedBy: image.approvedBy ?? null,
-      approvedAt: image.approvedAt ?? null,
-      createdAt: image._creationTime,
-      updatedAt: image._creationTime,
-    };
+    return await aircraftImageResponse(ctx, image);
   },
 });

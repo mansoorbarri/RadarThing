@@ -66,8 +66,8 @@ function getUploaderDisplay(
     ? usersByClerkId?.get(image.uploadedBy)
     : undefined;
   return (
-    image.discordUsername ??
     uploader?.discordUsername ??
+    image.discordUsername ??
     uploader?._id ??
     image.uploadedBy
   );
