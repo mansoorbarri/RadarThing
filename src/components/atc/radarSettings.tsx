@@ -273,9 +273,6 @@ export const RadarSettings = ({
                   Switch between the flat Leaflet map and globe renderer.
                 </p>
               </div>
-              <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-1 text-[10px] tracking-wider text-cyan-200 uppercase">
-                {mapRenderer === "globe" ? "Globe" : "Flat"}
-              </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -423,6 +420,19 @@ export const RadarSettings = ({
           isOpen={openSections.weather}
           onToggle={() => toggleSection("weather")}
         >
+          {runwayCenterlinePreferences &&
+          onRunwayCenterlinePreferencesChange ? (
+            <SettingsToggle
+              label="Runway Centerlines"
+              checked={runwayCenterlinePreferences.enabled}
+              onChange={(enabled) =>
+                updateRunwayCenterlinePreferences({ enabled })
+              }
+              disabled={!isPRO}
+              proBadgeSource="radar_settings_runway_centerlines_lock"
+            />
+          ) : null}
+
           <SettingsToggle
             label="Waypoints"
             checked={showWaypoints}
@@ -662,15 +672,6 @@ export const RadarSettings = ({
             </div>
 
             <div className="space-y-3 rounded-lg border border-white/10 bg-black/20 p-3">
-              <SettingsToggle
-                label="Runway Centerlines"
-                description="Show dashed runway extended centerlines in radar mode."
-                checked={runwayCenterlinePreferences.enabled}
-                onChange={(enabled) =>
-                  updateRunwayCenterlinePreferences({ enabled })
-                }
-              />
-
               <div
                 className={`space-y-3 ${!runwayCenterlinePreferences.enabled ? "opacity-50" : ""}`}
               >

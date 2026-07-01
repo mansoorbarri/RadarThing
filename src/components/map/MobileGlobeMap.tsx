@@ -1008,6 +1008,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       baseLayer: isRadarMode ? "radar" : isOSMMode ? "osm" : "satellite",
       mapRenderer,
       openAIP: isOpenAIPEnabled,
+      runwayCenterlines: runwayCenterlinePreferences.enabled,
       waypoints: showWaypoints,
       precipitation: showPrecipitation,
       airmets: showAirmets,
@@ -1019,6 +1020,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       isOSMMode,
       isRadarMode,
       mapRenderer,
+      runwayCenterlinePreferences.enabled,
       showWaypoints,
       showAirmets,
       showConflicts,
@@ -1183,9 +1185,18 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       const preset = layerPresets.find((entry) => entry.id === presetId);
       if (!preset) return;
 
+      const nextRunwayCenterlines =
+        canUseRadarMode && (preset.runwayCenterlines ?? false);
+
       setBooleanCookie("map_radar_mode", preset.baseLayer === "radar");
       setBooleanCookie("map_osm_mode", preset.baseLayer === "osm");
       setBooleanCookie("map_openaip", preset.openAIP);
+      setRunwayCenterlinePreferences((currentPreferences) =>
+        setStoredRunwayCenterlinePreferences({
+          ...currentPreferences,
+          enabled: nextRunwayCenterlines,
+        }),
+      );
       setBooleanCookie("map_waypoints", preset.waypoints ?? false);
       setBooleanCookie("weather_precipitation", preset.precipitation);
       setBooleanCookie("weather_airmets", preset.airmets);
@@ -1210,7 +1221,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
         onMapRendererChange(preset.mapRenderer);
       }
     },
-    [layerPresets, mapRenderer, onMapRendererChange],
+    [canUseRadarMode, layerPresets, mapRenderer, onMapRendererChange],
   );
 
   const saveLayerPreset = useCallback(

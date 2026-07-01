@@ -239,6 +239,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       baseLayer: isRadarMode ? "radar" : isOSMMode ? "osm" : "satellite",
       mapRenderer,
       openAIP: isOpenAIPEnabled,
+      runwayCenterlines: runwayCenterlinePreferences.enabled,
       waypoints: showWaypoints,
       precipitation: showPrecipitation,
       airmets: showAirmets,
@@ -250,6 +251,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       isOSMMode,
       isRadarMode,
       mapRenderer,
+      runwayCenterlinePreferences.enabled,
       showWaypoints,
       showAirmets,
       showConflicts,
@@ -336,6 +338,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       let nextAirmets = preset.airmets;
       let nextSigmets = preset.sigmets;
       let nextConflicts = preset.conflicts;
+      let nextRunwayCenterlines = preset.runwayCenterlines ?? false;
 
       if (preset.baseLayer === "radar" && !canUseRadarMode) {
         skipped.push("Radar Mode");
@@ -353,10 +356,20 @@ const MapComponent: React.FC<MapComponentProps> = ({
         skipped.push("Conflict Alerts");
         nextConflicts = false;
       }
+      if (nextRunwayCenterlines && !canUseRadarMode) {
+        skipped.push("Runway Centerlines");
+        nextRunwayCenterlines = false;
+      }
 
       setBooleanCookie("map_radar_mode", nextBaseLayer === "radar");
       setBooleanCookie("map_osm_mode", nextBaseLayer === "osm");
       setBooleanCookie("map_openaip", preset.openAIP);
+      setRunwayCenterlinePreferences((currentPreferences) =>
+        setStoredRunwayCenterlinePreferences({
+          ...currentPreferences,
+          enabled: nextRunwayCenterlines,
+        }),
+      );
       setBooleanCookie("map_waypoints", preset.waypoints ?? false);
       setBooleanCookie("weather_precipitation", preset.precipitation);
       setBooleanCookie("weather_airmets", nextAirmets);

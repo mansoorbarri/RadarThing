@@ -5,6 +5,7 @@ export interface MapLayerPresetState {
   baseLayer: MapBaseLayer;
   mapRenderer?: MapRenderer;
   openAIP: boolean;
+  runwayCenterlines?: boolean;
   waypoints?: boolean;
   precipitation: boolean;
   airmets: boolean;
@@ -52,6 +53,8 @@ function isMapLayerPreset(value: unknown): value is MapLayerPreset {
     isMapBaseLayer(preset.baseLayer) &&
     (preset.mapRenderer === undefined || isMapRenderer(preset.mapRenderer)) &&
     typeof preset.openAIP === "boolean" &&
+    (preset.runwayCenterlines === undefined ||
+      typeof preset.runwayCenterlines === "boolean") &&
     (preset.waypoints === undefined || typeof preset.waypoints === "boolean") &&
     typeof preset.precipitation === "boolean" &&
     typeof preset.airmets === "boolean" &&
@@ -112,6 +115,8 @@ export function mapLayerPresetStateEquals(
     left.baseLayer === right.baseLayer &&
     rendererMatches &&
     left.openAIP === right.openAIP &&
+    (left.runwayCenterlines ?? false) ===
+      (right.runwayCenterlines ?? false) &&
     (left.waypoints ?? false) === (right.waypoints ?? false) &&
     left.precipitation === right.precipitation &&
     left.airmets === right.airmets &&

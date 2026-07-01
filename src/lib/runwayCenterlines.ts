@@ -11,7 +11,7 @@ export interface RunwayCenterlinePreferences {
 
 export const DEFAULT_RUNWAY_CENTERLINE_PREFERENCES: RunwayCenterlinePreferences =
   {
-    enabled: true,
+    enabled: false,
     lengthNm: 10,
   };
 
