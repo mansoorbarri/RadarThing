@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as activeFlightSessions from "../activeFlightSessions.js";
 import type * as activeTrackers from "../activeTrackers.js";
 import type * as adminTelemetry from "../adminTelemetry.js";
 import type * as aircraftImages from "../aircraftImages.js";
@@ -32,6 +33,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  activeFlightSessions: typeof activeFlightSessions;
   activeTrackers: typeof activeTrackers;
   adminTelemetry: typeof adminTelemetry;
   aircraftImages: typeof aircraftImages;
