@@ -17,6 +17,7 @@
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
+    "test:active-flight-sessions": "tsx --test convex/activeFlightSessions.test.ts",
     "preview": "next build && next start",
     "start": "next start",
     "typecheck": "tsc --noEmit"

@@ -74,6 +74,17 @@ export default defineSchema({
     .index("by_userId_startTime", ["userId", "startTime"])
     .index("by_startTime", ["startTime"]),
 
+  activeFlightSessions: defineTable({
+    userId: v.id("users"),
+    state: v.union(v.literal("active"), v.literal("disconnected")),
+    originalId: v.string(),
+    session: v.any(),
+    disconnectedAt: v.optional(v.number()),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_updatedAt", ["updatedAt"]),
+
   userStats: defineTable({
     userId: v.id("users"),
     totalFlights: v.number(),
