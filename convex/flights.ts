@@ -434,6 +434,7 @@ export const create = mutation({
     routeData: v.optional(v.any()),
     startTime: v.number(),
     endTime: v.optional(v.number()),
+    dedupeKey: v.optional(v.string()),
     systemSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -443,6 +444,16 @@ export const create = mutation({
         throw new Error("User not found");
       }
       await requireAuthenticatedClerkId(ctx, user.clerkId);
+    }
+
+    if (args.dedupeKey) {
+      const existingFlight = await ctx.db
+        .query("flights")
+        .withIndex("by_dedupeKey", (q) => q.eq("dedupeKey", args.dedupeKey))
+        .first();
+      if (existingFlight) {
+        return existingFlight._id;
+      }
     }
 
     const statsExcludedReason = getStatsExcludedReason(args);
@@ -460,6 +471,7 @@ export const create = mutation({
       routeData: args.routeData,
       startTime: args.startTime,
       endTime: args.endTime,
+      dedupeKey: args.dedupeKey,
     });
 
     if (statsExcludedReason) {

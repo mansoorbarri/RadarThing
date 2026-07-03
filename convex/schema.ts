@@ -69,10 +69,12 @@ export default defineSchema({
     routeData: v.optional(v.any()), // JSON data - array of coordinates
     startTime: v.number(), // timestamp
     endTime: v.optional(v.number()), // timestamp
+    dedupeKey: v.optional(v.string()),
   })
     .index("by_userId", ["userId"])
     .index("by_userId_startTime", ["userId", "startTime"])
-    .index("by_startTime", ["startTime"]),
+    .index("by_startTime", ["startTime"])
+    .index("by_dedupeKey", ["dedupeKey"]),
 
   activeFlightSessions: defineTable({
     userId: v.id("users"),
