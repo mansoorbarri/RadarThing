@@ -24,6 +24,15 @@ test("falls back to stored duration when endTime is missing", () => {
   );
 });
 
+test("falls back to stored duration when startTime is missing", () => {
+  assert.equal(
+    getFlightDurationMs({
+      duration: 5_000,
+    }),
+    5_000,
+  );
+});
+
 test("falls back to stored duration when endTime is not after startTime", () => {
   assert.equal(
     getFlightDurationMs({
@@ -32,6 +41,16 @@ test("falls back to stored duration when endTime is not after startTime", () => 
       duration: 5_000,
     }),
     5_000,
+  );
+});
+
+test("clamps negative stored durations to zero", () => {
+  assert.equal(
+    getFlightDurationMs({
+      startTime: 1_000,
+      duration: -5_000,
+    }),
+    0,
   );
 });
 

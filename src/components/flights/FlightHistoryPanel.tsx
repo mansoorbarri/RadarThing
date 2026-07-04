@@ -74,9 +74,8 @@ function formatDate(timestamp: number) {
 }
 
 function formatDuration(start: number, end?: number, duration?: number) {
-  if (!end && duration === undefined) return "In Progress";
-  const ms =
-    getFlightDurationMs({ startTime: start, endTime: end, duration }) ?? 0;
+  const ms = getFlightDurationMs({ startTime: start, endTime: end, duration });
+  if (ms == null) return "In Progress";
   const hours = Math.floor(ms / (1000 * 60 * 60));
   const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
   if (hours === 0) return `${minutes}m`;
