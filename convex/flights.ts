@@ -19,6 +19,7 @@ import {
   getEffectiveAccessRole,
   hasEffectiveProAccess,
 } from "../src/lib/proAccess";
+import { getFlightDurationMs } from "../src/lib/flightDuration";
 import {
   isSystemSecretValid,
   requireAdmin,
@@ -174,15 +175,7 @@ function getRecordedFlightDurationMs(flight: {
   startTime: number;
   endTime?: number;
 }) {
-  if (typeof flight.duration === "number" && Number.isFinite(flight.duration)) {
-    return Math.max(0, flight.duration);
-  }
-
-  if (flight.endTime !== undefined) {
-    return Math.max(0, flight.endTime - flight.startTime);
-  }
-
-  return 0;
+  return getFlightDurationMs(flight) ?? 0;
 }
 
 function estimateRouteDurationMs(flight: {
