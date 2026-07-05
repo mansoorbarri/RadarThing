@@ -31,6 +31,7 @@ import {
   FREE_RECENT_FLIGHTS_LIMIT,
   matchesFlightHistorySearch,
 } from "~/lib/flightHistory";
+import { getFlightDurationMs } from "~/lib/flightDuration";
 import { Analytics } from "~/lib/analytics";
 import { cn } from "~/lib/utils";
 
@@ -73,13 +74,8 @@ function formatDate(timestamp: number) {
 }
 
 function formatDuration(start: number, end?: number, duration?: number) {
-  if (!end && duration === undefined) return "In Progress";
-  const ms =
-    typeof duration === "number" && Number.isFinite(duration)
-      ? duration
-      : end !== undefined
-        ? end - start
-        : 0;
+  const ms = getFlightDurationMs({ startTime: start, endTime: end, duration });
+  if (ms == null) return "In Progress";
   const hours = Math.floor(ms / (1000 * 60 * 60));
   const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
   if (hours === 0) return `${minutes}m`;

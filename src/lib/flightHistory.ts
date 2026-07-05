@@ -1,3 +1,5 @@
+import { getFlightDurationMs } from "./flightDuration";
+
 export const FLIGHT_HISTORY_PAGE_SIZE = 10;
 export const FREE_RECENT_FLIGHTS_LIMIT = FLIGHT_HISTORY_PAGE_SIZE;
 
@@ -62,15 +64,8 @@ function formatSearchDuration(
   endTime?: number,
   duration?: number,
 ) {
-  if (!endTime && duration === undefined)
-    return ["in progress", "active", "ongoing"];
-
-  const durationMs =
-    typeof duration === "number" && Number.isFinite(duration)
-      ? duration
-      : endTime !== undefined
-        ? endTime - startTime
-        : 0;
+  const durationMs = getFlightDurationMs({ startTime, endTime, duration });
+  if (durationMs == null) return ["in progress", "active", "ongoing"];
   const totalMinutes = Math.max(0, Math.round(durationMs / 60000));
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;

@@ -1,3 +1,5 @@
+import { getFlightDurationMs } from "../../src/lib/flightDuration";
+
 export type ChallengeRuleType =
   | "visit_airport"
   | "visit_airport_count"
@@ -83,19 +85,7 @@ function toRad(value: number) {
 }
 
 function getRecordedFlightDurationMs(flight: ChallengeFlight) {
-  if (typeof flight.duration === "number" && Number.isFinite(flight.duration)) {
-    return Math.max(0, flight.duration);
-  }
-
-  if (
-    typeof flight.endTime === "number" &&
-    Number.isFinite(flight.endTime) &&
-    flight.endTime > flight.startTime
-  ) {
-    return flight.endTime - flight.startTime;
-  }
-
-  return 0;
+  return getFlightDurationMs(flight) ?? 0;
 }
 
 export function calculateRouteDistanceNm(routeData: unknown) {

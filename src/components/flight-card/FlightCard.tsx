@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import { FlightRouteMap } from "./FlightRouteMap";
+import { getFlightDurationMs } from "~/lib/flightDuration";
 
 export interface FlightCardData {
   callsign?: string;
@@ -107,11 +108,7 @@ export const FlightCard = forwardRef<HTMLDivElement, { data: FlightCardData }>(
   function FlightCard({ data }, ref) {
     const hasRoute = data.routeData && data.routeData.length >= 2;
 
-    const durationMs =
-      data.duration ??
-      (data.endTime && data.startTime
-        ? data.endTime - data.startTime
-        : undefined);
+    const durationMs = getFlightDurationMs(data);
 
     const cleanAircraftType = data.aircraftType
       ?.replace(/\s*\([^)]*\)/g, "")

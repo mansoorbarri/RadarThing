@@ -19,6 +19,7 @@ import {
   getEffectiveAccessRole,
   hasEffectiveProAccess,
 } from "../src/lib/proAccess";
+import { getFlightDurationMs } from "../src/lib/flightDuration";
 import {
   isSystemSecretValid,
   requireAdmin,
@@ -174,15 +175,7 @@ function getRecordedFlightDurationMs(flight: {
   startTime: number;
   endTime?: number;
 }) {
-  if (typeof flight.duration === "number" && Number.isFinite(flight.duration)) {
-    return Math.max(0, flight.duration);
-  }
-
-  if (flight.endTime !== undefined) {
-    return Math.max(0, flight.endTime - flight.startTime);
-  }
-
-  return 0;
+  return getFlightDurationMs(flight) ?? 0;
 }
 
 function estimateRouteDurationMs(flight: {
@@ -246,6 +239,14 @@ function getUnrealisticDurationRepair(flight: {
     distanceNm,
     repairSpeedKts,
     ratio,
+  };
+}
+
+function getRepairedFlightTiming(startTime: number, durationMs: number) {
+  const roundedDurationMs = Math.max(0, Math.round(durationMs));
+  return {
+    duration: roundedDurationMs,
+    endTime: startTime + roundedDurationMs,
   };
 }
 
@@ -741,9 +742,14 @@ export const repairFlightDuration = mutation({
 
     const previousDurationMs = getRecordedFlightDurationMs(flight);
     const nextDurationMs = Math.round(args.durationMs);
+    const repairedTiming = getRepairedFlightTiming(
+      flight.startTime,
+      nextDurationMs,
+    );
 
     await ctx.db.patch(flight._id, {
-      duration: nextDurationMs,
+      duration: repairedTiming.duration,
+      endTime: repairedTiming.endTime,
     });
     await recalculateUserStats(ctx, flight.userId);
 
@@ -752,7 +758,7 @@ export const repairFlightDuration = mutation({
       flightId: flight._id,
       userId: flight.userId,
       previousDurationMs,
-      durationMs: nextDurationMs,
+      durationMs: repairedTiming.duration,
     };
   },
 });
@@ -818,8 +824,13 @@ export const repairUnrealisticDurationsPage = mutation({
       }
 
       if (!dryRun) {
+        const repairedTiming = getRepairedFlightTiming(
+          flight.startTime,
+          repair.repairedDurationMs,
+        );
         await ctx.db.patch(flight._id, {
-          duration: repair.repairedDurationMs,
+          duration: repairedTiming.duration,
+          endTime: repairedTiming.endTime,
         });
         repairedUserIds.add(flight.userId);
       }

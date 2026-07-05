@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { getFlightDurationMs } from "~/lib/flightDuration";
 import { unwrapPath } from "~/lib/map-utils";
 
 export interface FlightData {
@@ -120,10 +121,8 @@ export function useFlightReplay(flight: FlightData | null) {
 
   // Calculate total duration
   const totalDuration = useMemo(() => {
-    if (flight?.duration) return flight.duration;
-    if (flight?.endTime && flight?.startTime) {
-      return flight.endTime - flight.startTime;
-    }
+    const recordedDuration = flight ? getFlightDurationMs(flight) : undefined;
+    if (recordedDuration !== undefined) return recordedDuration;
     if (routeData.length > 0) {
       return estimateDuration(routeData);
     }
