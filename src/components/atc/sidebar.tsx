@@ -889,7 +889,10 @@ export const Sidebar = ({
                 )}
 
                 {flightProgress && (
-                  <FlightTimelineCard progress={flightProgress} />
+                  <FlightTimelineCard
+                    progress={flightProgress}
+                    distanceLeftNm={aircraft.distanceLeft}
+                  />
                 )}
 
                 <div className="grid grid-cols-2 gap-2.5">
@@ -966,7 +969,10 @@ export const Sidebar = ({
                     />
                   )}
                   {flightProgress && (
-                    <FlightTimelineCard progress={flightProgress} />
+                    <FlightTimelineCard
+                      progress={flightProgress}
+                      distanceLeftNm={aircraft.distanceLeft}
+                    />
                   )}
                   <div className="grid grid-cols-2 gap-3.5">
                     <StatBox
@@ -1090,10 +1096,15 @@ const DiversionStatusCard = ({
 
 const FlightTimelineCard = ({
   progress,
+  distanceLeftNm,
 }: {
   progress: FlightProgressSnapshot;
+  distanceLeftNm?: number | null;
 }) => {
   const { timeDisplayMode } = useTimeDisplayPreference();
+  const roundedDistanceLeftNm = Number.isFinite(distanceLeftNm)
+    ? Math.round(distanceLeftNm ?? 0)
+    : null;
 
   return (
     <div
@@ -1143,6 +1154,12 @@ const FlightTimelineCard = ({
           {formatDuration(progress.remainingMinutes)}
         </span>
       </div>
+      {roundedDistanceLeftNm !== null && (
+        <div className="mt-1 font-mono text-[10px] text-white/50">
+          Distance Left:{" "}
+          <span className="text-cyan-300">{roundedDistanceLeftNm} NM</span>
+        </div>
+      )}
     </div>
   );
 };

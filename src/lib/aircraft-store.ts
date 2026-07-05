@@ -23,6 +23,7 @@ export interface PositionUpdate {
   flightPlan: string;
   vspeed: string;
   nextWaypoint: string;
+  distanceLeft?: number | null;
   navMode?: boolean;
   speedMode?: "knots" | "mach";
   flapsPosition?: number;

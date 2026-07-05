@@ -484,6 +484,9 @@
       af: info.af || "",
       flightPlan: geofs.flightPlan?.export ? geofs.flightPlan.export() : [],
       nextWaypoint: geofs.flightPlan?.trackedWaypoint?.ident || null,
+      distanceLeft: Number.isFinite(geofs.flightPlan?.distanceLeft)
+        ? Math.round(geofs.flightPlan.distanceLeft)
+        : null,
       vspeed: Math.floor(geofs.animation?.values?.verticalSpeed || 0),
       navMode: geofs.autopilot?.mode === "NAV",
       speedMode: geofs.autopilot?.speedMode === "mach" ? "mach" : "knots",
