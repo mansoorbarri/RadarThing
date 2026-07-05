@@ -242,6 +242,14 @@ function getUnrealisticDurationRepair(flight: {
   };
 }
 
+function getRepairedFlightTiming(startTime: number, durationMs: number) {
+  const roundedDurationMs = Math.max(0, Math.round(durationMs));
+  return {
+    duration: roundedDurationMs,
+    endTime: startTime + roundedDurationMs,
+  };
+}
+
 async function getCurrentViewer(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity?.subject) return null;
@@ -734,9 +742,14 @@ export const repairFlightDuration = mutation({
 
     const previousDurationMs = getRecordedFlightDurationMs(flight);
     const nextDurationMs = Math.round(args.durationMs);
+    const repairedTiming = getRepairedFlightTiming(
+      flight.startTime,
+      nextDurationMs,
+    );
 
     await ctx.db.patch(flight._id, {
-      duration: nextDurationMs,
+      duration: repairedTiming.duration,
+      endTime: repairedTiming.endTime,
     });
     await recalculateUserStats(ctx, flight.userId);
 
@@ -745,7 +758,7 @@ export const repairFlightDuration = mutation({
       flightId: flight._id,
       userId: flight.userId,
       previousDurationMs,
-      durationMs: nextDurationMs,
+      durationMs: repairedTiming.duration,
     };
   },
 });
@@ -811,8 +824,13 @@ export const repairUnrealisticDurationsPage = mutation({
       }
 
       if (!dryRun) {
+        const repairedTiming = getRepairedFlightTiming(
+          flight.startTime,
+          repair.repairedDurationMs,
+        );
         await ctx.db.patch(flight._id, {
-          duration: repair.repairedDurationMs,
+          duration: repairedTiming.duration,
+          endTime: repairedTiming.endTime,
         });
         repairedUserIds.add(flight.userId);
       }
