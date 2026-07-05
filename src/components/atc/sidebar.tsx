@@ -1138,7 +1138,7 @@ const FlightTimelineCard = ({
             {formatRadarTime(progress.departureTimeTs, timeDisplayMode)}
           </div>
         </div>
-        <div>
+        <div className="text-right">
           <div className="font-mono text-[9px] tracking-wider text-white/40 uppercase">
             Est. Arrival
           </div>
@@ -1148,18 +1148,23 @@ const FlightTimelineCard = ({
         </div>
       </div>
 
-      <div className="mt-2 font-mono text-[10px] text-white/50">
-        Remaining:{" "}
-        <span className="text-cyan-300">
-          {formatDuration(progress.remainingMinutes)}
-        </span>
+      <div className="mt-2 text-center font-mono text-[11px] text-white/50">
+        {roundedDistanceLeftNm !== null ? (
+          <>
+            <span className="text-cyan-300">{roundedDistanceLeftNm} NM</span> in{" "}
+            <span className="text-cyan-300">
+              {formatDuration(progress.remainingMinutes)}
+            </span>
+          </>
+        ) : (
+          <>
+            Remaining:{" "}
+            <span className="text-cyan-300">
+              {formatDuration(progress.remainingMinutes)}
+            </span>
+          </>
+        )}
       </div>
-      {roundedDistanceLeftNm !== null && (
-        <div className="mt-1 font-mono text-[10px] text-white/50">
-          Distance Left:{" "}
-          <span className="text-cyan-300">{roundedDistanceLeftNm} NM</span>
-        </div>
-      )}
     </div>
   );
 };
