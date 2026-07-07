@@ -90,6 +90,8 @@ interface ReplayState {
   isPlaying: boolean;
 }
 
+const EMPTY_LIVE_AIRCRAFTS: PositionUpdate[] = [];
+
 interface MapComponentProps {
   aircrafts: PositionUpdate[];
   airports: Airport[];
@@ -1045,7 +1047,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
   );
 
   const liveAircrafts = useMemo(
-    () => (replayState ? [] : aircrafts),
+    () => (replayState ? EMPTY_LIVE_AIRCRAFTS : aircrafts),
     [aircrafts, replayState],
   );
 
