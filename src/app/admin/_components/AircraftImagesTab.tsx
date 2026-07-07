@@ -670,7 +670,12 @@ export function AircraftImagesTab({
         reason as (typeof AIRCRAFT_IMAGE_REJECTION_REASONS)[number],
       ),
     );
-    const customReason = rejectCustomReason.trim();
+    const customReason = rejectCustomReason
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join(" ")
+      .trim();
 
     if (selectedReasons.length > 0 && customReason) {
       return [...selectedReasons, `Custom: ${customReason}`].join("\n");

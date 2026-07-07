@@ -57,7 +57,7 @@ export function RejectModal({
           message will be sent to the uploader.
         </p>
         <div className="mb-4 space-y-2">
-          {AIRCRAFT_IMAGE_REJECTION_REASONS.map((reason, index) => {
+          {AIRCRAFT_IMAGE_REJECTION_REASONS.map((reason) => {
             const checked = selectedReasons.includes(reason);
 
             return (
@@ -70,7 +70,6 @@ export function RejectModal({
                   checked={checked}
                   onChange={() => toggleReason(reason)}
                   className="mt-0.5 h-4 w-4 rounded border-input text-red-500 focus:ring-red-500/50"
-                  autoFocus={index === 0}
                 />
                 <span className="text-foreground">{reason}</span>
               </label>
