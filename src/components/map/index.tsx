@@ -89,6 +89,8 @@ interface ConflictHistoryEvent extends ConflictAlertSummary {
   lastSeenAt: number;
 }
 
+const EMPTY_LIVE_AIRCRAFTS: PositionUpdate[] = [];
+
 interface MapComponentProps {
   aircrafts: PositionUpdate[];
   airports: Airport[];
@@ -258,6 +260,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
       showPrecipitation,
       showSigmets,
     ],
+  );
+
+  const liveAircrafts = useMemo(
+    () => (replayState ? EMPTY_LIVE_AIRCRAFTS : aircrafts),
+    [aircrafts, replayState],
   );
 
   const activePreset = useMemo(
@@ -793,7 +800,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     satelliteHybridLayer: mapRefs.satelliteHybridLayer,
     radarBaseLayer: mapRefs.radarBaseLayer,
     openAIPLayer: mapRefs.openAIPLayer,
-    aircrafts,
+    aircrafts: liveAircrafts,
     airports,
     runways,
     onlineAirports,
