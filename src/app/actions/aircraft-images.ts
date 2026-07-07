@@ -13,6 +13,34 @@ const utapi = new UTApi();
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 const SUPER_ADMIN_GOOGLE_ID = "101233162035372298523";
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function formatRejectionReasonHtml(reason: string): string {
+  const items = reason
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (items.length === 0) return "";
+
+  if (items.length === 1) {
+    return `<p style="margin: 0; color: #991b1b;"><strong>Reason:</strong> ${escapeHtml(items[0] ?? "")}</p>`;
+  }
+
+  const listItems = items
+    .map((item) => `<li style="margin: 4px 0;">${escapeHtml(item)}</li>`)
+    .join("");
+
+  return `<p style="margin: 0 0 8px; color: #991b1b;"><strong>Reasons:</strong></p><ul style="margin: 0; padding-left: 20px; color: #991b1b;">${listItems}</ul>`;
+}
+
 async function sendImageNotificationEmail(
   uploadedBy: string,
   status: "approved" | "rejected",
@@ -42,7 +70,7 @@ async function sendImageNotificationEmail(
     const reasonHtml =
       status === "rejected" && reason
         ? `<div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 12px; margin: 16px 0;">
-          <p style="margin: 0; color: #991b1b;"><strong>Reason:</strong> ${reason}</p>
+          ${formatRejectionReasonHtml(reason)}
         </div>`
         : "";
 

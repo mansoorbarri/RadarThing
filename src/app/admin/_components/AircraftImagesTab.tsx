@@ -31,7 +31,10 @@ import {
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
-import { RejectModal } from "./RejectModal";
+import {
+  AIRCRAFT_IMAGE_REJECTION_REASONS,
+  RejectModal,
+} from "./RejectModal";
 import { ConflictModal } from "./ConflictModal";
 import { ConfirmModal } from "./ConfirmModal";
 import {
@@ -355,7 +358,10 @@ export function AircraftImagesTab({
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
+  const [rejectSelectedReasons, setRejectSelectedReasons] = useState<string[]>(
+    [],
+  );
+  const [rejectCustomReason, setRejectCustomReason] = useState("");
   const [rejectTargetIds, setRejectTargetIds] = useState<string[]>([]);
   const [conflictModalOpen, setConflictModalOpen] = useState(false);
   const [conflictPendingImage, setConflictPendingImage] =
@@ -653,11 +659,44 @@ export function AircraftImagesTab({
 
   function openRejectModal(ids: string[]) {
     setRejectTargetIds(ids);
-    setRejectReason("");
+    setRejectSelectedReasons([]);
+    setRejectCustomReason("");
     setRejectModalOpen(true);
   }
 
+  function buildRejectReason() {
+    const selectedReasons = rejectSelectedReasons.filter((reason) =>
+      AIRCRAFT_IMAGE_REJECTION_REASONS.includes(
+        reason as (typeof AIRCRAFT_IMAGE_REJECTION_REASONS)[number],
+      ),
+    );
+    const customReason = rejectCustomReason
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+
+    if (selectedReasons.length > 0 && customReason) {
+      return [...selectedReasons, `Custom: ${customReason}`].join("\n");
+    }
+
+    if (selectedReasons.length > 0) {
+      return selectedReasons.join("\n");
+    }
+
+    return customReason;
+  }
+
+  function closeRejectModal() {
+    setRejectModalOpen(false);
+    setRejectTargetIds([]);
+    setRejectSelectedReasons([]);
+    setRejectCustomReason("");
+  }
+
   async function handleRejectConfirm() {
+    const rejectReason = buildRejectReason();
     if (!rejectReason.trim()) {
       toast.error("Please provide a reason for rejection");
       return;
@@ -699,8 +738,7 @@ export function AircraftImagesTab({
       }
       setBulkLoading(false);
     }
-    setRejectTargetIds([]);
-    setRejectReason("");
+    closeRejectModal();
   }
 
   function openDeleteModal(
@@ -822,10 +860,12 @@ export function AircraftImagesTab({
       <RejectModal
         isOpen={rejectModalOpen}
         targetCount={rejectTargetIds.length}
-        reason={rejectReason}
-        onReasonChange={setRejectReason}
+        selectedReasons={rejectSelectedReasons}
+        customReason={rejectCustomReason}
+        onSelectedReasonsChange={setRejectSelectedReasons}
+        onCustomReasonChange={setRejectCustomReason}
         onConfirm={handleRejectConfirm}
-        onCancel={() => setRejectModalOpen(false)}
+        onCancel={closeRejectModal}
       />
 
       <ConflictModal
