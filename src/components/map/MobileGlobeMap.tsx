@@ -1044,11 +1044,19 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
     [isOSMMode, isRadarMode],
   );
 
+  const liveAircrafts = useMemo(
+    () => (replayState ? [] : aircrafts),
+    [aircrafts, replayState],
+  );
+
   useEffect(() => {
     aircraftLookupRef.current = new Map(
-      aircrafts.map((aircraft) => [aircraft.callsign || aircraft.id, aircraft]),
+      liveAircrafts.map((aircraft) => [
+        aircraft.callsign || aircraft.id,
+        aircraft,
+      ]),
     );
-  }, [aircrafts]);
+  }, [liveAircrafts]);
 
   useEffect(() => {
     onAircraftSelectRef.current = onAircraftSelect;
@@ -1980,7 +1988,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
 
     const nextKeys = new Set<string>();
 
-    aircrafts
+    liveAircrafts
       .filter((aircraft) => isValidCoordinate(aircraft.lat, aircraft.lon))
       .forEach((aircraft) => {
         const aircraftKey = aircraft.callsign || aircraft.id;
@@ -2054,7 +2062,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       onInitialTrafficPaint?.();
     }
   }, [
-    aircrafts,
+    liveAircrafts,
     altitudeUnit,
     isRadarMode,
     isDesktopGlobe,
@@ -2187,7 +2195,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       return;
     }
 
-    const features = aircrafts.flatMap((aircraft) => {
+    const features = liveAircrafts.flatMap((aircraft) => {
       const aircraftKey = aircraft.callsign || aircraft.id;
       const line = buildLineFeature(
         toLngLatCoords(
@@ -2206,7 +2214,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       features,
     });
   }, [
-    aircrafts,
+    liveAircrafts,
     isRadarMode,
     mapReady,
     radarModeLinePreferences,
@@ -2222,7 +2230,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       return;
     }
 
-    const features = aircrafts.flatMap((aircraft) =>
+    const features = liveAircrafts.flatMap((aircraft) =>
       buildRadarTrailDots(aircraft, radarTrailPreferences)
         .filter((dot) => isValidCoordinate(dot.lat, dot.lon))
         .map((dot) =>
@@ -2237,7 +2245,7 @@ const MobileGlobeMap: React.FC<MapComponentProps> = ({
       type: "FeatureCollection",
       features,
     });
-  }, [aircrafts, isRadarMode, mapReady, radarTrailPreferences]);
+  }, [liveAircrafts, isRadarMode, mapReady, radarTrailPreferences]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -260,6 +260,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
     ],
   );
 
+  const liveAircrafts = useMemo(
+    () => (replayState ? [] : aircrafts),
+    [aircrafts, replayState],
+  );
+
   const activePreset = useMemo(
     () =>
       layerPresets.find((preset) =>
@@ -793,7 +798,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     satelliteHybridLayer: mapRefs.satelliteHybridLayer,
     radarBaseLayer: mapRefs.radarBaseLayer,
     openAIPLayer: mapRefs.openAIPLayer,
-    aircrafts,
+    aircrafts: liveAircrafts,
     airports,
     runways,
     onlineAirports,
