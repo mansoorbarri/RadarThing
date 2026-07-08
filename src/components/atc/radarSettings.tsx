@@ -39,8 +39,6 @@ const COLLAPSED_SECTIONS: Record<SettingsSectionId, boolean> = {
 
 interface RadarSettingsProps {
   isPRO: boolean;
-  mapRenderer?: "flat" | "globe";
-  onMapRendererChange?: (renderer: "flat" | "globe") => void;
   radarTrailPreferences?: RadarTrailPreferences;
   radarModeLinePreferences?: RadarModeLinePreferences;
   runwayCenterlinePreferences?: RunwayCenterlinePreferences;
@@ -77,8 +75,6 @@ interface RadarSettingsProps {
 
 export const RadarSettings = ({
   isPRO,
-  mapRenderer,
-  onMapRendererChange,
   radarTrailPreferences,
   radarModeLinePreferences,
   runwayCenterlinePreferences,
@@ -262,46 +258,6 @@ export const RadarSettings = ({
       </div>
 
       <div className="space-y-3 p-3.5 pr-2.5 sm:p-4 sm:pr-3">
-        {mapRenderer && onMapRendererChange ? (
-          <div className="space-y-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-[12px] font-semibold tracking-[0.16em] text-white uppercase">
-                  Map Renderer
-                </div>
-                <p className="mt-1 text-[11px] leading-5 text-white/45">
-                  Switch between the flat Leaflet map and globe renderer.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => onMapRendererChange("flat")}
-                className={`cursor-pointer rounded-md border px-3 py-2 text-[11px] transition-colors ${
-                  mapRenderer === "flat"
-                    ? "border-cyan-400/50 bg-cyan-500/15 text-cyan-200"
-                    : "border-white/10 bg-white/[0.03] text-white/65 hover:border-white/20 hover:text-white"
-                }`}
-              >
-                Flat Map
-              </button>
-              <button
-                type="button"
-                onClick={() => onMapRendererChange("globe")}
-                className={`cursor-pointer rounded-md border px-3 py-2 text-[11px] transition-colors ${
-                  mapRenderer === "globe"
-                    ? "border-cyan-400/50 bg-cyan-500/15 text-cyan-200"
-                    : "border-white/10 bg-white/[0.03] text-white/65 hover:border-white/20 hover:text-white"
-                }`}
-              >
-                Globe View
-              </button>
-            </div>
-          </div>
-        ) : null}
-
         <SettingsSection
           title="Layer Presets"
           isOpen={openSections.presets}
@@ -319,8 +275,8 @@ export const RadarSettings = ({
           }
         >
           <p className="text-[11px] leading-5 text-white/45">
-            Saves your current renderer, base layer, OpenAIP overlays, weather
-            layers, and conflict monitor state.
+            Saves your current base layer, OpenAIP overlays, weather layers,
+            and conflict monitor state.
           </p>
 
           <div className="flex flex-wrap gap-2">

@@ -121,8 +121,6 @@ interface MapComponentProps {
   setResetMapView?: (
     func: (targetLocation?: MapResetLocation | null) => void,
   ) => void;
-  mapRenderer?: "flat" | "globe";
-  onMapRendererChange?: (renderer: "flat" | "globe") => void;
   hideUi?: boolean;
   importedFlightPlan?: ImportedFlightPlan | null;
 }
@@ -150,8 +148,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   followAircraft,
   onConflictReview,
   setResetMapView,
-  mapRenderer = "flat",
-  onMapRendererChange,
   hideUi = false,
   importedFlightPlan = null,
 }) => {
@@ -239,7 +235,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const currentLayerState = useMemo<MapLayerPresetState>(
     () => ({
       baseLayer: isRadarMode ? "radar" : isOSMMode ? "osm" : "satellite",
-      mapRenderer,
       openAIP: isOpenAIPEnabled,
       runwayCenterlines: runwayCenterlinePreferences.enabled,
       waypoints: showWaypoints,
@@ -252,7 +247,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       isOpenAIPEnabled,
       isOSMMode,
       isRadarMode,
-      mapRenderer,
       runwayCenterlinePreferences.enabled,
       showWaypoints,
       showAirmets,
@@ -270,9 +264,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const activePreset = useMemo(
     () =>
       layerPresets.find((preset) =>
-        mapLayerPresetStateEquals(preset, currentLayerState, {
-          allowLegacyRendererMatch: true,
-        }),
+        mapLayerPresetStateEquals(preset, currentLayerState),
       ) ?? null,
     [currentLayerState, layerPresets],
   );
@@ -391,15 +383,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       setShowSigmets(nextSigmets);
       setShowConflicts(nextConflicts);
       setSelectedPresetId(preset.id);
-
-      if (
-        preset.mapRenderer &&
-        onMapRendererChange &&
-        preset.mapRenderer !== mapRenderer
-      ) {
-        onMapRendererChange(preset.mapRenderer);
-      }
-
       Analytics.track("map_layer_preset_applied", {
         preset_id: preset.id,
         preset_name: preset.name,
@@ -418,8 +401,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       canUseConflictAlerts,
       canUseRadarMode,
       layerPresets,
-      mapRenderer,
-      onMapRendererChange,
     ],
   );
 
@@ -1134,8 +1115,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         >
           <RadarSettings
             isPRO={isProUser}
-            mapRenderer={mapRenderer}
-            onMapRendererChange={onMapRendererChange}
             radarTrailPreferences={radarTrailPreferences}
             radarModeLinePreferences={radarModeLinePreferences}
             runwayCenterlinePreferences={runwayCenterlinePreferences}
