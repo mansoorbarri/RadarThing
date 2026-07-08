@@ -42,10 +42,6 @@ import {
   isEditableElement,
   isEditableTarget,
 } from "~/lib/clientDiagnostics";
-import {
-  getUserResetLocation,
-  type MapResetLocation,
-} from "~/lib/mapResetLocation";
 import { setCookie } from "~/lib/cookies";
 import { normalizeCallsign } from "~/lib/utils";
 import { type Airport } from "~/components/map";
@@ -355,9 +351,7 @@ function ATCPageContent() {
   const drawMultipleFlightPlansOnMapRef = useRef<
     ((aircrafts: PositionUpdate[], zoom?: boolean) => void) | null
   >(null);
-  const resetMapViewRef = useRef<
-    ((targetLocation?: MapResetLocation | null) => void) | null
-  >(null);
+  const resetMapViewRef = useRef<(() => void) | null>(null);
   const reportedShortcutDiagnosticsRef = useRef<Set<string>>(new Set());
   const importedFlightPlanInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -387,9 +381,8 @@ function ATCPageContent() {
     [addAirportSearch],
   );
 
-  const handleResetMapView = useCallback(async () => {
-    const targetLocation = await getUserResetLocation();
-    resetMapViewRef.current?.(targetLocation);
+  const handleResetMapView = useCallback(() => {
+    resetMapViewRef.current?.();
   }, []);
 
   useEffect(() => {

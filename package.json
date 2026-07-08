@@ -82,16 +82,5 @@
   "ct3aMetadata": {
     "initVersion": "7.40.0"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@clerk/shared",
-      "core-js",
-      "esbuild",
-      "msgpackr-extract",
-      "protobufjs",
-      "sharp",
-      "unrs-resolver"
-    ]
-  },
-  "packageManager": "pnpm@10.26.2"
+  "packageManager": "pnpm@10.34.4"
 }
