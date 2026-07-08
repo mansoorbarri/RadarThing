@@ -23,13 +23,6 @@ export const changelog: ChangelogEntry[] = [
     type: "new",
   },
   {
-    id: "flat-globe-view-switcher",
-    date: "2026-05-14",
-    title: "Flat and Globe Views",
-    description: "Globe view is the default. Switch to Flat anytime from Radar Settings.",
-    type: "improvement",
-  },
-  {
     id: "dashboard-flight-delete",
     date: "2026-05-14",
     title: "Delete Flights from Dashboard",

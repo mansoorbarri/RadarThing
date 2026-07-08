@@ -1,9 +1,7 @@
 export type MapBaseLayer = "satellite" | "radar" | "osm";
-export type MapRenderer = "flat" | "globe";
 
 export interface MapLayerPresetState {
   baseLayer: MapBaseLayer;
-  mapRenderer?: MapRenderer;
   openAIP: boolean;
   runwayCenterlines?: boolean;
   waypoints?: boolean;
@@ -37,10 +35,6 @@ function isMapBaseLayer(value: unknown): value is MapBaseLayer {
   return value === "satellite" || value === "radar" || value === "osm";
 }
 
-function isMapRenderer(value: unknown): value is MapRenderer {
-  return value === "flat" || value === "globe";
-}
-
 function isMapLayerPreset(value: unknown): value is MapLayerPreset {
   if (!value || typeof value !== "object") return false;
 
@@ -51,7 +45,6 @@ function isMapLayerPreset(value: unknown): value is MapLayerPreset {
     typeof preset.createdAt === "number" &&
     typeof preset.updatedAt === "number" &&
     isMapBaseLayer(preset.baseLayer) &&
-    (preset.mapRenderer === undefined || isMapRenderer(preset.mapRenderer)) &&
     typeof preset.openAIP === "boolean" &&
     (preset.runwayCenterlines === undefined ||
       typeof preset.runwayCenterlines === "boolean") &&
@@ -73,7 +66,20 @@ export function getStoredMapLayerPresets(): MapLayerPreset[] {
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
 
-    return parsed.filter(isMapLayerPreset);
+    const presets = parsed.filter(isMapLayerPreset).map((preset) => {
+      const { mapRenderer: _legacyMapRenderer, ...normalizedPreset } =
+        preset as MapLayerPreset & { mapRenderer?: unknown };
+      return normalizedPreset;
+    });
+    const normalizedRaw = JSON.stringify(presets);
+    if (normalizedRaw !== raw) {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, normalizedRaw);
+      } catch {
+        // Keep returning valid presets even if cleanup cannot be persisted.
+      }
+    }
+    return presets;
   } catch {
     return [];
   }
@@ -101,19 +107,9 @@ export function createMapLayerPreset(
 export function mapLayerPresetStateEquals(
   left: MapLayerPresetState,
   right: MapLayerPresetState,
-  options?: {
-    allowLegacyRendererMatch?: boolean;
-  },
 ) {
-  const rendererMatches =
-    options?.allowLegacyRendererMatch &&
-    (left.mapRenderer === undefined || right.mapRenderer === undefined)
-      ? true
-      : left.mapRenderer === right.mapRenderer;
-
   return (
     left.baseLayer === right.baseLayer &&
-    rendererMatches &&
     left.openAIP === right.openAIP &&
     (left.runwayCenterlines ?? false) ===
       (right.runwayCenterlines ?? false) &&
