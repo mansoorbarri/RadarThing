@@ -71,7 +71,14 @@ export function getStoredMapLayerPresets(): MapLayerPreset[] {
         preset as MapLayerPreset & { mapRenderer?: unknown };
       return normalizedPreset;
     });
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(presets));
+    const normalizedRaw = JSON.stringify(presets);
+    if (normalizedRaw !== raw) {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, normalizedRaw);
+      } catch {
+        // Keep returning valid presets even if cleanup cannot be persisted.
+      }
+    }
     return presets;
   } catch {
     return [];
