@@ -25,157 +25,6 @@
       .slice(0, 4);
   }
 
-  function extractWaypointIdent(waypoint) {
-    if (!waypoint) return "";
-    if (typeof waypoint === "string") return waypoint.trim().toUpperCase();
-
-    const candidates = [
-      waypoint.ident,
-      waypoint.name,
-      waypoint.icao,
-      waypoint.iata,
-      waypoint.airport,
-      waypoint.code,
-      waypoint.label,
-    ];
-
-    for (const value of candidates) {
-      if (typeof value === "string" && value.trim()) {
-        return value.trim().toUpperCase();
-      }
-    }
-
-    return "";
-  }
-
-  function sanitizeWaypoint(waypoint) {
-    if (!waypoint) return null;
-
-    if (typeof waypoint === "string") {
-      const ident = waypoint.trim().toUpperCase();
-      return ident ? { ident } : null;
-    }
-
-    if (typeof waypoint !== "object") return null;
-
-    const lat = Number(
-      waypoint.lat ?? waypoint.latitude ?? waypoint.location?.[0],
-    );
-    const lon = Number(
-      waypoint.lon ??
-        waypoint.lng ??
-        waypoint.longitude ??
-        waypoint.location?.[1],
-    );
-
-    const sanitized = {
-      ident: extractWaypointIdent(waypoint) || undefined,
-      name:
-        typeof waypoint.name === "string" && waypoint.name.trim()
-          ? waypoint.name.trim()
-          : undefined,
-      lat: Number.isFinite(lat) ? lat : undefined,
-      lon: Number.isFinite(lon) ? lon : undefined,
-    };
-
-    if (
-      !sanitized.ident &&
-      !sanitized.name &&
-      sanitized.lat === undefined &&
-      sanitized.lon === undefined
-    ) {
-      return null;
-    }
-
-    return sanitized;
-  }
-
-  function sanitizeFlightPlan(plan) {
-    if (!Array.isArray(plan)) return [];
-    return plan.map(sanitizeWaypoint).filter(Boolean);
-  }
-
-  function getExportedFlightPlan() {
-    function looksLikeWaypoint(value) {
-      if (!value || typeof value !== "object" || Array.isArray(value)) {
-        return false;
-      }
-
-      return (
-        typeof value.ident === "string" ||
-        typeof value.name === "string" ||
-        typeof value.icao === "string" ||
-        typeof value.iata === "string" ||
-        typeof value.airport === "string" ||
-        typeof value.code === "string" ||
-        typeof value.label === "string" ||
-        (typeof value.lat === "number" && typeof value.lon === "number")
-      );
-    }
-
-    function findWaypointArray(root) {
-      const queue = [root];
-      const seen = new Set();
-      let inspected = 0;
-
-      while (queue.length && inspected < 200) {
-        const current = queue.shift();
-        if (!current || typeof current !== "object" || seen.has(current)) {
-          continue;
-        }
-
-        seen.add(current);
-        inspected += 1;
-
-        if (Array.isArray(current)) {
-          if (current.length && current.some(looksLikeWaypoint)) {
-            return current;
-          }
-
-          for (const item of current) {
-            if (item && typeof item === "object") queue.push(item);
-          }
-          continue;
-        }
-
-        for (const value of Object.values(current)) {
-          if (!value) continue;
-          if (Array.isArray(value)) {
-            if (value.length && value.some(looksLikeWaypoint)) {
-              return value;
-            }
-            queue.push(value);
-            continue;
-          }
-
-          if (typeof value === "object") queue.push(value);
-        }
-      }
-
-      return [];
-    }
-
-    try {
-      const flightPlan = geofs?.flightPlan;
-      if (!flightPlan) return [];
-
-      if (typeof flightPlan.export === "function") {
-        const exported = flightPlan.export();
-        if (Array.isArray(exported)) return exported;
-
-        const exportedPlan = findWaypointArray(exported);
-        if (exportedPlan.length) return exportedPlan;
-      }
-
-      const livePlan = findWaypointArray(flightPlan);
-      if (livePlan.length) return livePlan;
-    } catch (error) {
-      console.warn("[RadarThing] Failed to export flight plan", error);
-    }
-
-    return [];
-  }
-
   function getUserIdentifier() {
     return (
       geofs?.userRecord?.googleid ||
@@ -619,10 +468,12 @@
           ? lla[2] * 3.28084
           : (geofs?.animation?.values?.altitude ?? 0);
       const altAGL = calculateAGL();
-      const flightPlan = sanitizeFlightPlan(getExportedFlightPlan());
-      const nextWaypoint = extractWaypointIdent(
-        geofs?.flightPlan?.trackedWaypoint,
-      );
+      let flightPlan = [];
+      try {
+        flightPlan = geofs?.flightPlan?.export ? geofs.flightPlan.export() : [];
+      } catch (error) {
+        console.warn("[RadarThing] Failed to export flight plan", error);
+      }
 
       const payload = {
         id: getUserIdentifier(),
@@ -648,7 +499,7 @@
         squawk: sanitizeSquawk(info.sqk),
         af: info.af || "",
         flightPlan,
-        nextWaypoint: nextWaypoint || null,
+        nextWaypoint: geofs?.flightPlan?.trackedWaypoint?.ident || null,
         distanceLeft: Number.isFinite(geofs?.flightPlan?.distanceLeft)
           ? Math.round(geofs.flightPlan.distanceLeft)
           : null,
