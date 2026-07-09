@@ -24,6 +24,18 @@ function normalizeAircraftTypeKey(aircraftType: string): string {
   if (ilyushinMatch) return "IL76";
   const antonovMatch = /\bAN-?(\d{2,3})\b/.exec(cleaned);
   if (antonovMatch) return `AN${antonovMatch[1]}`;
+  if (/\bA346\b/.test(cleaned) || /\bA340[-\s]?600\b/.test(cleaned)) {
+    return "A346";
+  }
+  if (/\bA345\b/.test(cleaned) || /\bA340[-\s]?500\b/.test(cleaned)) {
+    return "A345";
+  }
+  if (/\bA343\b/.test(cleaned) || /\bA340[-\s]?300\b/.test(cleaned)) {
+    return "A343";
+  }
+  if (/\bA342\b/.test(cleaned) || /\bA340[-\s]?200\b/.test(cleaned)) {
+    return "A342";
+  }
   return cleaned;
 }
 
