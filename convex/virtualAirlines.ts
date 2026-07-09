@@ -269,7 +269,7 @@ export const getFlightContext = query({
       ),
     );
 
-    if (aircraftTypes.length === 0 && args.aircraftType?.trim()) {
+    if (args.aircraftType?.trim()) {
       aircraftTypes.push(normalizeAircraftTypeKey(args.aircraftType));
     }
 

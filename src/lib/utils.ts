@@ -280,11 +280,16 @@ export function getAircraftTypeLookupCandidates(
   if (!cleaned) return [];
 
   const candidates = new Set<string>();
+  const compact = getCompactAircraftType(type);
   const normalized = normalizeAircraftType(type);
   const antonovMatch = /\bAN-?(\d{2,3})\b/.exec(cleaned);
 
   if (antonovMatch) {
     candidates.add(`AN${antonovMatch[1]}`);
+  }
+
+  if (compact) {
+    candidates.add(compact);
   }
 
   if (normalized) {
