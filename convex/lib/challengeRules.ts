@@ -3,6 +3,7 @@ import { getFlightDurationMs } from "../../src/lib/flightDuration";
 export type ChallengeRuleType =
   | "visit_airport"
   | "visit_airport_count"
+  | "visit_airport_list"
   | "depart_airport"
   | "arrive_airport"
   | "route"
@@ -18,6 +19,7 @@ export interface ChallengeRuleConfig {
   ruleType: ChallengeRuleType;
   scope?: ChallengeRuleScope;
   targetAirport?: string;
+  targetAirports?: string[];
   targetDepartureAirport?: string;
   targetArrivalAirport?: string;
   targetAircraftType?: string;
@@ -134,6 +136,9 @@ export function doesFlightMatchChallenge(
   const arrICAO = normalizeCode(flight.arrICAO);
   const aircraftType = normalizeCode(flight.aircraftType);
   const targetAirport = normalizeCode(challenge.targetAirport);
+  const targetAirports = new Set(
+    (challenge.targetAirports ?? []).map(normalizeCode).filter(Boolean),
+  );
   const targetDepartureAirport = normalizeCode(
     challenge.targetDepartureAirport,
   );
@@ -146,6 +151,8 @@ export function doesFlightMatchChallenge(
         Boolean(targetAirport) &&
         (depICAO === targetAirport || arrICAO === targetAirport)
       );
+    case "visit_airport_list":
+      return targetAirports.has(depICAO) || targetAirports.has(arrICAO);
     case "visit_airport_count":
     case "flight_count":
       return false;
@@ -181,6 +188,7 @@ export function doesFlightMatchChallenge(
 export function isAggregateChallengeRule(ruleType: ChallengeRuleType): boolean {
   return (
     ruleType === "visit_airport_count" ||
+    ruleType === "visit_airport_list" ||
     ruleType === "flight_count" ||
     ruleType === "min_duration" ||
     ruleType === "min_distance"
@@ -195,6 +203,7 @@ export function getChallengeRules(challenge: ChallengeRule) {
           ruleType: challenge.ruleType,
           scope: challenge.scope,
           targetAirport: challenge.targetAirport,
+          targetAirports: challenge.targetAirports,
           targetDepartureAirport: challenge.targetDepartureAirport,
           targetArrivalAirport: challenge.targetArrivalAirport,
           targetAircraftType: challenge.targetAircraftType,
@@ -241,6 +250,26 @@ export function countUniqueVisitedAirports(flights: ChallengeFlight[]) {
     const arrICAO = normalizeCode(flight.arrICAO);
     if (depICAO) visited.add(depICAO);
     if (arrICAO) visited.add(arrICAO);
+  }
+
+  return visited.size;
+}
+
+export function countUniqueVisitedTargetAirports(
+  flights: ChallengeFlight[],
+  targetAirports?: string[],
+) {
+  const targets = new Set(
+    (targetAirports ?? []).map(normalizeCode).filter(Boolean),
+  );
+  if (targets.size === 0) return 0;
+
+  const visited = new Set<string>();
+  for (const flight of flights) {
+    const depICAO = normalizeCode(flight.depICAO);
+    const arrICAO = normalizeCode(flight.arrICAO);
+    if (targets.has(depICAO)) visited.add(depICAO);
+    if (targets.has(arrICAO)) visited.add(arrICAO);
   }
 
   return visited.size;
@@ -306,9 +335,15 @@ export function doesFlightCollectionMatchChallenge(
 
   switch (rule.ruleType) {
     case "visit_airport_count":
+    case "visit_airport_list":
       return (
         typeof rule.requiredAirportCount === "number" &&
-        countUniqueVisitedAirports(eligibleFlights) >= rule.requiredAirportCount
+        (rule.ruleType === "visit_airport_count"
+          ? countUniqueVisitedAirports(eligibleFlights)
+          : countUniqueVisitedTargetAirports(
+              eligibleFlights,
+              rule.targetAirports,
+            )) >= rule.requiredAirportCount
       );
     case "flight_count":
       return (

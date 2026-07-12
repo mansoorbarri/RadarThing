@@ -9,6 +9,7 @@ import {
 import { isSystemSecretValid } from "./lib/auth";
 import {
   countUniqueVisitedAirports,
+  countUniqueVisitedTargetAirports,
   doesFlightCollectionMatchChallenge,
   doesFlightMatchChallenge,
   getChallengeScopedRules,
@@ -98,6 +99,7 @@ const challengeRuleValidator = v.object({
   ruleType: v.union(
     v.literal("visit_airport"),
     v.literal("visit_airport_count"),
+    v.literal("visit_airport_list"),
     v.literal("depart_airport"),
     v.literal("arrive_airport"),
     v.literal("route"),
@@ -109,6 +111,7 @@ const challengeRuleValidator = v.object({
   ),
   scope: v.optional(v.union(v.literal("challenge"), v.literal("each_flight"))),
   targetAirport: v.optional(v.string()),
+  targetAirports: v.optional(v.array(v.string())),
   targetDepartureAirport: v.optional(v.string()),
   targetArrivalAirport: v.optional(v.string()),
   targetAircraftType: v.optional(v.string()),
@@ -193,6 +196,7 @@ function validateChallengeInput(args: {
   ruleType: ChallengeRuleType;
   rules?: ChallengeRuleConfig[];
   targetAirport?: string;
+  targetAirports?: string[];
   targetDepartureAirport?: string;
   targetArrivalAirport?: string;
   targetAircraftType?: string;
@@ -211,8 +215,8 @@ function validateChallengeInput(args: {
     throw new Error("Challenge title must be 3-80 characters");
   }
 
-  if (description.length < 8 || description.length > 300) {
-    throw new Error("Challenge description must be 8-300 characters");
+  if (description.length < 8 || description.length > 2500) {
+    throw new Error("Challenge description must be 8-2500 characters");
   }
 
   if (!Number.isFinite(args.startAt)) {
@@ -235,10 +239,20 @@ function validateChallengeInput(args: {
   }
 
   function normalizeRule(rule: ChallengeRuleConfig) {
+    const targetAirports = [
+      ...new Set(
+        rule.targetAirports
+          ?.map(normalizeAirportCode)
+          .filter((airport): airport is string => Boolean(airport)),
+      ),
+    ];
+
     return {
       ruleType: rule.ruleType,
       scope: rule.scope ?? "challenge",
       targetAirport: normalizeAirportCode(rule.targetAirport),
+      targetAirports:
+        targetAirports.length > 0 ? targetAirports : undefined,
       targetDepartureAirport: normalizeAirportCode(rule.targetDepartureAirport),
       targetArrivalAirport: normalizeAirportCode(rule.targetArrivalAirport),
       targetAircraftType: normalizeAircraftType(rule.targetAircraftType),
@@ -256,6 +270,7 @@ function validateChallengeInput(args: {
           normalizeRule({
             ruleType: args.ruleType,
             targetAirport: args.targetAirport,
+            targetAirports: args.targetAirports,
             targetDepartureAirport: args.targetDepartureAirport,
             targetArrivalAirport: args.targetArrivalAirport,
             targetAircraftType: args.targetAircraftType,
@@ -283,6 +298,7 @@ function validateChallengeInput(args: {
       if (
         rule.scope === "each_flight" &&
         (rule.ruleType === "visit_airport_count" ||
+          rule.ruleType === "visit_airport_list" ||
           rule.ruleType === "flight_count")
       ) {
         throw new Error("Count rules must apply to the whole challenge");
@@ -315,6 +331,24 @@ function validateChallengeInput(args: {
         (!rule.requiredAirportCount || rule.requiredAirportCount <= 0)
       ) {
         throw new Error("Airport count challenges need a visit count above 0");
+      }
+
+      if (
+        rule.ruleType === "visit_airport_list" &&
+        (!rule.targetAirports || rule.targetAirports.length === 0)
+      ) {
+        throw new Error("Target airport list challenges need airport codes");
+      }
+
+      if (
+        rule.ruleType === "visit_airport_list" &&
+        (!rule.requiredAirportCount ||
+          rule.requiredAirportCount <= 0 ||
+          rule.requiredAirportCount > (rule.targetAirports?.length ?? 0))
+      ) {
+        throw new Error(
+          "Target airport list challenges need a visit count within the airport list size",
+        );
       }
 
       if (
@@ -352,6 +386,7 @@ function validateChallengeInput(args: {
     mode: args.mode,
     ruleType: primaryRule.ruleType,
     targetAirport: primaryRule.targetAirport,
+    targetAirports: primaryRule.targetAirports,
     targetDepartureAirport: primaryRule.targetDepartureAirport,
     targetArrivalAirport: primaryRule.targetArrivalAirport,
     targetAircraftType: primaryRule.targetAircraftType,
@@ -375,6 +410,7 @@ function serializeChallenge(challenge: {
   mode: "auto" | "manual";
   ruleType: ChallengeRuleType;
   targetAirport?: string;
+  targetAirports?: string[];
   targetDepartureAirport?: string;
   targetArrivalAirport?: string;
   targetAircraftType?: string;
@@ -398,6 +434,7 @@ function serializeChallenge(challenge: {
     mode: challenge.mode,
     ruleType: challenge.ruleType,
     targetAirport: challenge.targetAirport ?? null,
+    targetAirports: challenge.targetAirports ?? null,
     targetDepartureAirport: challenge.targetDepartureAirport ?? null,
     targetArrivalAirport: challenge.targetArrivalAirport ?? null,
     targetAircraftType: challenge.targetAircraftType ?? null,
@@ -409,6 +446,7 @@ function serializeChallenge(challenge: {
       ruleType: rule.ruleType,
       scope: getRuleScope(rule),
       targetAirport: rule.targetAirport ?? null,
+      targetAirports: rule.targetAirports ?? null,
       targetDepartureAirport: rule.targetDepartureAirport ?? null,
       targetArrivalAirport: rule.targetArrivalAirport ?? null,
       targetAircraftType: rule.targetAircraftType ?? null,
@@ -795,6 +833,7 @@ function findSupportingFlightId(
     startAt: number;
     endAt: number;
     targetAirport?: string;
+    targetAirports?: string[];
     targetDepartureAirport?: string;
     targetArrivalAirport?: string;
     targetAircraftType?: string;
@@ -848,6 +887,7 @@ function getAutoProgress(
     startAt: number;
     endAt: number;
     targetAirport?: string;
+    targetAirports?: string[];
     targetDepartureAirport?: string;
     targetArrivalAirport?: string;
     targetAircraftType?: string;
@@ -905,6 +945,22 @@ function getAutoProgress(
           progressCurrent: Math.min(current, target),
           progressTarget: target,
           progressLabel: `${Math.min(current, target)} / ${target} airports`,
+          isComplete,
+        };
+      }
+      case "visit_airport_list": {
+        const current = countUniqueVisitedTargetAirports(
+          flightsForProgress,
+          progressRule.targetAirports,
+        );
+        const target =
+          progressRule.requiredAirportCount ??
+          progressRule.targetAirports?.length ??
+          1;
+        return {
+          progressCurrent: Math.min(current, target),
+          progressTarget: target,
+          progressLabel: `${Math.min(current, target)} / ${target} target airports`,
           isComplete,
         };
       }
@@ -974,6 +1030,20 @@ function getAutoProgress(
         isComplete,
       };
     }
+    case "visit_airport_list": {
+      const current = countUniqueVisitedTargetAirports(
+        flightsForProgress,
+        challenge.targetAirports,
+      );
+      const target =
+        challenge.requiredAirportCount ?? challenge.targetAirports?.length ?? 1;
+      return {
+        progressCurrent: Math.min(current, target),
+        progressTarget: target,
+        progressLabel: `${Math.min(current, target)} / ${target} target airports`,
+        isComplete,
+      };
+    }
     case "flight_count": {
       const target = challenge.requiredFlightCount ?? 1;
       const current = flightsForProgress.length;
@@ -1040,6 +1110,7 @@ interface ChallengeLeaderboardResult {
   ruleType:
     | "visit_airport"
     | "visit_airport_count"
+    | "visit_airport_list"
     | "depart_airport"
     | "arrive_airport"
     | "route"
@@ -1049,6 +1120,7 @@ interface ChallengeLeaderboardResult {
     | "min_distance"
     | "manual";
   targetAirport: string | null;
+  targetAirports: string[] | null;
   targetDepartureAirport: string | null;
   targetArrivalAirport: string | null;
   targetAircraftType: string | null;
@@ -1264,11 +1336,8 @@ export async function autoCompleteChallengesForFlight(
 ) {
   const now = Date.now();
   const activeChallenges = await getActiveAutoChallenges(ctx, now);
-  const collectionChallenges = activeChallenges.filter((challenge) =>
-    requiresCollectionMatching(challenge),
-  );
   const allFlights =
-    collectionChallenges.length > 0
+    activeChallenges.length > 0
       ? await ctx.db
           .query("flights")
           .withIndex("by_userId", (q) => q.eq("userId", args.userId))
@@ -1892,6 +1961,7 @@ export const create = mutation({
     ruleType: v.union(
       v.literal("visit_airport"),
       v.literal("visit_airport_count"),
+      v.literal("visit_airport_list"),
       v.literal("depart_airport"),
       v.literal("arrive_airport"),
       v.literal("route"),
@@ -1903,6 +1973,7 @@ export const create = mutation({
     ),
     rules: v.optional(v.array(challengeRuleValidator)),
     targetAirport: v.optional(v.string()),
+    targetAirports: v.optional(v.array(v.string())),
     targetDepartureAirport: v.optional(v.string()),
     targetArrivalAirport: v.optional(v.string()),
     targetAircraftType: v.optional(v.string()),
@@ -1944,6 +2015,7 @@ export const update = mutation({
     ruleType: v.union(
       v.literal("visit_airport"),
       v.literal("visit_airport_count"),
+      v.literal("visit_airport_list"),
       v.literal("depart_airport"),
       v.literal("arrive_airport"),
       v.literal("route"),
@@ -1955,6 +2027,7 @@ export const update = mutation({
     ),
     rules: v.optional(v.array(challengeRuleValidator)),
     targetAirport: v.optional(v.string()),
+    targetAirports: v.optional(v.array(v.string())),
     targetDepartureAirport: v.optional(v.string()),
     targetArrivalAirport: v.optional(v.string()),
     targetAircraftType: v.optional(v.string()),

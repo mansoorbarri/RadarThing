@@ -41,6 +41,7 @@ type ChallengeMode = "auto" | "manual";
 type ChallengeRuleType =
   | "visit_airport"
   | "visit_airport_count"
+  | "visit_airport_list"
   | "depart_airport"
   | "arrive_airport"
   | "route"
@@ -77,6 +78,7 @@ interface ChallengeRuleForm {
   ruleType: ChallengeRuleType;
   scope: ChallengeRuleScope;
   targetAirport: string;
+  targetAirports: string;
   targetDepartureAirport: string;
   targetArrivalAirport: string;
   targetAircraftType: string;
@@ -106,6 +108,7 @@ const challengeModeSchema = z.union([z.literal("auto"), z.literal("manual")]);
 const challengeRuleTypeSchema = z.union([
   z.literal("visit_airport"),
   z.literal("visit_airport_count"),
+  z.literal("visit_airport_list"),
   z.literal("depart_airport"),
   z.literal("arrive_airport"),
   z.literal("route"),
@@ -126,6 +129,7 @@ const challengeRulePayloadSchema = z.object({
   ruleType: challengeRuleTypeSchema,
   scope: z.union([z.literal("challenge"), z.literal("each_flight")]).optional(),
   targetAirport: z.string().trim().toUpperCase().optional(),
+  targetAirports: z.array(z.string().trim().toUpperCase()).optional(),
   targetDepartureAirport: z.string().trim().toUpperCase().optional(),
   targetArrivalAirport: z.string().trim().toUpperCase().optional(),
   targetAircraftType: z.string().trim().toUpperCase().optional(),
@@ -145,12 +149,13 @@ const challengePayloadSchema = z
     description: z
       .string()
       .trim()
-      .min(8, "Challenge description must be 8-300 characters")
-      .max(300, "Challenge description must be 8-300 characters"),
+      .min(8, "Challenge description must be 8-2500 characters")
+      .max(2500, "Challenge description must be 8-2500 characters"),
     cadence: challengeCadenceSchema,
     mode: challengeModeSchema,
     ruleType: challengeRuleTypeSchema,
     targetAirport: z.string().trim().toUpperCase().optional(),
+    targetAirports: z.array(z.string().trim().toUpperCase()).optional(),
     targetDepartureAirport: z.string().trim().toUpperCase().optional(),
     targetArrivalAirport: z.string().trim().toUpperCase().optional(),
     targetAircraftType: z.string().trim().toUpperCase().optional(),
@@ -210,6 +215,7 @@ const challengePayloadSchema = z
       if (
         rule.scope === "each_flight" &&
         (rule.ruleType === "visit_airport_count" ||
+          rule.ruleType === "visit_airport_list" ||
           rule.ruleType === "flight_count")
       ) {
         ctx.addIssue({
@@ -258,6 +264,31 @@ const challengePayloadSchema = z
         ctx.addIssue({
           code: "custom",
           message: "Airport count challenges need a visit count above 0",
+          path: ["rules", index, "requiredAirportCount"],
+        });
+      }
+
+      if (
+        rule.ruleType === "visit_airport_list" &&
+        (!rule.targetAirports || rule.targetAirports.length === 0)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Target airport list challenges need airport codes",
+          path: ["rules", index, "targetAirports"],
+        });
+      }
+
+      if (
+        rule.ruleType === "visit_airport_list" &&
+        (!rule.requiredAirportCount ||
+          rule.requiredAirportCount <= 0 ||
+          rule.requiredAirportCount > (rule.targetAirports?.length ?? 0))
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "Target airport list challenges need a visit count within the airport list size",
           path: ["rules", index, "requiredAirportCount"],
         });
       }
@@ -330,6 +361,7 @@ function createInitialRule(
     ruleType,
     scope: "challenge",
     targetAirport: "",
+    targetAirports: "",
     targetDepartureAirport: "",
     targetArrivalAirport: "",
     targetAircraftType: "",
@@ -341,13 +373,18 @@ function createInitialRule(
 }
 
 function canRuleApplyToEachFlight(ruleType: ChallengeRuleType) {
-  return ruleType !== "visit_airport_count" && ruleType !== "flight_count";
+  return (
+    ruleType !== "visit_airport_count" &&
+    ruleType !== "visit_airport_list" &&
+    ruleType !== "flight_count"
+  );
 }
 
 function ruleFormFromChallengeRule(rule: {
   ruleType: ChallengeRuleType;
   scope?: ChallengeRuleScope | null;
   targetAirport: string | null;
+  targetAirports?: string[] | null;
   targetDepartureAirport: string | null;
   targetArrivalAirport: string | null;
   targetAircraftType: string | null;
@@ -360,6 +397,7 @@ function ruleFormFromChallengeRule(rule: {
     ruleType: rule.ruleType,
     scope: rule.scope ?? "challenge",
     targetAirport: rule.targetAirport ?? "",
+    targetAirports: rule.targetAirports?.join("\n") ?? "",
     targetDepartureAirport: rule.targetDepartureAirport ?? "",
     targetArrivalAirport: rule.targetArrivalAirport ?? "",
     targetAircraftType: rule.targetAircraftType ?? "",
@@ -376,11 +414,25 @@ function ruleFormFromChallengeRule(rule: {
   };
 }
 
+function parseAirportList(value: string) {
+  const airports = [
+    ...new Set(
+      value
+        .split(/[\s,;]+/)
+        .map((airport) => airport.trim().toUpperCase())
+        .filter(Boolean),
+    ),
+  ];
+
+  return airports.length > 0 ? airports : undefined;
+}
+
 function ruleFormToPayload(rule: ChallengeRuleForm) {
   return {
     ruleType: rule.ruleType,
     scope: canRuleApplyToEachFlight(rule.ruleType) ? rule.scope : "challenge",
     targetAirport: rule.targetAirport || undefined,
+    targetAirports: parseAirportList(rule.targetAirports),
     targetDepartureAirport: rule.targetDepartureAirport || undefined,
     targetArrivalAirport: rule.targetArrivalAirport || undefined,
     targetAircraftType: rule.targetAircraftType || undefined,
@@ -429,6 +481,7 @@ function describeRule(challenge: {
   mode: ChallengeMode;
   ruleType: ChallengeRuleType;
   targetAirport: string | null;
+  targetAirports: string[] | null;
   targetDepartureAirport: string | null;
   targetArrivalAirport: string | null;
   targetAircraftType: string | null;
@@ -440,6 +493,7 @@ function describeRule(challenge: {
     ruleType: ChallengeRuleType;
     scope?: ChallengeRuleScope | null;
     targetAirport: string | null;
+    targetAirports?: string[] | null;
     targetDepartureAirport: string | null;
     targetArrivalAirport: string | null;
     targetAircraftType: string | null;
@@ -463,6 +517,7 @@ function describeSingleRule(rule: {
   ruleType: ChallengeRuleType;
   scope?: ChallengeRuleScope | null;
   targetAirport: string | null;
+  targetAirports?: string[] | null;
   targetDepartureAirport: string | null;
   targetArrivalAirport: string | null;
   targetAircraftType: string | null;
@@ -477,6 +532,8 @@ function describeSingleRule(rule: {
       return `${prefix}Visit ${rule.targetAirport}`;
     case "visit_airport_count":
       return `${prefix}Visit ${rule.requiredAirportCount} unique airports`;
+    case "visit_airport_list":
+      return `${prefix}Visit ${rule.requiredAirportCount} of ${rule.targetAirports?.length ?? 0} target airports`;
     case "depart_airport":
       return `${prefix}Depart ${rule.targetAirport}`;
     case "arrive_airport":
@@ -596,6 +653,7 @@ export function ChallengesTab({
             {
               ruleType: challenge.ruleType,
               targetAirport: challenge.targetAirport,
+              targetAirports: challenge.targetAirports,
               targetDepartureAirport: challenge.targetDepartureAirport,
               targetArrivalAirport: challenge.targetArrivalAirport,
               targetAircraftType: challenge.targetAircraftType,
@@ -823,6 +881,54 @@ export function ChallengesTab({
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
           />
         </label>
+      );
+    }
+
+    if (rule.ruleType === "visit_airport_list") {
+      const targetAirportCount = parseAirportList(rule.targetAirports)?.length;
+
+      return (
+        <>
+          <label className="space-y-2">
+            <span className="text-sm text-slate-400">
+              Target airport ICAOs
+            </span>
+            <textarea
+              value={rule.targetAirports}
+              onChange={(event) =>
+                updateRule(index, {
+                  targetAirports: event.target.value.toUpperCase(),
+                })
+              }
+              placeholder={"SABE\nYSSY\nLOWW"}
+              rows={6}
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+            />
+            {targetAirportCount ? (
+              <span className="block text-xs text-slate-500">
+                {targetAirportCount} target airport
+                {targetAirportCount === 1 ? "" : "s"}
+              </span>
+            ) : null}
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm text-slate-400">
+              Target airports required
+            </span>
+            <input
+              type="number"
+              min="1"
+              value={rule.requiredAirportCount}
+              onChange={(event) =>
+                updateRule(index, {
+                  requiredAirportCount: event.target.value,
+                })
+              }
+              placeholder={targetAirportCount ? String(targetAirportCount) : "3"}
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+            />
+          </label>
+        </>
       );
     }
 
@@ -1161,6 +1267,12 @@ export function ChallengesTab({
                                 className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
                               >
                                 Visit X airports
+                              </SelectItem>
+                              <SelectItem
+                                value="visit_airport_list"
+                                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                              >
+                                Visit airport list
                               </SelectItem>
                               <SelectItem
                                 value="depart_airport"

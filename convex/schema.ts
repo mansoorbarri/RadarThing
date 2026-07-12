@@ -250,6 +250,7 @@ export default defineSchema({
     ruleType: v.union(
       v.literal("visit_airport"),
       v.literal("visit_airport_count"),
+      v.literal("visit_airport_list"),
       v.literal("depart_airport"),
       v.literal("arrive_airport"),
       v.literal("route"),
@@ -260,6 +261,7 @@ export default defineSchema({
       v.literal("manual"),
     ),
     targetAirport: v.optional(v.string()),
+    targetAirports: v.optional(v.array(v.string())),
     targetDepartureAirport: v.optional(v.string()),
     targetArrivalAirport: v.optional(v.string()),
     targetAircraftType: v.optional(v.string()),
@@ -273,6 +275,7 @@ export default defineSchema({
           ruleType: v.union(
             v.literal("visit_airport"),
             v.literal("visit_airport_count"),
+            v.literal("visit_airport_list"),
             v.literal("depart_airport"),
             v.literal("arrive_airport"),
             v.literal("route"),
@@ -286,6 +289,7 @@ export default defineSchema({
             v.union(v.literal("challenge"), v.literal("each_flight")),
           ),
           targetAirport: v.optional(v.string()),
+          targetAirports: v.optional(v.array(v.string())),
           targetDepartureAirport: v.optional(v.string()),
           targetArrivalAirport: v.optional(v.string()),
           targetAircraftType: v.optional(v.string()),

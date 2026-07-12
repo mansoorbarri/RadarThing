@@ -1,6 +1,7 @@
 export type ChallengeRuleType =
   | "visit_airport"
   | "visit_airport_count"
+  | "visit_airport_list"
   | "depart_airport"
   | "arrive_airport"
   | "route"
@@ -15,6 +16,7 @@ export interface ChallengeRuleSummaryRule {
   ruleType: ChallengeRuleType;
   scope?: ChallengeRuleScope | null;
   targetAirport: string | null;
+  targetAirports?: string[] | null;
   targetDepartureAirport: string | null;
   targetArrivalAirport: string | null;
   targetAircraftType: string | null;
@@ -47,6 +49,8 @@ function getSingleRuleSummary(rule: ChallengeRuleSummaryRule) {
       return `${prefix}Visit ${rule.targetAirport}`;
     case "visit_airport_count":
       return `${prefix}Visit ${rule.requiredAirportCount} unique airports`;
+    case "visit_airport_list":
+      return `${prefix}Visit ${rule.requiredAirportCount} of ${rule.targetAirports?.length ?? 0} target airports`;
     case "depart_airport":
       return `${prefix}Depart ${rule.targetAirport}`;
     case "arrive_airport":
