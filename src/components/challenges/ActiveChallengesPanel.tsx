@@ -279,7 +279,7 @@ export function ActiveChallengesPanel({
             return (
               <div
                 key={challenge.id}
-                className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5"
+                className="flex rounded-2xl border border-white/10 bg-white/5 p-4 sm:min-h-[260px] sm:flex-col sm:p-5"
               >
                 <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
@@ -332,8 +332,9 @@ export function ActiveChallengesPanel({
                   {getRuleSummary(challenge)}
                 </p>
 
-                {challenge.mode === "auto" ? (
-                  canShowProgress ? (
+                <div className="sm:mt-auto">
+                  {challenge.mode === "auto" ? (
+                    canShowProgress ? (
                     <div className="space-y-2">
                       <div className="flex items-center text-xs sm:hidden">
                         <span
@@ -385,7 +386,7 @@ export function ActiveChallengesPanel({
                         />
                       </div>
                     </div>
-                  ) : (
+                    ) : (
                     <div
                       className={`rounded-xl border px-3 py-2 text-sm ${
                         status === "completed"
@@ -402,8 +403,8 @@ export function ActiveChallengesPanel({
                         "This challenge is tracked automatically from your flight history."
                       )}
                     </div>
-                  )
-                ) : (
+                    )
+                  ) : (
                   <div className="space-y-3">
                     {canSubmitManual ? (
                       <>
@@ -512,7 +513,8 @@ export function ActiveChallengesPanel({
                       </button>
                     )}
                   </div>
-                )}
+                  )}
+                </div>
               </div>
             );
           })}
