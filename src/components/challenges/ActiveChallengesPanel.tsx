@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { ChallengeLeaderboardTab } from "~/components/challenges/ChallengeLeaderboardTab";
+import { ChallengeDescription } from "~/components/challenges/ChallengeDescription";
 import { getRuleSummary } from "~/components/challenges/ruleSummary";
 import { Analytics } from "~/lib/analytics";
 
@@ -323,9 +324,10 @@ export function ActiveChallengesPanel({
                   </div>
                 </div>
 
-                <p className="mb-3 text-sm text-slate-300">
-                  {challenge.description}
-                </p>
+                <ChallengeDescription
+                  description={challenge.description}
+                  className="mb-3 text-sm text-slate-300"
+                />
                 <p className="mb-4 font-mono text-xs text-cyan-300">
                   {getRuleSummary(challenge)}
                 </p>

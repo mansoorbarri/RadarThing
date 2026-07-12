@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { SystemThemeLogo } from "~/components/ui/SystemThemeLogo";
+import { ChallengeDescription } from "~/components/challenges/ChallengeDescription";
 import { getLeaderboardTabHref, type SortKey } from "./leaderboardTabs";
 
 function formatFlightTime(ms: number): string {
@@ -410,9 +411,10 @@ export default function LeaderboardClient({
                         <h3 className="text-2xl font-bold text-white">
                           {challenge.title}
                         </h3>
-                        <p className="mt-2 text-sm text-slate-300">
-                          {challenge.description}
-                        </p>
+                        <ChallengeDescription
+                          description={challenge.description}
+                          className="mt-2 text-sm text-slate-300"
+                        />
                       </div>
 
                       <div className="flex items-center gap-1 text-xs text-slate-500">

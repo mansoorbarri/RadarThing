@@ -23,6 +23,7 @@ import { z } from "zod";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { api } from "../../../../convex/_generated/api";
 import { Analytics } from "~/lib/analytics";
+import { ChallengeDescription } from "~/components/challenges/ChallengeDescription";
 import {
   Select,
   SelectContent,
@@ -1554,9 +1555,10 @@ export function ChallengesTab({
                               </div>
                             </div>
 
-                            <p className="mb-3 text-sm text-slate-300">
-                              {review.challengeDescription}
-                            </p>
+                            <ChallengeDescription
+                              description={review.challengeDescription}
+                              className="mb-3 text-sm text-slate-300"
+                            />
                             {review.submissionNote && (
                               <p className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">
                                 {review.submissionNote}
@@ -1699,9 +1701,10 @@ export function ChallengesTab({
                       </div>
                     </div>
 
-                    <p className="mb-3 text-sm text-slate-300">
-                      {review.challengeDescription}
-                    </p>
+                    <ChallengeDescription
+                      description={review.challengeDescription}
+                      className="mb-3 text-sm text-slate-300"
+                    />
                     {review.submissionNote && (
                       <p className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">
                         {review.submissionNote}
@@ -1779,9 +1782,10 @@ export function ChallengesTab({
                         <h4 className="text-base font-semibold text-white">
                           {challenge.title}
                         </h4>
-                        <p className="mt-1 text-sm text-slate-400">
-                          {challenge.description}
-                        </p>
+                        <ChallengeDescription
+                          description={challenge.description}
+                          className="mt-1 text-sm text-slate-400"
+                        />
                       </div>
 
                       <div className="flex flex-wrap gap-2">

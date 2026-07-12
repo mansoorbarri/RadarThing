@@ -9,6 +9,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "~/components/ui/collapsible";
+import { ChallengeDescription } from "~/components/challenges/ChallengeDescription";
 
 interface ChallengeLeaderboardEntry {
   userId: Id<"users">;
@@ -215,9 +216,10 @@ function ChallengeLeaderboardCard({
           <h4 className="text-lg font-semibold text-white">
             {challenge.title}
           </h4>
-          <p className="mt-2 text-sm text-slate-300">
-            {challenge.description}
-          </p>
+          <ChallengeDescription
+            description={challenge.description}
+            className="mt-2 text-sm text-slate-300"
+          />
           <p className="mt-2 font-mono text-xs text-cyan-300">
             {getRuleSummary(challenge)}
           </p>

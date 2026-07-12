@@ -6,6 +6,7 @@ import { CheckCircle2, Clock3, Flag, Loader2 } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { ChallengeLeaderboardTab } from "~/components/challenges/ChallengeLeaderboardTab";
+import { ChallengeDescription } from "~/components/challenges/ChallengeDescription";
 import { getRuleSummary } from "~/components/challenges/ruleSummary";
 
 function formatWindow(startAt: number, endAt: number) {
@@ -123,9 +124,10 @@ export function PilotChallengesPanel({ userId }: { userId: Id<"users"> }) {
                   </div>
                 </div>
 
-                <p className="mb-3 text-sm text-slate-300">
-                  {challenge.description}
-                </p>
+                <ChallengeDescription
+                  description={challenge.description}
+                  className="mb-3 text-sm text-slate-300"
+                />
                 <p className="mb-4 font-mono text-xs text-cyan-300">
                   {getRuleSummary(challenge)}
                 </p>
