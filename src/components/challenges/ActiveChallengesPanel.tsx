@@ -255,7 +255,7 @@ export function ActiveChallengesPanel({
           maxEntries={10}
         />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid items-start gap-4 lg:grid-cols-2">
           {challenges.map((challenge) => {
             const status = challenge.userStatus;
             const isSubmitting = submittingChallengeId === challenge.id;
