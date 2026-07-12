@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const PREVIEW_LENGTH = 300;
+const PREVIEW_LENGTH = 200;
 
 export function ChallengeDescription({
   description,
