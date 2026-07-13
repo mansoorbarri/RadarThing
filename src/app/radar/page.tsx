@@ -1995,9 +1995,6 @@ function ATCPageContent() {
         open={showShortcutsMenu && !isUiHidden}
         onClose={() => setShowShortcutsMenu(false)}
         isMobile={isMobile}
-        isFollowMode={isFollowMode}
-        canFollowAircraft={selectedAircrafts.length > 0}
-        onFollowModeChange={setIsFollowMode}
         showAircraftLabels={
           flightDisplayMode === "default" ||
           flightDisplayMode === "waypoints-hidden"

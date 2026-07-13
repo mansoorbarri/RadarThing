@@ -53,9 +53,6 @@ interface ShortcutsMenuProps {
   open: boolean;
   onClose: () => void;
   isMobile: boolean;
-  isFollowMode: boolean;
-  canFollowAircraft: boolean;
-  onFollowModeChange: (enabled: boolean) => void;
   showAircraftLabels: boolean;
   onAircraftLabelsChange: (enabled: boolean) => void;
   showRouteWaypoints: boolean;
@@ -70,9 +67,6 @@ export function ShortcutsMenu({
   open,
   onClose,
   isMobile,
-  isFollowMode,
-  canFollowAircraft,
-  onFollowModeChange,
   showAircraftLabels,
   onAircraftLabelsChange,
   showRouteWaypoints,
@@ -139,17 +133,6 @@ export function ShortcutsMenu({
           </div>
 
           <div className="divide-y divide-white/6 px-5">
-            <ToggleRow
-              label="Follow selected aircraft"
-              description={
-                canFollowAircraft
-                  ? "Keep the selected aircraft centered on the map."
-                  : "Select an aircraft to enable following."
-              }
-              checked={isFollowMode}
-              disabled={!canFollowAircraft}
-              onChange={onFollowModeChange}
-            />
             <ToggleRow
               label="Show aircraft labels"
               description="Show labels alongside aircraft on the map."
