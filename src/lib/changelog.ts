@@ -213,10 +213,19 @@ export const changelog: ChangelogEntry[] = [
   },
 ];
 
-const CURRENT_CHANGELOG_MONTH = new Date().toISOString().slice(0, 7);
+// Use the visitor's calendar date so scheduled entries become visible when
+// their day begins in that visitor's time zone.
+const now = new Date();
+const CURRENT_CHANGELOG_MONTH = `${now.getFullYear()}-${String(
+  now.getMonth() + 1,
+).padStart(2, "0")}`;
+const CURRENT_CHANGELOG_DATE = `${CURRENT_CHANGELOG_MONTH}-${String(
+  now.getDate(),
+).padStart(2, "0")}`;
 
 export const currentMonthChangelog = changelog.filter((entry) =>
-  entry.date.startsWith(CURRENT_CHANGELOG_MONTH),
+  entry.date.startsWith(CURRENT_CHANGELOG_MONTH) &&
+  entry.date <= CURRENT_CHANGELOG_DATE,
 );
 
 export const CURRENT_CHANGELOG_MONTH_LABEL = new Intl.DateTimeFormat("en-US", {
