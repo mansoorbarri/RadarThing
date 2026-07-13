@@ -112,12 +112,6 @@ export const add = mutation({
       throw new Error("Pilot not found");
     }
 
-    if (!selectedUser.discordUsername) {
-      throw new Error(
-        "Pilots must connect Discord to RadarThing before joining a VA",
-      );
-    }
-
     const existingMembership = await ctx.db
       .query("virtualAirlineMembers")
       .withIndex("by_virtualAirlineId_userId", (q) =>
@@ -135,6 +129,12 @@ export const add = mutation({
         addedBy: existingMembership.addedBy,
         createdAt: existingMembership._creationTime,
       };
+    }
+
+    if (!selectedUser.discordUsername) {
+      throw new Error(
+        "Pilots must connect Discord to RadarThing before joining a VA",
+      );
     }
 
     const existingUserMembership = await ctx.db

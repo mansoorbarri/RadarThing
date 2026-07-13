@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useConvexAuth, useQuery } from "convex/react";
 import {
@@ -45,6 +45,7 @@ export function VirtualAirlineRegistrationModal({
   const [website, setWebsite] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -52,6 +53,9 @@ export function VirtualAirlineRegistrationModal({
     setSecondsRemaining(REVIEW_DELAY_SECONDS);
     setHasAcknowledgedRules(false);
     setSubmitted(false);
+    setName("");
+    setCallsignPrefix("");
+    setWebsite("");
     const startedAt = Date.now();
     const interval = window.setInterval(() => {
       const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
@@ -61,14 +65,46 @@ export function VirtualAirlineRegistrationModal({
     return () => window.clearInterval(interval);
   }, [open]);
 
+  const handleClose = () => {
+    if (!isSubmitting) onClose();
+  };
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        handleClose();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const focusableElements = modalRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusableElements?.length) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement?.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, isSubmitting, onClose]);
+
   if (!open) return null;
 
   const isDiscordConnected = Boolean(dbUser?.discordUsername);
   const canAcknowledge = secondsRemaining === 0;
-
-  const handleClose = () => {
-    if (!isSubmitting) onClose();
-  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -95,6 +131,7 @@ export function VirtualAirlineRegistrationModal({
 
   return (
     <div
+      ref={modalRef}
       className="fixed inset-0 z-[10020] flex items-center justify-center bg-black/45 p-4 backdrop-blur-md dark:bg-black/75"
       role="dialog"
       aria-modal="true"
@@ -280,9 +317,7 @@ export function VirtualAirlineRegistrationModal({
             ) : (
               <p className="rounded-xl border border-emerald-300/20 bg-emerald-300/8 p-3 text-sm text-emerald-100">
                 Discord connected as{" "}
-                <span className="font-medium">
-                  {dbUser?.discordUsername}
-                </span>.
+                <span className="font-medium">{dbUser?.discordUsername}</span>.
               </p>
             )}
 

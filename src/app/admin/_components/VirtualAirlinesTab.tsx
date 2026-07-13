@@ -321,6 +321,12 @@ export function VirtualAirlinesTab({
         ? "VA approved"
         : "VA registration rejected",
     );
+    if (approvalStatus === "approved" && result.virtualAirline) {
+      setForm((current) => ({
+        ...current,
+        isActive: result.virtualAirline!.isActive,
+      }));
+    }
     setIsVaRejectModalOpen(false);
   };
 

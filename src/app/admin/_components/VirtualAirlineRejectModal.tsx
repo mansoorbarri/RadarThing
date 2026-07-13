@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function VirtualAirlineRejectModal({
   isOpen,
@@ -16,17 +16,60 @@ export function VirtualAirlineRejectModal({
   onConfirm: (reason: string) => void;
 }) {
   const [reason, setReason] = useState("");
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) setReason("");
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isSubmitting) {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const focusableElements =
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), textarea:not([disabled]), [href], input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+      if (!focusableElements?.length) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement?.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, isSubmitting, onClose]);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm dark:bg-black/70">
-      <div className="border-border bg-card text-card-foreground w-full max-w-md rounded-2xl border p-6 shadow-2xl">
-        <h3 className="text-foreground text-lg font-semibold">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="va-reject-title"
+        className="border-border bg-card text-card-foreground w-full max-w-md rounded-2xl border p-6 shadow-2xl"
+      >
+        <h3
+          id="va-reject-title"
+          className="text-foreground text-lg font-semibold"
+        >
           Reject VA registration
         </h3>
         <p className="text-muted-foreground mt-2 text-sm leading-6">

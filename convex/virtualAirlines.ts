@@ -16,6 +16,23 @@ function normalizeCallsign(callsign: string): string {
   return callsign.trim().toUpperCase().replace(/\s+/g, "");
 }
 
+function validateRegistrationInput(args: {
+  name: string;
+  callsignPrefix: string;
+}) {
+  const name = args.name.trim();
+  if (name.length < 2 || name.length > 60) {
+    throw new Error("VA name must be 2-60 characters");
+  }
+
+  const callsignPrefix = normalizeCallsignPrefix(args.callsignPrefix);
+  if (!/^[A-Z0-9]{2,8}$/.test(callsignPrefix)) {
+    throw new Error("Callsign prefix must be 2-8 letters or numbers");
+  }
+
+  return { name, callsignPrefix };
+}
+
 function normalizeAircraftTypeKey(aircraftType: string): string {
   const cleaned = aircraftType.trim().toUpperCase();
   const learjetMatch =
@@ -382,10 +399,21 @@ export const register = mutation({
       );
     }
 
+    const { name, callsignPrefix } = validateRegistrationInput(args);
+    const existingVirtualAirline = await ctx.db
+      .query("virtualAirlines")
+      .withIndex("by_callsignPrefix", (q) =>
+        q.eq("callsignPrefix", callsignPrefix),
+      )
+      .first();
+    if (existingVirtualAirline) {
+      throw new Error("That callsign prefix is already assigned to another VA");
+    }
+
     const now = Date.now();
     const id = await ctx.db.insert("virtualAirlines", {
-      name: args.name.trim(),
-      callsignPrefix: normalizeCallsignPrefix(args.callsignPrefix),
+      name,
+      callsignPrefix,
       adminClerkId: clerkId,
       website: args.website,
       isActive: false,
@@ -534,7 +562,7 @@ export const setApprovalStatus = mutation({
     });
 
     const virtualAirline = await ctx.db.get(args.id);
-    if (virtualAirline) {
+    if (virtualAirline && args.approvalStatus !== "pending") {
       await logAdminTelemetry(ctx, {
         actorClerkId: actor.clerkId,
         action: args.approvalStatus === "approved" ? "approve" : "reject",
