@@ -312,19 +312,17 @@ export function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
   const isMilitaryOperator = isMilitaryAirForce(af);
   const isMilitary =
     isMilitaryOperator || isMilitaryCombatType(rawType, normalizedType);
-  if (isMilitaryOperator) {
-    return isMilitaryTransportType(rawType, normalizedType)
-      ? AIRCRAFT_ICONS.militaryTransport
-      : AIRCRAFT_ICONS.military;
-  }
 
+  // The operator does not determine an airframe's silhouette. Military forces
+  // regularly operate civilian-derived aircraft (for example, USAF B747s),
+  // which should retain their corresponding civilian icon.
   const specificIcon = getSpecificAircraftIconUrl(normalizedType, rawType);
   if (specificIcon) return specificIcon;
 
-  if (isMilitary) {
-    return isMilitaryTransportType(rawType, normalizedType)
-      ? AIRCRAFT_ICONS.militaryTransport
-      : AIRCRAFT_ICONS.military;
+  // Preserve the transport silhouette for military airframes that do not have
+  // a more specific icon in the catalog.
+  if (isMilitaryOperator && isMilitaryTransportType(rawType, normalizedType)) {
+    return AIRCRAFT_ICONS.militaryTransport;
   }
 
   if (
@@ -380,6 +378,12 @@ export function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
   }
   if (/\b(light|prop|ga|general aviation)\b/.test(rawType)) {
     return AIRCRAFT_ICONS.generalAviation;
+  }
+
+  if (isMilitary) {
+    return isMilitaryTransportType(rawType, normalizedType)
+      ? AIRCRAFT_ICONS.militaryTransport
+      : AIRCRAFT_ICONS.military;
   }
 
   return DEFAULT_AIRCRAFT_ICON;
