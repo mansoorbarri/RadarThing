@@ -12,6 +12,8 @@
   let chartsToggleKey = localStorage.getItem(CHARTS_TOGGLE_KEY) || "q";
 
   const UI_CONTAINER_ID = "geofs-atc-radar-flightInfoUI";
+  const MOBILE_UI_CLOSE_ID = "geofs-atc-mobile-close";
+  const MOBILE_UI_OPEN_ID = "geofs-atc-mobile-open";
   const DEP_INPUT_ID = "atc-depInput";
   const ARR_INPUT_ID = "atc-arrInput";
   const FLT_INPUT_ID = "atc-fltInput";
@@ -33,6 +35,7 @@
   const RESUME_MODAL_ID = "radarthing-resume-flight-modal";
 
   let flightUI;
+  let mobileFlightUIOpenButton;
   let keybindMode = null;
   let lastSyncedPlan = "";
   let identRequestUntil = 0;
@@ -109,6 +112,32 @@
 
   function isICAO(str) {
     return /^[A-Z]{4}$/.test(str);
+  }
+
+  function isMobileBrowser() {
+    const uaMobile = navigator.userAgentData?.mobile;
+    if (typeof uaMobile === "boolean") return uaMobile;
+
+    const isIPad =
+      navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    const hasMobileUserAgent = /Android|iPhone|iPad|iPod|Mobile/i.test(
+      navigator.userAgent,
+    );
+
+    return (
+      isIPad ||
+      hasMobileUserAgent ||
+      (window.matchMedia("(pointer: coarse)").matches &&
+        window.innerWidth < 1024)
+    );
+  }
+
+  function setFlightUIVisible(visible) {
+    if (!flightUI) return;
+    flightUI.style.display = visible ? "block" : "none";
+    if (mobileFlightUIOpenButton) {
+      mobileFlightUIOpenButton.style.display = visible ? "none" : "flex";
+    }
   }
 
   function sanitizeFlightCallsign(value) {
@@ -1635,6 +1664,7 @@
   // ==========================================
 
   function injectFlightUI() {
+    const isMobile = isMobileBrowser();
     flightUI = document.createElement("div");
     flightUI.id = UI_CONTAINER_ID;
     flightUI.style.cssText = `
@@ -1655,6 +1685,7 @@
 
     flightUI.innerHTML = `
       <div style="
+        position:relative;
         text-align:center;
         margin-bottom:12px;
         font-size:11px;
@@ -1664,6 +1695,29 @@
         font-weight:600;
       ">
         ATC Flight Info
+        ${
+          isMobile
+            ? `<button id="${MOBILE_UI_CLOSE_ID}" type="button" aria-label="Close ATC flight info" title="Close" style="
+                position:absolute;
+                top:50%;
+                right:-4px;
+                width:28px;
+                height:28px;
+                transform:translateY(-50%);
+                display:grid;
+                place-items:center;
+                padding:0;
+                border:0;
+                border-radius:8px;
+                background:transparent;
+                color:#94a3b8;
+                font-size:20px;
+                font-weight:400;
+                line-height:1;
+                cursor:pointer;
+              ">&times;</button>`
+            : ""
+        }
       </div>
 
       <div style="display:grid; gap:10px;">
@@ -1820,6 +1874,42 @@
     `;
 
     document.body.appendChild(flightUI);
+
+    if (isMobile) {
+      mobileFlightUIOpenButton = document.createElement("button");
+      mobileFlightUIOpenButton.id = MOBILE_UI_OPEN_ID;
+      mobileFlightUIOpenButton.type = "button";
+      mobileFlightUIOpenButton.setAttribute("aria-label", "Open ATC flight info");
+      mobileFlightUIOpenButton.title = "Open ATC flight info";
+      mobileFlightUIOpenButton.textContent = "‹";
+      mobileFlightUIOpenButton.style.cssText = `
+        position:fixed;
+        top:72px;
+        right:12px;
+        width:36px;
+        height:42px;
+        display:none;
+        align-items:center;
+        justify-content:center;
+        padding:0;
+        border:1px solid rgba(255,255,255,0.12);
+        border-radius:12px;
+        background:rgba(2,6,23,0.82);
+        backdrop-filter:blur(18px);
+        color:#67e8f9;
+        font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+        font-size:28px;
+        line-height:1;
+        box-shadow:0 12px 28px rgba(0,0,0,0.5);
+        cursor:pointer;
+        z-index:999999;
+      `;
+      mobileFlightUIOpenButton.onclick = () => setFlightUIVisible(true);
+      document.body.appendChild(mobileFlightUIOpenButton);
+
+      document.getElementById(MOBILE_UI_CLOSE_ID).onclick = () =>
+        setFlightUIVisible(false);
+    }
 
     [DEP_INPUT_ID, ARR_INPUT_ID, FLT_INPUT_ID, SQK_INPUT_ID].forEach((id) => {
       const el = document.getElementById(id);
@@ -2493,8 +2583,7 @@
       e.target.tagName !== "INPUT" &&
       e.target.tagName !== "TEXTAREA"
     ) {
-      flightUI.style.display =
-        flightUI.style.display === "none" ? "block" : "none";
+      setFlightUIVisible(flightUI.style.display === "none");
       return;
     }
 
