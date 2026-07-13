@@ -141,6 +141,14 @@ export default defineSchema({
     adminClerkId: v.string(),
     website: v.optional(v.string()),
     isActive: v.boolean(),
+    approvalStatus: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("approved"),
+        v.literal("rejected"),
+      ),
+    ),
+    rejectionReason: v.optional(v.string()),
     createdBy: v.string(),
     updatedAt: v.number(),
   })

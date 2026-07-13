@@ -1,13 +1,60 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { clerkClient } from "@clerk/nextjs/server";
 import { UTApi } from "uploadthing/server";
+import { Resend } from "resend";
 import { api, convex, getAuthenticatedConvex } from "~/server/convex";
 import { getCurrentAccessContext } from "~/server/access";
+import { env } from "~/env";
 import { getAircraftTypeLookupCandidates } from "~/lib/utils";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 const utapi = new UTApi();
+const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+async function sendVirtualAirlineRejectionEmail(data: {
+  ownerClerkId: string;
+  name: string;
+  callsignPrefix: string;
+  reason: string;
+}) {
+  if (!resend) return;
+
+  try {
+    const client = await clerkClient();
+    const owner = await client.users.getUser(data.ownerClerkId);
+    const email = owner.emailAddresses[0]?.emailAddress;
+    if (!email) return;
+
+    await resend.emails.send({
+      from: "RadarThing <noreply@radarthing.com>",
+      to: email,
+      subject: "Your virtual airline registration was not approved",
+      html: `
+        <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #ef4444;">VA registration not approved</h2>
+          <p>Your registration for <strong>${escapeHtml(data.name)}</strong> (${escapeHtml(data.callsignPrefix)}) was not approved.</p>
+          <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 12px; margin: 16px 0;">
+            <p style="margin: 0; color: #991b1b;"><strong>Reason:</strong> ${escapeHtml(data.reason)}</p>
+          </div>
+          <p>You can submit another registration after addressing this feedback.</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Failed to send VA rejection email:", error);
+  }
+}
 
 function normalizeCallsignPrefix(prefix: string): string {
   return prefix.trim().toUpperCase().replace(/\s+/g, "");
@@ -45,6 +92,8 @@ export interface VirtualAirline {
   adminClerkId: string;
   website: string | null;
   isActive: boolean;
+  approvalStatus: "pending" | "approved" | "rejected";
+  rejectionReason: string | null;
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
@@ -77,6 +126,8 @@ function toVirtualAirline(item: {
   adminClerkId: string;
   website: string | null;
   isActive: boolean;
+  approvalStatus: "pending" | "approved" | "rejected";
+  rejectionReason: string | null;
   createdBy: string;
   createdAt: number;
   updatedAt: number;
@@ -88,6 +139,8 @@ function toVirtualAirline(item: {
     adminClerkId: item.adminClerkId,
     website: item.website,
     isActive: item.isActive,
+    approvalStatus: item.approvalStatus,
+    rejectionReason: item.rejectionReason,
     createdBy: item.createdBy,
     createdAt: new Date(item.createdAt),
     updatedAt: new Date(item.updatedAt),
@@ -290,13 +343,16 @@ export async function createVirtualAirline(data: {
   }
 
   const authedConvex = await getAuthenticatedConvex();
-  const virtualAirline = await authedConvex.mutation(api.virtualAirlines.create, {
-    name: validated.name,
-    callsignPrefix: validated.callsignPrefix,
-    adminClerkId: data.adminClerkId,
-    website: validated.website ?? undefined,
-    createdBy: access.clerkId,
-  });
+  const virtualAirline = await authedConvex.mutation(
+    api.virtualAirlines.create,
+    {
+      name: validated.name,
+      callsignPrefix: validated.callsignPrefix,
+      adminClerkId: data.adminClerkId,
+      website: validated.website ?? undefined,
+      createdBy: access.clerkId,
+    },
+  );
 
   revalidatePath("/admin");
   revalidatePath("/va-admin");
@@ -315,6 +371,119 @@ export async function createVirtualAirline(data: {
       ? toVirtualAirline(virtualAirline)
       : undefined,
   };
+}
+
+export async function registerVirtualAirline(data: {
+  name: string;
+  callsignPrefix: string;
+  website?: string;
+}): Promise<{
+  success: boolean;
+  error?: string;
+  virtualAirline?: VirtualAirline;
+}> {
+  const access = await getCurrentAccessContext();
+  if (!access.clerkId) {
+    return { success: false, error: "You must be signed in to register a VA" };
+  }
+
+  if (!access.user?.discordUsername) {
+    return {
+      success: false,
+      error:
+        "Connect your Discord account to RadarThing before registering a VA",
+    };
+  }
+
+  const validated = await validateVirtualAirlineInput({
+    ...data,
+    adminClerkId: access.clerkId,
+  });
+  if (!validated.ok) {
+    return { success: false, error: validated.error };
+  }
+
+  try {
+    const authedConvex = await getAuthenticatedConvex();
+    const virtualAirline = await authedConvex.mutation(
+      api.virtualAirlines.register,
+      {
+        name: validated.name,
+        callsignPrefix: validated.callsignPrefix,
+        website: validated.website ?? undefined,
+      },
+    );
+
+    revalidatePath("/admin");
+    revalidatePath("/va-admin");
+    revalidatePath("/radar");
+
+    return {
+      success: true,
+      virtualAirline: virtualAirline
+        ? toVirtualAirline(virtualAirline)
+        : undefined,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to submit VA registration",
+    };
+  }
+}
+
+export async function setVirtualAirlineApprovalStatus(data: {
+  id: string;
+  approvalStatus: "pending" | "approved" | "rejected";
+  rejectionReason?: string;
+}): Promise<{
+  success: boolean;
+  error?: string;
+  virtualAirline?: VirtualAirline;
+}> {
+  const access = await requireSiteAdmin();
+  if (!access?.clerkId) {
+    return {
+      success: false,
+      error: "Only ADMIN users can review VA registrations",
+    };
+  }
+
+  const rejectionReason = data.rejectionReason?.trim();
+  if (data.approvalStatus === "rejected" && !rejectionReason) {
+    return { success: false, error: "A rejection reason is required" };
+  }
+
+  const authedConvex = await getAuthenticatedConvex();
+  const virtualAirline = await authedConvex.mutation(
+    api.virtualAirlines.setApprovalStatus,
+    {
+      id: data.id as Id<"virtualAirlines">,
+      approvalStatus: data.approvalStatus,
+      rejectionReason,
+      actorClerkId: access.clerkId,
+    },
+  );
+
+  if (!virtualAirline) return { success: false, error: "VA not found" };
+
+  if (data.approvalStatus === "rejected" && rejectionReason) {
+    await sendVirtualAirlineRejectionEmail({
+      ownerClerkId: virtualAirline.adminClerkId,
+      name: virtualAirline.name,
+      callsignPrefix: virtualAirline.callsignPrefix,
+      reason: rejectionReason,
+    });
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/va-admin");
+  revalidatePath("/radar");
+
+  return { success: true, virtualAirline: toVirtualAirline(virtualAirline) };
 }
 
 export async function updateVirtualAirline(data: {
@@ -348,15 +517,18 @@ export async function updateVirtualAirline(data: {
   }
 
   const authedConvex = await getAuthenticatedConvex();
-  const virtualAirline = await authedConvex.mutation(api.virtualAirlines.update, {
-    id: data.id as Id<"virtualAirlines">,
-    name: validated.name,
-    callsignPrefix: validated.callsignPrefix,
-    adminClerkId: data.adminClerkId,
-    website: validated.website ?? undefined,
-    isActive: data.isActive,
-    actorClerkId: access.clerkId,
-  });
+  const virtualAirline = await authedConvex.mutation(
+    api.virtualAirlines.update,
+    {
+      id: data.id as Id<"virtualAirlines">,
+      name: validated.name,
+      callsignPrefix: validated.callsignPrefix,
+      adminClerkId: data.adminClerkId,
+      website: validated.website ?? undefined,
+      isActive: data.isActive,
+      actorClerkId: access.clerkId,
+    },
+  );
 
   revalidatePath("/admin");
   revalidatePath("/va-admin");
@@ -718,9 +890,10 @@ export async function createVirtualAirlineAircraftImage(data: {
   }
 }
 
-export async function deleteVirtualAirlineAircraftImage(
-  data: { id: string; virtualAirlineId: string },
-): Promise<{ success: boolean; error?: string }> {
+export async function deleteVirtualAirlineAircraftImage(data: {
+  id: string;
+  virtualAirlineId: string;
+}): Promise<{ success: boolean; error?: string }> {
   const authedConvex = await getAuthenticatedConvex();
   const image = await authedConvex.query(
     api.virtualAirlineAircraftImages.getById,
