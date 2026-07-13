@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
@@ -696,6 +697,34 @@ export default function AircraftImagesPage() {
               Your image will be reviewed by our team before appearing in the
               gallery.
             </p>
+
+            <div className="mb-6 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4">
+              <div className="flex gap-3">
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
+                <div>
+                  <h3 className="text-sm font-semibold text-amber-100">
+                    Image upload rules
+                  </h3>
+                  <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm leading-5 text-amber-50/90 marker:font-mono marker:text-amber-300">
+                    <li>Enter the base aircraft model, not a variant.</li>
+                    <li>Use a high-quality image.</li>
+                    <li>
+                      Show the complete aircraft without cropping it, with the
+                      livery clearly visible.
+                    </li>
+                    <li>
+                      Make sure the ICAO, IATA, and aircraft name are correct
+                      and match the aircraft in the image.
+                    </li>
+                    <li>Check that the image is not already uploaded.</li>
+                    <li>
+                      Use a real airline; military uploads must use the correct
+                      air force.
+                    </li>
+                  </ol>
+                </div>
+              </div>
+            </div>
 
             <form onSubmit={handleUploadAndSubmit} className="space-y-4">
               {error && (
