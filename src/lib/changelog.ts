@@ -8,6 +8,30 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "mobile-userscript-panel-controls",
+    date: "2026-07-15",
+    title: "Mobile Flight Panel Controls",
+    description:
+      "On mobile, you can now close the userscript's ATC Flight Info panel and reopen it anytime from a compact on-screen button.",
+    type: "improvement",
+  },
+  {
+    id: "mobile-radar-controls",
+    date: "2026-07-14",
+    title: "Mobile Radar Quick Controls",
+    description:
+      "The radar controls menu now offers mobile toggles for following aircraft, labels, route waypoints, heading mode, and the radar UI. Press L on desktop to cycle flight display modes.",
+    type: "new",
+  },
+  {
+    id: "virtual-airline-registration-approval",
+    date: "2026-07-13",
+    title: "Virtual Airline Registration Approval",
+    description:
+      "You can now submit a virtual airline registration for review. Administrators can approve or reject requests, and rejected applications include feedback by email.",
+    type: "new",
+  },
+  {
     id: "dashboard-privacy-blur",
     date: "2026-06-24",
     title: "Dashboard Privacy Blur",
