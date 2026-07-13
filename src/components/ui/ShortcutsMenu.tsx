@@ -53,9 +53,35 @@ interface ShortcutsMenuProps {
   open: boolean;
   onClose: () => void;
   isMobile: boolean;
+  isFollowMode: boolean;
+  canFollowAircraft: boolean;
+  onFollowModeChange: (enabled: boolean) => void;
+  showAircraftLabels: boolean;
+  onAircraftLabelsChange: (enabled: boolean) => void;
+  showRouteWaypoints: boolean;
+  onRouteWaypointsChange: (enabled: boolean) => void;
+  isHeadingMode: boolean;
+  onHeadingModeChange: (enabled: boolean) => void;
+  isUiHidden: boolean;
+  onUiHiddenChange: (hidden: boolean) => void;
 }
 
-export function ShortcutsMenu({ open, onClose, isMobile }: ShortcutsMenuProps) {
+export function ShortcutsMenu({
+  open,
+  onClose,
+  isMobile,
+  isFollowMode,
+  canFollowAircraft,
+  onFollowModeChange,
+  showAircraftLabels,
+  onAircraftLabelsChange,
+  showRouteWaypoints,
+  onRouteWaypointsChange,
+  isHeadingMode,
+  onHeadingModeChange,
+  isUiHidden,
+  onUiHiddenChange,
+}: ShortcutsMenuProps) {
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -87,6 +113,73 @@ export function ShortcutsMenu({ open, onClose, isMobile }: ShortcutsMenuProps) {
 
   if (!open) return null;
 
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 z-[10024] flex items-end bg-black/70 px-3 pb-3 backdrop-blur-sm">
+        <div
+          ref={panelRef}
+          className="w-full overflow-hidden rounded-2xl border border-cyan-400/20 bg-[#071019]/95 shadow-[0_24px_80px_rgba(0,0,0,0.65)]"
+        >
+          <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4">
+            <div>
+              <p className="font-mono text-[11px] tracking-[0.24em] text-cyan-400/75 uppercase">
+                Radar Controls
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-white">
+                Quick toggles
+              </h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+              aria-label="Close radar controls"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+
+          <div className="divide-y divide-white/6 px-5">
+            <ToggleRow
+              label="Follow selected aircraft"
+              description={
+                canFollowAircraft
+                  ? "Keep the selected aircraft centered on the map."
+                  : "Select an aircraft to enable following."
+              }
+              checked={isFollowMode}
+              disabled={!canFollowAircraft}
+              onChange={onFollowModeChange}
+            />
+            <ToggleRow
+              label="Show aircraft labels"
+              description="Show labels alongside aircraft on the map."
+              checked={showAircraftLabels}
+              onChange={onAircraftLabelsChange}
+            />
+            <ToggleRow
+              label="Show route waypoints"
+              description="Show waypoints along selected flight routes."
+              checked={showRouteWaypoints}
+              onChange={onRouteWaypointsChange}
+            />
+            <ToggleRow
+              label="Heading mode"
+              description="Set aircraft heading directly from the map."
+              checked={isHeadingMode}
+              onChange={onHeadingModeChange}
+            />
+            <ToggleRow
+              label="Show radar UI"
+              description="Hide panels and controls for an unobstructed map."
+              checked={!isUiHidden}
+              onChange={(enabled) => onUiHiddenChange(!enabled)}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-[10024] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
       <div
@@ -112,19 +205,7 @@ export function ShortcutsMenu({ open, onClose, isMobile }: ShortcutsMenuProps) {
               className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
               aria-label="Close shortcuts"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              <CloseIcon />
             </button>
           </div>
         </div>
@@ -163,5 +244,61 @@ export function ShortcutsMenu({ open, onClose, isMobile }: ShortcutsMenuProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+function ToggleRow({
+  label,
+  description,
+  checked,
+  disabled = false,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label
+      className={`flex min-h-20 items-center justify-between gap-4 py-4 ${disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer"}`}
+    >
+      <span>
+        <span className="block text-sm font-medium text-white">{label}</span>
+        <span className="mt-1 block text-xs leading-relaxed text-slate-400">
+          {description}
+        </span>
+      </span>
+      <input
+        type="checkbox"
+        className="peer sr-only"
+        checked={checked}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.checked)}
+      />
+      <span
+        aria-hidden="true"
+        className="relative h-7 w-12 shrink-0 rounded-full bg-slate-700 transition-colors peer-checked:bg-cyan-500 peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-300 peer-disabled:bg-slate-800 after:absolute after:top-1 after:left-1 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:after:translate-x-5"
+      />
+    </label>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
   );
 }

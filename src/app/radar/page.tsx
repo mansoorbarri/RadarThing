@@ -81,7 +81,15 @@ import {
   UploadIcon,
   AdminIcon,
 } from "~/utils/dockIcons";
-import { CircleHelp, FileText, Plane, RotateCcw, Route, X } from "lucide-react";
+import {
+  CircleHelp,
+  Eye,
+  FileText,
+  Plane,
+  RotateCcw,
+  Route,
+  X,
+} from "lucide-react";
 import { UnitPreferencesProvider } from "~/hooks/useUnitPreferences";
 import { TimeDisplayPreferenceProvider } from "~/hooks/useTimeDisplayPreference";
 
@@ -300,6 +308,10 @@ function ATCPageContent() {
   const [isFollowMode, setIsFollowMode] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isUiHidden, setIsUiHidden] = useState(false);
+  const [flightDisplayMode, setFlightDisplayMode] = useState<
+    "default" | "labels-hidden" | "waypoints-hidden" | "minimal"
+  >("default");
+  const [isHeadingMode, setIsHeadingMode] = useState(false);
   const [pendingAirportIcao, setPendingAirportIcao] = useState<string | null>(
     null,
   );
@@ -1141,7 +1153,7 @@ function ATCPageContent() {
         className={`absolute top-0 right-0 left-0 z-[10010] flex items-center justify-between ${isPhone ? "h-14 px-3 pt-1" : isTablet ? "h-16 px-4 pt-3" : "h-20 px-6 pt-5"}`}
       >
         <div className="flex items-center gap-2">
-          {(!isPhone || isUiHidden) && (
+          {!isPhone && !isUiHidden && (
             <Image
               src={
                 isDarkLayerMode || isLoading
@@ -1317,6 +1329,18 @@ function ATCPageContent() {
           </div>
         )}
       </header>
+
+      {isUiHidden && (
+        <button
+          type="button"
+          onClick={() => setIsUiHidden(false)}
+          className="fixed top-3 left-1/2 z-[10020] flex h-10 w-10 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-cyan-300/35 bg-[#071019]/90 text-cyan-200 shadow-lg shadow-black/30 backdrop-blur-md transition-colors hover:bg-cyan-400/15 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+          aria-label="Show radar UI"
+          title="Show radar UI"
+        >
+          <Eye size={18} strokeWidth={2} aria-hidden="true" />
+        </button>
+      )}
 
       {/* Mobile search - bottom sheet (phone only) */}
       {!isUiHidden && isPhone && showMobileSearch && (
@@ -1558,6 +1582,10 @@ function ATCPageContent() {
           }}
           hideUi={isUiHidden}
           importedFlightPlan={importedFlightPlan}
+          flightDisplayModeRequest={flightDisplayMode}
+          onFlightDisplayModeChange={setFlightDisplayMode}
+          headingModeEnabled={isHeadingMode}
+          onHeadingModeChange={setIsHeadingMode}
         />
 
         {importedFlightPlan && showImportedFlightPlanPanel ? (
@@ -1967,6 +1995,52 @@ function ATCPageContent() {
         open={showShortcutsMenu && !isUiHidden}
         onClose={() => setShowShortcutsMenu(false)}
         isMobile={isMobile}
+        isFollowMode={isFollowMode}
+        canFollowAircraft={selectedAircrafts.length > 0}
+        onFollowModeChange={setIsFollowMode}
+        showAircraftLabels={
+          flightDisplayMode === "default" ||
+          flightDisplayMode === "waypoints-hidden"
+        }
+        onAircraftLabelsChange={(showLabels) => {
+          const showWaypoints =
+            flightDisplayMode === "default" ||
+            flightDisplayMode === "labels-hidden";
+          setFlightDisplayMode(
+            showLabels
+              ? showWaypoints
+                ? "default"
+                : "waypoints-hidden"
+              : showWaypoints
+                ? "labels-hidden"
+                : "minimal",
+          );
+        }}
+        showRouteWaypoints={
+          flightDisplayMode === "default" ||
+          flightDisplayMode === "labels-hidden"
+        }
+        onRouteWaypointsChange={(showWaypoints) => {
+          const showLabels =
+            flightDisplayMode === "default" ||
+            flightDisplayMode === "waypoints-hidden";
+          setFlightDisplayMode(
+            showWaypoints
+              ? showLabels
+                ? "default"
+                : "labels-hidden"
+              : showLabels
+                ? "waypoints-hidden"
+                : "minimal",
+          );
+        }}
+        isHeadingMode={isHeadingMode}
+        onHeadingModeChange={setIsHeadingMode}
+        isUiHidden={isUiHidden}
+        onUiHiddenChange={(hidden) => {
+          setIsUiHidden(hidden);
+          if (hidden) setShowShortcutsMenu(false);
+        }}
       />
     </div>
   );
