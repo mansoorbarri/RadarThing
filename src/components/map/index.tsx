@@ -123,11 +123,19 @@ interface MapComponentProps {
   ) => void;
   hideUi?: boolean;
   importedFlightPlan?: ImportedFlightPlan | null;
+  flightDisplayModeRequest?: FlightDisplayMode;
+  onFlightDisplayModeChange?: (mode: FlightDisplayMode) => void;
+  headingModeEnabled?: boolean;
+  onHeadingModeChange?: (enabled: boolean) => void;
 }
 
 const MAX_CONFLICT_HISTORY = 12;
 
-type FlightDisplayMode = "default" | "labels-hidden" | "waypoints-hidden" | "minimal";
+export type FlightDisplayMode =
+  | "default"
+  | "labels-hidden"
+  | "waypoints-hidden"
+  | "minimal";
 
 const FLIGHT_DISPLAY_MODES: FlightDisplayMode[] = [
   "default",
@@ -159,6 +167,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
   setResetMapView,
   hideUi = false,
   importedFlightPlan = null,
+  flightDisplayModeRequest,
+  onFlightDisplayModeChange,
+  headingModeEnabled,
+  onHeadingModeChange,
 }) => {
   const detectedIsMobile = useMobileDetection();
   const isMobile = isMobileProp ?? detectedIsMobile;
@@ -229,6 +241,26 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const hasReportedInitialBaseLayerRef = useRef(false);
 
   const [icaoInput, setIcaoInput] = useState("");
+
+  useEffect(() => {
+    if (flightDisplayModeRequest) {
+      setFlightDisplayMode(flightDisplayModeRequest);
+    }
+  }, [flightDisplayModeRequest]);
+
+  useEffect(() => {
+    onFlightDisplayModeChange?.(flightDisplayMode);
+  }, [flightDisplayMode, onFlightDisplayModeChange]);
+
+  useEffect(() => {
+    if (headingModeEnabled !== undefined) {
+      setIsHeadingMode(headingModeEnabled);
+    }
+  }, [headingModeEnabled]);
+
+  useEffect(() => {
+    onHeadingModeChange?.(isHeadingMode);
+  }, [isHeadingMode, onHeadingModeChange]);
 
   const headingControlRef = useRef<HeadingModeControl | null>(null);
   const radarControlRef = useRef<RadarModeControl | null>(null);
