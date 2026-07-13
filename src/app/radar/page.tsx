@@ -64,6 +64,7 @@ import { AirportActivityPanel } from "~/components/atc/AirportActivityPanel";
 import { ImportedFlightPlanPanel } from "~/components/atc/ImportedFlightPlanPanel";
 import { VstripsFileFlightModal } from "~/components/atc/VstripsFileFlightModal";
 import { StatsExclusionsModal } from "~/components/atc/StatsExclusionsModal";
+import { VirtualAirlineRegistrationModal } from "~/components/atc/VirtualAirlineRegistrationModal";
 import { ProBadge } from "~/components/ui/pro-badge";
 import { WhatsNew } from "~/components/ui/WhatsNew";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
@@ -80,7 +81,7 @@ import {
   UploadIcon,
   AdminIcon,
 } from "~/utils/dockIcons";
-import { CircleHelp, FileText, RotateCcw, Route, X } from "lucide-react";
+import { CircleHelp, FileText, Plane, RotateCcw, Route, X } from "lucide-react";
 import { UnitPreferencesProvider } from "~/hooks/useUnitPreferences";
 import { TimeDisplayPreferenceProvider } from "~/hooks/useTimeDisplayPreference";
 
@@ -238,6 +239,8 @@ function ATCPageContent() {
     useState(false);
   const [showFileFlightModal, setShowFileFlightModal] = useState(false);
   const [showStatsExclusionsModal, setShowStatsExclusionsModal] =
+    useState(false);
+  const [showVirtualAirlineRegistration, setShowVirtualAirlineRegistration] =
     useState(false);
 
   const loadVstripsSettings = useCallback(async () => {
@@ -1049,6 +1052,13 @@ function ATCPageContent() {
             router.push("/aircraft-images");
           },
         },
+        {
+          id: "register-va",
+          label: "Register VA",
+          icon: <Plane size={18} strokeWidth={1.8} />,
+          active: showVirtualAirlineRegistration,
+          onClick: () => setShowVirtualAirlineRegistration(true),
+        },
         ...(isAdminUser
           ? [
               {
@@ -1111,6 +1121,10 @@ function ATCPageContent() {
         isLoading={isLoadingVstripsSettings}
         settings={vstripsSettings}
         onClose={() => setShowFileFlightModal(false)}
+      />
+      <VirtualAirlineRegistrationModal
+        open={showVirtualAirlineRegistration}
+        onClose={() => setShowVirtualAirlineRegistration(false)}
       />
       <StatsExclusionsModal
         open={showStatsExclusionsModal}

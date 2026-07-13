@@ -131,6 +131,12 @@ export const add = mutation({
       };
     }
 
+    if (!selectedUser.discordUsername) {
+      throw new Error(
+        "Pilots must connect Discord to RadarThing before joining a VA",
+      );
+    }
+
     const existingUserMembership = await ctx.db
       .query("virtualAirlineMembers")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))

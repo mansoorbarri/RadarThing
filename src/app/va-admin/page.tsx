@@ -168,6 +168,7 @@ export default function VirtualAirlineAdminPage() {
 
     return users
       .filter((candidate) => {
+        if (!candidate.discordUsername) return false;
         if (existingUserIds.has(candidate._id)) return false;
         if (!query) return true;
 

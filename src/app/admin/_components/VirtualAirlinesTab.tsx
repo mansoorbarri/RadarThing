@@ -28,6 +28,7 @@ import {
   removeVirtualAirlineMember,
   createVirtualAirlineAircraftImage,
   deleteVirtualAirlineAircraftImage,
+  setVirtualAirlineApprovalStatus,
 } from "~/app/actions/virtual-airlines";
 import { Switch } from "~/components/ui/switch";
 import {
@@ -35,6 +36,7 @@ import {
   type ImageUploaderRef,
 } from "~/components/ui/image-uploader";
 import { ConfirmModal } from "./ConfirmModal";
+import { VirtualAirlineRejectModal } from "./VirtualAirlineRejectModal";
 
 type ModalTab = "details" | "pilots" | "fleet";
 
@@ -99,6 +101,10 @@ export function VirtualAirlinesTab({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeletingVirtualAirline, setIsDeletingVirtualAirline] =
     useState(false);
+  const [approvalAction, setApprovalAction] = useState<
+    "approved" | "rejected" | null
+  >(null);
+  const [isVaRejectModalOpen, setIsVaRejectModalOpen] = useState(false);
   const fleetUploadedDataRef = useRef<{ url: string; key: string } | null>(
     null,
   );
@@ -127,6 +133,18 @@ export function VirtualAirlinesTab({
     () => selectedFleetImages ?? [],
     [selectedFleetImages],
   );
+  const selectedVirtualAirline = useMemo(
+    () =>
+      airlines.find((virtualAirline) => virtualAirline.id === form.id) ?? null,
+    [airlines, form.id],
+  );
+  const pendingVirtualAirlinesCount = useMemo(
+    () =>
+      airlines.filter(
+        (virtualAirline) => virtualAirline.approvalStatus === "pending",
+      ).length,
+    [airlines],
+  );
 
   const filteredUsers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -154,6 +172,7 @@ export function VirtualAirlinesTab({
     return users
       .filter((user) => {
         if (!user.googleId) return false;
+        if (!user.discordUsername) return false;
         if (existingUserIds.has(user._id)) return false;
         if (!query) return true;
         return (
@@ -276,6 +295,39 @@ export function VirtualAirlinesTab({
 
     setMemberSearch("");
     toast.success("Pilot added to VA");
+  };
+
+  const handleApproval = async (
+    approvalStatus: "approved" | "rejected",
+    rejectionReason?: string,
+  ) => {
+    if (!form.id) return;
+
+    setApprovalAction(approvalStatus);
+    const result = await setVirtualAirlineApprovalStatus({
+      id: form.id,
+      approvalStatus,
+      rejectionReason,
+    });
+    setApprovalAction(null);
+
+    if (!result.success) {
+      toast.error(result.error || "Failed to review VA registration");
+      return;
+    }
+
+    toast.success(
+      approvalStatus === "approved"
+        ? "VA approved"
+        : "VA registration rejected",
+    );
+    if (approvalStatus === "approved" && result.virtualAirline) {
+      setForm((current) => ({
+        ...current,
+        isActive: result.virtualAirline!.isActive,
+      }));
+    }
+    setIsVaRejectModalOpen(false);
   };
 
   const handleRemoveMember = async (
@@ -443,6 +495,12 @@ export function VirtualAirlinesTab({
             <p className="mt-1 text-sm text-slate-400">
               Manage VA ownership, pilots, and fleet uploads.
             </p>
+            {pendingVirtualAirlinesCount > 0 && (
+              <p className="mt-2 inline-flex rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">
+                {pendingVirtualAirlinesCount} pending approval
+                {pendingVirtualAirlinesCount === 1 ? "" : "s"}
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -484,12 +542,22 @@ export function VirtualAirlinesTab({
                         </h3>
                         <span
                           className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
-                            virtualAirline.isActive
-                              ? "bg-emerald-500/20 text-emerald-300"
-                              : "bg-white/10 text-slate-400"
+                            virtualAirline.approvalStatus === "pending"
+                              ? "bg-amber-500/20 text-amber-300"
+                              : virtualAirline.approvalStatus === "rejected"
+                                ? "bg-red-500/20 text-red-300"
+                                : virtualAirline.isActive
+                                  ? "bg-emerald-500/20 text-emerald-300"
+                                  : "bg-white/10 text-slate-400"
                           }`}
                         >
-                          {virtualAirline.isActive ? "Active" : "Disabled"}
+                          {virtualAirline.approvalStatus === "pending"
+                            ? "Pending approval"
+                            : virtualAirline.approvalStatus === "rejected"
+                              ? "Rejected"
+                              : virtualAirline.isActive
+                                ? "Active"
+                                : "Disabled"}
                         </span>
                       </div>
                       <div className="mt-3 text-xs text-slate-400">
@@ -720,26 +788,61 @@ export function VirtualAirlinesTab({
                   </div>
 
                   {form.id && (
-                    <div className="flex items-center justify-between rounded-lg border border-white/10 bg-black/20 px-4 py-3">
-                      <div>
-                        <div className="text-sm font-medium text-white">
-                          VA Active
+                    <>
+                      {selectedVirtualAirline?.approvalStatus === "pending" && (
+                        <div className="rounded-lg border border-amber-400/20 bg-amber-400/5 p-4">
+                          <div className="text-sm font-medium text-amber-100">
+                            This VA is awaiting approval
+                          </div>
+                          <p className="mt-1 text-xs text-amber-100/70">
+                            Approving activates the VA and grants the owner
+                            access to VA management.
+                          </p>
+                          <div className="mt-3 flex gap-2">
+                            <button
+                              type="button"
+                              disabled={approvalAction !== null}
+                              onClick={() => handleApproval("approved")}
+                              className="rounded-lg bg-emerald-500/20 px-3 py-2 text-xs font-medium text-emerald-200 transition hover:bg-emerald-500/30 disabled:opacity-50"
+                            >
+                              {approvalAction === "approved"
+                                ? "Approving…"
+                                : "Approve VA"}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={approvalAction !== null}
+                              onClick={() => setIsVaRejectModalOpen(true)}
+                              className="rounded-lg border border-red-400/25 px-3 py-2 text-xs font-medium text-red-200 transition hover:bg-red-500/10 disabled:opacity-50"
+                            >
+                              {approvalAction === "rejected"
+                                ? "Rejecting…"
+                                : "Reject"}
+                            </button>
+                          </div>
                         </div>
-                        <div className="text-xs text-slate-400">
-                          Disable to stop prefix matching and VA fleet usage.
+                      )}
+                      <div className="flex items-center justify-between rounded-lg border border-white/10 bg-black/20 px-4 py-3">
+                        <div>
+                          <div className="text-sm font-medium text-white">
+                            VA Active
+                          </div>
+                          <div className="text-xs text-slate-400">
+                            Disable to stop prefix matching and VA fleet usage.
+                          </div>
                         </div>
+                        <Switch
+                          checked={form.isActive}
+                          onCheckedChange={(checked) =>
+                            setForm((current) => ({
+                              ...current,
+                              isActive: checked,
+                            }))
+                          }
+                          className="data-[state=checked]:bg-cyan-500 data-[state=unchecked]:bg-white/20"
+                        />
                       </div>
-                      <Switch
-                        checked={form.isActive}
-                        onCheckedChange={(checked) =>
-                          setForm((current) => ({
-                            ...current,
-                            isActive: checked,
-                          }))
-                        }
-                        className="data-[state=checked]:bg-cyan-500 data-[state=unchecked]:bg-white/20"
-                      />
-                    </div>
+                    </>
                   )}
 
                   <button
@@ -1032,6 +1135,14 @@ export function VirtualAirlinesTab({
           </div>
         </div>
       )}
+
+      <VirtualAirlineRejectModal
+        isOpen={isVaRejectModalOpen}
+        virtualAirlineName={form.name || "this virtual airline"}
+        isSubmitting={approvalAction === "rejected"}
+        onClose={() => setIsVaRejectModalOpen(false)}
+        onConfirm={(reason) => handleApproval("rejected", reason)}
+      />
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}

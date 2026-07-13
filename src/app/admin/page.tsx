@@ -135,12 +135,19 @@ export default function AdminPage() {
     canRunAdminQueries ? {} : "skip",
   );
   const pendingCount = pendingQuery?.length ?? 0;
+  const pendingVirtualAirlinesQuery = useQuery(
+    api.virtualAirlines.getPending,
+    canRunAdminQueries ? {} : "skip",
+  );
+  const pendingVirtualAirlinesCount = pendingVirtualAirlinesQuery?.length ?? 0;
 
   const loading =
     !isLoaded ||
     (!isSignedIn && !oauthRedirectFailed) ||
     proStatusLoading ||
-    (canRunAdminQueries && pendingQuery === undefined);
+    (canRunAdminQueries &&
+      (pendingQuery === undefined ||
+        pendingVirtualAirlinesQuery === undefined));
 
   useEffect(() => {
     if (
@@ -199,7 +206,11 @@ export default function AdminPage() {
       badge: pendingCount || undefined,
     },
     { value: "charts", label: "Airport Charts" },
-    { value: "virtual-airlines", label: "Virtual Airlines" },
+    {
+      value: "virtual-airlines",
+      label: "Virtual Airlines",
+      badge: pendingVirtualAirlinesCount || undefined,
+    },
     { value: "challenges", label: "Challenges" },
     ...(isSuperAdmin ? [{ value: "pro" as const, label: "Pro" }] : []),
     ...(isSuperAdmin
@@ -285,6 +296,11 @@ export default function AdminPage() {
           >
             <Users className="h-4 w-4" />
             Virtual Airlines
+            {pendingVirtualAirlinesCount > 0 && (
+              <span className="ml-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-600 dark:text-amber-300">
+                {pendingVirtualAirlinesCount}
+              </span>
+            )}
           </button>
           <button
             onClick={() => router.push(getAdminTabHref("challenges"))}

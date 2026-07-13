@@ -16,6 +16,23 @@ function normalizeCallsign(callsign: string): string {
   return callsign.trim().toUpperCase().replace(/\s+/g, "");
 }
 
+function validateRegistrationInput(args: {
+  name: string;
+  callsignPrefix: string;
+}) {
+  const name = args.name.trim();
+  if (name.length < 2 || name.length > 60) {
+    throw new Error("VA name must be 2-60 characters");
+  }
+
+  const callsignPrefix = normalizeCallsignPrefix(args.callsignPrefix);
+  if (!/^[A-Z0-9]{2,8}$/.test(callsignPrefix)) {
+    throw new Error("Callsign prefix must be 2-8 letters or numbers");
+  }
+
+  return { name, callsignPrefix };
+}
+
 function normalizeAircraftTypeKey(aircraftType: string): string {
   const cleaned = aircraftType.trim().toUpperCase();
   const learjetMatch =
@@ -61,6 +78,8 @@ function toVirtualAirlineSummary(virtualAirline: Doc<"virtualAirlines">) {
     adminClerkId: virtualAirline.adminClerkId,
     website: virtualAirline.website ?? null,
     isActive: virtualAirline.isActive,
+    approvalStatus: virtualAirline.approvalStatus ?? "approved",
+    rejectionReason: virtualAirline.rejectionReason ?? null,
     createdBy: virtualAirline.createdBy,
     createdAt: virtualAirline._creationTime,
     updatedAt: virtualAirline.updatedAt,
@@ -121,6 +140,22 @@ export const getAll = query({
   },
 });
 
+export const getPending = query({
+  args: {},
+  handler: async (ctx) => {
+    try {
+      await requireAdmin(ctx);
+    } catch {
+      return [];
+    }
+
+    const virtualAirlines = await ctx.db.query("virtualAirlines").collect();
+    return virtualAirlines
+      .filter((virtualAirline) => virtualAirline.approvalStatus === "pending")
+      .map(toVirtualAirlineSummary);
+  },
+});
+
 export const getById = query({
   args: {
     id: v.id("virtualAirlines"),
@@ -166,6 +201,10 @@ export const getManagedByAdmin = query({
       .collect();
 
     return virtualAirlines
+      .filter(
+        (virtualAirline) =>
+          (virtualAirline.approvalStatus ?? "approved") === "approved",
+      )
       .sort((a, b) => {
         if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
         return a.name.localeCompare(b.name);
@@ -244,7 +283,10 @@ export const getFlightContext = query({
       };
     }
 
-    if (!virtualAirline.isActive) {
+    if (
+      !virtualAirline.isActive ||
+      (virtualAirline.approvalStatus ?? "approved") !== "approved"
+    ) {
       return {
         virtualAirline: null,
         image: null,
@@ -313,6 +355,7 @@ export const create = mutation({
       adminClerkId: args.adminClerkId,
       website: args.website,
       isActive: true,
+      approvalStatus: "approved",
       createdBy: actor.clerkId,
       updatedAt: now,
     });
@@ -333,6 +376,53 @@ export const create = mutation({
         },
       });
     }
+    return virtualAirline ? toVirtualAirlineSummary(virtualAirline) : null;
+  },
+});
+
+export const register = mutation({
+  args: {
+    name: v.string(),
+    callsignPrefix: v.string(),
+    website: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const clerkId = await requireAuthenticatedClerkId(ctx);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
+      .first();
+
+    if (!user?.discordUsername) {
+      throw new Error(
+        "Connect your Discord account to RadarThing before registering a VA",
+      );
+    }
+
+    const { name, callsignPrefix } = validateRegistrationInput(args);
+    const existingVirtualAirline = await ctx.db
+      .query("virtualAirlines")
+      .withIndex("by_callsignPrefix", (q) =>
+        q.eq("callsignPrefix", callsignPrefix),
+      )
+      .first();
+    if (existingVirtualAirline) {
+      throw new Error("That callsign prefix is already assigned to another VA");
+    }
+
+    const now = Date.now();
+    const id = await ctx.db.insert("virtualAirlines", {
+      name,
+      callsignPrefix,
+      adminClerkId: clerkId,
+      website: args.website,
+      isActive: false,
+      approvalStatus: "pending",
+      createdBy: clerkId,
+      updatedAt: now,
+    });
+
+    const virtualAirline = await ctx.db.get(id);
     return virtualAirline ? toVirtualAirlineSummary(virtualAirline) : null;
   },
 });
@@ -434,6 +524,55 @@ export const setActive = mutation({
         metadata: {
           before: { isActive: existing.isActive },
           after: { isActive: virtualAirline.isActive },
+        },
+      });
+    }
+    return virtualAirline ? toVirtualAirlineSummary(virtualAirline) : null;
+  },
+});
+
+export const setApprovalStatus = mutation({
+  args: {
+    id: v.id("virtualAirlines"),
+    approvalStatus: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected"),
+    ),
+    rejectionReason: v.optional(v.string()),
+    actorClerkId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const actor = await requireAdmin(ctx, { actorClerkId: args.actorClerkId });
+    const existing = await ctx.db.get(args.id);
+    if (!existing) return null;
+
+    const rejectionReason = args.rejectionReason?.trim();
+    if (args.approvalStatus === "rejected" && !rejectionReason) {
+      throw new Error("A rejection reason is required");
+    }
+
+    const isApproved = args.approvalStatus === "approved";
+    await ctx.db.patch(args.id, {
+      approvalStatus: args.approvalStatus,
+      rejectionReason:
+        args.approvalStatus === "rejected" ? rejectionReason : undefined,
+      isActive: isApproved,
+      updatedAt: Date.now(),
+    });
+
+    const virtualAirline = await ctx.db.get(args.id);
+    if (virtualAirline && args.approvalStatus !== "pending") {
+      await logAdminTelemetry(ctx, {
+        actorClerkId: actor.clerkId,
+        action: args.approvalStatus === "approved" ? "approve" : "reject",
+        resourceType: "virtual_airline",
+        resourceId: virtualAirline._id,
+        resourceLabel: `${virtualAirline.name} (${virtualAirline.callsignPrefix})`,
+        targetClerkId: virtualAirline.adminClerkId,
+        metadata: {
+          approvalStatus: args.approvalStatus,
+          rejectionReason: rejectionReason ?? null,
         },
       });
     }
