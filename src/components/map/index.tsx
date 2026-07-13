@@ -127,6 +127,15 @@ interface MapComponentProps {
 
 const MAX_CONFLICT_HISTORY = 12;
 
+type FlightDisplayMode = "default" | "labels-hidden" | "waypoints-hidden" | "minimal";
+
+const FLIGHT_DISPLAY_MODES: FlightDisplayMode[] = [
+  "default",
+  "labels-hidden",
+  "waypoints-hidden",
+  "minimal",
+];
+
 const MapComponent: React.FC<MapComponentProps> = ({
   aircrafts,
   airports,
@@ -189,7 +198,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
     getStoredMapLayerPresets(),
   );
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
-  const [showTags, setShowTags] = useState(true);
+  const [flightDisplayMode, setFlightDisplayMode] =
+    useState<FlightDisplayMode>("default");
+  const showTags =
+    flightDisplayMode === "default" ||
+    flightDisplayMode === "waypoints-hidden";
+  const showFlightPlanWaypoints =
+    flightDisplayMode === "default" ||
+    flightDisplayMode === "labels-hidden";
   const [radarTrailPreferences, setRadarTrailPreferences] = useState(() =>
     getStoredRadarTrailPreferences(),
   );
@@ -712,7 +728,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
       }
       if (e.key === "l" || e.key === "L") {
         if (!isInputFocused) {
-          setShowTags((prev) => !prev);
+          setFlightDisplayMode((currentMode) => {
+            const currentIndex = FLIGHT_DISPLAY_MODES.indexOf(currentMode);
+            const nextMode =
+              FLIGHT_DISPLAY_MODES[
+                (currentIndex + 1) % FLIGHT_DISPLAY_MODES.length
+              ]!;
+            return nextMode;
+          });
         }
       }
       if (!hideUi && (e.key === "t" || e.key === "T") && !isInputFocused) {
@@ -759,16 +782,23 @@ const MapComponent: React.FC<MapComponentProps> = ({
     clearImportedFlightPlan,
     currentSelectedAircraftRef,
     clearHistoryPolyline,
+    redrawFlightPlans,
   } = useFlightPlanDrawing({
     mapInstance: mapRefs.mapInstance,
     flightPlanLayerGroup: mapRefs.flightPlanLayerGroup,
     importedFlightPlanLayerGroup: mapRefs.importedFlightPlanLayerGroup,
     historyLayerGroup: mapRefs.historyLayerGroup,
     isRadarMode,
+    airports,
+    showFlightPlanWaypoints,
   });
 
   // Update the ref so handleMapClick can clear the polyline
   clearHistoryPolylineRef.current = clearHistoryPolyline;
+
+  useEffect(() => {
+    redrawFlightPlans();
+  }, [redrawFlightPlans]);
 
   useMapLayersAndMarkers({
     mapInstance: mapRefs.mapInstance,
