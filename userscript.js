@@ -3,7 +3,8 @@
   "use strict";
 
   const API_BASE = "https://sse.radarthing.com";
-  const SEND_INTERVAL_MS = 5000;
+  const AIRBORNE_SEND_INTERVAL_MS = 3000;
+  const GROUND_SEND_INTERVAL_MS = 1000;
   const COMMAND_POLL_INTERVAL_MS = 2000;
   const DEFAULT_IDENT_DURATION_SECONDS = 15;
 
@@ -12,6 +13,8 @@
   let takeoffTimeUTC = "";
   let identActiveUntil = 0;
   let identExpiryTimer = null;
+  let lastPositionSendAt = 0;
+  let positionUpdateInFlight = false;
 
   function sanitizeCallsign(value) {
     return String(value || "")
@@ -451,10 +454,23 @@
 
   setInterval(async () => {
     if (!info.active || !geofs?.aircraft?.instance) return;
+    if (positionUpdateInFlight) return;
+
+    const onGround =
+      geofs.aircraft.instance.groundContact ??
+      geofs?.animation?.values?.groundContact ??
+      false;
+    const interval = onGround
+      ? GROUND_SEND_INTERVAL_MS
+      : AIRBORNE_SEND_INTERVAL_MS;
+    const now = Date.now();
+    if (now - lastPositionSendAt < interval) return;
+
+    lastPositionSendAt = now;
+    positionUpdateInFlight = true;
 
     try {
       const inst = geofs.aircraft.instance;
-      const onGround = inst.groundContact ?? true;
       if (wasOnGround && !onGround) takeoffTimeUTC = new Date().toISOString();
       wasOnGround = onGround;
 
@@ -528,6 +544,8 @@
       }
     } catch (error) {
       console.warn("[RadarThing] Position update failed before send", error);
+    } finally {
+      positionUpdateInFlight = false;
     }
-  }, SEND_INTERVAL_MS);
+  }, GROUND_SEND_INTERVAL_MS);
 })();
