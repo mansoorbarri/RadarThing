@@ -29,7 +29,8 @@ const shortcutGroups: ShortcutGroup[] = [
       },
       {
         keys: "L",
-        description: "Show or hide aircraft labels on the map.",
+        description:
+          "Cycle flight display: default, labels hidden, route waypoints hidden, or both hidden. Hidden route waypoints show a dotted direct line to arrival.",
       },
       {
         keys: "T",

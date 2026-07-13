@@ -34,12 +34,20 @@ interface FlightPlanWaypointLike {
   spd?: number | string | null;
 }
 
+interface ArrivalAirport {
+  icao: string;
+  lat: number;
+  lon: number;
+}
+
 interface UseFlightPlanDrawingProps {
   mapInstance: React.MutableRefObject<L.Map | null>;
   flightPlanLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
   importedFlightPlanLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
   historyLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
   isRadarMode: boolean;
+  airports: ArrivalAirport[];
+  showFlightPlanWaypoints: boolean;
 }
 
 function fitMapToCoords(
@@ -112,9 +120,12 @@ export const useFlightPlanDrawing = ({
   importedFlightPlanLayerGroup,
   historyLayerGroup,
   isRadarMode,
+  airports,
+  showFlightPlanWaypoints,
 }: UseFlightPlanDrawingProps) => {
   const currentSelectedAircraftRef = useRef<string | null>(null);
   const currentSelectedIdsRef = useRef<Set<string>>(new Set());
+  const lastDrawnAircraftsRef = useRef<PositionUpdate[]>([]);
 
   const drawImportedFlightPlan = useCallback(
     (flightPlan: ImportedFlightPlan, shouldZoom = true) => {
@@ -212,6 +223,7 @@ export const useFlightPlanDrawing = ({
 
       flightPlanLayerGroup.current.clearLayers();
       historyLayerGroup.current.clearLayers();
+      lastDrawnAircraftsRef.current = aircrafts;
 
       currentSelectedIdsRef.current = new Set(
         aircrafts.map((aircraft) => aircraft.callsign || aircraft.id),
@@ -258,6 +270,37 @@ export const useFlightPlanDrawing = ({
 
         if (Number.isFinite(aircraft.lat) && Number.isFinite(aircraft.lon)) {
           zoomCoords.push([aircraft.lat, aircraft.lon]);
+        }
+
+        const arrivalAirport = airports.find(
+          (airport) =>
+            airport.icao.trim().toUpperCase() ===
+            aircraft.arrival?.trim().toUpperCase(),
+        );
+
+        if (!showFlightPlanWaypoints) {
+          if (
+            arrivalAirport &&
+            Number.isFinite(aircraft.lat) &&
+            Number.isFinite(aircraft.lon)
+          ) {
+            const directPath = preparePathForWorldCopy(
+              [
+                [aircraft.lat, aircraft.lon],
+                [arrivalAirport.lat, arrivalAirport.lon],
+              ],
+              aircraft.lon,
+            );
+            flightPlanLayerGroup.current!.addLayer(
+              L.polyline(directPath, {
+                color: "#9ca3af",
+                weight: isRadarMode ? 2 : 3,
+                opacity: 0.85,
+                dashArray: "4, 8",
+              }),
+            );
+          }
+          return;
         }
 
         if (!aircraft.flightPlan) return;
@@ -356,7 +399,14 @@ export const useFlightPlanDrawing = ({
         fitMapToCoords(mapInstance.current, zoomCoords);
       }
     },
-    [flightPlanLayerGroup, historyLayerGroup, isRadarMode, mapInstance],
+    [
+      airports,
+      flightPlanLayerGroup,
+      historyLayerGroup,
+      isRadarMode,
+      mapInstance,
+      showFlightPlanWaypoints,
+    ],
   );
 
   const drawFlightPlan = useCallback(
@@ -368,7 +418,14 @@ export const useFlightPlanDrawing = ({
 
   const clearHistoryPolyline = useCallback(() => {
     currentSelectedIdsRef.current.clear();
+    lastDrawnAircraftsRef.current = [];
   }, []);
+
+  const redrawFlightPlans = useCallback(() => {
+    if (lastDrawnAircraftsRef.current.length > 0) {
+      drawMultipleFlightPlans(lastDrawnAircraftsRef.current, false);
+    }
+  }, [drawMultipleFlightPlans]);
 
   return {
     drawFlightPlan,
@@ -377,5 +434,6 @@ export const useFlightPlanDrawing = ({
     clearImportedFlightPlan,
     currentSelectedAircraftRef,
     clearHistoryPolyline,
+    redrawFlightPlans,
   };
 };
