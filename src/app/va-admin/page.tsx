@@ -15,6 +15,7 @@ import {
   UserPlus,
   Users,
   Image as ImageIcon,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
@@ -684,6 +685,35 @@ export default function VirtualAirlineAdminPage() {
                 Upload a livery image for an aircraft type. Uploading the same
                 type again replaces the existing image.
               </p>
+
+              <div className="mt-5 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4">
+                <div className="flex gap-3">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-amber-100">
+                      Fleet image rules
+                    </h3>
+                    <p className="mt-1 text-sm leading-5 text-amber-100/80">
+                      Breaking these rules may result in your VA being deleted
+                      from RadarThing.
+                    </p>
+                    <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm leading-5 text-amber-50/90 marker:font-mono marker:text-amber-300">
+                      <li>
+                        Use a real aircraft with your VA livery, either
+                        Photoshopped or generated with AI.
+                      </li>
+                      <li>Use a high-quality image.</li>
+                      <li>
+                        Show the full aircraft; do not crop any part of it.
+                      </li>
+                      <li>
+                        Match the aircraft to its ICAO code—for example, B777
+                        requires an actual Boeing 777 image.
+                      </li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
 
               <div className="mt-5 space-y-4">
                 <div>
