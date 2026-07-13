@@ -1,17 +1,21 @@
 import type { Metadata } from "next";
 import { convex, api } from "~/server/convex";
-import type { Id } from "../../../../convex/_generated/dataModel";
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
+  const { id: profileIdentifier } = await params;
 
   try {
+    const user = await convex.query(api.users.getByProfileIdentifier, {
+      profileIdentifier,
+    });
+    if (!user) throw new Error("Pilot not found");
+
     const stats = await convex.query(api.flights.getStatsById, {
-      userId: id as Id<"users">,
+      userId: user._id,
     });
 
     const callsign = stats?.pilotCallsign ?? "Unknown Pilot";

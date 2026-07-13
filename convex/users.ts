@@ -177,6 +177,39 @@ export const getByDiscordUsername = query({
   },
 });
 
+// Public pilot links may contain either a Discord username or a Convex user ID.
+// This accepts a plain string so invalid IDs can resolve to null rather than
+// failing argument validation before the page can show its not-found state.
+export const getByProfileIdentifier = query({
+  args: { profileIdentifier: v.string() },
+  handler: async (ctx, args) => {
+    const identifier = args.profileIdentifier.trim();
+    if (!identifier) return null;
+
+    const normalized = normalizeDiscordUsername(identifier).replace(/^@/, "");
+    const userByDiscordUsername = await ctx.db
+      .query("users")
+      .withIndex("by_discordUsernameLower", (q) =>
+        q.eq("discordUsernameLower", normalized),
+      )
+      .first();
+
+    if (userByDiscordUsername) return userByDiscordUsername;
+
+    // The fallback supports legacy Discord records and treats malformed IDs as
+    // a normal missing profile instead of surfacing a validation error.
+    const users = await ctx.db.query("users").collect();
+    return (
+      users.find(
+        (user) =>
+          user._id === identifier ||
+          (user.discordUsername &&
+            normalizeDiscordUsername(user.discordUsername) === normalized),
+      ) ?? null
+    );
+  },
+});
+
 // Search pilots by Discord username prefix for radar search
 export const searchPilotsByDiscordUsername = query({
   args: {

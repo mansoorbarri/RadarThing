@@ -52,7 +52,7 @@ function PilotPageContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
-  const userId = params?.id as Id<"users">;
+  const profileIdentifier = params?.id as string;
 
   // Get callsign from URL query param (from SSE), fall back to DB
   const callsignFromUrl = searchParams?.get("callsign") ?? null;
@@ -67,7 +67,13 @@ function PilotPageContent() {
     depICAO?: string;
     arrICAO?: string;
   } | null>(null);
-  const stats = useQuery(api.flights.getStatsById, { userId });
+  const profileUser = useQuery(api.users.getByProfileIdentifier, {
+    profileIdentifier,
+  });
+  const stats = useQuery(
+    api.flights.getStatsById,
+    profileUser ? { userId: profileUser._id } : "skip",
+  );
   const deleteFlight = useMutation(api.flights.deleteFlight);
   const { isProUser, isAdminUser, isLoading: proLoading } = useProStatus();
   const { googleId: currentUserGoogleId, isLoaded: currentUserLoaded } =
@@ -87,7 +93,7 @@ function PilotPageContent() {
       toast.success("Flight deleted");
       Analytics.flightDeleted({
         source: "pilot_profile",
-        targetUserId: userId,
+        targetUserId: profileUser?._id,
         flightId: flightPendingDelete.id,
         callsign: flightPendingDelete.callsign,
         aircraftType: flightPendingDelete.aircraftType,
@@ -112,11 +118,11 @@ function PilotPageContent() {
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  if (stats === undefined || proLoading || !currentUserLoaded) {
+  if (profileUser === undefined || proLoading || !currentUserLoaded) {
     return <PilotPageSkeleton callsign={callsignFromUrl} />;
   }
 
-  if (stats === null) {
+  if (profileUser === null || stats === null) {
     return (
       <div className="pilot-theme-surface min-h-screen bg-black text-white">
         <Header router={router} />
@@ -144,6 +150,12 @@ function PilotPageContent() {
       </div>
     );
   }
+
+  if (stats === undefined) {
+    return <PilotPageSkeleton callsign={callsignFromUrl} />;
+  }
+
+  const userId: Id<"users"> = profileUser._id;
 
   return (
     <div className="pilot-theme-surface min-h-screen bg-black text-white">
