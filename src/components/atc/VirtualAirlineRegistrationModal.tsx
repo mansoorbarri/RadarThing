@@ -280,7 +280,9 @@ export function VirtualAirlineRegistrationModal({
             ) : (
               <p className="rounded-xl border border-emerald-300/20 bg-emerald-300/8 p-3 text-sm text-emerald-100">
                 Discord connected as{" "}
-                <span className="font-medium">{dbUser.discordUsername}</span>.
+                <span className="font-medium">
+                  {dbUser?.discordUsername}
+                </span>.
               </p>
             )}
 
