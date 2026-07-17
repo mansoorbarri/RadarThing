@@ -5,6 +5,7 @@
   const API_BASE = "https://sse.radarthing.com";
   const AIRBORNE_SEND_INTERVAL_MS = 3000;
   const GROUND_SEND_INTERVAL_MS = 1000;
+  const POSITION_REQUEST_TIMEOUT_MS = 10000;
   const COMMAND_POLL_INTERVAL_MS = 2000;
   const DEFAULT_IDENT_DURATION_SECONDS = 15;
 
@@ -531,11 +532,22 @@
         identUntil: isIdentActive() ? identActiveUntil : null,
       };
 
-      const res = await fetch(`${API_BASE}/api/atc/position`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(
+        () => controller.abort(),
+        POSITION_REQUEST_TIMEOUT_MS,
+      );
+      let res;
+      try {
+        res = await fetch(`${API_BASE}/api/atc/position`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!res.ok) {
         console.warn(
