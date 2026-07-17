@@ -32,6 +32,15 @@ export type SpeedMultiplier = 1 | 2 | 4 | 8 | 16;
 
 const SPEED_OPTIONS: SpeedMultiplier[] = [1, 2, 4, 8, 16];
 
+function isValidCoordinatePair(value: unknown): value is [number, number] {
+  return (
+    Array.isArray(value) &&
+    value.length >= 2 &&
+    Number.isFinite(value[0]) &&
+    Number.isFinite(value[1])
+  );
+}
+
 // Haversine formula to calculate distance between two points in nautical miles
 function haversineDistance(
   lat1: number,
@@ -111,12 +120,13 @@ export function useFlightReplay(flight: FlightData | null) {
 
   const animationFrameRef = useRef<number | null>(null);
   const lastTimestampRef = useRef<number | null>(null);
+  const rawRouteData = flight?.routeData;
 
   // Keep replay coordinates on a continuous longitude timeline so the marker
   // does not jump world copies mid-flight when crossing the antimeridian.
   const routeData = useMemo(
-    () => unwrapPath(flight?.routeData || []),
-    [flight?.routeData],
+    () => unwrapPath((rawRouteData || []).filter(isValidCoordinatePair)),
+    [rawRouteData],
   );
 
   // Calculate total duration
@@ -127,7 +137,7 @@ export function useFlightReplay(flight: FlightData | null) {
       return estimateDuration(routeData);
     }
     return 0;
-  }, [flight?.duration, flight?.endTime, flight?.startTime, routeData]);
+  }, [flight, routeData]);
 
   // Memoize computed state to prevent new object creation on every render
   const computedState = useMemo(() => {

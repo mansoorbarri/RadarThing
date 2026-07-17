@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { type PositionUpdate, activeAircraft } from "~/lib/aircraft-store";
 
+const AIRCRAFT_REMOVAL_GRACE_MS = 15_000;
+
 export interface OnlineAirportController {
   user: string;
   discordUserId: string | null;
@@ -83,7 +85,7 @@ export const useAircraftStream = () => {
             // Try to find and remove by id or callsign
             for (const [key, ac] of activeAircraft.entries()) {
               if (ac.id === id || key === id) {
-                activeAircraft.delete(key);
+                activeAircraft.scheduleDelete(key, AIRCRAFT_REMOVAL_GRACE_MS);
                 break;
               }
             }

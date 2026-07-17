@@ -234,6 +234,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   >([]);
   const lastConflictSnapshotRef = useRef<string>("");
   const lastConflictHistorySignatureRef = useRef<string>("");
+  const replayTraversedPolylineRef = useRef<L.Polyline | null>(null);
+  const replayRemainingPolylineRef = useRef<L.Polyline | null>(null);
+  const replayMarkerRef = useRef<L.Marker | null>(null);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // Local selection state for internal use (cleared when clicking map background)
@@ -1109,14 +1112,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
     // Clear replay layer if no replay state
     if (!replayState?.currentPosition) {
       mapRefs.replayLayerGroup.current.clearLayers();
+      replayTraversedPolylineRef.current = null;
+      replayRemainingPolylineRef.current = null;
+      replayMarkerRef.current = null;
       return;
     }
 
     const { currentPosition, currentHeading, traversedPath, remainingPath } =
       replayState;
-
-    // Clear previous layers
-    mapRefs.replayLayerGroup.current.clearLayers();
 
     const displayTraversedPath = preparePathForWorldCopy(
       traversedPath,
@@ -1129,36 +1132,70 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     // Draw traversed path (solid amber line)
     if (displayTraversedPath.length >= 2) {
-      const traversedPolyline = L.polyline(displayTraversedPath, {
+      const traversedStyle = {
         color: "#f59e0b", // amber-500
         weight: isRadarMode ? 2 : 4,
         opacity: isRadarMode ? 0.8 : 0.9,
         smoothFactor: 1,
-      });
-      mapRefs.replayLayerGroup.current.addLayer(traversedPolyline);
+      };
+
+      if (replayTraversedPolylineRef.current) {
+        replayTraversedPolylineRef.current
+          .setLatLngs(displayTraversedPath)
+          .setStyle(traversedStyle);
+      } else {
+        replayTraversedPolylineRef.current = L.polyline(
+          displayTraversedPath,
+          traversedStyle,
+        ).addTo(mapRefs.replayLayerGroup.current);
+      }
+    } else if (replayTraversedPolylineRef.current) {
+      mapRefs.replayLayerGroup.current.removeLayer(
+        replayTraversedPolylineRef.current,
+      );
+      replayTraversedPolylineRef.current = null;
     }
 
     // Draw remaining path (dashed, faded)
     if (displayRemainingPath.length >= 2) {
-      const remainingPolyline = L.polyline(displayRemainingPath, {
+      const remainingStyle = {
         color: "#f59e0b", // amber-500
         weight: isRadarMode ? 1 : 2,
         opacity: isRadarMode ? 0.3 : 0.4,
         smoothFactor: 1,
         dashArray: "8, 8",
-      });
-      mapRefs.replayLayerGroup.current.addLayer(remainingPolyline);
+      };
+
+      if (replayRemainingPolylineRef.current) {
+        replayRemainingPolylineRef.current
+          .setLatLngs(displayRemainingPath)
+          .setStyle(remainingStyle);
+      } else {
+        replayRemainingPolylineRef.current = L.polyline(
+          displayRemainingPath,
+          remainingStyle,
+        ).addTo(mapRefs.replayLayerGroup.current);
+      }
+    } else if (replayRemainingPolylineRef.current) {
+      mapRefs.replayLayerGroup.current.removeLayer(
+        replayRemainingPolylineRef.current,
+      );
+      replayRemainingPolylineRef.current = null;
     }
 
     const displayCurrentPosition =
       displayTraversedPath[displayTraversedPath.length - 1] ?? currentPosition;
 
-    // Draw replay aircraft marker at current position
-    const replayMarker = L.marker(displayCurrentPosition, {
-      icon: getReplayAircraftIcon(currentHeading),
-      zIndexOffset: 1000,
-    });
-    mapRefs.replayLayerGroup.current.addLayer(replayMarker);
+    if (replayMarkerRef.current) {
+      replayMarkerRef.current
+        .setLatLng(displayCurrentPosition)
+        .setIcon(getReplayAircraftIcon(currentHeading));
+    } else {
+      replayMarkerRef.current = L.marker(displayCurrentPosition, {
+        icon: getReplayAircraftIcon(currentHeading),
+        zIndexOffset: 1000,
+      }).addTo(mapRefs.replayLayerGroup.current);
+    }
   }, [replayState, isRadarMode, mapRefs.mapInstance, mapRefs.replayLayerGroup]);
 
   return (

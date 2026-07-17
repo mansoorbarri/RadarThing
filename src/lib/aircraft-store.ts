@@ -80,11 +80,18 @@ class AircraftStore {
   private flightPaths = new Map<string, [number, number][]>();
   private recentSamples = new Map<string, TimedPositionSample[]>();
   private trailSamples = new Map<string, TimedPositionSample[]>();
+  private removalTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private subscribers = new Set<Subscriber>();
   private pendingNotification = false;
   private notificationFrame: number | null = null;
 
   set(id: string, data: PositionUpdate) {
+    const pendingRemoval = this.removalTimers.get(id);
+    if (pendingRemoval) {
+      clearTimeout(pendingRemoval);
+      this.removalTimers.delete(id);
+    }
+
     // Track flight path history
     const currentPosition: [number, number] = [data.lat, data.lon];
     const existingPath = this.flightPaths.get(id) || [];
@@ -132,6 +139,12 @@ class AircraftStore {
   }
 
   delete(id: string) {
+    const pendingRemoval = this.removalTimers.get(id);
+    if (pendingRemoval) {
+      clearTimeout(pendingRemoval);
+      this.removalTimers.delete(id);
+    }
+
     const existed = this.store.delete(id);
     this.flightPaths.delete(id);
     this.recentSamples.delete(id);
@@ -142,7 +155,20 @@ class AircraftStore {
     return existed;
   }
 
+  scheduleDelete(id: string, delayMs: number) {
+    if (!this.store.has(id) || this.removalTimers.has(id)) return;
+
+    const timer = setTimeout(() => {
+      this.removalTimers.delete(id);
+      this.delete(id);
+    }, delayMs);
+
+    this.removalTimers.set(id, timer);
+  }
+
   clear() {
+    this.removalTimers.forEach((timer) => clearTimeout(timer));
+    this.removalTimers.clear();
     this.store.clear();
     this.flightPaths.clear();
     this.recentSamples.clear();
