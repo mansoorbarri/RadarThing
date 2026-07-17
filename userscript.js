@@ -16,6 +16,7 @@
   let identExpiryTimer = null;
   let lastPositionSendAt = 0;
   let positionUpdateInFlight = false;
+  let positionRequestSequence = 0;
 
   function sanitizeCallsign(value) {
     return String(value || "")
@@ -38,6 +39,37 @@
 
   function isIdentActive() {
     return identActiveUntil > Date.now();
+  }
+
+  function getErrorDiagnostics(error) {
+    return {
+      name: error?.name || null,
+      message: error?.message || String(error),
+      stack: error?.stack || null,
+      cause: error?.cause || null,
+      online: navigator.onLine,
+      visibilityState: document.visibilityState,
+      pageHidden: document.hidden,
+      origin: window.location.origin,
+      href: window.location.href,
+    };
+  }
+
+  function getPositionPayloadDiagnostics(payload) {
+    return {
+      id: payload.id || null,
+      googleId: payload.googleId || null,
+      callsign: payload.callsign || null,
+      flightNo: payload.flightNo || null,
+      departure: payload.departure || null,
+      arrival: payload.arrival || null,
+      lat: payload.lat,
+      lon: payload.lon,
+      altMSL: payload.altMSL,
+      speed: payload.speed,
+      groundSpeed: payload.groundSpeed,
+      ts: new Date().toISOString(),
+    };
   }
 
   function showIdentToast(message, isError = false) {
@@ -469,6 +501,9 @@
 
     lastPositionSendAt = now;
     positionUpdateInFlight = true;
+    let requestId = null;
+    let requestStartedAt = null;
+    let payloadDiagnostics = null;
 
     try {
       const inst = geofs.aircraft.instance;
@@ -532,6 +567,9 @@
         identUntil: isIdentActive() ? identActiveUntil : null,
       };
 
+      requestId = ++positionRequestSequence;
+      requestStartedAt = Date.now();
+      payloadDiagnostics = getPositionPayloadDiagnostics(payload);
       const controller = new AbortController();
       const timeoutId = setTimeout(
         () => controller.abort(),
@@ -551,11 +589,29 @@
 
       if (!res.ok) {
         console.warn(
-          `[RadarThing] Position update failed with HTTP ${res.status}`,
+          `[RadarThing] Position update #${requestId} failed with HTTP ${res.status}`,
+          {
+            requestId,
+            status: res.status,
+            statusText: res.statusText,
+            elapsedMs: Date.now() - requestStartedAt,
+            payload: payloadDiagnostics,
+          },
         );
       }
     } catch (error) {
-      console.warn("[RadarThing] Position update failed before send", error);
+      console.warn("[RadarThing] Position update failed before send", {
+        requestId,
+        elapsedMs:
+          typeof requestStartedAt === "number"
+            ? Date.now() - requestStartedAt
+            : null,
+        timeoutMs: POSITION_REQUEST_TIMEOUT_MS,
+        payload:
+          typeof payloadDiagnostics === "object" ? payloadDiagnostics : null,
+        error: getErrorDiagnostics(error),
+        rawError: error,
+      });
     } finally {
       positionUpdateInFlight = false;
     }
