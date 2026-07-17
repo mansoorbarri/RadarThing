@@ -141,6 +141,10 @@ function normalizeAircraftTypeForIcon(type: string) {
   if (/\bDH8[ABCD]?\b|\bQ4?00\b/.test(cleaned)) return "DH8D";
 
   if (/\bC17\b/.test(cleaned)) return "C17";
+  if (/\bAN[- ]?124\b|\bA124\b|\bANTONOV\b(?!\s+AN[-\s]?\d)/.test(cleaned)) {
+    return "A124";
+  }
+  if (/\bAN[- ]?140\b|\bA140\b/.test(cleaned)) return "A140";
   if (/\bC130\b|\bL100\b/.test(cleaned)) return "C130";
   if (/\bC5\b/.test(cleaned)) return "C5";
   if (/\bKC[- ]?(10|135|46)\b/.test(cleaned)) return "KC";
@@ -238,6 +242,8 @@ function getSpecificAircraftIconUrl(normalizedType: string, rawType: string) {
   }
 
   if (/^(C130|L100)$/.test(normalizedType)) return ADSB_RADAR_ICON_URLS.c130;
+  if (/^(A124|AN124)$/.test(normalizedType)) return ADSB_RADAR_ICON_URLS.b747;
+  if (/^(A140|AN140)$/.test(normalizedType)) return ADSB_RADAR_ICON_URLS.dh8a;
   if (/^(MD11|DC10|L1011|IL96)$/.test(normalizedType)) {
     return ADSB_RADAR_ICON_URLS.md11;
   }

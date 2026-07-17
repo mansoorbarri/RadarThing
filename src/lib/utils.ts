@@ -29,10 +29,28 @@ function normalizeBombardierAircraftType(cleaned: string): string | null {
   return null;
 }
 
+function normalizeAntonovAircraftType(cleaned: string): string | null {
+  const antonovMatch =
+    /\bANTONOV\b(?:\s+AN)?[-\s]?(\d{2,3})\b/.exec(cleaned) ||
+    /\bAN[-\s]?(\d{2,3})\b/.exec(cleaned);
+  if (antonovMatch) {
+    const model = antonovMatch[1];
+    if (!model) return null;
+    return /^(124|140|148|158|225)$/.test(model) ? `A${model}` : `AN${model}`;
+  }
+
+  if (cleaned === "ANTONOV") return "A124";
+
+  return null;
+}
+
 /** Normalize aircraft type (e.g., "Boeing 777-300ER" -> "B777", "Airbus A350-900" -> "A350") */
 export function normalizeAircraftType(type: string | undefined): string | null {
   if (!type) return null;
   const cleaned = type.trim().toUpperCase();
+
+  const normalizedAntonov = normalizeAntonovAircraftType(cleaned);
+  if (normalizedAntonov) return normalizedAntonov;
 
   const bombardierMatch = normalizeBombardierAircraftType(cleaned);
   if (bombardierMatch) return bombardierMatch;
@@ -265,6 +283,9 @@ export function getCompactAircraftType(type: string | undefined): string | null 
   if (/\bAT7[26]\b|\bATR[- ]?72\b/.test(cleaned)) return "AT76";
   if (/\bAT4[26]\b|\bATR[- ]?42\b/.test(cleaned)) return "AT46";
   if (/\bDH8[ABCD]?\b|\bQ400\b/.test(cleaned)) return "DH8D";
+
+  const compactAntonov = normalizeAntonovAircraftType(cleaned);
+  if (compactAntonov) return compactAntonov;
 
   if (/^[A-Z0-9]{3,5}$/.test(cleaned)) return cleaned;
 
