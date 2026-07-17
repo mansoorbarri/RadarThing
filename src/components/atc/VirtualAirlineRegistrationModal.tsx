@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useConvexAuth, useQuery } from "convex/react";
+import Link from "next/link";
 import {
   Check,
   Clock3,
@@ -65,9 +66,9 @@ export function VirtualAirlineRegistrationModal({
     return () => window.clearInterval(interval);
   }, [open]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (!isSubmitting) onClose();
-  };
+  }, [isSubmitting, onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -99,7 +100,7 @@ export function VirtualAirlineRegistrationModal({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, isSubmitting, onClose]);
+  }, [open, handleClose]);
 
   if (!open) return null;
 
@@ -179,12 +180,12 @@ export function VirtualAirlineRegistrationModal({
               A connected Discord account is required before you can review VA
               registration rules or submit a request.
             </p>
-            <a
+            <Link
               href="/dashboard"
               className="mt-7 inline-flex rounded-xl bg-cyan-300 px-5 py-2.5 text-sm font-semibold text-[#06202a] transition hover:bg-cyan-200"
             >
               Connect Discord in dashboard
-            </a>
+            </Link>
           </div>
         ) : !hasAcknowledgedRules ? (
           <div className="p-7 sm:p-8">
@@ -306,12 +307,12 @@ export function VirtualAirlineRegistrationModal({
             ) : !isDiscordConnected ? (
               <p className="rounded-xl border border-amber-300/25 bg-amber-300/10 p-3 text-sm leading-5 text-amber-100">
                 Discord must be connected before you can submit.{" "}
-                <a
+                <Link
                   href="/dashboard"
                   className="font-medium underline underline-offset-4"
                 >
                   Connect it in your dashboard
-                </a>
+                </Link>
                 .
               </p>
             ) : (

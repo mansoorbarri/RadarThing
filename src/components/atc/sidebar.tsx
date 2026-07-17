@@ -534,7 +534,7 @@ export const Sidebar = ({
           <p className="mb-4 max-w-[240px] text-center font-mono text-[10px] leading-relaxed text-white/50">
             Flight history is available for Pro and Admin users only.
           </p>
-          <a
+          <Link
             href="/pricing"
             onClick={() =>
               Analytics.upgradeButtonClicked({
@@ -545,7 +545,7 @@ export const Sidebar = ({
             className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 font-mono text-[10px] font-black tracking-wide text-black transition-all hover:shadow-lg hover:shadow-amber-500/20"
           >
             START 7-DAY TRIAL
-          </a>
+          </Link>
         </div>
       ) : history.length === 0 ? (
         <div className="py-20 text-center font-mono text-[10px] tracking-widest text-white/40 uppercase">
