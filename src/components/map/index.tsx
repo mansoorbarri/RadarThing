@@ -65,7 +65,6 @@ import {
   getStoredRunwayCenterlinePreferences,
   setStoredRunwayCenterlinePreferences,
 } from "~/lib/runwayCenterlinePreferences";
-import { type RadarKeybindPreferences } from "~/lib/radarKeybindPreferences";
 
 export interface Airport {
   name: string;
@@ -125,8 +124,6 @@ interface MapComponentProps {
   onFlightDisplayModeChange?: (mode: FlightDisplayMode) => void;
   headingModeEnabled?: boolean;
   onHeadingModeChange?: (enabled: boolean) => void;
-  keybindPreferences: RadarKeybindPreferences;
-  onKeybindPreferencesChange: (preferences: RadarKeybindPreferences) => void;
 }
 
 const MAX_CONFLICT_HISTORY = 12;
@@ -171,8 +168,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onFlightDisplayModeChange,
   headingModeEnabled,
   onHeadingModeChange,
-  keybindPreferences,
-  onKeybindPreferencesChange,
 }) => {
   const detectedIsMobile = useMobileDetection();
   const isMobile = isMobileProp ?? detectedIsMobile;
@@ -763,7 +758,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           },
         } as unknown as L.LeafletMouseEvent);
       }
-      if (e.code === keybindPreferences.cycleDisplay) {
+      if (e.key === "l" || e.key === "L") {
         if (!isInputFocused) {
           setFlightDisplayMode((currentMode) => {
             const currentIndex = FLIGHT_DISPLAY_MODES.indexOf(currentMode);
@@ -775,11 +770,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           });
         }
       }
-      if (
-        !hideUi &&
-        e.code === keybindPreferences.headingMode &&
-        !isInputFocused
-      ) {
+      if (!hideUi && (e.key === "t" || e.key === "T") && !isInputFocused) {
         setIsHeadingMode(true);
       }
     };
@@ -789,7 +780,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [handleMapClick, hideUi, keybindPreferences]);
+  }, [handleMapClick, hideUi]);
 
   useEffect(() => {
     if (!hideUi) return;
@@ -1250,8 +1241,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
             setShowSigmets={setShowSigmets}
             showConflicts={showConflicts}
             setShowConflicts={setShowConflicts}
-            keybindPreferences={keybindPreferences}
-            onKeybindPreferencesChange={onKeybindPreferencesChange}
           />
         </MapSettingsSidebar>
       ) : null}

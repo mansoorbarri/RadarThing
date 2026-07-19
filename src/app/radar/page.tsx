@@ -43,10 +43,6 @@ import {
   isEditableTarget,
 } from "~/lib/clientDiagnostics";
 import { setCookie } from "~/lib/cookies";
-import {
-  getStoredRadarKeybindPreferences,
-  setStoredRadarKeybindPreferences,
-} from "~/lib/radarKeybindPreferences";
 import { normalizeCallsign } from "~/lib/utils";
 import { type Airport } from "~/components/map";
 
@@ -170,9 +166,6 @@ function ATCPageContent() {
 
   const [selectedAircrafts, setSelectedAircrafts] = useState<PositionUpdate[]>(
     [],
-  );
-  const [keybindPreferences, setKeybindPreferences] = useState(() =>
-    getStoredRadarKeybindPreferences(),
   );
   const [selectedAirport, setSelectedAirport] = useState<Airport | undefined>(
     undefined,
@@ -781,7 +774,7 @@ function ATCPageContent() {
         setAutoSelectedFromUrl(false);
       }
 
-      if (e.code === keybindPreferences.toggleUi) {
+      if (e.key === "u" || e.key === "U") {
         if (shouldIgnoreLetterShortcuts) {
           if (isEditableContext) {
             reportShortcutDiagnostic("u", "editable_context", e.target);
@@ -794,7 +787,7 @@ function ATCPageContent() {
       }
 
       // F key to toggle follow mode (only when aircraft is selected and not typing in input)
-      if (e.code === keybindPreferences.follow) {
+      if (e.key === "f" || e.key === "F") {
         if (shouldIgnoreLetterShortcuts) {
           return;
         }
@@ -817,7 +810,6 @@ function ATCPageContent() {
     selectedAircrafts.length,
     showMobileSearch,
     showShortcutsMenu,
-    keybindPreferences,
   ]);
 
   // Keep the sideview open on the last airport unless the user closes it.
@@ -1603,10 +1595,6 @@ function ATCPageContent() {
           onFlightDisplayModeChange={setFlightDisplayMode}
           headingModeEnabled={isHeadingMode}
           onHeadingModeChange={setIsHeadingMode}
-          keybindPreferences={keybindPreferences}
-          onKeybindPreferencesChange={(preferences) => {
-            setKeybindPreferences(setStoredRadarKeybindPreferences(preferences));
-          }}
         />
 
         {importedFlightPlan && showImportedFlightPlanPanel ? (
