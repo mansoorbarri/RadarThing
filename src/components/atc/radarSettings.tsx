@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { Layers3, Monitor, Radar } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "~/components/ui/switch";
 import { Slider } from "~/components/ui/slider";
@@ -19,23 +19,17 @@ import {
 } from "~/lib/radarTrailPreferences";
 import { type RunwayCenterlinePreferences } from "~/lib/runwayCenterlines";
 
-const SETTINGS_SECTION_IDS = [
-  "presets",
-  "weather",
-  "trail",
-  "traffic",
-  "units",
-] as const;
+type SettingsTab = "map" | "visibility" | "misc";
 
-type SettingsSectionId = (typeof SETTINGS_SECTION_IDS)[number];
-
-const COLLAPSED_SECTIONS: Record<SettingsSectionId, boolean> = {
-  presets: false,
-  weather: false,
-  trail: false,
-  traffic: false,
-  units: false,
-};
+const SETTINGS_TABS: {
+  id: SettingsTab;
+  label: string;
+  icon: typeof Layers3;
+}[] = [
+  { id: "map", label: "Map", icon: Layers3 },
+  { id: "visibility", label: "Visibility", icon: Radar },
+  { id: "misc", label: "Misc", icon: Monitor },
+];
 
 interface RadarSettingsProps {
   isPRO: boolean;
@@ -104,7 +98,7 @@ export const RadarSettings = ({
   const { timeDisplayMode, setUseLocalTime } = useTimeDisplayPreference();
   const [presetName, setPresetName] = useState("");
   const [deleteArmed, setDeleteArmed] = useState(false);
-  const [openSections, setOpenSections] = useState(COLLAPSED_SECTIONS);
+  const [activeTab, setActiveTab] = useState<SettingsTab>("map");
 
   const activePreset = useMemo(
     () => presets.find((preset) => preset.id === activePresetId) ?? null,
@@ -120,8 +114,6 @@ export const RadarSettings = ({
   }, [selectedPresetId]);
 
   const targetPreset = activePreset ?? selectedPreset;
-  const allExpanded = SETTINGS_SECTION_IDS.every((id) => openSections[id]);
-  const allCollapsed = SETTINGS_SECTION_IDS.every((id) => !openSections[id]);
   const currentTrailIntervalLabel = radarTrailPreferences
     ? radarTrailPreferences.mode === "minutes"
       ? `${radarTrailPreferences.minutes} sec`
@@ -144,23 +136,6 @@ export const RadarSettings = ({
     }
     setPresetName("");
     setDeleteArmed(false);
-  };
-
-  const toggleSection = (sectionId: SettingsSectionId) => {
-    setOpenSections((current) => ({
-      ...current,
-      [sectionId]: !current[sectionId],
-    }));
-  };
-
-  const setAllSections = (open: boolean) => {
-    setOpenSections({
-      presets: open,
-      weather: open,
-      trail: open,
-      traffic: open,
-      units: open,
-    });
   };
 
   const updateRadarTrailPreferences = (
@@ -233,226 +208,231 @@ export const RadarSettings = ({
             RADAR CONFIGURATION
           </h3>
           <p className="mt-1 text-[10px] tracking-[0.22em] text-cyan-300/60 uppercase">
-            Compact controls
+            Configuration
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setAllSections(false)}
-            disabled={allCollapsed}
-            className="cursor-pointer rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] tracking-wider text-white/70 uppercase transition-colors hover:border-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Collapse All
-          </button>
-          <button
-            type="button"
-            onClick={() => setAllSections(true)}
-            disabled={allExpanded}
-            className="cursor-pointer rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1.5 text-[10px] tracking-wider text-cyan-200 uppercase transition-colors hover:bg-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Expand All
-          </button>
+        <div
+          className="-mx-3.5 flex gap-1 overflow-x-auto px-3.5 pb-1 sm:-mx-4 sm:px-4"
+          role="tablist"
+          aria-label="Radar configuration categories"
+        >
+          {SETTINGS_TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-2 text-[10px] font-semibold tracking-[0.12em] uppercase transition-colors ${
+                  isActive
+                    ? "border-cyan-400/40 bg-cyan-500/15 text-cyan-100 shadow-[inset_0_-2px_0_0_rgb(34_211_238)]"
+                    : "border-transparent text-white/45 hover:border-white/10 hover:bg-white/[0.04] hover:text-white/80"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       <div className="space-y-3 p-3.5 pr-2.5 sm:p-4 sm:pr-3">
-        <SettingsSection
-          title="Layer Presets"
-          isOpen={openSections.presets}
-          onToggle={() => toggleSection("presets")}
-          headerSlot={
-            <span
-              className={`rounded-full border px-2.5 py-1 text-[10px] tracking-wider uppercase ${
-                activePreset
-                  ? "border-cyan-400/40 bg-cyan-500/10 text-cyan-200"
-                  : "border-white/10 bg-white/5 text-white/55"
-              }`}
-            >
-              {activePreset ? activePreset.name : "Manual"}
-            </span>
-          }
-        >
-          <p className="text-[11px] leading-5 text-white/45">
-            Saves your current base layer, OpenAIP overlays, weather layers,
-            and conflict monitor state.
-          </p>
-
-          <div className="flex flex-wrap gap-2">
-            {presets.length === 0 ? (
-              <div className="w-full rounded-lg border border-dashed border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] text-white/45">
-                No presets saved yet.
-              </div>
-            ) : (
-              presets.map((preset) => {
-                const isActive = preset.id === activePresetId;
-                const isSelected = preset.id === selectedPresetId;
-
-                return (
-                  <button
-                    key={preset.id}
-                    onClick={() => onApplyPreset(preset.id)}
-                    className={`cursor-pointer rounded-full border px-3 py-1.5 text-[11px] transition-colors ${
-                      isActive
-                        ? "border-cyan-400/50 bg-cyan-500/15 text-cyan-200"
-                        : isSelected
-                          ? "border-cyan-400/30 bg-white/[0.05] text-white"
-                          : "border-white/10 bg-white/[0.03] text-white/65 hover:border-white/20 hover:text-white"
-                    }`}
-                  >
-                    {preset.name}
-                  </button>
-                );
-              })
-            )}
-          </div>
-
-          <div className="space-y-2 rounded-lg border border-white/10 bg-white/[0.03] p-3">
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                type="text"
-                value={presetName}
-                onChange={(event) => setPresetName(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    handleSavePreset();
-                  }
-                }}
-                maxLength={32}
-                placeholder="Preset name"
-                className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none placeholder:text-white/25 focus:border-cyan-500/50"
-              />
-              <button
-                onClick={handleSavePreset}
-                className="cursor-pointer rounded-md bg-cyan-500 px-3 py-2 text-[11px] font-bold text-black transition-colors hover:bg-cyan-400 sm:self-auto"
+        {activeTab === "map" ? (
+          <SettingsSection
+            title="Layer Presets"
+            headerSlot={
+              <span
+                className={`rounded-full border px-2.5 py-1 text-[10px] tracking-wider uppercase ${
+                  activePreset
+                    ? "border-cyan-400/40 bg-cyan-500/10 text-cyan-200"
+                    : "border-white/10 bg-white/5 text-white/55"
+                }`}
               >
-                Save Current
-              </button>
+                {activePreset ? activePreset.name : "Manual"}
+              </span>
+            }
+          >
+            <p className="text-[11px] leading-5 text-white/45">
+              Saves your current base layer, OpenAIP overlays, weather layers,
+              and conflict monitor state.
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              {presets.length === 0 ? (
+                <div className="w-full rounded-lg border border-dashed border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] text-white/45">
+                  No presets saved yet.
+                </div>
+              ) : (
+                presets.map((preset) => {
+                  const isActive = preset.id === activePresetId;
+                  const isSelected = preset.id === selectedPresetId;
+
+                  return (
+                    <button
+                      key={preset.id}
+                      onClick={() => onApplyPreset(preset.id)}
+                      className={`cursor-pointer rounded-full border px-3 py-1.5 text-[11px] transition-colors ${
+                        isActive
+                          ? "border-cyan-400/50 bg-cyan-500/15 text-cyan-200"
+                          : isSelected
+                            ? "border-cyan-400/30 bg-white/[0.05] text-white"
+                            : "border-white/10 bg-white/[0.03] text-white/65 hover:border-white/20 hover:text-white"
+                      }`}
+                    >
+                      {preset.name}
+                    </button>
+                  );
+                })
+              )}
             </div>
 
-            {targetPreset && (
-              <div className="space-y-2">
-                <div className="text-[11px] text-white/45">
-                  Selected preset:{" "}
-                  <span className="text-white/75">{targetPreset.name}</span>
-                </div>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <button
-                    onClick={() => {
-                      onUpdatePreset(targetPreset.id);
-                      setDeleteArmed(false);
-                    }}
-                    className="cursor-pointer rounded-md border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-[11px] text-cyan-200 transition-colors hover:bg-cyan-500/15"
-                  >
-                    Update Preset
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (deleteArmed) {
-                        onDeletePreset(targetPreset.id);
-                        setDeleteArmed(false);
-                        return;
-                      }
-                      setDeleteArmed(true);
-                    }}
-                    className={`cursor-pointer rounded-md border px-3 py-2 text-[11px] transition-colors ${
-                      deleteArmed
-                        ? "border-red-400/40 bg-red-500/15 text-red-200 hover:bg-red-500/20"
-                        : "border-white/10 bg-white/[0.03] text-white/65 hover:border-white/20 hover:text-white"
-                    }`}
-                  >
-                    {deleteArmed ? "Click Again to Delete" : "Delete Preset"}
-                  </button>
-                </div>
+            <div className="space-y-2 rounded-lg border border-white/10 bg-white/[0.03] p-3">
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  type="text"
+                  value={presetName}
+                  onChange={(event) => setPresetName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleSavePreset();
+                    }
+                  }}
+                  maxLength={32}
+                  placeholder="Preset name"
+                  className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none placeholder:text-white/25 focus:border-cyan-500/50"
+                />
+                <button
+                  onClick={handleSavePreset}
+                  className="cursor-pointer rounded-md bg-cyan-500 px-3 py-2 text-[11px] font-bold text-black transition-colors hover:bg-cyan-400 sm:self-auto"
+                >
+                  Save Current
+                </button>
               </div>
-            )}
-          </div>
-        </SettingsSection>
 
-        <SettingsSection
-          title="Map Layers"
-          isOpen={openSections.weather}
-          onToggle={() => toggleSection("weather")}
-        >
-          {runwayCenterlinePreferences &&
-          onRunwayCenterlinePreferencesChange ? (
+              {targetPreset && (
+                <div className="space-y-2">
+                  <div className="text-[11px] text-white/45">
+                    Selected preset:{" "}
+                    <span className="text-white/75">{targetPreset.name}</span>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <button
+                      onClick={() => {
+                        onUpdatePreset(targetPreset.id);
+                        setDeleteArmed(false);
+                      }}
+                      className="cursor-pointer rounded-md border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-[11px] text-cyan-200 transition-colors hover:bg-cyan-500/15"
+                    >
+                      Update Preset
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (deleteArmed) {
+                          onDeletePreset(targetPreset.id);
+                          setDeleteArmed(false);
+                          return;
+                        }
+                        setDeleteArmed(true);
+                      }}
+                      className={`cursor-pointer rounded-md border px-3 py-2 text-[11px] transition-colors ${
+                        deleteArmed
+                          ? "border-red-400/40 bg-red-500/15 text-red-200 hover:bg-red-500/20"
+                          : "border-white/10 bg-white/[0.03] text-white/65 hover:border-white/20 hover:text-white"
+                      }`}
+                    >
+                      {deleteArmed ? "Click Again to Delete" : "Delete Preset"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </SettingsSection>
+        ) : null}
+
+        {activeTab === "map" ? (
+          <SettingsSection title="Map Layers">
+            {runwayCenterlinePreferences &&
+            onRunwayCenterlinePreferencesChange ? (
+              <SettingsToggle
+                label="Runway Centerlines"
+                checked={runwayCenterlinePreferences.enabled}
+                onChange={(enabled) =>
+                  updateRunwayCenterlinePreferences({ enabled })
+                }
+                disabled={!isPRO}
+                proBadgeSource="radar_settings_runway_centerlines_lock"
+              />
+            ) : null}
+
             <SettingsToggle
-              label="Runway Centerlines"
-              checked={runwayCenterlinePreferences.enabled}
-              onChange={(enabled) =>
-                updateRunwayCenterlinePreferences({ enabled })
-              }
-              disabled={!isPRO}
-              proBadgeSource="radar_settings_runway_centerlines_lock"
+              label="Waypoints"
+              checked={showWaypoints}
+              onChange={(v) => {
+                setShowWaypoints(v);
+                Analytics.track("map_waypoints_toggled", { enabled: v });
+              }}
             />
-          ) : null}
 
-          <SettingsToggle
-            label="Waypoints"
-            checked={showWaypoints}
-            onChange={(v) => {
-              setShowWaypoints(v);
-              Analytics.track("map_waypoints_toggled", { enabled: v });
-            }}
-          />
+            <SettingsToggle
+              label="Precipitation"
+              checked={showPrecipitation}
+              onChange={(v) => {
+                setShowPrecipitation(v);
+                Analytics.weatherLayerToggled({
+                  layer: "precipitation",
+                  enabled: v,
+                });
+              }}
+            />
 
-          <SettingsToggle
-            label="Precipitation"
-            checked={showPrecipitation}
-            onChange={(v) => {
-              setShowPrecipitation(v);
-              Analytics.weatherLayerToggled({
-                layer: "precipitation",
-                enabled: v,
-              });
-            }}
-          />
+            <SettingsToggle
+              label="AIRMETs"
+              checked={showAirmets}
+              onChange={(v) => {
+                if (!isPRO) {
+                  Analytics.proFeatureBlocked({ feature: "airmets" });
+                  return;
+                }
+                setShowAirmets(v);
+                Analytics.weatherLayerToggled({ layer: "airmet", enabled: v });
+              }}
+              disabled={!isPRO}
+              proBadgeSource="radar_settings_airmets_lock"
+            />
 
-          <SettingsToggle
-            label="AIRMETs"
-            checked={showAirmets}
-            onChange={(v) => {
-              if (!isPRO) {
-                Analytics.proFeatureBlocked({ feature: "airmets" });
-                return;
-              }
-              setShowAirmets(v);
-              Analytics.weatherLayerToggled({ layer: "airmet", enabled: v });
-            }}
-            disabled={!isPRO}
-            proBadgeSource="radar_settings_airmets_lock"
-          />
+            <SettingsToggle
+              label="SIGMETs"
+              checked={showSigmets}
+              onChange={(v) => {
+                if (!isPRO) {
+                  Analytics.proFeatureBlocked({ feature: "sigmets" });
+                  return;
+                }
+                setShowSigmets(v);
+                Analytics.weatherLayerToggled({ layer: "sigmet", enabled: v });
+              }}
+              disabled={!isPRO}
+              proBadgeSource="radar_settings_sigmets_lock"
+            />
+          </SettingsSection>
+        ) : null}
 
-          <SettingsToggle
-            label="SIGMETs"
-            checked={showSigmets}
-            onChange={(v) => {
-              if (!isPRO) {
-                Analytics.proFeatureBlocked({ feature: "sigmets" });
-                return;
-              }
-              setShowSigmets(v);
-              Analytics.weatherLayerToggled({ layer: "sigmet", enabled: v });
-            }}
-            disabled={!isPRO}
-            proBadgeSource="radar_settings_sigmets_lock"
-          />
-        </SettingsSection>
-
-        {isPRO &&
+        {activeTab === "visibility" &&
+        isPRO &&
         radarTrailPreferences &&
         radarModeLinePreferences &&
         runwayCenterlinePreferences &&
         onRadarTrailPreferencesChange &&
         onRadarModeLinePreferencesChange &&
         onRunwayCenterlinePreferencesChange ? (
-          <SettingsSection
-            title="Radar Overlays"
-            isOpen={openSections.trail}
-            onToggle={() => toggleSection("trail")}
-          >
+          <SettingsSection title="Radar Overlays">
             <SettingsToggle
               label="History Trails"
               description="Show radar history dots behind aircraft in radar mode."
@@ -678,69 +658,65 @@ export const RadarSettings = ({
           </SettingsSection>
         ) : null}
 
-        <SettingsSection
-          title="Traffic"
-          isOpen={openSections.traffic}
-          onToggle={() => toggleSection("traffic")}
-        >
-          <SettingsToggle
-            label="Conflict Alerts"
-            checked={showConflicts}
-            onChange={(v) => {
-              if (!isPRO) {
-                Analytics.proFeatureBlocked({ feature: "traffic_conflicts" });
-                return;
-              }
-              setShowConflicts(v);
-              Analytics.conflictLayerToggled({ enabled: v });
-            }}
-            disabled={!isPRO}
-            proBadgeSource="radar_settings_conflict_alerts_lock"
-          />
-        </SettingsSection>
+        {activeTab === "visibility" ? (
+          <SettingsSection title="Traffic">
+            <SettingsToggle
+              label="Conflict Alerts"
+              checked={showConflicts}
+              onChange={(v) => {
+                if (!isPRO) {
+                  Analytics.proFeatureBlocked({ feature: "traffic_conflicts" });
+                  return;
+                }
+                setShowConflicts(v);
+                Analytics.conflictLayerToggled({ enabled: v });
+              }}
+              disabled={!isPRO}
+              proBadgeSource="radar_settings_conflict_alerts_lock"
+            />
+          </SettingsSection>
+        ) : null}
 
-        <SettingsSection
-          title="Display"
-          isOpen={openSections.units}
-          onToggle={() => toggleSection("units")}
-        >
-          <UnitSelector<TimeDisplayMode>
-            label="Time"
-            value={timeDisplayMode}
-            onChange={(value) => {
-              const enabled = value === "local";
-              setUseLocalTime(enabled);
-              Analytics.timeDisplayPreferenceChanged({
-                mode: enabled ? "local" : "utc",
-              });
-            }}
-            options={[
-              { value: "utc", label: "Zulu" },
-              { value: "local", label: "Local" },
-            ]}
-          />
+        {activeTab === "misc" ? (
+          <SettingsSection title="Display">
+            <UnitSelector<TimeDisplayMode>
+              label="Time"
+              value={timeDisplayMode}
+              onChange={(value) => {
+                const enabled = value === "local";
+                setUseLocalTime(enabled);
+                Analytics.timeDisplayPreferenceChanged({
+                  mode: enabled ? "local" : "utc",
+                });
+              }}
+              options={[
+                { value: "utc", label: "Zulu" },
+                { value: "local", label: "Local" },
+              ]}
+            />
 
-          <UnitSelector<SpeedUnit>
-            label="Speed"
-            value={speedUnit}
-            onChange={setSpeedUnit}
-            options={[
-              { value: "kts", label: "Knots" },
-              { value: "mach", label: "Mach" },
-            ]}
-          />
+            <UnitSelector<SpeedUnit>
+              label="Speed"
+              value={speedUnit}
+              onChange={setSpeedUnit}
+              options={[
+                { value: "kts", label: "Knots" },
+                { value: "mach", label: "Mach" },
+              ]}
+            />
 
-          <UnitSelector<AltitudeUnit>
-            label="Altitude"
-            value={altitudeUnit}
-            onChange={setAltitudeUnit}
-            options={[
-              { value: "auto", label: "Auto" },
-              { value: "feet", label: "Feet" },
-              { value: "fl", label: "FL" },
-            ]}
-          />
-        </SettingsSection>
+            <UnitSelector<AltitudeUnit>
+              label="Altitude"
+              value={altitudeUnit}
+              onChange={setAltitudeUnit}
+              options={[
+                { value: "auto", label: "Auto" },
+                { value: "feet", label: "Feet" },
+                { value: "fl", label: "FL" },
+              ]}
+            />
+          </SettingsSection>
+        ) : null}
       </div>
     </div>
   );
@@ -748,41 +724,23 @@ export const RadarSettings = ({
 
 function SettingsSection({
   title,
-  isOpen,
-  onToggle,
   headerSlot,
   children,
 }: {
   title: string;
-  isOpen: boolean;
-  onToggle: () => void;
   headerSlot?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.03]">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-white/[0.03]"
-        aria-expanded={isOpen}
-      >
-        <ChevronDown
-          className={`h-4 w-4 shrink-0 text-cyan-300 transition-transform ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
+    <section className="space-y-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
+      <div className="flex items-center gap-3">
         <span className="text-[11px] tracking-widest text-cyan-300 uppercase">
           {title}
         </span>
         {headerSlot ? <span className="ml-auto">{headerSlot}</span> : null}
-      </button>
+      </div>
 
-      {isOpen ? (
-        <div className="space-y-3 border-t border-white/10 px-3 py-3">
-          {children}
-        </div>
-      ) : null}
+      {children}
     </section>
   );
 }
