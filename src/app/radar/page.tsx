@@ -90,6 +90,7 @@ import {
   Eye,
   FileText,
   Plane,
+  RotateCcw,
   Route,
   X,
 } from "lucide-react";
@@ -1311,9 +1312,9 @@ function ATCPageContent() {
                     </button>
                     <button
                       onClick={reset}
-                      className="cursor-pointer rounded-lg bg-slate-500/20 px-3 py-1 text-xs text-slate-400"
+                      className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-slate-500/20 px-3 py-1 text-xs text-slate-400"
                     >
-                      Reset
+                      <RotateCcw className="h-3.5 w-3.5" /> Reset
                     </button>
                   </div>
                 </div>
