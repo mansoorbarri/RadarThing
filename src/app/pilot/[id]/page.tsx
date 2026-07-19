@@ -18,6 +18,7 @@ import {
   Check,
   Link,
   Trash2,
+  Radar,
 } from "lucide-react";
 import { useProStatus } from "~/hooks/useProStatus";
 import { Suspense } from "react";
@@ -32,6 +33,7 @@ import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
 import { isFlightModeratorGoogleId } from "~/lib/flight-moderation";
 import { ConfirmModal } from "~/app/admin/_components/ConfirmModal";
 import { SystemThemeLogo } from "~/components/ui/SystemThemeLogo";
+import { useAircraftStream } from "~/hooks/useAircraftStream";
 
 function formatFlightTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -70,6 +72,7 @@ function PilotPageContent() {
   const profileUser = useQuery(api.users.getByProfileIdentifier, {
     profileIdentifier,
   });
+  const { aircrafts } = useAircraftStream();
   const stats = useQuery(
     api.flights.getStatsById,
     profileUser ? { userId: profileUser._id } : "skip",
@@ -156,6 +159,10 @@ function PilotPageContent() {
   }
 
   const userId: Id<"users"> = profileUser._id;
+  const liveFlight = profileUser.googleId
+    ? aircrafts.find((aircraft) => aircraft.googleId === profileUser.googleId)
+    : undefined;
+  const liveFlightCallsign = liveFlight?.flightNo || liveFlight?.callsign;
 
   return (
     <div className="pilot-theme-surface min-h-screen bg-black text-white">
@@ -178,12 +185,29 @@ function PilotPageContent() {
               )}
             </button>
             <div className="min-w-0">
-              <h1 className="text-2xl leading-tight font-bold break-words text-white sm:text-3xl">
-                {stats.discordUsername ??
-                  callsignFromUrl ??
-                  stats.pilotCallsign ??
-                  "Unknown Pilot"}
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl leading-tight font-bold break-words text-white sm:text-3xl">
+                  {stats.discordUsername ??
+                    callsignFromUrl ??
+                    stats.pilotCallsign ??
+                    "Unknown Pilot"}
+                </h1>
+                {liveFlightCallsign && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      router.push(
+                        `/radar?callsign=${encodeURIComponent(liveFlightCallsign)}&pilot=${encodeURIComponent(profileUser.googleId!)}`,
+                      )
+                    }
+                    className="group/live relative inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-emerald-400/40 bg-emerald-400/10 text-emerald-300 transition-colors hover:border-emerald-300 hover:bg-emerald-400/20 hover:text-emerald-200 focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:outline-none"
+                    aria-label={`View ${liveFlightCallsign} on the live map`}
+                    title={`View ${liveFlightCallsign} on the live map`}
+                  >
+                    <Radar className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                )}
+              </div>
               {stats.discordUsername &&
                 (callsignFromUrl || stats.pilotCallsign) && (
                   <p className="mt-1 font-mono text-[11px] break-all text-slate-500 sm:text-xs">
