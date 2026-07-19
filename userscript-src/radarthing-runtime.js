@@ -21,6 +21,7 @@
   const SAVE_BTN_ID = "atc-saveBtn";
   const CLEAR_BTN_ID = "atc-clearBtn";
   const STATUS_INDICATOR_ID = "atc-statusIndicator";
+  const SIGN_IN_NOTICE_ID = "atc-sign-in-notice";
   const KEYBIND_BTN_ID = "atc-keybind-btn";
   const CHARTS_KEYBIND_BTN_ID = "atc-charts-keybind-btn";
   const RADAR_SETTINGS_HEADER_ID = "atc-radar-settings-header";
@@ -356,6 +357,13 @@
       toast.style.opacity = "0";
       setTimeout(() => toast.remove(), 300);
     }, 2500);
+  }
+
+  function updateSignInNotice() {
+    const notice = document.getElementById(SIGN_IN_NOTICE_ID);
+    if (!notice) return;
+
+    notice.style.display = geofs?.userRecord?.googleid ? "none" : "block";
   }
 
   function fillFlightForm(detail) {
@@ -1810,6 +1818,16 @@
         Flight info required
       </div>
 
+      <p id="${SIGN_IN_NOTICE_ID}" style="
+        margin:8px 0 0;
+        text-align:center;
+        font-size:9px;
+        line-height:1.45;
+        color:#fcd34d;
+      ">
+        Sign in to GeoFS to appear on the radar. Signed-out flights are not shown.
+      </p>
+
       <div style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;">
         <div id="${RADAR_SETTINGS_HEADER_ID}" style="
           display:flex;
@@ -1874,6 +1892,7 @@
     `;
 
     document.body.appendChild(flightUI);
+    updateSignInNotice();
 
     if (isMobile) {
       mobileFlightUIOpenButton = document.createElement("button");
@@ -2656,4 +2675,5 @@
   startResumePromptPolling();
   setInterval(syncFlightPlan, 3000);
   setInterval(updateIdentUI, 1000);
+  setInterval(updateSignInNotice, 1000);
 })();

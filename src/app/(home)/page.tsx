@@ -190,6 +190,11 @@ export default function HomePage() {
               />
             </div>
 
+            <p className="mt-5 text-sm leading-6 text-amber-200/75">
+              Sign in to your GeoFS account before flying. Flights from
+              signed-out sessions are not shown on the radar.
+            </p>
+
             <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
               <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-6">
                 <p className="mb-2 text-xs font-semibold tracking-[0.24em] text-cyan-400 uppercase">
