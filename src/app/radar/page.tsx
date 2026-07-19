@@ -696,7 +696,13 @@ function ATCPageContent() {
   }, [router]);
 
   useEffect(() => {
-    if (!fullFlightFilter || autoSelectedFromUrl || aircrafts.length === 0)
+    if (
+      !fullFlightFilter ||
+      autoSelectedFromUrl ||
+      aircrafts.length === 0 ||
+      !isMapLoaded ||
+      !drawFlightPlanOnMapRef.current
+    )
       return;
 
     const matchedAircraft = aircrafts.find(
@@ -718,6 +724,7 @@ function ATCPageContent() {
     fullFlightFilter,
     autoSelectedFromUrl,
     followParam,
+    isMapLoaded,
   ]);
 
   // Escape key to clear filters, F key to toggle follow mode, U key to hide UI
