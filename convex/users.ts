@@ -498,6 +498,7 @@ export const updateDiscordUsername = mutation({
   args: {
     clerkId: v.string(),
     discordUsername: v.optional(v.string()),
+    discordUserId: v.optional(v.string()),
     systemSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -515,14 +516,41 @@ export const updateDiscordUsername = mutation({
     if (!user) return null;
 
     const discordUsername = args.discordUsername?.trim();
+    const discordUserId = args.discordUserId?.trim();
 
     await ctx.db.patch(user._id, {
       discordUsername,
       discordUsernameLower: discordUsername
         ? normalizeDiscordUsername(discordUsername)
         : undefined,
+      discordUserId,
     });
     return user._id;
+  },
+});
+
+// Used only by the Discord bot through the authenticated bot API. A user may
+// have several ways to receive PRO access, so compute the effective entitlement
+// at read time rather than mirroring it into a second source of truth.
+export const getProDiscordRoleMembers = query({
+  args: { systemSecret: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    requireSystem(ctx, args.systemSecret);
+
+    const members: Array<{
+      discordUserId: string | null;
+      discordUsername: string | null;
+    }> = [];
+    for await (const user of ctx.db.query("users")) {
+      if (!user.isDeleted && hasEffectiveProAccess(user)) {
+        members.push({
+          discordUserId: user.discordUserId ?? null,
+          discordUsername: user.discordUsername ?? null,
+        });
+      }
+    }
+
+    return members;
   },
 });
 

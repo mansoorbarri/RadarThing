@@ -11,7 +11,8 @@ type BotAction =
   | "markSent"
   | "markCompleted"
   | "markCancelled"
-  | "markFailed";
+  | "markFailed"
+  | "listProDiscordRoles";
 
 function isAuthorized(request: Request): boolean {
   return request.headers.get("x-bot-secret") === env.CONVEX_SYSTEM_SECRET;
@@ -110,6 +111,13 @@ export async function POST(request: Request) {
         {},
       );
       return NextResponse.json({ reminders });
+    }
+
+    case "listProDiscordRoles": {
+      const members = await convex.query(api.users.getProDiscordRoleMembers, {
+        systemSecret: env.CONVEX_SYSTEM_SECRET,
+      });
+      return NextResponse.json({ members });
     }
 
     case "markTriggered": {

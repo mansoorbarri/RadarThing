@@ -162,6 +162,7 @@ export default function DashboardPage() {
     (a) => a.provider === "discord",
   );
   const discordUsername = discordAccount?.username?.trim() || null;
+  const discordUserId = discordAccount?.providerUserId?.trim() || null;
   const discordConnected = Boolean(discordAccount);
 
   useEffect(() => {
@@ -182,16 +183,22 @@ export default function DashboardPage() {
     if (
       discordConnected &&
       discordUsername &&
-      convexDiscord !== discordUsername
+      (convexDiscord !== discordUsername ||
+        dbUser?.discordUserId !== discordUserId)
     ) {
-      void updateDiscordUsername({ clerkId, discordUsername });
-    } else if (!discordConnected && convexDiscord) {
-      void updateDiscordUsername({ clerkId, discordUsername: undefined });
+      void updateDiscordUsername({ clerkId, discordUsername, discordUserId });
+    } else if (!discordConnected && (convexDiscord || dbUser?.discordUserId)) {
+      void updateDiscordUsername({
+        clerkId,
+        discordUsername: undefined,
+        discordUserId: undefined,
+      });
     }
   }, [
     clerkId,
     discordConnected,
     discordUsername,
+    discordUserId,
     dbUser,
     updateDiscordUsername,
   ]);

@@ -15,6 +15,8 @@ export default defineSchema({
     adminProExpiresAt: v.optional(v.number()),
     discordUsername: v.optional(v.string()),
     discordUsernameLower: v.optional(v.string()),
+    // Discord's immutable user ID is required for server role management.
+    discordUserId: v.optional(v.string()),
   })
     .index("by_clerkId", ["clerkId"])
     .index("by_email", ["email"])
