@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Layers3, Monitor, Radar } from "lucide-react";
+import { Keyboard, Layers3, Monitor, Radar, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "~/components/ui/switch";
 import { Slider } from "~/components/ui/slider";
@@ -18,6 +18,12 @@ import {
   type RadarTrailPreferences,
 } from "~/lib/radarTrailPreferences";
 import { type RunwayCenterlinePreferences } from "~/lib/runwayCenterlines";
+import {
+  DEFAULT_RADAR_KEYBINDS,
+  formatRadarKeybind,
+  type RadarKeybindAction,
+  type RadarKeybindPreferences,
+} from "~/lib/radarKeybindPreferences";
 
 type SettingsTab = "map" | "visibility" | "misc";
 
@@ -65,6 +71,8 @@ interface RadarSettingsProps {
 
   showConflicts: boolean;
   setShowConflicts: (v: boolean) => void;
+  keybindPreferences: RadarKeybindPreferences;
+  onKeybindPreferencesChange: (preferences: RadarKeybindPreferences) => void;
 }
 
 export const RadarSettings = ({
@@ -92,6 +100,8 @@ export const RadarSettings = ({
   setShowSigmets,
   showConflicts,
   setShowConflicts,
+  keybindPreferences,
+  onKeybindPreferencesChange,
 }: RadarSettingsProps) => {
   const { speedUnit, altitudeUnit, setSpeedUnit, setAltitudeUnit } =
     useUnitPreferences();
@@ -99,6 +109,49 @@ export const RadarSettings = ({
   const [presetName, setPresetName] = useState("");
   const [deleteArmed, setDeleteArmed] = useState(false);
   const [activeTab, setActiveTab] = useState<SettingsTab>("map");
+  const [capturingKeybind, setCapturingKeybind] =
+    useState<RadarKeybindAction | null>(null);
+
+  useEffect(() => {
+    if (!capturingKeybind) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (event.key === "Escape") {
+        setCapturingKeybind(null);
+        return;
+      }
+      if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) {
+        toast.error("Use a single letter, number, or function key.");
+        return;
+      }
+      if (!/^(Key[A-Z]|Digit[0-9]|F(?:[1-9]|1[0-2]))$/.test(event.code)) {
+        toast.error("Use a letter, number, or function key.");
+        return;
+      }
+      const alreadyAssigned = (
+        Object.keys(keybindPreferences) as RadarKeybindAction[]
+      ).find(
+        (action) =>
+          action !== capturingKeybind &&
+          keybindPreferences[action] === event.code,
+      );
+      if (alreadyAssigned) {
+        toast.error("That key is already assigned to another radar action.");
+        return;
+      }
+      onKeybindPreferencesChange({
+        ...keybindPreferences,
+        [capturingKeybind]: event.code,
+      });
+      setCapturingKeybind(null);
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [capturingKeybind, keybindPreferences, onKeybindPreferencesChange]);
 
   const activePreset = useMemo(
     () => presets.find((preset) => preset.id === activePresetId) ?? null,
@@ -421,6 +474,25 @@ export const RadarSettings = ({
           </SettingsSection>
         ) : null}
 
+        {activeTab === "visibility" ? (
+          <SettingsSection title="Traffic">
+            <SettingsToggle
+              label="Conflict Alerts"
+              checked={showConflicts}
+              onChange={(v) => {
+                if (!isPRO) {
+                  Analytics.proFeatureBlocked({ feature: "traffic_conflicts" });
+                  return;
+                }
+                setShowConflicts(v);
+                Analytics.conflictLayerToggled({ enabled: v });
+              }}
+              disabled={!isPRO}
+              proBadgeSource="radar_settings_conflict_alerts_lock"
+            />
+          </SettingsSection>
+        ) : null}
+
         {activeTab === "visibility" &&
         isPRO &&
         radarTrailPreferences &&
@@ -655,64 +727,87 @@ export const RadarSettings = ({
           </SettingsSection>
         ) : null}
 
-        {activeTab === "visibility" ? (
-          <SettingsSection title="Traffic">
-            <SettingsToggle
-              label="Conflict Alerts"
-              checked={showConflicts}
-              onChange={(v) => {
-                if (!isPRO) {
-                  Analytics.proFeatureBlocked({ feature: "traffic_conflicts" });
-                  return;
-                }
-                setShowConflicts(v);
-                Analytics.conflictLayerToggled({ enabled: v });
-              }}
-              disabled={!isPRO}
-              proBadgeSource="radar_settings_conflict_alerts_lock"
-            />
-          </SettingsSection>
-        ) : null}
-
         {activeTab === "misc" ? (
-          <SettingsSection title="Display">
-            <UnitSelector<TimeDisplayMode>
-              label="Time"
-              value={timeDisplayMode}
-              onChange={(value) => {
-                const enabled = value === "local";
-                setUseLocalTime(enabled);
-                Analytics.timeDisplayPreferenceChanged({
-                  mode: enabled ? "local" : "utc",
-                });
-              }}
-              options={[
-                { value: "utc", label: "Zulu" },
-                { value: "local", label: "Local" },
-              ]}
-            />
+          <>
+            <SettingsSection title="Display">
+              <UnitSelector<TimeDisplayMode>
+                label="Time"
+                value={timeDisplayMode}
+                onChange={(value) => {
+                  const enabled = value === "local";
+                  setUseLocalTime(enabled);
+                  Analytics.timeDisplayPreferenceChanged({
+                    mode: enabled ? "local" : "utc",
+                  });
+                }}
+                options={[
+                  { value: "utc", label: "Zulu" },
+                  { value: "local", label: "Local" },
+                ]}
+              />
 
-            <UnitSelector<SpeedUnit>
-              label="Speed"
-              value={speedUnit}
-              onChange={setSpeedUnit}
-              options={[
-                { value: "kts", label: "Knots" },
-                { value: "mach", label: "Mach" },
-              ]}
-            />
+              <UnitSelector<SpeedUnit>
+                label="Speed"
+                value={speedUnit}
+                onChange={setSpeedUnit}
+                options={[
+                  { value: "kts", label: "Knots" },
+                  { value: "mach", label: "Mach" },
+                ]}
+              />
 
-            <UnitSelector<AltitudeUnit>
-              label="Altitude"
-              value={altitudeUnit}
-              onChange={setAltitudeUnit}
-              options={[
-                { value: "auto", label: "Auto" },
-                { value: "feet", label: "Feet" },
-                { value: "fl", label: "FL" },
-              ]}
-            />
-          </SettingsSection>
+              <UnitSelector<AltitudeUnit>
+                label="Altitude"
+                value={altitudeUnit}
+                onChange={setAltitudeUnit}
+                options={[
+                  { value: "auto", label: "Auto" },
+                  { value: "feet", label: "Feet" },
+                  { value: "fl", label: "FL" },
+                ]}
+              />
+            </SettingsSection>
+            <SettingsSection title="Keybinds">
+              <p className="text-[11px] leading-5 text-white/45">
+                Click a binding, then press a letter, number, or function key.
+              </p>
+              {(
+                [
+                  ["follow", "Follow selected aircraft"],
+                  ["toggleUi", "Show / hide radar UI"],
+                  ["cycleDisplay", "Cycle flight display"],
+                  ["headingMode", "Enter Heading Mode"],
+                ] as const
+              ).map(([action, label]) => (
+                <div
+                  key={action}
+                  className="flex items-center justify-between gap-3 text-sm"
+                >
+                  <span className="min-w-0 text-white/80">{label}</span>
+                  <button
+                    type="button"
+                    onClick={() => setCapturingKeybind(action)}
+                    className="flex min-w-20 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-cyan-400/25 bg-cyan-400/10 px-2.5 py-1.5 font-mono text-[11px] font-semibold text-cyan-200 transition-colors hover:bg-cyan-400/20"
+                    aria-label={`Change ${label} keybind`}
+                  >
+                    <Keyboard className="h-3.5 w-3.5" />
+                    {capturingKeybind === action
+                      ? "Press key"
+                      : formatRadarKeybind(keybindPreferences[action])}
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() =>
+                  onKeybindPreferencesChange(DEFAULT_RADAR_KEYBINDS)
+                }
+                className="flex cursor-pointer items-center gap-1.5 text-[11px] font-medium text-white/50 transition-colors hover:text-white"
+              >
+                <RotateCcw className="h-3.5 w-3.5" /> Reset defaults
+              </button>
+            </SettingsSection>
+          </>
         ) : null}
       </div>
     </div>

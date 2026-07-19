@@ -43,6 +43,10 @@ import {
   isEditableTarget,
 } from "~/lib/clientDiagnostics";
 import { setCookie } from "~/lib/cookies";
+import {
+  getStoredRadarKeybindPreferences,
+  setStoredRadarKeybindPreferences,
+} from "~/lib/radarKeybindPreferences";
 import { normalizeCallsign } from "~/lib/utils";
 import { type Airport } from "~/components/map";
 
@@ -167,6 +171,9 @@ function ATCPageContent() {
   const [selectedAircrafts, setSelectedAircrafts] = useState<PositionUpdate[]>(
     [],
   );
+  const [keybindPreferences, setKeybindPreferences] = useState(() =>
+    getStoredRadarKeybindPreferences(),
+  );
   const [selectedAirport, setSelectedAirport] = useState<Airport | undefined>(
     undefined,
   );
@@ -191,7 +198,6 @@ function ATCPageContent() {
 
   // Check if callsign param is a full flight number (e.g., EK213) vs just a prefix (e.g., EK)
   const callsignParam = searchParams?.get("callsign") ?? null;
-  const pilotGoogleIdParam = searchParams?.get("pilot") ?? null;
   const normalizedCallsignParam = callsignParam
     ? normalizeCallsign(callsignParam)
     : null;
@@ -696,8 +702,7 @@ function ATCPageContent() {
     const matchedAircraft = aircrafts.find(
       (ac) =>
         (ac.callsign?.toUpperCase() === fullFlightFilter ||
-          ac.flightNo?.toUpperCase() === fullFlightFilter) &&
-        (!pilotGoogleIdParam || ac.googleId === pilotGoogleIdParam),
+          ac.flightNo?.toUpperCase() === fullFlightFilter),
     );
 
     if (matchedAircraft) {
@@ -713,7 +718,6 @@ function ATCPageContent() {
     fullFlightFilter,
     autoSelectedFromUrl,
     followParam,
-    pilotGoogleIdParam,
   ]);
 
   // Escape key to clear filters, F key to toggle follow mode, U key to hide UI
@@ -774,7 +778,7 @@ function ATCPageContent() {
         setAutoSelectedFromUrl(false);
       }
 
-      if (e.key === "u" || e.key === "U") {
+      if (e.code === keybindPreferences.toggleUi) {
         if (shouldIgnoreLetterShortcuts) {
           if (isEditableContext) {
             reportShortcutDiagnostic("u", "editable_context", e.target);
@@ -782,12 +786,13 @@ function ATCPageContent() {
           return;
         }
 
+        e.preventDefault();
         setIsUiHidden((prev) => !prev);
         return;
       }
 
       // F key to toggle follow mode (only when aircraft is selected and not typing in input)
-      if (e.key === "f" || e.key === "F") {
+      if (e.code === keybindPreferences.follow) {
         if (shouldIgnoreLetterShortcuts) {
           return;
         }
@@ -796,6 +801,7 @@ function ATCPageContent() {
           return;
         }
 
+        e.preventDefault();
         setIsFollowMode((prev) => !prev);
       }
     };
@@ -810,6 +816,7 @@ function ATCPageContent() {
     selectedAircrafts.length,
     showMobileSearch,
     showShortcutsMenu,
+    keybindPreferences,
   ]);
 
   // Keep the sideview open on the last airport unless the user closes it.
@@ -1595,6 +1602,12 @@ function ATCPageContent() {
           onFlightDisplayModeChange={setFlightDisplayMode}
           headingModeEnabled={isHeadingMode}
           onHeadingModeChange={setIsHeadingMode}
+          keybindPreferences={keybindPreferences}
+          onKeybindPreferencesChange={(preferences) => {
+            setKeybindPreferences(
+              setStoredRadarKeybindPreferences(preferences),
+            );
+          }}
         />
 
         {importedFlightPlan && showImportedFlightPlanPanel ? (

@@ -12,33 +12,6 @@ interface ShortcutGroup {
 
 const shortcutGroups: ShortcutGroup[] = [
   {
-    title: "Keyboard",
-    shortcuts: [
-      {
-        keys: "Esc",
-        description:
-          "Close open drawers, clear active callsign filters, or deselect the current map selection.",
-      },
-      {
-        keys: "F",
-        description: "Toggle follow mode for the currently selected aircraft.",
-      },
-      {
-        keys: "U",
-        description: "Show or hide radar UI elements.",
-      },
-      {
-        keys: "L",
-        description:
-          "Cycle flight display: default, labels hidden, route waypoints hidden, or both hidden. Hidden route waypoints show a dotted direct line to arrival.",
-      },
-      {
-        keys: "T",
-        description: "Enter Heading Mode without clicking the map control.",
-      },
-    ],
-  },
-  {
     title: "Mouse",
     shortcuts: [
       {
@@ -179,7 +152,8 @@ export function ShortcutsMenu({
                 Shortcut Reference
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
-                Keyboard and mouse shortcuts currently available on the radar.
+                Keyboard bindings can be customized in Radar Settings under
+                Misc. Mouse shortcuts are listed below.
               </p>
             </div>
 

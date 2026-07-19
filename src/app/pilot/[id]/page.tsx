@@ -197,7 +197,7 @@ function PilotPageContent() {
                     type="button"
                     onClick={() =>
                       router.push(
-                        `/radar?callsign=${encodeURIComponent(liveFlightCallsign)}&pilot=${encodeURIComponent(profileUser.googleId!)}`,
+                        `/radar?callsign=${encodeURIComponent(liveFlightCallsign)}`,
                       )
                     }
                     className="group/live relative inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-emerald-400/40 bg-emerald-400/10 text-emerald-300 transition-colors hover:border-emerald-300 hover:bg-emerald-400/20 hover:text-emerald-200 focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:outline-none"
