@@ -192,6 +192,7 @@ function ATCPageContent() {
 
   // Check if callsign param is a full flight number (e.g., EK213) vs just a prefix (e.g., EK)
   const callsignParam = searchParams?.get("callsign") ?? null;
+  const pilotGoogleIdParam = searchParams?.get("pilot") ?? null;
   const normalizedCallsignParam = callsignParam
     ? normalizeCallsign(callsignParam)
     : null;
@@ -691,8 +692,9 @@ function ATCPageContent() {
 
     const matchedAircraft = aircrafts.find(
       (ac) =>
-        ac.callsign?.toUpperCase() === fullFlightFilter ||
-        ac.flightNo?.toUpperCase() === fullFlightFilter,
+        (ac.callsign?.toUpperCase() === fullFlightFilter ||
+          ac.flightNo?.toUpperCase() === fullFlightFilter) &&
+        (!pilotGoogleIdParam || ac.googleId === pilotGoogleIdParam),
     );
 
     if (matchedAircraft) {
@@ -703,7 +705,13 @@ function ATCPageContent() {
         setIsFollowMode(true);
       }
     }
-  }, [aircrafts, fullFlightFilter, autoSelectedFromUrl, followParam]);
+  }, [
+    aircrafts,
+    fullFlightFilter,
+    autoSelectedFromUrl,
+    followParam,
+    pilotGoogleIdParam,
+  ]);
 
   // Escape key to clear filters, F key to toggle follow mode, U key to hide UI
   useEffect(() => {
