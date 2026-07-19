@@ -47,7 +47,7 @@ export function ControlDock({
   const bottomPos = isMobile ? "bottom-3" : "bottom-6";
   const sidePos = isMobile
     ? isRight ? "right-3" : "left-3"
-    : isRight && !rightOffset ? "right-6" : !isRight ? "left-6" : "";
+    : isRight && !rightOffset ? "right-4" : !isRight ? "left-6" : "";
 
   return (
     <div

@@ -16,7 +16,6 @@ import { type OnlineAirport } from "~/hooks/useAircraftStream";
 import { type Runway } from "~/hooks/useAirportData";
 import { preparePathForWorldCopy } from "~/lib/map-utils";
 import { type ImportedFlightPlan } from "~/lib/flightPlanImport";
-import { type MapResetLocation } from "~/lib/mapResetLocation";
 import { useMobileDetection } from "~/hooks/useMobileDetection";
 import { useProStatus } from "~/hooks/useProStatus";
 import { getBooleanCookie, setBooleanCookie } from "~/lib/cookies";
@@ -118,9 +117,7 @@ interface MapComponentProps {
   replayState?: ReplayState | null;
   followAircraft?: PositionUpdate;
   onConflictReview?: (aircrafts: PositionUpdate[]) => void;
-  setResetMapView?: (
-    func: (targetLocation?: MapResetLocation | null) => void,
-  ) => void;
+  onResetMapView?: () => void;
   hideUi?: boolean;
   importedFlightPlan?: ImportedFlightPlan | null;
   flightDisplayModeRequest?: FlightDisplayMode;
@@ -164,7 +161,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   replayState,
   followAircraft,
   onConflictReview,
-  setResetMapView,
+  onResetMapView,
   hideUi = false,
   importedFlightPlan = null,
   flightDisplayModeRequest,
@@ -806,6 +803,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setOSMControlRef: osmControlRef,
     setOpenAIPControlRef: openAIPControlRef,
     setSettingsControlRef: settingsControlRef,
+    onResetMapView,
     isMobile,
     hideUi,
   });
@@ -969,12 +967,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     mapRefs.satelliteHybridLayer,
     onInitialBaseLayerReady,
   ]);
-
-  useEffect(() => {
-    if (setResetMapView) {
-      setResetMapView(mapRefs.resetMapView);
-    }
-  }, [mapRefs.resetMapView, setResetMapView]);
 
   const prevImportedFlightPlanRef = useRef<ImportedFlightPlan | null>(null);
 

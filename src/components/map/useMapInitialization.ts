@@ -9,6 +9,7 @@ import {
   OpenAIPControl,
   OSMControl,
   RadarSettingsControl,
+  ResetMapViewControl,
   ZoomInControl,
   ZoomOutControl,
 } from "~/components/map/MapControls";
@@ -27,6 +28,7 @@ interface UseMapInitializationProps {
   setOSMControlRef?: React.MutableRefObject<OSMControl | null>;
   setOpenAIPControlRef: React.MutableRefObject<OpenAIPControl | null>;
   setSettingsControlRef: React.MutableRefObject<RadarSettingsControl | null>;
+  onResetMapView?: () => void;
   isMobile?: boolean;
   hideUi?: boolean;
 }
@@ -92,6 +94,7 @@ export const useMapInitialization = ({
   setOSMControlRef,
   setOpenAIPControlRef,
   setSettingsControlRef,
+  onResetMapView,
   isMobile = false,
   hideUi = false,
 }: UseMapInitializationProps): MapRefs => {
@@ -286,6 +289,7 @@ export const useMapInitialization = ({
   const openAIPControlInstanceRef = useRef<L.Control | null>(null);
   const settingsControlInstanceRef = useRef<L.Control | null>(null);
   const headingControlInstanceRef = useRef<L.Control | null>(null);
+  const resetMapViewControlInstanceRef = useRef<L.Control | null>(null);
   const zoomInControlInstanceRef = useRef<L.Control | null>(null);
   const zoomOutControlInstanceRef = useRef<L.Control | null>(null);
   const attributionControlInstanceRef = useRef<L.Control.Attribution | null>(
@@ -301,6 +305,10 @@ export const useMapInitialization = ({
       map.removeControl(headingControlInstanceRef.current);
       headingControlInstanceRef.current = null;
       setHeadingControlRef.current = null;
+    }
+    if (resetMapViewControlInstanceRef.current) {
+      map.removeControl(resetMapViewControlInstanceRef.current);
+      resetMapViewControlInstanceRef.current = null;
     }
     if (zoomInControlInstanceRef.current) {
       map.removeControl(zoomInControlInstanceRef.current);
@@ -338,6 +346,13 @@ export const useMapInitialization = ({
     }
 
     if (!hideUi) {
+      const resetMapViewControl = new ResetMapViewControl({}, () => {
+        resetMapView();
+        onResetMapView?.();
+      });
+      map.addControl(resetMapViewControl);
+      resetMapViewControlInstanceRef.current = resetMapViewControl;
+
       const zoomInControl = new ZoomInControl({}, mapInstance);
       map.addControl(zoomInControl);
       zoomInControlInstanceRef.current = zoomInControl;
@@ -410,6 +425,8 @@ export const useMapInitialization = ({
     setOpenAIPControlRef,
     setIsSettingsOpen,
     setSettingsControlRef,
+    resetMapView,
+    onResetMapView,
   ]);
 
   return {

@@ -207,9 +207,6 @@ export const RadarSettings = ({
           <h3 className="text-[14px] font-bold tracking-widest text-white uppercase">
             RADAR CONFIGURATION
           </h3>
-          <p className="mt-1 text-[10px] tracking-[0.22em] text-cyan-300/60 uppercase">
-            Configuration
-          </p>
         </div>
 
         <div

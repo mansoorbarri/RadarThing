@@ -165,9 +165,9 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
         </div>
       )}
 
-      {/* ICAO Input */}
+      {/* METAR airport input */}
       <div className="flex flex-row items-center gap-2 rounded-md border border-cyan-300/30 bg-black/80 p-2 shadow-[0_0_6px_rgba(0,255,255,0.15)]">
-        <span className="font-medium text-cyan-400">ICAO</span>
+        <span className="font-medium text-cyan-400">METAR</span>
         <input
           type="text"
           value={icaoInput}

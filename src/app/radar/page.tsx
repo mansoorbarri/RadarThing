@@ -86,7 +86,6 @@ import {
   Eye,
   FileText,
   Plane,
-  RotateCcw,
   Route,
   X,
 } from "lucide-react";
@@ -367,7 +366,6 @@ function ATCPageContent() {
   const drawMultipleFlightPlansOnMapRef = useRef<
     ((aircrafts: PositionUpdate[], zoom?: boolean) => void) | null
   >(null);
-  const resetMapViewRef = useRef<(() => void) | null>(null);
   const reportedShortcutDiagnosticsRef = useRef<Set<string>>(new Set());
   const importedFlightPlanInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -396,10 +394,6 @@ function ATCPageContent() {
     },
     [addAirportSearch],
   );
-
-  const handleResetMapView = useCallback(() => {
-    resetMapViewRef.current?.();
-  }, []);
 
   useEffect(() => {
     setCookie(DESKTOP_MAP_RENDERER_COOKIE, "", -1);
@@ -685,6 +679,18 @@ function ATCPageContent() {
 
   // Auto-select aircraft from URL param if it's a full flight number
   const followParam = searchParams?.get("follow") === "true";
+
+  const handleMapReset = useCallback(() => {
+    setFullFlightFilter(null);
+    setSelectedCallsigns(new Set());
+    setSelectedAircrafts([]);
+    setIsFollowMode(false);
+    setAutoSelectedFromUrl(false);
+    replaceRadarSearchParams((params) => {
+      params.delete("callsign");
+      params.delete("follow");
+    });
+  }, [replaceRadarSearchParams]);
 
   useEffect(() => {
     if (!fullFlightFilter || autoSelectedFromUrl || aircrafts.length === 0)
@@ -1178,7 +1184,7 @@ function ATCPageContent() {
 
           {!isUiHidden && isMapLoaded && !isPhone && (
             <div
-              className={`pointer-events-auto h-11 ${isTablet ? "w-64" : "w-80 lg:w-96"}`}
+              className={`pointer-events-auto h-11 -translate-y-1 translate-x-2 ${isTablet ? "w-64" : "w-80 lg:w-96"}`}
             >
               <SearchBar
                 searchTerm={searchTerm}
@@ -1585,9 +1591,7 @@ function ATCPageContent() {
           replayState={replayState}
           followAircraft={isFollowMode ? selectedAircrafts[0] : undefined}
           onConflictReview={handleConflictReview}
-          setResetMapView={(fn) => {
-            resetMapViewRef.current = fn;
-          }}
+          onResetMapView={handleMapReset}
           hideUi={isUiHidden}
           importedFlightPlan={importedFlightPlan}
           flightDisplayModeRequest={flightDisplayMode}
@@ -1691,11 +1695,6 @@ function ATCPageContent() {
         <ControlDock
           side="right"
           isMobile={isMobile}
-          bottomAction={{
-            icon: <RotateCcw size={18} strokeWidth={1.8} />,
-            label: "Reset map view",
-            onClick: handleResetMapView,
-          }}
           sections={dockSections}
         />
       )}

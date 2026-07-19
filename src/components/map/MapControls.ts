@@ -9,6 +9,10 @@ const tooltipHideTimerMap = new WeakMap<HTMLDivElement, ReturnType<
 
 // SVG Icons for map controls (matching theme style)
 const ICONS = {
+  reset: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M3 12a9 9 0 1 0 3-6.7"/>
+    <path d="M3 4v5h5"/>
+  </svg>`,
   zoomIn: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M12 5v14"/>
     <path d="M5 12h14"/>
@@ -147,6 +151,21 @@ abstract class IconButtonControl extends L.Control {
   private handleClick = () => {
     this.onButtonClick();
   };
+}
+
+export class ResetMapViewControl extends IconButtonControl {
+  protected title = "Reset map view";
+  protected iconHtml = ICONS.reset;
+  private readonly resetMapView: () => void;
+
+  constructor(options: L.ControlOptions, resetMapView: () => void) {
+    super(options);
+    this.resetMapView = resetMapView;
+  }
+
+  protected onButtonClick() {
+    this.resetMapView();
+  }
 }
 
 export class ZoomInControl extends IconButtonControl {
