@@ -284,6 +284,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [isMobile, selectedAircraftIds]);
 
   const clearHistoryPolylineRef = useRef<(() => void) | null>(null);
+  const clearFlightPlansRef = useRef<(() => void) | null>(null);
+
+  const handleResetMapView = useCallback(() => {
+    clearFlightPlansRef.current?.();
+    onResetMapView?.();
+  }, [onResetMapView]);
 
   const currentLayerState = useMemo<MapLayerPresetState>(
     () => ({
@@ -814,7 +820,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setOSMControlRef: osmControlRef,
     setOpenAIPControlRef: openAIPControlRef,
     setSettingsControlRef: settingsControlRef,
-    onResetMapView,
+    onResetMapView: handleResetMapView,
     isMobile,
     hideUi,
   });
@@ -826,6 +832,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     clearImportedFlightPlan,
     currentSelectedAircraftRef,
     clearHistoryPolyline,
+    clearFlightPlans,
     redrawFlightPlans,
   } = useFlightPlanDrawing({
     mapInstance: mapRefs.mapInstance,
@@ -839,6 +846,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   // Update the ref so handleMapClick can clear the polyline
   clearHistoryPolylineRef.current = clearHistoryPolyline;
+  clearFlightPlansRef.current = clearFlightPlans;
 
   useEffect(() => {
     redrawFlightPlans();

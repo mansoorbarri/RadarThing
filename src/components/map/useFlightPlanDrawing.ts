@@ -25,6 +25,16 @@ const FLIGHT_PATH_COLORS = [
   "#22b8cf",
 ];
 
+function getRenderSignature(
+  isRadarMode: boolean,
+  showFlightPlanWaypoints: boolean,
+  airports: ArrivalAirport[],
+) {
+  return `${isRadarMode}:${showFlightPlanWaypoints}:${airports
+    .map((airport) => `${airport.icao}:${airport.lat}:${airport.lon}`)
+    .join("|")}`;
+}
+
 interface FlightPlanWaypointLike {
   ident?: string;
   type?: string;
@@ -126,6 +136,12 @@ export const useFlightPlanDrawing = ({
   const currentSelectedAircraftRef = useRef<string | null>(null);
   const currentSelectedIdsRef = useRef<Set<string>>(new Set());
   const lastDrawnAircraftsRef = useRef<PositionUpdate[]>([]);
+  const lastRenderedStyleRef = useRef("");
+  const renderSignature = getRenderSignature(
+    isRadarMode,
+    showFlightPlanWaypoints,
+    airports,
+  );
 
   const drawImportedFlightPlan = useCallback(
     (flightPlan: ImportedFlightPlan, shouldZoom = true) => {
@@ -224,6 +240,7 @@ export const useFlightPlanDrawing = ({
       flightPlanLayerGroup.current.clearLayers();
       historyLayerGroup.current.clearLayers();
       lastDrawnAircraftsRef.current = aircrafts;
+      lastRenderedStyleRef.current = renderSignature;
 
       currentSelectedIdsRef.current = new Set(
         aircrafts.map((aircraft) => aircraft.callsign || aircraft.id),
@@ -405,6 +422,7 @@ export const useFlightPlanDrawing = ({
       historyLayerGroup,
       isRadarMode,
       mapInstance,
+      renderSignature,
       showFlightPlanWaypoints,
     ],
   );
@@ -419,13 +437,24 @@ export const useFlightPlanDrawing = ({
   const clearHistoryPolyline = useCallback(() => {
     currentSelectedIdsRef.current.clear();
     lastDrawnAircraftsRef.current = [];
+    lastRenderedStyleRef.current = "";
   }, []);
 
+  const clearFlightPlans = useCallback(() => {
+    flightPlanLayerGroup.current?.clearLayers();
+    historyLayerGroup.current?.clearLayers();
+    currentSelectedAircraftRef.current = null;
+    clearHistoryPolyline();
+  }, [clearHistoryPolyline, flightPlanLayerGroup, historyLayerGroup]);
+
   const redrawFlightPlans = useCallback(() => {
-    if (lastDrawnAircraftsRef.current.length > 0) {
+    if (
+      lastDrawnAircraftsRef.current.length > 0 &&
+      lastRenderedStyleRef.current !== renderSignature
+    ) {
       drawMultipleFlightPlans(lastDrawnAircraftsRef.current, false);
     }
-  }, [drawMultipleFlightPlans]);
+  }, [drawMultipleFlightPlans, renderSignature]);
 
   return {
     drawFlightPlan,
@@ -434,6 +463,7 @@ export const useFlightPlanDrawing = ({
     clearImportedFlightPlan,
     currentSelectedAircraftRef,
     clearHistoryPolyline,
+    clearFlightPlans,
     redrawFlightPlans,
   };
 };
