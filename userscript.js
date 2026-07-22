@@ -30,7 +30,7 @@
       .slice(0, 4);
   }
 
-  function getUserIdentifier() {
+  function getUserIdentifier(geofs = window.geofs) {
     return (
       geofs?.userRecord?.googleid ||
       sanitizeCallsign(geofs?.userRecord?.callsign)
@@ -165,6 +165,7 @@
 
   // Command execution handlers
   function executeCommand(cmd) {
+    const geofs = window.geofs;
     if (!geofs?.autopilot || !geofs?.aircraft?.instance) {
       console.warn("[RadarThing] Cannot execute command - GeoFS not ready");
       return;
@@ -367,9 +368,10 @@
 
   // Poll for commands from RadarThing server
   async function pollCommands() {
+    const geofs = window.geofs;
     if (!geofs?.userRecord) return;
 
-    const id = getUserIdentifier();
+    const id = getUserIdentifier(geofs);
     if (!id) return;
 
     try {
@@ -422,12 +424,13 @@
 
   // End flight and save to database immediately
   async function endFlight() {
+    const geofs = window.geofs;
     if (!geofs?.userRecord) {
       console.warn("[RadarThing] Cannot end flight - no userRecord");
       return;
     }
 
-    const id = getUserIdentifier();
+    const id = getUserIdentifier(geofs);
     if (!id) {
       console.warn("[RadarThing] Cannot end flight - no id");
       return;
@@ -468,6 +471,7 @@
 
   function calculateAGL() {
     try {
+      const geofs = window.geofs;
       const altitudeMSL = geofs?.animation?.values?.altitude;
       const groundElevationFeet = geofs?.animation?.values?.groundElevationFeet;
       const aircraft = geofs?.aircraft?.instance;
@@ -486,6 +490,7 @@
   }
 
   setInterval(async () => {
+    const geofs = window.geofs;
     if (!info.active || !geofs?.aircraft?.instance) return;
     if (positionUpdateInFlight) return;
 
@@ -528,7 +533,7 @@
       }
 
       const payload = {
-        id: getUserIdentifier(),
+        id: getUserIdentifier(geofs),
         googleId: geofs?.userRecord?.googleid || null,
         source: "radarthing",
         callsign: sanitizeCallsign(geofs?.userRecord?.callsign),
