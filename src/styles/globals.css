@@ -1292,3 +1292,8 @@ body {
 .animate-scale-in {
   animation: scaleIn 0.2s ease-out both;
 }
+.leaflet-aircraft-icon:focus,
+.leaflet-aircraft-icon:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
