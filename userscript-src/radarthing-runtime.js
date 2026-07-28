@@ -1851,22 +1851,26 @@
     flightUI.innerHTML = `
       <div id="${FLIGHT_UI_HEADER_ID}" style="
         position:relative;
-        text-align:center;
+        display:flex;
+        align-items:center;
+        gap:8px;
         margin-bottom:12px;
-        font-size:11px;
-        letter-spacing:0.18em;
-        text-transform:uppercase;
-        color:#22d3ee;
-        font-weight:600;
       ">
-        ATC Flight Info
+        <span style="
+          flex:1;
+          min-width:0;
+          text-align:left;
+          font-size:11px;
+          letter-spacing:0.14em;
+          text-transform:uppercase;
+          color:#22d3ee;
+          font-weight:600;
+          white-space:nowrap;
+        ">RadarThing</span>
         <div style="
-          position:absolute;
-          top:50%;
-          left:-4px;
-          transform:translateY(-50%);
           display:flex;
           gap:4px;
+          flex-shrink:0;
         ">
           <button id="${FLIGHT_UI_MOVE_BTN_ID}" type="button" aria-pressed="false" title="Enable panel moving" style="
             padding:4px 6px;
@@ -1898,12 +1902,8 @@
         ${
           isMobile
             ? `<button id="${MOBILE_UI_CLOSE_ID}" type="button" aria-label="Close ATC flight info" title="Close" style="
-                position:absolute;
-                top:50%;
-                right:-4px;
                 width:28px;
                 height:28px;
-                transform:translateY(-50%);
                 display:grid;
                 place-items:center;
                 padding:0;
