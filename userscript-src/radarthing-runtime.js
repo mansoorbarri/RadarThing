@@ -24,10 +24,6 @@
   const SIGN_IN_NOTICE_ID = "atc-sign-in-notice";
   const KEYBIND_BTN_ID = "atc-keybind-btn";
   const CHARTS_KEYBIND_BTN_ID = "atc-charts-keybind-btn";
-  const FLIGHT_UI_MOVE_BTN_ID = "atc-flight-ui-move-btn";
-  const FLIGHT_UI_RESET_BTN_ID = "atc-flight-ui-reset-btn";
-  const FLIGHT_UI_HEADER_ID = "atc-flight-ui-header";
-  const FLIGHT_UI_POS_KEY = "geofs-atc-flight-ui-position";
   const RADAR_SETTINGS_HEADER_ID = "atc-radar-settings-header";
   const RADAR_SETTINGS_BODY_ID = "atc-radar-settings-body";
   const RADAR_SETTINGS_ARROW_ID = "atc-radar-settings-arrow";
@@ -145,142 +141,6 @@
     }
   }
 
-  function loadFlightUiPosition() {
-    try {
-      const position = JSON.parse(localStorage.getItem(FLIGHT_UI_POS_KEY));
-      if (
-        !position ||
-        !Number.isFinite(position.left) ||
-        !Number.isFinite(position.top)
-      ) {
-        return null;
-      }
-      return position;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  function clampFlightUiToViewport() {
-    if (!flightUI || !flightUI.style.left) return;
-
-    const margin = 12;
-    const maxLeft = Math.max(
-      margin,
-      window.innerWidth - flightUI.offsetWidth - margin,
-    );
-    const maxTop = Math.max(
-      margin,
-      window.innerHeight - flightUI.offsetHeight - margin,
-    );
-    const left = parseFloat(flightUI.style.left) || margin;
-    const top = parseFloat(flightUI.style.top) || margin;
-
-    flightUI.style.left = `${Math.min(Math.max(left, margin), maxLeft)}px`;
-    flightUI.style.top = `${Math.min(Math.max(top, margin), maxTop)}px`;
-  }
-
-  function saveFlightUiPosition() {
-    if (!flightUI || !flightUI.style.left) return;
-    localStorage.setItem(
-      FLIGHT_UI_POS_KEY,
-      JSON.stringify({
-        left: parseFloat(flightUI.style.left),
-        top: parseFloat(flightUI.style.top),
-      }),
-    );
-  }
-
-  function makeFlightUiMovable() {
-    const moveButton = document.getElementById(FLIGHT_UI_MOVE_BTN_ID);
-    const resetButton = document.getElementById(FLIGHT_UI_RESET_BTN_ID);
-    const header = document.getElementById(FLIGHT_UI_HEADER_ID);
-    if (!moveButton || !resetButton || !header || !flightUI) return;
-
-    let moveMode = false;
-    let dragging = false;
-    let pointerId = null;
-    let offsetX = 0;
-    let offsetY = 0;
-
-    const updateMoveMode = () => {
-      moveButton.textContent = moveMode ? "Done" : "Move panel";
-      moveButton.setAttribute("aria-pressed", String(moveMode));
-      moveButton.title = moveMode
-        ? "Lock panel in place"
-        : "Enable panel moving";
-      moveButton.style.background = moveMode
-        ? "rgba(34,211,238,0.22)"
-        : "rgba(255,255,255,0.06)";
-      moveButton.style.borderColor = moveMode
-        ? "rgba(34,211,238,0.55)"
-        : "rgba(255,255,255,0.12)";
-      moveButton.style.color = moveMode ? "#a5f3fc" : "#94a3b8";
-      header.style.cursor = moveMode ? "grab" : "default";
-      header.title = moveMode ? "Drag this header to move the panel" : "";
-    };
-
-    moveButton.addEventListener("click", (event) => {
-      event.stopPropagation();
-      moveMode = !moveMode;
-      updateMoveMode();
-    });
-
-    resetButton.addEventListener("click", (event) => {
-      event.stopPropagation();
-      moveMode = false;
-      flightUI.style.left = "";
-      flightUI.style.top = "72px";
-      flightUI.style.right = "16px";
-      localStorage.removeItem(FLIGHT_UI_POS_KEY);
-      updateMoveMode();
-    });
-
-    header.addEventListener("pointerdown", (event) => {
-      if (!moveMode || event.target.closest("button")) return;
-
-      const rect = flightUI.getBoundingClientRect();
-      flightUI.style.left = `${rect.left}px`;
-      flightUI.style.top = `${rect.top}px`;
-      flightUI.style.right = "auto";
-      offsetX = event.clientX - rect.left;
-      offsetY = event.clientY - rect.top;
-      dragging = true;
-      pointerId = event.pointerId;
-      header.setPointerCapture(pointerId);
-      header.style.cursor = "grabbing";
-      event.preventDefault();
-    });
-
-    header.addEventListener("pointermove", (event) => {
-      if (!dragging || event.pointerId !== pointerId) return;
-      flightUI.style.left = `${event.clientX - offsetX}px`;
-      flightUI.style.top = `${event.clientY - offsetY}px`;
-      clampFlightUiToViewport();
-    });
-
-    const stopDragging = (event) => {
-      if (!dragging || (event && event.pointerId !== pointerId)) return;
-      dragging = false;
-      pointerId = null;
-      if (header.hasPointerCapture(event?.pointerId)) {
-        header.releasePointerCapture(event.pointerId);
-      }
-      saveFlightUiPosition();
-      updateMoveMode();
-    };
-
-    header.addEventListener("pointerup", stopDragging);
-    header.addEventListener("pointercancel", stopDragging);
-    window.addEventListener("resize", () => {
-      if (!flightUI.style.left) return;
-      clampFlightUiToViewport();
-      saveFlightUiPosition();
-    });
-
-    updateMoveMode();
-  }
-
   function sanitizeFlightCallsign(value) {
     return String(value || "")
       .toUpperCase()
@@ -319,19 +179,11 @@
       session?.arrival || session?.arr,
     );
 
-    if (
-      !currentFlightNo ||
-      !sessionFlightNo ||
-      currentFlightNo !== sessionFlightNo
-    ) {
+    if (!currentFlightNo || !sessionFlightNo || currentFlightNo !== sessionFlightNo) {
       return false;
     }
 
-    if (
-      currentDeparture &&
-      sessionDeparture &&
-      currentDeparture !== sessionDeparture
-    ) {
+    if (currentDeparture && sessionDeparture && currentDeparture !== sessionDeparture) {
       return false;
     }
 
@@ -340,7 +192,10 @@
     }
 
     return Boolean(
-      currentDeparture || sessionDeparture || currentArrival || sessionArrival,
+      currentDeparture ||
+        sessionDeparture ||
+        currentArrival ||
+        sessionArrival,
     );
   }
 
@@ -519,15 +374,11 @@
     const afEl = document.getElementById(AF_INPUT_ID);
 
     if (depEl)
-      depEl.value = String(
-        detail?.departure || detail?.dep || "",
-      ).toUpperCase();
+      depEl.value = String(detail?.departure || detail?.dep || "").toUpperCase();
     if (arrEl)
       arrEl.value = String(detail?.arrival || detail?.arr || "").toUpperCase();
     if (fltEl)
-      fltEl.value = sanitizeFlightCallsign(
-        detail?.flightNo || detail?.flt || "",
-      );
+      fltEl.value = sanitizeFlightCallsign(detail?.flightNo || detail?.flt || "");
     if (sqkEl)
       sqkEl.value = sanitizeSquawk(detail?.squawk || detail?.sqk || "");
     if (afEl) afEl.value = String(detail?.af || "").toUpperCase();
@@ -760,9 +611,8 @@
   function showResumeFlightModal(detail) {
     const modal = ensureResumeFlightModal();
 
-    modal.querySelector("#radarthing-resume-departure").textContent = String(
-      detail?.departure || "???",
-    ).toUpperCase();
+    modal.querySelector("#radarthing-resume-departure").textContent =
+      String(detail?.departure || "???").toUpperCase();
     modal.querySelector("#radarthing-resume-arrival").textContent = String(
       detail?.arrival || "???",
     ).toUpperCase();
@@ -789,8 +639,8 @@
 
     const hasFilledFlightInfo = Boolean(
       document.getElementById(DEP_INPUT_ID)?.value.trim() ||
-      document.getElementById(ARR_INPUT_ID)?.value.trim() ||
-      document.getElementById(FLT_INPUT_ID)?.value.trim(),
+        document.getElementById(ARR_INPUT_ID)?.value.trim() ||
+        document.getElementById(FLT_INPUT_ID)?.value.trim(),
     );
 
     try {
@@ -1841,15 +1691,8 @@
       z-index:999999;
     `;
 
-    const savedFlightUiPosition = loadFlightUiPosition();
-    if (savedFlightUiPosition) {
-      flightUI.style.left = `${savedFlightUiPosition.left}px`;
-      flightUI.style.top = `${savedFlightUiPosition.top}px`;
-      flightUI.style.right = "auto";
-    }
-
     flightUI.innerHTML = `
-      <div id="${FLIGHT_UI_HEADER_ID}" style="
+      <div style="
         position:relative;
         text-align:center;
         margin-bottom:12px;
@@ -1860,41 +1703,6 @@
         font-weight:600;
       ">
         ATC Flight Info
-        <div style="
-          position:absolute;
-          top:50%;
-          left:-4px;
-          transform:translateY(-50%);
-          display:flex;
-          gap:4px;
-        ">
-          <button id="${FLIGHT_UI_MOVE_BTN_ID}" type="button" aria-pressed="false" title="Enable panel moving" style="
-            padding:4px 6px;
-            border:1px solid rgba(255,255,255,0.12);
-            border-radius:6px;
-            background:rgba(255,255,255,0.06);
-            color:#94a3b8;
-            font-size:8px;
-            font-weight:600;
-            letter-spacing:0.08em;
-            line-height:1;
-            text-transform:uppercase;
-            cursor:pointer;
-          ">Move panel</button>
-          <button id="${FLIGHT_UI_RESET_BTN_ID}" type="button" title="Reset panel position" style="
-            padding:4px 6px;
-            border:1px solid rgba(255,255,255,0.12);
-            border-radius:6px;
-            background:rgba(255,255,255,0.06);
-            color:#94a3b8;
-            font-size:8px;
-            font-weight:600;
-            letter-spacing:0.08em;
-            line-height:1;
-            text-transform:uppercase;
-            cursor:pointer;
-          ">Reset</button>
-        </div>
         ${
           isMobile
             ? `<button id="${MOBILE_UI_CLOSE_ID}" type="button" aria-label="Close ATC flight info" title="Close" style="
@@ -2084,18 +1892,13 @@
     `;
 
     document.body.appendChild(flightUI);
-    clampFlightUiToViewport();
-    makeFlightUiMovable();
     updateSignInNotice();
 
     if (isMobile) {
       mobileFlightUIOpenButton = document.createElement("button");
       mobileFlightUIOpenButton.id = MOBILE_UI_OPEN_ID;
       mobileFlightUIOpenButton.type = "button";
-      mobileFlightUIOpenButton.setAttribute(
-        "aria-label",
-        "Open ATC flight info",
-      );
+      mobileFlightUIOpenButton.setAttribute("aria-label", "Open ATC flight info");
       mobileFlightUIOpenButton.title = "Open ATC flight info";
       mobileFlightUIOpenButton.textContent = "‹";
       mobileFlightUIOpenButton.style.cssText = `
