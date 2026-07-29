@@ -537,10 +537,10 @@ export const getProDiscordRoleMembers = query({
   handler: async (ctx, args) => {
     requireSystem(ctx, args.systemSecret);
 
-    const members: Array<{
+    const members: {
       discordUserId: string | null;
       discordUsername: string | null;
-    }> = [];
+    }[] = [];
     for await (const user of ctx.db.query("users")) {
       if (!user.isDeleted && hasEffectiveProAccess(user)) {
         members.push({
