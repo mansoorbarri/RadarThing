@@ -288,6 +288,17 @@ async function validateVirtualAirlineInput(data: {
     };
   }
 
+  const ownedVirtualAirlines = await convex.query(api.virtualAirlines.getAll);
+  if (
+    ownedVirtualAirlines.some(
+      (virtualAirline) =>
+        virtualAirline.adminClerkId === data.adminClerkId &&
+        virtualAirline.id !== data.id,
+    )
+  ) {
+    return { ok: false as const, error: "A user can only own one VA" };
+  }
+
   const normalizedWebsite = normalizeWebsiteInput(data.website);
   if (!normalizedWebsite.ok) {
     return { ok: false as const, error: normalizedWebsite.error };

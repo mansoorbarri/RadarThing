@@ -137,12 +137,19 @@ export const add = mutation({
       );
     }
 
-    const existingUserMembership = await ctx.db
+    const existingUserMemberships = await ctx.db
       .query("virtualAirlineMembers")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    const ownedVirtualAirline = await ctx.db
+      .query("virtualAirlines")
+      .withIndex("by_adminClerkId", (q) =>
+        q.eq("adminClerkId", selectedUser.clerkId),
+      )
       .first();
 
-    if (existingUserMembership) {
+    if (existingUserMemberships.length > 0 && !ownedVirtualAirline) {
       throw new Error("Pilot is already assigned to another VA");
     }
 
