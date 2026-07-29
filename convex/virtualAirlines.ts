@@ -33,6 +33,28 @@ function validateRegistrationInput(args: {
   return { name, callsignPrefix };
 }
 
+async function ensureSingleVirtualAirlineOwner(
+  ctx: any,
+  adminClerkId: string,
+  excludedVirtualAirlineId?: string,
+) {
+  const ownedVirtualAirlines = await ctx.db
+    .query("virtualAirlines")
+    .withIndex("by_adminClerkId", (q: any) =>
+      q.eq("adminClerkId", adminClerkId),
+    )
+    .collect();
+
+  if (
+    ownedVirtualAirlines.some(
+      (virtualAirline: Doc<"virtualAirlines">) =>
+        virtualAirline._id !== excludedVirtualAirlineId,
+    )
+  ) {
+    throw new Error("A user can only own one VA");
+  }
+}
+
 function normalizeAircraftTypeKey(aircraftType: string): string {
   const cleaned = aircraftType.trim().toUpperCase();
   const learjetMatch =
@@ -239,15 +261,29 @@ export const getFlightContext = query({
       };
     }
 
-    const directMembership = await ctx.db
+    const matchingVirtualAirline = await getMatchingVirtualAirline(
+      ctx,
+      args.callsign,
+    );
+    if (!matchingVirtualAirline) {
+      return {
+        virtualAirline: null,
+        image: null,
+      };
+    }
+
+    const directMemberships = await ctx.db
       .query("virtualAirlineMembers")
       .withIndex("by_googleId", (q) => q.eq("googleId", googleId))
-      .first();
-    let virtualAirlineId = directMembership?.virtualAirlineId ?? null;
+      .collect();
+    const directMembership = directMemberships.find(
+      (membership) =>
+        membership.virtualAirlineId === matchingVirtualAirline._id,
+    );
 
     // Treat the assigned VA owner as an implicit member so new VAs work
     // immediately even before the roster table is populated.
-    if (!virtualAirlineId) {
+    if (!directMembership) {
       const user = await ctx.db
         .query("users")
         .withIndex("by_googleId", (q) => q.eq("googleId", googleId))
@@ -260,28 +296,15 @@ export const getFlightContext = query({
         };
       }
 
-      const matchingVirtualAirline = await getMatchingVirtualAirline(
-        ctx,
-        args.callsign,
-      );
-
-      if (matchingVirtualAirline?.adminClerkId !== user.clerkId) {
+      if (matchingVirtualAirline.adminClerkId !== user.clerkId) {
         return {
           virtualAirline: null,
           image: null,
         };
       }
-
-      virtualAirlineId = matchingVirtualAirline._id;
     }
 
-    const virtualAirline = await ctx.db.get(virtualAirlineId);
-    if (!virtualAirline) {
-      return {
-        virtualAirline: null,
-        image: null,
-      };
-    }
+    const virtualAirline = matchingVirtualAirline;
 
     if (
       !virtualAirline.isActive ||
@@ -348,6 +371,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const actor = await requireAdmin(ctx, { actorClerkId: args.createdBy });
+    await ensureSingleVirtualAirlineOwner(ctx, args.adminClerkId);
     const now = Date.now();
     const id = await ctx.db.insert("virtualAirlines", {
       name: args.name.trim(),
@@ -398,6 +422,8 @@ export const register = mutation({
         "Connect your Discord account to RadarThing before registering a VA",
       );
     }
+
+    await ensureSingleVirtualAirlineOwner(ctx, clerkId);
 
     const { name, callsignPrefix } = validateRegistrationInput(args);
     const existingVirtualAirline = await ctx.db
@@ -454,6 +480,27 @@ export const update = mutation({
         args.isActive !== existing.isActive)
     ) {
       throw new Error("Unauthorized");
+    }
+
+    if (args.adminClerkId !== existing.adminClerkId) {
+      await ensureSingleVirtualAirlineOwner(ctx, args.adminClerkId);
+
+      const formerOwner = await ctx.db
+        .query("users")
+        .withIndex("by_clerkId", (q) => q.eq("clerkId", existing.adminClerkId))
+        .first();
+      if (formerOwner) {
+        const formerOwnerMemberships = await ctx.db
+          .query("virtualAirlineMembers")
+          .withIndex("by_userId", (q) => q.eq("userId", formerOwner._id))
+          .collect();
+
+        if (formerOwnerMemberships.length > 1) {
+          throw new Error(
+            "Remove the former owner's extra VA memberships before transferring ownership",
+          );
+        }
+      }
     }
 
     await ctx.db.patch(args.id, {
