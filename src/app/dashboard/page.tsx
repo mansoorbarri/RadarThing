@@ -186,7 +186,11 @@ export default function DashboardPage() {
       (convexDiscord !== discordUsername ||
         dbUser?.discordUserId !== discordUserId)
     ) {
-      void updateDiscordUsername({ clerkId, discordUsername, discordUserId });
+      void updateDiscordUsername({
+        clerkId,
+        discordUsername: discordUsername ?? undefined,
+        discordUserId,
+      });
     } else if (!discordConnected && (convexDiscord || dbUser?.discordUserId)) {
       void updateDiscordUsername({
         clerkId,

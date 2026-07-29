@@ -22,7 +22,7 @@ export const DEFAULT_RADAR_KEYBINDS: RadarKeybindPreferences = {
   headingMode: "KeyT",
 };
 
-function isSupportedCode(value: string | null): value is string {
+function isSupportedCode(value: string | null | undefined): value is string {
   return Boolean(
     value && /^(Key[A-Z]|Digit[0-9]|F(?:[1-9]|1[0-2]))$/.test(value),
   );
