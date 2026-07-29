@@ -583,7 +583,7 @@ export function VirtualAirlinesTab({
       {/* ── Modal ── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-          <div className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#060b11] shadow-2xl">
+          <div className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-2xl">
             {/* Header */}
             <div className="flex items-start justify-between gap-4 border-b border-white/10 px-6 py-5">
               <div>

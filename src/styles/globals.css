@@ -61,6 +61,50 @@
   --radar-map-tile-filter: brightness(0.6) contrast(1.1) saturate(0.9);
 }
 
+/* Keep theme tokens available to portalled UI (Radix selects, dialogs, etc.).
+ * Page surfaces also declare these values so legacy dark utility classes can be
+ * remapped locally below. */
+.light {
+  --background: oklch(0.975 0.008 235);
+  --foreground: oklch(0.18 0.035 240);
+  --card: oklch(0.995 0.004 230);
+  --card-foreground: oklch(0.18 0.035 240);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.035 240);
+  --primary: oklch(0.55 0.15 220);
+  --primary-foreground: oklch(0.99 0.005 230);
+  --secondary: oklch(0.94 0.02 225);
+  --secondary-foreground: oklch(0.22 0.04 240);
+  --muted: oklch(0.94 0.018 225);
+  --muted-foreground: oklch(0.46 0.035 240);
+  --accent: oklch(0.92 0.04 210);
+  --accent-foreground: oklch(0.22 0.04 240);
+  --destructive: oklch(0.58 0.22 25);
+  --border: oklch(0.86 0.025 235);
+  --input: oklch(0.9 0.025 235);
+  --ring: oklch(0.58 0.16 220);
+  --radar-panel: rgba(255, 255, 255, 0.94);
+  --radar-panel-strong: rgba(248, 252, 255, 0.96);
+  --radar-border: rgba(14, 116, 144, 0.24);
+  --radar-text: rgb(15, 23, 42);
+  --radar-muted: rgb(71, 85, 105);
+  --radar-accent: rgb(2, 132, 199);
+  --radar-map-bg: #dbe8ef;
+  --radar-map-tile-filter: brightness(1.04) contrast(0.96) saturate(0.92);
+}
+
+/* Select content is portalled to document.body, outside page-specific light
+ * mode overrides. Force it to use the document's active semantic tokens. */
+.light [data-slot="select-content"] {
+  background-color: var(--popover) !important;
+  border-color: var(--border) !important;
+  color: var(--popover-foreground) !important;
+}
+
+.light [data-slot="select-item"] {
+  color: var(--popover-foreground) !important;
+}
+
 .light .dashboard-theme-surface,
 .light .admin-theme-surface,
 .light .pilot-theme-surface,
