@@ -484,6 +484,23 @@ export const update = mutation({
 
     if (args.adminClerkId !== existing.adminClerkId) {
       await ensureSingleVirtualAirlineOwner(ctx, args.adminClerkId);
+
+      const formerOwner = await ctx.db
+        .query("users")
+        .withIndex("by_clerkId", (q) => q.eq("clerkId", existing.adminClerkId))
+        .first();
+      if (formerOwner) {
+        const formerOwnerMemberships = await ctx.db
+          .query("virtualAirlineMembers")
+          .withIndex("by_userId", (q) => q.eq("userId", formerOwner._id))
+          .collect();
+
+        if (formerOwnerMemberships.length > 1) {
+          throw new Error(
+            "Remove the former owner's extra VA memberships before transferring ownership",
+          );
+        }
+      }
     }
 
     await ctx.db.patch(args.id, {
