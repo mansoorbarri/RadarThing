@@ -7,6 +7,7 @@ export const AIRCRAFT_IMAGE_REJECTION_REASONS = [
   "Invalid ICAO/IATA",
   "Wrong aircraft in the image",
   "Image too zoomed in.",
+  "Simulator images are not allowed",
 ] as const;
 
 interface RejectModalProps {
