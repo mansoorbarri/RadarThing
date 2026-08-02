@@ -94,7 +94,14 @@ export const useAircraftStream = () => {
 
         // Get all aircraft with their accumulated flight paths
         setAircrafts(activeAircraft.getAll());
-        setOnlineAirports(data.onlineAirports || []);
+
+        // The initial payload includes the complete ATC roster, while traffic
+        // delta payloads normally omit it. Only replace the roster when the
+        // server explicitly sends one so live-ATC markers persist between
+        // aircraft updates.
+        if (Array.isArray(data.onlineAirports)) {
+          setOnlineAirports(data.onlineAirports);
+        }
         setIsLoading(false);
         setError(null);
         setLastMessageAt(receivedAt);
