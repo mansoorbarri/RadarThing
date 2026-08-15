@@ -8,6 +8,7 @@ import { api, convex, getAuthenticatedConvex } from "~/server/convex";
 import { getCurrentAccessContext } from "~/server/access";
 import { env } from "~/env";
 import { getAircraftTypeLookupCandidates } from "~/lib/utils";
+import { mapVirtualAirlineMemberAddError } from "~/lib/virtualAirlineErrors";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 const utapi = new UTApi();
@@ -742,16 +743,7 @@ export async function addVirtualAirlineMember(data: {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Failed to add VA member:", { virtualAirlineId: data.virtualAirlineId, userId: data.userId, error: message });
 
-    if (message.includes("already assigned")) {
-      return { success: false, error: "That pilot is already assigned to another VA" };
-    }
-    if (message.includes("Pilot not found")) {
-      return { success: false, error: "Pilot not found — the user may have deleted their account" };
-    }
-    if (message.includes("Discord")) {
-      return { success: false, error: "This pilot must connect their Discord account before joining a VA" };
-    }
-    return { success: false, error: message || "Failed to add pilot to VA" };
+    return { success: false, error: mapVirtualAirlineMemberAddError(message) };
   }
   revalidatePath("/admin");
   revalidatePath("/va-admin");
