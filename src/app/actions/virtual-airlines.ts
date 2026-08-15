@@ -739,22 +739,28 @@ export async function addVirtualAirlineMember(data: {
       addedBy: access.clerkId,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "";
-    return {
-      success: false,
-      error: message.includes("already assigned")
-        ? "That pilot is already assigned to another VA"
-        : "Failed to add pilot to VA",
-    };
-  }
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Failed to add VA member:", { virtualAirlineId: data.virtualAirlineId, userId: data.userId, error: message });
 
+    if (message.includes("already assigned")) {
+      return { success: false, error: "That pilot is already assigned to another VA" };
+    }
+    if (message.includes("Pilot not found")) {
+      return { success: false, error: "Pilot not found — the user may have deleted their account" };
+    }
+    if (message.includes("Discord")) {
+      return { success: false, error: "This pilot must connect their Discord account before joining a VA" };
+    }
+    return { success: false, error: message || "Failed to add pilot to VA" };
+  }
   revalidatePath("/admin");
   revalidatePath("/va-admin");
   revalidatePath("/radar");
 
   if (!member) {
-    return { success: false, error: "Failed to add pilot to VA" };
-  }
+    console.error("VA member mutation returned null", { virtualAirlineId: data.virtualAirlineId, userId: data.userId });
+    return { success: false, error: "Failed to add pilot to VA — membership could not be created" };
+   }
 
   const refreshedMembers = await authedConvex.query(
     api.virtualAirlineMembers.getByVirtualAirlineId,
