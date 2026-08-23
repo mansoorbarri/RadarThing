@@ -25,6 +25,11 @@ import { api } from "../../../../convex/_generated/api";
 import { Analytics } from "~/lib/analytics";
 import { ChallengeDescription } from "~/components/challenges/ChallengeDescription";
 import {
+  AIRCRAFT_CATEGORY_LABELS,
+  AIRCRAFT_CATEGORY_VALUES,
+  type AircraftCategory,
+} from "~/lib/aircraftCategories";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -50,6 +55,9 @@ type ChallengeRuleType =
   | "flight_count"
   | "min_duration"
   | "min_distance"
+  | "max_duration"
+  | "max_distance"
+  | "aircraft_category"
   | "manual";
 type ChallengeRuleScope = "challenge" | "each_flight";
 type ChallengeAdminSectionId =
@@ -83,10 +91,13 @@ interface ChallengeRuleForm {
   targetDepartureAirport: string;
   targetArrivalAirport: string;
   targetAircraftType: string;
+  targetAircraftCategories: AircraftCategory[];
   requiredAirportCount: string;
   requiredFlightCount: string;
   minDurationMinutes: string;
   minDistanceNm: string;
+  maxDurationMinutes: string;
+  maxDistanceNm: string;
 }
 
 interface ChallengeForm {
@@ -117,8 +128,13 @@ const challengeRuleTypeSchema = z.union([
   z.literal("flight_count"),
   z.literal("min_duration"),
   z.literal("min_distance"),
+  z.literal("max_duration"),
+  z.literal("max_distance"),
+  z.literal("aircraft_category"),
   z.literal("manual"),
 ]);
+
+const aircraftCategorySchema = z.enum(AIRCRAFT_CATEGORY_VALUES);
 
 const optionalNumberSchema = z.preprocess(
   (value) =>
@@ -134,10 +150,13 @@ const challengeRulePayloadSchema = z.object({
   targetDepartureAirport: z.string().trim().toUpperCase().optional(),
   targetArrivalAirport: z.string().trim().toUpperCase().optional(),
   targetAircraftType: z.string().trim().toUpperCase().optional(),
+  targetAircraftCategories: z.array(aircraftCategorySchema).optional(),
   requiredAirportCount: optionalNumberSchema,
   requiredFlightCount: optionalNumberSchema,
   minDurationMinutes: optionalNumberSchema,
   minDistanceNm: optionalNumberSchema,
+  maxDurationMinutes: optionalNumberSchema,
+  maxDistanceNm: optionalNumberSchema,
 });
 
 const challengePayloadSchema = z
@@ -160,10 +179,13 @@ const challengePayloadSchema = z
     targetDepartureAirport: z.string().trim().toUpperCase().optional(),
     targetArrivalAirport: z.string().trim().toUpperCase().optional(),
     targetAircraftType: z.string().trim().toUpperCase().optional(),
+    targetAircraftCategories: z.array(aircraftCategorySchema).optional(),
     requiredAirportCount: optionalNumberSchema,
     requiredFlightCount: optionalNumberSchema,
     minDurationMinutes: optionalNumberSchema,
     minDistanceNm: optionalNumberSchema,
+    maxDurationMinutes: optionalNumberSchema,
+    maxDistanceNm: optionalNumberSchema,
     rules: z.array(challengeRulePayloadSchema).min(1).max(8),
     startAt: z
       .number({ invalid_type_error: "Challenge start time is invalid" })
@@ -259,6 +281,18 @@ const challengePayloadSchema = z
       }
 
       if (
+        rule.ruleType === "aircraft_category" &&
+        (!rule.targetAircraftCategories ||
+          rule.targetAircraftCategories.length === 0)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Select at least one aircraft category",
+          path: ["rules", index, "targetAircraftCategories"],
+        });
+      }
+
+      if (
         rule.ruleType === "visit_airport_count" &&
         (!rule.requiredAirportCount || rule.requiredAirportCount <= 0)
       ) {
@@ -326,6 +360,41 @@ const challengePayloadSchema = z
           path: ["rules", index, "minDistanceNm"],
         });
       }
+
+      if (
+        (rule.ruleType === "max_duration" ||
+          rule.ruleType === "max_distance" ||
+          rule.ruleType === "aircraft_category") &&
+        rule.scope !== "each_flight"
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "This rule must apply to each counted flight",
+          path: ["rules", index, "scope"],
+        });
+      }
+
+      if (
+        rule.ruleType === "max_duration" &&
+        (!rule.maxDurationMinutes || rule.maxDurationMinutes <= 0)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Maximum duration rules need a duration above 0",
+          path: ["rules", index, "maxDurationMinutes"],
+        });
+      }
+
+      if (
+        rule.ruleType === "max_distance" &&
+        (!rule.maxDistanceNm || rule.maxDistanceNm <= 0)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Maximum distance rules need a distance above 0",
+          path: ["rules", index, "maxDistanceNm"],
+        });
+      }
     }
   });
 
@@ -360,16 +429,24 @@ function createInitialRule(
 ): ChallengeRuleForm {
   return {
     ruleType,
-    scope: "challenge",
+    scope:
+      ruleType === "max_duration" ||
+      ruleType === "max_distance" ||
+      ruleType === "aircraft_category"
+        ? "each_flight"
+        : "challenge",
     targetAirport: "",
     targetAirports: "",
     targetDepartureAirport: "",
     targetArrivalAirport: "",
     targetAircraftType: "",
+    targetAircraftCategories: [],
     requiredAirportCount: "",
     requiredFlightCount: "",
     minDurationMinutes: "",
     minDistanceNm: "",
+    maxDurationMinutes: "",
+    maxDistanceNm: "",
   };
 }
 
@@ -381,6 +458,14 @@ function canRuleApplyToEachFlight(ruleType: ChallengeRuleType) {
   );
 }
 
+function mustRuleApplyToEachFlight(ruleType: ChallengeRuleType) {
+  return (
+    ruleType === "max_duration" ||
+    ruleType === "max_distance" ||
+    ruleType === "aircraft_category"
+  );
+}
+
 function ruleFormFromChallengeRule(rule: {
   ruleType: ChallengeRuleType;
   scope?: ChallengeRuleScope | null;
@@ -389,10 +474,13 @@ function ruleFormFromChallengeRule(rule: {
   targetDepartureAirport: string | null;
   targetArrivalAirport: string | null;
   targetAircraftType: string | null;
+  targetAircraftCategories?: AircraftCategory[] | null;
   requiredAirportCount: number | null;
   requiredFlightCount: number | null;
   minDurationMinutes: number | null;
   minDistanceNm: number | null;
+  maxDurationMinutes?: number | null;
+  maxDistanceNm?: number | null;
 }) {
   return {
     ruleType: rule.ruleType,
@@ -402,6 +490,7 @@ function ruleFormFromChallengeRule(rule: {
     targetDepartureAirport: rule.targetDepartureAirport ?? "",
     targetArrivalAirport: rule.targetArrivalAirport ?? "",
     targetAircraftType: rule.targetAircraftType ?? "",
+    targetAircraftCategories: rule.targetAircraftCategories ?? [],
     requiredAirportCount:
       rule.requiredAirportCount !== null
         ? String(rule.requiredAirportCount)
@@ -412,6 +501,9 @@ function ruleFormFromChallengeRule(rule: {
       rule.minDurationMinutes !== null ? String(rule.minDurationMinutes) : "",
     minDistanceNm:
       rule.minDistanceNm !== null ? String(rule.minDistanceNm) : "",
+    maxDurationMinutes:
+      rule.maxDurationMinutes != null ? String(rule.maxDurationMinutes) : "",
+    maxDistanceNm: rule.maxDistanceNm != null ? String(rule.maxDistanceNm) : "",
   };
 }
 
@@ -431,12 +523,20 @@ function parseAirportList(value: string) {
 function ruleFormToPayload(rule: ChallengeRuleForm) {
   return {
     ruleType: rule.ruleType,
-    scope: canRuleApplyToEachFlight(rule.ruleType) ? rule.scope : "challenge",
+    scope: mustRuleApplyToEachFlight(rule.ruleType)
+      ? "each_flight"
+      : canRuleApplyToEachFlight(rule.ruleType)
+        ? rule.scope
+        : "challenge",
     targetAirport: rule.targetAirport || undefined,
     targetAirports: parseAirportList(rule.targetAirports),
     targetDepartureAirport: rule.targetDepartureAirport || undefined,
     targetArrivalAirport: rule.targetArrivalAirport || undefined,
     targetAircraftType: rule.targetAircraftType || undefined,
+    targetAircraftCategories:
+      rule.targetAircraftCategories.length > 0
+        ? rule.targetAircraftCategories
+        : undefined,
     requiredAirportCount: rule.requiredAirportCount
       ? Number(rule.requiredAirportCount)
       : undefined,
@@ -447,6 +547,10 @@ function ruleFormToPayload(rule: ChallengeRuleForm) {
       ? Number(rule.minDurationMinutes)
       : undefined,
     minDistanceNm: rule.minDistanceNm ? Number(rule.minDistanceNm) : undefined,
+    maxDurationMinutes: rule.maxDurationMinutes
+      ? Number(rule.maxDurationMinutes)
+      : undefined,
+    maxDistanceNm: rule.maxDistanceNm ? Number(rule.maxDistanceNm) : undefined,
   };
 }
 
@@ -498,10 +602,13 @@ function describeRule(challenge: {
     targetDepartureAirport: string | null;
     targetArrivalAirport: string | null;
     targetAircraftType: string | null;
+    targetAircraftCategories?: AircraftCategory[] | null;
     requiredAirportCount: number | null;
     requiredFlightCount: number | null;
     minDurationMinutes: number | null;
     minDistanceNm: number | null;
+    maxDurationMinutes?: number | null;
+    maxDistanceNm?: number | null;
   }[];
 }) {
   if (challenge.mode === "manual") return "Manual review challenge";
@@ -522,10 +629,13 @@ function describeSingleRule(rule: {
   targetDepartureAirport: string | null;
   targetArrivalAirport: string | null;
   targetAircraftType: string | null;
+  targetAircraftCategories?: AircraftCategory[] | null;
   requiredAirportCount: number | null;
   requiredFlightCount: number | null;
   minDurationMinutes: number | null;
   minDistanceNm: number | null;
+  maxDurationMinutes?: number | null;
+  maxDistanceNm?: number | null;
 }) {
   const prefix = rule.scope === "each_flight" ? "Each counted flight: " : "";
   switch (rule.ruleType) {
@@ -543,12 +653,20 @@ function describeSingleRule(rule: {
       return `${prefix}Route ${rule.targetDepartureAirport} -> ${rule.targetArrivalAirport}`;
     case "aircraft_type":
       return `${prefix}Aircraft ${rule.targetAircraftType}`;
+    case "aircraft_category":
+      return `${prefix}${(rule.targetAircraftCategories ?? [])
+        .map((category) => AIRCRAFT_CATEGORY_LABELS[category])
+        .join(" or ")}`;
     case "flight_count":
       return `${prefix}Complete ${rule.requiredFlightCount} flights`;
     case "min_duration":
       return `${prefix}At least ${rule.minDurationMinutes} minutes`;
     case "min_distance":
       return `${prefix}At least ${rule.minDistanceNm} nm`;
+    case "max_duration":
+      return `${prefix}At most ${rule.maxDurationMinutes} minutes`;
+    case "max_distance":
+      return `${prefix}At most ${rule.maxDistanceNm} nm`;
     default:
       return "Manual review challenge";
   }
@@ -658,10 +776,13 @@ export function ChallengesTab({
               targetDepartureAirport: challenge.targetDepartureAirport,
               targetArrivalAirport: challenge.targetArrivalAirport,
               targetAircraftType: challenge.targetAircraftType,
+              targetAircraftCategories: challenge.targetAircraftCategories,
               requiredAirportCount: challenge.requiredAirportCount,
               requiredFlightCount: challenge.requiredFlightCount,
               minDurationMinutes: challenge.minDurationMinutes,
               minDistanceNm: challenge.minDistanceNm,
+              maxDurationMinutes: challenge.maxDurationMinutes,
+              maxDistanceNm: challenge.maxDistanceNm,
             },
           ];
 
@@ -891,9 +1012,7 @@ export function ChallengesTab({
       return (
         <>
           <label className="space-y-2">
-            <span className="text-sm text-slate-400">
-              Target airport ICAOs
-            </span>
+            <span className="text-sm text-slate-400">Target airport ICAOs</span>
             <textarea
               value={rule.targetAirports}
               onChange={(event) =>
@@ -925,7 +1044,9 @@ export function ChallengesTab({
                   requiredAirportCount: event.target.value,
                 })
               }
-              placeholder={targetAirportCount ? String(targetAirportCount) : "3"}
+              placeholder={
+                targetAirportCount ? String(targetAirportCount) : "3"
+              }
               className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
             />
           </label>
@@ -984,6 +1105,49 @@ export function ChallengesTab({
       );
     }
 
+    if (rule.ruleType === "aircraft_category") {
+      return (
+        <fieldset className="space-y-2 md:col-span-2">
+          <legend className="text-sm text-slate-400">
+            Accepted aircraft categories
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {AIRCRAFT_CATEGORY_VALUES.map((category) => {
+              const isSelected =
+                rule.targetAircraftCategories.includes(category);
+
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() =>
+                    updateRule(index, {
+                      targetAircraftCategories: isSelected
+                        ? rule.targetAircraftCategories.filter(
+                            (value) => value !== category,
+                          )
+                        : [...rule.targetAircraftCategories, category],
+                    })
+                  }
+                  className={`cursor-pointer rounded-full border px-3 py-2 text-sm transition-colors ${
+                    isSelected
+                      ? "border-cyan-400/50 bg-cyan-400/15 text-cyan-100"
+                      : "border-white/10 bg-black/30 text-slate-400 hover:border-white/20 hover:text-slate-200"
+                  }`}
+                >
+                  {AIRCRAFT_CATEGORY_LABELS[category]}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-slate-500">
+            A flight can match any selected category. Categories may overlap.
+          </p>
+        </fieldset>
+      );
+    }
+
     if (rule.ruleType === "flight_count") {
       return (
         <label className="space-y-2">
@@ -1034,6 +1198,48 @@ export function ChallengesTab({
             placeholder="500"
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
           />
+        </label>
+      );
+    }
+
+    if (rule.ruleType === "max_duration") {
+      return (
+        <label className="space-y-2">
+          <span className="text-sm text-slate-400">Maximum minutes</span>
+          <input
+            type="number"
+            min="1"
+            value={rule.maxDurationMinutes}
+            onChange={(event) =>
+              updateRule(index, { maxDurationMinutes: event.target.value })
+            }
+            placeholder="90"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+          />
+          <span className="block text-xs text-slate-500">
+            Flights without recorded duration data will not count.
+          </span>
+        </label>
+      );
+    }
+
+    if (rule.ruleType === "max_distance") {
+      return (
+        <label className="space-y-2">
+          <span className="text-sm text-slate-400">Maximum nautical miles</span>
+          <input
+            type="number"
+            min="1"
+            value={rule.maxDistanceNm}
+            onChange={(event) =>
+              updateRule(index, { maxDistanceNm: event.target.value })
+            }
+            placeholder="500"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+          />
+          <span className="block text-xs text-slate-500">
+            Flights without a recorded route will not count.
+          </span>
         </label>
       );
     }
@@ -1300,6 +1506,12 @@ export function ChallengesTab({
                                 Specific aircraft
                               </SelectItem>
                               <SelectItem
+                                value="aircraft_category"
+                                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                              >
+                                Aircraft category
+                              </SelectItem>
+                              <SelectItem
                                 value="flight_count"
                                 className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
                               >
@@ -1317,6 +1529,18 @@ export function ChallengesTab({
                               >
                                 Minimum distance
                               </SelectItem>
+                              <SelectItem
+                                value="max_duration"
+                                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                              >
+                                Maximum duration
+                              </SelectItem>
+                              <SelectItem
+                                value="max_distance"
+                                className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
+                              >
+                                Maximum distance
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </label>
@@ -1327,11 +1551,16 @@ export function ChallengesTab({
                           </span>
                           <Select
                             value={
-                              canRuleApplyToEachFlight(rule.ruleType)
-                                ? rule.scope
-                                : "challenge"
+                              mustRuleApplyToEachFlight(rule.ruleType)
+                                ? "each_flight"
+                                : canRuleApplyToEachFlight(rule.ruleType)
+                                  ? rule.scope
+                                  : "challenge"
                             }
-                            disabled={!canRuleApplyToEachFlight(rule.ruleType)}
+                            disabled={
+                              !canRuleApplyToEachFlight(rule.ruleType) ||
+                              mustRuleApplyToEachFlight(rule.ruleType)
+                            }
                             onValueChange={(value) =>
                               updateRule(index, {
                                 scope: value as ChallengeRuleScope,
