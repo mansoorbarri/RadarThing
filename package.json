@@ -24,7 +24,7 @@
   },
   "engines": {
     "node": ">=20 <26",
-    "pnpm": ">=10 <11"
+    "pnpm": ">=11 <12"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.5",
