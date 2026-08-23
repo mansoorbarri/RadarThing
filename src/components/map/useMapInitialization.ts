@@ -351,15 +351,21 @@ export const useMapInitialization = ({
         onResetMapView?.();
       });
       map.addControl(resetMapViewControl);
+      resetMapViewControl._container?.classList.toggle(
+        "map-control-mobile-dock",
+        isMobile,
+      );
       resetMapViewControlInstanceRef.current = resetMapViewControl;
 
-      const zoomInControl = new ZoomInControl({}, mapInstance);
-      map.addControl(zoomInControl);
-      zoomInControlInstanceRef.current = zoomInControl;
+      if (!isMobile) {
+        const zoomInControl = new ZoomInControl({}, mapInstance);
+        map.addControl(zoomInControl);
+        zoomInControlInstanceRef.current = zoomInControl;
 
-      const zoomOutControl = new ZoomOutControl({}, mapInstance);
-      map.addControl(zoomOutControl);
-      zoomOutControlInstanceRef.current = zoomOutControl;
+        const zoomOutControl = new ZoomOutControl({}, mapInstance);
+        map.addControl(zoomOutControl);
+        zoomOutControlInstanceRef.current = zoomOutControl;
+      }
 
       const headingControl = new HeadingModeControl({}, setIsHeadingMode);
       map.addControl(headingControl);
@@ -415,6 +421,7 @@ export const useMapInitialization = ({
   }, [
     hideUi,
     canUseRadarMode,
+    isMobile,
     setIsHeadingMode,
     setHeadingControlRef,
     setIsRadarMode,

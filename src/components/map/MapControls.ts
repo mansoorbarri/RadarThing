@@ -3,9 +3,10 @@ import React from "react";
 import { Analytics } from "~/lib/analytics";
 
 const tooltipCleanupMap = new WeakMap<HTMLDivElement, () => void>();
-const tooltipHideTimerMap = new WeakMap<HTMLDivElement, ReturnType<
-  typeof setTimeout
->>();
+const tooltipHideTimerMap = new WeakMap<
+  HTMLDivElement,
+  ReturnType<typeof setTimeout>
+>();
 
 // SVG Icons for map controls (matching theme style)
 const ICONS = {
@@ -62,10 +63,7 @@ function showTooltip(container: HTMLDivElement) {
   container.classList.add("map-tooltip-visible");
 }
 
-function scheduleHideTooltip(
-  container: HTMLDivElement,
-  delayMs = 240,
-) {
+function scheduleHideTooltip(container: HTMLDivElement, delayMs = 240) {
   clearTooltipHideTimer(container);
   const timer = setTimeout(() => {
     container.classList.remove("map-tooltip-visible");
@@ -127,6 +125,7 @@ function setActiveStyle(container: HTMLDivElement, active: boolean) {
 abstract class IconButtonControl extends L.Control {
   public options = { position: "topleft" as L.ControlPosition };
   public _container: HTMLDivElement | null = null;
+  protected controlName?: string;
   protected abstract title: string;
   protected abstract iconHtml: string;
   protected abstract onButtonClick(): void;
@@ -134,6 +133,7 @@ abstract class IconButtonControl extends L.Control {
   onAdd(): HTMLDivElement {
     const container = L.DomUtil.create("div");
     applyMetarStyleButton(container, this.title, this.iconHtml);
+    if (this.controlName) container.dataset.control = this.controlName;
     L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
     L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
     L.DomEvent.on(container, "click", this.handleClick);
@@ -154,6 +154,7 @@ abstract class IconButtonControl extends L.Control {
 }
 
 export class ResetMapViewControl extends IconButtonControl {
+  protected controlName = "reset-map-view";
   protected title = "Reset map view";
   protected iconHtml = ICONS.reset;
   private readonly resetMapView: () => void;
