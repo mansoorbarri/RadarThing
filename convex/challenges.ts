@@ -147,6 +147,14 @@ function normalizeAircraftType(value?: string) {
   return normalized || undefined;
 }
 
+function mustRuleApplyToEachFlight(ruleType: ChallengeRuleType) {
+  return (
+    ruleType === "max_duration" ||
+    ruleType === "max_distance" ||
+    ruleType === "aircraft_category"
+  );
+}
+
 async function getViewer(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
@@ -268,7 +276,11 @@ function validateChallengeInput(args: {
 
     return {
       ruleType: rule.ruleType,
-      scope: rule.scope ?? "challenge",
+      scope:
+        rule.scope ??
+        (mustRuleApplyToEachFlight(rule.ruleType)
+          ? "each_flight"
+          : "challenge"),
       targetAirport: normalizeAirportCode(rule.targetAirport),
       targetAirports: targetAirports.length > 0 ? targetAirports : undefined,
       targetDepartureAirport: normalizeAirportCode(rule.targetDepartureAirport),
@@ -409,11 +421,10 @@ function validateChallengeInput(args: {
       }
 
       if (
-        (rule.ruleType === "max_duration" ||
-          rule.ruleType === "max_distance") &&
+        mustRuleApplyToEachFlight(rule.ruleType) &&
         rule.scope !== "each_flight"
       ) {
-        throw new Error("Maximum rules must apply to each counted flight");
+        throw new Error("This rule must apply to each counted flight");
       }
 
       if (

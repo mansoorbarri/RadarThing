@@ -363,12 +363,13 @@ const challengePayloadSchema = z
 
       if (
         (rule.ruleType === "max_duration" ||
-          rule.ruleType === "max_distance") &&
+          rule.ruleType === "max_distance" ||
+          rule.ruleType === "aircraft_category") &&
         rule.scope !== "each_flight"
       ) {
         ctx.addIssue({
           code: "custom",
-          message: "Maximum rules must apply to each counted flight",
+          message: "This rule must apply to each counted flight",
           path: ["rules", index, "scope"],
         });
       }
@@ -458,7 +459,11 @@ function canRuleApplyToEachFlight(ruleType: ChallengeRuleType) {
 }
 
 function mustRuleApplyToEachFlight(ruleType: ChallengeRuleType) {
-  return ruleType === "max_duration" || ruleType === "max_distance";
+  return (
+    ruleType === "max_duration" ||
+    ruleType === "max_distance" ||
+    ruleType === "aircraft_category"
+  );
 }
 
 function ruleFormFromChallengeRule(rule: {
