@@ -1,11 +1,18 @@
 packages:
   - .
 
-onlyBuiltDependencies:
-  - "@clerk/shared"
-  - core-js
-  - esbuild
-  - msgpackr-extract
-  - protobufjs
-  - sharp
-  - unrs-resolver
+nodeLinker: hoisted
+
+publicHoistPattern:
+  - "*eslint*"
+  - "*prettier*"
+
+allowBuilds:
+  "@clerk/shared": true
+  "@posthog/cli": false
+  core-js: true
+  esbuild: true
+  msgpackr-extract: true
+  protobufjs: true
+  sharp: true
+  unrs-resolver: true
