@@ -95,6 +95,16 @@ const ATWI60_SCHEDULED_ROUTES = [
   { month: 7, day: 30, depICAO: "KOKC", arrICAO: "KPHX" },
 ] as const;
 
+const aircraftCategoryValidator = v.union(
+  v.literal("airbus"),
+  v.literal("boeing"),
+  v.literal("commercial"),
+  v.literal("military"),
+  v.literal("helicopter"),
+  v.literal("turboprop"),
+  v.literal("general_aviation"),
+);
+
 const challengeRuleValidator = v.object({
   ruleType: v.union(
     v.literal("visit_airport"),
@@ -107,6 +117,9 @@ const challengeRuleValidator = v.object({
     v.literal("flight_count"),
     v.literal("min_duration"),
     v.literal("min_distance"),
+    v.literal("max_duration"),
+    v.literal("max_distance"),
+    v.literal("aircraft_category"),
     v.literal("manual"),
   ),
   scope: v.optional(v.union(v.literal("challenge"), v.literal("each_flight"))),
@@ -115,10 +128,13 @@ const challengeRuleValidator = v.object({
   targetDepartureAirport: v.optional(v.string()),
   targetArrivalAirport: v.optional(v.string()),
   targetAircraftType: v.optional(v.string()),
+  targetAircraftCategories: v.optional(v.array(aircraftCategoryValidator)),
   requiredAirportCount: v.optional(v.number()),
   requiredFlightCount: v.optional(v.number()),
   minDurationMinutes: v.optional(v.number()),
   minDistanceNm: v.optional(v.number()),
+  maxDurationMinutes: v.optional(v.number()),
+  maxDistanceNm: v.optional(v.number()),
 });
 
 function normalizeAirportCode(value?: string) {
@@ -200,10 +216,13 @@ function validateChallengeInput(args: {
   targetDepartureAirport?: string;
   targetArrivalAirport?: string;
   targetAircraftType?: string;
+  targetAircraftCategories?: ChallengeRuleConfig["targetAircraftCategories"];
   requiredAirportCount?: number;
   requiredFlightCount?: number;
   minDurationMinutes?: number;
   minDistanceNm?: number;
+  maxDurationMinutes?: number;
+  maxDistanceNm?: number;
   startAt: number;
   durationDays?: number;
   isPublished?: boolean;
@@ -251,15 +270,21 @@ function validateChallengeInput(args: {
       ruleType: rule.ruleType,
       scope: rule.scope ?? "challenge",
       targetAirport: normalizeAirportCode(rule.targetAirport),
-      targetAirports:
-        targetAirports.length > 0 ? targetAirports : undefined,
+      targetAirports: targetAirports.length > 0 ? targetAirports : undefined,
       targetDepartureAirport: normalizeAirportCode(rule.targetDepartureAirport),
       targetArrivalAirport: normalizeAirportCode(rule.targetArrivalAirport),
       targetAircraftType: normalizeAircraftType(rule.targetAircraftType),
+      targetAircraftCategories:
+        rule.targetAircraftCategories &&
+        rule.targetAircraftCategories.length > 0
+          ? [...new Set(rule.targetAircraftCategories)]
+          : undefined,
       requiredAirportCount: rule.requiredAirportCount,
       requiredFlightCount: rule.requiredFlightCount,
       minDurationMinutes: rule.minDurationMinutes,
       minDistanceNm: rule.minDistanceNm,
+      maxDurationMinutes: rule.maxDurationMinutes,
+      maxDistanceNm: rule.maxDistanceNm,
     };
   }
 
@@ -274,10 +299,13 @@ function validateChallengeInput(args: {
             targetDepartureAirport: args.targetDepartureAirport,
             targetArrivalAirport: args.targetArrivalAirport,
             targetAircraftType: args.targetAircraftType,
+            targetAircraftCategories: args.targetAircraftCategories,
             requiredAirportCount: args.requiredAirportCount,
             requiredFlightCount: args.requiredFlightCount,
             minDurationMinutes: args.minDurationMinutes,
             minDistanceNm: args.minDistanceNm,
+            maxDurationMinutes: args.maxDurationMinutes,
+            maxDistanceNm: args.maxDistanceNm,
           }),
         ];
 
@@ -327,6 +355,14 @@ function validateChallengeInput(args: {
       }
 
       if (
+        rule.ruleType === "aircraft_category" &&
+        (!rule.targetAircraftCategories ||
+          rule.targetAircraftCategories.length === 0)
+      ) {
+        throw new Error("Aircraft category rules need at least one category");
+      }
+
+      if (
         rule.ruleType === "visit_airport_count" &&
         (!rule.requiredAirportCount || rule.requiredAirportCount <= 0)
       ) {
@@ -371,6 +407,28 @@ function validateChallengeInput(args: {
       ) {
         throw new Error("Minimum distance challenges need a distance above 0");
       }
+
+      if (
+        (rule.ruleType === "max_duration" ||
+          rule.ruleType === "max_distance") &&
+        rule.scope !== "each_flight"
+      ) {
+        throw new Error("Maximum rules must apply to each counted flight");
+      }
+
+      if (
+        rule.ruleType === "max_duration" &&
+        (!rule.maxDurationMinutes || rule.maxDurationMinutes <= 0)
+      ) {
+        throw new Error("Maximum duration rules need a duration above 0");
+      }
+
+      if (
+        rule.ruleType === "max_distance" &&
+        (!rule.maxDistanceNm || rule.maxDistanceNm <= 0)
+      ) {
+        throw new Error("Maximum distance rules need a distance above 0");
+      }
     }
   }
 
@@ -390,10 +448,13 @@ function validateChallengeInput(args: {
     targetDepartureAirport: primaryRule.targetDepartureAirport,
     targetArrivalAirport: primaryRule.targetArrivalAirport,
     targetAircraftType: primaryRule.targetAircraftType,
+    targetAircraftCategories: primaryRule.targetAircraftCategories,
     requiredAirportCount: primaryRule.requiredAirportCount,
     requiredFlightCount: primaryRule.requiredFlightCount,
     minDurationMinutes: primaryRule.minDurationMinutes,
     minDistanceNm: primaryRule.minDistanceNm,
+    maxDurationMinutes: primaryRule.maxDurationMinutes,
+    maxDistanceNm: primaryRule.maxDistanceNm,
     rules,
     durationDays,
     startAt: args.startAt,
@@ -414,10 +475,13 @@ function serializeChallenge(challenge: {
   targetDepartureAirport?: string;
   targetArrivalAirport?: string;
   targetAircraftType?: string;
+  targetAircraftCategories?: ChallengeRuleConfig["targetAircraftCategories"];
   requiredAirportCount?: number;
   requiredFlightCount?: number;
   minDurationMinutes?: number;
   minDistanceNm?: number;
+  maxDurationMinutes?: number;
+  maxDistanceNm?: number;
   rules?: ChallengeRuleConfig[];
   durationDays?: number;
   startAt: number;
@@ -438,10 +502,13 @@ function serializeChallenge(challenge: {
     targetDepartureAirport: challenge.targetDepartureAirport ?? null,
     targetArrivalAirport: challenge.targetArrivalAirport ?? null,
     targetAircraftType: challenge.targetAircraftType ?? null,
+    targetAircraftCategories: challenge.targetAircraftCategories ?? null,
     requiredAirportCount: challenge.requiredAirportCount ?? null,
     requiredFlightCount: challenge.requiredFlightCount ?? null,
     minDurationMinutes: challenge.minDurationMinutes ?? null,
     minDistanceNm: challenge.minDistanceNm ?? null,
+    maxDurationMinutes: challenge.maxDurationMinutes ?? null,
+    maxDistanceNm: challenge.maxDistanceNm ?? null,
     rules: getChallengeRules(challenge).map((rule) => ({
       ruleType: rule.ruleType,
       scope: getRuleScope(rule),
@@ -450,10 +517,13 @@ function serializeChallenge(challenge: {
       targetDepartureAirport: rule.targetDepartureAirport ?? null,
       targetArrivalAirport: rule.targetArrivalAirport ?? null,
       targetAircraftType: rule.targetAircraftType ?? null,
+      targetAircraftCategories: rule.targetAircraftCategories ?? null,
       requiredAirportCount: rule.requiredAirportCount ?? null,
       requiredFlightCount: rule.requiredFlightCount ?? null,
       minDurationMinutes: rule.minDurationMinutes ?? null,
       minDistanceNm: rule.minDistanceNm ?? null,
+      maxDurationMinutes: rule.maxDurationMinutes ?? null,
+      maxDistanceNm: rule.maxDistanceNm ?? null,
     })),
     durationDays:
       challenge.durationDays ??
@@ -505,7 +575,9 @@ function aggregateManualChallengeCompletions(
   const sorted = [...completions].sort((a, b) => b.updatedAt - a.updatedAt);
   const latest = sorted[0];
   if (!latest) return null;
-  const hasPending = sorted.some((completion) => completion.status === "pending");
+  const hasPending = sorted.some(
+    (completion) => completion.status === "pending",
+  );
   const latestCompleted = sorted.find(
     (completion) => completion.status === "completed",
   );
@@ -521,8 +593,9 @@ function aggregateManualChallengeCompletions(
     completedAt: latestCompleted?.completedAt,
     submissionNote: latest.submissionNote,
     canSubmitManual: !hasPending,
-    approvedCount: sorted.filter((completion) => completion.status === "completed")
-      .length,
+    approvedCount: sorted.filter(
+      (completion) => completion.status === "completed",
+    ).length,
     latestActivityAt: latest.updatedAt,
   };
 }
@@ -837,10 +910,13 @@ function findSupportingFlightId(
     targetDepartureAirport?: string;
     targetArrivalAirport?: string;
     targetAircraftType?: string;
+    targetAircraftCategories?: ChallengeRuleConfig["targetAircraftCategories"];
     requiredAirportCount?: number;
     requiredFlightCount?: number;
     minDurationMinutes?: number;
     minDistanceNm?: number;
+    maxDurationMinutes?: number;
+    maxDistanceNm?: number;
     mode: "auto" | "manual";
     isPublished: boolean;
   },
@@ -891,10 +967,13 @@ function getAutoProgress(
     targetDepartureAirport?: string;
     targetArrivalAirport?: string;
     targetAircraftType?: string;
+    targetAircraftCategories?: ChallengeRuleConfig["targetAircraftCategories"];
     requiredAirportCount?: number;
     requiredFlightCount?: number;
     minDurationMinutes?: number;
     minDistanceNm?: number;
+    maxDurationMinutes?: number;
+    maxDistanceNm?: number;
     mode: "auto" | "manual";
     isPublished: boolean;
   },
@@ -1107,27 +1186,21 @@ interface ChallengeLeaderboardResult {
   description: string;
   cadence: "weekly" | "monthly" | "custom";
   mode: "auto" | "manual";
-  ruleType:
-    | "visit_airport"
-    | "visit_airport_count"
-    | "visit_airport_list"
-    | "depart_airport"
-    | "arrive_airport"
-    | "route"
-    | "aircraft_type"
-    | "flight_count"
-    | "min_duration"
-    | "min_distance"
-    | "manual";
+  ruleType: ChallengeRuleType;
   targetAirport: string | null;
   targetAirports: string[] | null;
   targetDepartureAirport: string | null;
   targetArrivalAirport: string | null;
   targetAircraftType: string | null;
+  targetAircraftCategories:
+    | ChallengeRuleConfig["targetAircraftCategories"]
+    | null;
   requiredAirportCount: number | null;
   requiredFlightCount: number | null;
   minDurationMinutes: number | null;
   minDistanceNm: number | null;
+  maxDurationMinutes: number | null;
+  maxDistanceNm: number | null;
   durationDays: number;
   startAt: number;
   endAt: number;
@@ -1431,7 +1504,8 @@ export const listActiveForViewer = query({
     >();
 
     for (const completion of completions) {
-      const entries = completionsByChallengeId.get(completion.challengeId) ?? [];
+      const entries =
+        completionsByChallengeId.get(completion.challengeId) ?? [];
       entries.push(completion);
       completionsByChallengeId.set(completion.challengeId, entries);
     }
@@ -1497,7 +1571,8 @@ export const listActiveForUser = query({
       (typeof completions)[number][]
     >();
     for (const completion of completions) {
-      const entries = completionsByChallengeId.get(completion.challengeId) ?? [];
+      const entries =
+        completionsByChallengeId.get(completion.challengeId) ?? [];
       entries.push(completion);
       completionsByChallengeId.set(completion.challengeId, entries);
     }
@@ -1659,12 +1734,15 @@ export const listActiveLeaderboard = query({
         completionsByUserId.set(completion.userId, entries);
       }
 
-      const entries: ChallengeLeaderboardEntryResult[] = [...completionsByUserId]
+      const entries: ChallengeLeaderboardEntryResult[] = [
+        ...completionsByUserId,
+      ]
         .flatMap(([userId, userCompletions]) => {
           const user = usersById.get(userId);
           if (!user) return [];
 
-          const aggregate = aggregateManualChallengeCompletions(userCompletions);
+          const aggregate =
+            aggregateManualChallengeCompletions(userCompletions);
           if (!aggregate) return [];
 
           const stats = userStatsByUserId.get(userId);
@@ -1673,7 +1751,8 @@ export const listActiveLeaderboard = query({
               userId,
               displayName: getChallengePilotDisplayName(user, stats, userId),
               callsign: stats?.lastFlightCallsign ?? null,
-              progressCurrent: aggregate.approvedCount > 0 ? aggregate.approvedCount : 0,
+              progressCurrent:
+                aggregate.approvedCount > 0 ? aggregate.approvedCount : 0,
               progressTarget: 1,
               progressLabel:
                 aggregate.status === "completed"
@@ -1927,7 +2006,9 @@ export const listPendingReviews = query({
         createdAt: completion.createdAt,
         reviewedAt: completion.reviewedAt ?? null,
         flights: flights
-          .filter((flight): flight is NonNullable<typeof flight> => flight !== null)
+          .filter(
+            (flight): flight is NonNullable<typeof flight> => flight !== null,
+          )
           .map((flight) => ({
             id: flight._id,
             callsign: flight.callsign,
@@ -1969,6 +2050,9 @@ export const create = mutation({
       v.literal("flight_count"),
       v.literal("min_duration"),
       v.literal("min_distance"),
+      v.literal("max_duration"),
+      v.literal("max_distance"),
+      v.literal("aircraft_category"),
       v.literal("manual"),
     ),
     rules: v.optional(v.array(challengeRuleValidator)),
@@ -1977,10 +2061,13 @@ export const create = mutation({
     targetDepartureAirport: v.optional(v.string()),
     targetArrivalAirport: v.optional(v.string()),
     targetAircraftType: v.optional(v.string()),
+    targetAircraftCategories: v.optional(v.array(aircraftCategoryValidator)),
     requiredAirportCount: v.optional(v.number()),
     requiredFlightCount: v.optional(v.number()),
     minDurationMinutes: v.optional(v.number()),
     minDistanceNm: v.optional(v.number()),
+    maxDurationMinutes: v.optional(v.number()),
+    maxDistanceNm: v.optional(v.number()),
     startAt: v.number(),
     durationDays: v.optional(v.number()),
     isPublished: v.optional(v.boolean()),
@@ -2023,6 +2110,9 @@ export const update = mutation({
       v.literal("flight_count"),
       v.literal("min_duration"),
       v.literal("min_distance"),
+      v.literal("max_duration"),
+      v.literal("max_distance"),
+      v.literal("aircraft_category"),
       v.literal("manual"),
     ),
     rules: v.optional(v.array(challengeRuleValidator)),
@@ -2031,10 +2121,13 @@ export const update = mutation({
     targetDepartureAirport: v.optional(v.string()),
     targetArrivalAirport: v.optional(v.string()),
     targetAircraftType: v.optional(v.string()),
+    targetAircraftCategories: v.optional(v.array(aircraftCategoryValidator)),
     requiredAirportCount: v.optional(v.number()),
     requiredFlightCount: v.optional(v.number()),
     minDurationMinutes: v.optional(v.number()),
     minDistanceNm: v.optional(v.number()),
+    maxDurationMinutes: v.optional(v.number()),
+    maxDistanceNm: v.optional(v.number()),
     startAt: v.number(),
     durationDays: v.optional(v.number()),
     isPublished: v.optional(v.boolean()),
@@ -2156,7 +2249,10 @@ export const submitManualClaim = mutation({
     }
 
     const normalizedFlightIds = Array.from(
-      new Set([...(args.flightIds ?? []), ...(args.flightId ? [args.flightId] : [])]),
+      new Set([
+        ...(args.flightIds ?? []),
+        ...(args.flightId ? [args.flightId] : []),
+      ]),
     );
 
     const existing = await ctx.db
@@ -2183,7 +2279,8 @@ export const submitManualClaim = mutation({
       status: "pending",
       submissionNote,
       flightId: normalizedFlightIds[0],
-      flightIds: normalizedFlightIds.length > 0 ? normalizedFlightIds : undefined,
+      flightIds:
+        normalizedFlightIds.length > 0 ? normalizedFlightIds : undefined,
       createdAt: now,
       updatedAt: now,
     });
@@ -2307,7 +2404,11 @@ export const recomputeAutoChallengeProgress = mutation({
       if (challenge.mode !== "auto") {
         continue;
       }
-      const result = await backfillAutoChallengeCompletions(ctx, challenge, now);
+      const result = await backfillAutoChallengeCompletions(
+        ctx,
+        challenge,
+        now,
+      );
       results.push({
         challengeId: challenge._id,
         title: challenge.title,

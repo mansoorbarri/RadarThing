@@ -1,3 +1,8 @@
+import {
+  AIRCRAFT_CATEGORY_LABELS,
+  type AircraftCategory,
+} from "~/lib/aircraftCategories";
+
 export type ChallengeRuleType =
   | "visit_airport"
   | "visit_airport_count"
@@ -9,6 +14,9 @@ export type ChallengeRuleType =
   | "flight_count"
   | "min_duration"
   | "min_distance"
+  | "max_duration"
+  | "max_distance"
+  | "aircraft_category"
   | "manual";
 export type ChallengeRuleScope = "challenge" | "each_flight";
 
@@ -20,10 +28,13 @@ export interface ChallengeRuleSummaryRule {
   targetDepartureAirport: string | null;
   targetArrivalAirport: string | null;
   targetAircraftType: string | null;
+  targetAircraftCategories?: AircraftCategory[] | null;
   requiredAirportCount: number | null;
   requiredFlightCount: number | null;
   minDurationMinutes: number | null;
   minDistanceNm: number | null;
+  maxDurationMinutes?: number | null;
+  maxDistanceNm?: number | null;
 }
 
 export interface ChallengeRuleSummaryChallenge extends ChallengeRuleSummaryRule {
@@ -59,12 +70,20 @@ function getSingleRuleSummary(rule: ChallengeRuleSummaryRule) {
       return `${prefix}Fly ${rule.targetDepartureAirport} to ${rule.targetArrivalAirport}`;
     case "aircraft_type":
       return `${prefix}Use ${rule.targetAircraftType}`;
+    case "aircraft_category":
+      return `${prefix}Use ${(rule.targetAircraftCategories ?? [])
+        .map((category) => AIRCRAFT_CATEGORY_LABELS[category])
+        .join(" or ")}`;
     case "flight_count":
       return `${prefix}Complete ${rule.requiredFlightCount} flights`;
     case "min_duration":
       return `${prefix}Fly at least ${rule.minDurationMinutes} minutes`;
     case "min_distance":
       return `${prefix}Fly at least ${rule.minDistanceNm} nm`;
+    case "max_duration":
+      return `${prefix}Fly at most ${rule.maxDurationMinutes} minutes`;
+    case "max_distance":
+      return `${prefix}Fly at most ${rule.maxDistanceNm} nm`;
     case "manual":
       return "Manual review required";
   }

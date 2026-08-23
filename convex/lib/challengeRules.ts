@@ -1,4 +1,8 @@
 import { getFlightDurationMs } from "../../src/lib/flightDuration";
+import {
+  getAircraftCategories,
+  type AircraftCategory,
+} from "../../src/lib/aircraftCategories";
 
 export type ChallengeRuleType =
   | "visit_airport"
@@ -11,6 +15,9 @@ export type ChallengeRuleType =
   | "flight_count"
   | "min_duration"
   | "min_distance"
+  | "max_duration"
+  | "max_distance"
+  | "aircraft_category"
   | "manual";
 
 export type ChallengeRuleScope = "challenge" | "each_flight";
@@ -23,10 +30,13 @@ export interface ChallengeRuleConfig {
   targetDepartureAirport?: string;
   targetArrivalAirport?: string;
   targetAircraftType?: string;
+  targetAircraftCategories?: AircraftCategory[];
   requiredAirportCount?: number;
   requiredFlightCount?: number;
   minDurationMinutes?: number;
   minDistanceNm?: number;
+  maxDurationMinutes?: number;
+  maxDistanceNm?: number;
 }
 
 export interface ChallengeRule extends ChallengeRuleConfig {
@@ -90,6 +100,21 @@ function getRecordedFlightDurationMs(flight: ChallengeFlight) {
   return getFlightDurationMs(flight) ?? 0;
 }
 
+function hasRecordedRouteDistance(routeData: unknown) {
+  if (!Array.isArray(routeData)) return false;
+
+  for (let index = 1; index < routeData.length; index += 1) {
+    if (
+      isCoordinatePair(routeData[index - 1]) &&
+      isCoordinatePair(routeData[index])
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function calculateRouteDistanceNm(routeData: unknown) {
   if (!Array.isArray(routeData)) return 0;
 
@@ -144,6 +169,9 @@ export function doesFlightMatchChallenge(
   );
   const targetArrivalAirport = normalizeCode(challenge.targetArrivalAirport);
   const targetAircraftType = normalizeCode(challenge.targetAircraftType);
+  const targetAircraftCategories = new Set(
+    challenge.targetAircraftCategories ?? [],
+  );
 
   switch (challenge.ruleType) {
     case "visit_airport":
@@ -169,6 +197,10 @@ export function doesFlightMatchChallenge(
       );
     case "aircraft_type":
       return Boolean(targetAircraftType) && aircraftType === targetAircraftType;
+    case "aircraft_category":
+      return getAircraftCategories(flight.aircraftType).some((category) =>
+        targetAircraftCategories.has(category),
+      );
     case "min_duration":
       return (
         typeof challenge.minDurationMinutes === "number" &&
@@ -179,6 +211,20 @@ export function doesFlightMatchChallenge(
       return (
         typeof challenge.minDistanceNm === "number" &&
         calculateRouteDistanceNm(flight.routeData) >= challenge.minDistanceNm
+      );
+    case "max_duration": {
+      const durationMs = getFlightDurationMs(flight);
+      return (
+        typeof challenge.maxDurationMinutes === "number" &&
+        durationMs !== undefined &&
+        durationMs <= challenge.maxDurationMinutes * 60 * 1000
+      );
+    }
+    case "max_distance":
+      return (
+        typeof challenge.maxDistanceNm === "number" &&
+        hasRecordedRouteDistance(flight.routeData) &&
+        calculateRouteDistanceNm(flight.routeData) <= challenge.maxDistanceNm
       );
     case "manual":
       return false;
@@ -207,10 +253,13 @@ export function getChallengeRules(challenge: ChallengeRule) {
           targetDepartureAirport: challenge.targetDepartureAirport,
           targetArrivalAirport: challenge.targetArrivalAirport,
           targetAircraftType: challenge.targetAircraftType,
+          targetAircraftCategories: challenge.targetAircraftCategories,
           requiredAirportCount: challenge.requiredAirportCount,
           requiredFlightCount: challenge.requiredFlightCount,
           minDurationMinutes: challenge.minDurationMinutes,
           minDistanceNm: challenge.minDistanceNm,
+          maxDurationMinutes: challenge.maxDurationMinutes,
+          maxDistanceNm: challenge.maxDistanceNm,
         },
       ];
 }

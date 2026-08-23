@@ -268,6 +268,9 @@ export default defineSchema({
       v.literal("flight_count"),
       v.literal("min_duration"),
       v.literal("min_distance"),
+      v.literal("max_duration"),
+      v.literal("max_distance"),
+      v.literal("aircraft_category"),
       v.literal("manual"),
     ),
     targetAirport: v.optional(v.string()),
@@ -275,10 +278,25 @@ export default defineSchema({
     targetDepartureAirport: v.optional(v.string()),
     targetArrivalAirport: v.optional(v.string()),
     targetAircraftType: v.optional(v.string()),
+    targetAircraftCategories: v.optional(
+      v.array(
+        v.union(
+          v.literal("airbus"),
+          v.literal("boeing"),
+          v.literal("commercial"),
+          v.literal("military"),
+          v.literal("helicopter"),
+          v.literal("turboprop"),
+          v.literal("general_aviation"),
+        ),
+      ),
+    ),
     requiredAirportCount: v.optional(v.number()),
     requiredFlightCount: v.optional(v.number()),
     minDurationMinutes: v.optional(v.number()),
     minDistanceNm: v.optional(v.number()),
+    maxDurationMinutes: v.optional(v.number()),
+    maxDistanceNm: v.optional(v.number()),
     rules: v.optional(
       v.array(
         v.object({
@@ -293,6 +311,9 @@ export default defineSchema({
             v.literal("flight_count"),
             v.literal("min_duration"),
             v.literal("min_distance"),
+            v.literal("max_duration"),
+            v.literal("max_distance"),
+            v.literal("aircraft_category"),
             v.literal("manual"),
           ),
           scope: v.optional(
@@ -303,10 +324,25 @@ export default defineSchema({
           targetDepartureAirport: v.optional(v.string()),
           targetArrivalAirport: v.optional(v.string()),
           targetAircraftType: v.optional(v.string()),
+          targetAircraftCategories: v.optional(
+            v.array(
+              v.union(
+                v.literal("airbus"),
+                v.literal("boeing"),
+                v.literal("commercial"),
+                v.literal("military"),
+                v.literal("helicopter"),
+                v.literal("turboprop"),
+                v.literal("general_aviation"),
+              ),
+            ),
+          ),
           requiredAirportCount: v.optional(v.number()),
           requiredFlightCount: v.optional(v.number()),
           minDurationMinutes: v.optional(v.number()),
           minDistanceNm: v.optional(v.number()),
+          maxDurationMinutes: v.optional(v.number()),
+          maxDistanceNm: v.optional(v.number()),
         }),
       ),
     ),

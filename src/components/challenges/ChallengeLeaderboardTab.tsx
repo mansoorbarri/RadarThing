@@ -10,6 +10,10 @@ import {
   CollapsibleTrigger,
 } from "~/components/ui/collapsible";
 import { ChallengeDescription } from "~/components/challenges/ChallengeDescription";
+import {
+  getRuleSummary,
+  type ChallengeRuleSummaryChallenge,
+} from "~/components/challenges/ruleSummary";
 
 interface ChallengeLeaderboardEntry {
   userId: Id<"users">;
@@ -23,21 +27,11 @@ interface ChallengeLeaderboardEntry {
   status: "completed" | "in_progress" | "pending" | "rejected";
 }
 
-interface ChallengeLeaderboard {
+interface ChallengeLeaderboard extends ChallengeRuleSummaryChallenge {
   id: Id<"challenges">;
   title: string;
   description: string;
   cadence: "weekly" | "monthly" | "custom";
-  mode: "auto" | "manual";
-  ruleType: string;
-  targetAirport: string | null;
-  targetDepartureAirport: string | null;
-  targetArrivalAirport: string | null;
-  targetAircraftType: string | null;
-  requiredAirportCount: number | null;
-  requiredFlightCount: number | null;
-  minDurationMinutes: number | null;
-  minDistanceNm: number | null;
   startAt: number;
   endAt: number;
   entries: ChallengeLeaderboardEntry[];
@@ -51,33 +45,6 @@ function formatWindow(startAt: number, endAt: number) {
     month: "short",
     day: "numeric",
   })}`;
-}
-
-function getRuleSummary(challenge: ChallengeLeaderboard) {
-  if (challenge.mode === "manual") return "Manual review challenge";
-
-  switch (challenge.ruleType) {
-    case "visit_airport":
-      return `Visit ${challenge.targetAirport}`;
-    case "visit_airport_count":
-      return `Visit ${challenge.requiredAirportCount} unique airports`;
-    case "depart_airport":
-      return `Depart ${challenge.targetAirport}`;
-    case "arrive_airport":
-      return `Arrive at ${challenge.targetAirport}`;
-    case "route":
-      return `Fly ${challenge.targetDepartureAirport} to ${challenge.targetArrivalAirport}`;
-    case "aircraft_type":
-      return `Use ${challenge.targetAircraftType}`;
-    case "flight_count":
-      return `Complete ${challenge.requiredFlightCount} flights`;
-    case "min_duration":
-      return `Fly at least ${challenge.minDurationMinutes} minutes`;
-    case "min_distance":
-      return `Fly at least ${challenge.minDistanceNm} nm`;
-    default:
-      return "Automatic challenge";
-  }
 }
 
 function getRankTone(rank: number) {
@@ -154,7 +121,9 @@ export function ChallengeLeaderboardTab({
       }
     >
       {challenges.map((challenge) => {
-        const startedEntries = challenge.entries.filter(hasStartedChallengeEntry);
+        const startedEntries = challenge.entries.filter(
+          hasStartedChallengeEntry,
+        );
         const visibleEntries =
           typeof maxEntries === "number"
             ? startedEntries.slice(0, maxEntries)
