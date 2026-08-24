@@ -53,7 +53,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       searchResults.pilots.length > 0);
 
   return (
-    <div className="flex w-full flex-col">
+    <div className="flex w-full flex-col" data-tour="radar-search">
       <input
         type="text"
         placeholder="Search flight, pilot, or airport..."

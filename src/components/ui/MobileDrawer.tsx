@@ -31,9 +31,7 @@ export const MobileDrawer = ({ children, onClose }: MobileDrawerProps) => {
 
   const snapToNearestState = useCallback((nextHeight: number) => {
     const nextState = SNAP_ORDER.reduce((closest, state) => {
-      const closestDistance = Math.abs(
-        DRAWER_HEIGHTS[closest] - nextHeight,
-      );
+      const closestDistance = Math.abs(DRAWER_HEIGHTS[closest] - nextHeight);
       const currentDistance = Math.abs(DRAWER_HEIGHTS[state] - nextHeight);
       return currentDistance < closestDistance ? state : closest;
     }, "partial" as DrawerState);
@@ -98,6 +96,7 @@ export const MobileDrawer = ({ children, onClose }: MobileDrawerProps) => {
   return (
     <div className="pointer-events-none fixed inset-0 z-[10015]">
       <div
+        data-tour="flight-details"
         className={`pointer-events-auto fixed inset-x-0 bottom-0 overflow-hidden rounded-t-[28px] border-t border-white/10 bg-black/95 shadow-[0_-24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl ${
           isDragging ? "" : "transition-[height] duration-250 ease-out"
         }`}

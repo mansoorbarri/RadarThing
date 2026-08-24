@@ -16,6 +16,8 @@ import {
 } from "./lib/auth";
 
 const SUPER_ADMIN_GOOGLE_ID = "101233162035372298523";
+// Accounts created before the guide shipped are not treated as first-time users.
+const RADAR_GUIDE_RELEASE_AT = Date.UTC(2026, 7, 23);
 
 function normalizeDiscordUsername(value: string): string {
   return value.trim().toLowerCase();
@@ -290,6 +292,31 @@ export const getRole = query({
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
       .first();
     return user?.role ?? null;
+  },
+});
+
+export const shouldShowRadarGuide = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return false;
+
+    return (
+      (user.createdAt ?? 0) >= RADAR_GUIDE_RELEASE_AT &&
+      user.radarGuideCompletedAt === undefined
+    );
+  },
+});
+
+export const completeRadarGuide = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) throw new Error("Not authenticated");
+
+    if (user.radarGuideCompletedAt === undefined) {
+      await ctx.db.patch(user._id, { radarGuideCompletedAt: Date.now() });
+    }
   },
 });
 
