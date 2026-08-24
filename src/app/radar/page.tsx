@@ -1783,6 +1783,7 @@ function ATCPageContent() {
 
             {canAccessSelectedAirportCharts ? (
               <button
+                data-tour="airport-charts-button"
                 onClick={() => {
                   setShowTaxiChart(true);
                 }}
@@ -1814,22 +1815,27 @@ function ATCPageContent() {
               {isPhone ? "FIDs" : "Flights"}
             </button>
 
-            {!isPhone && (
-              <button
-                onClick={() => setShowAtcPlayer(!showAtcPlayer)}
-                className={`cursor-pointer rounded-lg border px-3 py-1.5 text-[10px] transition-colors ${
-                  showAtcPlayer
-                    ? onlineAtcForSelected
-                      ? "border-green-500/50 bg-green-500/20 text-green-300"
-                      : "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
-                    : onlineAtcForSelected
-                      ? "border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20"
-                      : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
-                }`}
-              >
-                {onlineAtcForSelected ? "Live ATC" : "ATC Audio"}
-              </button>
-            )}
+            <button
+              data-tour="airport-atc-button"
+              onClick={() => setShowAtcPlayer(!showAtcPlayer)}
+              className={`cursor-pointer rounded-lg border transition-colors ${
+                showAtcPlayer
+                  ? onlineAtcForSelected
+                    ? "border-green-500/50 bg-green-500/20 text-green-300"
+                    : "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
+                  : onlineAtcForSelected
+                    ? "border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20"
+                    : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
+              } ${isPhone ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
+            >
+              {isPhone
+                ? onlineAtcForSelected
+                  ? "Live ATC"
+                  : "ATC"
+                : onlineAtcForSelected
+                  ? "Live ATC"
+                  : "ATC Audio"}
+            </button>
 
             <button
               onClick={() => {
@@ -2109,7 +2115,19 @@ function ATCPageContent() {
           if (hidden) setShowShortcutsMenu(false);
         }}
       />
-      <RadarGuide open={isRadarGuideOpen} onFinish={finishRadarGuide} />
+      <RadarGuide
+        open={isRadarGuideOpen}
+        onFinish={finishRadarGuide}
+        signals={{
+          hasSelectedAircraft: selectedAircrafts.length > 0,
+          hasSelectedFreeChartAirport: isFreeChartIcao(selectedAirport?.icao),
+          isChartOpen: showTaxiChart || chartOverlayActive,
+          isAtcOpen: showAtcPlayer,
+        }}
+        onOpenAircraftImages={() => {
+          window.open("/aircraft-images", "_blank", "noopener,noreferrer");
+        }}
+      />
     </div>
   );
 }

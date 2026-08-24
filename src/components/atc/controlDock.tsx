@@ -90,6 +90,7 @@ export function ControlDock({
                     {section.items.map((item) => (
                       <button
                         key={item.id}
+                        data-tour={`radar-tool-${item.id}`}
                         onClick={() => {
                           item.onClick();
                           setOpen(false);

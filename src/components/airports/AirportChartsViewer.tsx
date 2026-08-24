@@ -519,7 +519,8 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
       }
 
       const nextIndex = nextRunwayGroup.charts.findIndex(
-        (candidate) => getAirportChartKey(candidate) === getAirportChartKey(chart),
+        (candidate) =>
+          getAirportChartKey(candidate) === getAirportChartKey(chart),
       );
 
       if (type !== selectedType) {
@@ -598,7 +599,10 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
   const isPdfChart = selectedChart && isPdf(selectedChart.chartUrl);
 
   return (
-    <div className="animate-fade-in fixed inset-0 z-[10020] bg-black/80 backdrop-blur-sm">
+    <div
+      data-tour="airport-charts-viewer"
+      className="animate-fade-in fixed inset-0 z-[10020] bg-black/80 backdrop-blur-sm"
+    >
       <div className="animate-scale-in absolute inset-4 flex flex-col rounded-xl bg-slate-950 shadow-2xl">
         {/* Header */}
         <header className="flex flex-col gap-3 border-b border-white/10 px-4 py-3">
@@ -632,6 +636,7 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
                 Refresh
               </button>
               <button
+                data-tour="airport-charts-close"
                 onClick={onClose}
                 className="cursor-pointer rounded-md border border-red-500/30 px-3 py-1 text-xs text-red-400 hover:bg-red-500/10"
               >

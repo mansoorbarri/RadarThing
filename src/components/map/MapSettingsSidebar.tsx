@@ -27,18 +27,33 @@ export const MapSettingsSidebar = ({
   if (isMobile) {
     return (
       <MobileSwipeSheet onClose={onClose} initialState="half">
-        <div className="min-h-full bg-[#050f14]/95 p-3 pb-4">{children}</div>
+        <div
+          data-tour="map-settings-panel"
+          className="min-h-full bg-[#050f14]/95 p-3 pb-4"
+        >
+          <button
+            type="button"
+            data-tour="map-settings-close"
+            onClick={onClose}
+            className="hidden"
+            tabIndex={-1}
+            aria-hidden="true"
+          />
+          {children}
+        </div>
       </MobileSwipeSheet>
     );
   }
 
   return (
     <aside
+      data-tour="map-settings-panel"
       className={cn(
         "animate-slide-in-left fixed inset-y-0 left-0 z-[10020] w-full max-w-[360px] border-r border-white/10 bg-black/90 backdrop-blur-xl xl:max-w-[400px]",
       )}
     >
       <Button
+        data-tour="map-settings-close"
         variant="ghost"
         size="icon-xs"
         onClick={onClose}

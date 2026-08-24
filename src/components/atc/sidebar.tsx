@@ -731,6 +731,7 @@ export const Sidebar = ({
                 {aircraft.callsign &&
                   (pilotUser ? (
                     <Link
+                      data-tour="pilot-profile-link"
                       href={`/pilot/${pilotUser._id}?callsign=${encodeURIComponent(aircraft.callsign)}`}
                       className="mt-1 flex items-center gap-1 font-mono text-[10px] font-bold text-cyan-400 transition-colors hover:text-cyan-300"
                     >

@@ -9,8 +9,12 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import {
+  CloudRain,
   ChevronLeft,
   ChevronRight,
+  Headphones,
+  ImageUp,
+  Layers3,
   MousePointer2,
   Plane,
   Radar,
@@ -21,16 +25,34 @@ import {
 } from "lucide-react";
 
 interface GuideStep {
+  id: string;
   eyebrow: string;
   title: string;
   description: string;
   hint?: string;
+  details?: string[];
   targets?: string[];
+  task?:
+    | { type: "event"; eventName: "click" | "input"; prompt: string }
+    | {
+        type: "signal";
+        signal: keyof RadarGuideSignals;
+        prompt: string;
+      }
+    | { type: "acknowledge"; prompt: string };
   icon: typeof Radar;
+}
+
+export interface RadarGuideSignals {
+  hasSelectedAircraft: boolean;
+  hasSelectedFreeChartAirport: boolean;
+  isChartOpen: boolean;
+  isAtcOpen: boolean;
 }
 
 const STEPS: GuideStep[] = [
   {
+    id: "welcome",
     eyebrow: "Welcome aboard",
     title: "Your live radar, at a glance",
     description:
@@ -39,56 +61,175 @@ const STEPS: GuideStep[] = [
     icon: Radar,
   },
   {
+    id: "search",
     eyebrow: "Find anything",
     title: "Start with search",
     description:
       "Search by flight number, callsign, pilot name, or airport ICAO. Choose a flight to locate it on the map, a pilot to open their profile, or an airport to jump there.",
-    hint: "Try a callsign you recognize, or an ICAO code such as EGLL.",
+    hint: "Type at least one character to complete this task.",
     targets: [
       '[data-tour="radar-search"]',
       '[data-tour="radar-mobile-search"]',
     ],
+    task: { type: "event", eventName: "input", prompt: "Try search" },
     icon: Search,
   },
   {
+    id: "flight",
     eyebrow: "Live traffic",
     title: "Pick a flight on the radar",
     description:
       "Each aircraft marker is a live flight. Click one to draw its route and open the flight panel. You can pan and zoom the map just as you normally would while this step is open.",
-    hint: "Go ahead—select any aircraft, then continue.",
+    hint: "Select an aircraft marker or a flight from the search results.",
     targets: ['[data-tour="radar-map"]'],
+    task: {
+      type: "signal",
+      signal: "hasSelectedAircraft",
+      prompt: "Select a live flight",
+    },
     icon: MousePointer2,
   },
   {
+    id: "pilot",
     eyebrow: "Flight details",
-    title: "Read the whole flight",
+    title: "Open the pilot profile",
     description:
-      "The flight panel brings together the aircraft, route, altitude, speed, progress, and live flight plan. Airport codes in the panel are shortcuts back to the map.",
-    hint: "If no panel is open yet, click an aircraft marker first.",
-    targets: ['[data-tour="flight-details"]', '[data-tour="radar-map"]'],
-    icon: Plane,
-  },
-  {
-    eyebrow: "Meet the pilot",
-    title: "Open pilot profiles",
-    description:
-      "Pilot names link to their public profile, where you can see their callsign and free public stats. You can also find a pilot directly from the search box.",
-    hint: "Look for the pilot name in an open flight panel.",
+      "The flight panel contains aircraft, route, altitude, speed, progress, and flight-plan details. Click the pilot callsign to open their public profile in a new tab.",
+    hint: "If the flight has a RadarThing pilot profile, its Pilot link is highlighted.",
     targets: [
+      '[data-tour="pilot-profile-link"]',
       '[data-tour="flight-details"]',
-      '[data-tour="radar-search"]',
-      '[data-tour="radar-mobile-search"]',
     ],
+    task: {
+      type: "event",
+      eventName: "click",
+      prompt: "Open the pilot profile",
+    },
     icon: UserRound,
   },
   {
-    eyebrow: "Explore more",
-    title: "Your radar toolkit",
+    id: "map-layer",
+    eyebrow: "Map layers",
+    title: "Change the map beneath the traffic",
     description:
-      "Open the bottom menu for the live flights list, airport activity, callsign filters, keyboard shortcuts, the leaderboard, uploads, and Help—all available to free users.",
-    hint: "That’s it. You’re ready to explore the skies.",
-    targets: ['[data-tour="radar-tools"]'],
+      "OpenStreetMap and OpenAIP give you different geographic and aviation context. Radar Mode is a Pro layer. Try the highlighted free OpenStreetMap control.",
+    hint: "Click OpenStreetMap to switch the base layer.",
+    targets: ['[data-control="osm-layer"]', '[data-control="openaip-layer"]'],
+    task: { type: "event", eventName: "click", prompt: "Switch a map layer" },
+    icon: Layers3,
+  },
+  {
+    id: "configuration",
+    eyebrow: "Configuration",
+    title: "Open radar configuration",
+    description:
+      "Configuration contains map overlays, visibility controls, units, keyboard bindings, and saved layer presets.",
+    hint: "Click the highlighted gear control.",
+    targets: ['[data-control="radar-settings"]'],
+    task: { type: "event", eventName: "click", prompt: "Open Configuration" },
     icon: Wrench,
+  },
+  {
+    id: "weather",
+    eyebrow: "Weather layers",
+    title: "Turn weather on and off",
+    description:
+      "Precipitation is available to everyone. AIRMETs and SIGMETs are advanced Pro weather layers for broader hazard awareness.",
+    hint: "Toggle Precipitation once to see how weather overlays work.",
+    targets: ['[data-tour="weather-precipitation"]'],
+    task: { type: "event", eventName: "click", prompt: "Toggle precipitation" },
+    icon: CloudRain,
+  },
+  {
+    id: "us-airport",
+    eyebrow: "Free airport charts",
+    title: "Find a US airport",
+    description:
+      "Airport charts are free for US airports and territories. Search for a US ICAO—try KJFK—and select the airport result.",
+    hint: "The task completes when a free-chart airport is selected.",
+    targets: [
+      '[data-tour="radar-search"]',
+      '[data-tour="radar-mobile-search"]',
+    ],
+    task: {
+      type: "signal",
+      signal: "hasSelectedFreeChartAirport",
+      prompt: "Select a US airport",
+    },
+    icon: Search,
+  },
+  {
+    id: "charts",
+    eyebrow: "Airport charts",
+    title: "Open the airport chart viewer",
+    description:
+      "Use Charts for taxi diagrams, SIDs, STARs, and approaches contributed by the community. Charts outside the free US coverage are included with Pro.",
+    hint: "Click Charts in the selected-airport bar.",
+    targets: ['[data-tour="airport-charts-button"]'],
+    task: {
+      type: "signal",
+      signal: "isChartOpen",
+      prompt: "Open Charts",
+    },
+    icon: Plane,
+  },
+  {
+    id: "chart-types",
+    eyebrow: "Chart workflow",
+    title: "Know what each chart is for",
+    description:
+      "Ground charts help with taxiing; SIDs cover departures; STARs cover arrivals; Approach charts take you from the terminal area to the runway.",
+    details: [
+      "US charts: free",
+      "Worldwide chart access: Pro",
+      "Search, rotate, zoom, and side view are built into the viewer",
+    ],
+    targets: ['[data-tour="airport-charts-viewer"]'],
+    task: { type: "acknowledge", prompt: "I understand the chart types" },
+    icon: Layers3,
+  },
+  {
+    id: "atc",
+    eyebrow: "ATC audio",
+    title: "Check the airport’s ATC tab",
+    description:
+      "The airport bar shows live GeoFS controllers when available. Otherwise, ATC Audio links to LiveATC feeds for that ICAO.",
+    hint: "Click ATC Audio or Live ATC in the selected-airport bar.",
+    targets: ['[data-tour="airport-atc-button"]'],
+    task: {
+      type: "signal",
+      signal: "isAtcOpen",
+      prompt: "Open ATC Audio",
+    },
+    icon: Headphones,
+  },
+  {
+    id: "toolkit",
+    eyebrow: "Radar toolkit",
+    title: "Open the main menu",
+    description:
+      "The bottom menu contains live flight and airport lists, filters, shortcuts, community pages, uploads, and Help.",
+    hint: "Open the highlighted menu to continue.",
+    targets: ['[data-tour="radar-tools"]'],
+    task: { type: "event", eventName: "click", prompt: "Open the radar menu" },
+    icon: Wrench,
+  },
+  {
+    id: "aircraft-images",
+    eyebrow: "Community images",
+    title: "Upload aircraft images correctly",
+    description:
+      "Open the Aircraft Gallery from Upload, then choose Upload Image. Every submission is reviewed before it appears on flight cards.",
+    details: [
+      "Use the base aircraft model—not a variant",
+      "Show the complete aircraft and a clearly visible livery",
+      "Match the ICAO, IATA, and aircraft name exactly",
+      "Check for duplicates; use real airlines or the correct air force",
+    ],
+    hint: "Open the gallery in a new tab after reviewing these rules.",
+    targets: ['[data-tour="radar-tool-upload"]'],
+    task: { type: "event", eventName: "click", prompt: "Open Upload" },
+    icon: ImageUp,
   },
 ];
 
@@ -123,17 +264,37 @@ function getFocusableElements(container: HTMLElement) {
 export function RadarGuide({
   open,
   onFinish,
+  signals,
+  onOpenAircraftImages,
 }: {
   open: boolean;
   onFinish: () => void | Promise<void>;
+  signals: RadarGuideSignals;
+  onOpenAircraftImages: () => void;
 }) {
   const [stepIndex, setStepIndex] = useState(0);
+  const [completedStepIds, setCompletedStepIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
   const dialogRef = useRef<HTMLElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const step = STEPS[stepIndex]!;
   const isLastStep = stepIndex === STEPS.length - 1;
+  const signalComplete =
+    step.task?.type === "signal" && signals[step.task.signal];
+  const isStepComplete =
+    !step.task || completedStepIds.has(step.id) || signalComplete;
+
+  const markStepComplete = useCallback((stepId: string) => {
+    setCompletedStepIds((current) => {
+      if (current.has(stepId)) return current;
+      const next = new Set(current);
+      next.add(stepId);
+      return next;
+    });
+  }, []);
 
   const measureTarget = useCallback(() => {
     setViewportHeight(window.innerHeight);
@@ -191,8 +352,79 @@ export function RadarGuide({
   }, [open]);
 
   useEffect(() => {
-    if (!open) setStepIndex(0);
+    if (!open) {
+      setStepIndex(0);
+      setCompletedStepIds(new Set());
+    }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || step.task?.type !== "event") return;
+    const eventName = step.task.eventName;
+    const handleTaskEvent = (event: Event) => {
+      const target = findTarget(step.targets);
+      if (
+        !target ||
+        !(event.target instanceof Node) ||
+        !target.contains(event.target)
+      ) {
+        return;
+      }
+
+      if (
+        eventName === "input" &&
+        event.target instanceof HTMLInputElement &&
+        !event.target.value.trim()
+      ) {
+        return;
+      }
+
+      if (step.id === "pilot") {
+        const link =
+          event.target instanceof Element
+            ? event.target.closest<HTMLAnchorElement>("a[href]")
+            : null;
+        if (link) {
+          event.preventDefault();
+          window.open(link.href, "_blank", "noopener,noreferrer");
+        }
+      }
+      if (step.id === "aircraft-images") {
+        event.preventDefault();
+        event.stopPropagation();
+        onOpenAircraftImages();
+      }
+      markStepComplete(step.id);
+    };
+
+    document.addEventListener(eventName, handleTaskEvent, true);
+    return () => document.removeEventListener(eventName, handleTaskEvent, true);
+  }, [
+    markStepComplete,
+    onOpenAircraftImages,
+    open,
+    step.id,
+    step.targets,
+    step.task,
+  ]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (step.id === "us-airport") {
+      document
+        .querySelector<HTMLButtonElement>('[data-tour="map-settings-close"]')
+        ?.click();
+    }
+    if (step.id === "atc") {
+      document
+        .querySelector<HTMLButtonElement>('[data-tour="airport-charts-close"]')
+        ?.click();
+    }
+  }, [open, step.id]);
+
+  useEffect(() => {
+    if (signalComplete) markStepComplete(step.id);
+  }, [markStepComplete, signalComplete, step.id]);
 
   const handleGuideNavigationKey = useCallback(
     (key: string) => {
@@ -201,6 +433,7 @@ export function RadarGuide({
         return true;
       }
       if (key === "ArrowRight" && !isLastStep) {
+        if (!isStepComplete) return true;
         setStepIndex((current) => current + 1);
         return true;
       }
@@ -210,7 +443,7 @@ export function RadarGuide({
       }
       return false;
     },
-    [isLastStep, onFinish, stepIndex],
+    [isLastStep, isStepComplete, onFinish, stepIndex],
   );
 
   useEffect(() => {
@@ -288,6 +521,28 @@ export function RadarGuide({
           }
         : { bottom: Math.max(18, viewportHeight - targetRect.top + 18) }
     : undefined;
+  const taskNeedsExternalAction =
+    step.task?.type === "event" || step.task?.type === "signal";
+  const primaryLabel = isStepComplete
+    ? isLastStep
+      ? "Start exploring"
+      : stepIndex === 0
+        ? "Begin guided tasks"
+        : "Next"
+    : (step.task?.prompt ?? "Complete the task");
+
+  const handlePrimaryAction = () => {
+    if (!isStepComplete) {
+      if (step.task?.type === "acknowledge") {
+        markStepComplete(step.id);
+        setStepIndex((current) => current + 1);
+      }
+      return;
+    }
+
+    if (isLastStep) void onFinish();
+    else setStepIndex((current) => current + 1);
+  };
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[10100]">
@@ -333,7 +588,7 @@ export function RadarGuide({
         aria-labelledby="radar-guide-title"
         tabIndex={-1}
         onKeyDown={handleDialogKeyDown}
-        className={`pointer-events-auto absolute right-3 left-3 mx-auto w-auto max-w-[430px] overflow-hidden rounded-2xl border border-cyan-300/25 bg-[#07131c]/96 text-white shadow-[0_24px_80px_rgba(0,0,0,0.65),0_0_30px_rgba(34,211,238,0.1)] backdrop-blur-2xl sm:right-auto sm:left-1/2 sm:w-[430px] sm:-translate-x-1/2 ${targetRect ? "" : "top-1/2 -translate-y-1/2"}`}
+        className={`pointer-events-auto absolute right-3 left-3 mx-auto max-h-[calc(100dvh-1.5rem)] w-auto max-w-[430px] overflow-y-auto rounded-2xl border border-cyan-300/25 bg-[#07131c]/96 text-white shadow-[0_24px_80px_rgba(0,0,0,0.65),0_0_30px_rgba(34,211,238,0.1)] backdrop-blur-2xl sm:right-auto sm:left-1/2 sm:w-[430px] sm:-translate-x-1/2 ${targetRect ? "" : "top-1/2 -translate-y-1/2"}`}
         style={targetRect ? cardStyle : undefined}
       >
         <div className="h-px bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent" />
@@ -373,10 +628,34 @@ export function RadarGuide({
           <p className="mt-3 text-sm leading-6 text-slate-300">
             {step.description}
           </p>
+          {step.details && (
+            <ul className="mt-4 space-y-2 rounded-xl border border-white/8 bg-black/25 px-4 py-3 text-xs leading-5 text-slate-300">
+              {step.details.map((detail) => (
+                <li key={detail} className="flex gap-2">
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-cyan-300" />
+                  <span>{detail}</span>
+                </li>
+              ))}
+            </ul>
+          )}
           {step.hint && (
             <div className="mt-4 flex gap-2 rounded-xl border border-cyan-300/10 bg-cyan-300/[0.055] px-3 py-2.5 text-xs leading-5 text-cyan-100/75">
               <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-cyan-300" />
               <span>{step.hint}</span>
+            </div>
+          )}
+
+          {step.task && (
+            <div
+              className={`mt-3 flex items-center gap-2 rounded-lg border px-3 py-2 font-mono text-[10px] tracking-[0.08em] uppercase ${isStepComplete ? "border-emerald-400/25 bg-emerald-400/8 text-emerald-300" : "border-amber-300/25 bg-amber-300/8 text-amber-200"}`}
+              role="status"
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${isStepComplete ? "bg-emerald-300" : "animate-pulse bg-amber-300"}`}
+              />
+              {isStepComplete
+                ? "Task complete"
+                : `Action required · ${step.task.prompt}`}
             </div>
           )}
 
@@ -401,14 +680,12 @@ export function RadarGuide({
               )}
               <button
                 type="button"
-                onClick={() => {
-                  if (isLastStep) void onFinish();
-                  else setStepIndex((current) => current + 1);
-                }}
-                className="flex h-9 items-center gap-1.5 rounded-lg border border-cyan-200/30 bg-cyan-300 px-4 text-xs font-semibold text-[#041016] shadow-[0_0_18px_rgba(34,211,238,0.18)] transition-colors hover:bg-cyan-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                onClick={handlePrimaryAction}
+                disabled={!isStepComplete && taskNeedsExternalAction}
+                className="flex min-h-9 items-center gap-1.5 rounded-lg border border-cyan-200/30 bg-cyan-300 px-4 py-2 text-xs font-semibold text-[#041016] shadow-[0_0_18px_rgba(34,211,238,0.18)] transition-colors hover:bg-cyan-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/8 disabled:text-white/35 disabled:shadow-none"
               >
-                {isLastStep ? "Start exploring" : "Next"}
-                {!isLastStep && <ChevronRight size={14} />}
+                {primaryLabel}
+                {isStepComplete && !isLastStep && <ChevronRight size={14} />}
               </button>
             </div>
           </div>
