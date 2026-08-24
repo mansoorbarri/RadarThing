@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -101,6 +108,18 @@ function findTarget(selectors: string[] | undefined) {
   return null;
 }
 
+function getFocusableElements(container: HTMLElement) {
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter(
+    (element) =>
+      element.getClientRects().length > 0 &&
+      element.getAttribute("aria-hidden") !== "true",
+  );
+}
+
 export function RadarGuide({
   open,
   onFinish,
@@ -111,6 +130,8 @@ export function RadarGuide({
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
+  const dialogRef = useRef<HTMLElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const step = STEPS[stepIndex]!;
   const isLastStep = stepIndex === STEPS.length - 1;
 
@@ -153,22 +174,104 @@ export function RadarGuide({
 
   useEffect(() => {
     if (!open) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") void onFinish();
-      if (event.key === "ArrowRight" && !isLastStep) {
-        setStepIndex((current) => current + 1);
-      }
-      if (event.key === "ArrowLeft" && stepIndex > 0) {
-        setStepIndex((current) => current - 1);
-      }
+    previouslyFocusedRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const animationFrameId = window.requestAnimationFrame(() => {
+      dialogRef.current?.focus();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+      const previouslyFocused = previouslyFocusedRef.current;
+      previouslyFocusedRef.current = null;
+      if (previouslyFocused?.isConnected) previouslyFocused.focus();
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isLastStep, onFinish, open, stepIndex]);
+  }, [open]);
 
   useEffect(() => {
     if (!open) setStepIndex(0);
   }, [open]);
+
+  const handleGuideNavigationKey = useCallback(
+    (key: string) => {
+      if (key === "Escape") {
+        void onFinish();
+        return true;
+      }
+      if (key === "ArrowRight" && !isLastStep) {
+        setStepIndex((current) => current + 1);
+        return true;
+      }
+      if (key === "ArrowLeft" && stepIndex > 0) {
+        setStepIndex((current) => current - 1);
+        return true;
+      }
+      return false;
+    },
+    [isLastStep, onFinish, stepIndex],
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    const handleOutsideKeyDown = (event: KeyboardEvent) => {
+      const dialog = dialogRef.current;
+      if (
+        dialog &&
+        event.target instanceof Node &&
+        dialog.contains(event.target)
+      ) {
+        return;
+      }
+
+      if (event.key === "Tab") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        dialog?.focus();
+        return;
+      }
+
+      if (handleGuideNavigationKey(event.key)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    };
+    window.addEventListener("keydown", handleOutsideKeyDown, true);
+    return () =>
+      window.removeEventListener("keydown", handleOutsideKeyDown, true);
+  }, [handleGuideNavigationKey, open]);
+
+  const handleDialogKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    event.stopPropagation();
+
+    if (event.key === "Tab") {
+      event.preventDefault();
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+
+      const focusableElements = getFocusableElements(dialog);
+      if (focusableElements.length === 0) {
+        dialog.focus();
+        return;
+      }
+
+      const currentIndex = focusableElements.indexOf(
+        document.activeElement as HTMLElement,
+      );
+      const nextIndex = event.shiftKey
+        ? currentIndex <= 0
+          ? focusableElements.length - 1
+          : currentIndex - 1
+        : currentIndex === focusableElements.length - 1
+          ? 0
+          : currentIndex + 1;
+      focusableElements[nextIndex]?.focus();
+      return;
+    }
+
+    if (handleGuideNavigationKey(event.key)) event.preventDefault();
+  };
 
   if (!open) return null;
 
@@ -187,12 +290,7 @@ export function RadarGuide({
     : undefined;
 
   return (
-    <div
-      className="pointer-events-none fixed inset-0 z-[10100]"
-      role="dialog"
-      aria-modal="true"
-      aria-label="RadarThing welcome tour"
-    >
+    <div className="pointer-events-none fixed inset-0 z-[10100]">
       {targetRect ? (
         <>
           <div
@@ -229,6 +327,12 @@ export function RadarGuide({
       )}
 
       <section
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="radar-guide-title"
+        tabIndex={-1}
+        onKeyDown={handleDialogKeyDown}
         className={`pointer-events-auto absolute right-3 left-3 mx-auto w-auto max-w-[430px] overflow-hidden rounded-2xl border border-cyan-300/25 bg-[#07131c]/96 text-white shadow-[0_24px_80px_rgba(0,0,0,0.65),0_0_30px_rgba(34,211,238,0.1)] backdrop-blur-2xl sm:right-auto sm:left-1/2 sm:w-[430px] sm:-translate-x-1/2 ${targetRect ? "" : "top-1/2 -translate-y-1/2"}`}
         style={targetRect ? cardStyle : undefined}
       >
@@ -260,7 +364,10 @@ export function RadarGuide({
             </button>
           </div>
 
-          <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+          <h2
+            id="radar-guide-title"
+            className="text-xl font-semibold tracking-tight text-white sm:text-2xl"
+          >
             {step.title}
           </h2>
           <p className="mt-3 text-sm leading-6 text-slate-300">

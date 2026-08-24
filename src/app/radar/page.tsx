@@ -48,6 +48,10 @@ import {
   setStoredRadarKeybindPreferences,
 } from "~/lib/radarKeybindPreferences";
 import { normalizeCallsign } from "~/lib/utils";
+import {
+  completeRadarGuideIfEligible,
+  shouldOpenRadarGuide,
+} from "~/lib/radarGuide";
 import { type Airport } from "~/components/map";
 
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
@@ -178,8 +182,10 @@ function ATCPageContent() {
 
   const finishRadarGuide = useCallback(() => {
     setIsRadarGuideOpen(false);
-    if (shouldShowRadarGuide !== true) return;
-    void completeRadarGuide().catch(() => {
+    void completeRadarGuideIfEligible(
+      shouldShowRadarGuide,
+      completeRadarGuide,
+    )?.catch(() => {
       toast.error("We couldn't save your tour progress.");
     });
   }, [completeRadarGuide, shouldShowRadarGuide]);
@@ -344,9 +350,12 @@ function ATCPageContent() {
 
   useEffect(() => {
     if (
-      !isAppReady ||
-      (!shouldReplayRadarGuide && shouldShowRadarGuide !== true) ||
-      hasOpenedRadarGuide.current
+      !shouldOpenRadarGuide({
+        isAppReady,
+        shouldReplay: shouldReplayRadarGuide,
+        eligibility: shouldShowRadarGuide,
+        hasOpened: hasOpenedRadarGuide.current,
+      })
     ) {
       return;
     }
@@ -787,6 +796,8 @@ function ATCPageContent() {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isRadarGuideOpen) return;
+
       const activeElement = document.activeElement;
       const isEditableContext =
         isEditableTarget(e.target) || isEditableElement(activeElement);
@@ -845,6 +856,7 @@ function ATCPageContent() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     fullFlightFilter,
+    isRadarGuideOpen,
     isPhone,
     isTablet,
     selectedCallsigns,
