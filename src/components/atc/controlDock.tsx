@@ -46,15 +46,24 @@ export function ControlDock({
   const panelWidth = isMobile ? "w-[220px]" : "w-[236px]";
   const bottomPos = isMobile ? "bottom-3" : "bottom-6";
   const sidePos = isMobile
-    ? isRight ? "right-3" : "left-3"
-    : isRight && !rightOffset ? "right-4" : !isRight ? "left-6" : "";
+    ? isRight
+      ? "right-3"
+      : "left-3"
+    : isRight && !rightOffset
+      ? "right-4"
+      : !isRight
+        ? "left-6"
+        : "";
 
   return (
     <div
+      data-tour="radar-tools"
       className={`pointer-events-auto fixed ${bottomPos} ${
         sidePos
       } z-[10013] flex flex-col items-center gap-2 transition-[right] duration-200`}
-      style={isRight && rightOffset && !isMobile ? { right: rightOffset } : undefined}
+      style={
+        isRight && rightOffset && !isMobile ? { right: rightOffset } : undefined
+      }
     >
       {/* Dock toggle + items wrapper */}
       <div className="relative">
@@ -62,7 +71,7 @@ export function ControlDock({
         <div
           className={`absolute ${isMobile ? "bottom-13" : "bottom-14"} ${
             isRight ? "right-0 items-end" : "left-0 items-start"
-          } flex flex-col gap-1.5 transform-gpu transition-[opacity,transform] duration-180 ease-out ${
+          } flex transform-gpu flex-col gap-1.5 transition-[opacity,transform] duration-180 ease-out ${
             open
               ? "translate-y-0 opacity-100"
               : "pointer-events-none translate-y-1.5 opacity-0"

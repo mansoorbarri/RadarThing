@@ -8,6 +8,7 @@ export default defineSchema({
     role: v.union(v.literal("FREE"), v.literal("PRO"), v.literal("ADMIN")),
     isDeleted: v.boolean(),
     createdAt: v.optional(v.number()),
+    radarGuideCompletedAt: v.optional(v.number()),
     deletedAt: v.optional(v.number()), // timestamp
     googleId: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),

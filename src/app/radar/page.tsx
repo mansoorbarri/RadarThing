@@ -10,7 +10,7 @@ import React, {
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
 import { type Id } from "../../../convex/_generated/dataModel";
@@ -48,6 +48,10 @@ import {
   setStoredRadarKeybindPreferences,
 } from "~/lib/radarKeybindPreferences";
 import { normalizeCallsign } from "~/lib/utils";
+import {
+  completeRadarGuideIfEligible,
+  shouldOpenRadarGuide,
+} from "~/lib/radarGuide";
 import { type Airport } from "~/components/map";
 
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
@@ -74,6 +78,7 @@ import { WhatsNew } from "~/components/ui/WhatsNew";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
 import { MobileDrawer } from "~/components/ui/MobileDrawer";
 import { ShortcutsMenu } from "~/components/ui/ShortcutsMenu";
+import { RadarGuide } from "~/components/onboarding/RadarGuide";
 import {
   AirportsIcon,
   FlightsIcon,
@@ -90,6 +95,7 @@ import {
   Eye,
   FileText,
   Plane,
+  Radar,
   RotateCcw,
   Route,
   X,
@@ -139,6 +145,7 @@ export default function ATCPage() {
 function ATCPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const shouldReplayRadarGuide = searchParams?.get("tour") === "1";
   useTileCacheWorker();
   const isMobile = useMobileDetection();
   const deviceType = useDeviceType();
@@ -168,6 +175,20 @@ function ATCPageContent() {
   }, [aircrafts.length, onlineAirports.length, fetchAirports]);
 
   const { isProUser, isAdminUser, isLoading: proLoading } = useProStatus();
+  const shouldShowRadarGuide = useQuery(api.users.shouldShowRadarGuide);
+  const completeRadarGuide = useMutation(api.users.completeRadarGuide);
+  const [isRadarGuideOpen, setIsRadarGuideOpen] = useState(false);
+  const hasOpenedRadarGuide = useRef(false);
+
+  const finishRadarGuide = useCallback(() => {
+    setIsRadarGuideOpen(false);
+    void completeRadarGuideIfEligible(
+      shouldShowRadarGuide,
+      completeRadarGuide,
+    )?.catch(() => {
+      toast.error("We couldn't save your tour progress.");
+    });
+  }, [completeRadarGuide, shouldShowRadarGuide]);
 
   const [selectedAircrafts, setSelectedAircrafts] = useState<PositionUpdate[]>(
     [],
@@ -326,6 +347,21 @@ function ATCPageContent() {
     useState<ImportedFlightPlan | null>(null);
   const [showImportedFlightPlanPanel, setShowImportedFlightPlanPanel] =
     useState(false);
+
+  useEffect(() => {
+    if (
+      !shouldOpenRadarGuide({
+        isAppReady,
+        shouldReplay: shouldReplayRadarGuide,
+        eligibility: shouldShowRadarGuide,
+        hasOpened: hasOpenedRadarGuide.current,
+      })
+    ) {
+      return;
+    }
+    hasOpenedRadarGuide.current = true;
+    setIsRadarGuideOpen(true);
+  }, [isAppReady, shouldReplayRadarGuide, shouldShowRadarGuide]);
 
   const aircraftGoogleIds = useMemo(
     () =>
@@ -708,8 +744,8 @@ function ATCPageContent() {
 
     const matchedAircraft = aircrafts.find(
       (ac) =>
-        (ac.callsign?.toUpperCase() === fullFlightFilter ||
-          ac.flightNo?.toUpperCase() === fullFlightFilter),
+        ac.callsign?.toUpperCase() === fullFlightFilter ||
+        ac.flightNo?.toUpperCase() === fullFlightFilter,
     );
 
     if (matchedAircraft) {
@@ -760,6 +796,8 @@ function ATCPageContent() {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isRadarGuideOpen) return;
+
       const activeElement = document.activeElement;
       const isEditableContext =
         isEditableTarget(e.target) || isEditableElement(activeElement);
@@ -818,6 +856,7 @@ function ATCPageContent() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     fullFlightFilter,
+    isRadarGuideOpen,
     isPhone,
     isTablet,
     selectedCallsigns,
@@ -1117,6 +1156,13 @@ function ATCPageContent() {
       label: "Help",
       items: [
         {
+          id: "radar-guide",
+          label: "Radar Tour",
+          icon: <Radar size={18} strokeWidth={1.8} />,
+          active: isRadarGuideOpen,
+          onClick: () => setIsRadarGuideOpen(true),
+        },
+        {
           id: "stats-rules",
           label: "Stats Rules",
           icon: <CircleHelp size={18} strokeWidth={1.8} />,
@@ -1196,7 +1242,7 @@ function ATCPageContent() {
 
           {!isUiHidden && isMapLoaded && !isPhone && (
             <div
-              className={`pointer-events-auto h-11 -translate-y-1 translate-x-2 ${isTablet ? "w-64" : "w-80 lg:w-96"}`}
+              className={`pointer-events-auto h-11 translate-x-2 -translate-y-1 ${isTablet ? "w-64" : "w-80 lg:w-96"}`}
             >
               <SearchBar
                 searchTerm={searchTerm}
@@ -1247,6 +1293,7 @@ function ATCPageContent() {
           {/* Mobile search button — phone only */}
           {!isUiHidden && isMapLoaded && isPhone && !showMobileSearch && (
             <button
+              data-tour="radar-mobile-search"
               onClick={() => setShowMobileSearch(true)}
               className="pointer-events-auto flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-black/60 backdrop-blur-md"
             >
@@ -1398,6 +1445,7 @@ function ATCPageContent() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               autoFocus
+              data-tour="radar-mobile-search"
               data-debug-id="radar-mobile-search-input"
               className="w-full rounded-xl border border-cyan-400/30 bg-black/60 px-4 py-3 text-[15px] text-cyan-400 placeholder-cyan-500/40 outline-none focus:border-cyan-400"
             />
@@ -1576,7 +1624,7 @@ function ATCPageContent() {
         </>
       )}
 
-      <main className="absolute inset-0">
+      <main className="absolute inset-0" data-tour="radar-map">
         <DynamicMapComponent
           aircrafts={visibleAircrafts}
           airports={airports}
@@ -1710,11 +1758,7 @@ function ATCPageContent() {
 
       {/* Control dock - compact on mobile, hidden when chart side panel is open */}
       {!isUiHidden && !(chartOverlayActive && chartOverlayIcao) && (
-        <ControlDock
-          side="right"
-          isMobile={isMobile}
-          sections={dockSections}
-        />
+        <ControlDock side="right" isMobile={isMobile} sections={dockSections} />
       )}
 
       {!isUiHidden && selectedAirport && (
@@ -1888,6 +1932,7 @@ function ATCPageContent() {
           </MobileDrawer>
         ) : (
           <aside
+            data-tour="flight-details"
             className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10014] border-l border-white/10 bg-black/90 backdrop-blur-xl transition-[width] duration-300 ease-in-out ${
               isSidebarCollapsed
                 ? "w-12"
@@ -2064,6 +2109,7 @@ function ATCPageContent() {
           if (hidden) setShowShortcutsMenu(false);
         }}
       />
+      <RadarGuide open={isRadarGuideOpen} onFinish={finishRadarGuide} />
     </div>
   );
 }
