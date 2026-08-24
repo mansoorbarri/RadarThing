@@ -636,7 +636,6 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
                 Refresh
               </button>
               <button
-                data-tour="airport-charts-close"
                 onClick={onClose}
                 className="cursor-pointer rounded-md border border-red-500/30 px-3 py-1 text-xs text-red-400 hover:bg-red-500/10"
               >

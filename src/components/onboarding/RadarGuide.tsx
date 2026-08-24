@@ -12,7 +12,6 @@ import {
   CloudRain,
   ChevronLeft,
   ChevronRight,
-  Headphones,
   ImageUp,
   Layers3,
   MousePointer2,
@@ -47,7 +46,6 @@ export interface RadarGuideSignals {
   hasSelectedAircraft: boolean;
   hasSelectedFreeChartAirport: boolean;
   isChartOpen: boolean;
-  isAtcOpen: boolean;
 }
 
 const STEPS: GuideStep[] = [
@@ -189,29 +187,14 @@ const STEPS: GuideStep[] = [
     icon: Layers3,
   },
   {
-    id: "atc",
-    eyebrow: "ATC audio",
-    title: "Check the airport’s ATC tab",
-    description:
-      "The airport bar shows live GeoFS controllers when available. Otherwise, ATC Audio links to LiveATC feeds for that ICAO.",
-    hint: "Click ATC Audio or Live ATC in the selected-airport bar.",
-    targets: ['[data-tour="airport-atc-button"]'],
-    task: {
-      type: "signal",
-      signal: "isAtcOpen",
-      prompt: "Open ATC Audio",
-    },
-    icon: Headphones,
-  },
-  {
     id: "toolkit",
-    eyebrow: "Radar toolkit",
-    title: "Open the main menu",
+    eyebrow: "Control dock",
+    title: "Open the control dock",
     description:
-      "The bottom menu contains live flight and airport lists, filters, shortcuts, community pages, uploads, and Help.",
-    hint: "Open the highlighted menu to continue.",
+      "The dock icon in the bottom-right opens live flight and airport lists, filters, shortcuts, community pages, uploads, and Help.",
+    hint: "Click the highlighted dock icon to continue.",
     targets: ['[data-tour="radar-tools"]'],
-    task: { type: "event", eventName: "click", prompt: "Open the radar menu" },
+    task: { type: "event", eventName: "click", prompt: "Open the dock" },
     icon: Wrench,
   },
   {
@@ -266,11 +249,13 @@ export function RadarGuide({
   onFinish,
   signals,
   onOpenAircraftImages,
+  onPrepareDock,
 }: {
   open: boolean;
   onFinish: () => void | Promise<void>;
   signals: RadarGuideSignals;
   onOpenAircraftImages: () => void;
+  onPrepareDock: () => void;
 }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [completedStepIds, setCompletedStepIds] = useState<Set<string>>(
@@ -415,12 +400,13 @@ export function RadarGuide({
         .querySelector<HTMLButtonElement>('[data-tour="map-settings-close"]')
         ?.click();
     }
-    if (step.id === "atc") {
+    if (step.id === "toolkit") {
       document
-        .querySelector<HTMLButtonElement>('[data-tour="airport-charts-close"]')
+        .querySelector<HTMLElement>('[data-control="reset-map-view"]')
         ?.click();
+      onPrepareDock();
     }
-  }, [open, step.id]);
+  }, [onPrepareDock, open, step.id]);
 
   useEffect(() => {
     if (signalComplete) markStepComplete(step.id);
