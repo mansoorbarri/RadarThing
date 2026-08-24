@@ -226,6 +226,7 @@ export class RadarSettingsControl extends L.Control {
   onAdd(): HTMLDivElement {
     const container = L.DomUtil.create("div");
     applyMetarStyleButton(container, "Configuration", ICONS.settings);
+    container.dataset.control = "radar-settings";
     L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
     L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
     L.DomEvent.on(container, "click", this._boundClick);
@@ -304,6 +305,7 @@ export class RadarModeControl extends L.Control {
   onAdd(): HTMLDivElement {
     const container = L.DomUtil.create("div");
     applyMetarStyleButton(container, "Radar Mode", ICONS.radar);
+    container.dataset.control = "radar-mode";
     L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
     L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
     L.DomEvent.on(container, "click", this._boundClick);
@@ -349,6 +351,7 @@ export class LockedRadarModeControl extends L.Control {
       <span style="position: absolute; top: -6px; right: -6px; background: rgba(234, 179, 8, 0.2); color: #facc15; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: bold;">PRO</span>
       <span class="map-tooltip">Radar Mode (PRO)</span>
     `;
+    container.dataset.control = "radar-mode-pro";
     attachTooltipBehavior(container);
     L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
     L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
@@ -383,6 +386,7 @@ export class OSMControl extends L.Control {
   onAdd(): HTMLDivElement {
     const container = L.DomUtil.create("div");
     applyMetarStyleButton(container, "OpenStreetMap", ICONS.osm);
+    container.dataset.control = "osm-layer";
     L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
     L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
     L.DomEvent.on(container, "click", this._boundClick);
@@ -421,6 +425,7 @@ export class OpenAIPControl extends L.Control {
   onAdd(): HTMLDivElement {
     const container = L.DomUtil.create("div");
     applyMetarStyleButton(container, "OpenAIP Layer", ICONS.globe);
+    container.dataset.control = "openaip-layer";
     L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
     L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
     L.DomEvent.on(container, "click", this._boundClick);

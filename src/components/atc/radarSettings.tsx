@@ -432,6 +432,7 @@ export const RadarSettings = ({
 
             <SettingsToggle
               label="Precipitation"
+              tourId="weather-precipitation"
               checked={showPrecipitation}
               onChange={(v) => {
                 setShowPrecipitation(v);
@@ -839,6 +840,7 @@ function SettingsSection({
 
 function SettingsToggle({
   label,
+  tourId,
   description,
   checked,
   onChange,
@@ -846,6 +848,7 @@ function SettingsToggle({
   proBadgeSource,
 }: {
   label: string;
+  tourId?: string;
   description?: string;
   checked: boolean;
   onChange: (v: boolean) => void;
@@ -854,6 +857,7 @@ function SettingsToggle({
 }) {
   return (
     <div
+      data-tour={tourId}
       className={`flex items-start justify-between gap-3 text-sm ${
         disabled ? "opacity-60" : ""
       }`}
