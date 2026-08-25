@@ -49,7 +49,10 @@ function getCachedImage(
   return entry.data; // Can be null (meaning "no image exists")
 }
 
-function setCachedImage(key: string, data: CachedAircraftPhotoData | null): void {
+function setCachedImage(
+  key: string,
+  data: CachedAircraftPhotoData | null,
+): void {
   imageCache.set(key, { data, timestamp: Date.now() });
 }
 
@@ -113,7 +116,7 @@ export const useAircraftPhoto = (
   const [photo, setPhoto] = useState<AircraftPhotoData | null>(null);
   const [virtualAirline, setVirtualAirline] =
     useState<VirtualAirlinePhotoData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(callsign?.trim()));
 
   useEffect(() => {
     const resolvedCallsign = callsign?.trim();
@@ -175,7 +178,7 @@ export const useAircraftPhoto = (
         );
 
         const nextVirtualAirline = vaContext.virtualAirline
-            ? {
+          ? {
               id: vaContext.virtualAirline.id,
               name: vaContext.virtualAirline.name,
               callsignPrefix: vaContext.virtualAirline.callsignPrefix,
