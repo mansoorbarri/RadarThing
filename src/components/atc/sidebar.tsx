@@ -11,7 +11,6 @@ import React, {
 import { toast } from "sonner";
 import { useUserByGoogleId } from "~/hooks/useUserByGoogleId";
 import { getCompactAircraftType, normalizeCallsign } from "~/lib/utils";
-import { formatTelephonyCallsign } from "~/lib/airlineTelephony";
 // Inline SVG icons to avoid bundling entire react-icons library (~7.8MB)
 const PlaneInflightIcon = ({
   size = 24,
@@ -614,10 +613,7 @@ export const Sidebar = ({
   const isAircraftImagePending = aircraftPhotoLoading && !aircraftPhoto;
   const isFactoryFallback =
     hasCommunityImage && aircraftPhoto?.source === "factory";
-  const radioCallsign = formatTelephonyCallsign(
-    aircraft.flightNo,
-    aircraft.telephonyDesignator,
-  );
+  const radioCallsign = aircraft.telephonyDesignator?.trim();
 
   return (
     <div
@@ -716,8 +712,6 @@ export const Sidebar = ({
                 </div>
                 {radioCallsign && (
                   <p className="mt-1 truncate font-mono text-[10px] font-black tracking-[0.14em] text-cyan-300/85 uppercase drop-shadow-md">
-                    <span className="text-white/40">Radio</span>
-                    <span className="mx-1.5 text-cyan-400/50">·</span>
                     {radioCallsign}
                   </p>
                 )}
