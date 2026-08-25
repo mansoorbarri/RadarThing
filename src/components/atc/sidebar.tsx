@@ -632,7 +632,7 @@ export const Sidebar = ({
             <>
               {/* Loading skeleton while image loads */}
               {!imageLoaded && (
-                <div className="absolute inset-0 z-0 animate-pulse bg-white/5" />
+                <div className="absolute inset-0 z-0 animate-pulse bg-white/5 motion-reduce:animate-none" />
               )}
               <Image
                 src={aircraftPhoto!.imageUrl}
@@ -652,7 +652,7 @@ export const Sidebar = ({
           )}
 
           {isAircraftImagePending && (
-            <div className="absolute inset-0 animate-pulse bg-white/5" />
+            <div className="absolute inset-0 animate-pulse bg-white/5 motion-reduce:animate-none" />
           )}
 
           {isFactoryFallback && (
