@@ -15,6 +15,8 @@ export interface PositionUpdate {
   observedGroundSpeed?: number;
   etaObservedGroundSpeed?: number;
   flightNo: string;
+  telephonyDesignator?: string;
+  airlineName?: string;
   departure: string;
   arrival: string;
   takeoffTime: string;
