@@ -11,6 +11,7 @@ import React, {
 import { toast } from "sonner";
 import { useUserByGoogleId } from "~/hooks/useUserByGoogleId";
 import { getCompactAircraftType, normalizeCallsign } from "~/lib/utils";
+import { formatTelephonyCallsign } from "~/lib/airlineTelephony";
 // Inline SVG icons to avoid bundling entire react-icons library (~7.8MB)
 const PlaneInflightIcon = ({
   size = 24,
@@ -613,6 +614,10 @@ export const Sidebar = ({
   const isAircraftImagePending = aircraftPhotoLoading && !aircraftPhoto;
   const isFactoryFallback =
     hasCommunityImage && aircraftPhoto?.source === "factory";
+  const radioCallsign = formatTelephonyCallsign(
+    aircraft.flightNo,
+    aircraft.telephonyDesignator,
+  );
 
   return (
     <div
@@ -693,9 +698,9 @@ export const Sidebar = ({
 
           {/* Flight Info Overlay */}
           <div
-            className={`relative z-10 ${isMobile ? "px-4 pb-2" : "px-6 pb-4"} ${hasCommunityImage || isAircraftImagePending ? "pt-36" : ""}`}
+            className={`relative z-10 ${isMobile ? "px-4 pb-2" : "px-6 pb-3"} ${hasCommunityImage || isAircraftImagePending ? (isMobile ? "pt-36" : "pt-40") : ""}`}
           >
-            <div className={`${isMobile ? "mb-3" : "mb-5"}`}>
+            <div className={`${isMobile ? "mb-3" : "mb-2"}`}>
               <div className="min-w-0">
                 <div className="mb-1 flex items-center gap-2">
                   <h1
@@ -709,6 +714,13 @@ export const Sidebar = ({
                     </span>
                   )}
                 </div>
+                {radioCallsign && (
+                  <p className="mt-1 truncate font-mono text-[10px] font-black tracking-[0.14em] text-cyan-300/85 uppercase drop-shadow-md">
+                    <span className="text-white/40">Radio</span>
+                    <span className="mx-1.5 text-cyan-400/50">·</span>
+                    {radioCallsign}
+                  </p>
+                )}
                 <p className="truncate font-mono text-[11px] font-black tracking-[0.15em] text-slate-300 uppercase">
                   {compactAircraftType || aircraft.type || "Unknown Class"}
                 </p>

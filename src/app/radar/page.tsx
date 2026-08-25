@@ -23,6 +23,7 @@ import {
 } from "~/lib/flightPlanImport";
 import { useMobileDetection, useDeviceType } from "~/hooks/useMobileDetection";
 import { useAircraftStream } from "~/hooks/useAircraftStream";
+import { useAirlineTelephony } from "~/hooks/useAirlineTelephony";
 import { useAirportData } from "~/hooks/useAirportData";
 import { useAircraftSearch } from "~/hooks/useAircraftSearch";
 import { useDisplayedTime } from "~/hooks/useDisplayedTime";
@@ -153,13 +154,14 @@ function ATCPageContent() {
   const isTablet = deviceType === "tablet";
 
   const {
-    aircrafts,
+    aircrafts: streamedAircrafts,
     isLoading,
     connectionStatus,
     onlineAirports,
     error: streamError,
     lastMessageAgeSeconds,
   } = useAircraftStream();
+  const aircrafts = useAirlineTelephony(streamedAircrafts);
   const {
     airports,
     runways,
