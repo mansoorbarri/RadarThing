@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "radar-tour",
+    date: "2026-08-25",
+    title: "Radar Tour",
+    description: "Take a one-time guided tour of RadarThing's core features.",
+    type: "new",
+  },
+  {
     id: "mobile-userscript-panel-controls",
     date: "2026-07-15",
     title: "Mobile Flight Panel Controls",

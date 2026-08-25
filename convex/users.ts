@@ -16,8 +16,6 @@ import {
 } from "./lib/auth";
 
 const SUPER_ADMIN_GOOGLE_ID = "101233162035372298523";
-// Accounts created before the guide shipped are not treated as first-time users.
-const RADAR_GUIDE_RELEASE_AT = Date.UTC(2026, 7, 23);
 
 function normalizeDiscordUsername(value: string): string {
   return value.trim().toLowerCase();
@@ -301,10 +299,7 @@ export const shouldShowRadarGuide = query({
     const user = await getCurrentUser(ctx);
     if (!user) return false;
 
-    return (
-      (user.createdAt ?? 0) >= RADAR_GUIDE_RELEASE_AT &&
-      user.radarGuideCompletedAt === undefined
-    );
+    return user.radarGuideCompletedAt === undefined;
   },
 });
 
