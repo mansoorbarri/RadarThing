@@ -35,28 +35,6 @@ const PlaneInflightIcon = ({
   </svg>
 );
 
-const PlaneIcon = ({
-  size = 24,
-  className = "",
-}: {
-  size?: number;
-  className?: string;
-}) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M16 10h4a2 2 0 0 1 0 4h-4l-4 7h-3l2 -7h-4l-2 2h-3l2 -4l-2 -4h3l2 2h4l-2 -7h3z" />
-  </svg>
-);
-
 const HistoryIcon = ({
   size = 24,
   className = "",
@@ -235,6 +213,7 @@ export const Sidebar = ({
 }) => {
   const [tab, setTab] = useState<"info" | "history">("info");
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [aircraftImageFailed, setAircraftImageFailed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const compactAircraftType = getCompactAircraftType(aircraft.type);
 
@@ -599,7 +578,11 @@ export const Sidebar = ({
     </div>
   );
 
-  const { photo: aircraftPhoto, virtualAirline } = useAircraftPhoto(
+  const {
+    photo: aircraftPhoto,
+    virtualAirline,
+    loading: aircraftPhotoLoading,
+  } = useAircraftPhoto(
     aircraft.flightNo || aircraft.callsign,
     aircraft.type,
     aircraft.googleId,
@@ -623,7 +606,13 @@ export const Sidebar = ({
   // Reset image loaded state when photo changes
   useEffect(() => {
     setImageLoaded(false);
-  }, [aircraftPhoto?.imageUrl]);
+    setAircraftImageFailed(false);
+  }, [aircraft.id, aircraftPhoto?.imageUrl]);
+
+  const hasCommunityImage = Boolean(aircraftPhoto && !aircraftImageFailed);
+  const isAircraftImagePending = aircraftPhotoLoading && !aircraftPhoto;
+  const isFactoryFallback =
+    hasCommunityImage && aircraftPhoto?.source === "factory";
 
   return (
     <div
@@ -636,68 +625,78 @@ export const Sidebar = ({
       >
         {/* Header with optional aircraft photo background */}
         <div
-          className={`relative ${isMobile ? "" : ""} ${aircraftPhoto ? (isMobile ? "min-h-[140px]" : "min-h-[200px]") : ""}`}
+          className={`relative ${hasCommunityImage || isAircraftImagePending ? (isMobile ? "min-h-[140px]" : "min-h-[200px]") : ""}`}
         >
           {/* Aircraft Photo Background */}
-          {aircraftPhoto && (
+          {hasCommunityImage && (
             <>
               {/* Loading skeleton while image loads */}
               {!imageLoaded && (
-                <div className="absolute inset-0 z-0 animate-pulse bg-white/5" />
+                <div className="absolute inset-0 z-0 animate-pulse bg-white/5 motion-reduce:animate-none" />
               )}
               <Image
-                src={aircraftPhoto.imageUrl}
-                alt="Aircraft"
+                src={aircraftPhoto!.imageUrl}
+                alt={`${compactAircraftType || aircraft.type || "Aircraft"} in flight`}
                 fill
                 sizes="(max-width: 768px) 100vw, 420px"
                 className={`object-cover transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
                 onLoad={() => setImageLoaded(true)}
+                onError={() => {
+                  setAircraftImageFailed(true);
+                  setImageLoaded(false);
+                }}
               />
               {/* Dark gradient overlay for text readability */}
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#050f14] via-[#050f14]/80 to-black/40" />
             </>
           )}
 
-          {!aircraftPhoto && (
+          {isAircraftImagePending && (
+            <div className="absolute inset-0 animate-pulse bg-white/5 motion-reduce:animate-none" />
+          )}
+
+          {isFactoryFallback && (
+            <p className="absolute top-2 left-1/2 z-20 w-max max-w-[calc(100%-1rem)] -translate-x-1/2 rounded-md bg-black/50 px-2 py-1 text-center font-mono text-[9px] leading-tight text-white/65 backdrop-blur-sm">
+              Factory image shown — upload the airline image at{" "}
+              <Link
+                href="/aircraft-images"
+                className="font-bold text-cyan-300 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-200 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+              >
+                /aircraft-images
+              </Link>
+              .
+            </p>
+          )}
+
+          {!isAircraftImagePending && !hasCommunityImage && (
             <div
               className={`${isMobile ? "mx-4 mt-3 mb-2 p-3" : "mx-6 mt-4 mb-3 p-3.5"} relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-sky-500/5 to-black/40`}
             >
-              <div className="pointer-events-none absolute -top-5 -right-4 text-cyan-300/15">
-                <PlaneIcon size={72} />
-              </div>
-              <div className="relative">
-                <p className="font-mono text-[10px] font-black tracking-[0.18em] text-cyan-300/90 uppercase">
-                  No Aircraft Image
-                </p>
-                <p className="mt-0.5 max-w-[280px] font-mono text-[10px] leading-relaxed text-white/60">
-                  {virtualAirline
-                    ? `${virtualAirline.name} has not uploaded a fleet image for this aircraft yet.`
-                    : "Help the community identify this aircraft by uploading a photo."}
-                </p>
-                {!virtualAirline && (
-                  <Link
-                    href="/aircraft-images"
-                    className="mt-2 inline-flex rounded-lg border border-cyan-400/40 bg-cyan-500/20 px-3 py-1.5 font-mono text-[10px] font-black tracking-wide text-cyan-200 transition-colors hover:bg-cyan-500/30"
-                  >
-                    Upload at /aircraft-images
-                  </Link>
-                )}
-              </div>
+              <p className="font-mono text-[10px] font-black tracking-[0.18em] text-cyan-300/90 uppercase">
+                No Aircraft Image
+              </p>
+              <p className="mt-0.5 max-w-[280px] font-mono text-[10px] leading-relaxed text-white/60">
+                {virtualAirline
+                  ? `${virtualAirline.name} has not uploaded a fleet image for this aircraft yet.`
+                  : "Help the community identify this aircraft by uploading a photo."}
+              </p>
+              {!virtualAirline && (
+                <Link
+                  href="/aircraft-images"
+                  className="mt-2 inline-flex font-mono text-[10px] font-black tracking-wide text-cyan-300 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-200 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+                >
+                  /aircraft-images
+                </Link>
+              )}
             </div>
           )}
 
           {/* Flight Info Overlay */}
           <div
-            className={`relative z-10 ${isMobile ? "p-4 pb-2" : "p-6 pb-4"} ${aircraftPhoto ? "pt-32" : ""}`}
+            className={`relative z-10 ${isMobile ? "px-4 pb-2" : "px-6 pb-4"} ${hasCommunityImage || isAircraftImagePending ? "pt-36" : ""}`}
           >
             <div className={`${isMobile ? "mb-3" : "mb-5"}`}>
               <div className="min-w-0">
-                <div className="mb-1.5 flex items-center gap-2">
-                  <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
-                  <span className="font-mono text-[10px] font-black tracking-[0.2em] text-cyan-400 uppercase">
-                    {aircraftPhoto ? "Tracking" : "Active Radar Lock"}
-                  </span>
-                </div>
                 <div className="mb-1 flex items-center gap-2">
                   <h1
                     className={`truncate font-mono leading-none font-black tracking-tighter text-white uppercase drop-shadow-lg ${isMobile ? "text-2xl" : "text-4xl"}`}

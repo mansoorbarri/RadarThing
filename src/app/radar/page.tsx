@@ -1919,6 +1919,7 @@ function ATCPageContent() {
           <MobileDrawer onClose={() => setSelectedAircrafts([])}>
             {selectedAircrafts.length === 1 ? (
               <Sidebar
+                key={selectedAircrafts[0]!.id}
                 aircraft={selectedAircrafts[0]!}
                 onWaypointClick={undefined}
                 onHistoryClick={(flight) => {
@@ -2001,6 +2002,7 @@ function ATCPageContent() {
             ) : /* Expanded state - full sidebar content */
             selectedAircrafts.length === 1 ? (
               <Sidebar
+                key={selectedAircrafts[0]!.id}
                 aircraft={selectedAircrafts[0]!}
                 onWaypointClick={undefined}
                 onHistoryClick={(flight) => {

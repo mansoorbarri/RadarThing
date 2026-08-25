@@ -4,6 +4,7 @@ import {
   type AircraftImage,
 } from "~/app/actions/aircraft-images";
 import { getVirtualAirlineFlightContext } from "~/app/actions/virtual-airlines";
+import { getAircraftFactoryCallsignCandidates } from "~/lib/aircraftFactoryCallsigns";
 import { getAircraftTypeLookupCandidates } from "~/lib/utils";
 
 // In-memory cache for aircraft photos (persists across component instances)
@@ -49,7 +50,10 @@ function getCachedImage(
   return entry.data; // Can be null (meaning "no image exists")
 }
 
-function setCachedImage(key: string, data: CachedAircraftPhotoData | null): void {
+function setCachedImage(
+  key: string,
+  data: CachedAircraftPhotoData | null,
+): void {
   imageCache.set(key, { data, timestamp: Date.now() });
 }
 
@@ -95,6 +99,7 @@ function getAirlineCodeCandidates(
 export interface AircraftPhotoData {
   imageUrl: string;
   discordUsername: string | null;
+  source: "virtual-airline" | "airline" | "factory";
 }
 
 export interface VirtualAirlinePhotoData {
@@ -113,11 +118,12 @@ export const useAircraftPhoto = (
   const [photo, setPhoto] = useState<AircraftPhotoData | null>(null);
   const [virtualAirline, setVirtualAirline] =
     useState<VirtualAirlinePhotoData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(callsign?.trim()));
 
   useEffect(() => {
     const resolvedCallsign = callsign?.trim();
     const airlineCodes = getAirlineCodeCandidates(callsign, af);
+    const factoryCallsigns = getAircraftFactoryCallsignCandidates(aircraftType);
     const aircraftTypes = getAircraftTypeLookupCandidates(aircraftType);
     let isCancelled = false;
     let retryTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -175,7 +181,7 @@ export const useAircraftPhoto = (
         );
 
         const nextVirtualAirline = vaContext.virtualAirline
-            ? {
+          ? {
               id: vaContext.virtualAirline.id,
               name: vaContext.virtualAirline.name,
               callsignPrefix: vaContext.virtualAirline.callsignPrefix,
@@ -188,6 +194,7 @@ export const useAircraftPhoto = (
             photo: {
               imageUrl: vaContext.image.imageUrl,
               discordUsername: null,
+              source: "virtual-airline" as const,
             },
             virtualAirline: nextVirtualAirline,
           };
@@ -197,12 +204,30 @@ export const useAircraftPhoto = (
         }
 
         let image: AircraftImage | null = null;
+        let imageSource: AircraftPhotoData["source"] = "airline";
 
         if (airlineCodes.length > 0 && aircraftTypes.length > 0) {
           for (const airlineCode of airlineCodes) {
             for (const aircraftTypeKey of aircraftTypes) {
               image = await getAircraftImage(airlineCode, aircraftTypeKey);
               if (image) break;
+            }
+            if (image) break;
+          }
+        }
+
+        // Fall back to an approved manufacturer image only after every
+        // airline-specific lookup candidate has missed.
+        if (!image && aircraftTypes.length > 0) {
+          for (const factoryCallsign of factoryCallsigns) {
+            if (airlineCodes.includes(factoryCallsign)) continue;
+
+            for (const aircraftTypeKey of aircraftTypes) {
+              image = await getAircraftImage(factoryCallsign, aircraftTypeKey);
+              if (image) {
+                imageSource = "factory";
+                break;
+              }
             }
             if (image) break;
           }
@@ -225,6 +250,7 @@ export const useAircraftPhoto = (
           photo: {
             imageUrl: image.imageUrl,
             discordUsername: image.discordUsername,
+            source: imageSource,
           },
           virtualAirline: nextVirtualAirline,
         };
