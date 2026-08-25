@@ -107,8 +107,6 @@ import {
   type LiveFlightPlanWaypoint,
 } from "~/lib/flightProgress";
 
-const GENERIC_AIRCRAFT_IMAGE = "/images/generic-aircraft.webp";
-
 const getFlightPhase = (
   altAGL: number,
   vspeed: number,
@@ -613,6 +611,8 @@ export const Sidebar = ({
 
   const hasCommunityImage = Boolean(aircraftPhoto && !aircraftImageFailed);
   const isAircraftImagePending = aircraftPhotoLoading && !aircraftPhoto;
+  const isFactoryFallback =
+    hasCommunityImage && aircraftPhoto?.source === "factory";
 
   return (
     <div
@@ -623,39 +623,27 @@ export const Sidebar = ({
       <div
         className={`${isMobile ? "flex-1 overflow-y-auto" : "flex flex-1 flex-col overflow-hidden"}`}
       >
-        {/* Header with aircraft photo or generic fallback background */}
+        {/* Header with optional aircraft photo background */}
         <div
-          className={`relative ${isMobile ? "min-h-[140px]" : "min-h-[200px]"}`}
+          className={`relative ${hasCommunityImage || isAircraftImagePending ? (isMobile ? "min-h-[140px]" : "min-h-[200px]") : ""}`}
         >
           {/* Aircraft Photo Background */}
-          {!isAircraftImagePending && (
+          {hasCommunityImage && (
             <>
               {/* Loading skeleton while image loads */}
               {!imageLoaded && (
                 <div className="absolute inset-0 z-0 animate-pulse bg-white/5" />
               )}
               <Image
-                src={
-                  hasCommunityImage
-                    ? aircraftPhoto!.imageUrl
-                    : GENERIC_AIRCRAFT_IMAGE
-                }
-                alt={
-                  hasCommunityImage
-                    ? `${compactAircraftType || aircraft.type || "Aircraft"} in flight`
-                    : "Generic aircraft in flight"
-                }
+                src={aircraftPhoto!.imageUrl}
+                alt={`${compactAircraftType || aircraft.type || "Aircraft"} in flight`}
                 fill
                 sizes="(max-width: 768px) 100vw, 420px"
                 className={`object-cover transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
                 onLoad={() => setImageLoaded(true)}
                 onError={() => {
-                  if (hasCommunityImage) {
-                    setAircraftImageFailed(true);
-                    setImageLoaded(false);
-                  } else {
-                    setImageLoaded(true);
-                  }
+                  setAircraftImageFailed(true);
+                  setImageLoaded(false);
                 }}
               />
               {/* Dark gradient overlay for text readability */}
@@ -667,9 +655,9 @@ export const Sidebar = ({
             <div className="absolute inset-0 animate-pulse bg-white/5" />
           )}
 
-          {!isAircraftImagePending && !hasCommunityImage && (
+          {isFactoryFallback && (
             <p className="absolute top-2 left-1/2 z-20 w-max max-w-[calc(100%-1rem)] -translate-x-1/2 rounded-md bg-black/50 px-2 py-1 text-center font-mono text-[9px] leading-tight text-white/65 backdrop-blur-sm">
-              No community image — upload at{" "}
+              Factory image shown — upload the airline image at{" "}
               <Link
                 href="/aircraft-images"
                 className="font-bold text-cyan-300 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-200 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
@@ -680,9 +668,32 @@ export const Sidebar = ({
             </p>
           )}
 
+          {!isAircraftImagePending && !hasCommunityImage && (
+            <div
+              className={`${isMobile ? "mx-4 mt-3 mb-2 p-3" : "mx-6 mt-4 mb-3 p-3.5"} relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-sky-500/5 to-black/40`}
+            >
+              <p className="font-mono text-[10px] font-black tracking-[0.18em] text-cyan-300/90 uppercase">
+                No Aircraft Image
+              </p>
+              <p className="mt-0.5 max-w-[280px] font-mono text-[10px] leading-relaxed text-white/60">
+                {virtualAirline
+                  ? `${virtualAirline.name} has not uploaded a fleet image for this aircraft yet.`
+                  : "Help the community identify this aircraft by uploading a photo."}
+              </p>
+              {!virtualAirline && (
+                <Link
+                  href="/aircraft-images"
+                  className="mt-2 inline-flex font-mono text-[10px] font-black tracking-wide text-cyan-300 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-200 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+                >
+                  /aircraft-images
+                </Link>
+              )}
+            </div>
+          )}
+
           {/* Flight Info Overlay */}
           <div
-            className={`relative z-10 ${isMobile ? "px-4 pt-36 pb-2" : "px-6 pt-36 pb-4"}`}
+            className={`relative z-10 ${isMobile ? "px-4 pb-2" : "px-6 pb-4"} ${hasCommunityImage || isAircraftImagePending ? "pt-36" : ""}`}
           >
             <div className={`${isMobile ? "mb-3" : "mb-5"}`}>
               <div className="min-w-0">
