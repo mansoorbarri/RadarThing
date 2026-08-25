@@ -682,16 +682,10 @@ export const Sidebar = ({
 
           {/* Flight Info Overlay */}
           <div
-            className={`relative z-10 ${isMobile ? "p-4 pt-32 pb-2" : "p-6 pt-32 pb-4"}`}
+            className={`relative z-10 ${isMobile ? "px-4 pt-36 pb-2" : "px-6 pt-36 pb-4"}`}
           >
             <div className={`${isMobile ? "mb-3" : "mb-5"}`}>
               <div className="min-w-0">
-                <div className="mb-1.5 flex items-center gap-2">
-                  <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
-                  <span className="font-mono text-[10px] font-black tracking-[0.2em] text-cyan-400 uppercase">
-                    {hasCommunityImage ? "Tracking" : "Active Radar Lock"}
-                  </span>
-                </div>
                 <div className="mb-1 flex items-center gap-2">
                   <h1
                     className={`truncate font-mono leading-none font-black tracking-tighter text-white uppercase drop-shadow-lg ${isMobile ? "text-2xl" : "text-4xl"}`}
