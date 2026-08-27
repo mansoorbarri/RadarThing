@@ -65,6 +65,32 @@ const AIRCRAFT_ICONS = {
   narrowbody: ADSB_RADAR_ICON_URLS.e195,
   rearEngineJet: ADSB_RADAR_ICON_URLS.f100,
 } as const;
+
+// Keep the size range restrained so dense traffic remains readable while the
+// relative scale of the airframes is still visible, similar to FR24.
+const AIRCRAFT_ICON_SCALE = new Map<string, number>([
+  [ADSB_RADAR_ICON_URLS.a380, 1.18],
+  [ADSB_RADAR_ICON_URLS.b747, 1.16],
+  [ADSB_RADAR_ICON_URLS.b777, 1.13],
+  [ADSB_RADAR_ICON_URLS.a340, 1.12],
+  [ADSB_RADAR_ICON_URLS.a330, 1.1],
+  [ADSB_RADAR_ICON_URLS.b787, 1.1],
+  [ADSB_RADAR_ICON_URLS.md11, 1.1],
+  [ADSB_RADAR_ICON_URLS.b767, 1.07],
+  [ADSB_RADAR_ICON_URLS.c130, 1.06],
+  [ADSB_RADAR_ICON_URLS.crjx, 0.95],
+  [ADSB_RADAR_ICON_URLS.dh8a, 0.93],
+  [ADSB_RADAR_ICON_URLS.erj, 0.92],
+  [ADSB_RADAR_ICON_URLS.glf5, 0.93],
+  [ADSB_RADAR_ICON_URLS.fa7x, 0.92],
+  [ADSB_RADAR_ICON_URLS.learjet, 0.89],
+  [ADSB_RADAR_ICON_URLS.cessna, 0.86],
+  [ADSB_RADAR_ICON_URLS.a4, 0.9],
+  [ADSB_RADAR_ICON_URLS.a6, 0.9],
+  [ADSB_RADAR_ICON_URLS.f5, 0.88],
+  [ADSB_RADAR_ICON_URLS.f11, 0.9],
+  [ADSB_RADAR_ICON_URLS.f15, 0.92],
+]);
 const MILITARY_AF_CODES = new Set([
   "usaf",
   "raf",
@@ -395,6 +421,24 @@ export function getAircraftIconUrl(aircraftClass?: string, airForce?: string) {
   return DEFAULT_AIRCRAFT_ICON;
 }
 
+export function getAircraftMarkerSize(
+  aircraftClass?: string,
+  airForce?: string,
+  isMobile = false,
+) {
+  const baseSize = isMobile ? 24 : 28;
+  const rawType = aircraftClass?.trim().toLowerCase() ?? "";
+
+  // A7 is also a fixed-wing military silhouette, so only scale it as a
+  // helicopter when the aircraft metadata explicitly identifies a rotorcraft.
+  if (isHelicopterType(rawType)) {
+    return Math.round(baseSize * 0.88);
+  }
+
+  const iconUrl = getAircraftIconUrl(aircraftClass, airForce);
+  return Math.round(baseSize * (AIRCRAFT_ICON_SCALE.get(iconUrl) ?? 1));
+}
+
 export function getAircraftIconFilter(
   isEmergency: boolean,
   isSelected: boolean,
@@ -475,7 +519,7 @@ export const getAircraftDivIcon = (
   unitPrefs: UnitPreferences = DEFAULT_UNIT_PREFERENCES,
 ) => {
   const iconUrl = getAircraftIconUrl(aircraft.type, aircraft.af);
-  const planeSize = isMobile ? 24 : 28;
+  const planeSize = getAircraftMarkerSize(aircraft.type, aircraft.af, isMobile);
   const callsignDisplay = aircraft.callsign || "";
   const tagHeight = callsignDisplay ? (isMobile ? 46 : 56) : isMobile ? 38 : 52;
   const tagWidth = isMobile ? 104 : 132;
