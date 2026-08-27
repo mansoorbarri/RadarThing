@@ -215,12 +215,13 @@ export const useMapInitialization = ({
     );
 
     radarBaseLayer.current = L.tileLayer(
-      "/api/map/carto/{z}/{x}/{y}?scale={r}",
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       {
+        subdomains: "abc",
         maxZoom: MAX_ZOOM,
         minZoom: tileLayerMinZoom,
         minNativeZoom: TILE_MIN_NATIVE_ZOOM,
-        attribution: '© <a href="https://carto.com/attributions">CARTO</a>',
+        className: "radar-dark-tiles",
         ...tileLoadingOptions,
       },
     );

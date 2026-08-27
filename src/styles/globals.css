@@ -1211,6 +1211,16 @@ body {
   filter: brightness(0.6) contrast(1.1) saturate(0.9) !important;
 }
 
+/*
+ * Keep geographic context faint and monochrome in Radar Mode so traffic and
+ * ATC overlays read like a scope instead of competing with a street map.
+ * Leaflet puts className on the layer container, so filter it exactly once.
+ */
+.radar-dark-tiles {
+  filter: grayscale(1) invert(1) brightness(0.24) contrast(0.85) !important;
+  opacity: 1 !important;
+}
+
 /* Map control button tooltips */
 .map-control-btn {
   position: relative;

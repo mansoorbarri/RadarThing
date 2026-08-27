@@ -14,24 +14,12 @@ const TILE_HOSTS = [
   "a.tile.openstreetmap.org",
   "b.tile.openstreetmap.org",
   "c.tile.openstreetmap.org",
-  "a.basemaps.cartocdn.com",
-  "b.basemaps.cartocdn.com",
-  "c.basemaps.cartocdn.com",
-  "d.basemaps.cartocdn.com",
   "api.tiles.openaip.net",
 ];
 
 function isTileRequest(url) {
   try {
-    const parsedUrl = new URL(url);
-    if (
-      parsedUrl.origin === self.location.origin &&
-      parsedUrl.pathname.startsWith("/api/map/carto/")
-    ) {
-      return true;
-    }
-
-    const hostname = parsedUrl.hostname;
+    const hostname = new URL(url).hostname;
     return TILE_HOSTS.some((h) => hostname === h || hostname.endsWith("." + h));
   } catch {
     return false;
