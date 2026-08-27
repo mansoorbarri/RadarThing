@@ -23,7 +23,15 @@ const TILE_HOSTS = [
 
 function isTileRequest(url) {
   try {
-    const hostname = new URL(url).hostname;
+    const parsedUrl = new URL(url);
+    if (
+      parsedUrl.origin === self.location.origin &&
+      parsedUrl.pathname.startsWith("/api/map/carto/")
+    ) {
+      return true;
+    }
+
+    const hostname = parsedUrl.hostname;
     return TILE_HOSTS.some((h) => hostname === h || hostname.endsWith("." + h));
   } catch {
     return false;

@@ -215,12 +215,12 @@ export const useMapInitialization = ({
     );
 
     radarBaseLayer.current = L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      "/api/map/carto/{z}/{x}/{y}?scale={r}",
       {
-        subdomains: "abcd",
         maxZoom: MAX_ZOOM,
         minZoom: tileLayerMinZoom,
         minNativeZoom: TILE_MIN_NATIVE_ZOOM,
+        attribution: '© <a href="https://carto.com/attributions">CARTO</a>',
         ...tileLoadingOptions,
       },
     );
