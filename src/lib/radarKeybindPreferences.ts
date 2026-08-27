@@ -1,4 +1,5 @@
 import { getCookie, setCookie } from "~/lib/cookies";
+import { isEditableElement, isEditableTarget } from "~/lib/clientDiagnostics";
 
 export type RadarKeybindAction =
   | "follow"
@@ -75,4 +76,21 @@ export function formatRadarKeybind(code: string): string {
   if (code.startsWith("Key")) return code.slice(3);
   if (code.startsWith("Digit")) return code.slice(5);
   return code;
+}
+
+export function shouldIgnoreRadarShortcut(
+  event: KeyboardEvent,
+  activeElement: Element | null,
+): boolean {
+  return (
+    event.defaultPrevented ||
+    event.isComposing ||
+    event.repeat ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.altKey ||
+    event.shiftKey ||
+    isEditableTarget(event.target) ||
+    isEditableElement(activeElement)
+  );
 }

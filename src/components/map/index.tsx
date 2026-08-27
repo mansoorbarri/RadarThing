@@ -65,7 +65,10 @@ import {
   getStoredRunwayCenterlinePreferences,
   setStoredRunwayCenterlinePreferences,
 } from "~/lib/runwayCenterlinePreferences";
-import { type RadarKeybindPreferences } from "~/lib/radarKeybindPreferences";
+import {
+  shouldIgnoreRadarShortcut,
+  type RadarKeybindPreferences,
+} from "~/lib/radarKeybindPreferences";
 
 export interface Airport {
   name: string;
@@ -215,11 +218,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [flightDisplayMode, setFlightDisplayMode] =
     useState<FlightDisplayMode>("default");
   const showTags =
-    flightDisplayMode === "default" ||
-    flightDisplayMode === "waypoints-hidden";
+    flightDisplayMode === "default" || flightDisplayMode === "waypoints-hidden";
   const showFlightPlanWaypoints =
-    flightDisplayMode === "default" ||
-    flightDisplayMode === "labels-hidden";
+    flightDisplayMode === "default" || flightDisplayMode === "labels-hidden";
   const [radarTrailPreferences, setRadarTrailPreferences] = useState(() =>
     getStoredRadarTrailPreferences(),
   );
@@ -756,12 +757,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      const activeElement = document.activeElement;
-      const isInputFocused =
-        activeElement instanceof HTMLInputElement ||
-        activeElement instanceof HTMLTextAreaElement ||
-        activeElement?.getAttribute("contenteditable") === "true";
-
       if (e.key === "Escape") {
         handleMapClick({
           originalEvent: {
@@ -769,24 +764,21 @@ const MapComponent: React.FC<MapComponentProps> = ({
           },
         } as unknown as L.LeafletMouseEvent);
       }
+
+      if (shouldIgnoreRadarShortcut(e, document.activeElement)) return;
+
       if (e.code === keybindPreferences.cycleDisplay) {
-        if (!isInputFocused) {
-          e.preventDefault();
-          setFlightDisplayMode((currentMode) => {
-            const currentIndex = FLIGHT_DISPLAY_MODES.indexOf(currentMode);
-            const nextMode =
-              FLIGHT_DISPLAY_MODES[
-                (currentIndex + 1) % FLIGHT_DISPLAY_MODES.length
-              ]!;
-            return nextMode;
-          });
-        }
+        e.preventDefault();
+        setFlightDisplayMode((currentMode) => {
+          const currentIndex = FLIGHT_DISPLAY_MODES.indexOf(currentMode);
+          const nextMode =
+            FLIGHT_DISPLAY_MODES[
+              (currentIndex + 1) % FLIGHT_DISPLAY_MODES.length
+            ]!;
+          return nextMode;
+        });
       }
-      if (
-        !hideUi &&
-        e.code === keybindPreferences.headingMode &&
-        !isInputFocused
-      ) {
+      if (!hideUi && e.code === keybindPreferences.headingMode) {
         e.preventDefault();
         setIsHeadingMode(true);
       }

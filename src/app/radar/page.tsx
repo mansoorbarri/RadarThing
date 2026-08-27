@@ -47,6 +47,7 @@ import { setCookie } from "~/lib/cookies";
 import {
   getStoredRadarKeybindPreferences,
   setStoredRadarKeybindPreferences,
+  shouldIgnoreRadarShortcut,
 } from "~/lib/radarKeybindPreferences";
 import { normalizeCallsign } from "~/lib/utils";
 import {
@@ -825,14 +826,10 @@ function ATCPageContent() {
       const activeElement = document.activeElement;
       const isEditableContext =
         isEditableTarget(e.target) || isEditableElement(activeElement);
-      const shouldIgnoreLetterShortcuts =
-        e.defaultPrevented ||
-        e.isComposing ||
-        e.repeat ||
-        e.metaKey ||
-        e.ctrlKey ||
-        e.altKey ||
-        isEditableContext;
+      const shouldIgnoreLetterShortcuts = shouldIgnoreRadarShortcut(
+        e,
+        activeElement,
+      );
 
       if (showShortcutsMenu && e.key === "Escape") {
         return;
