@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import userscriptConfig from "../../../userscript-src/config.json";
 import { FREE_RECENT_FLIGHTS_LIMIT } from "~/lib/flightHistory";
-import { AdSenseUnit } from "~/components/ads/AdSenseUnit";
 
 const USERSCRIPT_INSTALL_URL = "https://radarthing.com/userscript";
 const USERSCRIPT_LOADER_URL = `${userscriptConfig.siteUrl}/loader`;
@@ -316,10 +315,6 @@ export default function HomePage() {
               />
             </div>
           </div>
-        </section>
-
-        <section className="border-t border-white/5 px-6 py-8">
-          <AdSenseUnit className="mx-auto max-w-5xl" />
         </section>
 
         {/* Pricing Comparison */}

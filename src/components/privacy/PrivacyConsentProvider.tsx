@@ -77,7 +77,7 @@ export function requestGooglePrivacyOptions() {
     return;
   }
 
-  window.location.assign("/?privacy=ads");
+  window.location.assign("/radar?privacy=ads");
 }
 
 export function PrivacyConsentProvider({

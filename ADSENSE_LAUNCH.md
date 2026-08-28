@@ -3,21 +3,22 @@
 The repository-side compliance work is implemented. Complete these account and
 DNS/email steps before enabling production ads.
 
-## 1. Create the ad unit
+## 1. Ad implementation
 
-1. The responsive display unit `RadarThing Free Content` has been created.
-2. The code includes these values as production defaults; the environment
-   variables remain available as overrides:
+The code loads Google Auto ads only for free users on `/radar`, aircraft images,
+airport charts, leaderboards, and public pilot pages. The approved
+`data-overlays="bottom"` option forces dynamic/collapsible anchors to the bottom
+edge. The `RadarThing Free Content` display unit is also used between aircraft
+telemetry and Enroute Path, and as the first card in the aircraft image gallery.
 
-   ```text
-   NEXT_PUBLIC_GOOGLE_ADSENSE_CLIENT=ca-pub-5174559718233522
-   NEXT_PUBLIC_GOOGLE_ADSENSE_SLOT=8811855745
-   ```
+The landing page, pricing, checkout, account, admin, and legal pages do not load
+the tag. The publisher ID is included as a production default; the environment
+variable remains available as an override:
 
-3. Keep Auto ads disabled. RadarThing uses explicit, separated placements on
-   the homepage, aircraft gallery, and airport-chart library. The interactive
-   radar, checkout, account, pricing, admin, and legal pages are intentionally
-   excluded.
+```text
+NEXT_PUBLIC_GOOGLE_ADSENSE_CLIENT=ca-pub-5174559718233522
+NEXT_PUBLIC_GOOGLE_ADSENSE_SLOT=8811855745
+```
 
 ## 2. Publish Google's certified CMP messages
 
@@ -35,11 +36,28 @@ In **AdSense → Privacy & messaging**:
    controls for the regions you serve.
 7. Test consent and revocation from a UK/EEA location and a covered US state.
 
-The AdSense tag loaded by `AdSenseUnit` is the top-level tag that lets Google's
+## 3. Enable only the anchor format
+
+In **AdSense → Ads → radarthing.com → Edit**:
+
+1. Turn on **Auto ads**.
+2. Under **Overlay formats**, enable **Anchor ads**.
+3. In Anchor advanced settings, select **Bottom only**.
+4. Enable **Allow dynamic anchors** so users receive the expandable/collapsible
+   format.
+5. Enable anchors on screens wider than 1000px if you want them on desktop.
+6. Disable Vignette ads, Side rail ads, Intent-driven formats, Banner ads, and
+   Multiplex ads. The code-managed display unit will continue to work.
+7. Under **Page exclusions**, add `https://radarthing.com/` and select **This
+   page only**. This account-side exclusion also protects the landing page
+   during client-side navigation.
+8. Apply the settings to the site.
+
+The AdSense tag loaded by the ad components is the top-level tag that lets Google's
 certified CMP display. The Privacy control links back into Google's revocation
 flow when the tag is present.
 
-## 3. Finish operational details
+## 4. Finish operational details
 
 - Make sure `support@radarthing.com`, `privacy@radarthing.com`, and
   `copyright@radarthing.com` are working inboxes or aliases.

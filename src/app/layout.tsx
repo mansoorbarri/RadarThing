@@ -13,6 +13,7 @@ import { PostHogProvider } from "~/components/providers/PostHogProvider";
 import { ThemeProvider } from "~/components/providers/ThemeProvider";
 import { PrivacyConsentProvider } from "~/components/privacy/PrivacyConsentProvider";
 import { PrivacyControl } from "~/components/privacy/PrivacyControl";
+import { AdSenseAnchor } from "~/components/ads/AdSenseAnchor";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://radarthing.com"),
@@ -101,6 +102,7 @@ export default function RootLayout({
                     />
                     {children}
                     <PrivacyControl />
+                    <AdSenseAnchor />
                   </Suspense>
                 </PostHogProvider>
               </ConvexProvider>

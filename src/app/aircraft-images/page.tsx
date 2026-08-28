@@ -38,8 +38,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { AdSenseUnit } from "~/components/ads/AdSenseUnit";
 import Link from "next/link";
+import { AdSenseInContent } from "~/components/ads/AdSenseInContent";
 
 type SubmitStage =
   | "idle"
@@ -458,8 +458,6 @@ export default function AircraftImagesPage() {
           )}
         </div>
 
-        <AdSenseUnit className="my-8" />
-
         {/* Search and Filters */}
         <div className="mb-6 flex flex-col gap-3 sm:gap-4">
           <div className="relative flex-1">
@@ -600,6 +598,7 @@ export default function AircraftImagesPage() {
         ) : (
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <AdSenseInContent placement="gallery-card" />
               {paginatedImages.map((image) => (
                 <div
                   key={image.id}

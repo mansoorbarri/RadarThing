@@ -26,7 +26,6 @@ import { UserAuth } from "~/components/atc/userAuth";
 import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 import type { ChartType } from "~/types/airportCharts";
 import { useProStatus } from "~/hooks/useProStatus";
-import { AdSenseUnit } from "~/components/ads/AdSenseUnit";
 import Link from "next/link";
 
 // Cookie helpers - shared with aircraft-images
@@ -380,8 +379,6 @@ export default function AirportChartsPage() {
             </GoogleSignInButton>
           )}
         </div>
-
-        <AdSenseUnit className="my-8" />
 
         {/* Search and Filters */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">

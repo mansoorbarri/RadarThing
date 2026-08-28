@@ -88,6 +88,7 @@ import { useProStatus } from "~/hooks/useProStatus";
 import Image from "next/image";
 import { useAircraftPhoto } from "~/hooks/useAircraftPhoto";
 import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
+import { AdSenseInContent } from "~/components/ads/AdSenseInContent";
 import { AircraftControlPanel } from "./AircraftControlPanel";
 import Link from "next/link";
 import { Analytics } from "~/lib/analytics";
@@ -931,6 +932,7 @@ export const Sidebar = ({
                   <MiniStat label="AGL" value={displayValues.altAGL} />
                 </div>
 
+                <AdSenseInContent placement="telemetry" />
                 {isOwnAircraft && <AircraftControlPanel aircraft={aircraft} />}
                 {renderFlightPlan()}
               </div>
@@ -1028,6 +1030,7 @@ export const Sidebar = ({
                       delay={5}
                     />
                   </div>
+                  <AdSenseInContent placement="telemetry" />
                   {isOwnAircraft && (
                     <AircraftControlPanel aircraft={aircraft} />
                   )}
