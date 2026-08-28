@@ -243,10 +243,19 @@ export async function createAirportChart(data: {
   chartUrl: string;
   imageKey?: string;
   discordUsername?: string;
+  rightsConfirmed: boolean;
 }): Promise<{ success: boolean; error?: string; chart?: AirportChartRecord }> {
   const userId = await getCurrentUserId();
   if (!userId) {
     return { success: false, error: "You must be signed in to upload charts" };
+  }
+  if (!data.rightsConfirmed) {
+    if (data.imageKey)
+      await utapi.deleteFiles(data.imageKey).catch(() => undefined);
+    return {
+      success: false,
+      error: "You must confirm that you have permission to share this chart",
+    };
   }
 
   try {

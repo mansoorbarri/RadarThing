@@ -91,6 +91,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
           chartName: upload.chartName,
           chartUrl: upload.url,
           imageKey: upload.key,
+          rightsConfirmed: true,
         }),
       ),
     );
@@ -113,7 +114,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-card p-4 text-card-foreground shadow-2xl sm:p-6">
+      <div className="border-border bg-card text-card-foreground relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border p-4 shadow-2xl sm:p-6">
         <button
           onClick={() => !isProcessing && onClose()}
           disabled={isProcessing}

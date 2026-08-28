@@ -7,8 +7,10 @@ import { api } from "../../../convex/_generated/api";
 import { Analytics } from "~/lib/analytics";
 import { getEffectiveAccessRole } from "~/lib/proAccess";
 import { ClientDiagnosticsProvider } from "./ClientDiagnosticsProvider";
+import { usePrivacyConsent } from "~/components/privacy/PrivacyConsentProvider";
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
+  const { analyticsAllowed, isResolved } = usePrivacyConsent();
   const { user, isLoaded: clerkLoaded } = useUser();
   const clerkId = user?.id;
 
@@ -20,12 +22,18 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize PostHog on mount
   useEffect(() => {
-    Analytics.init();
-  }, []);
+    if (!isResolved) return;
+    if (analyticsAllowed) {
+      Analytics.init();
+      Analytics.optIn();
+    } else {
+      Analytics.optOut();
+    }
+  }, [analyticsAllowed, isResolved]);
 
   // Identify user when they load
   useEffect(() => {
-    if (!clerkLoaded) return;
+    if (!clerkLoaded || !analyticsAllowed) return;
 
     if (!user) {
       // User logged out
@@ -42,7 +50,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         stripeCustomerId: dbUser.stripeCustomerId,
       });
     }
-  }, [clerkLoaded, user, dbUser]);
+  }, [analyticsAllowed, clerkLoaded, user, dbUser]);
 
   return (
     <>

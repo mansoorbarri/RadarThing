@@ -112,6 +112,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
       imageUrl,
       imageKey,
       isMilitary,
+      rightsConfirmed: true,
     });
 
     if (result.success) {
@@ -129,19 +130,19 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-2xl">
+      <div className="border-border bg-card text-card-foreground relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border p-6 shadow-2xl">
         <button
           onClick={() => !isProcessing && onClose()}
           disabled={isProcessing}
-          className="absolute top-4 right-4 cursor-pointer text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          className="text-muted-foreground hover:text-foreground absolute top-4 right-4 cursor-pointer transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
           <X className="h-5 w-5" />
         </button>
 
-        <h2 className="mb-2 text-xl font-bold text-foreground">
+        <h2 className="text-foreground mb-2 text-xl font-bold">
           Upload Aircraft Image
         </h2>
-        <p className="mb-6 text-sm text-muted-foreground">
+        <p className="text-muted-foreground mb-6 text-sm">
           Image will be published immediately.
         </p>
 
@@ -168,7 +169,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                 className={`absolute top-0.5 h-4 w-4 rounded-full bg-slate-200 transition-[left] ${isMilitary ? "left-[18px]" : "left-0.5"}`}
               />
             </div>
-            <span className="font-mono text-xs text-muted-foreground">
+            <span className="text-muted-foreground font-mono text-xs">
               MILITARY AIRCRAFT
             </span>
           </label>
@@ -176,7 +177,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
           {isMilitary ? (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-2 block font-mono text-xs text-muted-foreground">
+                <label className="text-muted-foreground mb-2 block font-mono text-xs">
                   AIR FORCE *
                 </label>
                 <input
@@ -192,11 +193,11 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   maxLength={10}
                   required
                   disabled={isProcessing}
-                  className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
                 />
               </div>
               <div>
-                <label className="mb-2 block font-mono text-xs text-muted-foreground">
+                <label className="text-muted-foreground mb-2 block font-mono text-xs">
                   AIRCRAFT *
                 </label>
                 <input
@@ -213,14 +214,14 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   required
                   disabled={isProcessing}
                   title="Use base model only (e.g., F16, C130)"
-                  className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
                 />
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="mb-2 block font-mono text-xs text-muted-foreground">
+                <label className="text-muted-foreground mb-2 block font-mono text-xs">
                   IATA CODE *
                 </label>
                 <input
@@ -236,11 +237,11 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   maxLength={2}
                   required
                   disabled={isProcessing}
-                  className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
                 />
               </div>
               <div>
-                <label className="mb-2 block font-mono text-xs text-muted-foreground">
+                <label className="text-muted-foreground mb-2 block font-mono text-xs">
                   ICAO CODE *
                 </label>
                 <input
@@ -256,11 +257,11 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   maxLength={4}
                   required
                   disabled={isProcessing}
-                  className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
                 />
               </div>
               <div>
-                <label className="mb-2 block font-mono text-xs text-muted-foreground">
+                <label className="text-muted-foreground mb-2 block font-mono text-xs">
                   AIRCRAFT *
                 </label>
                 <input
@@ -277,19 +278,19 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   required
                   disabled={isProcessing}
                   title="Use base model only (e.g., B777, A350) — not variants"
-                  className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
                 />
               </div>
             </div>
           )}
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             {isMilitary
               ? "Enter the air force name (e.g., USAF, PAF, RAF) and aircraft model."
               : "Aircraft should be base model only, not the variant. Like: B777. Not: B77W."}
           </p>
 
           <div>
-            <label className="mb-2 block font-mono text-xs text-muted-foreground">
+            <label className="text-muted-foreground mb-2 block font-mono text-xs">
               SELECT IMAGE
             </label>
             <ImageUploader

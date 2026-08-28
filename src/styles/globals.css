@@ -1351,3 +1351,12 @@ body {
   outline: none !important;
   box-shadow: none !important;
 }
+
+.legal-copy a {
+  color: rgb(165 243 252);
+  text-underline-offset: 3px;
+}
+
+.legal-copy a:hover {
+  text-decoration: underline;
+}

@@ -26,6 +26,8 @@ import { UserAuth } from "~/components/atc/userAuth";
 import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 import type { ChartType } from "~/types/airportCharts";
 import { useProStatus } from "~/hooks/useProStatus";
+import { AdSenseUnit } from "~/components/ads/AdSenseUnit";
+import Link from "next/link";
 
 // Cookie helpers - shared with aircraft-images
 function getCookie(name: string): string {
@@ -97,6 +99,7 @@ export default function AirportChartsPage() {
   const [submitProgress, setSubmitProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasSelectedFiles, setHasSelectedFiles] = useState(false);
+  const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const uploaderRef = useRef<ChartUploaderRef>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -163,6 +166,11 @@ export default function AirportChartsPage() {
       setError("Please select at least one chart file");
       return;
     }
+    if (!rightsConfirmed) {
+      toast.error("Confirm that you have permission to share these charts");
+      setError("You must confirm your rights before uploading");
+      return;
+    }
     if (!formData.icao || formData.icao.length < 3) {
       toast.error("Valid ICAO code required (3-4 characters)");
       setError("Valid ICAO code required (3-4 characters)");
@@ -192,6 +200,7 @@ export default function AirportChartsPage() {
           chartUrl: upload.url,
           imageKey: upload.key,
           discordUsername: formData.discordUsername || undefined,
+          rightsConfirmed,
         }),
       ),
     );
@@ -220,6 +229,7 @@ export default function AirportChartsPage() {
       setSubmitStage("idle");
       setSubmitProgress(null);
       setHasSelectedFiles(false);
+      setRightsConfirmed(false);
       uploaderRef.current?.reset();
       setFormData((prev) => ({
         icao: "",
@@ -371,6 +381,8 @@ export default function AirportChartsPage() {
           )}
         </div>
 
+        <AdSenseUnit className="my-8" />
+
         {/* Search and Filters */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="relative flex-1">
@@ -503,6 +515,7 @@ export default function AirportChartsPage() {
                 setSubmitStage("idle");
                 setSubmitProgress(null);
                 setHasSelectedFiles(false);
+                setRightsConfirmed(false);
                 uploaderRef.current?.reset();
                 setFormData((prev) => ({
                   icao: "",
@@ -601,6 +614,29 @@ export default function AirportChartsPage() {
                 />
               </div>
 
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-5 text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={rightsConfirmed}
+                  onChange={(event) => setRightsConfirmed(event.target.checked)}
+                  required
+                  disabled={isProcessing}
+                  className="mt-0.5 h-4 w-4 accent-cyan-400"
+                />
+                <span>
+                  I created these charts, they are public domain, or I have
+                  permission to upload and share them under the{" "}
+                  <Link
+                    href="/terms"
+                    target="_blank"
+                    className="text-cyan-300 hover:underline"
+                  >
+                    submission terms
+                  </Link>
+                  .
+                </span>
+              </label>
+
               <div>
                 <label className="mb-2 block font-mono text-xs text-slate-400">
                   SELECT CHART FILES
@@ -631,7 +667,10 @@ export default function AirportChartsPage() {
               <button
                 type="submit"
                 disabled={
-                  isProcessing || !hasSelectedFiles || submitStage === "success"
+                  isProcessing ||
+                  !hasSelectedFiles ||
+                  !rightsConfirmed ||
+                  submitStage === "success"
                 }
                 className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
                   submitStage === "success"
@@ -647,8 +686,13 @@ export default function AirportChartsPage() {
             {submitStage === "success" && (
               <div className="absolute inset-0 z-50 flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-[#0a0f14]">
                 {/* Subtle grid pattern background */}
-                <div className="pointer-events-none absolute inset-0 opacity-[0.04]"
-                  style={{ backgroundImage: "linear-gradient(rgba(34,211,238,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.5) 1px, transparent 1px)", backgroundSize: "32px 32px" }}
+                <div
+                  className="pointer-events-none absolute inset-0 opacity-[0.04]"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(rgba(34,211,238,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.5) 1px, transparent 1px)",
+                    backgroundSize: "32px 32px",
+                  }}
                 />
 
                 {/* Expanding location pulse */}
@@ -659,13 +703,20 @@ export default function AirportChartsPage() {
                 </div>
 
                 {/* Center content */}
-                <div className="relative z-10 flex flex-col items-center animate-[fadeInUp_0.5s_ease-out_forwards]"
-                  style={{ opacity: 0 }}>
+                <div
+                  className="relative z-10 flex animate-[fadeInUp_0.5s_ease-out_forwards] flex-col items-center"
+                  style={{ opacity: 0 }}
+                >
                   {/* Map pin drop effect */}
                   <div className="relative mb-5">
-                    <div className="absolute -bottom-1 left-1/2 h-2 w-10 -translate-x-1/2 animate-[pinShadow_0.4s_ease-out_forwards] rounded-full bg-cyan-400/20 blur-sm" style={{ opacity: 0 }} />
-                    <div className="relative flex h-20 w-20 animate-[pinDrop_0.4s_cubic-bezier(0.34,1.56,0.64,1)_forwards] items-center justify-center rounded-full border border-cyan-500/30 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 shadow-[0_0_40px_rgba(34,211,238,0.15)]"
-                      style={{ transform: "translateY(-20px)", opacity: 0 }}>
+                    <div
+                      className="absolute -bottom-1 left-1/2 h-2 w-10 -translate-x-1/2 animate-[pinShadow_0.4s_ease-out_forwards] rounded-full bg-cyan-400/20 blur-sm"
+                      style={{ opacity: 0 }}
+                    />
+                    <div
+                      className="relative flex h-20 w-20 animate-[pinDrop_0.4s_cubic-bezier(0.34,1.56,0.64,1)_forwards] items-center justify-center rounded-full border border-cyan-500/30 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 shadow-[0_0_40px_rgba(34,211,238,0.15)]"
+                      style={{ transform: "translateY(-20px)", opacity: 0 }}
+                    >
                       <Map className="h-9 w-9 text-cyan-400" />
                     </div>
                   </div>
@@ -683,23 +734,55 @@ export default function AirportChartsPage() {
 
                 <style jsx>{`
                   @keyframes mapPulse {
-                    0% { transform: scale(0.5); opacity: 0; }
-                    30% { opacity: 1; }
-                    100% { transform: scale(1); opacity: 0; }
+                    0% {
+                      transform: scale(0.5);
+                      opacity: 0;
+                    }
+                    30% {
+                      opacity: 1;
+                    }
+                    100% {
+                      transform: scale(1);
+                      opacity: 0;
+                    }
                   }
                   @keyframes pinDrop {
-                    0% { transform: translateY(-20px); opacity: 0; }
-                    60% { transform: translateY(2px); opacity: 1; }
-                    100% { transform: translateY(0); opacity: 1; }
+                    0% {
+                      transform: translateY(-20px);
+                      opacity: 0;
+                    }
+                    60% {
+                      transform: translateY(2px);
+                      opacity: 1;
+                    }
+                    100% {
+                      transform: translateY(0);
+                      opacity: 1;
+                    }
                   }
                   @keyframes pinShadow {
-                    0% { transform: translateX(-50%) scale(0.3); opacity: 0; }
-                    60% { transform: translateX(-50%) scale(1.1); opacity: 0.3; }
-                    100% { transform: translateX(-50%) scale(1); opacity: 0.2; }
+                    0% {
+                      transform: translateX(-50%) scale(0.3);
+                      opacity: 0;
+                    }
+                    60% {
+                      transform: translateX(-50%) scale(1.1);
+                      opacity: 0.3;
+                    }
+                    100% {
+                      transform: translateX(-50%) scale(1);
+                      opacity: 0.2;
+                    }
                   }
                   @keyframes fadeInUp {
-                    0% { transform: translateY(12px); opacity: 0; }
-                    100% { transform: translateY(0); opacity: 1; }
+                    0% {
+                      transform: translateY(12px);
+                      opacity: 0;
+                    }
+                    100% {
+                      transform: translateY(0);
+                      opacity: 1;
+                    }
                   }
                 `}</style>
               </div>

@@ -37,6 +37,8 @@ export const env = createEnv({
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string(),
     NEXT_PUBLIC_POSTHOG_KEY: z.string(),
     NEXT_PUBLIC_POSTHOG_HOST: z.string(),
+    NEXT_PUBLIC_GOOGLE_ADSENSE_CLIENT: z.string().optional(),
+    NEXT_PUBLIC_GOOGLE_ADSENSE_SLOT: z.string().optional(),
   },
 
   /**
@@ -63,6 +65,10 @@ export const env = createEnv({
     POSTHOG_PROJECT_ID: process.env.POSTHOG_PROJECT_ID,
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    NEXT_PUBLIC_GOOGLE_ADSENSE_CLIENT:
+      process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_CLIENT,
+    NEXT_PUBLIC_GOOGLE_ADSENSE_SLOT:
+      process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_SLOT,
     AVIAPAGES_API_KEY: process.env.AVIAPAGES_API_KEY,
     AVWX_TOKEN: process.env.AVWX_TOKEN,
     OPENWEATHERMAP_API_KEY: process.env.OPENWEATHERMAP_API_KEY,

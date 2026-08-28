@@ -38,6 +38,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { AdSenseUnit } from "~/components/ads/AdSenseUnit";
+import Link from "next/link";
 
 type SubmitStage =
   | "idle"
@@ -77,13 +79,13 @@ export default function AircraftImagesPage() {
 
   // Track page view
   useEffect(() => {
-    document.cookie =
-      "radarthing_discord=; Max-Age=0; path=/; SameSite=Lax";
+    document.cookie = "radarthing_discord=; Max-Age=0; path=/; SameSite=Lax";
     Analytics.imageGalleryViewed();
   }, []);
   const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
   const [error, setError] = useState<string | null>(null);
   const [hasSelectedFile, setHasSelectedFile] = useState(false);
+  const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const uploaderRef = useRef<ImageUploaderRef>(null);
   const uploadedDataRef = useRef<{ url: string; key: string } | null>(null);
 
@@ -220,6 +222,11 @@ export default function AircraftImagesPage() {
       setError("Please select an image first");
       return;
     }
+    if (!rightsConfirmed) {
+      toast.error("Confirm that you have permission to share this image");
+      setError("You must confirm your rights before uploading");
+      return;
+    }
     if (isMilitary) {
       if (!formData.airlineIcao) {
         toast.error("Air force name is required (e.g., USAF, PAF)");
@@ -290,6 +297,7 @@ export default function AircraftImagesPage() {
       imageUrl,
       imageKey,
       isMilitary,
+      rightsConfirmed,
     });
 
     if (result.success) {
@@ -309,6 +317,7 @@ export default function AircraftImagesPage() {
         setShowUploadModal(false);
         setSubmitStage("idle");
         setHasSelectedFile(false);
+        setRightsConfirmed(false);
         uploadedDataRef.current = null;
         uploaderRef.current?.reset();
         setIsMilitary(false);
@@ -448,6 +457,8 @@ export default function AircraftImagesPage() {
             </GoogleSignInButton>
           )}
         </div>
+
+        <AdSenseUnit className="my-8" />
 
         {/* Search and Filters */}
         <div className="mb-6 flex flex-col gap-3 sm:gap-4">
@@ -674,6 +685,7 @@ export default function AircraftImagesPage() {
                 setError(null);
                 setSubmitStage("idle");
                 setHasSelectedFile(false);
+                setRightsConfirmed(false);
                 uploadedDataRef.current = null;
                 uploaderRef.current?.reset();
                 setFormData({
@@ -891,12 +903,38 @@ export default function AircraftImagesPage() {
                 />
               </div>
 
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-5 text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={rightsConfirmed}
+                  onChange={(event) => setRightsConfirmed(event.target.checked)}
+                  required
+                  disabled={isProcessing}
+                  className="mt-0.5 h-4 w-4 accent-cyan-400"
+                />
+                <span>
+                  I created this image or have permission to upload and share
+                  it, and it follows the{" "}
+                  <Link
+                    href="/terms"
+                    target="_blank"
+                    className="text-cyan-300 hover:underline"
+                  >
+                    submission terms
+                  </Link>
+                  .
+                </span>
+              </label>
+
               {/* Success overlay is rendered outside the form */}
 
               <button
                 type="submit"
                 disabled={
-                  isProcessing || !hasSelectedFile || submitStage === "success"
+                  isProcessing ||
+                  !hasSelectedFile ||
+                  !rightsConfirmed ||
+                  submitStage === "success"
                 }
                 className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
                   submitStage === "success"

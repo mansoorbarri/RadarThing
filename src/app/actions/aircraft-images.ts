@@ -360,10 +360,19 @@ export async function createAircraftImage(data: {
   imageUrl: string;
   imageKey?: string;
   isMilitary?: boolean;
+  rightsConfirmed: boolean;
 }): Promise<{ success: boolean; error?: string; image?: AircraftImage }> {
   const userId = await getCurrentUserId();
   if (!userId) {
     return { success: false, error: "You must be signed in to upload images" };
+  }
+  if (!data.rightsConfirmed) {
+    if (data.imageKey)
+      await utapi.deleteFiles(data.imageKey).catch(() => undefined);
+    return {
+      success: false,
+      error: "You must confirm that you have permission to share this image",
+    };
   }
 
   // Validate codes based on military flag

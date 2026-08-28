@@ -170,7 +170,26 @@ export const Analytics = {
       session_recording: {
         maskAllInputs: true,
       },
+      opt_out_capturing_by_default: true,
+      opt_out_persistence_by_default: true,
+      respect_dnt: true,
     });
+  },
+
+  optIn: () => {
+    if (typeof window === "undefined") return;
+    if (process.env.NODE_ENV === "development") return;
+    posthog.opt_in_capturing();
+  },
+
+  optOut: () => {
+    if (typeof window === "undefined") return;
+    if (process.env.NODE_ENV === "development") return;
+    if (!posthog.__loaded) return;
+    posthog.reset();
+    posthog.persistence?.clear();
+    posthog.sessionPersistence?.clear();
+    posthog.opt_out_capturing();
   },
 
   // Identify user with their properties

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import userscriptConfig from "../../../userscript-src/config.json";
 import { FREE_RECENT_FLIGHTS_LIMIT } from "~/lib/flightHistory";
+import { AdSenseUnit } from "~/components/ads/AdSenseUnit";
 
 const USERSCRIPT_INSTALL_URL = "https://radarthing.com/userscript";
 const USERSCRIPT_LOADER_URL = `${userscriptConfig.siteUrl}/loader`;
@@ -317,6 +318,10 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section className="border-t border-white/5 px-6 py-8">
+          <AdSenseUnit className="mx-auto max-w-5xl" />
+        </section>
+
         {/* Pricing Comparison */}
         <section className="border-t border-white/5 bg-white/[0.02]">
           <div className="mx-auto max-w-6xl px-6 py-20">
@@ -482,9 +487,21 @@ export default function HomePage() {
           <span className="text-sm text-white/30">
             © {new Date().getFullYear()} RadarThing
           </span>
-          <div className="flex gap-6 text-sm text-white/40">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-white/40">
+            <Link href="/about" className="hover:text-white">
+              About
+            </Link>
             <Link href="/pricing" className="hover:text-white">
               Pricing
+            </Link>
+            <Link href="/privacy" className="hover:text-white">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-white">
+              Terms
+            </Link>
+            <Link href="/contact" className="hover:text-white">
+              Contact
             </Link>
             <Link
               href="https://discord.gg/pbQF4txdRC"

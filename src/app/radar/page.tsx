@@ -100,8 +100,10 @@ import {
   Radar,
   RotateCcw,
   Route,
+  ShieldCheck,
   X,
 } from "lucide-react";
+import { openPrivacySettings } from "~/components/privacy/PrivacyConsentProvider";
 import { UnitPreferencesProvider } from "~/hooks/useUnitPreferences";
 import { TimeDisplayPreferenceProvider } from "~/hooks/useTimeDisplayPreference";
 
@@ -1207,6 +1209,20 @@ function ATCPageContent() {
           onClick: () => {
             window.open("https://discord.gg/pbQF4txdRC", "_blank");
           },
+        },
+        {
+          id: "privacy-settings",
+          label: "Privacy Settings",
+          icon: <ShieldCheck size={18} strokeWidth={1.8} />,
+          active: false,
+          onClick: openPrivacySettings,
+        },
+        {
+          id: "legal",
+          label: "Privacy & Terms",
+          icon: <FileText size={18} strokeWidth={1.8} />,
+          active: false,
+          onClick: () => router.push("/privacy"),
         },
       ],
     },
