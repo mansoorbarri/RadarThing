@@ -63,6 +63,10 @@ export function normalizeAircraftType(type: string | undefined): string | null {
   if (shuttleOrbiterMatch) return `OV${shuttleOrbiterMatch[1]}`;
   if (/\bSPACE\s+SHUTTLE\b/.test(cleaned)) return "SHUTTLE";
 
+  if (/\bA223\b/.test(cleaned) || /\bA220[- ]?300\b/.test(cleaned)) {
+    return "BCS3";
+  }
+
   const airbusMatch = /A\d{3}/.exec(cleaned);
   if (airbusMatch) return airbusMatch[0];
 
@@ -268,7 +272,7 @@ export function getCompactAircraftType(type: string | undefined): string | null 
   if (/\bA306\b|\bA30B\b|\bA300\b/.test(cleaned)) return "A306";
 
   if (/\bA223\b/.test(cleaned) || /\bA220[- ]?300\b/.test(cleaned)) {
-    return "A223";
+    return "BCS3";
   }
   if (/\bA221\b/.test(cleaned) || /\bA220[- ]?100\b/.test(cleaned)) {
     return "A221";

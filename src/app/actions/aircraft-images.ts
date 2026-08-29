@@ -195,6 +195,9 @@ function normalizeAircraftTypeInput(aircraftType: string): string {
   if (ilyushinMatch) return "IL76";
   const antonovMatch = /\bAN-?(\d{2,3})\b/.exec(cleaned);
   if (antonovMatch) return `AN${antonovMatch[1]}`;
+  if (/\bA223\b/.test(cleaned) || /\bA220[-\s]?300\b/.test(cleaned)) {
+    return "BCS3";
+  }
   return cleaned;
 }
 
