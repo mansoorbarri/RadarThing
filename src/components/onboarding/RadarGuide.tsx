@@ -263,6 +263,7 @@ export function RadarGuide({
   );
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
+  const [dialogHeight, setDialogHeight] = useState(0);
   const dialogRef = useRef<HTMLElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const step = STEPS[stepIndex]!;
@@ -283,6 +284,12 @@ export function RadarGuide({
 
   const measureTarget = useCallback(() => {
     setViewportHeight(window.innerHeight);
+    const nextDialogHeight = dialogRef.current?.getBoundingClientRect().height;
+    if (nextDialogHeight) {
+      setDialogHeight((current) =>
+        current === nextDialogHeight ? current : nextDialogHeight,
+      );
+    }
     const target = findTarget(step.targets);
     if (!target) {
       setTargetRect(null);
@@ -496,16 +503,39 @@ export function RadarGuide({
 
   const Icon = step.icon;
   const cardStyle = targetRect
-    ? targetRect.height > viewportHeight * 0.55
-      ? { bottom: 24 }
-      : targetRect.top + targetRect.height < viewportHeight * 0.58
-        ? {
-            top: Math.min(
-              targetRect.top + targetRect.height + 18,
-              viewportHeight - 360,
-            ),
-          }
-        : { bottom: Math.max(18, viewportHeight - targetRect.top + 18) }
+    ? (() => {
+        const viewportMargin = 12;
+        const maxHeight = Math.max(160, viewportHeight - viewportMargin * 2);
+
+        if (targetRect.height > viewportHeight * 0.55) {
+          return { bottom: viewportMargin, maxHeight };
+        }
+
+        if (targetRect.top + targetRect.height < viewportHeight * 0.58) {
+          const desiredTop = targetRect.top + targetRect.height + 18;
+          const latestTop = Math.max(
+            viewportMargin,
+            viewportHeight - dialogHeight - viewportMargin,
+          );
+          const top = Math.min(desiredTop, latestTop);
+          return {
+            top,
+            maxHeight: Math.max(160, viewportHeight - top - viewportMargin),
+          };
+        }
+
+        const bottom = Math.max(
+          viewportMargin,
+          viewportHeight - targetRect.top + 18,
+        );
+        return {
+          bottom,
+          maxHeight: Math.max(
+            160,
+            viewportHeight - bottom - viewportMargin,
+          ),
+        };
+      })()
     : undefined;
   const taskNeedsExternalAction =
     step.task?.type === "event" || step.task?.type === "signal";
