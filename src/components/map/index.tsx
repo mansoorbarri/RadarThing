@@ -101,6 +101,11 @@ interface AltitudeCurtainLayers {
   bands: (L.Polygon | null)[];
 }
 
+// Project the curtain's ground edge at a fixed map scale. This gives every
+// floor point stable geographic coordinates instead of moving it whenever the
+// current zoom changes.
+const ALTITUDE_GROUND_REFERENCE_ZOOM = 10;
+
 function createEmptyAltitudeCurtain(): AltitudeCurtainLayers {
   return {
     bands: [],
@@ -152,9 +157,10 @@ function buildAltitudeCurtainGeometry(
       maxDepth,
       (Math.max(0, altitude) / 50_000) * maxDepth,
     );
-    const projected = map.latLngToLayerPoint(point);
-    return map.layerPointToLatLng(
+    const projected = map.project(point, ALTITUDE_GROUND_REFERENCE_ZOOM);
+    return map.unproject(
       L.point(projected.x - depth * 0.14, projected.y + depth),
+      ALTITUDE_GROUND_REFERENCE_ZOOM,
     );
   };
 
@@ -417,7 +423,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const selectedAltitudeCurtainRef = useRef<AltitudeCurtainLayers>(
     createEmptyAltitudeCurtain(),
   );
-  const [altitudeProjectionVersion, setAltitudeProjectionVersion] = useState(0);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // Local selection state for internal use (cleared when clicking map background)
@@ -1290,21 +1295,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     mapRefs.mapInstance,
   ]);
 
-  // Re-project the altitude curtains after zooming so their apparent height
-  // stays stable in screen space instead of growing with the map scale.
-  useEffect(() => {
-    const map = mapRefs.mapInstance.current;
-    if (!map) return;
-
-    const handleZoomEnd = () => {
-      setAltitudeProjectionVersion((version) => version + 1);
-    };
-    map.on("zoomend", handleZoomEnd);
-    return () => {
-      map.off("zoomend", handleZoomEnd);
-    };
-  }, [mapRefs.mapInstance, mapRefs.mapReady]);
-
   // A selected live aircraft gets a compact altitude curtain along its recent
   // track. The wall represents its current altitude, while the normal tag keeps
   // the precise numeric readout visible.
@@ -1368,7 +1358,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     );
   }, [
     aircrafts,
-    altitudeProjectionVersion,
     isMobile,
     isRadarMode,
     mapRefs.mapInstance,
@@ -1506,7 +1495,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     replayState,
     isRadarMode,
     isMobile,
-    altitudeProjectionVersion,
     showAltitude3D,
     mapRefs.mapInstance,
     mapRefs.replayLayerGroup,
