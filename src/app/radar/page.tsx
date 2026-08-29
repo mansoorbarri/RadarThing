@@ -17,6 +17,7 @@ import { type Id } from "../../../convex/_generated/dataModel";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { activeAircraft } from "~/lib/aircraft-store";
+import { type FlightRoutePoint } from "~/lib/flightTelemetry";
 import {
   parseImportedFlightPlan,
   type ImportedFlightPlan,
@@ -208,7 +209,7 @@ function ATCPageContent() {
     Boolean(selectedAirport?.icao) &&
     (isProUser || isFreeChartIcao(selectedAirport?.icao));
 
-  const [historyPath, setHistoryPath] = useState<[number, number][] | null>(
+  const [historyPath, setHistoryPath] = useState<FlightRoutePoint[] | null>(
     null,
   );
   const [isViewingHistory, setIsViewingHistory] = useState(false);

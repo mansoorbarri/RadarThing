@@ -2,6 +2,11 @@ import { useCallback, useRef } from "react";
 import L from "leaflet";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type ImportedFlightPlan } from "~/lib/flightPlanImport";
+import { estimateFlownAltitudeProfile } from "~/lib/altitudeProfile";
+import {
+  ALTITUDE_RENDER_BANDS,
+  buildAltitudePathSegments,
+} from "~/lib/altitudeBands";
 import {
   findActiveWaypointIndex,
   preparePathForWorldCopy,
@@ -33,6 +38,22 @@ function getRenderSignature(
   return `${isRadarMode}:${showFlightPlanWaypoints}:${airports
     .map((airport) => `${airport.icao}:${airport.lat}:${airport.lon}`)
     .join("|")}`;
+}
+
+function addAltitudeColoredPath(
+  layerGroup: L.LayerGroup,
+  path: [number, number][],
+  altitudes: number[],
+  options: L.PolylineOptions,
+) {
+  for (const segment of buildAltitudePathSegments(path, altitudes)) {
+    layerGroup.addLayer(
+      L.polyline(segment.points, {
+        ...options,
+        color: ALTITUDE_RENDER_BANDS[segment.bandIndex]!.color,
+      }),
+    );
+  }
 }
 
 interface FlightPlanWaypointLike {
@@ -186,9 +207,9 @@ export const useFlightPlanDrawing = ({
           </div>
         `;
 
-        const isEndpoint =
-          index === 0 || index === validWaypoints.length - 1;
-        const icon = isRadarMode || isEndpoint ? RadarWaypointIcon : WaypointIcon;
+        const isEndpoint = index === 0 || index === validWaypoints.length - 1;
+        const icon =
+          isRadarMode || isEndpoint ? RadarWaypointIcon : WaypointIcon;
 
         const marker = L.marker(coord, {
           icon,
@@ -254,31 +275,54 @@ export const useFlightPlanDrawing = ({
           aircraft.flightPath || [],
           aircraft.lon,
         );
+        const historyAltitudes = estimateFlownAltitudeProfile(
+          history.length,
+          Number(aircraft.altMSL ?? aircraft.alt),
+        );
+        const telemetry = aircraft.flightTelemetry ?? [];
+        const telemetryStartIndex = Math.max(
+          0,
+          history.length - telemetry.length,
+        );
+        telemetry.forEach((sample, telemetryIndex) => {
+          const pathIndex = telemetryStartIndex + telemetryIndex;
+          if (pathIndex < historyAltitudes.length) {
+            historyAltitudes[pathIndex] = sample.altMSL;
+          }
+        });
 
         if (history.length >= 2) {
           const mainPath = history.slice(0, -1);
           if (mainPath.length >= 2) {
-            historyLayerGroup.current!.addLayer(
-              L.polyline(mainPath, {
-                color,
-                weight: isRadarMode ? 2 : 4,
-                opacity: isRadarMode ? 0.7 : 0.8,
-                smoothFactor: 1,
-                dashArray: isRadarMode ? "5, 5" : "",
-              }),
+            const mainPathOptions = {
+              color,
+              weight: isRadarMode ? 2 : 4,
+              opacity: isRadarMode ? 0.7 : 0.8,
+              smoothFactor: 1,
+              dashArray: isRadarMode ? "5, 5" : "",
+            };
+            addAltitudeColoredPath(
+              historyLayerGroup.current!,
+              mainPath,
+              historyAltitudes.slice(0, -1),
+              mainPathOptions,
             );
           }
 
           const trailingSegment = history.slice(-2);
           if (trailingSegment.length === 2) {
-            historyLayerGroup.current!.addLayer(
-              L.polyline(trailingSegment, {
-                color,
-                weight: isRadarMode ? 1 : 2,
-                opacity: isRadarMode ? 0.3 : 0.4,
-                smoothFactor: 1,
-                dashArray: "4, 4",
-              }),
+            const trailingOptions = {
+              color,
+              weight: isRadarMode ? 1 : 2,
+              opacity: isRadarMode ? 0.3 : 0.4,
+              smoothFactor: 1,
+              dashArray: "4, 4",
+            };
+            addAltitudeColoredPath(
+              historyLayerGroup.current!,
+              trailingSegment,
+              historyAltitudes.slice(-2),
+              trailingOptions,
             );
           }
 
@@ -323,7 +367,9 @@ export const useFlightPlanDrawing = ({
         if (!aircraft.flightPlan) return;
 
         try {
-          const waypoints = JSON.parse(aircraft.flightPlan) as FlightPlanWaypointLike[];
+          const waypoints = JSON.parse(
+            aircraft.flightPlan,
+          ) as FlightPlanWaypointLike[];
           if (waypoints.length === 0) return;
 
           const activeWaypointIndex = findActiveWaypointIndex(

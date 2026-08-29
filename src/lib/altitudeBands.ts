@@ -12,7 +12,51 @@ export const UNKNOWN_ALTITUDE_BAND = {
   color: "#64748b",
 } as const;
 
+export const ALTITUDE_RENDER_BANDS = [
+  ...ALTITUDE_BANDS,
+  UNKNOWN_ALTITUDE_BAND,
+] as const;
+
+export interface AltitudePathSegment<T> {
+  points: T[];
+  bandIndex: number;
+}
+
 export function getAltitudeBandIndex(altitude: number) {
   const index = ALTITUDE_BANDS.findIndex((band) => altitude < band.ceiling);
   return index < 0 ? ALTITUDE_BANDS.length - 1 : index;
+}
+
+export function buildAltitudePathSegments<T>(
+  path: readonly T[],
+  altitudes: readonly number[],
+  altitudeKnown: readonly boolean[] = path.map(() => true),
+): AltitudePathSegment<T>[] {
+  const segments: AltitudePathSegment<T>[] = [];
+
+  for (let index = 1; index < path.length; index += 1) {
+    const previousPoint = path[index - 1];
+    const point = path[index];
+    if (previousPoint === undefined || point === undefined) continue;
+
+    const previousAltitude = altitudes[index - 1];
+    const altitude = altitudes[index];
+    const hasAltitude =
+      altitudeKnown[index - 1] !== false &&
+      altitudeKnown[index] !== false &&
+      Number.isFinite(previousAltitude) &&
+      Number.isFinite(altitude);
+    const bandIndex = hasAltitude
+      ? getAltitudeBandIndex((previousAltitude! + altitude!) / 2)
+      : ALTITUDE_BANDS.length;
+    const activeSegment = segments[segments.length - 1];
+
+    if (activeSegment?.bandIndex === bandIndex) {
+      activeSegment.points.push(point);
+    } else {
+      segments.push({ points: [previousPoint, point], bandIndex });
+    }
+  }
+
+  return segments;
 }

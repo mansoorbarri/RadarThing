@@ -21,10 +21,15 @@ import { useProStatus } from "~/hooks/useProStatus";
 import { getBooleanCookie, setBooleanCookie } from "~/lib/cookies";
 import {
   ALTITUDE_BANDS,
+  ALTITUDE_RENDER_BANDS,
+  buildAltitudePathSegments,
   getAltitudeBandIndex,
-  UNKNOWN_ALTITUDE_BAND,
 } from "~/lib/altitudeBands";
-import { estimateFlownAltitudeProfile } from "~/lib/altitudeProfile";
+import {
+  buildAltitudeProfile,
+  estimateFlownAltitudeProfile,
+} from "~/lib/altitudeProfile";
+import { type FlightRoutePoint } from "~/lib/flightTelemetry";
 
 import { useMapInitialization } from "./useMapInitialization";
 import { useFlightPlanDrawing } from "./useFlightPlanDrawing";
@@ -101,6 +106,10 @@ interface AltitudeCurtainLayers {
   bands: (L.Polygon | null)[];
 }
 
+interface AltitudePolylineLayers {
+  segments: L.Polyline[];
+}
+
 // Project the curtain's ground edge at a fixed map scale. This gives every
 // floor point stable geographic coordinates instead of moving it whenever the
 // current zoom changes.
@@ -110,6 +119,52 @@ function createEmptyAltitudeCurtain(): AltitudeCurtainLayers {
   return {
     bands: [],
   };
+}
+
+function clearAltitudePolylines(
+  group: L.LayerGroup,
+  layers: React.MutableRefObject<AltitudePolylineLayers>,
+) {
+  for (const layer of layers.current.segments) {
+    group.removeLayer(layer);
+  }
+  layers.current = { segments: [] };
+}
+
+function renderAltitudePolylines(
+  group: L.LayerGroup,
+  layers: React.MutableRefObject<AltitudePolylineLayers>,
+  path: [number, number][],
+  altitudes: number[],
+  options: L.PolylineOptions,
+) {
+  const segments = buildAltitudePathSegments(path, altitudes);
+
+  segments.forEach((segment, index) => {
+    const style = {
+      ...options,
+      color: ALTITUDE_RENDER_BANDS[segment.bandIndex]!.color,
+    };
+    const existing = layers.current.segments[index];
+    if (existing) {
+      existing.setLatLngs(segment.points).setStyle(style).bringToFront();
+    } else {
+      layers.current.segments[index] = L.polyline(segment.points, style).addTo(
+        group,
+      );
+      layers.current.segments[index]?.bringToFront();
+    }
+  });
+
+  for (
+    let index = layers.current.segments.length - 1;
+    index >= segments.length;
+    index -= 1
+  ) {
+    const layer = layers.current.segments[index];
+    if (layer) group.removeLayer(layer);
+    layers.current.segments.pop();
+  }
 }
 
 function sampleAltitudePath(
@@ -149,7 +204,7 @@ function buildAltitudeCurtainGeometry(
     rawAltitudes,
     rawAltitudeKnown,
   );
-  const renderBands = [...ALTITUDE_BANDS, UNKNOWN_ALTITUDE_BAND];
+  const renderBands = ALTITUDE_RENDER_BANDS;
   const bandFaces: L.LatLngExpression[][][] = renderBands.map(() => []);
 
   const floorPoint = (point: [number, number], altitude: number) => {
@@ -236,7 +291,7 @@ function renderAltitudeCurtain(
     maxDepth,
   );
 
-  [...ALTITUDE_BANDS, UNKNOWN_ALTITUDE_BAND].forEach((band, index) => {
+  ALTITUDE_RENDER_BANDS.forEach((band, index) => {
     const faces = geometry.bandFaces[index] ?? [];
     const existing = layers.current.bands[index];
     if (existing) {
@@ -289,7 +344,7 @@ interface MapComponentProps {
   onMapReady?: () => void;
   onInitialBaseLayerReady?: () => void;
   onInitialTrafficPaint?: () => void;
-  historyPath?: [number, number][] | null;
+  historyPath?: FlightRoutePoint[] | null;
   onLayerModeChange?: (isDarkLayer: boolean) => void;
   replayState?: ReplayState | null;
   followAircraft?: PositionUpdate;
@@ -414,8 +469,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
   >([]);
   const lastConflictSnapshotRef = useRef<string>("");
   const lastConflictHistorySignatureRef = useRef<string>("");
-  const replayTraversedPolylineRef = useRef<L.Polyline | null>(null);
-  const replayRemainingPolylineRef = useRef<L.Polyline | null>(null);
+  const replayTraversedAltitudePolylinesRef = useRef<AltitudePolylineLayers>({
+    segments: [],
+  });
+  const replayRemainingAltitudePolylinesRef = useRef<AltitudePolylineLayers>({
+    segments: [],
+  });
   const replayMarkerRef = useRef<L.Marker | null>(null);
   const replayAltitudeCurtainRef = useRef<AltitudeCurtainLayers>(
     createEmptyAltitudeCurtain(),
@@ -1203,7 +1262,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   );
 
   // Track previous historyPath to detect flight changes
-  const prevHistoryPathRef = useRef<[number, number][] | null>(null);
+  const prevHistoryPathRef = useRef<FlightRoutePoint[] | null>(null);
   const replayReferenceLon = replayState?.currentPosition?.[1];
 
   // Zoom to flight path when it changes (works for both replay and static history)
@@ -1220,7 +1279,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     if (prevHistoryPathRef.current !== historyPath) {
       prevHistoryPathRef.current = historyPath;
       const displayPath = preparePathForWorldCopy(
-        historyPath,
+        historyPath.map(([lat, lon]) => [lat, lon] as [number, number]),
         replayReferenceLon,
       );
       const bounds = L.latLngBounds(displayPath);
@@ -1252,19 +1311,31 @@ const MapComponent: React.FC<MapComponentProps> = ({
     mapRefs.historyLayerGroup.current.clearLayers();
 
     const displayHistoryPath = preparePathForWorldCopy(
-      historyPath,
+      historyPath.map(([lat, lon]) => [lat, lon] as [number, number]),
       replayReferenceLon,
     );
 
     if (displayHistoryPath.length >= 2) {
-      const historyPolyline = L.polyline(displayHistoryPath, {
+      const historyStyle = {
         color: isRadarMode ? "#00ff00" : "#00ff00",
         weight: isRadarMode ? 2 : 4,
         opacity: isRadarMode ? 0.7 : 0.8,
         smoothFactor: 1,
         dashArray: "",
-      });
-      mapRefs.historyLayerGroup.current.addLayer(historyPolyline);
+      };
+
+      const altitudeProfile = buildAltitudeProfile(historyPath);
+      for (const segment of buildAltitudePathSegments(
+        displayHistoryPath,
+        altitudeProfile.altitudes,
+      )) {
+        mapRefs.historyLayerGroup.current.addLayer(
+          L.polyline(segment.points, {
+            ...historyStyle,
+            color: ALTITUDE_RENDER_BANDS[segment.bandIndex]!.color,
+          }),
+        );
+      }
     }
   }, [
     historyPath,
@@ -1378,8 +1449,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     // Clear replay layer if no replay state
     if (!replayState?.currentPosition) {
       mapRefs.replayLayerGroup.current.clearLayers();
-      replayTraversedPolylineRef.current = null;
-      replayRemainingPolylineRef.current = null;
+      replayTraversedAltitudePolylinesRef.current = { segments: [] };
+      replayRemainingAltitudePolylinesRef.current = { segments: [] };
       replayMarkerRef.current = null;
       replayAltitudeCurtainRef.current = createEmptyAltitudeCurtain();
       return;
@@ -1413,7 +1484,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       );
     }
 
-    // Draw traversed path (solid amber line)
+    // Draw the traversed path with the same bands as the 3D curtain and legend.
     if (displayTraversedPath.length >= 2) {
       const traversedStyle = {
         color: "#f59e0b", // amber-500
@@ -1422,24 +1493,21 @@ const MapComponent: React.FC<MapComponentProps> = ({
         smoothFactor: 1,
       };
 
-      if (replayTraversedPolylineRef.current) {
-        replayTraversedPolylineRef.current
-          .setLatLngs(displayTraversedPath)
-          .setStyle(traversedStyle);
-      } else {
-        replayTraversedPolylineRef.current = L.polyline(
-          displayTraversedPath,
-          traversedStyle,
-        ).addTo(mapRefs.replayLayerGroup.current);
-      }
-    } else if (replayTraversedPolylineRef.current) {
-      mapRefs.replayLayerGroup.current.removeLayer(
-        replayTraversedPolylineRef.current,
+      renderAltitudePolylines(
+        mapRefs.replayLayerGroup.current,
+        replayTraversedAltitudePolylinesRef,
+        displayTraversedPath,
+        replayState.traversedAltitudes,
+        traversedStyle,
       );
-      replayTraversedPolylineRef.current = null;
+    } else {
+      clearAltitudePolylines(
+        mapRefs.replayLayerGroup.current,
+        replayTraversedAltitudePolylinesRef,
+      );
     }
 
-    // Draw remaining path (dashed, faded)
+    // Keep the remaining path dashed and faded while sharing the same bands.
     if (displayRemainingPath.length >= 2) {
       const remainingStyle = {
         color: "#f59e0b", // amber-500
@@ -1449,21 +1517,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
         dashArray: "8, 8",
       };
 
-      if (replayRemainingPolylineRef.current) {
-        replayRemainingPolylineRef.current
-          .setLatLngs(displayRemainingPath)
-          .setStyle(remainingStyle);
-      } else {
-        replayRemainingPolylineRef.current = L.polyline(
-          displayRemainingPath,
-          remainingStyle,
-        ).addTo(mapRefs.replayLayerGroup.current);
-      }
-    } else if (replayRemainingPolylineRef.current) {
-      mapRefs.replayLayerGroup.current.removeLayer(
-        replayRemainingPolylineRef.current,
+      renderAltitudePolylines(
+        mapRefs.replayLayerGroup.current,
+        replayRemainingAltitudePolylinesRef,
+        displayRemainingPath,
+        replayState.remainingAltitudes,
+        remainingStyle,
       );
-      replayRemainingPolylineRef.current = null;
+    } else {
+      clearAltitudePolylines(
+        mapRefs.replayLayerGroup.current,
+        replayRemainingAltitudePolylinesRef,
+      );
     }
 
     const displayCurrentPosition =
