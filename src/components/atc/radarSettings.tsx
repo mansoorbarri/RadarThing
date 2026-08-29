@@ -18,6 +18,7 @@ import {
   type RadarTrailPreferences,
 } from "~/lib/radarTrailPreferences";
 import { type RunwayCenterlinePreferences } from "~/lib/runwayCenterlines";
+import { ALTITUDE_BANDS } from "~/lib/altitudeBands";
 import {
   DEFAULT_RADAR_KEYBINDS,
   formatRadarKeybind,
@@ -60,6 +61,9 @@ interface RadarSettingsProps {
   showWaypoints: boolean;
   setShowWaypoints: (v: boolean) => void;
 
+  showAltitude3D: boolean;
+  setShowAltitude3D: (v: boolean) => void;
+
   showPrecipitation: boolean;
   setShowPrecipitation: (v: boolean) => void;
 
@@ -92,6 +96,8 @@ export const RadarSettings = ({
   onDeletePreset,
   showWaypoints,
   setShowWaypoints,
+  showAltitude3D,
+  setShowAltitude3D,
   showPrecipitation,
   setShowPrecipitation,
   showAirmets,
@@ -408,6 +414,45 @@ export const RadarSettings = ({
 
         {activeTab === "map" ? (
           <SettingsSection title="Map Layers">
+            <SettingsToggle
+              label="3D Altitude Trail"
+              checked={showAltitude3D}
+              onChange={(enabled) => {
+                setShowAltitude3D(enabled);
+                Analytics.track("map_altitude_3d_toggled", { enabled });
+              }}
+            />
+
+            {showAltitude3D ? (
+              <div className="overflow-hidden rounded-md border border-cyan-400/15 bg-[#061116]/80">
+                <div className="border-b border-white/10 px-2.5 py-2 text-[8px] font-bold tracking-[0.2em] text-white/40">
+                  ALTITUDE BANDS
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 px-2.5 py-2.5">
+                  {[...ALTITUDE_BANDS].reverse().map((band) => (
+                    <div
+                      key={band.label}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <span
+                        className="h-1.5 w-7 shrink-0 rounded-full"
+                        style={{
+                          background: band.color,
+                          boxShadow: `0 0 8px ${band.color}80`,
+                        }}
+                      />
+                      <span className="text-[9px] text-white/65 tabular-nums">
+                        {band.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-white/10 px-2.5 py-2 text-[8px] tracking-[0.08em] text-white/30">
+                  ~ ESTIMATED WHERE UNRECORDED
+                </div>
+              </div>
+            ) : null}
+
             {runwayCenterlinePreferences &&
             onRunwayCenterlinePreferencesChange ? (
               <SettingsToggle

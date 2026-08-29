@@ -517,6 +517,7 @@ export const getAircraftDivIcon = (
   showTags = true,
   isMobile = false,
   unitPrefs: UnitPreferences = DEFAULT_UNIT_PREFERENCES,
+  showAltitude3D = false,
 ) => {
   const iconUrl = getAircraftIconUrl(aircraft.type, aircraft.af);
   const planeSize = getAircraftMarkerSize(aircraft.type, aircraft.af, isMobile);
@@ -557,6 +558,9 @@ export const getAircraftDivIcon = (
     selectedAircraftId &&
     (aircraft.id === selectedAircraftId ||
       aircraft.callsign === selectedAircraftId);
+  const usePerspectiveAircraft = Boolean(
+    showAltitude3D && isCurrentAircraftSelected && !isOnGround,
+  );
 
   const planeStyle = `
     position: absolute;
@@ -567,9 +571,47 @@ export const getAircraftDivIcon = (
     transform:rotate(${aircraft.heading || 0}deg);
     transform-origin: 50% 50%;
     z-index: 2;
-    filter: ${getAircraftIconFilter(Boolean(isEmergency), Boolean(isCurrentAircraftSelected))};
     ${isEmergency ? "animation: pulse 1s infinite alternate;" : ""}
   `;
+  const planeFilter = getAircraftIconFilter(
+    Boolean(isEmergency),
+    Boolean(isCurrentAircraftSelected),
+  );
+  const planeMarkup = usePerspectiveAircraft
+    ? `
+        <div style="${planeStyle} transform-style: preserve-3d;">
+          <div style="
+            position: absolute;
+            left: 13%;
+            right: 13%;
+            bottom: -5px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.62);
+            filter: blur(3px);
+            transform: scaleX(0.82);
+          "></div>
+          <img src="${iconUrl}" style="
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.72;
+            transform: translateY(4px) scaleY(0.84);
+            filter: brightness(0) saturate(100%) invert(22%) sepia(40%) saturate(1010%) hue-rotate(166deg) brightness(72%) contrast(104%);
+          " />
+          <img src="${iconUrl}" style="
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            transform: perspective(72px) rotateX(34deg) translateY(-2px) scale(1.12);
+            transform-origin: 50% 56%;
+            filter: ${planeFilter};
+          " />
+        </div>
+      `
+    : `<img src="${iconUrl}" style="${planeStyle} filter: ${planeFilter}; pointer-events: none;" />`;
 
   const identStyle = isIdentActive
     ? `
@@ -621,7 +663,7 @@ export const getAircraftDivIcon = (
     html: `
       <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px; pointer-events: auto; cursor: pointer;">
         ${isIdentActive ? `<div style="${identStyle} pointer-events: none;"></div>` : ""}
-        <img src="${iconUrl}" style="${planeStyle} pointer-events: none;" />
+        ${planeMarkup}
         <div style="${tagStyle} pointer-events: none;">
           ${detailContent}
         </div>
@@ -857,23 +899,65 @@ export const RadarAirportIcon = L.divIcon({
 });
 
 // Replay aircraft icon with heading rotation
-export const getReplayAircraftIcon = (heading: number) => {
+export const getReplayAircraftIcon = (
+  heading: number,
+  altitude?: number,
+  altitudeIsEstimated = false,
+  showAltitude3D = false,
+) => {
   const iconUrl = DEFAULT_AIRCRAFT_ICON;
   const planeSize = 36;
+  const altitudeLabel =
+    typeof altitude === "number" && Number.isFinite(altitude)
+      ? altitude >= 18_000
+        ? `FL${Math.round(altitude / 100)}`
+        : `${Math.round(altitude).toLocaleString()} FT`
+      : null;
 
   return L.divIcon({
     html: `
       <div style="position: relative; width: ${planeSize}px; height: ${planeSize}px;">
-        <img
-          src="${iconUrl}"
-          style="
-            width: ${planeSize}px;
-            height: ${planeSize}px;
-            transform: rotate(${heading}deg);
-            transform-origin: 50% 50%;
+        <div style="
+          position: absolute;
+          inset: 0;
+          transform: rotate(${heading}deg);
+          transform-origin: 50% 50%;
+          transform-style: preserve-3d;
+        ">
+          ${
+            showAltitude3D
+              ? `<div style="
+                    position: absolute;
+                    left: 13%;
+                    right: 13%;
+                    bottom: -5px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background: rgba(0, 0, 0, 0.62);
+                    filter: blur(3px);
+                    transform: scaleX(0.82);
+                  "></div>
+                  <img src="${iconUrl}" style="
+                    position: absolute;
+                    inset: 0;
+                    width: 100%;
+                    height: 100%;
+                    opacity: 0.72;
+                    transform: translateY(4px) scaleY(0.84);
+                    filter: brightness(0) saturate(100%) invert(31%) sepia(41%) saturate(1140%) hue-rotate(353deg) brightness(73%) contrast(101%);
+                  " />`
+              : ""
+          }
+          <img src="${iconUrl}" style="
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            transform: ${showAltitude3D ? "perspective(72px) rotateX(34deg) translateY(-2px) scale(1.12)" : "none"};
+            transform-origin: 50% 56%;
             filter: brightness(0) saturate(100%) invert(73%) sepia(73%) saturate(1374%) hue-rotate(342deg) brightness(101%) contrast(95%) drop-shadow(0 0 8px rgba(245, 158, 11, 0.8));
-          "
-        />
+          " />
+        </div>
         <div style="
           position: absolute;
           top: -4px;
@@ -884,6 +968,25 @@ export const getReplayAircraftIcon = (heading: number) => {
           border-radius: 50%;
           animation: pulse 1.5s ease-in-out infinite;
         "></div>
+        ${
+          altitudeLabel
+            ? `<div style="
+                position: absolute;
+                top: 39px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 3px 6px;
+                border: 1px solid rgba(251, 191, 36, 0.35);
+                border-radius: 5px;
+                background: rgba(7, 11, 15, 0.9);
+                color: #fcd34d;
+                font: 700 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+                letter-spacing: 0.04em;
+                white-space: nowrap;
+                box-shadow: 0 5px 16px rgba(0, 0, 0, 0.35);
+              ">${altitudeIsEstimated ? "~" : ""}${altitudeLabel}</div>`
+            : ""
+        }
       </div>
     `,
     className: "leaflet-replay-aircraft-icon",

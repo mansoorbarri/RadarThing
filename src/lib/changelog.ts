@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: "3d-altitude-paths",
+    date: "2026-08-29",
+    title: "3D Altitude Paths",
+    description:
+      "Toggle 3D altitude paths for selected aircraft and replays in Settings → Map → 3D Altitude Trail.",
+    type: "new",
+  },
+  {
     id: "radar-tour",
     date: "2026-08-25",
     title: "Radar Tour",
@@ -42,7 +50,8 @@ export const changelog: ChangelogEntry[] = [
     id: "dashboard-privacy-blur",
     date: "2026-06-24",
     title: "Dashboard Privacy Blur",
-    description: "Blur your dashboard name, email, and avatar from Account settings.",
+    description:
+      "Blur your dashboard name, email, and avatar from Account settings.",
     type: "new",
   },
   {
@@ -57,7 +66,8 @@ export const changelog: ChangelogEntry[] = [
     id: "dashboard-flight-delete",
     date: "2026-05-14",
     title: "Delete Flights from Dashboard",
-    description: "Delete your own flights from the dashboard with a confirmation prompt.",
+    description:
+      "Delete your own flights from the dashboard with a confirmation prompt.",
     type: "new",
   },
   {
@@ -254,9 +264,10 @@ const CURRENT_CHANGELOG_DATE = `${CURRENT_CHANGELOG_MONTH}-${String(
   now.getDate(),
 ).padStart(2, "0")}`;
 
-export const currentMonthChangelog = changelog.filter((entry) =>
-  entry.date.startsWith(CURRENT_CHANGELOG_MONTH) &&
-  entry.date <= CURRENT_CHANGELOG_DATE,
+export const currentMonthChangelog = changelog.filter(
+  (entry) =>
+    entry.date.startsWith(CURRENT_CHANGELOG_MONTH) &&
+    entry.date <= CURRENT_CHANGELOG_DATE,
 );
 
 export const CURRENT_CHANGELOG_MONTH_LABEL = new Intl.DateTimeFormat("en-US", {

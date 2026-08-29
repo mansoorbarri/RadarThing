@@ -69,7 +69,9 @@ export default defineSchema({
     maxAltitude: v.optional(v.number()), // feet
     maxSpeed: v.optional(v.number()), // knots
     statsExcludedReason: v.optional(v.string()),
-    routeData: v.optional(v.any()), // JSON data - array of coordinates
+    // Legacy [lat, lon] points or extended
+    // [lat, lon, altMSL, speed, heading, verticalSpeed, timestamp] samples.
+    routeData: v.optional(v.any()),
     startTime: v.number(), // timestamp
     endTime: v.optional(v.number()), // timestamp
     dedupeKey: v.optional(v.string()),

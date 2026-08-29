@@ -44,6 +44,7 @@ interface MapRefs {
   airportMarkersLayer: React.MutableRefObject<L.LayerGroup | null>;
   historyLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
   replayLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
+  altitudeLayerGroup: React.MutableRefObject<L.LayerGroup | null>;
   osmLayer: React.MutableRefObject<L.TileLayer | null>;
   satelliteHybridLayer: React.MutableRefObject<L.TileLayer | null>;
   radarBaseLayer: React.MutableRefObject<L.TileLayer | null>;
@@ -108,6 +109,7 @@ export const useMapInitialization = ({
   const airportMarkersLayer = useRef<L.LayerGroup | null>(null);
   const historyLayerGroup = useRef<L.LayerGroup | null>(null);
   const replayLayerGroup = useRef<L.LayerGroup | null>(null);
+  const altitudeLayerGroup = useRef<L.LayerGroup | null>(null);
 
   const osmLayer = useRef<L.TileLayer | null>(null);
   const satelliteHybridLayer = useRef<L.TileLayer | null>(null);
@@ -236,6 +238,10 @@ export const useMapInitialization = ({
 
     satelliteHybridLayer.current.addTo(map);
 
+    const altitudePane = map.createPane("altitudeCurtainPane");
+    altitudePane.style.zIndex = "425";
+    altitudePane.style.pointerEvents = "none";
+
     radarTrailsLayerGroup.current = L.layerGroup().addTo(map);
     radarModeLineLayerGroup.current = L.layerGroup().addTo(map);
     runwayCenterlineLayerGroup.current = L.layerGroup().addTo(map);
@@ -245,6 +251,7 @@ export const useMapInitialization = ({
     airportMarkersLayer.current = L.layerGroup().addTo(map);
     historyLayerGroup.current = L.layerGroup().addTo(map);
     replayLayerGroup.current = L.layerGroup().addTo(map);
+    altitudeLayerGroup.current = L.layerGroup().addTo(map);
 
     // Signal that map and layers are ready
     setMapReady(true);
@@ -345,7 +352,6 @@ export const useMapInitialization = ({
       settingsControlInstanceRef.current = null;
       setSettingsControlRef.current = null;
     }
-
     if (!hideUi) {
       const resetMapViewControl = new ResetMapViewControl({}, () => {
         resetMapView();
@@ -448,6 +454,7 @@ export const useMapInitialization = ({
     airportMarkersLayer,
     historyLayerGroup,
     replayLayerGroup,
+    altitudeLayerGroup,
     osmLayer,
     satelliteHybridLayer,
     radarBaseLayer,

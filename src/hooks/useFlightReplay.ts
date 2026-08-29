@@ -1,6 +1,12 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { getFlightDurationMs } from "~/lib/flightDuration";
 import { unwrapPath } from "~/lib/map-utils";
+import { type FlightRoutePoint } from "~/lib/flightTelemetry";
+import {
+  buildAltitudeProfile,
+  getPeakAltitude,
+  interpolateAltitude,
+} from "~/lib/altitudeProfile";
 
 export interface FlightData {
   id: string;
@@ -13,7 +19,7 @@ export interface FlightData {
   duration?: number;
   maxAltitude?: number;
   maxSpeed?: number;
-  routeData?: [number, number][];
+  routeData?: FlightRoutePoint[];
 }
 
 export interface FlightReplayState {
@@ -23,6 +29,11 @@ export interface FlightReplayState {
   currentHeading: number;
   traversedPath: [number, number][];
   remainingPath: [number, number][];
+  traversedAltitudes: number[];
+  remainingAltitudes: number[];
+  currentAltitude: number;
+  maxAltitude: number;
+  altitudeIsEstimated: boolean;
   elapsedTime: number; // in ms
   totalDuration: number; // in ms
   speed: number;
@@ -128,6 +139,10 @@ export function useFlightReplay(flight: FlightData | null) {
     () => unwrapPath((rawRouteData || []).filter(isValidCoordinatePair)),
     [rawRouteData],
   );
+  const altitudeProfile = useMemo(
+    () => buildAltitudeProfile(rawRouteData || [], flight?.maxAltitude),
+    [flight?.maxAltitude, rawRouteData],
+  );
 
   // Calculate total duration
   const totalDuration = useMemo(() => {
@@ -148,6 +163,11 @@ export function useFlightReplay(flight: FlightData | null) {
         currentHeading: 0,
         traversedPath: [],
         remainingPath: routeData,
+        traversedAltitudes: [],
+        remainingAltitudes: altitudeProfile.altitudes,
+        currentAltitude: altitudeProfile.altitudes[0] ?? 0,
+        maxAltitude: getPeakAltitude(altitudeProfile.altitudes),
+        altitudeIsEstimated: altitudeProfile.isEstimated,
         elapsedTime: 0,
         totalDuration,
       };
@@ -165,7 +185,11 @@ export function useFlightReplay(flight: FlightData | null) {
       routeData.length - 2,
     );
     const segmentProgress =
-      timePerSegment > 0 ? (elapsedTime % timePerSegment) / timePerSegment : 0;
+      currentProgress >= 1
+        ? 1
+        : timePerSegment > 0
+          ? (elapsedTime % timePerSegment) / timePerSegment
+          : 0;
 
     // Get current interpolated position
     const p1 = routeData[currentSegmentIndex]!;
@@ -174,6 +198,11 @@ export function useFlightReplay(flight: FlightData | null) {
 
     // Calculate heading
     const currentHeading = calculateHeading(p1[0], p1[1], p2[0], p2[1]);
+    const currentAltitude = interpolateAltitude(
+      altitudeProfile.altitudes[currentSegmentIndex] ?? 0,
+      altitudeProfile.altitudes[currentSegmentIndex + 1] ?? 0,
+      segmentProgress,
+    );
 
     // Split path into traversed and remaining
     const traversedPath: [number, number][] = [
@@ -191,10 +220,21 @@ export function useFlightReplay(flight: FlightData | null) {
       currentHeading,
       traversedPath,
       remainingPath,
+      traversedAltitudes: [
+        ...altitudeProfile.altitudes.slice(0, currentSegmentIndex + 1),
+        currentAltitude,
+      ],
+      remainingAltitudes: [
+        currentAltitude,
+        ...altitudeProfile.altitudes.slice(currentSegmentIndex + 1),
+      ],
+      currentAltitude,
+      maxAltitude: getPeakAltitude(altitudeProfile.altitudes),
+      altitudeIsEstimated: altitudeProfile.isEstimated,
       elapsedTime,
       totalDuration,
     };
-  }, [routeData, elapsedTime, totalDuration]);
+  }, [routeData, elapsedTime, totalDuration, altitudeProfile]);
 
   // Animation loop using ref to avoid recreating callback
   const speedRef = useRef(speed);

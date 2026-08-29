@@ -19,6 +19,12 @@ import { type ImportedFlightPlan } from "~/lib/flightPlanImport";
 import { useMobileDetection } from "~/hooks/useMobileDetection";
 import { useProStatus } from "~/hooks/useProStatus";
 import { getBooleanCookie, setBooleanCookie } from "~/lib/cookies";
+import {
+  ALTITUDE_BANDS,
+  getAltitudeBandIndex,
+  UNKNOWN_ALTITUDE_BAND,
+} from "~/lib/altitudeBands";
+import { estimateFlownAltitudeProfile } from "~/lib/altitudeProfile";
 
 import { useMapInitialization } from "./useMapInitialization";
 import { useFlightPlanDrawing } from "./useFlightPlanDrawing";
@@ -83,7 +89,167 @@ interface ReplayState {
   currentHeading: number;
   traversedPath: [number, number][];
   remainingPath: [number, number][];
+  traversedAltitudes: number[];
+  remainingAltitudes: number[];
+  currentAltitude: number;
+  maxAltitude: number;
+  altitudeIsEstimated: boolean;
   isPlaying: boolean;
+}
+
+interface AltitudeCurtainLayers {
+  bands: (L.Polygon | null)[];
+}
+
+function createEmptyAltitudeCurtain(): AltitudeCurtainLayers {
+  return {
+    bands: [],
+  };
+}
+
+function sampleAltitudePath(
+  path: [number, number][],
+  altitudes: number[],
+  altitudeKnown: boolean[],
+  maxPoints = 96,
+) {
+  if (path.length <= maxPoints) return { path, altitudes, altitudeKnown };
+
+  const sampledPath: [number, number][] = [];
+  const sampledAltitudes: number[] = [];
+  const sampledAltitudeKnown: boolean[] = [];
+  const step = (path.length - 1) / (maxPoints - 1);
+  for (let index = 0; index < maxPoints; index += 1) {
+    const sourceIndex = Math.min(path.length - 1, Math.round(index * step));
+    sampledPath.push(path[sourceIndex]!);
+    sampledAltitudes.push(altitudes[sourceIndex] ?? 0);
+    sampledAltitudeKnown.push(altitudeKnown[sourceIndex] ?? false);
+  }
+  return {
+    path: sampledPath,
+    altitudes: sampledAltitudes,
+    altitudeKnown: sampledAltitudeKnown,
+  };
+}
+
+function buildAltitudeCurtainGeometry(
+  map: L.Map,
+  rawPath: [number, number][],
+  rawAltitudes: number[],
+  rawAltitudeKnown: boolean[],
+  maxDepth: number,
+) {
+  const { path, altitudes, altitudeKnown } = sampleAltitudePath(
+    rawPath,
+    rawAltitudes,
+    rawAltitudeKnown,
+  );
+  const renderBands = [...ALTITUDE_BANDS, UNKNOWN_ALTITUDE_BAND];
+  const bandFaces: L.LatLngExpression[][][] = renderBands.map(() => []);
+
+  const floorPoint = (point: [number, number], altitude: number) => {
+    const depth = Math.min(
+      maxDepth,
+      (Math.max(0, altitude) / 50_000) * maxDepth,
+    );
+    const projected = map.latLngToLayerPoint(point);
+    return map.layerPointToLatLng(
+      L.point(projected.x - depth * 0.14, projected.y + depth),
+    );
+  };
+
+  let activeBandIndex = -1;
+  let activeTop: L.LatLngExpression[] = [];
+  let activeFloor: L.LatLngExpression[] = [];
+  const flushActiveStrip = () => {
+    if (activeBandIndex < 0 || activeTop.length < 2) return;
+    bandFaces[activeBandIndex]!.push([
+      ...activeTop,
+      ...[...activeFloor].reverse(),
+    ]);
+  };
+
+  for (let index = 1; index < path.length; index += 1) {
+    const previousPoint = path[index - 1]!;
+    const point = path[index]!;
+    const previousAltitude = altitudes[index - 1] ?? 0;
+    const altitude = altitudes[index] ?? 0;
+    const previousFloor = floorPoint(previousPoint, previousAltitude);
+    const floor = floorPoint(point, altitude);
+    const hasRecordedAltitude =
+      (altitudeKnown[index - 1] ?? false) && (altitudeKnown[index] ?? false);
+    const segmentAltitude = (previousAltitude + altitude) / 2;
+    const bandIndex = hasRecordedAltitude
+      ? getAltitudeBandIndex(segmentAltitude)
+      : ALTITUDE_BANDS.length;
+
+    if (bandIndex !== activeBandIndex) {
+      flushActiveStrip();
+      activeBandIndex = bandIndex;
+      activeTop = [previousPoint, point];
+      activeFloor = [previousFloor, floor];
+    } else {
+      activeTop.push(point);
+      activeFloor.push(floor);
+    }
+  }
+  flushActiveStrip();
+
+  return { bandFaces };
+}
+
+function clearAltitudeCurtain(
+  group: L.LayerGroup,
+  layers: React.MutableRefObject<AltitudeCurtainLayers>,
+) {
+  for (const layer of layers.current.bands) {
+    if (layer) group.removeLayer(layer);
+  }
+  layers.current = createEmptyAltitudeCurtain();
+}
+
+function renderAltitudeCurtain(
+  group: L.LayerGroup,
+  layers: React.MutableRefObject<AltitudeCurtainLayers>,
+  map: L.Map,
+  path: [number, number][],
+  altitudes: number[],
+  altitudeKnown: boolean[],
+  maxDepth: number,
+) {
+  if (path.length < 2) {
+    clearAltitudeCurtain(group, layers);
+    return;
+  }
+
+  const geometry = buildAltitudeCurtainGeometry(
+    map,
+    path,
+    altitudes,
+    altitudeKnown,
+    maxDepth,
+  );
+
+  [...ALTITUDE_BANDS, UNKNOWN_ALTITUDE_BAND].forEach((band, index) => {
+    const faces = geometry.bandFaces[index] ?? [];
+    const existing = layers.current.bands[index];
+    if (existing) {
+      existing.setLatLngs(faces);
+    } else {
+      layers.current.bands[index] = L.polygon(faces, {
+        pane: "altitudeCurtainPane",
+        stroke: false,
+        fillColor: band.color,
+        fillOpacity: 0.38,
+        interactive: false,
+      }).addTo(group);
+    }
+    layers.current.bands[index]?.setStyle({
+      color: band.color,
+      fillColor: band.color,
+    });
+    layers.current.bands[index]?.bringToBack();
+  });
 }
 
 interface ConflictHistoryEvent extends ConflictAlertSummary {
@@ -106,6 +272,7 @@ interface MapComponentProps {
   ) => void;
   onAirportSelect?: (airport: Airport) => void;
   selectedAircraftIds?: string[];
+  selectedAircrafts?: PositionUpdate[];
   selectedAirport?: Airport;
   setDrawFlightPlanOnMap: (
     func: (aircraft: PositionUpdate, shouldZoom?: boolean) => void,
@@ -156,6 +323,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onAircraftSelect,
   onAirportSelect,
   selectedAircraftIds = [],
+  selectedAircrafts = [],
   selectedAirport,
   setDrawFlightPlanOnMap,
   setDrawMultipleFlightPlansOnMap,
@@ -194,6 +362,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   );
   const [isOpenAIPEnabled, setIsOpenAIPEnabled] = useState(() =>
     getBooleanCookie("map_openaip", false),
+  );
+  const [showAltitude3D, setShowAltitude3D] = useState(() =>
+    getBooleanCookie("map_altitude_3d", false),
   );
   const [showWaypoints, setShowWaypoints] = useState(() =>
     getBooleanCookie("map_waypoints", false),
@@ -240,6 +411,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const replayTraversedPolylineRef = useRef<L.Polyline | null>(null);
   const replayRemainingPolylineRef = useRef<L.Polyline | null>(null);
   const replayMarkerRef = useRef<L.Marker | null>(null);
+  const replayAltitudeCurtainRef = useRef<AltitudeCurtainLayers>(
+    createEmptyAltitudeCurtain(),
+  );
+  const selectedAltitudeCurtainRef = useRef<AltitudeCurtainLayers>(
+    createEmptyAltitudeCurtain(),
+  );
+  const [altitudeProjectionVersion, setAltitudeProjectionVersion] = useState(0);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // Local selection state for internal use (cleared when clicking map background)
@@ -593,6 +771,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [isOpenAIPEnabled]);
 
   useEffect(() => {
+    setBooleanCookie("map_altitude_3d", showAltitude3D);
+  }, [showAltitude3D]);
+
+  useEffect(() => {
     setBooleanCookie("map_waypoints", showWaypoints);
   }, [showWaypoints]);
 
@@ -862,6 +1044,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     isOSMMode,
     isRadarMode,
     isOpenAIPEnabled,
+    showAltitude3D,
     selectedAircraftIds,
     selectedAirport,
     onAircraftSelect,
@@ -920,6 +1103,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     isOpenAIPEnabled,
     isSettingsOpen,
     canUseRadarMode,
+    mapRefs.mapReady,
   ]);
 
   useEffect(() => {
@@ -1106,6 +1290,96 @@ const MapComponent: React.FC<MapComponentProps> = ({
     mapRefs.mapInstance,
   ]);
 
+  // Re-project the altitude curtains after zooming so their apparent height
+  // stays stable in screen space instead of growing with the map scale.
+  useEffect(() => {
+    const map = mapRefs.mapInstance.current;
+    if (!map) return;
+
+    const handleZoomEnd = () => {
+      setAltitudeProjectionVersion((version) => version + 1);
+    };
+    map.on("zoomend", handleZoomEnd);
+    return () => {
+      map.off("zoomend", handleZoomEnd);
+    };
+  }, [mapRefs.mapInstance, mapRefs.mapReady]);
+
+  // A selected live aircraft gets a compact altitude curtain along its recent
+  // track. The wall represents its current altitude, while the normal tag keeps
+  // the precise numeric readout visible.
+  useEffect(() => {
+    const map = mapRefs.mapInstance.current;
+    const group = mapRefs.altitudeLayerGroup.current;
+    if (!map || !group) return;
+
+    if (!showAltitude3D || replayState || selectedAircraftIds.length === 0) {
+      clearAltitudeCurtain(group, selectedAltitudeCurtainRef);
+      return;
+    }
+
+    const selectedId = selectedAircraftIds[0];
+    const selectedAircraft =
+      selectedAircrafts[0] ??
+      aircrafts.find(
+        (aircraft) =>
+          aircraft.id === selectedId || aircraft.callsign === selectedId,
+      );
+    const altitude = Number(selectedAircraft?.altMSL ?? selectedAircraft?.alt);
+    if (!selectedAircraft || !Number.isFinite(altitude) || altitude < 300) {
+      clearAltitudeCurtain(group, selectedAltitudeCurtainRef);
+      return;
+    }
+
+    const telemetry = selectedAircraft.flightTelemetry ?? [];
+    const rawPath = [...(selectedAircraft.flightPath ?? [])];
+    const currentPoint: [number, number] = [
+      selectedAircraft.lat,
+      selectedAircraft.lon,
+    ];
+    const lastPoint = rawPath[rawPath.length - 1];
+    if (
+      lastPoint?.[0] !== currentPoint[0] ||
+      lastPoint?.[1] !== currentPoint[1]
+    ) {
+      rawPath.push(currentPoint);
+    }
+    const recordedAltitudes = estimateFlownAltitudeProfile(
+      rawPath.length,
+      altitude,
+    );
+    const telemetryStartIndex = Math.max(0, rawPath.length - telemetry.length);
+    telemetry.forEach((sample, index) => {
+      const routeIndex = telemetryStartIndex + index;
+      if (routeIndex < recordedAltitudes.length) {
+        recordedAltitudes[routeIndex] = sample.altMSL;
+      }
+    });
+    const curtainAltitudeKnown = rawPath.map(() => true);
+    const displayPath = preparePathForWorldCopy(rawPath, selectedAircraft.lon);
+    renderAltitudeCurtain(
+      group,
+      selectedAltitudeCurtainRef,
+      map,
+      displayPath,
+      recordedAltitudes,
+      curtainAltitudeKnown,
+      isMobile ? 86 : 126,
+    );
+  }, [
+    aircrafts,
+    altitudeProjectionVersion,
+    isMobile,
+    isRadarMode,
+    mapRefs.mapInstance,
+    mapRefs.mapReady,
+    mapRefs.altitudeLayerGroup,
+    replayState,
+    selectedAircraftIds,
+    selectedAircrafts,
+    showAltitude3D,
+  ]);
+
   // Render flight replay animation
   useEffect(() => {
     if (!mapRefs.mapInstance.current || !mapRefs.replayLayerGroup.current) {
@@ -1118,6 +1392,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       replayTraversedPolylineRef.current = null;
       replayRemainingPolylineRef.current = null;
       replayMarkerRef.current = null;
+      replayAltitudeCurtainRef.current = createEmptyAltitudeCurtain();
       return;
     }
 
@@ -1132,6 +1407,22 @@ const MapComponent: React.FC<MapComponentProps> = ({
       remainingPath,
       currentPosition[1],
     );
+    if (showAltitude3D) {
+      renderAltitudeCurtain(
+        mapRefs.replayLayerGroup.current,
+        replayAltitudeCurtainRef,
+        mapRefs.mapInstance.current,
+        displayTraversedPath,
+        replayState.traversedAltitudes,
+        displayTraversedPath.map(() => true),
+        isMobile ? 96 : 150,
+      );
+    } else {
+      clearAltitudeCurtain(
+        mapRefs.replayLayerGroup.current,
+        replayAltitudeCurtainRef,
+      );
+    }
 
     // Draw traversed path (solid amber line)
     if (displayTraversedPath.length >= 2) {
@@ -1192,14 +1483,34 @@ const MapComponent: React.FC<MapComponentProps> = ({
     if (replayMarkerRef.current) {
       replayMarkerRef.current
         .setLatLng(displayCurrentPosition)
-        .setIcon(getReplayAircraftIcon(currentHeading));
+        .setIcon(
+          getReplayAircraftIcon(
+            currentHeading,
+            replayState.currentAltitude,
+            replayState.altitudeIsEstimated,
+            showAltitude3D,
+          ),
+        );
     } else {
       replayMarkerRef.current = L.marker(displayCurrentPosition, {
-        icon: getReplayAircraftIcon(currentHeading),
+        icon: getReplayAircraftIcon(
+          currentHeading,
+          replayState.currentAltitude,
+          replayState.altitudeIsEstimated,
+          showAltitude3D,
+        ),
         zIndexOffset: 1000,
       }).addTo(mapRefs.replayLayerGroup.current);
     }
-  }, [replayState, isRadarMode, mapRefs.mapInstance, mapRefs.replayLayerGroup]);
+  }, [
+    replayState,
+    isRadarMode,
+    isMobile,
+    altitudeProjectionVersion,
+    showAltitude3D,
+    mapRefs.mapInstance,
+    mapRefs.replayLayerGroup,
+  ]);
 
   return (
     <>
@@ -1244,6 +1555,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
             onDeletePreset={deleteLayerPreset}
             showWaypoints={showWaypoints}
             setShowWaypoints={setShowWaypoints}
+            showAltitude3D={showAltitude3D}
+            setShowAltitude3D={setShowAltitude3D}
             showPrecipitation={showPrecipitation}
             setShowPrecipitation={setShowPrecipitation}
             showAirmets={showAirmets}

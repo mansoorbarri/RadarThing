@@ -35,12 +35,14 @@ export interface PositionUpdate {
   ts: number;
   lastSeen: number;
   flightPath?: [number, number][];
+  flightTelemetry?: FlightTelemetrySample[];
   trailSamples?: TimedPositionSample[];
 }
 
 type Subscriber = (aircraft: Map<string, PositionUpdate>) => void;
 
 const MAX_FLIGHT_PATH_POINTS = 150;
+const MAX_FLIGHT_TELEMETRY_POINTS = 300;
 const MAX_RECENT_SAMPLE_POINTS = 180;
 const MAX_SPEED_SAMPLE_AGE_MS = 90_000;
 const MIN_SPEED_SAMPLE_WINDOW_MS = 8_000;
@@ -54,6 +56,14 @@ export interface TimedPositionSample {
   lat: number;
   lon: number;
   ts: number;
+}
+
+export interface FlightTelemetrySample extends TimedPositionSample {
+  altMSL: number;
+  speed: number;
+  groundSpeed: number;
+  heading: number;
+  vspeed: number;
 }
 
 function toRadians(value: number) {
@@ -80,6 +90,7 @@ function distanceNm(
 class AircraftStore {
   private store = new Map<string, PositionUpdate>();
   private flightPaths = new Map<string, [number, number][]>();
+  private flightTelemetry = new Map<string, FlightTelemetrySample[]>();
   private recentSamples = new Map<string, TimedPositionSample[]>();
   private trailSamples = new Map<string, TimedPositionSample[]>();
   private removalTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -113,6 +124,7 @@ class AircraftStore {
     }
 
     const sampleTs = Number.isFinite(data.ts) ? data.ts : Date.now();
+    const flightTelemetry = this.recordFlightTelemetry(id, data, sampleTs);
     const samples = this.recordRecentSample(id, currentPosition, sampleTs);
     const trailSamples = this.recordTrailSample(id, currentPosition, sampleTs);
     const observedGroundSpeed = this.calculateObservedGroundSpeedKts(samples);
@@ -125,6 +137,7 @@ class AircraftStore {
       observedGroundSpeed,
       etaObservedGroundSpeed,
       flightPath: this.flightPaths.get(id) || [],
+      flightTelemetry,
       trailSamples,
     };
 
@@ -149,6 +162,7 @@ class AircraftStore {
 
     const existed = this.store.delete(id);
     this.flightPaths.delete(id);
+    this.flightTelemetry.delete(id);
     this.recentSamples.delete(id);
     this.trailSamples.delete(id);
     if (existed) {
@@ -173,6 +187,7 @@ class AircraftStore {
     this.removalTimers.clear();
     this.store.clear();
     this.flightPaths.clear();
+    this.flightTelemetry.clear();
     this.recentSamples.clear();
     this.trailSamples.clear();
     this.notifySubscribers();
@@ -218,7 +233,9 @@ class AircraftStore {
     const currentPath = this.flightPaths.get(id) || [];
     if (flightPath.length <= currentPath.length) return;
 
-    const nextPath = flightPath.map(([lat, lon]) => [lat, lon] as [number, number]);
+    const nextPath = flightPath.map(
+      ([lat, lon]) => [lat, lon] as [number, number],
+    );
     this.flightPaths.set(id, nextPath);
     this.store.set(id, {
       ...existing,
@@ -231,13 +248,51 @@ class AircraftStore {
     return Array.from(this.store.values());
   }
 
+  private recordFlightTelemetry(
+    id: string,
+    data: PositionUpdate,
+    ts: number,
+  ): FlightTelemetrySample[] {
+    const existing = this.flightTelemetry.get(id) || [];
+    const sample: FlightTelemetrySample = {
+      lat: data.lat,
+      lon: data.lon,
+      altMSL: Number(data.altMSL ?? data.alt) || 0,
+      speed: Number(data.speed) || 0,
+      groundSpeed: Number(data.groundSpeed ?? data.speed) || 0,
+      heading: Number(data.heading) || 0,
+      vspeed: Number(data.vspeed) || 0,
+      ts,
+    };
+    const last = existing[existing.length - 1];
+
+    if (
+      last?.lat === sample.lat &&
+      last.lon === sample.lon &&
+      last.altMSL === sample.altMSL &&
+      last.speed === sample.speed &&
+      last.heading === sample.heading &&
+      last.vspeed === sample.vspeed
+    ) {
+      return existing;
+    }
+
+    const next = [...existing, sample].slice(-MAX_FLIGHT_TELEMETRY_POINTS);
+    this.flightTelemetry.set(id, next);
+    return next;
+  }
+
   private recordRecentSample(
     id: string,
     position: [number, number],
     ts: number,
   ): TimedPositionSample[] {
     const [lat, lon] = position;
-    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(ts)) {
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lon) ||
+      !Number.isFinite(ts)
+    ) {
       return this.recentSamples.get(id) || [];
     }
 
@@ -247,10 +302,7 @@ class AircraftStore {
 
     if (!last) {
       next = [{ lat, lon, ts }];
-    } else if (
-      ts > last.ts &&
-      (lat !== last.lat || lon !== last.lon)
-    ) {
+    } else if (ts > last.ts && (lat !== last.lat || lon !== last.lon)) {
       next = [...existing, { lat, lon, ts }];
     }
 
@@ -271,7 +323,11 @@ class AircraftStore {
     ts: number,
   ): TimedPositionSample[] {
     const [lat, lon] = position;
-    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(ts)) {
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lon) ||
+      !Number.isFinite(ts)
+    ) {
       return this.trailSamples.get(id) || [];
     }
 
@@ -360,9 +416,7 @@ class AircraftStore {
 
       totalElapsedMs += segmentElapsedMs;
       const ageMs = Math.max(0, newestTs - current.ts);
-      const weight = Math.exp(
-        (-Math.LN2 * ageMs) / ETA_SPEED_HALF_LIFE_MS,
-      );
+      const weight = Math.exp((-Math.LN2 * ageMs) / ETA_SPEED_HALF_LIFE_MS);
 
       weightedSpeedSum += segmentSpeedKts * weight;
       weightSum += weight;

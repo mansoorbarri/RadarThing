@@ -5,6 +5,12 @@ import { toast } from "sonner";
 import { type FlightData, useFlightReplay } from "~/hooks/useFlightReplay";
 import { Analytics } from "~/lib/analytics";
 
+function formatAltitude(altitude: number) {
+  return altitude >= 18_000
+    ? `FL${Math.round(altitude / 100)}`
+    : `${Math.round(altitude).toLocaleString()} ft`;
+}
+
 // Inline SVG icons
 const PlayIcon = ({ className = "" }: { className?: string }) => (
   <svg
@@ -102,6 +108,11 @@ interface FlightReplayControlsProps {
     currentHeading: number;
     traversedPath: [number, number][];
     remainingPath: [number, number][];
+    traversedAltitudes: number[];
+    remainingAltitudes: number[];
+    currentAltitude: number;
+    maxAltitude: number;
+    altitudeIsEstimated: boolean;
     isPlaying: boolean;
   }) => void;
   isMobile?: boolean;
@@ -131,6 +142,11 @@ export function FlightReplayControls({
       currentHeading: replay.currentHeading,
       traversedPath: replay.traversedPath,
       remainingPath: replay.remainingPath,
+      traversedAltitudes: replay.traversedAltitudes,
+      remainingAltitudes: replay.remainingAltitudes,
+      currentAltitude: replay.currentAltitude,
+      maxAltitude: replay.maxAltitude,
+      altitudeIsEstimated: replay.altitudeIsEstimated,
       isPlaying: replay.isPlaying,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally using elapsedTime to batch updates
@@ -247,7 +263,9 @@ export function FlightReplayControls({
         }`}
         style={{
           transform:
-            isMobile && dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
+            isMobile && dragOffset > 0
+              ? `translateY(${dragOffset}px)`
+              : undefined,
           transition: isDraggingHeader ? "none" : "transform 180ms ease-out",
         }}
       >
@@ -296,8 +314,42 @@ export function FlightReplayControls({
           </div>
         </div>
 
+        <div
+          className={`mb-3 flex items-center gap-3 rounded-xl border border-amber-400/15 bg-amber-400/[0.06] ${isMobile ? "px-3 py-2" : "px-3.5 py-2.5"}`}
+        >
+          <div className="relative flex h-8 w-8 shrink-0 items-end justify-center overflow-hidden rounded-lg border border-amber-300/20 bg-[#090d11]">
+            <div
+              className="w-full bg-gradient-to-t from-amber-500/25 to-amber-300/80 transition-[height] duration-200"
+              style={{
+                height: `${Math.max(8, Math.min(100, replay.maxAltitude > 0 ? (replay.currentAltitude / replay.maxAltitude) * 100 : 0))}%`,
+              }}
+            />
+            <div className="absolute inset-x-1 top-1/2 border-t border-dashed border-amber-200/40" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline justify-between gap-4">
+              <span className="font-mono text-[9px] font-semibold tracking-[0.18em] text-amber-300/65">
+                3D ALTITUDE
+              </span>
+              <span className="font-mono text-sm font-bold text-amber-300 tabular-nums">
+                {formatAltitude(replay.currentAltitude)}
+              </span>
+            </div>
+            <div className="mt-0.5 flex justify-between font-mono text-[9px] text-white/35">
+              <span>
+                {replay.altitudeIsEstimated
+                  ? "ESTIMATED PROFILE"
+                  : "RECORDED PROFILE"}
+              </span>
+              <span>PEAK {formatAltitude(replay.maxAltitude)}</span>
+            </div>
+          </div>
+        </div>
+
         {/* Controls */}
-        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center gap-4"}`}>
+        <div
+          className={`flex ${isMobile ? "flex-col gap-2" : "items-center gap-4"}`}
+        >
           <div className={`flex items-center ${isMobile ? "gap-2" : "gap-4"}`}>
             {/* Play/Pause Button */}
             <button
@@ -366,7 +418,6 @@ export function FlightReplayControls({
           )}
         </div>
       </div>
-
     </div>
   );
 }

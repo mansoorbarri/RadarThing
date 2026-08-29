@@ -220,6 +220,11 @@ function ATCPageContent() {
     currentHeading: number;
     traversedPath: [number, number][];
     remainingPath: [number, number][];
+    traversedAltitudes: number[];
+    remainingAltitudes: number[];
+    currentAltitude: number;
+    maxAltitude: number;
+    altitudeIsEstimated: boolean;
     isPlaying: boolean;
   } | null>(null);
 
@@ -1670,6 +1675,7 @@ function ATCPageContent() {
           isMobile={isPhone}
           selectedAirport={selectedAirport}
           selectedAircraftIds={selectedAircraftIds}
+          selectedAircrafts={selectedAircrafts}
           onAircraftSelect={handleAircraftSelect}
           onAirportSelect={(airport) => {
             selectAirport(airport);

@@ -151,6 +151,7 @@ interface UseMapLayersAndMarkersProps {
   isOSMMode: boolean;
   isRadarMode: boolean;
   isOpenAIPEnabled: boolean;
+  showAltitude3D: boolean;
   selectedAircraftIds: string[];
   selectedAirport?: Airport;
   onAircraftSelect: (
@@ -513,6 +514,7 @@ export const useMapLayersAndMarkers = ({
   isOSMMode,
   isRadarMode,
   isOpenAIPEnabled,
+  showAltitude3D,
   selectedAircraftIds,
   selectedAirport,
   onAircraftSelect,
@@ -846,6 +848,7 @@ export const useMapLayersAndMarkers = ({
             showTags,
             isMobile,
             unitPrefs,
+            showAltitude3D,
           );
 
       const existingMarker = existingMarkers.get(id);
@@ -930,6 +933,7 @@ export const useMapLayersAndMarkers = ({
     aircrafts,
     isRadarMode,
     selectedAircraftIds,
+    showAltitude3D,
     aircraftMarkersLayer,
     onAircraftSelect,
     showTags,
