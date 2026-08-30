@@ -1676,7 +1676,6 @@ function ATCPageContent() {
           isMobile={isPhone}
           selectedAirport={selectedAirport}
           selectedAircraftIds={selectedAircraftIds}
-          selectedAircrafts={selectedAircrafts}
           onAircraftSelect={handleAircraftSelect}
           onAirportSelect={(airport) => {
             selectAirport(airport);

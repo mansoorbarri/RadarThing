@@ -8,14 +8,6 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    id: "3d-altitude-paths",
-    date: "2026-08-29",
-    title: "3D Altitude Paths",
-    description:
-      "Toggle 3D altitude paths for selected aircraft and replays in Settings → Map → 3D Altitude Trail.",
-    type: "new",
-  },
-  {
     id: "radar-tour",
     date: "2026-08-25",
     title: "Radar Tour",

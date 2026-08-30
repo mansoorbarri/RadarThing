@@ -517,7 +517,6 @@ export const getAircraftDivIcon = (
   showTags = true,
   isMobile = false,
   unitPrefs: UnitPreferences = DEFAULT_UNIT_PREFERENCES,
-  showAltitude3D = false,
 ) => {
   const iconUrl = getAircraftIconUrl(aircraft.type, aircraft.af);
   const planeSize = getAircraftMarkerSize(aircraft.type, aircraft.af, isMobile);
@@ -558,10 +557,6 @@ export const getAircraftDivIcon = (
     selectedAircraftId &&
     (aircraft.id === selectedAircraftId ||
       aircraft.callsign === selectedAircraftId);
-  const usePerspectiveAircraft = Boolean(
-    showAltitude3D && isCurrentAircraftSelected && !isOnGround,
-  );
-
   const planeStyle = `
     position: absolute;
     top: ${(totalHeight - planeSize) / 2}px;
@@ -577,41 +572,7 @@ export const getAircraftDivIcon = (
     Boolean(isEmergency),
     Boolean(isCurrentAircraftSelected),
   );
-  const planeMarkup = usePerspectiveAircraft
-    ? `
-        <div style="${planeStyle} transform-style: preserve-3d;">
-          <div style="
-            position: absolute;
-            left: 13%;
-            right: 13%;
-            bottom: -5px;
-            height: 8px;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.62);
-            filter: blur(3px);
-            transform: scaleX(0.82);
-          "></div>
-          <img src="${iconUrl}" style="
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0.72;
-            transform: translateY(4px) scaleY(0.84);
-            filter: brightness(0) saturate(100%) invert(22%) sepia(40%) saturate(1010%) hue-rotate(166deg) brightness(72%) contrast(104%);
-          " />
-          <img src="${iconUrl}" style="
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            transform: perspective(72px) rotateX(34deg) translateY(-2px) scale(1.12);
-            transform-origin: 50% 56%;
-            filter: ${planeFilter};
-          " />
-        </div>
-      `
-    : `<img src="${iconUrl}" style="${planeStyle} filter: ${planeFilter}; pointer-events: none;" />`;
+  const planeMarkup = `<img src="${iconUrl}" style="${planeStyle} filter: ${planeFilter}; pointer-events: none;" />`;
 
   const identStyle = isIdentActive
     ? `
@@ -903,7 +864,6 @@ export const getReplayAircraftIcon = (
   heading: number,
   altitude?: number,
   altitudeIsEstimated = false,
-  showAltitude3D = false,
 ) => {
   const iconUrl = DEFAULT_AIRCRAFT_ICON;
   const planeSize = 36;
@@ -922,39 +882,12 @@ export const getReplayAircraftIcon = (
           inset: 0;
           transform: rotate(${heading}deg);
           transform-origin: 50% 50%;
-          transform-style: preserve-3d;
         ">
-          ${
-            showAltitude3D
-              ? `<div style="
-                    position: absolute;
-                    left: 13%;
-                    right: 13%;
-                    bottom: -5px;
-                    height: 8px;
-                    border-radius: 50%;
-                    background: rgba(0, 0, 0, 0.62);
-                    filter: blur(3px);
-                    transform: scaleX(0.82);
-                  "></div>
-                  <img src="${iconUrl}" style="
-                    position: absolute;
-                    inset: 0;
-                    width: 100%;
-                    height: 100%;
-                    opacity: 0.72;
-                    transform: translateY(4px) scaleY(0.84);
-                    filter: brightness(0) saturate(100%) invert(31%) sepia(41%) saturate(1140%) hue-rotate(353deg) brightness(73%) contrast(101%);
-                  " />`
-              : ""
-          }
           <img src="${iconUrl}" style="
             position: absolute;
             inset: 0;
             width: 100%;
             height: 100%;
-            transform: ${showAltitude3D ? "perspective(72px) rotateX(34deg) translateY(-2px) scale(1.12)" : "none"};
-            transform-origin: 50% 56%;
             filter: brightness(0) saturate(100%) invert(73%) sepia(73%) saturate(1374%) hue-rotate(342deg) brightness(101%) contrast(95%) drop-shadow(0 0 8px rgba(245, 158, 11, 0.8));
           " />
         </div>

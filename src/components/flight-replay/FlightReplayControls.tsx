@@ -329,7 +329,7 @@ export function FlightReplayControls({
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline justify-between gap-4">
               <span className="font-mono text-[9px] font-semibold tracking-[0.18em] text-amber-300/65">
-                3D ALTITUDE
+                ALTITUDE PROFILE
               </span>
               <span className="font-mono text-sm font-bold text-amber-300 tabular-nums">
                 {formatAltitude(replay.currentAltitude)}
