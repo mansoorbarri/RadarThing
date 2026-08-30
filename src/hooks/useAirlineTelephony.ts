@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  getIcaoAirlineDesignator,
+  getAirlineDesignator,
   type AirlineTelephony,
 } from "~/lib/airlineTelephony";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 
-const STORAGE_KEY = "radarthing:airline-telephony:v1";
+const STORAGE_KEY = "radarthing:airline-telephony:v2";
 const CLIENT_CACHE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
 interface CacheEntry {
@@ -29,7 +29,8 @@ function readCache(): TelephonyCache {
     return Object.fromEntries(
       Object.entries(stored).filter(
         ([code, entry]) =>
-          /^[A-Z]{3}$/.test(code) &&
+          /^(?:[A-Z]{3}|[A-Z0-9]{2})$/.test(code) &&
+          /[A-Z]/.test(code) &&
           entry &&
           typeof entry.expiresAt === "number" &&
           entry.expiresAt > now,
@@ -65,7 +66,7 @@ export function useAirlineTelephony(
       Array.from(
         new Set(
           aircrafts
-            .map((aircraft) => getIcaoAirlineDesignator(aircraft.flightNo))
+            .map((aircraft) => getAirlineDesignator(aircraft.flightNo))
             .filter((code): code is string => Boolean(code)),
         ),
       ).sort(),
@@ -85,7 +86,7 @@ export function useAirlineTelephony(
     missingCodes.forEach((code) => requestedCodesRef.current.add(code));
 
     void fetch(
-      `/api/airlines/telephony?icao=${encodeURIComponent(missingCodes.join(","))}`,
+      `/api/airlines/telephony?code=${encodeURIComponent(missingCodes.join(","))}`,
     )
       .then(async (response) => {
         if (!response.ok)
@@ -118,7 +119,7 @@ export function useAirlineTelephony(
   return useMemo(
     () =>
       aircrafts.map((aircraft) => {
-        const code = getIcaoAirlineDesignator(aircraft.flightNo);
+        const code = getAirlineDesignator(aircraft.flightNo);
         const telephonyDesignator = code
           ? cache[code]?.value?.telephonyDesignator
           : null;

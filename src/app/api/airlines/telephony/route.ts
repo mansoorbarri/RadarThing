@@ -9,6 +9,7 @@ const CACHE_CONTROL = `public, max-age=86400, s-maxage=${CACHE_TTL_SECONDS}, sta
 interface AdsbdbAirline {
   name?: unknown;
   icao?: unknown;
+  iata?: unknown;
   callsign?: unknown;
 }
 
@@ -24,7 +25,10 @@ function normalizeRequestedCodes(value: string | null): string[] {
       value
         .split(",")
         .map((code) => code.trim().toUpperCase())
-        .filter((code) => /^[A-Z]{3}$/.test(code)),
+        .filter(
+          (code) =>
+            /^(?:[A-Z]{3}|[A-Z0-9]{2})$/.test(code) && /[A-Z]/.test(code),
+        ),
     ),
   ).slice(0, MAX_CODES_PER_REQUEST);
 }
@@ -43,13 +47,15 @@ function parseAirline(
     const airline = candidate as AdsbdbAirline;
     const icao =
       typeof airline.icao === "string" ? airline.icao.trim().toUpperCase() : "";
+    const iata =
+      typeof airline.iata === "string" ? airline.iata.trim().toUpperCase() : "";
     const name = typeof airline.name === "string" ? airline.name.trim() : "";
     const telephonyDesignator =
       typeof airline.callsign === "string"
         ? airline.callsign.trim().toUpperCase()
         : "";
 
-    if (icao === code && name && telephonyDesignator) {
+    if ((icao === code || iata === code) && name && telephonyDesignator) {
       return { icao, name, telephonyDesignator };
     }
   }
@@ -81,12 +87,13 @@ async function fetchAirline(
 
 export async function GET(request: NextRequest) {
   const codes = normalizeRequestedCodes(
-    request.nextUrl.searchParams.get("icao"),
+    request.nextUrl.searchParams.get("code") ??
+      request.nextUrl.searchParams.get("icao"),
   );
 
   if (codes.length === 0) {
     return NextResponse.json(
-      { error: "Provide at least one three-letter ICAO airline designator" },
+      { error: "Provide at least one IATA or ICAO airline designator" },
       { status: 400 },
     );
   }
