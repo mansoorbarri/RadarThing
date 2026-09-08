@@ -18,7 +18,6 @@ const DRAWER_HEIGHTS: Record<DrawerState, number> = {
 const SNAP_ORDER: DrawerState[] = ["minimized", "partial", "full"];
 
 export const MobileDrawer = ({ children, onClose }: MobileDrawerProps) => {
-  const [drawerState, setDrawerState] = useState<DrawerState>("partial");
   const [height, setHeight] = useState(DRAWER_HEIGHTS.partial);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartYRef = useRef(0);
@@ -36,7 +35,6 @@ export const MobileDrawer = ({ children, onClose }: MobileDrawerProps) => {
       return currentDistance < closestDistance ? state : closest;
     }, "partial" as DrawerState);
 
-    setDrawerState(nextState);
     setHeight(DRAWER_HEIGHTS[nextState]);
   }, []);
 
@@ -103,14 +101,24 @@ export const MobileDrawer = ({ children, onClose }: MobileDrawerProps) => {
         style={{ height: `${height}dvh` }}
       >
         <div className="flex h-full flex-col">
-          <div
-            onPointerDown={handlePointerDown}
-            className="flex touch-none justify-center border-b border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent px-4 pt-3 pb-2"
-          >
-            <div className="h-1.5 w-12 rounded-full bg-white/35" />
+          <div className="relative flex h-12 shrink-0 items-center border-b border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent">
+            <div
+              onPointerDown={handlePointerDown}
+              className="flex h-full flex-1 touch-none items-center justify-center px-14"
+            >
+              <div className="h-1.5 w-12 rounded-full bg-white/35" />
+            </div>
+            <button
+              type="button"
+              aria-label="Close flight details"
+              onClick={onClose}
+              className="absolute right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl text-2xl text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-cyan-400"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]">
+          <div className="min-h-0 flex-1 overflow-hidden pb-[env(safe-area-inset-bottom,0px)]">
             {children}
           </div>
         </div>

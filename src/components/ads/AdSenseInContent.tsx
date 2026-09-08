@@ -9,9 +9,9 @@ const ADSENSE_CLIENT =
 const ADSENSE_SLOT =
   process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_SLOT ?? "8811855745";
 
-type AdSenseInContentProps = {
+interface AdSenseInContentProps {
   placement: "telemetry" | "gallery-card";
-};
+}
 
 export function AdSenseInContent({ placement }: AdSenseInContentProps) {
   const { isProUser, isLoading } = useProStatus();
@@ -51,18 +51,21 @@ export function AdSenseInContent({ placement }: AdSenseInContentProps) {
       {process.env.NODE_ENV === "production" ? (
         <ins
           className={`adsbygoogle block ${
-            isGalleryCard ? "min-h-56 flex-1" : "min-h-24"
+            isGalleryCard ? "min-h-56 flex-1" : "h-[100px]"
           }`}
-          style={{ display: "block" }}
+          style={{
+            display: "block",
+            ...(isGalleryCard ? {} : { height: 100 }),
+          }}
           data-ad-client={ADSENSE_CLIENT}
           data-ad-slot={ADSENSE_SLOT}
-          data-ad-format="auto"
-          data-full-width-responsive="true"
+          data-ad-format={isGalleryCard ? "auto" : undefined}
+          data-full-width-responsive={isGalleryCard ? "true" : "false"}
         />
       ) : (
         <div
           className={`flex items-center justify-center px-4 text-center font-mono text-[10px] tracking-wider text-slate-600 uppercase ${
-            isGalleryCard ? "min-h-56 flex-1" : "min-h-24"
+            isGalleryCard ? "min-h-56 flex-1" : "h-[100px]"
           }`}
         >
           Ad preview · free plan

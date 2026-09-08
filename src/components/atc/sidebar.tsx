@@ -619,11 +619,11 @@ export const Sidebar = ({
   return (
     <div
       ref={containerRef}
-      className="flex h-full flex-col bg-[#050f14]/90 text-white"
+      className="flex h-full min-h-0 flex-col bg-[#050f14]/90 text-white"
     >
       {/* Scrollable content wrapper for mobile */}
       <div
-        className={`${isMobile ? "flex-1 overflow-y-auto" : "flex flex-1 flex-col overflow-hidden"}`}
+        className={`${isMobile ? "min-h-0 flex-1 overflow-y-auto overscroll-contain" : "flex min-h-0 flex-1 flex-col overflow-hidden"}`}
       >
         {/* Header with optional aircraft photo background */}
         <div
