@@ -237,3 +237,9 @@ Environment variables are validated in `src/env.js` using T3 Env. Server-side va
 ## Issues and Feedback
 
 Found a bug or have a suggestion? Open an issue on [GitHub](https://github.com/mansoorbarri/RadarThing/issues) or join the RadarThing Discord from the homepage.
+
+## Public guides
+
+Guide copy lives in `content/guides/*.md` as plain Markdown. Edit those files to update the public `/guides/[slug]` pages; JSX is not needed for article content. The server renders Markdown with `react-markdown` (raw HTML is not enabled).
+
+To add a guide, create a Markdown file with one H1 title and add its slug, title, and description to `src/lib/guides.ts`. That registry drives navigation, static routes, metadata, and sitemap entries. Use root-relative links for site pages. Check instructions against the current UI and subscription limits before publishing.

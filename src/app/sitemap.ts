@@ -1,7 +1,18 @@
 import type { MetadataRoute } from "next";
+import { guides } from "~/lib/guides";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
+    {
+      url: "https://radarthing.com/guides",
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    ...guides.map((guide) => ({
+      url: `https://radarthing.com/guides/${guide.slug}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
     {
       url: "https://radarthing.com",
       lastModified: new Date(),
