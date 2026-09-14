@@ -101,23 +101,12 @@ export default function HomePage() {
               for GeoFS
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/guides"
-              className="text-sm text-white/70 hover:text-cyan-300"
-            >
-              Guides
-            </Link>
-            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              </span>
-              <span className="font-mono text-[10px] text-emerald-400">
-                ONLINE
-              </span>
-            </div>
-          </div>
+          <Link
+            href="/guides"
+            className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
+          >
+            Guide
+          </Link>
         </div>
       </header>
 
