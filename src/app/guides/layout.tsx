@@ -22,9 +22,6 @@ export default function GuidesLayout({ children }: { children: ReactNode }) {
             <Link href="/guides" className="text-cyan-300 hover:underline">
               Guides
             </Link>
-            <Link href="/contact" className="text-slate-300 hover:underline">
-              Contact
-            </Link>
             <Link
               href="/radar"
               className="border border-cyan-300/30 px-4 py-2 text-cyan-200 hover:bg-cyan-300/10"
