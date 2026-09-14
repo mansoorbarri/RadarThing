@@ -1175,7 +1175,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     mapRefs.mapInstance.current.setView([lat, lon], undefined, {
       animate: true,
-      duration: 0.3,
+      duration: 1.5,
     });
   }, [
     followAircraft?.lat,
