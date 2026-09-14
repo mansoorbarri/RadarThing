@@ -1185,6 +1185,13 @@ function ATCPageContent() {
       label: "Help",
       items: [
         {
+          id: "written-guides",
+          label: "Guides",
+          icon: <FileText size={18} strokeWidth={1.8} />,
+          active: false,
+          onClick: () => window.open("/guides", "_blank", "noopener,noreferrer"),
+        },
+        {
           id: "radar-guide",
           label: "Radar Tour",
           icon: <Radar size={18} strokeWidth={1.8} />,

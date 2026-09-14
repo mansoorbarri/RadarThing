@@ -102,6 +102,12 @@ export default function HomePage() {
             </span>
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              href="/guides"
+              className="text-sm text-white/70 hover:text-cyan-300"
+            >
+              Guides
+            </Link>
             <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -483,6 +489,9 @@ export default function HomePage() {
             © {new Date().getFullYear()} RadarThing
           </span>
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-white/40">
+            <Link href="/guides" className="hover:text-white">
+              Guides
+            </Link>
             <Link href="/about" className="hover:text-white">
               About
             </Link>
