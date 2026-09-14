@@ -139,7 +139,7 @@ export function useAltitudeOverlay(props: Props) {
           lon + Math.round((referenceLongitude - lon) / 360) * 360,
         ]);
         const point = projectMapTilt(flat, size, elevation);
-        return L.point(point.x, point.y);
+        return point ? L.point(point.x, point.y) : null;
       };
       // Paint curtains first, then their upper edges so crossings stay legible.
       const edges: {
@@ -159,6 +159,7 @@ export function useAltitudeOverlay(props: Props) {
             continue;
           const a = project(previous[0], previous[1]);
           const b = project(current[0], current[1]);
+          if (!a || !b) continue;
           // A date-line seam must not turn into a line spanning the map.
           if (Math.abs(a.x - b.x) > (256 * 2 ** map.getZoom()) / 2) continue;
           const firstAltitude = track.altitudes[index - 1]!;
@@ -167,6 +168,7 @@ export function useAltitudeOverlay(props: Props) {
           const secondHeight = altitudeHeight(secondAltitude);
           const topA = project(previous[0], previous[1], firstHeight);
           const topB = project(current[0], current[1], secondHeight);
+          if (!topA || !topB) continue;
           if (
             Math.max(a.x, b.x, topA.x, topB.x) < 0 ||
             Math.min(a.x, b.x, topA.x, topB.x) > size.x ||
@@ -206,6 +208,7 @@ export function useAltitudeOverlay(props: Props) {
         const latLng = layer.getLatLng();
         const ground = project(latLng.lat, latLng.lng);
         const top = project(latLng.lat, latLng.lng, altitudeHeight(altitude));
+        if (!ground || !top) return;
         if (
           ground.x < -200 ||
           ground.x > size.x + 200 ||

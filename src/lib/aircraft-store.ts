@@ -105,6 +105,8 @@ class AircraftStore {
       this.removalTimers.delete(id);
     }
 
+    const sampleTs = Number.isFinite(data.ts) ? data.ts : Date.now();
+
     // Track flight path history
     const currentPosition: [number, number] = [data.lat, data.lon];
     const existingPath = this.flightPaths.get(id) || [];
@@ -121,10 +123,10 @@ class AircraftStore {
         existingPath.shift();
       }
       this.flightPaths.set(id, existingPath);
+      this.recordFlightTelemetry(id, data, sampleTs);
     }
 
-    const sampleTs = Number.isFinite(data.ts) ? data.ts : Date.now();
-    const flightTelemetry = this.recordFlightTelemetry(id, data, sampleTs);
+    const flightTelemetry = this.flightTelemetry.get(id) ?? [];
     const samples = this.recordRecentSample(id, currentPosition, sampleTs);
     const trailSamples = this.recordTrailSample(id, currentPosition, sampleTs);
     const observedGroundSpeed = this.calculateObservedGroundSpeedKts(samples);
@@ -237,9 +239,11 @@ class AircraftStore {
       ([lat, lon]) => [lat, lon] as [number, number],
     );
     this.flightPaths.set(id, nextPath);
+    this.flightTelemetry.delete(id);
     this.store.set(id, {
       ...existing,
       flightPath: nextPath,
+      flightTelemetry: [],
     });
     this.notifySubscribers();
   }

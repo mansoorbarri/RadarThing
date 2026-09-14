@@ -21,11 +21,20 @@ export function createAircraftBillboards(map: L.Map) {
   map.getContainer().appendChild(pane);
   const markers = new Map<BillboardMarker, BillboardMarker["_setPos"]>();
   const elevations = new Map<BillboardMarker, number>();
+  const hidden = new Map<BillboardMarker, string>();
+  const restoreVisibility = (marker: BillboardMarker) => {
+    const visibility = hidden.get(marker);
+    const element = marker.getElement();
+    if (visibility !== undefined && element)
+      element.style.visibility = visibility;
+    hidden.delete(marker);
+  };
 
   const restore = (
     marker: BillboardMarker,
     original: BillboardMarker["_setPos"],
   ) => {
+    restoreVisibility(marker);
     marker._setPos = original;
     const element = marker.getElement();
     // Removed markers must not be reintroduced during cleanup.
@@ -59,6 +68,16 @@ export function createAircraftBillboards(map: L.Map) {
                 map.getSize(),
                 elevations.get(this) ?? 0,
               );
+              if (!screen) {
+                const element = this.getElement();
+                if (element) {
+                  if (!hidden.has(this))
+                    hidden.set(this, element.style.visibility);
+                  element.style.visibility = "hidden";
+                }
+                return;
+              }
+              restoreVisibility(this);
               original.call(this, L.point(screen.x, screen.y));
             };
           }

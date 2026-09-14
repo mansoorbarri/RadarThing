@@ -1,5 +1,5 @@
 import type { PositionUpdate } from "./aircraft-store";
-import { estimateFlownAltitudeProfile } from "./altitudeProfile";
+import { buildLiveAltitudeProfile } from "./altitudeProfile";
 import { ALTITUDE_RENDER_BANDS, getAltitudeBandIndex } from "./altitudeBands";
 
 export interface AltitudeTrack {
@@ -13,19 +13,18 @@ export interface AltitudeTrack {
 export function liveAltitudeTrack(aircraft: PositionUpdate): AltitudeTrack {
   const path = [...(aircraft.flightPath ?? [])];
   const altitude = Number(aircraft.altMSL ?? aircraft.alt);
-  const altitudes = estimateFlownAltitudeProfile(path.length, altitude);
-  const telemetry = aircraft.flightTelemetry ?? [];
-  const start = Math.max(0, path.length - telemetry.length);
-  telemetry.forEach((sample, index) => {
-    if (start + index < path.length) altitudes[start + index] = sample.altMSL;
-  });
+  const { altitudes, isEstimated } = buildLiveAltitudeProfile(
+    path,
+    aircraft.flightTelemetry ?? [],
+    altitude,
+  );
   path.push([aircraft.lat, aircraft.lon]);
   altitudes.push(altitude);
   return {
     id: aircraft.callsign || aircraft.id,
     path,
     altitudes,
-    estimated: start > 0,
+    estimated: isEstimated,
   };
 }
 

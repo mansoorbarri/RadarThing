@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildAltitudeProfile,
+  buildLiveAltitudeProfile,
   estimateFlownAltitudeProfile,
   getPeakAltitude,
   interpolateAltitude,
@@ -39,4 +40,65 @@ test("estimates a live flown profile ending at current altitude", () => {
 
   assert.equal(flown[0], 0);
   assert.equal(flown[5], 32_000);
+});
+
+const sample = (lat: number, altitude: number) => ({
+  lat,
+  lon: 0,
+  altMSL: altitude,
+});
+
+test("telemetry fills matching coordinates without shifting samples across gaps", () => {
+  const path: [number, number][] = [
+    [1, 0],
+    [2, 0],
+    [3, 0],
+    [4, 0],
+  ];
+  const estimates = estimateFlownAltitudeProfile(path.length, 35000);
+  const result = buildLiveAltitudeProfile(
+    path,
+    [sample(1, 1000), sample(99, 90000), sample(3, 30000), sample(4, NaN)],
+    35000,
+  );
+  assert.deepEqual(result.altitudes, [1000, estimates[1], 30000, estimates[3]]);
+  assert.equal(result.isEstimated, true);
+});
+
+test("retained suffixes use recent samples and repeated positions consume distinct observations", () => {
+  assert.deepEqual(
+    buildLiveAltitudeProfile(
+      [
+        [1, 0],
+        [2, 0],
+      ],
+      [sample(1, 1000), sample(2, 2000), sample(1, 10000), sample(2, 20000)],
+      35000,
+    ),
+    { altitudes: [10000, 20000], isEstimated: false },
+  );
+  const result = buildLiveAltitudeProfile(
+    [
+      [1, 0],
+      [2, 0],
+      [1, 0],
+    ],
+    [sample(2, 2000), sample(1, 10000)],
+    35000,
+  );
+  assert.deepEqual(result.altitudes, [0, 2000, 10000]);
+  assert.equal(result.isEstimated, true);
+});
+
+test("unrelated telemetry of equal length never suppresses the estimated flag", () => {
+  const result = buildLiveAltitudeProfile(
+    [
+      [1, 0],
+      [2, 0],
+    ],
+    [sample(3, 123), sample(4, 456)],
+    35000,
+  );
+  assert.deepEqual(result.altitudes, estimateFlownAltitudeProfile(2, 35000));
+  assert.equal(result.isEstimated, true);
 });
