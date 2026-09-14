@@ -1808,7 +1808,16 @@ function ATCPageContent() {
 
       {/* Control dock - compact on mobile, hidden when chart side panel is open */}
       {!isUiHidden && !(chartOverlayActive && chartOverlayIcao) && (
-        <ControlDock side="right" isMobile={isMobile} sections={dockSections} />
+        <ControlDock
+          side="right"
+          isMobile={isMobile}
+          sections={dockSections}
+          bottomAction={{
+            icon: <FileText size={18} strokeWidth={1.8} />,
+            label: "Guides",
+            onClick: () => window.open("/guides", "_blank", "noopener,noreferrer"),
+          }}
+        />
       )}
 
       {!isUiHidden && selectedAirport && (

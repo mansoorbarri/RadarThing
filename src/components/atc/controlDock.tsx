@@ -130,6 +130,7 @@ export function ControlDock({
         <button
           onClick={bottomAction.onClick}
           title={bottomAction.label}
+          aria-label={bottomAction.label}
           className={`flex ${btnSize} cursor-pointer items-center justify-center rounded-md border border-cyan-400/30 bg-black/80 text-cyan-400 shadow-[0_0_6px_rgba(0,255,255,0.25)] transition-all duration-200 hover:border-cyan-400/50 hover:bg-cyan-400/15 hover:shadow-[0_0_10px_rgba(0,255,255,0.5)]`}
         >
           {bottomAction.icon}
