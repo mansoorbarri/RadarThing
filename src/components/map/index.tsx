@@ -8,6 +8,9 @@ import React, {
   useMemo,
 } from "react";
 import L from "leaflet";
+import { useAltitudeOverlay } from "./useAltitudeOverlay";
+import { liveAltitudeTrack, type AltitudeTrack } from "~/lib/altitude3d";
+
 import "leaflet/dist/leaflet.css";
 import { toast } from "sonner";
 
@@ -246,6 +249,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const canUseAdvancedWeather = isProUser;
   const canUseConflictAlerts = isProUser;
 
+  const [isAltitude3D, setIsAltitude3D] = useState(false);
   const [isHeadingMode, setIsHeadingMode] = useState(false);
   const [isRadarMode, setIsRadarMode] = useState(() =>
     getBooleanCookie("map_radar_mode", false),
@@ -1281,6 +1285,57 @@ const MapComponent: React.FC<MapComponentProps> = ({
       }).addTo(mapRefs.replayLayerGroup.current);
     }
   }, [replayState, isRadarMode, mapRefs.mapInstance, mapRefs.replayLayerGroup]);
+
+  const altitudeTracks = useMemo<AltitudeTrack[]>(() => {
+    if (!isAltitude3D) return [];
+    if (replayState?.currentPosition)
+      return [
+        {
+          id: "Replay",
+          path: replayState.traversedPath,
+          altitudes: replayState.traversedAltitudes,
+          estimated: replayState.altitudeIsEstimated,
+        },
+        {
+          id: "Replay",
+          path: replayState.remainingPath,
+          altitudes: replayState.remainingAltitudes,
+          estimated: replayState.altitudeIsEstimated,
+          remaining: true,
+        },
+      ];
+    if (historyPath?.length) {
+      const profile = buildAltitudeProfile(historyPath);
+      return [
+        {
+          id: "Flight history",
+          path: historyPath.map(([lat, lon]) => [lat, lon]),
+          altitudes: profile.altitudes,
+          estimated: profile.isEstimated,
+        },
+      ];
+    }
+    return aircrafts
+      .filter((aircraft) =>
+        selectedAircraftIds.includes(aircraft.callsign || aircraft.id),
+      )
+      .map(liveAltitudeTrack);
+  }, [isAltitude3D, replayState, historyPath, aircrafts, selectedAircraftIds]);
+
+  useAltitudeOverlay({
+    map: mapRefs.mapInstance,
+    ready: mapRefs.mapReady,
+    enabled: isAltitude3D,
+    hideUi,
+    revision: mapRefs.mapRevision,
+    onToggle: () => setIsAltitude3D((value) => !value),
+    tracks: altitudeTracks,
+    aircrafts,
+    aircraftLayer: mapRefs.aircraftMarkersLayer,
+    historyLayer: mapRefs.historyLayerGroup,
+    replayLayer: mapRefs.replayLayerGroup,
+    replayAltitude: replayState?.currentAltitude,
+  });
 
   return (
     <>

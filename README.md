@@ -26,6 +26,7 @@ Tampermonkey installs are persistent. Console installs use the same hosted loade
 - **Most-tracked flights** panel showing what other users are watching.
 - **Follow mode** for keeping a selected aircraft centered.
 - **Radar Mode** map styling for a cleaner controller view.
+- **3D altitude toggle** on the existing map: a tilted camera, raised trails and translucent curtains use the same altitude colours as 2D, with aircraft icons and upright tags following the elevated flown trail, plus the existing layer switches and side controls. Heights are visually exaggerated to make altitude differences readable at every zoom; the toggle tooltip identifies estimated profiles.
 - **Aircraft type icons** for common airline, regional, business, general aviation, military, and helicopter traffic.
 
 ### Pilot and Controller Tools
