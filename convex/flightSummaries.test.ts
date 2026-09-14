@@ -126,8 +126,10 @@ test("summaries preserve distance rules, including missing and zero-distance rou
         isPublished: true,
       };
       for (const [index, entry] of flights.entries()) {
+        const summary = summaries[index];
+        assert.ok(summary, `Missing flight summary at index ${index}`);
         assert.equal(
-          doesFlightMatchChallenge(challenge, summaries[index]),
+          doesFlightMatchChallenge(challenge, summary),
           doesFlightMatchChallenge(challenge, entry),
         );
       }
