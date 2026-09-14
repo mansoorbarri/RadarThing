@@ -24,6 +24,8 @@ export default function GuidesLayout({ children }: { children: ReactNode }) {
             </Link>
             <Link
               href="/radar"
+              target="_blank"
+              rel="noopener noreferrer"
               className="border border-cyan-300/30 px-4 py-2 text-cyan-200 hover:bg-cyan-300/10"
             >
               Open radar ↗
