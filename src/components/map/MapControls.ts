@@ -153,6 +153,63 @@ abstract class IconButtonControl extends L.Control {
   };
 }
 
+export class AltitudeModeControl extends IconButtonControl {
+  protected controlName = "altitude-mode";
+  protected title = "3D altitude · heights exaggerated for visibility";
+  protected iconHtml =
+    '<span style="font-size:12px;font-weight:700" aria-hidden="true">3D</span>';
+
+  constructor(
+    options: L.ControlOptions,
+    private readonly toggle: () => void,
+  ) {
+    super(options);
+  }
+
+  protected onButtonClick() {
+    this.toggle();
+  }
+
+  private onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      event.stopPropagation();
+      this.toggle();
+    }
+  };
+
+  onAdd() {
+    const container = super.onAdd();
+    container.setAttribute("role", "button");
+    container.setAttribute("aria-label", "Toggle 3D altitude");
+    container.tabIndex = 0;
+    container.addEventListener("keydown", this.onKeyDown);
+    return container;
+  }
+
+  onRemove() {
+    this._container?.removeEventListener("keydown", this.onKeyDown);
+    super.onRemove();
+  }
+
+  updateState(enabled: boolean, estimated: boolean) {
+    if (!this._container) return;
+    const settings = this._container.parentElement?.querySelector(
+      '[data-control="radar-settings"]',
+    );
+    if (settings && this._container.nextElementSibling !== settings) {
+      settings.parentElement?.insertBefore(this._container, settings);
+    }
+    setActiveStyle(this._container, enabled);
+    this._container.setAttribute("aria-pressed", String(enabled));
+    const tooltip = this._container.querySelector(".map-tooltip");
+    if (tooltip)
+      tooltip.textContent = enabled
+        ? `3D altitude on · heights exaggerated${estimated ? " · some altitudes estimated" : ""}`
+        : this.title;
+  }
+}
+
 export class ResetMapViewControl extends IconButtonControl {
   protected controlName = "reset-map-view";
   protected title = "Reset map view";

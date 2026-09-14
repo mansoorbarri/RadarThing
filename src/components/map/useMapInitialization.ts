@@ -50,6 +50,7 @@ interface MapRefs {
   openAIPLayer: React.MutableRefObject<L.TileLayer | null>;
   weatherOverlayLayer: React.MutableRefObject<L.TileLayer | null>;
   mapReady: boolean;
+  mapRevision: number;
   resetMapView: (targetLocation?: MapResetLocation | null) => void;
 }
 
@@ -117,6 +118,7 @@ export const useMapInitialization = ({
 
   // State to signal when map and layers are ready
   const [mapReady, setMapReady] = useState(false);
+  const [mapRevision, setMapRevision] = useState(0);
   const [isMobileMapMode] = useState(isMobile);
   const mapMinZoom = isMobileMapMode ? MOBILE_MIN_ZOOM : DESKTOP_MIN_ZOOM;
   const tileLayerMinZoom = isMobileMapMode
@@ -248,6 +250,8 @@ export const useMapInitialization = ({
 
     // Signal that map and layers are ready
     setMapReady(true);
+    // Notify layers when responsive callbacks recreate the Leaflet instance.
+    setMapRevision((revision) => revision + 1);
 
     map.on("click", onMapClick);
 
@@ -453,6 +457,7 @@ export const useMapInitialization = ({
     openAIPLayer,
     weatherOverlayLayer,
     mapReady,
+    mapRevision,
     resetMapView,
   };
 };

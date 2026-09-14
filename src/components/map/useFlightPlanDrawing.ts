@@ -2,7 +2,7 @@ import { useCallback, useRef } from "react";
 import L from "leaflet";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { type ImportedFlightPlan } from "~/lib/flightPlanImport";
-import { estimateFlownAltitudeProfile } from "~/lib/altitudeProfile";
+import { buildLiveAltitudeProfile } from "~/lib/altitudeProfile";
 import {
   ALTITUDE_RENDER_BANDS,
   buildAltitudePathSegments,
@@ -275,21 +275,11 @@ export const useFlightPlanDrawing = ({
           aircraft.flightPath || [],
           aircraft.lon,
         );
-        const historyAltitudes = estimateFlownAltitudeProfile(
-          history.length,
+        const { altitudes: historyAltitudes } = buildLiveAltitudeProfile(
+          aircraft.flightPath ?? [],
+          aircraft.flightTelemetry ?? [],
           Number(aircraft.altMSL ?? aircraft.alt),
         );
-        const telemetry = aircraft.flightTelemetry ?? [];
-        const telemetryStartIndex = Math.max(
-          0,
-          history.length - telemetry.length,
-        );
-        telemetry.forEach((sample, telemetryIndex) => {
-          const pathIndex = telemetryStartIndex + telemetryIndex;
-          if (pathIndex < historyAltitudes.length) {
-            historyAltitudes[pathIndex] = sample.altMSL;
-          }
-        });
 
         if (history.length >= 2) {
           const mainPath = history.slice(0, -1);

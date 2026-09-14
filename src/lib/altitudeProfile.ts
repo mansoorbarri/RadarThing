@@ -85,3 +85,42 @@ export function estimateFlownAltitudeProfile(
     return peak * smoothStep(Math.min(1, progress / 0.2));
   });
 }
+
+/** Match ordered telemetry to actual coordinates, keeping estimates for gaps.
+ * Work backwards so a retained path suffix uses the most recent samples when
+ * telemetry contains older visits to the same coordinates.
+ */
+export function buildLiveAltitudeProfile(
+  path: readonly (readonly [number, number])[],
+  telemetry: readonly { lat: number; lon: number; altMSL: number }[],
+  currentAltitude: number,
+): AltitudeProfile {
+  const altitudes = estimateFlownAltitudeProfile(path.length, currentAltitude);
+  const samplesByPosition = new Map<
+    string,
+    { index: number; altitude: number }[]
+  >();
+  telemetry.forEach((sample, index) => {
+    if (![sample.lat, sample.lon, sample.altMSL].every(Number.isFinite)) return;
+    const key = `${sample.lat},${sample.lon}`;
+    const samples = samplesByPosition.get(key) ?? [];
+    samples.push({ index, altitude: sample.altMSL });
+    samplesByPosition.set(key, samples);
+  });
+  let beforeSample = telemetry.length;
+  let isEstimated = false;
+  for (let index = path.length - 1; index >= 0; index--) {
+    const point = path[index]!;
+    const candidates = samplesByPosition.get(`${point[0]},${point[1]}`);
+    while (candidates?.length && candidates.at(-1)!.index >= beforeSample)
+      candidates.pop();
+    const sample = candidates?.pop();
+    if (sample) {
+      altitudes[index] = sample.altitude;
+      beforeSample = sample.index;
+    } else {
+      isEstimated = true;
+    }
+  }
+  return { altitudes, isEstimated };
+}
