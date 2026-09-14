@@ -21,6 +21,7 @@
   const SAVE_BTN_ID = "atc-saveBtn";
   const CLEAR_BTN_ID = "atc-clearBtn";
   const STATUS_INDICATOR_ID = "atc-statusIndicator";
+  const MOST_TRACKED_BADGE_ID = "radarthing-most-tracked-badge";
   const SIGN_IN_NOTICE_ID = "atc-sign-in-notice";
   const KEYBIND_BTN_ID = "atc-keybind-btn";
   const CHARTS_KEYBIND_BTN_ID = "atc-charts-keybind-btn";
@@ -38,6 +39,9 @@
   const IDENT_REQUEST_WINDOW_MS = 60000;
   const RESUME_FLIGHT_API = "https://sse.radarthing.com/api/resume-flight";
   const RESUME_MODAL_ID = "radarthing-resume-flight-modal";
+  const TRACKING_STATUS_API =
+    "https://radarthing.com/api/userscript/tracking-status";
+  const TRACKING_STATUS_POLL_INTERVAL_MS = 15000;
 
   let flightUI;
   let mobileFlightUIOpenButton;
@@ -49,6 +53,8 @@
   let resumePromptCheckStarted = false;
   let resumePromptResolved = false;
   let resumeModalResolver = null;
+  let flightActiveForTrackingBadge = false;
+  let trackingStatusRequestId = 0;
   function loadRadarPrefs() {
     try {
       const raw = localStorage.getItem(RADAR_PREFS_KEY);
@@ -285,6 +291,60 @@
     return String(value || "")
       .toUpperCase()
       .replace(/\s+/g, "");
+  }
+
+  function hideMostTrackedBadge() {
+    const badge = document.getElementById(MOST_TRACKED_BADGE_ID);
+    if (badge) badge.style.display = "none";
+  }
+
+  async function refreshMostTrackedBadge() {
+    const badge = document.getElementById(MOST_TRACKED_BADGE_ID);
+    const callsign = sanitizeFlightCallsign(window.geofs?.userRecord?.callsign);
+    const requestId = ++trackingStatusRequestId;
+
+    if (!badge || !flightActiveForTrackingBadge || !callsign) {
+      hideMostTrackedBadge();
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${TRACKING_STATUS_API}?callsign=${encodeURIComponent(callsign)}`,
+        {
+          cache: "no-store",
+          headers: { "X-Requested-With": "GeoFS-RadarThing" },
+        },
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const status = await response.json();
+      const currentCallsign = sanitizeFlightCallsign(
+        window.geofs?.userRecord?.callsign,
+      );
+      if (
+        requestId !== trackingStatusRequestId ||
+        !flightActiveForTrackingBadge ||
+        currentCallsign !== callsign
+      ) {
+        return;
+      }
+
+      if (!status.isMostTracked) {
+        hideMostTrackedBadge();
+        return;
+      }
+
+      const count = Math.max(0, Number(status.count) || 0);
+      const countEl = badge.querySelector("[data-tracker-count]");
+      if (countEl) {
+        countEl.textContent = `${count} viewer${count === 1 ? "" : "s"}`;
+      }
+      badge.title = `${count} people are viewing your flight on RadarThing`;
+      badge.style.display = "flex";
+    } catch (_) {
+      if (requestId === trackingStatusRequestId) hideMostTrackedBadge();
+    }
   }
 
   function normalizeFlightInfoValue(value) {
@@ -1920,6 +1980,26 @@
         }
       </div>
 
+      <div id="${MOST_TRACKED_BADGE_ID}" role="status" aria-live="polite" style="
+        display:none;
+        align-items:center;
+        gap:9px;
+        margin:-2px 0 12px;
+        padding:8px 10px;
+        border:1px solid rgba(251,191,36,0.32);
+        border-radius:10px;
+        background:linear-gradient(110deg,rgba(245,158,11,0.16),rgba(251,191,36,0.06));
+        box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);
+        color:#fde68a;
+      ">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="flex:none;">
+          <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" stroke-width="1.8"/>
+          <circle cx="12" cy="12" r="2.6" fill="currentColor"/>
+        </svg>
+        <span style="font-size:9px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;">#1 Most tracked</span>
+        <span data-tracker-count style="margin-left:auto;font-size:9px;color:#fbbf24;white-space:nowrap;"></span>
+      </div>
+
       <div style="display:grid; gap:10px;">
         ${buildInputRow("DEP", DEP_INPUT_ID, "ICAO")}
         ${buildInputRow("ARR", ARR_INPUT_ID, "ICAO")}
@@ -2837,8 +2917,17 @@
 
   window.addEventListener("atc-data-sync", (e) => {
     const detail = e.detail || {};
-    if (detail.active === false) return;
+    if (detail.active === false) {
+      flightActiveForTrackingBadge = false;
+      trackingStatusRequestId += 1;
+      hideMostTrackedBadge();
+      return;
+    }
     fillFlightForm(detail);
+    if (detail.active === true) {
+      flightActiveForTrackingBadge = true;
+      void refreshMostTrackedBadge();
+    }
   });
 
   window.addEventListener("radarthing-ident-requested", (e) => {
@@ -2866,6 +2955,7 @@
   // ==========================================
 
   injectFlightUI();
+  setInterval(refreshMostTrackedBadge, TRACKING_STATUS_POLL_INTERVAL_MS);
   injectChartsCSS();
   createChartsPanel();
   setupChartZoomHandlers();

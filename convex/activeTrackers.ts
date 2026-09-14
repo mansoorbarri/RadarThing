@@ -1,6 +1,23 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 
+const MIN_TRACKERS_FOR_MOST_TRACKED = 3;
+
+function getRankedTrackerCounts(
+  trackers: { callsign: string }[],
+): { callsign: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const tracker of trackers) {
+    const callsign = tracker.callsign.trim().toUpperCase();
+    if (!callsign) continue;
+    counts.set(callsign, (counts.get(callsign) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .map(([callsign, count]) => ({ callsign, count }))
+    .sort((a, b) => b.count - a.count || a.callsign.localeCompare(b.callsign));
+}
+
 export const startTracking = mutation({
   args: {
     clerkId: v.string(),
@@ -70,17 +87,30 @@ export const getMostTracked = query({
   handler: async (ctx) => {
     const allTrackers = await ctx.db.query("activeTrackers").collect();
 
-    // Aggregate by callsign
-    const counts = new Map<string, number>();
-    for (const tracker of allTrackers) {
-      counts.set(tracker.callsign, (counts.get(tracker.callsign) ?? 0) + 1);
+    // Sort by count descending, take top 10
+    return getRankedTrackerCounts(allTrackers).slice(0, 10);
+  },
+});
+
+export const getTrackingStatus = query({
+  args: { callsign: v.string() },
+  handler: async (ctx, args) => {
+    const callsign = args.callsign.trim().toUpperCase();
+    if (!callsign) {
+      return { isMostTracked: false, count: 0 };
     }
 
-    // Sort by count descending, take top 10
-    return Array.from(counts.entries())
-      .map(([callsign, count]) => ({ callsign, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+    const allTrackers = await ctx.db.query("activeTrackers").collect();
+    const ranked = getRankedTrackerCounts(allTrackers);
+    const count =
+      ranked.find((entry) => entry.callsign === callsign)?.count ?? 0;
+    const leadingCount = ranked[0]?.count ?? 0;
+
+    return {
+      isMostTracked:
+        count >= MIN_TRACKERS_FOR_MOST_TRACKED && count === leadingCount,
+      count,
+    };
   },
 });
 
