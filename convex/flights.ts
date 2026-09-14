@@ -9,11 +9,11 @@ import {
 import { paginationOptsValidator } from "convex/server";
 import { autoCompleteChallengesForFlight } from "./challenges";
 import { calculateRouteDistanceNm } from "./lib/challengeRules";
+import { collectFlightSummaries } from "./lib/flightSummaries";
 import { isFlightModeratorGoogleId } from "../src/lib/flight-moderation";
 import {
   FLIGHT_HISTORY_PAGE_SIZE,
   FREE_RECENT_FLIGHTS_LIMIT,
-  matchesFlightHistorySearch,
 } from "../src/lib/flightHistory";
 import {
   getEffectiveAccessRole,
@@ -286,7 +286,7 @@ function serializeFlightHistoryFlight(flight: {
   duration?: number;
   maxAltitude?: number;
   maxSpeed?: number;
-  routeData?: [number, number][];
+  hasRouteData: boolean;
 }) {
   return {
     id: flight._id,
@@ -299,7 +299,7 @@ function serializeFlightHistoryFlight(flight: {
     duration: flight.duration,
     maxAltitude: flight.maxAltitude,
     maxSpeed: flight.maxSpeed,
-    routeData: flight.routeData,
+    hasRouteData: flight.hasRouteData,
   };
 }
 
@@ -1017,10 +1017,12 @@ export const getStatsByClerkId = query({
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .first();
 
-    const flights = await ctx.db
-      .query("flights")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
+    const flights = await collectFlightSummaries(
+      ctx.db
+        .query("flights")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id)),
+      !stats,
+    );
     const eligibleFlights = flights.filter(isFlightStatsEligible);
 
     // Calculate stats
@@ -1033,7 +1035,7 @@ export const getStatsByClerkId = query({
     for (const flight of eligibleFlights) {
       if (!stats) {
         fallbackTotalFlightTimeMs += getRecordedFlightDurationMs(flight);
-        fallbackTotalDistanceNm += calculateRouteDistanceNm(flight.routeData);
+        fallbackTotalDistanceNm += flight.distanceNm;
       }
 
       // Aircraft counts
@@ -1120,11 +1122,13 @@ export const getFlightHistoryPage = query({
     const viewer = await getCurrentViewer(ctx);
     const canAccessFullHistory = canViewerAccessFullFlightHistory(viewer);
 
-    const allFlights = await ctx.db
-      .query("flights")
-      .withIndex("by_userId_startTime", (q) => q.eq("userId", args.userId))
-      .order("desc")
-      .collect();
+    const allFlights = await collectFlightSummaries(
+      ctx.db
+        .query("flights")
+        .withIndex("by_userId_startTime", (q) => q.eq("userId", args.userId))
+        .order("desc"),
+      false,
+    );
 
     const totalRecordedFlights = allFlights.length;
     const flights = (
@@ -1262,10 +1266,12 @@ export const getStatsById = query({
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .first();
 
-    const flights = await ctx.db
-      .query("flights")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
+    const flights = await collectFlightSummaries(
+      ctx.db
+        .query("flights")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id)),
+      !stats,
+    );
     const eligibleFlights = flights.filter(isFlightStatsEligible);
 
     // Calculate stats
@@ -1278,7 +1284,7 @@ export const getStatsById = query({
     for (const flight of eligibleFlights) {
       if (!stats) {
         fallbackTotalFlightTimeMs += getRecordedFlightDurationMs(flight);
-        fallbackTotalDistanceNm += calculateRouteDistanceNm(flight.routeData);
+        fallbackTotalDistanceNm += flight.distanceNm;
       }
 
       // Aircraft counts

@@ -7,6 +7,7 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { isSystemSecretValid } from "./lib/auth";
+import { collectFlightSummaries } from "./lib/flightSummaries";
 import {
   countUniqueVisitedAirports,
   countUniqueVisitedTargetAirports,
@@ -560,6 +561,23 @@ async function getActiveChallenges(ctx: QueryCtx | MutationCtx, now: number) {
   );
 }
 
+async function getChallengeFlightSummaries(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<"users">,
+  challenges: { startAt: number; endAt: number }[],
+) {
+  if (challenges.length === 0) return [];
+  const startAt = Math.min(...challenges.map((challenge) => challenge.startAt));
+  const endAt = Math.max(...challenges.map((challenge) => challenge.endAt));
+  return collectFlightSummaries(
+    ctx.db
+      .query("flights")
+      .withIndex("by_userId_startTime", (q) =>
+        q.eq("userId", userId).gte("startTime", startAt).lt("startTime", endAt),
+      ),
+  );
+}
+
 async function getActiveAutoChallenges(
   ctx: QueryCtx | MutationCtx,
   now: number,
@@ -939,6 +957,8 @@ function findSupportingFlightId(
     startTime: number;
     endTime?: number;
     routeData?: unknown;
+    distanceNm?: number;
+    hasRecordedDistance?: boolean;
   }[],
 ) {
   const flightsInWindow = getFlightsInChallengeWindow(challenge, flights).sort(
@@ -962,6 +982,8 @@ function findSupportingFlightId(
         startTime: flight.startTime,
         endTime: flight.endTime,
         routeData: flight.routeData,
+        distanceNm: flight.distanceNm,
+        hasRecordedDistance: flight.hasRecordedDistance,
       }),
     )?._id ?? null
   );
@@ -1498,10 +1520,7 @@ export const listActiveForViewer = query({
 
     const viewerUser = viewer.user;
     const flights = viewerUser
-      ? await ctx.db
-          .query("flights")
-          .withIndex("by_userId", (q) => q.eq("userId", viewerUser._id))
-          .collect()
+      ? await getChallengeFlightSummaries(ctx, viewerUser._id, challenges)
       : [];
     const completions = viewerUser
       ? await ctx.db
@@ -1571,10 +1590,7 @@ export const listActiveForUser = query({
         .query("challengeCompletions")
         .withIndex("by_userId", (q) => q.eq("userId", args.userId))
         .collect(),
-      ctx.db
-        .query("flights")
-        .withIndex("by_userId", (q) => q.eq("userId", args.userId))
-        .collect(),
+      getChallengeFlightSummaries(ctx, args.userId, challenges),
     ]);
 
     const completionsByChallengeId = new Map<
@@ -2453,10 +2469,7 @@ export const syncForCurrentUser = mutation({
     if (activeChallenges.length === 0) return 0;
 
     const [flights, existingCompletions] = await Promise.all([
-      ctx.db
-        .query("flights")
-        .withIndex("by_userId", (q) => q.eq("userId", user._id))
-        .collect(),
+      getChallengeFlightSummaries(ctx, user._id, activeChallenges),
       ctx.db
         .query("challengeCompletions")
         .withIndex("by_userId", (q) => q.eq("userId", user._id))

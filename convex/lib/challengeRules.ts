@@ -56,6 +56,8 @@ export interface ChallengeFlight {
   endTime?: number;
   duration?: number;
   routeData?: unknown;
+  distanceNm?: number;
+  hasRecordedDistance?: boolean;
 }
 
 function normalizeCode(value?: string | null) {
@@ -100,7 +102,7 @@ function getRecordedFlightDurationMs(flight: ChallengeFlight) {
   return getFlightDurationMs(flight) ?? 0;
 }
 
-function hasRecordedRouteDistance(routeData: unknown) {
+export function hasRecordedRouteDistance(routeData: unknown) {
   if (!Array.isArray(routeData)) return false;
 
   for (let index = 1; index < routeData.length; index += 1) {
@@ -210,7 +212,8 @@ export function doesFlightMatchChallenge(
     case "min_distance":
       return (
         typeof challenge.minDistanceNm === "number" &&
-        calculateRouteDistanceNm(flight.routeData) >= challenge.minDistanceNm
+        (flight.distanceNm ?? calculateRouteDistanceNm(flight.routeData)) >=
+          challenge.minDistanceNm
       );
     case "max_duration": {
       const durationMs = getFlightDurationMs(flight);
@@ -223,8 +226,10 @@ export function doesFlightMatchChallenge(
     case "max_distance":
       return (
         typeof challenge.maxDistanceNm === "number" &&
-        hasRecordedRouteDistance(flight.routeData) &&
-        calculateRouteDistanceNm(flight.routeData) <= challenge.maxDistanceNm
+        (flight.hasRecordedDistance ??
+          hasRecordedRouteDistance(flight.routeData)) &&
+        (flight.distanceNm ?? calculateRouteDistanceNm(flight.routeData)) <=
+          challenge.maxDistanceNm
       );
     case "manual":
       return false;
@@ -332,7 +337,8 @@ export function sumFlightDurationsMinutes(flights: ChallengeFlight[]) {
 
 export function sumFlightDistancesNm(flights: ChallengeFlight[]) {
   return flights.reduce(
-    (total, flight) => total + calculateRouteDistanceNm(flight.routeData),
+    (total, flight) =>
+      total + (flight.distanceNm ?? calculateRouteDistanceNm(flight.routeData)),
     0,
   );
 }

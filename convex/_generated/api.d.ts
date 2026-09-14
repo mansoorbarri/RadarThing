@@ -19,6 +19,7 @@ import type * as flights from "../flights.js";
 import type * as lib_airlineCodes from "../lib/airlineCodes.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_challengeRules from "../lib/challengeRules.js";
+import type * as lib_flightSummaries from "../lib/flightSummaries.js";
 import type * as lib_icaoRegions from "../lib/icaoRegions.js";
 import type * as users from "../users.js";
 import type * as virtualAirlineAircraftImages from "../virtualAirlineAircraftImages.js";
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   "lib/airlineCodes": typeof lib_airlineCodes;
   "lib/auth": typeof lib_auth;
   "lib/challengeRules": typeof lib_challengeRules;
+  "lib/flightSummaries": typeof lib_flightSummaries;
   "lib/icaoRegions": typeof lib_icaoRegions;
   users: typeof users;
   virtualAirlineAircraftImages: typeof virtualAirlineAircraftImages;

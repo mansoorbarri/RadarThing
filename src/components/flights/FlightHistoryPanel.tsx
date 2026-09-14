@@ -1,7 +1,7 @@
 "use client";
 
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useConvex, useMutation, useQuery } from "convex/react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import {
@@ -139,6 +139,8 @@ export function FlightHistoryPanel({
   onDeleteFlight,
   onUpgrade,
 }: FlightHistoryPanelProps) {
+  const convex = useConvex();
+  const [loadingRouteId, setLoadingRouteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [page, setPage] = useState(1);
@@ -157,6 +159,28 @@ export function FlightHistoryPanel({
   const historyPage = useQuery(api.flights.getFlightHistoryPage, {
     userId,
   });
+
+  async function generateFlightCard(flight: FlightHistoryPanelFlight) {
+    if (!canGenerateFlightCard) {
+      onGenerateFlightCard(flight);
+      return;
+    }
+    setLoadingRouteId(flight.id);
+    try {
+      const fullFlight = await convex.query(api.flights.getById, {
+        id: flight.id,
+      });
+      if (!fullFlight) {
+        toast.error("This flight is no longer available");
+        return;
+      }
+      onGenerateFlightCard(fullFlight);
+    } catch {
+      toast.error("Failed to load flight route. Please try again.");
+    } finally {
+      setLoadingRouteId(null);
+    }
+  }
   const viewerChallenges = useQuery(
     api.challenges.listActiveForViewer,
     canSubmitChallengeFlights ? {} : "skip",
@@ -565,36 +589,38 @@ export function FlightHistoryPanel({
                                   </span>
                                 </button>
                               )}
-                            {flight.routeData &&
-                              flight.routeData.length > 1 && (
-                                <>
-                                  <button
-                                    onClick={() => onShareFlight(flight)}
-                                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400 sm:h-8 sm:w-8 sm:text-white/40 sm:opacity-0 sm:group-hover:opacity-100"
-                                    title="Copy share link"
-                                  >
-                                    <Share2 className="h-3.5 w-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={() => onGenerateFlightCard(flight)}
-                                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-all hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400 sm:h-8 sm:w-8 sm:text-white/40 sm:opacity-0 sm:group-hover:opacity-100"
-                                    title={
-                                      canGenerateFlightCard
-                                        ? "Generate flight card"
-                                        : "Unlock PRO to generate a flight card"
-                                    }
-                                  >
-                                    <Camera className="h-3.5 w-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={() => onReplayFlight(flight)}
-                                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 transition-all hover:bg-amber-500/20 sm:h-8 sm:w-8 sm:opacity-0 sm:group-hover:opacity-100"
-                                    title="Replay this flight"
-                                  >
-                                    <Play className="h-4 w-4" />
-                                  </button>
-                                </>
-                              )}
+                            {flight.hasRouteData && (
+                              <>
+                                <button
+                                  onClick={() => onShareFlight(flight)}
+                                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400 sm:h-8 sm:w-8 sm:text-white/40 sm:opacity-0 sm:group-hover:opacity-100"
+                                  title="Copy share link"
+                                >
+                                  <Share2 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  disabled={loadingRouteId !== null}
+                                  onClick={() =>
+                                    void generateFlightCard(flight)
+                                  }
+                                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-all hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400 sm:h-8 sm:w-8 sm:text-white/40 sm:opacity-0 sm:group-hover:opacity-100"
+                                  title={
+                                    canGenerateFlightCard
+                                      ? "Generate flight card"
+                                      : "Unlock PRO to generate a flight card"
+                                  }
+                                >
+                                  <Camera className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => onReplayFlight(flight)}
+                                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 transition-all hover:bg-amber-500/20 sm:h-8 sm:w-8 sm:opacity-0 sm:group-hover:opacity-100"
+                                  title="Replay this flight"
+                                >
+                                  <Play className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
                             {canDeleteFlights && onDeleteFlight && (
                               <button
                                 onClick={() => onDeleteFlight(flight)}
@@ -641,7 +667,7 @@ export function FlightHistoryPanel({
                                   : "Challenge"}
                               </button>
                             )}
-                          {flight.routeData && flight.routeData.length > 1 && (
+                          {flight.hasRouteData && (
                             <>
                               <button
                                 onClick={() => onReplayFlight(flight)}
@@ -660,7 +686,8 @@ export function FlightHistoryPanel({
                                 Share
                               </button>
                               <button
-                                onClick={() => onGenerateFlightCard(flight)}
+                                disabled={loadingRouteId !== null}
+                                onClick={() => void generateFlightCard(flight)}
                                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-[10px] tracking-wider text-white/70 uppercase transition-colors hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-300"
                                 title={
                                   canGenerateFlightCard
