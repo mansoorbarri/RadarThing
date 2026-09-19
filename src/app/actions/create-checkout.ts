@@ -19,6 +19,8 @@ export async function createCheckoutSession() {
   const dbUser = await convex.query(api.users.getByClerkId, {
     clerkId: userId,
   });
+  if (dbUser?.activeBanId || dbUser?.isDeleted)
+    throw new Error("Account access restricted");
   let stripeCustomerId = dbUser?.stripeCustomerId;
 
   // Create Stripe customer if user doesn't have one

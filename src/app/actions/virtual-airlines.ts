@@ -267,7 +267,7 @@ async function validateVirtualAirlineInput(data: {
     clerkId: data.adminClerkId,
   });
 
-  if (!adminUser || adminUser.isDeleted) {
+  if (!adminUser || adminUser.isDeleted || adminUser.activeBanId) {
     return {
       ok: false as const,
       error: "Selected VA admin must be an active RadarThing user",
@@ -723,7 +723,7 @@ export async function addVirtualAirlineMember(data: {
     clerkId: access.clerkId,
   });
 
-  if (!currentUser || currentUser.isDeleted) {
+  if (!currentUser || currentUser.isDeleted || currentUser.activeBanId) {
     return {
       success: false,
       error: "Your RadarThing account could not be verified",

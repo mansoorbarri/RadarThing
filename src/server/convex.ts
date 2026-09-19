@@ -8,7 +8,14 @@ const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL!;
 export const convex = new ConvexHttpClient(convexUrl);
 
 export async function getAuthenticatedConvex() {
-  const { getToken } = await auth();
+  const { getToken, userId } = await auth();
+  if (userId) {
+    const user = await convex.query(api.users.getByClerkId, {
+      clerkId: userId,
+    });
+    if (user?.activeBanId || user?.isDeleted)
+      throw new Error("Account access restricted");
+  }
   const token = await getToken({ template: "convex" });
   const client = new ConvexHttpClient(convexUrl);
 

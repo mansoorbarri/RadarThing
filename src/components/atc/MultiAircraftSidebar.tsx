@@ -1,5 +1,7 @@
 "use client";
 
+import { SidebarModeration } from "~/components/moderation/ModerationControls";
+
 import React, { useMemo, useRef, useState } from "react";
 import { type PositionUpdate } from "~/lib/aircraft-store";
 import { useUnitPreferences } from "~/hooks/useUnitPreferences";
@@ -187,6 +189,10 @@ const AircraftCard = ({
         onTouchEnd={handleTouchEnd}
         onTouchCancel={resetSwipe}
       >
+        <SidebarModeration
+          key={aircraft.googleId || aircraft.id}
+          googleId={aircraft.googleId}
+        />
         {/* Color indicator strip */}
         <div
           className="absolute top-0 bottom-0 left-0 w-1 rounded-l-xl"

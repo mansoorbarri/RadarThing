@@ -23,6 +23,8 @@ export type TempProDurationValue =
 
 export interface ProAccessUserLike {
   role?: ProAccessRole | null;
+  activeBanId?: string | null;
+  isDeleted?: boolean;
   adminProExpiresAt?: number | null;
 }
 
@@ -39,7 +41,7 @@ export function hasEffectiveProAccess(
   user: ProAccessUserLike | null | undefined,
   now = Date.now(),
 ) {
-  if (!user) return false;
+  if (!user || user.activeBanId || user.isDeleted) return false;
   return (
     user.role === "ADMIN" ||
     user.role === "PRO" ||
@@ -51,7 +53,7 @@ export function getEffectiveAccessRole(
   user: ProAccessUserLike | null | undefined,
   now = Date.now(),
 ): ProAccessRole {
-  if (!user) return "FREE";
+  if (!user || user.activeBanId || user.isDeleted) return "FREE";
   if (user.role === "ADMIN") return "ADMIN";
   if (hasEffectiveProAccess(user, now)) return "PRO";
   return "FREE";

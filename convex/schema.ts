@@ -7,6 +7,7 @@ export default defineSchema({
     email: v.string(),
     role: v.union(v.literal("FREE"), v.literal("PRO"), v.literal("ADMIN")),
     isDeleted: v.boolean(),
+    activeBanId: v.optional(v.id("moderationActions")),
     createdAt: v.optional(v.number()),
     radarGuideCompletedAt: v.optional(v.number()),
     deletedAt: v.optional(v.number()), // timestamp
@@ -25,6 +26,41 @@ export default defineSchema({
     .index("by_stripeCustomerId", ["stripeCustomerId"])
     .index("by_discordUsernameLower", ["discordUsernameLower"]),
 
+  moderationActions: defineTable({
+    targetUserId: v.id("users"),
+    targetLabel: v.string(),
+    targetEmail: v.string(),
+    actorUserId: v.id("users"),
+    actorLabel: v.string(),
+    kind: v.union(v.literal("warn"), v.literal("ban")),
+    reason: v.string(),
+    createdAt: v.number(),
+    acknowledgedAt: v.optional(v.number()),
+    revokedAt: v.optional(v.number()),
+    revokedBy: v.optional(v.id("users")),
+    revokedByLabel: v.optional(v.string()),
+    revokeReason: v.optional(v.string()),
+    requestId: v.string(),
+    emailStatus: v.union(
+      v.literal("pending"),
+      v.literal("sent"),
+      v.literal("failed"),
+    ),
+    emailAttempts: v.number(),
+    emailLastError: v.optional(v.string()),
+    emailSentAt: v.optional(v.number()),
+  })
+    .index("by_actor_createdAt", ["actorUserId", "createdAt"])
+    .index("by_target_createdAt", ["targetUserId", "createdAt"])
+    .index("by_createdAt", ["createdAt"])
+    .index("by_actor_request", ["actorUserId", "requestId"])
+    .index("by_target_pending", [
+      "targetUserId",
+      "kind",
+      "revokedAt",
+      "acknowledgedAt",
+    ]),
+
   adminTelemetry: defineTable({
     actorClerkId: v.string(),
     actorUserId: v.optional(v.id("users")),
@@ -39,12 +75,17 @@ export default defineSchema({
       v.literal("create"),
       v.literal("grant_pro"),
       v.literal("revoke_pro"),
+      v.literal("warn"),
+      v.literal("ban"),
+      v.literal("revoke_warning"),
+      v.literal("lift_ban"),
     ),
     resourceType: v.union(
       v.literal("aircraft_image"),
       v.literal("airport_chart"),
       v.literal("virtual_airline"),
       v.literal("pro_access"),
+      v.literal("user_moderation"),
     ),
     resourceId: v.string(),
     resourceLabel: v.string(),

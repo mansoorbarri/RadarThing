@@ -167,7 +167,7 @@ async function getViewer(ctx: QueryCtx | MutationCtx) {
     .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
     .first();
 
-  if (!user || user.isDeleted) {
+  if (!user || user.isDeleted || user.activeBanId) {
     return { identity, user: null, isAdmin: false };
   }
 
@@ -1578,7 +1578,7 @@ export const listActiveForUser = query({
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
-    if (!user || user.isDeleted) return [];
+    if (!user || user.isDeleted || user.activeBanId) return [];
 
     const now = Date.now();
     const challenges = (await getPublishedChallenges(ctx))

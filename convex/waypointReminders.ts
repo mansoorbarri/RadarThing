@@ -2,6 +2,8 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 
+import { requireAuthenticatedClerkId, requireSystem } from "./lib/auth";
+
 type ReminderStatus = Doc<"waypointReminders">["status"];
 
 function normalizeIdent(value: string): string {
@@ -18,8 +20,14 @@ export const create = mutation({
     waypointIdent: v.string(),
     intervalSeconds: v.number(),
     durationSeconds: v.number(),
+    systemSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user || user.isDeleted || user.activeBanId)
+      throw new Error("Account access restricted");
+    if (args.systemSecret) requireSystem(ctx, args.systemSecret);
+    else await requireAuthenticatedClerkId(ctx, user.clerkId);
     const now = Date.now();
 
     return await ctx.db.insert("waypointReminders", {
@@ -49,7 +57,12 @@ export const listActive = query({
       .withIndex("by_status", (q) => q.eq("status", "active"))
       .collect();
 
-    return [...armed, ...active].sort((a, b) => a.createdAt - b.createdAt);
+    const eligible = [];
+    for (const reminder of [...armed, ...active]) {
+      const user = await ctx.db.get(reminder.userId);
+      if (user && !user.isDeleted && !user.activeBanId) eligible.push(reminder);
+    }
+    return eligible.sort((a, b) => a.createdAt - b.createdAt);
   },
 });
 
@@ -63,9 +76,11 @@ export const getById = query({
 export const markTriggered = mutation({
   args: {
     id: v.id("waypointReminders"),
+    systemSecret: v.optional(v.string()),
     triggeredAt: v.number(),
   },
   handler: async (ctx, args) => {
+    requireSystem(ctx, args.systemSecret);
     const reminder = await ctx.db.get(args.id);
     if (reminder?.status !== "armed") return null;
 
@@ -82,9 +97,11 @@ export const markTriggered = mutation({
 export const markSent = mutation({
   args: {
     id: v.id("waypointReminders"),
+    systemSecret: v.optional(v.string()),
     sentAt: v.number(),
   },
   handler: async (ctx, args) => {
+    requireSystem(ctx, args.systemSecret);
     const reminder = await ctx.db.get(args.id);
     if (!reminder) return null;
 
@@ -99,6 +116,7 @@ export const markSent = mutation({
 export const markStatus = mutation({
   args: {
     id: v.id("waypointReminders"),
+    systemSecret: v.optional(v.string()),
     status: v.union(
       v.literal("completed"),
       v.literal("cancelled"),
@@ -108,6 +126,7 @@ export const markStatus = mutation({
     completedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    requireSystem(ctx, args.systemSecret);
     const reminder = await ctx.db.get(args.id);
     if (!reminder) return null;
 
@@ -128,6 +147,9 @@ export const cancelForUser = mutation({
     callsign: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new Error("User not found");
+    await requireAuthenticatedClerkId(ctx, user.clerkId);
     const reminders = await ctx.db
       .query("waypointReminders")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))

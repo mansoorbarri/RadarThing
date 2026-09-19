@@ -1,6 +1,8 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { auth } from "@clerk/nextjs/server";
 
+import { assertCurrentAccountActive } from "~/server/moderation";
+
 const f = createUploadthing();
 
 export const ourFileRouter = {
@@ -9,6 +11,7 @@ export const ourFileRouter = {
       const { userId } = await auth();
 
       if (!userId) throw new Error("Unauthorized");
+      await assertCurrentAccountActive(userId);
 
       return { userId };
     })
@@ -23,6 +26,7 @@ export const ourFileRouter = {
       const { userId } = await auth();
 
       if (!userId) throw new Error("Unauthorized");
+      await assertCurrentAccountActive(userId);
 
       return { userId };
     })

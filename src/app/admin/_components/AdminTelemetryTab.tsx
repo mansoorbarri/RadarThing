@@ -31,6 +31,10 @@ const ACTION_LABELS = {
   create: "Created",
   grant_pro: "Granted PRO",
   revoke_pro: "Revoked PRO",
+  warn: "Warned user",
+  ban: "Banned user",
+  revoke_warning: "Revoked warning",
+  lift_ban: "Lifted ban",
 } as const;
 
 const RESOURCE_LABELS = {
@@ -38,6 +42,7 @@ const RESOURCE_LABELS = {
   airport_chart: "Airport chart",
   virtual_airline: "Virtual airline",
   pro_access: "PRO access",
+  user_moderation: "User moderation",
 } as const;
 
 const ACTION_STYLES = {
@@ -49,6 +54,10 @@ const ACTION_STYLES = {
   create: "border-cyan-400/30 bg-cyan-400/10 text-cyan-200",
   grant_pro: "border-yellow-400/30 bg-yellow-400/10 text-yellow-200",
   revoke_pro: "border-orange-400/30 bg-orange-400/10 text-orange-200",
+  warn: "border-amber-400/30 bg-amber-400/10 text-amber-200",
+  ban: "border-red-400/30 bg-red-400/10 text-red-200",
+  revoke_warning: "border-cyan-400/30 bg-cyan-400/10 text-cyan-200",
+  lift_ban: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
 } as const;
 
 type TelemetryAction = keyof typeof ACTION_LABELS;
@@ -58,6 +67,8 @@ const ALL_ACTIONS_VALUE = "__all_actions__";
 interface TelemetryEvent {
   id: string;
   actorClerkId: string;
+  actorLabel?: string;
+  targetLabel?: string;
   actorEmail: string | null;
   actorDiscordUsername: string | null;
   action: TelemetryAction;
@@ -72,6 +83,7 @@ interface TelemetryEvent {
 
 function formatActor(event: TelemetryEvent) {
   return (
+    event.actorLabel ??
     event.actorDiscordUsername ??
     event.actorEmail ??
     `Clerk ${event.actorClerkId.slice(0, 8)}`
@@ -80,6 +92,7 @@ function formatActor(event: TelemetryEvent) {
 
 function formatTarget(event: TelemetryEvent) {
   return (
+    event.targetLabel ??
     event.targetDiscordUsername ??
     event.targetEmail ??
     (event.targetClerkId ? `Clerk ${event.targetClerkId.slice(0, 8)}` : null)
@@ -136,8 +149,9 @@ export function AdminTelemetryTab({
   canRunSuperAdminQueries: boolean;
 }) {
   const [userFilter, setUserFilter] = useState("");
-  const [actionFilter, setActionFilter] =
-    useState<typeof ALL_ACTIONS_VALUE | TelemetryAction>(ALL_ACTIONS_VALUE);
+  const [actionFilter, setActionFilter] = useState<
+    typeof ALL_ACTIONS_VALUE | TelemetryAction
+  >(ALL_ACTIONS_VALUE);
   const events = useQuery(
     api.adminTelemetry.getRecent,
     canRunSuperAdminQueries ? { limit: 100 } : "skip",
@@ -228,7 +242,9 @@ export function AdminTelemetryTab({
           <Select
             value={actionFilter}
             onValueChange={(value: string) =>
-              setActionFilter(value as typeof ALL_ACTIONS_VALUE | TelemetryAction)
+              setActionFilter(
+                value as typeof ALL_ACTIONS_VALUE | TelemetryAction,
+              )
             }
           >
             <SelectTrigger className="h-11 w-full rounded-lg border-white/10 bg-white/5 font-mono text-sm text-white shadow-none hover:bg-white/[0.07] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">

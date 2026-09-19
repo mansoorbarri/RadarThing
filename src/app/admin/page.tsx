@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 
+import { ModerationTab } from "./_components/ModerationTab";
 import { AdminHeader } from "./_components/AdminHeader";
 import { AdminAccessDenied } from "./_components/AdminAccessDenied";
 import { AdminSkeleton, AdminTabSkeleton } from "./_components/skeletons";
@@ -206,6 +207,7 @@ export default function AdminPage() {
       badge: pendingCount || undefined,
     },
     { value: "charts", label: "Airport Charts" },
+    { value: "moderation", label: "Moderation" },
     {
       value: "virtual-airlines",
       label: "Virtual Airlines",
@@ -326,6 +328,13 @@ export default function AdminPage() {
               Pro
             </button>
           )}
+          <button
+            onClick={() => router.push(getAdminTabHref("moderation"))}
+            className={`flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 font-medium transition-all ${mainTab === "moderation" ? "bg-amber-500/20 text-amber-300" : "bg-white/5 text-slate-400 hover:bg-white/10"}`}
+          >
+            <Flag className="h-4 w-4" />
+            Moderation
+          </button>
           {isSuperAdmin && (
             <button
               onClick={() => router.push(getAdminTabHref("activity"))}
@@ -345,6 +354,7 @@ export default function AdminPage() {
           <AircraftImagesTab canRunAdminQueries={canRunAdminQueries} />
         )}
         {mainTab === "charts" && <AirportChartsTab />}
+        {mainTab === "moderation" && <ModerationTab />}
         {mainTab === "challenges" && (
           <ChallengesTab canRunAdminQueries={canRunAdminQueries} />
         )}

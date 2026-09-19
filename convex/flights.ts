@@ -254,10 +254,11 @@ async function getCurrentViewer(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity?.subject) return null;
 
-  return await ctx.db
+  const viewer = await ctx.db
     .query("users")
     .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
     .first();
+  return viewer?.activeBanId ? null : viewer;
 }
 
 function canViewerAccessFullFlightHistory(
@@ -439,6 +440,8 @@ export const create = mutation({
     systemSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const targetUser = await ctx.db.get(args.userId);
+    if (targetUser?.activeBanId) throw new Error("Account access restricted");
     if (!isSystemSecretValid(args.systemSecret)) {
       const user = await ctx.db.get(args.userId);
       if (!user || user.isDeleted) {
@@ -639,6 +642,7 @@ export const deleteFlight = mutation({
   args: { flightId: v.id("flights") },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
+    await requireAuthenticatedClerkId(ctx);
     if (!identity) {
       throw new Error("You must be signed in to delete flights");
     }

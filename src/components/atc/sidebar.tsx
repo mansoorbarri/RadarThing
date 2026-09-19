@@ -1,5 +1,7 @@
 "use client";
 
+import { SidebarModeration } from "~/components/moderation/ModerationControls";
+
 import React, {
   useMemo,
   useState,
@@ -625,6 +627,10 @@ export const Sidebar = ({
       <div
         className={`${isMobile ? "min-h-0 flex-1 overflow-y-auto overscroll-contain" : "flex min-h-0 flex-1 flex-col overflow-hidden"}`}
       >
+        <SidebarModeration
+          key={aircraft.googleId || aircraft.id}
+          googleId={aircraft.googleId}
+        />
         {/* Header with optional aircraft photo background */}
         <div
           className={`relative ${hasCommunityImage || isAircraftImagePending ? (isMobile ? "min-h-[140px]" : "min-h-[200px]") : ""}`}
