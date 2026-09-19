@@ -1,6 +1,6 @@
 # Account moderation
 
-Admins can warn or ban linked RadarThing accounts from the aircraft sidebars or `/admin/moderation`. Moderation identifies users and admins only by Discord username (when available) or the full RT account ID shown on the dashboard. Search accepts Discord usernames and RT IDs only, not email, Google ID, or Clerk ID. Moderation queries return explicitly selected fields, and legacy email-based labels are redacted in histories and moderation Activity events. Recipient email addresses stay internal to the notification worker. Reasons are required and shared with the affected user. Users without a linked RT account cannot be moderated or emailed.
+Admins can warn or ban linked RadarThing accounts from `/admin/moderation`. Moderation identifies users and admins only by Discord username (when available) or the full RT account ID shown on the dashboard. Search accepts Discord usernames and RT IDs only, not email, Google ID, or Clerk ID. Moderation queries return explicitly selected fields, and legacy email-based labels are redacted in histories and moderation Activity events. Recipient email addresses stay internal to the notification worker. Reasons are required and shared with the affected user. Users without a linked RT account cannot be moderated or emailed.
 
 Regular admins see their own actions in the moderation history and can inspect a target's previous actions before issuing another. Only the super-admin can revoke warnings or lift bans, including their own actions. Only the super-admin can moderate other admins. Self-moderation and moderation of the super-admin are blocked on the server.
 
@@ -23,4 +23,4 @@ Emails use a stable Resend idempotency key per moderation action. Failed attempt
 
 Run `pnpm test:moderation`, `pnpm exec tsx --test convex/activeFlightSessions.test.ts convex/flightSummaries.test.ts convex/challengeRules.test.ts`, `pnpm check`, and `pnpm build`.
 
-Before release, use dedicated test accounts to verify sidebar actions, warning emails and next-visit acknowledgment, an already-open session receiving a ban, blocked direct requests, account/billing access, and super-admin overrides. Automated handler tests use an in-memory database and mock the email provider; they never moderate real accounts or send email.
+Before release, use dedicated test accounts to verify admin moderation actions, warning emails and next-visit acknowledgment, an already-open session receiving a ban, blocked direct requests, account/billing access, and super-admin overrides. Automated handler tests use an in-memory database and mock the email provider; they never moderate real accounts or send email.

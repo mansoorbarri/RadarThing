@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery } from "convex/react";
 import { Dialog } from "radix-ui";
 import { AlertTriangle, Ban, X } from "lucide-react";
 import { toast } from "sonner";
@@ -58,26 +58,6 @@ export function ModerationControls({
           onClose={() => setKind(null)}
         />
       )}
-    </div>
-  );
-}
-
-export function SidebarModeration({ googleId }: { googleId?: string | null }) {
-  const { isAdminUser } = useProStatus();
-  const user = useQuery(
-    api.moderation.sidebarTarget,
-    isAdminUser && googleId ? { googleId } : "skip",
-  );
-  if (!isAdminUser) return null;
-  return (
-    <div className="border-t border-white/10 p-3">
-      <ModerationControls
-        userId={user?._id}
-        label={user?.label ?? "RT account"}
-        disabledReason={
-          user ? user.disabledReason : "No linked RT account available."
-        }
-      />
     </div>
   );
 }
