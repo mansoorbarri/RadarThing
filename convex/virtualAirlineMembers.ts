@@ -108,7 +108,12 @@ export const add = mutation({
     );
 
     const selectedUser = await ctx.db.get(args.userId);
-    if (!selectedUser || selectedUser.isDeleted || !selectedUser.googleId) {
+    if (
+      !selectedUser ||
+      selectedUser.isDeleted ||
+      selectedUser.activeBanId ||
+      !selectedUser.googleId
+    ) {
       throw new Error("Pilot not found");
     }
 

@@ -17,11 +17,16 @@ export async function getCurrentAccessContext() {
   }
 
   const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
-  const isSuperAdmin = user?.googleId === SUPER_ADMIN_GOOGLE_ID;
+  const isSuperAdmin = Boolean(
+    user &&
+    !user.isDeleted &&
+    !user.activeBanId &&
+    user.googleId === SUPER_ADMIN_GOOGLE_ID,
+  );
 
-  if (!user) {
+  if (!user || user.activeBanId || user.isDeleted) {
     return {
-      clerkId: userId,
+      clerkId: null,
       user: null,
       isAdmin: isSuperAdmin,
       isSuperAdmin,
@@ -32,7 +37,10 @@ export async function getCurrentAccessContext() {
   return {
     clerkId: userId,
     user,
-    isAdmin: user.role === "ADMIN" || isSuperAdmin,
+    isAdmin:
+      !user.activeBanId &&
+      !user.isDeleted &&
+      (user.role === "ADMIN" || isSuperAdmin),
     isSuperAdmin,
     isPro: hasEffectiveProAccess(user) || isSuperAdmin,
   };

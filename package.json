@@ -20,7 +20,8 @@
     "test:active-flight-sessions": "tsx --test convex/activeFlightSessions.test.ts",
     "preview": "next build && next start",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:moderation": "tsx --test convex/moderation.test.ts"
   },
   "engines": {
     "node": ">=20 <26",

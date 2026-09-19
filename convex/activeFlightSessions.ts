@@ -34,8 +34,13 @@ export const replaceAll = mutation({
     requireSystem(ctx, args.systemSecret);
 
     const now = Date.now();
+    const eligible = [];
+    for (const session of args.sessions) {
+      const user = await ctx.db.get(session.userId);
+      if (user && !user.isDeleted && !user.activeBanId) eligible.push(session);
+    }
     const sessionsByUserId = new Map(
-      args.sessions.map((session) => [session.userId, session]),
+      eligible.map((session) => [session.userId, session]),
     );
     const seenUserIds = new Set(sessionsByUserId.keys());
     const existing = await ctx.db.query("activeFlightSessions").collect();
@@ -94,7 +99,9 @@ export const clear = mutation({
   handler: async (ctx, args) => {
     requireSystem(ctx, args.systemSecret);
 
-    const targetUserIds = args.userIds ? Array.from(new Set(args.userIds)) : null;
+    const targetUserIds = args.userIds
+      ? Array.from(new Set(args.userIds))
+      : null;
     const sessions = targetUserIds
       ? (
           await Promise.all(

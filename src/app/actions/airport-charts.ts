@@ -119,7 +119,7 @@ async function isAdminUser(): Promise<boolean> {
   if (!userId) return false;
 
   const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
-  if (!user) return false;
+  if (!user || user.activeBanId || user.isDeleted) return false;
 
   if (user.role === "ADMIN") return true;
 

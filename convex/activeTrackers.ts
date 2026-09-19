@@ -1,6 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 
+import { requireAuthenticatedClerkId } from "./lib/auth";
+
 const MIN_TRACKERS_FOR_MOST_TRACKED = 3;
 
 function getRankedTrackerCounts(
@@ -24,6 +26,7 @@ export const startTracking = mutation({
     callsigns: v.array(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAuthenticatedClerkId(ctx, args.clerkId);
     const callsigns = Array.from(
       new Set(
         args.callsigns.map((callsign) => callsign.trim()).filter(Boolean),
@@ -55,6 +58,7 @@ export const stopTracking = mutation({
     clerkId: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireAuthenticatedClerkId(ctx, args.clerkId);
     const existing = await ctx.db
       .query("activeTrackers")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -71,6 +75,7 @@ export const heartbeat = mutation({
     clerkId: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireAuthenticatedClerkId(ctx, args.clerkId);
     const existing = await ctx.db
       .query("activeTrackers")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))

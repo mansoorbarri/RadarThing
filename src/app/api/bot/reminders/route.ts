@@ -100,6 +100,7 @@ export async function POST(request: Request) {
         waypointIdent,
         intervalSeconds,
         durationSeconds,
+        systemSecret: env.CONVEX_SYSTEM_SECRET,
       });
 
       return NextResponse.json({ success: true, reminderId });
@@ -133,6 +134,7 @@ export async function POST(request: Request) {
         {
           id,
           triggeredAt,
+          systemSecret: env.CONVEX_SYSTEM_SECRET,
         },
       );
       return NextResponse.json({ success: true, reminder });
@@ -149,6 +151,7 @@ export async function POST(request: Request) {
       const reminder = await convex.mutation(api.waypointReminders.markSent, {
         id,
         sentAt,
+        systemSecret: env.CONVEX_SYSTEM_SECRET,
       });
       return NextResponse.json({ success: true, reminder });
     }
@@ -177,6 +180,7 @@ export async function POST(request: Request) {
         status,
         completedAt,
         failureReason,
+        systemSecret: env.CONVEX_SYSTEM_SECRET,
       });
 
       return NextResponse.json({ success: true, reminder });

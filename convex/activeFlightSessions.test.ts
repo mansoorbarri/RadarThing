@@ -38,6 +38,9 @@ function createMockCtx(initialDocs: ActiveFlightSessionDoc[] = []) {
   const docs = initialDocs.map((doc) => ({ ...doc }));
 
   const db = {
+    get(id: string) {
+      return Promise.resolve({ _id: id, isDeleted: false });
+    },
     query(tableName: string) {
       assert.equal(tableName, "activeFlightSessions");
       let userIdFilter: string | null = null;
@@ -117,9 +120,13 @@ test("list returns a bounded active session set", async () => {
     { _id: "doc-2", _creationTime: 2, updatedAt: 2, ...session("user-2") },
   ]);
 
-  const result = await callHandler<ActiveFlightSessionDoc[]>(list as never, ctx, {
-    limit: 1,
-  });
+  const result = await callHandler<ActiveFlightSessionDoc[]>(
+    list as never,
+    ctx,
+    {
+      limit: 1,
+    },
+  );
 
   assert.equal(result.length, 1);
   assert.equal(result[0]?.userId, "user-1");
@@ -136,13 +143,10 @@ test("replaceAll patches existing sessions, inserts new sessions, and deletes mi
   });
 
   assert.deepEqual(result, { saved: 2, deleted: 1 });
-  assert.deepEqual(
-    docs.map((doc) => [doc.userId, doc.state]).sort(),
-    [
-      ["user-1", "disconnected"],
-      ["user-2", "active"],
-    ],
-  );
+  assert.deepEqual(docs.map((doc) => [doc.userId, doc.state]).sort(), [
+    ["user-1", "disconnected"],
+    ["user-2", "active"],
+  ]);
 });
 
 test("replaceAll processes duplicate incoming userIds once", async () => {

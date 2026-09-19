@@ -10,13 +10,20 @@ type AuditAction =
   | "delete"
   | "create"
   | "grant_pro"
-  | "revoke_pro";
+  | "revoke_pro"
+  | "warn"
+  | "ban"
+  | "revoke_warning"
+  | "lift_ban";
 
 type AuditResourceType =
   | "aircraft_image"
   | "airport_chart"
   | "virtual_airline"
-  | "pro_access";
+  | "pro_access"
+  | "user_moderation";
+
+import { moderationLabel } from "./lib/moderationRules";
 
 const SUPER_ADMIN_GOOGLE_ID = "101233162035372298523";
 
@@ -73,14 +80,18 @@ export async function logAdminTelemetry(
   await ctx.db.insert("adminTelemetry", {
     actorClerkId: args.actorClerkId,
     actorUserId: actor?._id,
-    actorEmail: actor?.email ?? identityActorEmail ?? undefined,
+    actorEmail:
+      args.resourceType === "user_moderation"
+        ? undefined
+        : (actor?.email ?? identityActorEmail ?? undefined),
     actorDiscordUsername: actor?.discordUsername,
     action: args.action,
     resourceType: args.resourceType,
     resourceId: String(args.resourceId),
     resourceLabel: args.resourceLabel.slice(0, 180),
     targetClerkId: args.targetClerkId,
-    targetEmail: target?.email,
+    targetEmail:
+      args.resourceType === "user_moderation" ? undefined : target?.email,
     targetDiscordUsername: target?.discordUsername,
     metadata: args.metadata,
     createdAt: Date.now(),
@@ -109,37 +120,64 @@ export const getRecent = query({
       .query("adminTelemetry")
       .withIndex("by_createdAt")
       .order("desc")
-      .take(Math.min(limit * 5, 1000));
+      .take(limit);
 
-    const actorClerkIds = Array.from(
-      new Set(events.map((event) => event.actorClerkId)),
+    return await Promise.all(
+      events.map(async (event) => {
+        if (event.resourceType === "user_moderation") {
+          const id = ctx.db.normalizeId("moderationActions", event.resourceId);
+          const record = id ? await ctx.db.get(id) : null;
+          const [actor, target] = await Promise.all([
+            event.actorUserId ? ctx.db.get(event.actorUserId) : null,
+            record ? ctx.db.get(record.targetUserId) : null,
+          ]);
+          const actorLabel = moderationLabel(
+            actor,
+            event.actorUserId ?? "unavailable",
+          );
+          const targetLabel = moderationLabel(
+            target,
+            record?.targetUserId ?? "unavailable",
+          );
+          return {
+            id: event._id,
+            actorClerkId: "",
+            actorEmail: null,
+            actorDiscordUsername: null,
+            actorLabel,
+            targetLabel,
+            action: event.action,
+            resourceType: event.resourceType,
+            resourceId: event.resourceId,
+            resourceLabel: targetLabel,
+            targetClerkId: null,
+            targetEmail: null,
+            targetDiscordUsername: null,
+            metadata: {
+              reason:
+                typeof event.metadata?.reason === "string"
+                  ? event.metadata.reason
+                  : null,
+            },
+            createdAt: event.createdAt,
+          };
+        }
+        return {
+          id: event._id,
+          actorClerkId: event.actorClerkId,
+          actorEmail: event.actorEmail ?? null,
+          actorDiscordUsername: event.actorDiscordUsername ?? null,
+          action: event.action,
+          resourceType: event.resourceType,
+          resourceId: event.resourceId,
+          resourceLabel: event.resourceLabel,
+          targetClerkId: event.targetClerkId ?? null,
+          targetEmail: event.targetEmail ?? null,
+          targetDiscordUsername: event.targetDiscordUsername ?? null,
+          metadata: event.metadata ?? null,
+          createdAt: event.createdAt,
+        };
+      }),
     );
-    const actors = await Promise.all(
-      actorClerkIds.map((clerkId) => getUserByClerkId(ctx, clerkId)),
-    );
-    const actorsByClerkId = new Map(
-      actors.flatMap((actor) => (actor ? [[actor.clerkId, actor]] : [])),
-    );
-
-    return events
-      .filter((event) =>
-        isAdminTelemetryActor(actorsByClerkId.get(event.actorClerkId) ?? null),
-      )
-      .slice(0, limit)
-      .map((event) => ({
-        id: event._id,
-        actorClerkId: event.actorClerkId,
-        actorEmail: event.actorEmail ?? null,
-        actorDiscordUsername: event.actorDiscordUsername ?? null,
-        action: event.action,
-        resourceType: event.resourceType,
-        resourceId: event.resourceId,
-        resourceLabel: event.resourceLabel,
-        targetClerkId: event.targetClerkId ?? null,
-        targetEmail: event.targetEmail ?? null,
-        targetDiscordUsername: event.targetDiscordUsername ?? null,
-        metadata: event.metadata ?? null,
-        createdAt: event.createdAt,
-      }));
   },
 });

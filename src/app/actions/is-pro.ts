@@ -12,7 +12,8 @@ async function getUserByEmail(
   const email = clerkUser?.primaryEmailAddress?.emailAddress;
   if (!email) return null;
 
-  return await convex.query(api.users.getByEmail, { email });
+  const user = await convex.query(api.users.getByEmail, { email });
+  return user?.activeBanId || user?.isDeleted ? null : user;
 }
 
 function isSuperAdminUserRecord(

@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useMutation } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { useUser } from "@clerk/nextjs";
-import { api } from "../../convex/_generated/api";
+import { syncCurrentAccount } from "~/app/actions/sync-account";
 
 export function useStoreUserEffect() {
   const { isAuthenticated } = useConvexAuth();
@@ -23,20 +22,15 @@ export function useStoreUserEffect() {
 
 export function StoreUserProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user, storedRef } = useStoreUserEffect();
-  const storeUser = useMutation(api.users.storeUser);
 
   useEffect(() => {
     if (!isAuthenticated || !user || storedRef.current) return;
 
-    const googleId =
-      user.externalAccounts?.find((acc) => acc.provider === "google")
-        ?.providerUserId ?? undefined;
-
     storedRef.current = true;
-    void storeUser({ googleId }).catch(() => {
-        storedRef.current = false;
-      });
-  }, [isAuthenticated, user, storeUser, storedRef]);
+    void syncCurrentAccount().catch(() => {
+      storedRef.current = false;
+    });
+  }, [isAuthenticated, user, storedRef]);
 
   return children;
 }

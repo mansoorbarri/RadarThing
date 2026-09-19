@@ -5,6 +5,7 @@ export const ADMIN_TABS = [
   "virtual-airlines",
   "pro",
   "activity",
+  "moderation",
 ] as const;
 
 export type MainTab = (typeof ADMIN_TABS)[number];

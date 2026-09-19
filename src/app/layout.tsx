@@ -13,6 +13,7 @@ import { PostHogProvider } from "~/components/providers/PostHogProvider";
 import { ThemeProvider } from "~/components/providers/ThemeProvider";
 import { PrivacyConsentProvider } from "~/components/privacy/PrivacyConsentProvider";
 import { PrivacyControl } from "~/components/privacy/PrivacyControl";
+import { ModerationGate } from "~/components/moderation/ModerationGate";
 import { AdSenseAnchor } from "~/components/ads/AdSenseAnchor";
 
 export const metadata: Metadata = {
@@ -100,9 +101,11 @@ export default function RootLayout({
                         },
                       }}
                     />
-                    {children}
-                    <PrivacyControl />
-                    <AdSenseAnchor />
+                    <ModerationGate>
+                      {children}
+                      <PrivacyControl />
+                      <AdSenseAnchor />
+                    </ModerationGate>
                   </Suspense>
                 </PostHogProvider>
               </ConvexProvider>

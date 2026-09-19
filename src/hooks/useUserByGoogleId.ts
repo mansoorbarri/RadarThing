@@ -3,9 +3,9 @@
 import { useQuery } from "convex/react";
 import { useRef, useEffect, useCallback } from "react";
 import { api } from "../../convex/_generated/api";
-import type { Doc } from "../../convex/_generated/dataModel";
+import type { FunctionReturnType } from "convex/server";
 
-type User = Doc<"users">;
+type User = NonNullable<FunctionReturnType<typeof api.users.getByGoogleId>>;
 
 // Global cache shared across all hook instances
 // Key: googleId, Value: { user, timestamp }

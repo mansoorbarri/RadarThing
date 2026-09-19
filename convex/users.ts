@@ -87,10 +87,13 @@ export const getByClerkId = query({
 export const getByGoogleId = query({
   args: { googleId: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const user = await ctx.db
       .query("users")
       .withIndex("by_googleId", (q) => q.eq("googleId", args.googleId))
       .first();
+    return user && !user.isDeleted
+      ? { _id: user._id, discordUsername: user.discordUsername }
+      : null;
   },
 });
 
@@ -307,7 +310,8 @@ export const completeRadarGuide = mutation({
   args: {},
   handler: async (ctx) => {
     const user = await getCurrentUser(ctx);
-    if (!user) throw new Error("Not authenticated");
+    if (!user || user.activeBanId || user.isDeleted)
+      throw new Error("Not authenticated");
 
     if (user.radarGuideCompletedAt === undefined) {
       await ctx.db.patch(user._id, { radarGuideCompletedAt: Date.now() });
@@ -315,12 +319,14 @@ export const completeRadarGuide = mutation({
   },
 });
 
-// Store user (client-side upsert, called once per session)
+// Store user from the trusted Clerk sync action, called once per session.
 export const storeUser = mutation({
   args: {
     googleId: v.optional(v.string()),
+    systemSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    requireSystem(ctx, args.systemSecret);
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
@@ -402,6 +408,8 @@ export const update = mutation({
     if (!user) return null;
 
     const requiresSystem =
+      updates.googleId !== undefined ||
+      updates.email !== undefined ||
       updates.role !== undefined ||
       updates.stripeCustomerId !== undefined ||
       updates.stripeSubscriptionId !== undefined ||
@@ -446,6 +454,8 @@ export const updateByClerkId = mutation({
     if (!user) return null;
 
     const requiresSystem =
+      updates.googleId !== undefined ||
+      updates.email !== undefined ||
       updates.role !== undefined ||
       updates.stripeCustomerId !== undefined ||
       updates.stripeSubscriptionId !== undefined ||
@@ -802,6 +812,7 @@ export const getTotalApprovedUploads = query({
 export const backfillApprovedAircraftImageStats = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const users = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("isDeleted"), false))

@@ -28,7 +28,8 @@ export const useProStatus = () => {
       (!isAuthenticated ||
         dbUser === undefined ||
         superAdminQuery === undefined));
-  const isRoleAdmin = dbUser?.role === "ADMIN";
+  const isRoleAdmin =
+    dbUser?.role === "ADMIN" && !dbUser.activeBanId && !dbUser.isDeleted;
   const isAdminUser = isRoleAdmin || isSuperAdmin;
   const isProUser = hasEffectiveProAccess(dbUser);
 

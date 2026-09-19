@@ -44,6 +44,9 @@ export async function requireAuthenticatedClerkId(
     throw new Error("Unauthorized");
   }
 
+  const user = await getCurrentUser(ctx);
+  if (user?.activeBanId || user?.isDeleted)
+    throw new Error("Account access restricted");
   return identity.subject;
 }
 
@@ -75,7 +78,12 @@ export async function requireAdmin(
 
   const isSuperAdmin = user?.googleId === SUPER_ADMIN_GOOGLE_ID;
 
-  if (!user || user.isDeleted || (user.role !== "ADMIN" && !isSuperAdmin)) {
+  if (
+    !user ||
+    user.isDeleted ||
+    user.activeBanId ||
+    (user.role !== "ADMIN" && !isSuperAdmin)
+  ) {
     throw new Error("Unauthorized");
   }
 
@@ -113,6 +121,7 @@ export async function requireVirtualAirlineManager(
   if (
     !user ||
     user.isDeleted ||
+    user.activeBanId ||
     (!isSiteAdmin && actorClerkId !== virtualAirline.adminClerkId)
   ) {
     throw new Error("Unauthorized");
@@ -131,7 +140,7 @@ export async function requireAnyVirtualAirlineManager(ctx: AuthCtx) {
   const isSiteAdmin =
     user?.role === "ADMIN" || user?.googleId === SUPER_ADMIN_GOOGLE_ID;
 
-  if (user?.isDeleted) {
+  if (user?.isDeleted || user?.activeBanId) {
     throw new Error("Unauthorized");
   }
 
