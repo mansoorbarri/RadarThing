@@ -43,7 +43,6 @@ const ADSB_RADAR_ICON_URLS = {
   erj: `${ADSB_RADAR_ICON_BASE}/erj.svg`,
   f100: `${ADSB_RADAR_ICON_BASE}/f100.svg`,
   f11: `${ADSB_RADAR_ICON_BASE}/f11.svg`,
-  f15: `${ADSB_RADAR_ICON_BASE}/f15.svg`,
   f5: `${ADSB_RADAR_ICON_BASE}/f5.svg`,
   fa7x: `${ADSB_RADAR_ICON_BASE}/fa7x.svg`,
   glf5: `${ADSB_RADAR_ICON_BASE}/glf5.svg`,
@@ -89,7 +88,6 @@ const AIRCRAFT_ICON_SCALE = new Map<string, number>([
   [ADSB_RADAR_ICON_URLS.a6, 0.9],
   [ADSB_RADAR_ICON_URLS.f5, 0.88],
   [ADSB_RADAR_ICON_URLS.f11, 0.9],
-  [ADSB_RADAR_ICON_URLS.f15, 0.92],
 ]);
 const MILITARY_AF_CODES = new Set([
   "usaf",
@@ -320,7 +318,8 @@ function getSpecificAircraftIconUrl(normalizedType: string, rawType: string) {
       return ADSB_RADAR_ICON_URLS.f5;
     }
     if (normalizedType === "F11") return ADSB_RADAR_ICON_URLS.f11;
-    if (normalizedType === "F15") return ADSB_RADAR_ICON_URLS.f15;
+    // The catalog's f15.svg is a multirotor, not an F-15 airframe.
+    // Use the fighter silhouette for F15 along with the other modern fighters.
     return ADSB_RADAR_ICON_URLS.a6;
   }
 
