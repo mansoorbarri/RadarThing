@@ -760,6 +760,9 @@ function ATCPageContent() {
     setFullFlightFilter(null);
     setSelectedCallsigns(new Set());
     setSelectedAircrafts([]);
+    setSelectedAirport(undefined);
+    setPendingAirportIcao(null);
+    setHasResolvedInitialAirportFromUrl(true);
     setIsFollowMode(false);
     setAutoSelectedFromUrl(false);
     router.replace(window.location.pathname);
