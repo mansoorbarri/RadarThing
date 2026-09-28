@@ -166,6 +166,10 @@ function Dashboard() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [keybinds, setKeybinds] = useState(DEFAULT_RADAR_KEYBINDS);
   const [fullscreen, setFullscreen] = useState(false);
+  const lastTotalsLoad = useRef<{ year: number; count: number } | null>(null);
+  const [stalledTotalsYear, setStalledTotalsYear] = useState<number | null>(
+    null,
+  );
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get(
       "preview",
@@ -206,9 +210,27 @@ function Dashboard() {
     { initialNumItems: 20 },
   );
   useEffect(() => {
-    if (totalsStatus === "CanLoadMore") loadMore(20);
-  }, [totalsStatus, loadMore]);
-  const totalsReady = totalsStatus === "Exhausted";
+    if (
+      totalsStatus !== "CanLoadMore" ||
+      year === null ||
+      stalledTotalsYear === year
+    )
+      return;
+
+    if (
+      lastTotalsLoad.current?.year === year &&
+      recordedFlights.length <= lastTotalsLoad.current.count
+    ) {
+      setStalledTotalsYear(year);
+      return;
+    }
+
+    lastTotalsLoad.current = { year, count: recordedFlights.length };
+    loadMore(20);
+  }, [totalsStatus, recordedFlights.length, year, stalledTotalsYear, loadMore]);
+  const totalsReady =
+    totalsStatus === "Exhausted" ||
+    (year !== null && stalledTotalsYear === year);
   const eventTotals = recordedFlights.reduce(
     (sum, flight) => ({
       flights: sum.flights + (flight.included ? 1 : 0),
