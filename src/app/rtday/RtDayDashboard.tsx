@@ -82,9 +82,11 @@ function Metric({
 
 function MilestoneCelebration({
   milestone,
+  preview,
   onDismiss,
 }: {
   milestone: number;
+  preview: boolean;
   onDismiss: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -125,6 +127,7 @@ function MilestoneCelebration({
         size={64}
         aria-hidden="true"
       />
+      {preview && <span className={styles.celebrationPreview}>Preview</span>}
       <h2 id="milestone-title">
         {milestone === RT_DAY_RECORD ? "Record matched" : "New record"}
       </h2>
@@ -157,9 +160,41 @@ function Dashboard() {
   const [peak, setPeak] = useState(0);
   const [celebration, setCelebration] = useState<number | null>(null);
   const celebratedMilestone = useRef(0);
+  const [previewReady, setPreviewReady] = useState(false);
+  const [previewTarget, setPreviewTarget] = useState<number | null>(null);
+  const [previewCount, setPreviewCount] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [keybinds, setKeybinds] = useState(DEFAULT_RADAR_KEYBINDS);
   const [fullscreen, setFullscreen] = useState(false);
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get(
+      "preview",
+    );
+    if (requested !== "50" && requested !== "51") {
+      setPreviewReady(true);
+      return;
+    }
+
+    const target = Number(requested);
+    setPreviewTarget(target);
+    setPreviewCount(0);
+    setPreviewReady(true);
+
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const start = setTimeout(() => {
+      let step = 0;
+      interval = setInterval(() => {
+        step += 1;
+        setPreviewCount(Math.round((target * step) / 20));
+        if (step === 20) clearInterval(interval);
+      }, 100);
+    }, 600);
+
+    return () => {
+      clearTimeout(start);
+      if (interval) clearInterval(interval);
+    };
+  }, []);
   const year = now === null ? null : new Date(now).getUTCFullYear();
   const {
     results: recordedFlights,
@@ -212,7 +247,8 @@ function Dashboard() {
   const selected = aircrafts.find(
     (aircraft) => (aircraft.id || aircraft.callsign) === selectedId,
   );
-  const count = aircrafts.length;
+  const isPreview = previewTarget !== null;
+  const count = isPreview ? previewCount : aircrafts.length;
   const milestone =
     count >= RT_DAY_TARGET
       ? RT_DAY_TARGET
@@ -220,11 +256,15 @@ function Dashboard() {
         ? RT_DAY_RECORD
         : 0;
   useEffect(() => {
-    if (live && milestone > celebratedMilestone.current) {
+    if (
+      previewReady &&
+      (live || isPreview) &&
+      milestone > celebratedMilestone.current
+    ) {
       celebratedMilestone.current = milestone;
       setCelebration(milestone);
     }
-  }, [live, milestone]);
+  }, [previewReady, live, isPreview, milestone]);
   const percentage = ((count / RT_DAY_TARGET) * 100).toFixed(2);
   const airports = new Set(
     aircrafts
@@ -293,22 +333,24 @@ function Dashboard() {
       <section className={styles.hero} aria-labelledby="flight-count-title">
         <div className={styles.record}>
           <div className={styles.counter}>
-            <strong>{liveValue(count)}</strong>
+            <strong>{isPreview ? number(count) : liveValue(count)}</strong>
             <span>/ {RT_DAY_TARGET}</span>
           </div>
           <div className={styles.recordLabel}>
             <h1 id="flight-count-title">Flights online</h1>
             <span className={styles.percentage}>
-              {live ? `${percentage}%` : "—%"}
+              {live || isPreview ? `${percentage}%` : "—%"}
             </span>
           </div>
-          <span className={live ? styles.live : styles.offline}>
+          <span className={live || isPreview ? styles.live : styles.offline}>
             <i />
-            {live
-              ? "LIVE"
-              : connectionStatus === "connecting"
-                ? "CONNECTING"
-                : "RECONNECTING"}
+            {isPreview
+              ? "PREVIEW"
+              : live
+                ? "LIVE"
+                : connectionStatus === "connecting"
+                  ? "CONNECTING"
+                  : "RECONNECTING"}
           </span>
           <div className={styles.progressRow}>
             <div
@@ -319,7 +361,7 @@ function Dashboard() {
               aria-valuemax={RT_DAY_TARGET}
               aria-valuenow={Math.min(count, RT_DAY_TARGET)}
               aria-valuetext={
-                live
+                live || isPreview
                   ? `${count} of ${RT_DAY_TARGET} simultaneous flights`
                   : "Waiting for live data"
               }
@@ -332,7 +374,7 @@ function Dashboard() {
             </div>
             <Trophy
               className={
-                peak >= RT_DAY_TARGET
+                peak >= RT_DAY_TARGET || (isPreview && count >= RT_DAY_TARGET)
                   ? styles.trophyReached
                   : styles.trophyTarget
               }
@@ -346,6 +388,7 @@ function Dashboard() {
         <MilestoneCelebration
           key={celebration}
           milestone={celebration}
+          preview={isPreview}
           onDismiss={() => setCelebration(null)}
         />
       )}
@@ -369,7 +412,7 @@ function Dashboard() {
               onKeybindPreferencesChange={setKeybinds}
               hideUi
             />
-            {!live && (
+            {!live && !isPreview && (
               <div className={styles.connectionNotice} role="status">
                 {connectionStatus === "connecting"
                   ? "Connecting to the live flight feed…"

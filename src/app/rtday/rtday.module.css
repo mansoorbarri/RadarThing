@@ -546,6 +546,18 @@
   font-weight: 600;
   letter-spacing: -1px;
 }
+.celebrationPreview {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--cyan);
+  font:
+    10px ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
 .celebration p {
   color: #c6e0e9;
   margin: 12px 0 24px;
