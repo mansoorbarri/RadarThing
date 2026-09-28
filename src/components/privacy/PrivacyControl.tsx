@@ -8,7 +8,7 @@ export function PrivacyControl() {
   const pathname = usePathname();
   const { openPrivacySettings } = usePrivacyConsent();
 
-  if (pathname === "/radar") return null;
+  if (pathname === "/radar" || pathname === "/rtday") return null;
 
   return (
     <button

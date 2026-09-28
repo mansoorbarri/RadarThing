@@ -1360,3 +1360,36 @@ export const getStatsById = query({
     };
   },
 });
+
+// Public aggregate inputs only: no pilot identifiers or route coordinates leave
+// this query. Pagination keeps event-day reads bounded even on a busy birthday.
+export const getRtDayFlightTotals = query({
+  args: { year: v.number(), paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
+    if (!Number.isInteger(args.year) || args.year < 2020 || args.year > 2100) {
+      throw new Error("Invalid RT Day year");
+    }
+    const start = Date.UTC(args.year, 10, 14);
+    const end = start + 86_400_000;
+    const results = await ctx.db
+      .query("flights")
+      .withIndex("by_startTime", (q) =>
+        q.gte("startTime", start).lt("startTime", end),
+      )
+      .paginate({
+        ...args.paginationOpts,
+        numItems: Math.min(args.paginationOpts.numItems, 20),
+      });
+    return {
+      ...results,
+      page: results.page.map((flight) => {
+        const included = !getStatsExcludedReason(flight);
+        return {
+          included,
+          distanceNm: included ? calculateRouteDistanceNm(flight.routeData) : 0,
+          durationMs: included ? (getFlightDurationMs(flight) ?? 0) : 0,
+        };
+      }),
+    };
+  },
+});

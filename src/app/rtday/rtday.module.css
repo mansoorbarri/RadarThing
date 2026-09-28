@@ -1,0 +1,652 @@
+.page {
+  --cyan: #67e8f9;
+  --muted: #87989d;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 0 24px 16px;
+  background: #080c0e;
+  color: #f4f6f5;
+  color-scheme: dark;
+  font-family: var(--font-geist-sans), sans-serif;
+}
+.header {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  border-bottom: 1px solid #233034;
+}
+.header img {
+  width: 162px;
+  height: auto;
+}
+.eventTag,
+.utc,
+.recordLabel,
+.metricLabel {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+.eventTag {
+  color: var(--muted);
+  border-left: 1px solid #354145;
+  padding-left: 24px;
+}
+.headerActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.utc {
+  color: #b8c7cb;
+  font-variant-numeric: tabular-nums;
+}
+.iconButton {
+  border: 1px solid #304045;
+  border-radius: 5px;
+  padding: 8px;
+  color: #b8c7cb;
+  cursor: pointer;
+}
+.radarLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--cyan);
+}
+.page a:hover,
+.page button:hover {
+  color: white;
+}
+.page a:focus-visible,
+.page button:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+.hero {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+.record {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto 8px;
+  align-items: end;
+  justify-content: stretch;
+  position: relative;
+  padding-top: 6px;
+  column-gap: 24px;
+  row-gap: 14px;
+  width: min(100%, 600px);
+}
+.counter {
+  justify-self: end;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  grid-column: 1;
+  grid-row: 1;
+}
+.counter strong {
+  font-size: clamp(76px, 8vw, 112px);
+  font-weight: 600;
+  letter-spacing: -4px;
+}
+.counter > span {
+  font-size: 44px;
+  color: #7e9299;
+  letter-spacing: -1px;
+}
+.recordLabel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  grid-column: 2;
+  grid-row: 1;
+}
+.recordLabel h1 {
+  font-family: var(--font-geist-sans), sans-serif;
+  font-size: clamp(28px, 3vw, 38px);
+  white-space: nowrap;
+  font-weight: 500;
+  letter-spacing: 0;
+  margin: 0 0 5px;
+}
+.live,
+.offline {
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  color: var(--cyan);
+}
+.live i,
+.offline i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.offline {
+  color: #e9b56c;
+}
+.progress {
+  grid-column: 1 / -1;
+  width: min(600px, 100%);
+  justify-self: stretch;
+  grid-row: 2;
+  height: 8px;
+  background: #253337;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress > div {
+  height: 100%;
+  background: var(--cyan);
+  transition: width 1s ease;
+}
+.dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 14px;
+  min-height: 0;
+}
+.radarPanel {
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid #29383d;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0c1316;
+}
+.map {
+  height: 100%;
+  position: relative;
+  isolation: isolate;
+}
+.mapLoading {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: #0a171d;
+  color: var(--cyan);
+  font-size: 13px;
+}
+.telemetry {
+  display: grid;
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  min-height: 0;
+}
+.metric {
+  padding: 14px 18px;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid #263438;
+  border-radius: 8px;
+  background: #0c1215;
+}
+.metricLabel {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #a8bec5;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+.metricLabel svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--cyan);
+  stroke-width: 1.5;
+}
+.metricValue {
+  font-size: clamp(24px, 2.4vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -1px;
+  font-weight: 550;
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.metricValue small {
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: #7d959e;
+  margin-left: 7px;
+}
+.lowerStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.connectionNotice {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: #101e26ed;
+  border: 1px solid #4b6068;
+  border-radius: 5px;
+  padding: 8px 12px;
+  color: #e5c594;
+  font-size: 11px;
+  max-width: 90%;
+  width: max-content;
+}
+.flightDetail {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: #081216ef;
+  border: 1px solid #47656e;
+  border-radius: 6px;
+}
+.flightDetail > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.flightDetail > div:first-child {
+  margin-right: auto;
+}
+.flightDetail strong {
+  color: var(--cyan);
+  font-size: 14px;
+}
+.flightDetail span,
+.flightDetail small {
+  color: #a9bfc5;
+  font-size: 11px;
+}
+.flightDetail button {
+  cursor: pointer;
+  color: #a9bfc5;
+}
+.page :global(.leaflet-container) {
+  font-family: var(--font-geist-sans), sans-serif;
+}
+@media (max-width: 1000px) {
+  .eventTag {
+    display: none;
+  }
+  .dashboard {
+    grid-template-columns: minmax(0, 1fr) 190px;
+  }
+  .metric {
+    padding: 12px;
+  }
+}
+@media (max-width: 650px) {
+  .page {
+    padding: 0 10px 10px;
+    gap: 8px;
+  }
+  .header {
+    min-height: 44px;
+    gap: 8px;
+  }
+  .header img {
+    width: 125px;
+  }
+  .headerActions {
+    gap: 12px;
+  }
+  .utc {
+    display: none;
+  }
+  .iconButton {
+    padding: 5px;
+  }
+  .radarLink {
+    font-size: 11px;
+    gap: 4px;
+  }
+  .live,
+  .offline {
+    font-size: 8px;
+  }
+  .dashboard {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+  .telemetry {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(2, auto);
+    gap: 8px;
+  }
+  .lowerStats {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .metric {
+    padding: 8px 10px;
+  }
+  .metricLabel {
+    font-size: 10px;
+    gap: 6px;
+  }
+  .metricLabel svg {
+    width: 12px;
+    height: 12px;
+  }
+  .metricValue {
+    font-size: 22px;
+    margin-top: 4px;
+  }
+  .metricValue small {
+    font-size: 10px;
+    margin-left: 4px;
+  }
+  .flightDetail {
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    gap: 8px;
+    padding: 8px;
+  }
+}
+@media (max-height: 550px) and (min-width: 651px) {
+  .page {
+    gap: 6px;
+    padding-bottom: 8px;
+  }
+  .header {
+    min-height: 38px;
+  }
+  .metric {
+    padding: 6px 12px;
+  }
+  .metricValue {
+    font-size: 22px;
+    margin-top: 3px;
+  }
+  .telemetry {
+    gap: 6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page * {
+    transition: none !important;
+  }
+}
+
+@media (max-width: 650px) {
+  .record {
+    grid-template-columns: auto auto;
+    column-gap: 15px;
+    row-gap: 7px;
+  }
+  .counter strong {
+    font-size: 56px;
+    letter-spacing: -2px;
+  }
+  .counter > span {
+    font-size: 26px;
+  }
+  .recordLabel {
+    gap: 6px;
+  }
+  .recordLabel h1 {
+    font-size: 20px;
+  }
+}
+@media (max-height: 550px) and (min-width: 651px) {
+  .hero {
+    padding: 0;
+  }
+  .counter strong {
+    font-size: 50px;
+  }
+  .record {
+    row-gap: 5px;
+  }
+}
+
+/* Event-only palette and compact labels; the standard radar keeps its styling. */
+.page {
+  --cyan: #45e8ff;
+  --muted: #b4c9d2;
+  background: #03080b;
+}
+.metric {
+  background: #11212a;
+  border-color: #3c5966;
+}
+.metricLabel {
+  color: #d0e4eb;
+}
+.metricValue {
+  color: #fff;
+}
+.metricValue small {
+  color: #afc9d4;
+}
+.counter > span {
+  color: #b0cbd5;
+}
+.record {
+  grid-template-rows: auto 24px;
+  row-gap: 8px;
+}
+.recordLabel {
+  flex-wrap: wrap;
+  gap: 0 12px;
+}
+.percentage {
+  color: var(--cyan);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.progressRow {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.progress {
+  flex: 1;
+  width: auto;
+  background: #344e5b;
+  height: 9px;
+}
+.progress > div {
+  box-shadow: 0 0 14px #45e8ff66;
+}
+.trophyTarget {
+  color: #b7d5df;
+  flex-shrink: 0;
+}
+.trophyReached {
+  color: #ffd267;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 6px #ffd26777);
+}
+.page :global(.aircraft-label) {
+  width: max-content !important;
+  max-width: 155px;
+}
+.page :global(.aircraft-label-body) {
+  min-height: 0 !important;
+  background: #07151aee;
+  border: 1px solid #6ec5d9;
+  border-radius: 4px;
+  padding: 3px 6px;
+  text-shadow: none !important;
+}
+.page :global(.aircraft-label-type),
+.page :global(.aircraft-label-detail) {
+  display: none;
+}
+.page :global(.leaflet-marker-icon:hover),
+.page :global(.leaflet-marker-icon:focus) {
+  z-index: 10000 !important;
+}
+.page :global(.leaflet-marker-icon:is(:hover, :focus) .aircraft-label-type) {
+  display: inline;
+}
+.page :global(.leaflet-marker-icon:is(:hover, :focus) .aircraft-label-detail) {
+  display: block;
+}
+.celebration {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(420px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 38px 24px 26px;
+  text-align: center;
+  background: #0a1b24;
+  color: #f4fbff;
+  border: 1px solid #ffd267;
+  border-radius: 16px;
+  box-shadow: 0 0 90px #45e8ff22;
+  overflow: hidden;
+  animation: milestone-enter 0.45s ease-out both;
+}
+.celebration::backdrop {
+  background: #02090eb3;
+  backdrop-filter: blur(3px);
+}
+.celebrationTrophy {
+  color: #ffd267;
+  margin: 0 auto 18px;
+  filter: drop-shadow(0 0 20px #ffd26755);
+  animation: trophy-enter 0.7s ease-out both;
+}
+.celebration h2 {
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -1px;
+}
+.celebration p {
+  color: #c6e0e9;
+  margin: 12px 0 24px;
+  font-size: 18px;
+}
+.celebration p strong {
+  color: var(--cyan);
+  font-size: 28px;
+}
+.celebration button {
+  position: relative;
+  border: 1px solid #5b899a;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 13px;
+  cursor: pointer;
+  background: #133441;
+}
+.confetti {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.confetti i {
+  position: absolute;
+  left: var(--x);
+  top: -15px;
+  width: 5px;
+  height: 11px;
+  background: #45e8ff;
+  animation: confetti-fall 3s var(--delay) ease-in both;
+}
+.confetti i:nth-child(3n) {
+  background: #ffd267;
+}
+.confetti i:nth-child(3n + 1) {
+  background: #fff;
+}
+@keyframes confetti-fall {
+  from {
+    transform: translateY(-20px) rotate(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(450px) rotate(var(--angle));
+    opacity: 0;
+  }
+}
+@keyframes milestone-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes trophy-enter {
+  from {
+    transform: translateY(12px) rotate(-15deg) scale(0.7);
+  }
+  to {
+    transform: translateY(0) rotate(0) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .celebration,
+  .celebrationTrophy,
+  .confetti i {
+    animation: none;
+  }
+  .confetti {
+    display: none;
+  }
+}
+@media (max-width: 650px) {
+  .percentage {
+    font-size: 11px;
+  }
+  .recordLabel {
+    gap: 0 7px;
+  }
+  .progressRow {
+    gap: 8px;
+  }
+}
+@media (max-height: 450px) {
+  .celebration {
+    padding: 18px;
+  }
+  .celebrationTrophy {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 10px;
+  }
+  .celebration h2 {
+    font-size: 26px;
+  }
+  .celebration p {
+    margin: 8px 0 16px;
+  }
+}
