@@ -63,7 +63,11 @@ export function normalizeAircraftType(type: string | undefined): string | null {
   if (shuttleOrbiterMatch) return `OV${shuttleOrbiterMatch[1]}`;
   if (/\bSPACE\s+SHUTTLE\b/.test(cleaned)) return "SHUTTLE";
 
-  if (/\bA223\b/.test(cleaned) || /\bA220[- ]?300\b/.test(cleaned)) {
+  if (
+    /\bA223\b/.test(cleaned) ||
+    /\bA220[- ]?300\b/.test(cleaned) ||
+    /\bA220$/.test(cleaned)
+  ) {
     return "BCS3";
   }
 
@@ -149,7 +153,9 @@ export function normalizeAircraftType(type: string | undefined): string | null {
   return firstWord || null;
 }
 
-export function getCompactAircraftType(type: string | undefined): string | null {
+export function getCompactAircraftType(
+  type: string | undefined,
+): string | null {
   if (!type) return null;
 
   const cleaned = type.trim().toUpperCase();
@@ -271,7 +277,11 @@ export function getCompactAircraftType(type: string | undefined): string | null 
   if (/\bA310\b/.test(cleaned)) return "A310";
   if (/\bA306\b|\bA30B\b|\bA300\b/.test(cleaned)) return "A306";
 
-  if (/\bA223\b/.test(cleaned) || /\bA220[- ]?300\b/.test(cleaned)) {
+  if (
+    /\bA223\b/.test(cleaned) ||
+    /\bA220[- ]?300\b/.test(cleaned) ||
+    /\bA220$/.test(cleaned)
+  ) {
     return "BCS3";
   }
   if (/\bA221\b/.test(cleaned) || /\bA220[- ]?100\b/.test(cleaned)) {
@@ -334,9 +344,7 @@ export function getAircraftTypeLookupCandidates(
   const militaryVariantMatch =
     /\b(KC|AH|UH|CH|MH|HH|[FBTCA])-?(\d{1,3})([A-Z])\b/.exec(cleaned);
   if (militaryVariantMatch) {
-    candidates.add(
-      `${militaryVariantMatch[1]}${militaryVariantMatch[2]}`,
-    );
+    candidates.add(`${militaryVariantMatch[1]}${militaryVariantMatch[2]}`);
     candidates.add(
       `${militaryVariantMatch[1]}${militaryVariantMatch[2]}${militaryVariantMatch[3]}`,
     );

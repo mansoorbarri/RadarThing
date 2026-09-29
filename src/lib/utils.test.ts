@@ -16,8 +16,12 @@ test("normalizes live Antonov An-140 stream names to A140", () => {
 });
 
 test("normalizes the Airbus A220-300 to its ICAO designator BCS3", () => {
+  assert.equal(normalizeAircraftType("A220"), "BCS3");
+  assert.equal(normalizeAircraftType("Airbus A220"), "BCS3");
   assert.equal(normalizeAircraftType("A220-300"), "BCS3");
   assert.equal(normalizeAircraftType("Airbus A220-300"), "BCS3");
   assert.equal(getCompactAircraftType("A220-300"), "BCS3");
   assert.equal(getCompactAircraftType("A223"), "BCS3");
+  assert.equal(getCompactAircraftType("A220"), "BCS3");
+  assert.equal(getCompactAircraftType("A220-100"), "A221");
 });
