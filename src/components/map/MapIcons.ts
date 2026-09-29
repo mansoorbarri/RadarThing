@@ -542,7 +542,7 @@ export const getAircraftDivIcon = (
   const compactType = getCompactAircraftType(aircraft.type);
   const primaryLabel = aircraft.flightNo || aircraft.callsign || "N/A";
   const headerContent = compactType
-    ? `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}<span style="font-size: 78%; opacity: 0.72;"> ${compactType}</span></span>`
+    ? `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}<span class="aircraft-label-type" style="font-size: 78%; opacity: 0.72;"> ${compactType}</span></span>`
     : `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}</span>`;
   const detailLabel = `${displayAlt} ${displaySpeed}`;
 
@@ -599,7 +599,7 @@ export const getAircraftDivIcon = (
 
   const fontSize = isMobile ? "10px" : "12px";
   const detailContent = `
-    <div class="
+    <div class="aircraft-label-body
       flex flex-col px-1.5 py-1
       rounded-sm
       bg-black/40 backdrop-blur
@@ -612,10 +612,10 @@ export const getAircraftDivIcon = (
         ${headerContent}
         ${isEmergency ? `<span class="text-red-500 animate-pulse">!</span>` : ""}
       </div>
-      <div class="opacity-80" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+      <div class="aircraft-label-detail opacity-80" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
         ${detailLabel}
       </div>
-      ${callsignDisplay ? `<div class="opacity-60" style="font-size: ${isMobile ? "8px" : "10px"}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${callsignDisplay}</div>` : ""}
+      ${callsignDisplay ? `<div class="aircraft-label-detail opacity-60" style="font-size: ${isMobile ? "8px" : "10px"}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${callsignDisplay}</div>` : ""}
     </div>
   `;
 
@@ -624,7 +624,7 @@ export const getAircraftDivIcon = (
       <div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px; pointer-events: auto; cursor: pointer;">
         ${isIdentActive ? `<div style="${identStyle} pointer-events: none;"></div>` : ""}
         ${planeMarkup}
-        <div style="${tagStyle} pointer-events: none;">
+        <div class="aircraft-label" style="${tagStyle} pointer-events: none;">
           ${detailContent}
         </div>
       </div>
@@ -711,7 +711,7 @@ export const getRadarAircraftDivIcon = (
   const compactType = getCompactAircraftType(aircraft.type);
   const primaryLabel = aircraft.flightNo || aircraft.callsign || "N/A";
   const headerContent = compactType
-    ? `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}<span style="font-size: 78%; opacity: 0.72;"> ${compactType}</span></span>`
+    ? `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}<span class="aircraft-label-type" style="font-size: 78%; opacity: 0.72;"> ${compactType}</span></span>`
     : `<span style="display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${primaryLabel}</span>`;
   const detailLabel = `${displayAlt} ${displaySpeed}`;
 
@@ -798,7 +798,7 @@ export const getRadarAircraftDivIcon = (
   `;
 
   const detailContent = `
-    <div style="
+    <div class="aircraft-label-body" style="
       min-height: ${labelHeight}px;
       box-sizing: border-box;
       color: ${isEmergency ? "#fca5a5" : isCurrentAircraftSelected ? "#dcfce7" : "#f8fafc"};
@@ -811,7 +811,7 @@ export const getRadarAircraftDivIcon = (
       <div style="font-weight: 700; font-size: ${isMobile ? "11px" : "13px"}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
         ${headerContent}${isEmergency ? " !" : ""}
       </div>
-      <div style="margin-top: 2px; opacity: 0.95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+      <div class="aircraft-label-detail" style="margin-top: 2px; opacity: 0.95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
         ${detailLabel}
       </div>
     </div>
@@ -824,7 +824,7 @@ export const getRadarAircraftDivIcon = (
         ${isCurrentAircraftSelected ? `<div style="${selectionRingStyle} pointer-events: none;"></div>` : ""}
         <div style="${dotStyle} pointer-events: none;"></div>
         <div style="${connectorLineStyle} pointer-events: none;"></div>
-        <div style="${labelStyle} pointer-events: none;">
+        <div class="aircraft-label" style="${labelStyle} pointer-events: none;">
           ${detailContent}
         </div>
       </div>
