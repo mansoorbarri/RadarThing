@@ -13,6 +13,27 @@ import { getCurrentUserDataExport } from "~/app/actions/export-user-data";
 import { downloadAccountDataExport } from "~/lib/account-data-export";
 import { moderationButton } from "./ModerationControls";
 
+function isPublicContentPage(pathname: string) {
+  return (
+    pathname === "/" ||
+    pathname === "/guides" ||
+    pathname.startsWith("/guides/") ||
+    pathname === "/radar" ||
+    pathname === "/aircraft-images" ||
+    pathname === "/leaderboard" ||
+    pathname.startsWith("/leaderboard/") ||
+    pathname.startsWith("/pilot/") ||
+    [
+      "/about",
+      "/contact",
+      "/privacy",
+      "/terms",
+      "/cookies",
+      "/copyright",
+    ].includes(pathname)
+  );
+}
+
 export function ModerationGate({ children }: { children: ReactNode }) {
   const { user } = useUser();
   // A new account sign-in starts a fresh visit, even without a full page reload.
@@ -44,7 +65,10 @@ function AccountNotices({ children }: { children: ReactNode }) {
   const warning = status?.warnings.find(
     (w) => visitStartedAt !== null && w.createdAt <= visitStartedAt,
   );
-  if (isLoading || (isAuthenticated && status === undefined))
+  if (
+    (isLoading || (isAuthenticated && status === undefined)) &&
+    !isPublicContentPage(pathname ?? "")
+  )
     return (
       <div
         role="status"

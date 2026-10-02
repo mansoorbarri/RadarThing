@@ -38,12 +38,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     },
     {
-      url: "https://radarthing.com/airport-charts",
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.7,
-    },
-    {
       url: "https://radarthing.com/about",
       lastModified: new Date(),
       changeFrequency: "monthly",

@@ -10,7 +10,6 @@ const ADSENSE_CLIENT =
 const MONETIZED_ROUTES = [
   "/radar",
   "/aircraft-images",
-  "/airport-charts",
   "/leaderboard",
   "/pilot",
 ] as const;

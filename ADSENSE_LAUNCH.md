@@ -6,13 +6,13 @@ DNS/email steps before enabling production ads.
 ## 1. Ad implementation
 
 The code loads Google Auto ads only for free users on `/radar`, aircraft images,
-airport charts, leaderboards, and public pilot pages. The approved
+leaderboards, and public pilot pages. The approved
 `data-overlays="bottom"` option forces dynamic/collapsible anchors to the bottom
 edge. The `RadarThing Free Content` display unit is also used between aircraft
 telemetry and Enroute Path, and as the first card in the aircraft image gallery.
 
-The landing page, pricing, checkout, account, admin, and legal pages do not load
-the tag. The publisher ID is included as a production default; the environment
+The landing page, pricing, checkout, account, admin, airport chart upload, and
+legal pages do not load the tag. The publisher ID is included as a production default; the environment
 variable remains available as an override:
 
 ```text

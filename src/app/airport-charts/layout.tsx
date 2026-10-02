@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/airport-charts",
   },
+  robots: { index: false, follow: false },
 };
 
 export default function AirportChartsLayout({
