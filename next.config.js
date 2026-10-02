@@ -30,11 +30,6 @@ const config = {
   async redirects() {
     return [
       {
-        source: "/rt-day",
-        destination: "/rtday",
-        permanent: false,
-      },
-      {
         source: "/userscript",
         destination: "/userscript/radarthing.user.js",
         permanent: false,
