@@ -199,9 +199,16 @@ export const MapGlobalStyles = ({ hideUi = false }: { hideUi?: boolean }) => (
     /* Keep the phone map reset action paired with the lower-right dock. */
     .map-control-btn.map-control-mobile-dock[data-control="reset-map-view"] {
       position: fixed !important;
-      right: 14px !important;
+      right: 12px !important;
       bottom: 64px !important;
       margin: 0 !important;
+      width: 44px !important;
+      height: 44px !important;
+    }
+
+    .map-control-mobile-dock[data-control="reset-map-view"] .map-tooltip {
+      left: auto;
+      right: calc(100% + 8px);
     }
 
     /* Reduce gap between left-side controls */

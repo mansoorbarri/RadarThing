@@ -402,10 +402,10 @@ export class LockedRadarModeControl extends L.Control {
   onAdd(): HTMLDivElement {
     const container = L.DomUtil.create("div");
     container.className =
-      "map-control-btn relative w-[36px] h-[36px] flex items-center justify-center text-white/40 text-[18px] font-semibold border border-yellow-500/30 rounded-md bg-black/70 shadow-[0_0_6px_rgba(234,179,8,0.25)] cursor-pointer transition-all duration-200 hover:bg-yellow-500/10 hover:shadow-[0_0_10px_rgba(234,179,8,0.4)] hover:border-yellow-500/60";
+      "map-control-btn relative flex h-10 w-10 items-center justify-center rounded-md border border-yellow-500/30 bg-black/70 text-white/40 shadow-[0_0_6px_rgba(234,179,8,0.25)] transition-all duration-200 hover:border-yellow-500/60 hover:bg-yellow-500/10 hover:shadow-[0_0_10px_rgba(234,179,8,0.4)]";
     container.innerHTML = `
       <span style="opacity: 0.4">${ICONS.radar}</span>
-      <span style="position: absolute; top: -6px; right: -6px; background: rgba(234, 179, 8, 0.2); color: #facc15; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: bold;">PRO</span>
+      <span aria-hidden="true" style="position: absolute; z-index: 1; top: -6px; right: -6px; pointer-events: none; background: rgba(234, 179, 8, 0.2); color: #facc15; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: bold;">PRO</span>
       <span class="map-tooltip">Radar Mode (PRO)</span>
     `;
     container.dataset.control = "radar-mode-pro";
