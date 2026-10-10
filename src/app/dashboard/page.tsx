@@ -784,7 +784,7 @@ export default function DashboardPage() {
                 <h4 className="mb-5 text-sm font-semibold text-white">
                   Account Info
                 </h4>
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                   <div className="min-w-0">
                     <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">
                       <User className="h-3.5 w-3.5" />
@@ -798,12 +798,17 @@ export default function DashboardPage() {
                       {displayName ?? "Not set"}
                     </div>
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 xl:col-span-2">
                     <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">
                       <Mail className="h-3.5 w-3.5" />
                       Email
                     </div>
                     <div
+                      title={
+                        hidePersonalInfo
+                          ? undefined
+                          : user?.primaryEmailAddress?.emailAddress
+                      }
                       className={`truncate text-sm text-slate-300 ${personalInfoTransitionClass} ${
                         hidePersonalInfo ? personalInfoBlurClass : ""
                       }`}
