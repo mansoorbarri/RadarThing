@@ -30,12 +30,17 @@ export async function GET(request: NextRequest) {
     );
   const googleId = request.nextUrl.searchParams.get("googleId") ?? "";
   const token = request.headers.get("x-acars-token");
-  const messages = token
-    ? await convex.query(api.acars.listForDevice, {
-        googleId,
-        tokenHash: acarsTokenHash(token),
-      })
-    : await convex.query(api.acars.listPublic, { googleId });
+  let messages;
+  try {
+    messages = token
+      ? await convex.query(api.acars.listForDevice, {
+          googleId,
+          tokenHash: acarsTokenHash(token),
+        })
+      : await convex.query(api.acars.listPublic, { googleId });
+  } catch {
+    messages = await convex.query(api.acars.listPublic, { googleId });
+  }
   return NextResponse.json(
     { messages },
     { headers: { ...check.headers, "Cache-Control": "no-store" } },

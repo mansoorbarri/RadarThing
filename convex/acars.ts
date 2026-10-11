@@ -8,6 +8,7 @@ import {
 } from "./lib/moderationRules";
 
 const MAX_MESSAGES = 20;
+const POST_COOLDOWN_MS = 30_000;
 
 function validGoogleId(value: string) {
   return /^\d{8,32}$/.test(value);
@@ -35,6 +36,31 @@ async function postingPilot(
   return user;
 }
 
+async function lastPostingAttempt(
+  ctx: QueryCtx | MutationCtx,
+  googleId: string,
+) {
+  const [latest, blocked] = await Promise.all([
+    ctx.db
+      .query("acarsMessages")
+      .withIndex("by_googleId_createdAt", (q) => q.eq("googleId", googleId))
+      .order("desc")
+      .first(),
+    ctx.db
+      .query("acarsModerationEvents")
+      .withIndex("by_googleId_createdAt", (q) => q.eq("googleId", googleId))
+      .order("desc")
+      .first(),
+  ]);
+  return Math.max(latest?.createdAt ?? 0, blocked?.createdAt ?? 0);
+}
+
+async function assertPostingCooldown(ctx: MutationCtx, googleId: string) {
+  const lastAttempt = await lastPostingAttempt(ctx, googleId);
+  if (lastAttempt && Date.now() - lastAttempt < POST_COOLDOWN_MS)
+    throw new Error("Wait 30 seconds before publishing another ACARS entry");
+}
+
 export const registerDevice = mutation({
   args: {
     googleId: v.string(),
@@ -54,6 +80,12 @@ export const registerDevice = mutation({
         throw new Error("ACARS device belongs to another pilot");
       return;
     }
+    const claimed = await ctx.db
+      .query("acarsDevices")
+      .withIndex("by_googleId", (q) => q.eq("googleId", args.googleId))
+      .first();
+    if (claimed)
+      throw new Error("This GeoFS ID is already registered on another device");
     await ctx.db.insert("acarsDevices", {
       googleId: args.googleId,
       tokenHash: args.tokenHash,
@@ -67,28 +99,11 @@ export const postingStatus = query({
   handler: async (ctx, args) => {
     try {
       await postingPilot(ctx, args.tokenHash, args.googleId);
-      const latest = await ctx.db
-        .query("acarsMessages")
-        .withIndex("by_googleId_createdAt", (q) =>
-          q.eq("googleId", args.googleId),
-        )
-        .order("desc")
-        .first();
-      const blocked = await ctx.db
-        .query("acarsModerationEvents")
-        .withIndex("by_googleId_createdAt", (q) =>
-          q.eq("googleId", args.googleId),
-        )
-        .order("desc")
-        .first();
-      const lastAttempt = Math.max(
-        latest?.createdAt ?? 0,
-        blocked?.createdAt ?? 0,
-      );
+      const lastAttempt = await lastPostingAttempt(ctx, args.googleId);
       return {
         allowed: true,
         retryAfter: lastAttempt
-          ? Math.max(0, 30_000 - (Date.now() - lastAttempt))
+          ? Math.max(0, POST_COOLDOWN_MS - (Date.now() - lastAttempt))
           : 0,
       };
     } catch (error) {
@@ -113,6 +128,7 @@ export const publish = mutation({
     const body = args.body.trim();
     if (!body || body.length > 500)
       throw new Error("ACARS text must be 1–500 characters");
+    await assertPostingCooldown(ctx, args.googleId);
     const messages = await ctx.db
       .query("acarsMessages")
       .withIndex("by_googleId_createdAt", (q) =>
@@ -120,8 +136,6 @@ export const publish = mutation({
       )
       .order("desc")
       .take(MAX_MESSAGES + 1);
-    if (messages[0] && Date.now() - messages[0].createdAt < 30_000)
-      throw new Error("Wait 30 seconds before publishing another ACARS entry");
     const oldest = messages[messages.length - 1];
     if (messages.length >= MAX_MESSAGES && oldest)
       await ctx.db.delete(oldest._id);
@@ -148,6 +162,7 @@ export const recordBlocked = mutation({
     const user = await postingPilot(ctx, args.tokenHash, args.googleId);
     if (!args.body.trim() || args.body.length > 500)
       throw new Error("Invalid ACARS text");
+    await assertPostingCooldown(ctx, args.googleId);
     const previous = await ctx.db
       .query("acarsModerationEvents")
       .withIndex("by_googleId_createdAt", (q) =>
@@ -238,18 +253,47 @@ export const myAccountExport = query({
   handler: async (ctx) => {
     const user = await getCurrentUser(ctx);
     if (!user || user.isDeleted) throw new Error("Account not found");
-    const [messages, blocked] = await Promise.all([
-      ctx.db
-        .query("acarsMessages")
-        .withIndex("by_userId_createdAt", (q) => q.eq("userId", user._id))
-        .order("desc")
-        .take(100),
-      ctx.db
-        .query("acarsModerationEvents")
-        .withIndex("by_userId_createdAt", (q) => q.eq("userId", user._id))
-        .order("desc")
-        .take(100),
-    ]);
+    const [messagesByUser, blockedByUser, messagesByGoogle, blockedByGoogle] =
+      await Promise.all([
+        ctx.db
+          .query("acarsMessages")
+          .withIndex("by_userId_createdAt", (q) => q.eq("userId", user._id))
+          .order("desc")
+          .take(100),
+        ctx.db
+          .query("acarsModerationEvents")
+          .withIndex("by_userId_createdAt", (q) => q.eq("userId", user._id))
+          .order("desc")
+          .take(100),
+        user.googleId
+          ? ctx.db
+              .query("acarsMessages")
+              .withIndex("by_googleId_createdAt", (q) =>
+                q.eq("googleId", user.googleId!),
+              )
+              .order("desc")
+              .take(100)
+          : Promise.resolve([]),
+        user.googleId
+          ? ctx.db
+              .query("acarsModerationEvents")
+              .withIndex("by_googleId_createdAt", (q) =>
+                q.eq("googleId", user.googleId!),
+              )
+              .order("desc")
+              .take(100)
+          : Promise.resolve([]),
+      ]);
+    const messages = [
+      ...new Map(
+        [...messagesByUser, ...messagesByGoogle].map((row) => [row._id, row]),
+      ).values(),
+    ].sort((a, b) => b.createdAt - a.createdAt);
+    const blocked = [
+      ...new Map(
+        [...blockedByUser, ...blockedByGoogle].map((row) => [row._id, row]),
+      ).values(),
+    ].sort((a, b) => b.createdAt - a.createdAt);
     return {
       messages: messages.map(({ _id, googleId, body, createdAt }) => ({
         id: _id,

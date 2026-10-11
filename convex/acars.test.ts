@@ -12,6 +12,7 @@ import {
   adminQueue,
   adminRemove,
   recordBlocked,
+  myAccountExport,
 } from "./acars";
 
 const googleId = "123456789012345678";
@@ -20,7 +21,11 @@ const systemSecret = "test-acars-secret";
 
 function fixture() {
   process.env.CONVEX_SYSTEM_SECRET = systemSecret;
-  const tables: Record<string, any[]> = {
+  const tables: Record<string, any[]> & {
+    acarsDevices: any[];
+    acarsMessages: any[];
+    acarsModerationEvents: any[];
+  } = {
     users: [
       {
         _id: "pilot",
@@ -99,12 +104,10 @@ function fixture() {
   };
 }
 
-async function call<T>(
-  fn: unknown,
-  ctx: any,
-  args: any,
-): Promise<T> {
-  return await (fn as { _handler: (context: any, values: any) => Promise<T> })._handler(ctx, args);
+async function call<T>(fn: unknown, ctx: any, args: any): Promise<T> {
+  return await (
+    fn as { _handler: (context: any, values: any) => Promise<T> }
+  )._handler(ctx, args);
 }
 
 test("pilot entries require a registered device and trusted server mutation", async () => {
@@ -201,6 +204,90 @@ test("existing account ban blocks ACARS publication and hides entries", async ()
   assert.deepEqual(await call(listPublic, f.ctx, { googleId }), []);
 });
 
+test("one device claims a GeoFS ID and the same device can register again", async () => {
+  const f = fixture();
+  await call(registerDevice, f.ctx, { googleId, tokenHash, systemSecret });
+  await call(registerDevice, f.ctx, { googleId, tokenHash, systemSecret });
+  assert.equal(f.tables.acarsDevices.length, 1);
+  await assert.rejects(
+    call(registerDevice, f.ctx, {
+      googleId,
+      tokenHash: "b".repeat(64),
+      systemSecret,
+    }),
+    /already registered/,
+  );
+});
+
+test("blocked and published attempts share the mutation cooldown", async () => {
+  const f = fixture();
+  await call(registerDevice, f.ctx, { googleId, tokenHash, systemSecret });
+  await call(recordBlocked, f.ctx, {
+    googleId,
+    tokenHash,
+    body: "Blocked sample",
+    categories: ["harassment"],
+    systemSecret,
+  });
+  await assert.rejects(
+    call(recordBlocked, f.ctx, {
+      googleId,
+      tokenHash,
+      body: "Blocked again",
+      categories: ["harassment"],
+      systemSecret,
+    }),
+    /Wait 30 seconds/,
+  );
+  await assert.rejects(
+    call(publish, f.ctx, {
+      googleId,
+      tokenHash,
+      body: "Publish after block",
+      systemSecret,
+    }),
+    /Wait 30 seconds/,
+  );
+  assert.equal(f.tables.acarsModerationEvents.length, 1);
+  assert.equal(f.tables.acarsMessages.length, 0);
+});
+
+test("account export includes earlier GeoFS entries without duplicates", async () => {
+  const f = fixture();
+  await call(registerDevice, f.ctx, { googleId, tokenHash, systemSecret });
+  await call(publish, f.ctx, {
+    googleId,
+    tokenHash,
+    body: "Linked entry",
+    systemSecret,
+  });
+  f.tables.acarsMessages.push({
+    _id: "old-message",
+    googleId,
+    deviceHash: tokenHash,
+    body: "Earlier entry",
+    createdAt: Date.now() - 60_000,
+  });
+  f.tables.acarsModerationEvents.push({
+    _id: "old-block",
+    googleId,
+    body: "Earlier blocked text",
+    categories: ["harassment"],
+    createdAt: Date.now() - 60_000,
+  });
+  f.as("pilot");
+  const exported = await call<{
+    messages: { id: string }[];
+    blocked: { id: string }[];
+  }>(myAccountExport, f.ctx, {});
+  assert.equal(exported.messages.length, 2);
+  assert.equal(new Set(exported.messages.map((row) => row.id)).size, 2);
+  assert.deepEqual(
+    exported.blocked.map((row) => row.id),
+    ["old-block"],
+  );
+});
+
 test("reported entries and blocked attempts appear in admin review", async () => {
   const f = fixture();
   await call(registerDevice, f.ctx, { googleId, tokenHash, systemSecret });
@@ -218,6 +305,7 @@ test("reported entries and blocked attempts appear in admin review", async () =>
     await call(report, f.ctx, { messageId: id, reason: "Duplicate" }),
     reportId,
   );
+  f.tables.acarsMessages[0].createdAt -= 60_000;
   await call(recordBlocked, f.ctx, {
     googleId,
     tokenHash,
