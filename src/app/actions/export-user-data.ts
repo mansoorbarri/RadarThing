@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { api, convex } from "~/server/convex";
+import { api, convex, getAuthenticatedConvex } from "~/server/convex";
 import {
   RADARTHING_ACCOUNT_DATA_EXPORT_VERSION,
   type RadarThingAccountDataExport,
@@ -21,9 +21,11 @@ export async function getCurrentUserDataExport(): Promise<RadarThingAccountDataE
     throw new Error("Your RadarThing account could not be found");
   }
 
-  const [stats, flights] = await Promise.all([
+  const authenticatedConvex = await getAuthenticatedConvex();
+  const [stats, flights, acars] = await Promise.all([
     convex.query(api.flights.getStatsByClerkId, { clerkId: userId }),
     convex.query(api.flights.getByUserId, { userId: user._id }),
+    authenticatedConvex.query(api.acars.myAccountExport, {}),
   ]);
 
   return {
@@ -40,6 +42,7 @@ export async function getCurrentUserDataExport(): Promise<RadarThingAccountDataE
       createdAt: user._creationTime,
     },
     stats: serializeStats(stats),
+    acars,
     flights: flights
       .sort((a, b) => b.startTime - a.startTime)
       .map((flight) => ({

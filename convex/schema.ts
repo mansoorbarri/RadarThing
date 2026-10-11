@@ -264,6 +264,48 @@ export default defineSchema({
     .index("by_callsign", ["callsign"])
     .index("by_lastSeen", ["lastSeen"]),
 
+  acarsDevices: defineTable({
+    googleId: v.string(),
+    tokenHash: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_tokenHash", ["tokenHash"])
+    .index("by_googleId", ["googleId"]),
+
+  acarsMessages: defineTable({
+    userId: v.optional(v.id("users")),
+    googleId: v.string(),
+    deviceHash: v.string(),
+    body: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_googleId_createdAt", ["googleId", "createdAt"])
+    .index("by_userId_createdAt", ["userId", "createdAt"]),
+
+  acarsModerationEvents: defineTable({
+    userId: v.optional(v.id("users")),
+    googleId: v.string(),
+    body: v.string(),
+    categories: v.array(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_createdAt", ["createdAt"])
+    .index("by_userId_createdAt", ["userId", "createdAt"])
+    .index("by_googleId_createdAt", ["googleId", "createdAt"]),
+
+  acarsReports: defineTable({
+    messageId: v.id("acarsMessages"),
+    reporterUserId: v.id("users"),
+    pilotUserId: v.optional(v.id("users")),
+    googleId: v.string(),
+    body: v.string(),
+    reason: v.string(),
+    createdAt: v.number(),
+    reviewedAt: v.optional(v.number()),
+  })
+    .index("by_message_reporter", ["messageId", "reporterUserId"])
+    .index("by_createdAt", ["createdAt"]),
+
   waypointReminders: defineTable({
     userId: v.id("users"),
     googleId: v.string(),
