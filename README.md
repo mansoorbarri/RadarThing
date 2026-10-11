@@ -94,6 +94,8 @@ Generated userscript files are built into `public/userscript/` and `radarthing.u
 pnpm run build:userscript
 ```
 
+To test unpublished userscript changes in GeoFS, run `pnpm run build:userscript:dev` and install the generated `radarthing.dev.user.js` in Tampermonkey. This standalone build uses the current branch code and sends ACARS requests to `http://localhost:3000`; run `pnpm dev` for the local website and API. Disable the regular RadarThing userscript while testing to avoid loading both copies. The local app needs its Convex functions and `OPENAI_API_KEY` configured for ACARS publishing.
+
 The public install flow is:
 
 1. `/userscript` redirects Tampermonkey users to `/userscript/radarthing.user.js`.
