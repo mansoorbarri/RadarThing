@@ -186,9 +186,21 @@ export default defineSchema({
     session: v.any(),
     disconnectedAt: v.optional(v.number()),
     updatedAt: v.number(),
+    // Route coords live in activeFlightRouteChunks so checkpoints only write
+    // new points. Sessions without routeVersion keep coords in `session`.
+    routeVersion: v.optional(v.string()),
+    routePointCount: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
     .index("by_updatedAt", ["updatedAt"]),
+
+  // Append-only route pieces for activeFlightSessions, one per checkpoint.
+  activeFlightRouteChunks: defineTable({
+    userId: v.id("users"),
+    routeVersion: v.string(),
+    startIndex: v.number(),
+    coords: v.array(v.any()),
+  }).index("by_userId_startIndex", ["userId", "startIndex"]),
 
   userStats: defineTable({
     userId: v.id("users"),

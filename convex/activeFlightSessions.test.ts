@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { beforeEach, test } from "node:test";
-import { clear, list, replaceAll } from "./activeFlightSessions";
+import { clear, getRoute, list, replaceAll } from "./activeFlightSessions";
 
 const SYSTEM_SECRET = "test-system-secret";
 
@@ -13,6 +13,8 @@ interface ActiveFlightSessionDoc {
   session: unknown;
   disconnectedAt?: number;
   updatedAt: number;
+  routeVersion?: string;
+  routePointCount?: number;
 }
 
 interface LiveHourDoc {
@@ -41,98 +43,102 @@ function session(
   };
 }
 
+interface RouteChunkDoc {
+  _id: string;
+  userId: string;
+  routeVersion: string;
+  startIndex: number;
+  coords: unknown[];
+}
+
 function createMockCtx(initialDocs: ActiveFlightSessionDoc[] = []) {
   let nextId = initialDocs.length + 1;
   const docs = initialDocs.map((doc) => ({ ...doc }));
   const liveHours: (LiveHourDoc & { _id: string })[] = [];
+  const chunks: RouteChunkDoc[] = [];
+  const tables: Record<string, { _id: string }[]> = {
+    activeFlightSessions: docs,
+    activeFlightRouteChunks: chunks,
+    telemetryLiveHours: liveHours,
+  };
 
   const db = {
     get(id: string) {
       return Promise.resolve({ _id: id, isDeleted: false });
     },
     query(tableName: string) {
-      if (tableName === "telemetryLiveHours") {
-        let hourStart: number | null = null;
-        return {
-          withIndex(_indexName: string, predicate: (q: unknown) => unknown) {
-            predicate({
-              eq(_field: string, value: number) {
-                hourStart = value;
-              },
-            });
-            return this;
-          },
-          first() {
-            return Promise.resolve(
-              liveHours.find((hour) => hour.hourStart === hourStart) ?? null,
-            );
-          },
-        };
-      }
-      assert.equal(tableName, "activeFlightSessions");
-      let userIdFilter: string | null = null;
+      const rows = tables[tableName];
+      assert.ok(rows, `unexpected table ${tableName}`);
+      const filters: [string, unknown][] = [];
 
-      return {
+      const builder = {
         withIndex(_indexName: string, predicate?: (q: unknown) => unknown) {
-          if (predicate) {
-            const result = predicate({
-              eq(field: string, value: string) {
-                assert.equal(field, "userId");
-                return { value };
-              },
-            });
-            userIdFilter = (result as { value: string }).value;
-          }
-          return this;
+          const index = {
+            eq(field: string, value: unknown) {
+              filters.push([field, value]);
+              return index;
+            },
+          };
+          predicate?.(index);
+          return builder;
         },
         collect() {
           return Promise.resolve(
-            userIdFilter
-              ? docs.filter((doc) => doc.userId === userIdFilter)
-              : [...docs],
+            rows.filter((row) =>
+              filters.every(
+                ([field, value]) =>
+                  (row as Record<string, unknown>)[field] === value,
+              ),
+            ),
           );
         },
-        take(limit: number) {
-          return Promise.resolve(docs.slice(0, limit));
+        async first() {
+          return (await builder.collect())[0] ?? null;
+        },
+        async take(limit: number) {
+          return (await builder.collect()).slice(0, limit);
         },
       };
+      return builder;
     },
-    insert(
-      tableName: string,
-      value: Omit<ActiveFlightSessionDoc, "_id" | "_creationTime">,
-    ) {
-      if (tableName === "telemetryLiveHours") {
-        const _id = `hour-${nextId++}`;
-        liveHours.push({ _id, ...(value as unknown as LiveHourDoc) });
-        return Promise.resolve(_id);
-      }
-      assert.equal(tableName, "activeFlightSessions");
+    insert(tableName: string, value: Record<string, unknown>) {
+      const rows = tables[tableName];
+      assert.ok(rows, `unexpected table ${tableName}`);
       const _id = `doc-${nextId++}`;
-      docs.push({ _id, _creationTime: Date.now(), ...value });
+      rows.push({ _id, _creationTime: Date.now(), ...value } as never);
       return Promise.resolve(_id);
     },
-    patch(_id: string, value: Partial<ActiveFlightSessionDoc>) {
-      const hour = liveHours.find((candidate) => candidate._id === _id);
-      if (hour) {
-        Object.assign(hour, value);
-        return Promise.resolve();
+    patch(_id: string, value: Record<string, unknown>) {
+      const row = Object.values(tables)
+        .flat()
+        .find((candidate) => candidate._id === _id);
+      assert.ok(row);
+      // Convex patch removes fields set to undefined.
+      for (const [key, fieldValue] of Object.entries(value)) {
+        if (fieldValue === undefined) {
+          delete (row as Record<string, unknown>)[key];
+        } else {
+          (row as Record<string, unknown>)[key] = fieldValue;
+        }
       }
-      const doc = docs.find((candidate) => candidate._id === _id);
-      assert.ok(doc);
-      Object.assign(doc, value);
       return Promise.resolve();
     },
     delete(_id: string) {
-      const index = docs.findIndex((candidate) => candidate._id === _id);
-      assert.notEqual(index, -1);
-      docs.splice(index, 1);
-      return Promise.resolve();
+      for (const rows of Object.values(tables)) {
+        const index = rows.findIndex((candidate) => candidate._id === _id);
+        if (index !== -1) {
+          rows.splice(index, 1);
+          return Promise.resolve();
+        }
+      }
+      assert.fail(`missing document ${_id}`);
     },
   };
 
   return {
     ctx: { db },
     docs,
+    chunks,
     liveHours,
   };
 }
@@ -180,7 +186,7 @@ test("replaceAll patches existing sessions, inserts new sessions, and deletes mi
     sessions: [session("user-1", "disconnected"), session("user-2")],
   });
 
-  assert.deepEqual(result, { saved: 2, deleted: 1 });
+  assert.deepEqual(result, { saved: 2, deleted: 1, resync: [] });
   assert.deepEqual(docs.map((doc) => [doc.userId, doc.state]).sort(), [
     ["user-1", "disconnected"],
     ["user-2", "active"],
@@ -211,7 +217,7 @@ test("replaceAll processes duplicate incoming userIds once", async () => {
     sessions: [session("user-1"), session("user-1", "disconnected")],
   });
 
-  assert.deepEqual(result, { saved: 1, deleted: 0 });
+  assert.deepEqual(result, { saved: 1, deleted: 0, resync: [] });
   assert.equal(docs.length, 1);
   assert.equal(docs[0]?.state, "disconnected");
 });
@@ -224,7 +230,7 @@ test("replaceAll with an empty sessions array clears all active session rows", a
 
   const result = await callHandler(replaceAll as never, ctx, { sessions: [] });
 
-  assert.deepEqual(result, { saved: 0, deleted: 2 });
+  assert.deepEqual(result, { saved: 0, deleted: 2, resync: [] });
   assert.deepEqual(docs, []);
 });
 
@@ -243,5 +249,126 @@ test("clear deletes only targeted userIds when provided", async () => {
   assert.deepEqual(
     docs.map((doc) => doc.userId),
     ["user-2"],
+  );
+});
+
+function routed(
+  userId: string,
+  version: string,
+  startIndex: number,
+  coords: number[][],
+) {
+  return { ...session(userId), route: { version, startIndex, coords } };
+}
+
+test("replaceAll stores routes as appended chunks and getRoute reassembles them", async () => {
+  const { ctx, docs, chunks } = createMockCtx();
+
+  await callHandler(replaceAll as never, ctx, {
+    sessions: [routed("user-1", "v1", 0, [[1, 1], [2, 2]])],
+  });
+  const result = await callHandler(replaceAll as never, ctx, {
+    sessions: [routed("user-1", "v1", 2, [[3, 3]])],
+  });
+  await callHandler(replaceAll as never, ctx, {
+    sessions: [routed("user-1", "v1", 3, [])],
+  });
+
+  assert.deepEqual(result, { saved: 1, deleted: 0, resync: [] });
+  assert.equal(chunks.length, 2);
+  assert.equal(docs[0]?.routePointCount, 3);
+  assert.deepEqual(
+    await callHandler(getRoute as never, ctx, { userId: "user-1" }),
+    [
+      [1, 1],
+      [2, 2],
+      [3, 3],
+    ],
+  );
+});
+
+test("replaceAll replaces old chunks when a route is resent in full", async () => {
+  const { ctx, chunks } = createMockCtx();
+
+  await callHandler(replaceAll as never, ctx, {
+    sessions: [routed("user-1", "v1", 0, [[1, 1], [2, 2]])],
+  });
+  await callHandler(replaceAll as never, ctx, {
+    sessions: [routed("user-1", "v1", 2, [[3, 3]])],
+  });
+  await callHandler(replaceAll as never, ctx, {
+    sessions: [routed("user-1", "v2", 0, [[1, 1], [3, 3]])],
+  });
+
+  assert.equal(chunks.length, 1);
+  assert.deepEqual(
+    await callHandler(getRoute as never, ctx, { userId: "user-1" }),
+    [
+      [1, 1],
+      [3, 3],
+    ],
+  );
+});
+
+test("replaceAll asks for a full resend when an append does not line up", async () => {
+  const { ctx, docs, chunks } = createMockCtx();
+
+  await callHandler(replaceAll as never, ctx, {
+    sessions: [routed("user-1", "v1", 0, [[1, 1]])],
+  });
+  const wrongVersion = await callHandler(replaceAll as never, ctx, {
+    sessions: [routed("user-1", "v2", 1, [[2, 2]])],
+  });
+  const gap = await callHandler(replaceAll as never, ctx, {
+    sessions: [routed("user-1", "v1", 5, [[2, 2]])],
+  });
+  const missing = await callHandler(replaceAll as never, ctx, {
+    sessions: [routed("user-1", "v1", 1, []), routed("user-2", "v1", 1, [])],
+  });
+
+  assert.deepEqual(wrongVersion, { saved: 1, deleted: 0, resync: ["user-1"] });
+  assert.deepEqual(gap, { saved: 1, deleted: 0, resync: ["user-1"] });
+  assert.deepEqual(missing, { saved: 2, deleted: 0, resync: ["user-2"] });
+  assert.equal(chunks.length, 1);
+  assert.equal(docs.find((doc) => doc.userId === "user-1")?.routePointCount, 1);
+});
+
+test("removing a session deletes its route chunks", async () => {
+  const { ctx, docs, chunks } = createMockCtx();
+
+  await callHandler(replaceAll as never, ctx, {
+    sessions: [
+      routed("user-1", "v1", 0, [[1, 1]]),
+      routed("user-2", "v1", 0, [[2, 2]]),
+    ],
+  });
+  await callHandler(replaceAll as never, ctx, {
+    sessions: [routed("user-2", "v1", 1, [])],
+  });
+  assert.deepEqual(
+    chunks.map((chunk) => chunk.userId),
+    ["user-2"],
+  );
+
+  await callHandler(clear as never, ctx, { userIds: ["user-2"] });
+  assert.deepEqual(chunks, []);
+  assert.deepEqual(docs, []);
+});
+
+test("replaceAll without a route drops chunked storage for legacy callers", async () => {
+  const { ctx, docs, chunks } = createMockCtx();
+
+  await callHandler(replaceAll as never, ctx, {
+    sessions: [routed("user-1", "v1", 0, [[1, 1]])],
+  });
+  await callHandler(replaceAll as never, ctx, {
+    sessions: [session("user-1")],
+  });
+
+  assert.deepEqual(chunks, []);
+  assert.equal(docs[0]?.routeVersion, undefined);
+  assert.equal(
+    await callHandler(getRoute as never, ctx, { userId: "user-1" }),
+    null,
   );
 });

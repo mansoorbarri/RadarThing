@@ -11,6 +11,7 @@ import type { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { getCurrentUser, requireAdmin } from "./lib/auth";
 import { logAdminTelemetry } from "./adminTelemetry";
+import { deleteRouteChunks } from "./lib/activeFlightRoutes";
 import {
   assertModerationTarget,
   moderationReason,
@@ -156,6 +157,7 @@ export const issue = mutation({
         .withIndex("by_userId", (q) => q.eq("userId", target._id))
         .collect();
       for (const session of sessions) await ctx.db.delete(session._id);
+      await deleteRouteChunks(ctx, target._id);
     }
     await logAdminTelemetry(ctx, {
       actorClerkId: actor.clerkId,

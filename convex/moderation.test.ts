@@ -60,6 +60,7 @@ function fixture(actor = "admin") {
     adminTelemetry: [],
     activeTrackers: [],
     activeFlightSessions: [],
+    activeFlightRouteChunks: [],
   };
   let sequence = 0;
   const scheduled: any[] = [];
@@ -189,10 +190,12 @@ test("ban removes tracking, rejects duplicate bans and enforces backend restrict
   assert.ok(f.tables.activeFlightSessions);
   f.tables.activeTrackers.push({ _id: "tracker", clerkId: "pilot" });
   f.tables.activeFlightSessions.push({ _id: "session", userId: "pilot" });
+  f.tables.activeFlightRouteChunks?.push({ _id: "chunk", userId: "pilot" });
   const id = await call(issue, f.ctx, { ...warning, kind: "ban" });
   assert.equal((await f.ctx.db.get("pilot")).activeBanId, id);
   assert.equal(f.tables.activeTrackers?.length, 0);
   assert.equal(f.tables.activeFlightSessions?.length, 0);
+  assert.equal(f.tables.activeFlightRouteChunks?.length, 0);
   await assert.rejects(
     call(issue, f.ctx, { ...warning, kind: "ban", requestId: "duplicate" }),
     /already banned/,
