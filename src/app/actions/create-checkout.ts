@@ -11,8 +11,11 @@ function getSubscriptionData(
     trialStartedAt?: number;
     stripeSubscriptionId?: string;
   } | null,
+  accountUsedTrial: boolean,
 ): Stripe.Checkout.SessionCreateParams.SubscriptionData | undefined {
-  if (!hasUsedTrial(dbUser)) return { trial_period_days: 7 };
+  if (!hasUsedTrial(dbUser) && !accountUsedTrial) {
+    return { trial_period_days: 7 };
+  }
 
   // Subscribing during the no-card trial keeps the remaining trial days.
   const trialEndsAt = dbUser?.trialEndsAt;
@@ -46,7 +49,17 @@ export async function createCheckoutSession() {
   if (dbUser?.activeBanId || dbUser?.isDeleted)
     throw new Error("Account access restricted");
   let stripeCustomerId = dbUser?.stripeCustomerId;
-  const subscriptionData = getSubscriptionData(dbUser);
+  // Covers older records sharing this email or Google ID, not just this one.
+  const accountUsedTrial = await convex.query(api.users.hasTrialHistory, {
+    clerkId: userId,
+    email: email ?? "",
+    googleId: user.externalAccounts.find(
+      (account) =>
+        account.provider === "oauth_google" || account.provider === "google",
+    )?.externalId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
+  });
+  const subscriptionData = getSubscriptionData(dbUser, accountUsedTrial);
 
   // Create Stripe customer if user doesn't have one
   if (!stripeCustomerId) {

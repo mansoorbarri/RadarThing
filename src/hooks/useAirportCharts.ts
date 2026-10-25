@@ -67,6 +67,9 @@ export function useAirportCharts(icao?: string) {
   const [errorCode, setErrorCode] = useState<ChartsAccessErrorCode | null>(
     null,
   );
+  // Bumped on every fetch or ICAO change so late responses for an airport
+  // the user already left can't overwrite the current one.
+  const requestIdRef = useRef(0);
 
   // Initialize from cache if available
   const cachedState = icao ? getViewerState(icao) : undefined;
@@ -117,6 +120,7 @@ export function useAirportCharts(icao?: string) {
     delete stored[key];
     saveToStorage(stored);
 
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError(null);
     setErrorCode(null);
@@ -134,21 +138,28 @@ export function useAirportCharts(icao?: string) {
       })
       .then((data) => {
         const chartData = data.charts ?? createEmptyChartsByType();
+        // A stale response may be older than what's cached, so drop it entirely.
+        if (requestId !== requestIdRef.current) return;
         memoryCache.set(key, chartData);
+        saveToStorage({ ...loadFromStorage(), [key]: chartData });
         setCharts(chartData);
-
-        const newStored = loadFromStorage();
-        saveToStorage({ ...newStored, [key]: chartData });
       })
       .catch((e) => {
+        if (requestId !== requestIdRef.current) return;
         setError(e.message);
         setErrorCode(e instanceof ChartsFetchError ? e.code : null);
         setCharts(createEmptyChartsByType());
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (requestId === requestIdRef.current) setLoading(false);
+      });
   }, [icao]);
 
   useEffect(() => {
+    // Invalidate any request still in flight for the previous airport.
+    requestIdRef.current++;
+    setLoading(false);
+
     if (!icao) {
       setCharts(null);
       setSelectedChartIndexInternal(0);
@@ -175,6 +186,7 @@ export function useAirportCharts(icao?: string) {
       return;
     }
 
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError(null);
     setErrorCode(null);
@@ -192,19 +204,23 @@ export function useAirportCharts(icao?: string) {
       })
       .then((data) => {
         const chartData = data.charts ?? createEmptyChartsByType();
+        // A stale response may be older than what's cached, so drop it entirely.
+        if (requestId !== requestIdRef.current) return;
         memoryCache.set(key, chartData);
+        saveToStorage({ ...loadFromStorage(), [key]: chartData });
         setCharts(chartData);
         // Always reset when fetching fresh data (no cache existed)
         setSelectedChartIndexInternal(0);
-
-        saveToStorage({ ...stored, [key]: chartData });
       })
       .catch((e) => {
+        if (requestId !== requestIdRef.current) return;
         setError(e.message);
         setErrorCode(e instanceof ChartsFetchError ? e.code : null);
         setCharts(createEmptyChartsByType());
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (requestId === requestIdRef.current) setLoading(false);
+      });
   }, [icao]);
 
   // Reset initial mount flag after first render

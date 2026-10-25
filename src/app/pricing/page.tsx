@@ -342,11 +342,11 @@ export default function PricingPage() {
                     {loading ? "Loading..." : "Start 7-day free trial"}
                   </button>
                   <button
-                    onClick={() => handleUpgrade("pricing_page_skip_trial")}
+                    onClick={() => handleUpgrade("pricing_page_card_trial")}
                     disabled={loading}
                     className="mt-3 w-full cursor-pointer text-center text-xs text-slate-300 underline-offset-2 hover:text-white hover:underline disabled:opacity-60"
                   >
-                    Or subscribe now
+                    Or add a card now (still 7 days free)
                   </button>
                 </>
               )}
