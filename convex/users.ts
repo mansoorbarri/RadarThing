@@ -6,7 +6,12 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
-import { hasEffectiveProAccess } from "../src/lib/proAccess";
+import {
+  FREE_TRIAL_DURATION_MS,
+  canStartFreeTrial,
+  hasEffectiveProAccess,
+  hasUsedTrial,
+} from "../src/lib/proAccess";
 import { logAdminTelemetry } from "./adminTelemetry";
 import {
   requireAdmin,
@@ -316,6 +321,41 @@ export const completeRadarGuide = mutation({
     if (user.radarGuideCompletedAt === undefined) {
       await ctx.db.patch(user._id, { radarGuideCompletedAt: Date.now() });
     }
+  },
+});
+
+export const startFreeTrial = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user || user.activeBanId || user.isDeleted)
+      throw new Error("Not authenticated");
+
+    if (!canStartFreeTrial(user)) {
+      throw new Error("Free trial is not available for this account");
+    }
+
+    // One trial per Google account or email, even across recreated records.
+    const accounts = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", user.email))
+      .collect();
+    if (user.googleId) {
+      accounts.push(
+        ...(await ctx.db
+          .query("users")
+          .withIndex("by_googleId", (q) => q.eq("googleId", user.googleId))
+          .collect()),
+      );
+    }
+    if (accounts.some((account) => hasUsedTrial(account))) {
+      throw new Error("Free trial is not available for this account");
+    }
+
+    const now = Date.now();
+    const trialEndsAt = now + FREE_TRIAL_DURATION_MS;
+    await ctx.db.patch(user._id, { trialStartedAt: now, trialEndsAt });
+    return { trialEndsAt };
   },
 });
 

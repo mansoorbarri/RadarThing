@@ -370,6 +370,10 @@ export const Analytics = {
     track("checkout_started", props);
   },
 
+  freeTrialStarted: (props: CheckoutEventProps) => {
+    track("free_trial_started", props);
+  },
+
   checkoutCompleted: (props?: CheckoutEventProps) => {
     track("checkout_completed", props);
   },

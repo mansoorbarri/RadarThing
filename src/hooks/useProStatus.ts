@@ -2,7 +2,11 @@
 import { useConvexAuth, useQuery } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { api } from "../../convex/_generated/api";
-import { hasEffectiveProAccess } from "~/lib/proAccess";
+import {
+  canStartFreeTrial,
+  hasActiveTrial,
+  hasEffectiveProAccess,
+} from "~/lib/proAccess";
 
 export const useProStatus = () => {
   const { user, isLoaded } = useUser();
@@ -32,11 +36,21 @@ export const useProStatus = () => {
     dbUser?.role === "ADMIN" && !dbUser.activeBanId && !dbUser.isDeleted;
   const isAdminUser = isRoleAdmin || isSuperAdmin;
   const isProUser = hasEffectiveProAccess(dbUser);
+  const isTrialUser =
+    hasActiveTrial(dbUser) && dbUser?.role === "FREE" && !isSuperAdmin;
 
   return {
     isProUser: isProUser || isSuperAdmin, // Super admins also have PRO access
     isAdminUser,
     isSuperAdmin,
+    // Signed-in users who can still claim the one-time no-card trial.
+    canStartTrial: canStartFreeTrial(dbUser) && !isSuperAdmin,
+    isTrialUser,
+    // Set for FREE users who have used the no-card trial, active or ended.
+    trialEndsAt:
+      dbUser?.role === "FREE" && !isSuperAdmin
+        ? (dbUser.trialEndsAt ?? null)
+        : null,
     isLoading: Boolean(isLoading),
   };
 };

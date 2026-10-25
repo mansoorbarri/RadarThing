@@ -37,6 +37,20 @@ function saveToStorage(data: Record<string, ChartsByType>) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
+export type ChartsAccessErrorCode =
+  | "PRO_REQUIRED"
+  | "SIGN_IN_REQUIRED"
+  | "FREE_LIMIT_REACHED";
+
+class ChartsFetchError extends Error {
+  constructor(
+    message: string,
+    readonly code: ChartsAccessErrorCode | null = null,
+  ) {
+    super(message);
+  }
+}
+
 function createEmptyChartsByType(): ChartsByType {
   return {
     TAXI: [],
@@ -50,6 +64,9 @@ export function useAirportCharts(icao?: string) {
   const [charts, setCharts] = useState<ChartsByType | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<ChartsAccessErrorCode | null>(
+    null,
+  );
 
   // Initialize from cache if available
   const cachedState = icao ? getViewerState(icao) : undefined;
@@ -102,12 +119,16 @@ export function useAirportCharts(icao?: string) {
 
     setLoading(true);
     setError(null);
+    setErrorCode(null);
 
     fetch(`/api/charts/${key}`)
       .then(async (res) => {
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.error ?? "Failed to fetch charts");
+          throw new ChartsFetchError(
+            data.error ?? "Failed to fetch charts",
+            data.code,
+          );
         }
         return res.json();
       })
@@ -121,6 +142,7 @@ export function useAirportCharts(icao?: string) {
       })
       .catch((e) => {
         setError(e.message);
+        setErrorCode(e instanceof ChartsFetchError ? e.code : null);
         setCharts(createEmptyChartsByType());
       })
       .finally(() => setLoading(false));
@@ -134,6 +156,8 @@ export function useAirportCharts(icao?: string) {
     }
 
     const key = icao.toUpperCase();
+    setError(null);
+    setErrorCode(null);
     // Only reset state if we don't have cached viewer state for this ICAO
     const hasViewerState = !!getViewerState(key);
 
@@ -153,12 +177,16 @@ export function useAirportCharts(icao?: string) {
 
     setLoading(true);
     setError(null);
+    setErrorCode(null);
 
     fetch(`/api/charts/${key}`)
       .then(async (res) => {
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.error ?? "Failed to fetch charts");
+          throw new ChartsFetchError(
+            data.error ?? "Failed to fetch charts",
+            data.code,
+          );
         }
         return res.json();
       })
@@ -173,6 +201,7 @@ export function useAirportCharts(icao?: string) {
       })
       .catch((e) => {
         setError(e.message);
+        setErrorCode(e instanceof ChartsFetchError ? e.code : null);
         setCharts(createEmptyChartsByType());
       })
       .finally(() => setLoading(false));
@@ -215,6 +244,7 @@ export function useAirportCharts(icao?: string) {
     charts,
     loading,
     error,
+    errorCode,
     selectedType,
     setSelectedType,
     selectedChartIndex,

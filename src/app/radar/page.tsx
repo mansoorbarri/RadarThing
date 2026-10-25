@@ -83,6 +83,7 @@ import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
 import { MobileDrawer } from "~/components/ui/MobileDrawer";
 import { ShortcutsMenu } from "~/components/ui/ShortcutsMenu";
 import { RadarGuide } from "~/components/onboarding/RadarGuide";
+import { TrialStatusBanner } from "~/components/ui/trial-status-banner";
 import {
   AirportsIcon,
   FlightsIcon,
@@ -2198,6 +2199,7 @@ function ATCPageContent() {
           if (hidden) setShowShortcutsMenu(false);
         }}
       />
+      <TrialStatusBanner hidden={isUiHidden || isRadarGuideOpen} />
       <RadarGuide
         open={isRadarGuideOpen}
         onFinish={finishRadarGuide}

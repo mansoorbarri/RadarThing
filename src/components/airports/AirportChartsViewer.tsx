@@ -13,6 +13,7 @@ import type {
   ChartsByType,
 } from "~/types/airportCharts";
 import { useAirportCharts } from "~/hooks/useAirportCharts";
+import { ChartsAccessPrompt } from "~/components/airports/ChartsAccessPrompt";
 import {
   getChartRotation,
   getNextChartRotation,
@@ -474,6 +475,7 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
     charts,
     loading,
     error,
+    errorCode,
     selectedType,
     setSelectedType,
     selectedChartIndex,
@@ -709,6 +711,14 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
                     Loading charts...
                   </span>
                 </div>
+              </div>
+            ) : errorCode ? (
+              <div className="flex h-full w-full items-center justify-center">
+                <ChartsAccessPrompt
+                  code={errorCode}
+                  message={error}
+                  source="airport_charts_viewer"
+                />
               </div>
             ) : error ? (
               <div className="flex h-full w-full flex-col items-center justify-center text-center">

@@ -15,6 +15,8 @@ export default defineSchema({
     stripeCustomerId: v.optional(v.string()),
     stripeSubscriptionId: v.optional(v.string()),
     adminProExpiresAt: v.optional(v.number()),
+    trialStartedAt: v.optional(v.number()),
+    trialEndsAt: v.optional(v.number()),
     discordUsername: v.optional(v.string()),
     discordUsernameLower: v.optional(v.string()),
     // Discord's immutable user ID is required for server role management.
@@ -25,6 +27,16 @@ export default defineSchema({
     .index("by_googleId", ["googleId"])
     .index("by_stripeCustomerId", ["stripeCustomerId"])
     .index("by_discordUsernameLower", ["discordUsernameLower"]),
+
+  // Daily metered allowances for FREE users (e.g. distinct chart airports).
+  freeUsage: defineTable({
+    userId: v.id("users"),
+    feature: v.literal("charts"),
+    dayKey: v.string(),
+    keys: v.array(v.string()),
+  })
+    .index("by_user_feature_day", ["userId", "feature", "dayKey"])
+    .index("by_dayKey", ["dayKey"]),
 
   moderationActions: defineTable({
     targetUserId: v.id("users"),

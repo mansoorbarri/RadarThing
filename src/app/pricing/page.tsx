@@ -2,6 +2,8 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { createCheckoutSession } from "~/app/actions/create-checkout";
 import { createPortalSession } from "~/app/actions/create-portal";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -13,6 +15,8 @@ import { UserAuth } from "~/components/atc/userAuth";
 import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 import { Analytics } from "~/lib/analytics";
 import { FREE_RECENT_FLIGHTS_LIMIT } from "~/lib/flightHistory";
+import { FREE_DAILY_ALLOWANCE } from "~/lib/freeAllowance";
+import { MIN_STRIPE_TRIAL_MS } from "~/lib/proAccess";
 
 export default function PricingPage() {
   const router = useRouter();
@@ -22,7 +26,14 @@ export default function PricingPage() {
   const [mounted, setMounted] = useState(false);
   const autoCheckoutStartedRef = useRef(false);
 
-  const { isProUser, isLoading: checkingStatus } = useProStatus();
+  const {
+    isProUser,
+    isTrialUser,
+    trialEndsAt,
+    canStartTrial,
+    isLoading: checkingStatus,
+  } = useProStatus();
+  const startFreeTrial = useMutation(api.users.startFreeTrial);
 
   useEffect(() => {
     setMounted(true);
@@ -54,14 +65,51 @@ export default function PricingPage() {
     [isSignedIn],
   );
 
+  const handleStartTrial = useCallback(
+    async (source: string) => {
+      if (!isSignedIn) return;
+
+      Analytics.upgradeButtonClicked({ source, feature: "free_trial" });
+      try {
+        setLoading(true);
+        await startFreeTrial({});
+        Analytics.freeTrialStarted({ source });
+        router.push("/radar");
+      } catch (err) {
+        console.error(err);
+        alert("Failed to start your free trial");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [isSignedIn, startFreeTrial, router],
+  );
+
   useEffect(() => {
     if (!isLoaded || checkingStatus || !isSignedIn) return;
-    if (searchParams?.get("checkout") !== "1") return;
     if (autoCheckoutStartedRef.current) return;
 
+    if (searchParams?.get("trial") === "1") {
+      // New sign-ins may not have a user record yet, so wait until the trial
+      // is claimable. Accounts that already used it stay on this page.
+      if (!canStartTrial) return;
+      autoCheckoutStartedRef.current = true;
+      void handleStartTrial("pricing_page_post_signin");
+      return;
+    }
+
+    if (searchParams?.get("checkout") !== "1") return;
     autoCheckoutStartedRef.current = true;
     void handleUpgrade("pricing_page_post_signin");
-  }, [isLoaded, checkingStatus, isSignedIn, searchParams, handleUpgrade]);
+  }, [
+    isLoaded,
+    checkingStatus,
+    isSignedIn,
+    searchParams,
+    canStartTrial,
+    handleUpgrade,
+    handleStartTrial,
+  ]);
 
   async function handleManageSubscription() {
     try {
@@ -78,6 +126,51 @@ export default function PricingPage() {
 
   if (!mounted || !isLoaded || checkingStatus) {
     return <Loading />;
+  }
+
+  if (isTrialUser && trialEndsAt) {
+    // Matches create-checkout: too close to the end, billing starts at once.
+    const keepsTrialDays = trialEndsAt - Date.now() > MIN_STRIPE_TRIAL_MS;
+    const daysLeft = Math.max(
+      1,
+      Math.ceil((trialEndsAt - Date.now()) / (24 * 60 * 60 * 1000)),
+    );
+    return (
+      <div className="relative min-h-screen overflow-hidden bg-[#03070d] text-white">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute top-20 -left-24 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
+          <div className="absolute -right-28 bottom-10 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
+        </div>
+        <Header router={router} />
+        <main className="relative mx-auto max-w-2xl px-6 py-24">
+          <div className="rounded-3xl border border-cyan-400/25 bg-gradient-to-br from-cyan-500/12 via-sky-500/8 to-blue-500/10 p-10 text-center shadow-[0_0_80px_rgba(6,182,212,0.12)] backdrop-blur-xl">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-400/30 bg-cyan-500/15">
+              <Zap className="h-7 w-7 text-cyan-300" />
+            </div>
+            <p className="mb-2 font-mono text-[11px] tracking-[0.18em] text-cyan-300/80 uppercase">
+              Free Trial Active
+            </p>
+            <h1 className="mb-3 text-3xl font-bold text-white">
+              {daysLeft} {daysLeft === 1 ? "day" : "days"} of PRO left
+            </h1>
+            <p className="mb-8 text-slate-300">
+              Subscribe now to keep weather intel, charts, and your full flight
+              history.{" "}
+              {keepsTrialDays
+                ? `You won't be charged until your trial ends on ${new Date(trialEndsAt).toLocaleDateString()}.`
+                : "Your subscription starts today."}
+            </p>
+            <button
+              onClick={() => handleUpgrade("pricing_page_trial_active")}
+              disabled={loading}
+              className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:from-cyan-300 hover:to-blue-400 disabled:opacity-50"
+            >
+              {loading ? "Loading..." : "Keep PRO for $3/month"}
+            </button>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   if (isProUser) {
@@ -168,7 +261,7 @@ export default function PricingPage() {
               <SignalCard
                 title="Charts Access"
                 value="Global"
-                subtitle="Taxi, SID, STAR, approach procedures"
+                subtitle={`Unlimited airports worldwide. Free gets ${FREE_DAILY_ALLOWANCE.charts} US airports a day`}
               />
             </div>
 
@@ -188,7 +281,7 @@ export default function PricingPage() {
                 title="Airport Data"
                 description="Procedures and charts where you need them while tracking flights."
                 features={[
-                  "Interactive airport charts",
+                  "Unlimited interactive airport charts",
                   "Detailed airport diagrams",
                   "Approach, SID, and STAR procedures",
                 ]}
@@ -218,11 +311,13 @@ export default function PricingPage() {
                 <div className="pb-1 text-slate-300">/ month</div>
               </div>
               <p className="mt-2 text-sm text-cyan-100/85">
-                Start with a 7-day free trial. Cancel anytime.
+                {!isSignedIn || canStartTrial
+                  ? "Try it free for 7 days. No card needed."
+                  : "Cancel anytime."}
               </p>
 
               {!isSignedIn && (
-                <GoogleSignInButton redirectTo="/pricing?checkout=1">
+                <GoogleSignInButton redirectTo="/pricing?trial=1">
                   <button
                     onClick={() =>
                       Analytics.upgradeButtonClicked({
@@ -232,24 +327,44 @@ export default function PricingPage() {
                     }
                     className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-white shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400"
                   >
-                    Continue with Google
+                    Start free trial with Google
                   </button>
                 </GoogleSignInButton>
               )}
 
-              {isSignedIn && (
-                <button
-                  onClick={() => handleUpgrade("pricing_page")}
-                  disabled={loading}
-                  className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-white shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? "Loading..." : "Start 7-day free trial"}
-                </button>
+              {isSignedIn && canStartTrial && (
+                <>
+                  <button
+                    onClick={() => handleStartTrial("pricing_page")}
+                    disabled={loading}
+                    className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-white shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {loading ? "Loading..." : "Start 7-day free trial"}
+                  </button>
+                  <button
+                    onClick={() => handleUpgrade("pricing_page_skip_trial")}
+                    disabled={loading}
+                    className="mt-3 w-full cursor-pointer text-center text-xs text-slate-300 underline-offset-2 hover:text-white hover:underline disabled:opacity-60"
+                  >
+                    Or subscribe now
+                  </button>
+                </>
               )}
 
-              <p className="mt-4 text-center text-[11px] text-slate-300/85">
-                Secure checkout by Stripe
-              </p>
+              {isSignedIn && !canStartTrial && (
+                <>
+                  <button
+                    onClick={() => handleUpgrade("pricing_page")}
+                    disabled={loading}
+                    className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-white shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {loading ? "Loading..." : "Subscribe to PRO"}
+                  </button>
+                  <p className="mt-4 text-center text-[11px] text-slate-300/85">
+                    Secure checkout by Stripe
+                  </p>
+                </>
+              )}
 
               <div className="mt-6 space-y-2 rounded-2xl border border-white/10 bg-white/5 p-4">
                 <p className="font-mono text-[10px] tracking-[0.14em] text-slate-400 uppercase">
@@ -262,7 +377,7 @@ export default function PricingPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-cyan-300" />
-                    Airport charts and procedures
+                    Unlimited airport charts and procedures
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-cyan-300" />
@@ -332,11 +447,7 @@ function FeatureSection({
   );
 }
 
-function Header({
-  router,
-}: {
-  router: ReturnType<typeof useRouter>;
-}) {
+function Header({ router }: { router: ReturnType<typeof useRouter> }) {
   return (
     <header className="relative z-10 border-b border-white/10 bg-black/35 backdrop-blur-xl">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
