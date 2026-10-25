@@ -3,6 +3,33 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import Stripe from "stripe";
 import { convex, api } from "~/server/convex";
+import { MIN_STRIPE_TRIAL_MS, hasUsedTrial } from "~/lib/proAccess";
+
+function getSubscriptionData(
+  dbUser: {
+    trialEndsAt?: number;
+    trialStartedAt?: number;
+    stripeSubscriptionId?: string;
+  } | null,
+  accountUsedTrial: boolean,
+): Stripe.Checkout.SessionCreateParams.SubscriptionData | undefined {
+  if (!hasUsedTrial(dbUser) && !accountUsedTrial) {
+    return { trial_period_days: 7 };
+  }
+
+  // Subscribing during the no-card trial keeps the remaining trial days.
+  const trialEndsAt = dbUser?.trialEndsAt;
+  if (
+    !dbUser?.stripeSubscriptionId &&
+    typeof trialEndsAt === "number" &&
+    trialEndsAt - Date.now() > MIN_STRIPE_TRIAL_MS
+  ) {
+    return { trial_end: Math.floor(trialEndsAt / 1000) };
+  }
+
+  // Already had a trial or a past subscription, so billing starts right away.
+  return undefined;
+}
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -22,6 +49,17 @@ export async function createCheckoutSession() {
   if (dbUser?.activeBanId || dbUser?.isDeleted)
     throw new Error("Account access restricted");
   let stripeCustomerId = dbUser?.stripeCustomerId;
+  // Covers older records sharing this email or Google ID, not just this one.
+  const accountUsedTrial = await convex.query(api.users.hasTrialHistory, {
+    clerkId: userId,
+    email: email ?? "",
+    googleId: user.externalAccounts.find(
+      (account) =>
+        account.provider === "oauth_google" || account.provider === "google",
+    )?.externalId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
+  });
+  const subscriptionData = getSubscriptionData(dbUser, accountUsedTrial);
 
   // Create Stripe customer if user doesn't have one
   if (!stripeCustomerId) {
@@ -53,9 +91,7 @@ export async function createCheckoutSession() {
       ],
       mode: "subscription",
       allow_promotion_codes: true,
-      subscription_data: {
-        trial_period_days: 7,
-      },
+      subscription_data: subscriptionData,
       success_url: `${baseUrl}/checkout/success`,
       cancel_url: `${baseUrl}/pricing`,
       metadata: {
@@ -93,9 +129,7 @@ export async function createCheckoutSession() {
         ],
         mode: "subscription",
         allow_promotion_codes: true,
-        subscription_data: {
-          trial_period_days: 7,
-        },
+        subscription_data: subscriptionData,
         success_url: `${baseUrl}/checkout/success`,
         cancel_url: `${baseUrl}/pricing`,
         metadata: {

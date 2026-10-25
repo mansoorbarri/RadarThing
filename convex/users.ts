@@ -6,7 +6,12 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
-import { hasEffectiveProAccess } from "../src/lib/proAccess";
+import {
+  FREE_TRIAL_DURATION_MS,
+  canStartFreeTrial,
+  hasEffectiveProAccess,
+  hasUsedTrial,
+} from "../src/lib/proAccess";
 import { logAdminTelemetry } from "./adminTelemetry";
 import {
   requireAdmin,
@@ -316,6 +321,110 @@ export const completeRadarGuide = mutation({
     if (user.radarGuideCompletedAt === undefined) {
       await ctx.db.patch(user._id, { radarGuideCompletedAt: Date.now() });
     }
+  },
+});
+
+interface TrialIdentity {
+  email?: string;
+  googleId?: string;
+}
+
+// One trial per Google account or email, even across recreated records.
+// Every trial check goes through here so pricing, the no-card trial, and
+// checkout always agree.
+async function hasAccountUsedTrial(
+  ctx: QueryCtx | MutationCtx,
+  identities: TrialIdentity[],
+) {
+  const emails = new Set(identities.flatMap((i) => (i.email ? [i.email] : [])));
+  const googleIds = new Set(
+    identities.flatMap((i) => (i.googleId ? [i.googleId] : [])),
+  );
+
+  for (const email of emails) {
+    const accounts = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .collect();
+    if (accounts.some((account) => hasUsedTrial(account))) return true;
+  }
+  for (const googleId of googleIds) {
+    const accounts = await ctx.db
+      .query("users")
+      .withIndex("by_googleId", (q) => q.eq("googleId", googleId))
+      .collect();
+    if (accounts.some((account) => hasUsedTrial(account))) return true;
+  }
+  return false;
+}
+
+// The stored record plus the signed-in session's email, which checkout also
+// uses, in case the stored email hasn't been synced from Clerk yet.
+async function getSessionTrialIdentities(
+  ctx: QueryCtx | MutationCtx,
+  user: TrialIdentity,
+) {
+  const identity = await ctx.auth.getUserIdentity();
+  return [user, { email: identity?.email }];
+}
+
+// Used by checkout so it never offers a Stripe trial the no-card flow would refuse.
+// Email and Google ID come from the Clerk session, so history is found even
+// before this account's own record exists.
+export const hasTrialHistory = query({
+  args: {
+    clerkId: v.string(),
+    email: v.string(),
+    googleId: v.optional(v.string()),
+    systemSecret: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    requireSystem(ctx, args.systemSecret);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    return await hasAccountUsedTrial(ctx, [
+      ...(user ? [user] : []),
+      { email: args.email, googleId: args.googleId },
+    ]);
+  },
+});
+
+// Drives the pricing page so it only offers trials the server will grant.
+export const canStartMyFreeTrial = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user || !canStartFreeTrial(user)) return false;
+    return !(await hasAccountUsedTrial(
+      ctx,
+      await getSessionTrialIdentities(ctx, user),
+    ));
+  },
+});
+
+export const startFreeTrial = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user || user.activeBanId || user.isDeleted)
+      throw new Error("Not authenticated");
+
+    if (
+      !canStartFreeTrial(user) ||
+      (await hasAccountUsedTrial(
+        ctx,
+        await getSessionTrialIdentities(ctx, user),
+      ))
+    ) {
+      throw new Error("Free trial is not available for this account");
+    }
+
+    const now = Date.now();
+    const trialEndsAt = now + FREE_TRIAL_DURATION_MS;
+    await ctx.db.patch(user._id, { trialStartedAt: now, trialEndsAt });
+    return { trialEndsAt };
   },
 });
 

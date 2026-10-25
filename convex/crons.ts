@@ -41,4 +41,10 @@ crons.daily(
   internal.telemetry.pruneLiveHours,
 );
 
+crons.hourly(
+  "prune old free usage allowances",
+  { minuteUTC: 40 },
+  internal.freeUsage.pruneOldFreeUsage,
+);
+
 export default crons;

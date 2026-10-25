@@ -18,6 +18,13 @@ export const TEMP_PRO_DURATION_OPTIONS = [
   },
 ] as const;
 
+// No-card trial granted from the pricing page, once per account.
+export const FREE_TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Stripe Checkout rejects a trial_end less than 48 hours away, so subscribing
+// closer to the end of the no-card trial starts billing immediately.
+export const MIN_STRIPE_TRIAL_MS = 49 * 60 * 60 * 1000;
+
 export type TempProDurationValue =
   (typeof TEMP_PRO_DURATION_OPTIONS)[number]["value"];
 
@@ -26,6 +33,9 @@ export interface ProAccessUserLike {
   activeBanId?: string | null;
   isDeleted?: boolean;
   adminProExpiresAt?: number | null;
+  trialStartedAt?: number | null;
+  trialEndsAt?: number | null;
+  stripeSubscriptionId?: string | null;
 }
 
 export function hasActiveAdminProGrant(
@@ -37,6 +47,32 @@ export function hasActiveAdminProGrant(
   );
 }
 
+export function hasActiveTrial(
+  user: ProAccessUserLike | null | undefined,
+  now = Date.now(),
+) {
+  return Boolean(
+    typeof user?.trialEndsAt === "number" && user.trialEndsAt > now,
+  );
+}
+
+// A user gets one trial: either the no-card trial or a Stripe checkout trial.
+export function hasUsedTrial(user: ProAccessUserLike | null | undefined) {
+  return Boolean(
+    typeof user?.trialStartedAt === "number" || user?.stripeSubscriptionId,
+  );
+}
+
+export function canStartFreeTrial(
+  user: ProAccessUserLike | null | undefined,
+  now = Date.now(),
+) {
+  if (!user || user.activeBanId || user.isDeleted) return false;
+  if (user.role === "ADMIN" || user.role === "PRO") return false;
+  if (hasActiveAdminProGrant(user, now)) return false;
+  return !hasUsedTrial(user);
+}
+
 export function hasEffectiveProAccess(
   user: ProAccessUserLike | null | undefined,
   now = Date.now(),
@@ -45,7 +81,8 @@ export function hasEffectiveProAccess(
   return (
     user.role === "ADMIN" ||
     user.role === "PRO" ||
-    hasActiveAdminProGrant(user, now)
+    hasActiveAdminProGrant(user, now) ||
+    hasActiveTrial(user, now)
   );
 }
 

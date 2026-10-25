@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { isPro } from "~/app/actions/is-pro";
+import { convex } from "~/server/convex";
 import type { ChartType, AirportChart } from "~/types/airportCharts";
 import { organizeChartsByType } from "~/services/airportChartsService";
 import { isFreeChartIcao } from "~/lib/chartAccess";
@@ -15,13 +17,7 @@ export async function GET(request: NextRequest, context: any) {
     | ChartType
     | undefined;
 
-  const isProUser = await isPro();
-
-  if (!isProUser && !isFreeChartIcao(icao)) {
-    return NextResponse.json({ error: "PRO required" }, { status: 403 });
-  }
-
-  // Validate chart type if provided
+  // Validate before charging the FREE allowance so bad requests are free.
   if (chartType && !VALID_CHART_TYPES.includes(chartType)) {
     return NextResponse.json(
       {
@@ -29,6 +25,30 @@ export async function GET(request: NextRequest, context: any) {
       },
       { status: 400 },
     );
+  }
+
+  const isProUser = await isPro();
+
+  if (!isProUser && !isFreeChartIcao(icao)) {
+    return NextResponse.json(
+      { error: "PRO required", code: "PRO_REQUIRED" },
+      { status: 403 },
+    );
+  }
+
+  let freeUserClerkId: string | null = null;
+  if (!isProUser) {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json(
+        {
+          error: "Sign in with Google to view free airport charts.",
+          code: "SIGN_IN_REQUIRED",
+        },
+        { status: 401 },
+      );
+    }
+    freeUserClerkId = userId;
   }
 
   try {
@@ -52,6 +72,40 @@ export async function GET(request: NextRequest, context: any) {
       approvedAt: c.approvedAt,
       createdAt: c.createdAt,
     }));
+
+    // FREE users get a few distinct chart airports per day. Charge only after
+    // the fetch succeeds so a failed request doesn't use up a slot.
+    if (freeUserClerkId) {
+      const allowance = await convex.mutation(
+        api.freeUsage.consumeFreeAllowance,
+        {
+          clerkId: freeUserClerkId,
+          feature: "charts",
+          key: String(icao),
+          systemSecret: process.env.CONVEX_SYSTEM_SECRET,
+        },
+      );
+      if (allowance.accountIssue) {
+        return NextResponse.json(
+          {
+            error:
+              allowance.accountIssue === "missing"
+                ? "Account not ready. Try again in a moment."
+                : "Account access restricted",
+          },
+          { status: 403 },
+        );
+      }
+      if (!allowance.allowed) {
+        return NextResponse.json(
+          {
+            error: `Free accounts can open charts for ${allowance.limit} airports per day. Upgrade to PRO for unlimited charts.`,
+            code: "FREE_LIMIT_REACHED",
+          },
+          { status: 403 },
+        );
+      }
+    }
 
     // If specific type requested, return filtered charts
     if (chartType) {

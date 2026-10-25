@@ -23,6 +23,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test:moderation": "tsx --test convex/moderation.test.ts",
+    "test:pro-access": "tsx --test src/lib/proAccess.test.ts src/lib/freeAllowance.test.ts",
     "test:telemetry": "tsx --test convex/telemetry.test.ts"
   },
   "engines": {

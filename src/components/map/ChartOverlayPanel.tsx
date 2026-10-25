@@ -14,6 +14,7 @@ import {
   type ReactZoomPanPinchRef,
 } from "react-zoom-pan-pinch";
 import { useAirportCharts } from "~/hooks/useAirportCharts";
+import { ChartsAccessPrompt } from "~/components/airports/ChartsAccessPrompt";
 import {
   getChartRotation,
   getNextChartRotation,
@@ -85,7 +86,9 @@ function RunwayFilterBar({
           }`}
         >
           {group.label}
-          <span className="ml-1 text-[9px] opacity-60">{group.charts.length}</span>
+          <span className="ml-1 text-[9px] opacity-60">
+            {group.charts.length}
+          </span>
         </button>
       ))}
     </div>
@@ -206,7 +209,7 @@ interface ChartSidePanelProps {
 }
 
 export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
-  const { charts, loading } = useAirportCharts(icao);
+  const { charts, loading, error, errorCode } = useAirportCharts(icao);
   const [pdfError, setPdfError] = useState(false);
   const [chartRotation, setChartRotation] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -403,7 +406,8 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
       }
 
       const nextIndex = nextRunwayGroup.charts.findIndex(
-        (candidate) => getAirportChartKey(candidate) === getAirportChartKey(chart),
+        (candidate) =>
+          getAirportChartKey(candidate) === getAirportChartKey(chart),
       );
 
       setSelectedType(type);
@@ -454,6 +458,14 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-cyan-500" />
             <span className="text-xs text-white/40">Loading charts...</span>
           </div>
+        </div>
+      ) : errorCode ? (
+        <div className="flex flex-1 items-center justify-center">
+          <ChartsAccessPrompt
+            code={errorCode}
+            message={error}
+            source="chart_side_panel"
+          />
         </div>
       ) : !hasCharts ? (
         <div className="flex flex-1 items-center justify-center px-4">
