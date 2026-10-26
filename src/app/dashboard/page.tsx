@@ -422,20 +422,9 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold text-white">
-                  {displayName ? (
-                    <>
-                      <span
-                        className={`${personalInfoTransitionClass} ${
-                          hidePersonalInfo ? personalInfoBlurClass : ""
-                        }`}
-                      >
-                        {displayName}&apos;s
-                      </span>{" "}
-                      Account
-                    </>
-                  ) : (
-                    "Your Account"
-                  )}
+                  {displayName && !hidePersonalInfo
+                    ? `${displayName}'s Account`
+                    : "Your Account"}
                 </h1>
                 <button
                   onClick={openNameEditor}
