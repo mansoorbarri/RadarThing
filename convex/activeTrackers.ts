@@ -1,9 +1,19 @@
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "./_generated/server";
+import {
+  mutation,
+  query,
+  internalMutation,
+  type QueryCtx,
+} from "./_generated/server";
 
 import { requireAuthenticatedClerkId } from "./lib/auth";
 
 const MIN_TRACKERS_FOR_MOST_TRACKED = 3;
+// Clients heartbeat every 2 minutes; allow one missed beat.
+const STALE_TRACKER_MS = 5 * 60 * 1000;
+// Matches the userscript tracking-status route; keeps the summary document
+// small no matter what clients send.
+const MAX_CALLSIGN_LENGTH = 32;
 const ANONYMOUS_TRACKER_ID =
   /^anon:(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[a-z0-9]+:[a-z0-9]+)$/i;
 
@@ -47,7 +57,11 @@ export const startTracking = mutation({
     await requireTrackerAccess(ctx, args.clerkId);
     const callsigns = Array.from(
       new Set(
-        args.callsigns.map((callsign) => callsign.trim()).filter(Boolean),
+        args.callsigns
+          .map((callsign) => callsign.trim())
+          .filter(
+            (callsign) => callsign && callsign.length <= MAX_CALLSIGN_LENGTH,
+          ),
       ),
     );
 
@@ -106,12 +120,14 @@ export const heartbeat = mutation({
   },
 });
 
+async function getRanked(ctx: QueryCtx) {
+  const summary = await ctx.db.query("activeTrackerSummary").first();
+  return summary?.ranked ?? [];
+}
+
 export const getMostTracked = query({
   handler: async (ctx) => {
-    const allTrackers = await ctx.db.query("activeTrackers").collect();
-
-    // Sort by count descending, take top 10
-    return getRankedTrackerCounts(allTrackers).slice(0, 10);
+    return (await getRanked(ctx)).slice(0, 10);
   },
 });
 
@@ -123,8 +139,7 @@ export const getTrackingStatus = query({
       return { isMostTracked: false, count: 0 };
     }
 
-    const allTrackers = await ctx.db.query("activeTrackers").collect();
-    const ranked = getRankedTrackerCounts(allTrackers);
+    const ranked = await getRanked(ctx);
     const count =
       ranked.find((entry) => entry.callsign === callsign)?.count ?? 0;
     const leadingCount = ranked[0]?.count ?? 0;
@@ -137,17 +152,32 @@ export const getTrackingStatus = query({
   },
 });
 
-export const cleanupStale = internalMutation({
+// Drops stale trackers and rewrites the summary only when the ranking changed,
+// so subscribed viewers re-run at most once per cron tick.
+export const refreshSummary = internalMutation({
   handler: async (ctx) => {
-    const threeMinutesAgo = Date.now() - 3 * 60 * 1000;
+    const staleBefore = Date.now() - STALE_TRACKER_MS;
 
     const stale = await ctx.db
       .query("activeTrackers")
-      .withIndex("by_lastSeen", (q) => q.lt("lastSeen", threeMinutesAgo))
+      .withIndex("by_lastSeen", (q) => q.lt("lastSeen", staleBefore))
       .collect();
 
     for (const entry of stale) {
       await ctx.db.delete(entry._id);
+    }
+
+    const trackers = await ctx.db.query("activeTrackers").collect();
+    const ranked = getRankedTrackerCounts(trackers);
+    const summary = await ctx.db.query("activeTrackerSummary").first();
+
+    if (!summary) {
+      await ctx.db.insert("activeTrackerSummary", {
+        ranked,
+        updatedAt: Date.now(),
+      });
+    } else if (JSON.stringify(summary.ranked) !== JSON.stringify(ranked)) {
+      await ctx.db.patch(summary._id, { ranked, updatedAt: Date.now() });
     }
   },
 });

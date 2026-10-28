@@ -18,7 +18,7 @@ function corsHeaders(origin: string | null) {
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "X-Requested-With",
     "Access-Control-Max-Age": "86400",
-    Vary: "Origin",
+    Vary: "Origin, X-Requested-With",
   };
 }
 
@@ -58,7 +58,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(status, {
       headers: {
         ...corsHeaders(origin),
-        "Cache-Control": "no-store",
+        // Every pilot polls; let the CDN answer repeats for the same callsign.
+        "Cache-Control":
+          "public, max-age=0, s-maxage=15, stale-while-revalidate=15",
       },
     });
   } catch (error) {
