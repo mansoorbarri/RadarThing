@@ -16,9 +16,21 @@ import { send } from "./moderationEmail";
 import { getRecent } from "./adminTelemetry";
 import { requireAdmin, requireAuthenticatedClerkId } from "./lib/auth";
 import { SUPER_ADMIN_GOOGLE_ID } from "./lib/moderationRules";
-import { storeUser, update, updateByClerkId } from "./users";
+import {
+  getProDiscordRoleMembers,
+  storeUser,
+  update,
+  updateByClerkId,
+} from "./users";
 import { create as createFlight } from "./flights";
-import { heartbeat, startTracking, stopTracking } from "./activeTrackers";
+import {
+  getMostTracked,
+  getTrackingStatus,
+  heartbeat,
+  refreshSummary,
+  startTracking,
+  stopTracking,
+} from "./activeTrackers";
 import { replaceAll } from "./activeFlightSessions";
 import { hasEffectiveProAccess } from "../src/lib/proAccess";
 
@@ -100,6 +112,18 @@ function fixture(actor = "admin") {
             const index: any = {
               eq: (key: string, value: any) => {
                 rows = rows.filter((r) => r[key] === value);
+                return index;
+              },
+              lt: (key: string, value: any) => {
+                rows = rows.filter(
+                  (r) => r[key] !== undefined && r[key] < value,
+                );
+                return index;
+              },
+              gt: (key: string, value: any) => {
+                rows = rows.filter(
+                  (r) => r[key] !== undefined && r[key] > value,
+                );
                 return index;
               },
             };
@@ -496,5 +520,120 @@ test("history, sidebar history, and moderation logs redact legacy email identiti
     logs.find((event: { action: string }) => event.action === "warn")
       .actorLabel,
     "RT ID: admin",
+  );
+});
+
+test("tracker summary drops stale trackers and feeds both tracker queries", async () => {
+  const f = fixture();
+  const now = Date.now();
+  f.tables.activeTrackers = [
+    ...["a", "b", "c"].map((clerkId) => ({
+      _id: `t-${clerkId}`,
+      clerkId,
+      callsign: "ba123",
+      lastSeen: now,
+    })),
+    { _id: "t-d", clerkId: "d", callsign: "AFR1", lastSeen: now },
+    { _id: "t-old", clerkId: "e", callsign: "AFR1", lastSeen: 0 },
+  ];
+
+  assert.deepEqual(await call(getMostTracked, f.ctx), []);
+  await call(refreshSummary, f.ctx);
+
+  assert.equal(f.tables.activeTrackers.length, 4);
+  assert.deepEqual(await call(getMostTracked, f.ctx), [
+    { callsign: "BA123", count: 3 },
+    { callsign: "AFR1", count: 1 },
+  ]);
+  assert.deepEqual(
+    await call(getTrackingStatus, f.ctx, { callsign: " ba123 " }),
+    { isMostTracked: true, count: 3 },
+  );
+  assert.deepEqual(await call(getTrackingStatus, f.ctx, { callsign: "AFR1" }), {
+    isMostTracked: false,
+    count: 1,
+  });
+
+  const updatedAt = f.tables.activeTrackerSummary?.[0].updatedAt;
+  await call(refreshSummary, f.ctx);
+  assert.equal(f.tables.activeTrackerSummary?.length, 1);
+  assert.equal(f.tables.activeTrackerSummary?.[0].updatedAt, updatedAt);
+});
+
+test("PRO Discord role members come from every PRO source without duplicates", async () => {
+  process.env.CONVEX_SYSTEM_SECRET = "secret";
+  const f = fixture();
+  const now = Date.now();
+  assert.ok(f.tables.users);
+  f.tables.users.push(
+    {
+      _id: "granted",
+      role: "FREE",
+      isDeleted: false,
+      adminProExpiresAt: now + 60_000,
+      discordUserId: "g",
+    },
+    {
+      _id: "expired",
+      role: "FREE",
+      isDeleted: false,
+      adminProExpiresAt: now - 60_000,
+    },
+    {
+      _id: "trial",
+      role: "FREE",
+      isDeleted: false,
+      trialEndsAt: now + 60_000,
+      discordUserId: "t",
+    },
+    {
+      _id: "both",
+      role: "PRO",
+      isDeleted: false,
+      trialEndsAt: now + 60_000,
+      discordUserId: "b",
+    },
+    { _id: "gone", role: "PRO", isDeleted: true, discordUserId: "x" },
+    {
+      _id: "banned",
+      role: "PRO",
+      isDeleted: false,
+      activeBanId: "ban",
+      discordUserId: "y",
+    },
+  );
+
+  const members = await call(getProDiscordRoleMembers, f.ctx, {
+    systemSecret: "secret",
+  });
+  const expected = f.tables.users.filter((user) =>
+    hasEffectiveProAccess(user, now),
+  );
+
+  assert.equal(members.length, expected.length);
+  assert.deepEqual(
+    members
+      .map((member: { discordUserId: string | null }) => member.discordUserId)
+      .sort(),
+    expected.map((user) => user.discordUserId ?? null).sort(),
+  );
+  assert.ok(
+    members.some(
+      (member: { discordUserId: string | null }) =>
+        member.discordUserId === "g",
+    ),
+  );
+  assert.ok(
+    members.some(
+      (member: { discordUserId: string | null }) =>
+        member.discordUserId === "t",
+    ),
+  );
+  assert.equal(
+    members.filter(
+      (member: { discordUserId: string | null }) =>
+        member.discordUserId === "b",
+    ).length,
+    1,
   );
 });
