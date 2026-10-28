@@ -637,3 +637,16 @@ test("PRO Discord role members come from every PRO source without duplicates", a
     1,
   );
 });
+
+test("startTracking ignores oversized callsigns", async () => {
+  const f = fixture();
+  const clerkId = "anon:123e4567-e89b-42d3-a456-426614174000";
+  await call(startTracking, f.ctx, {
+    clerkId,
+    callsigns: ["BA123", "X".repeat(33), "Y".repeat(32)],
+  });
+  assert.deepEqual(
+    f.tables.activeTrackers?.map((tracker) => tracker.callsign).sort(),
+    ["BA123", "Y".repeat(32)],
+  );
+});

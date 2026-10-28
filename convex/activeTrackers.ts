@@ -11,6 +11,9 @@ import { requireAuthenticatedClerkId } from "./lib/auth";
 const MIN_TRACKERS_FOR_MOST_TRACKED = 3;
 // Clients heartbeat every 2 minutes; allow one missed beat.
 const STALE_TRACKER_MS = 5 * 60 * 1000;
+// Matches the userscript tracking-status route; keeps the summary document
+// small no matter what clients send.
+const MAX_CALLSIGN_LENGTH = 32;
 const ANONYMOUS_TRACKER_ID =
   /^anon:(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[a-z0-9]+:[a-z0-9]+)$/i;
 
@@ -54,7 +57,11 @@ export const startTracking = mutation({
     await requireTrackerAccess(ctx, args.clerkId);
     const callsigns = Array.from(
       new Set(
-        args.callsigns.map((callsign) => callsign.trim()).filter(Boolean),
+        args.callsigns
+          .map((callsign) => callsign.trim())
+          .filter(
+            (callsign) => callsign && callsign.length <= MAX_CALLSIGN_LENGTH,
+          ),
       ),
     );
 
