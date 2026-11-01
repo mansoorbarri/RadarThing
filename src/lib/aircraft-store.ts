@@ -254,7 +254,20 @@ class AircraftStore {
     }
     this.flightPathHistoryIds.add(id);
 
-    const nextPath = flightPath
+    // Keep live positions that arrived after the route's last point, such as
+    // ones streamed while the route was being fetched.
+    const lastRoutePoint = flightPath[flightPath.length - 1]!;
+    let lastRouteIndex = currentPath.length - 1;
+    while (
+      lastRouteIndex >= 0 &&
+      (currentPath[lastRouteIndex]![0] !== lastRoutePoint[0] ||
+        currentPath[lastRouteIndex]![1] !== lastRoutePoint[1])
+    ) {
+      lastRouteIndex--;
+    }
+    const liveSuffix =
+      lastRouteIndex >= 0 ? currentPath.slice(lastRouteIndex + 1) : [];
+    const nextPath = [...flightPath, ...liveSuffix]
       .slice(-MAX_HISTORY_FLIGHT_PATH_POINTS)
       .map(([lat, lon]) => [lat, lon] as [number, number]);
     this.flightPaths.set(id, nextPath);

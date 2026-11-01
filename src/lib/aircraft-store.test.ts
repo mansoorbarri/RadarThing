@@ -132,6 +132,24 @@ test("server route history replaces the live path once and is kept as the stream
     activeAircraft.mergeFlightPath(aircraft.id, history.slice(0, 50));
     assert.equal(activeAircraft.get(aircraft.id)!.flightPath!.length, 100);
 
+    // Live points after the route's last point survive the first merge.
+    activeAircraft.delete(aircraft.id);
+    for (const lat of [0.97, 0.98, 0.99, 1, 1.01]) {
+      activeAircraft.set(aircraft.id, { ...aircraft, lat });
+    }
+    activeAircraft.mergeFlightPath(aircraft.id, history);
+    assert.deepEqual(
+      activeAircraft.get(aircraft.id)!.flightPath!.slice(-3),
+      [
+        [0.99, 20],
+        [1, 20],
+        [1.01, 20],
+      ],
+    );
+    activeAircraft.delete(aircraft.id);
+    activeAircraft.set(aircraft.id, aircraft);
+    activeAircraft.mergeFlightPath(aircraft.id, history);
+
     // Stream updates extend the history instead of trimming it at 150.
     for (let index = 0; index < 300; index++) {
       activeAircraft.set(aircraft.id, { ...aircraft, lat: 40 + index / 1000 });
