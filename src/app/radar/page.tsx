@@ -423,9 +423,7 @@ function ATCPageContent() {
 
   const selectedAircraft =
     selectedAircrafts.length === 1 ? selectedAircrafts[0]! : null;
-  const { flightPath: activeFlightPath } = useActiveFlightPath(
-    !isViewingHistory ? selectedAircraft : null,
-  );
+  useActiveFlightPath(!isViewingHistory ? selectedAircraft : null);
 
   const {
     recentSearches,
@@ -760,13 +758,6 @@ function ATCPageContent() {
       drawMultipleFlightPlansOnMapRef.current(updatedSelection, false);
     }
   }, [aircrafts, isViewingHistory, selectedAircrafts]);
-
-  useEffect(() => {
-    if (!selectedAircraft || !activeFlightPath || isViewingHistory) return;
-
-    const aircraftId = selectedAircraft.callsign || selectedAircraft.id;
-    activeAircraft.mergeFlightPath(aircraftId, activeFlightPath);
-  }, [activeFlightPath, isViewingHistory, selectedAircraft]);
 
   useEffect(() => {
     if (!isReplayActive) return;

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { type PositionUpdate } from "~/lib/aircraft-store";
+import { useEffect, useRef } from "react";
+import { activeAircraft, type PositionUpdate } from "~/lib/aircraft-store";
 
 const ACTIVE_FLIGHT_PATH_API_URL =
   "https://sse.radarthing.com/api/active-flight-path";
-const REFRESH_INTERVAL_MS = 15000;
+const RETRY_INTERVAL_MS = 15000;
 
 function isCoordinatePair(point: unknown): point is [number, number] {
   return (
@@ -45,41 +45,30 @@ function getAircraftPathKey(aircraft: PositionUpdate | null) {
   ].join("|");
 }
 
+// Loads the selected aircraft's route so far into the aircraft store once. The
+// stream then extends it, so this only fetches again if the store drops the
+// history (for example when a reconnect snapshot clears it), or retries until
+// the server has a route to return.
 export function useActiveFlightPath(aircraft: PositionUpdate | null) {
   const aircraftPathKey = getAircraftPathKey(aircraft);
-  const [activePathState, setActivePathState] = useState<{
-    aircraftPathKey: string | null;
-    flightPath: [number, number][] | null;
-  }>({
-    aircraftPathKey: null,
-    flightPath: null,
+  const storeId = aircraft ? aircraft.callsign || aircraft.id : null;
+  const needsHistory =
+    storeId !== null && !activeAircraft.hasFlightPathHistory(storeId);
+  const aircraftRef = useRef(aircraft);
+
+  useEffect(() => {
+    aircraftRef.current = aircraft;
   });
 
   useEffect(() => {
-    if (!aircraft) {
-      setActivePathState({
-        aircraftPathKey: null,
-        flightPath: null,
-      });
-      return;
-    }
+    const current = aircraftRef.current;
+    if (!current || !storeId || !needsHistory) return;
 
-    const params = getFlightQueryParams(aircraft);
-    if (params.size === 0) {
-      setActivePathState({
-        aircraftPathKey,
-        flightPath: null,
-      });
-      return;
-    }
+    const params = getFlightQueryParams(current);
+    if (params.size === 0) return;
 
     let isMounted = true;
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-
-    setActivePathState({
-      aircraftPathKey,
-      flightPath: null,
-    });
+    let retryId: ReturnType<typeof setTimeout> | null = null;
 
     const fetchPath = async () => {
       try {
@@ -90,52 +79,39 @@ export function useActiveFlightPath(aircraft: PositionUpdate | null) {
           },
         );
 
-        if (!response.ok) {
-          if (response.status === 404 && isMounted) {
-            setActivePathState({
-              aircraftPathKey,
-              flightPath: null,
-            });
+        if (response.ok) {
+          const data = (await response.json()) as {
+            routeData?: unknown;
+          };
+
+          const path = Array.isArray(data.routeData)
+            ? data.routeData.filter(isCoordinatePair)
+            : [];
+
+          if (!isMounted) return;
+          if (path.length >= 2) {
+            activeAircraft.mergeFlightPath(storeId, path);
+            if (activeAircraft.hasFlightPathHistory(storeId)) return;
           }
-          return;
-        }
-
-        const data = (await response.json()) as {
-          routeData?: unknown;
-        };
-
-        const nextPath = Array.isArray(data.routeData)
-          ? data.routeData.filter(isCoordinatePair)
-          : [];
-
-        if (isMounted) {
-          setActivePathState({
-            aircraftPathKey,
-            flightPath: nextPath.length >= 2 ? nextPath : null,
-          });
         }
       } catch {
-        // Ignore fetch failures and keep the most recent known path.
+        // Retry below; the live path keeps growing from the stream meanwhile.
+      }
+
+      if (isMounted) {
+        retryId = setTimeout(() => {
+          void fetchPath();
+        }, RETRY_INTERVAL_MS);
       }
     };
 
     void fetchPath();
-    intervalId = setInterval(() => {
-      void fetchPath();
-    }, REFRESH_INTERVAL_MS);
 
     return () => {
       isMounted = false;
-      if (intervalId) {
-        clearInterval(intervalId);
+      if (retryId) {
+        clearTimeout(retryId);
       }
     };
-  }, [aircraft, aircraftPathKey]);
-
-  return {
-    flightPath:
-      activePathState.aircraftPathKey === aircraftPathKey
-        ? activePathState.flightPath
-        : null,
-  };
+  }, [aircraftPathKey, storeId, needsHistory]);
 }
