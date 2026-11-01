@@ -42,7 +42,8 @@ export const useAircraftStream = () => {
 
     setConnectionStatus("connecting");
 
-    const url = "https://sse.radarthing.com/api/stream";
+    // Opt in to deltas that omit unchanged flight plans (handled below).
+    const url = "https://sse.radarthing.com/api/stream?flightPlans=changed";
 
     const es = new EventSource(url);
     eventSourceRef.current = es;
