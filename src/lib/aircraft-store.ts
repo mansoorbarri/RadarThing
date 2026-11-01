@@ -254,9 +254,9 @@ class AircraftStore {
     }
     this.flightPathHistoryIds.add(id);
 
-    const nextPath = flightPath.map(
-      ([lat, lon]) => [lat, lon] as [number, number],
-    );
+    const nextPath = flightPath
+      .slice(-MAX_HISTORY_FLIGHT_PATH_POINTS)
+      .map(([lat, lon]) => [lat, lon] as [number, number]);
     this.flightPaths.set(id, nextPath);
     this.flightTelemetry.delete(id);
     this.store.set(id, {
