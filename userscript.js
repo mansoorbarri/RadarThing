@@ -493,29 +493,30 @@
           body: JSON.stringify(payload),
           signal: controller.signal,
         });
-      } finally {
-        clearTimeout(timeoutId);
-      }
 
-      if (!res.ok) {
-        console.warn(
-          `[RadarThing] Position update #${requestId} failed with HTTP ${res.status}`,
-          {
-            requestId,
-            status: res.status,
-            statusText: res.statusText,
-            elapsedMs: Date.now() - requestStartedAt,
-            payload: payloadDiagnostics,
-          },
-        );
-      } else {
-        let data = null;
-        try {
-          data = await res.json();
-        } catch {
-          // A body without commands is fine.
+        if (!res.ok) {
+          console.warn(
+            `[RadarThing] Position update #${requestId} failed with HTTP ${res.status}`,
+            {
+              requestId,
+              status: res.status,
+              statusText: res.statusText,
+              elapsedMs: Date.now() - requestStartedAt,
+              payload: payloadDiagnostics,
+            },
+          );
+        } else {
+          let data = null;
+          try {
+            data = await res.json();
+          } catch {
+            // A body without commands is fine.
+          }
+          runReceivedCommands(data?.commands);
         }
-        runReceivedCommands(data?.commands);
+      } finally {
+        // Keep the abort timeout until the body is read, too.
+        clearTimeout(timeoutId);
       }
     } catch (error) {
       console.warn("[RadarThing] Position update failed before send", {
