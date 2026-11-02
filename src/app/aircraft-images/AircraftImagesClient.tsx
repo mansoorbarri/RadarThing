@@ -679,42 +679,42 @@ export default function AircraftImagesClient({
             )}
           </>
         )}
-        <details className="group mt-8 border-t border-white/10 pt-4 text-sm leading-7 text-slate-400">
-          <summary className="cursor-pointer text-slate-300 hover:text-white">
-            About the gallery and contributions
-          </summary>
-          <div className="grid gap-8 pt-6 md:grid-cols-2">
-            <div>
-              <h2 className="mb-2 text-lg font-semibold text-white">
-                How images reach the radar
-              </h2>
-              <p>
-                Contributors submit an image for a specific airline and aircraft
-                type. A moderator reviews each submission before it appears in
-                this gallery and alongside matching aircraft in RadarThing. Use
-                the filters above to check whether an image is already available
-                for a combination.
-              </p>
-            </div>
-            <div>
-              <h2 className="mb-2 text-lg font-semibold text-white">
-                Contribute an image
-              </h2>
-              <p>
-                Upload an image you have the right to share and enter the
-                matching aircraft details. If you see a rights issue with an
-                existing image, use our{" "}
-                <Link
-                  href="/copyright"
-                  className="text-cyan-300 hover:underline"
-                >
-                  copyright contact
-                </Link>{" "}
-                so we can review it.
-              </p>
-            </div>
+        <section className="mt-14 grid gap-8 border-t border-white/10 pt-8 text-sm leading-7 text-slate-400 md:grid-cols-2">
+          <div>
+            <h2 className="mb-2 text-lg font-semibold text-white">
+              How images reach the radar
+            </h2>
+            <p>
+              Each image is attached to an airline&apos;s IATA and ICAO codes
+              and a base aircraft type, such as B777 or A320. When a pilot flies
+              that type with a callsign starting with the airline&apos;s code,
+              the radar shows the matching image behind their flight details. A
+              moderator reviews every submission before it appears here. Use the
+              filters above to check whether a combination is already covered.
+            </p>
           </div>
-        </details>
+          <div>
+            <h2 className="mb-2 text-lg font-semibold text-white">
+              Contribute an image
+            </h2>
+            <p>
+              Upload a sharp photo of a real aircraft that you have the right to
+              share, and use the base model rather than a variant. Approved
+              images count towards the Contribution leaderboard. If you see a
+              rights issue with an existing image, use our{" "}
+              <Link href="/copyright" className="text-cyan-300 hover:underline">
+                copyright contact
+              </Link>{" "}
+              so we can review it.
+            </p>
+            <Link
+              href="/guides/contributing-aircraft-images"
+              className="mt-3 inline-block text-cyan-300 hover:underline"
+            >
+              Read the contribution guidelines
+            </Link>
+          </div>
+        </section>
       </main>
 
       {/* Upload Modal */}

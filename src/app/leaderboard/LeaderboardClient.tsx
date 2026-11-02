@@ -744,26 +744,46 @@ export default function LeaderboardClient({
             )}
           </>
         )}
-        <details className="mt-8 border-t border-white/10 pt-4 text-sm leading-7 text-slate-400">
-          <summary className="cursor-pointer text-slate-300 hover:text-white">
-            Reading the rankings
-          </summary>
-          <p className="mt-3 max-w-3xl">
-            These totals come from flights recorded by participating GeoFS
-            pilots. Switch tabs to compare completed flights, distance, flight
-            time, current streaks and approved aircraft image contributions.
-            Select a pilot to inspect their public flight statistics and recent
-            routes. Tracker gaps and excluded flights can affect totals; the
-            rankings are a community view of simulator activity, not a measure
-            of real-world flying experience.
-          </p>
-          <Link
-            href="/guides/flight-history-and-replay"
-            className="mt-3 inline-block text-cyan-300 hover:underline"
-          >
-            How flight history works ↗
-          </Link>
-        </details>
+        <section className="mt-14 grid gap-8 border-t border-white/10 pt-8 text-sm leading-7 text-slate-400 md:grid-cols-2">
+          <div>
+            <h2 className="mb-2 text-lg font-semibold text-white">
+              Reading the rankings
+            </h2>
+            <p>
+              These totals come from flights recorded by participating GeoFS
+              pilots. Switch tabs to compare completed flights, distance, flight
+              time, current streaks, approved aircraft image contributions, and
+              challenge progress. Select a pilot to see their public statistics
+              and recent routes. The rankings are a community view of simulator
+              activity, not a measure of real-world flying experience.
+            </p>
+          </div>
+          <div>
+            <h2 className="mb-2 text-lg font-semibold text-white">
+              Which flights count
+            </h2>
+            <p>
+              Flights recorded above 750 kt, or 1,333 kt for Concorde and
+              recognised high-performance military aircraft, stay in a
+              pilot&apos;s history but are left out of totals. Streaks count
+              consecutive UTC days with at least one counted flight.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1">
+              <Link
+                href="/guides/pilot-stats-and-leaderboards"
+                className="text-cyan-300 hover:underline"
+              >
+                How stats and streaks work
+              </Link>
+              <Link
+                href="/guides/pilot-challenges"
+                className="text-cyan-300 hover:underline"
+              >
+                Pilot challenges
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );

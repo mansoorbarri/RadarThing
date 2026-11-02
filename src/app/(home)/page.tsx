@@ -17,6 +17,20 @@ import {
 } from "lucide-react";
 import userscriptConfig from "../../../userscript-src/config.json";
 import { FREE_RECENT_FLIGHTS_LIMIT } from "~/lib/flightHistory";
+import { guides } from "~/lib/guides";
+
+const FEATURED_GUIDE_SLUGS = [
+  "getting-started",
+  "planning-a-realistic-flight",
+  "reading-metars",
+  "airport-charts",
+  "atc-and-phraseology",
+  "squawk-codes",
+] as const;
+
+const featuredGuides = FEATURED_GUIDE_SLUGS.flatMap((slug) =>
+  guides.filter((guide) => guide.slug === slug),
+);
 
 const USERSCRIPT_INSTALL_URL = "https://radarthing.com/userscript";
 const USERSCRIPT_LOADER_URL = `${userscriptConfig.siteUrl}/loader`;
@@ -179,7 +193,7 @@ export default function HomePage() {
               <SetupStep
                 step={3}
                 title="Fly in GeoFS"
-                description="Open GeoFS and your position will appear on the radar automatically"
+                description="Press W in GeoFS, enter your departure, arrival, and callsign, then choose Transmit to appear on the radar"
                 link="https://geo-fs.com/geofs.php"
                 linkText="Open GeoFS"
               />
@@ -421,6 +435,49 @@ export default function HomePage() {
                   Upgrade to Pro
                 </Link>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Guides */}
+        <section className="border-t border-white/5">
+          <div className="mx-auto max-w-6xl px-6 py-20 md:py-24">
+            <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="mb-3 text-sm font-medium text-cyan-400">
+                  Field manual
+                </p>
+                <h2 className="text-2xl font-bold text-white md:text-3xl">
+                  Learn to fly it like the real thing
+                </h2>
+                <p className="mt-3 max-w-2xl text-white/45">
+                  Practical guides for GeoFS pilots, from your first tracked
+                  flight to weather, charts, and radio calls.
+                </p>
+              </div>
+              <Link
+                href="/guides"
+                className="group inline-flex items-center gap-2 text-sm font-medium text-cyan-300 hover:text-cyan-200"
+              >
+                All {guides.length} guides
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </div>
+            <div className="grid gap-px overflow-hidden rounded-xl border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
+              {featuredGuides.map((guide) => (
+                <Link
+                  key={guide.slug}
+                  href={`/guides/${guide.slug}`}
+                  className="group flex flex-col bg-[#010b10] p-6 transition-colors hover:bg-[#04161d]"
+                >
+                  <h3 className="font-semibold text-white group-hover:text-cyan-200">
+                    {guide.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-white/45">
+                    {guide.description}
+                  </p>
+                </Link>
+              ))}
             </div>
           </div>
         </section>

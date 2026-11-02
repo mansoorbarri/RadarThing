@@ -20,6 +20,7 @@ function isPublicContentPage(pathname: string) {
     pathname.startsWith("/guides/") ||
     pathname === "/radar" ||
     pathname === "/aircraft-images" ||
+    pathname === "/pricing" ||
     pathname === "/leaderboard" ||
     pathname.startsWith("/leaderboard/") ||
     pathname.startsWith("/pilot/") ||

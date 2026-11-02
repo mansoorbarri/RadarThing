@@ -6,11 +6,14 @@ export function LegalPage({
   eyebrow,
   title,
   summary,
+  lastUpdated,
   children,
 }: {
   eyebrow: string;
   title: string;
   summary: string;
+  /** Overrides the legal effective/updated dates for non-legal pages. */
+  lastUpdated?: string;
   children: ReactNode;
 }) {
   return (
@@ -38,6 +41,9 @@ export function LegalPage({
             />
           </Link>
           <div className="flex items-center gap-4 text-xs text-white/50 sm:gap-6">
+            <Link href="/guides" className="hover:text-white">
+              Guides
+            </Link>
             <Link href="/about" className="hover:text-white">
               About
             </Link>
@@ -60,9 +66,15 @@ export function LegalPage({
             {eyebrow}
           </p>
           <p className="mt-4 text-xs leading-5 text-white/35">
-            Effective 28 August 2026
-            <br />
-            Last updated 28 August 2026
+            {lastUpdated ? (
+              <>Last updated {lastUpdated}</>
+            ) : (
+              <>
+                Effective 28 August 2026
+                <br />
+                Last updated 28 August 2026
+              </>
+            )}
           </p>
           <nav className="mt-8 hidden space-y-2 text-sm text-white/45 md:block">
             <LegalLink href="/privacy">Privacy</LegalLink>
@@ -88,6 +100,12 @@ export function LegalPage({
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-8 text-xs text-white/35 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <p>© {new Date().getFullYear()} RadarThing</p>
           <div className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link href="/guides" className="hover:text-white">
+              Guides
+            </Link>
+            <Link href="/about" className="hover:text-white">
+              About
+            </Link>
             <Link href="/privacy" className="hover:text-white">
               Privacy
             </Link>
