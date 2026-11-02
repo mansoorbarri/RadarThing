@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { convex, api } from "~/server/convex";
 
+// Profiles with very few counted flights are mostly empty templates. Keep them
+// out of search indexes so thin pages don't dilute the site's quality signals.
+const MIN_INDEXABLE_FLIGHTS = 5;
+
 export async function generateMetadata({
   params,
 }: {
@@ -28,6 +32,10 @@ export async function generateMetadata({
     return {
       title,
       description,
+      robots:
+        flights >= MIN_INDEXABLE_FLIGHTS
+          ? undefined
+          : { index: false, follow: true },
       openGraph: {
         title,
         description,
@@ -42,6 +50,7 @@ export async function generateMetadata({
     return {
       title: "Pilot Profile",
       description: "View pilot stats and flight history on RadarThing.",
+      robots: { index: false, follow: true },
     };
   }
 }

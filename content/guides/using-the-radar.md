@@ -34,10 +34,10 @@ Precipitation is available to everyone. AIRMETs and SIGMETs are Pro overlays. Tu
 
 Search for an airport and select its airport result, then use Charts in the selected-airport bar. The viewer contains community-contributed ground, departure, arrival, and approach charts where available.
 
-Charts for US airports and territories are free. Charts outside that coverage are included with Pro. Availability also depends on which charts the community has contributed, so an airport selection does not guarantee every procedure will be present.
+Charts for US airports and territories are free once you sign in with Google, for up to three different airports per UTC day. Unlimited charts, and charts outside that coverage, are included with Pro. [Reading airport charts](/guides/reading-airport-charts) explains each chart type. Availability also depends on which charts the community has contributed, so an airport selection does not guarantee every procedure will be present.
 
 These resources support simulator flying only and must not be used for real-world flight planning or navigation.
 
 ## Get help without losing your place
 
-The radar menu includes Help for replaying the interactive tour. The written guides are available from Guides in the same menu, including [Aircraft not appearing](/guides/aircraft-not-appearing) and [Flight history and replay](/guides/flight-history-and-replay).
+The radar menu's Help section includes Radar Tour for replaying the interactive introduction. The written guides are available from Guides in the same menu, including [Aircraft not appearing](/guides/aircraft-not-appearing) and [Flight history and replay](/guides/flight-history-and-replay).

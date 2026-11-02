@@ -5,11 +5,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
       url: "https://radarthing.com/guides",
+      lastModified: new Date(
+        `${guides
+          .map((guide) => guide.updated)
+          .sort()
+          .at(-1)}T00:00:00Z`,
+      ),
       changeFrequency: "monthly",
       priority: 0.8,
     },
     ...guides.map((guide) => ({
       url: `https://radarthing.com/guides/${guide.slug}`,
+      lastModified: new Date(`${guide.updated}T00:00:00Z`),
       changeFrequency: "monthly" as const,
       priority: 0.7,
     })),
