@@ -52,6 +52,24 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     }
   }, [analyticsAllowed, clerkLoaded, user, dbUser]);
 
+  // OAuth sign-in finishes with a full page load, so report each new Clerk
+  // sign-in timestamp once instead of watching for a signed-out → signed-in change.
+  const lastSignInAt = user?.lastSignInAt?.getTime();
+  useEffect(() => {
+    if (!analyticsAllowed || !dbUser || !lastSignInAt) return;
+    // Ignore old sessions so existing users are not reported as fresh sign-ins.
+    if (Date.now() - lastSignInAt > 10 * 60 * 1000) return;
+    const storageKey = "analytics_last_reported_sign_in";
+    try {
+      if (window.localStorage.getItem(storageKey) === String(lastSignInAt))
+        return;
+      window.localStorage.setItem(storageKey, String(lastSignInAt));
+    } catch {
+      return;
+    }
+    Analytics.signedIn();
+  }, [analyticsAllowed, dbUser, lastSignInAt]);
+
   return (
     <>
       <ClientDiagnosticsProvider />

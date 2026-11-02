@@ -56,6 +56,7 @@ import { MetarPanel } from "./MetarPanel";
 import { RadarSettings } from "~/components/atc/radarSettings";
 import { MapSettingsSidebar } from "~/components/map/MapSettingsSidebar";
 import { Analytics } from "~/lib/analytics";
+import { useTrackChange } from "~/hooks/useTrackChange";
 import {
   createMapLayerPreset,
   getStoredMapLayerPresets,
@@ -338,6 +339,21 @@ const MapComponent: React.FC<MapComponentProps> = ({
   useEffect(() => {
     onHeadingModeChange?.(isHeadingMode);
   }, [isHeadingMode, onHeadingModeChange]);
+
+  const baseLayerMode = isRadarMode ? "radar" : isOSMMode ? "osm" : "default";
+  useTrackChange(baseLayerMode, (mode) => Analytics.mapModeChanged({ mode }));
+  useTrackChange(isOpenAIPEnabled, (enabled) =>
+    Analytics.openAipOverlayToggled({ enabled }),
+  );
+  useTrackChange(isHeadingMode, (enabled) =>
+    Analytics.headingModeToggled({ enabled }),
+  );
+  useTrackChange(isAltitude3D, (enabled) =>
+    Analytics.altitude3dToggled({ enabled }),
+  );
+  useTrackChange(flightDisplayMode, (mode) =>
+    Analytics.flightDisplayModeChanged({ mode }),
+  );
 
   const headingControlRef = useRef<HeadingModeControl | null>(null);
   const radarControlRef = useRef<RadarModeControl | null>(null);
