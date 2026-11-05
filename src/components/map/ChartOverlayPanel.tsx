@@ -456,7 +456,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
         <div className="flex flex-1 items-center justify-center">
           <div className="flex flex-col items-center gap-2">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-cyan-500" />
-            <span className="text-xs text-white/60">Loading charts...</span>
+            <span className="text-xs text-white/60">Loading charts…</span>
           </div>
         </div>
       ) : errorCode ? (

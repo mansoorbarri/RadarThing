@@ -65,7 +65,7 @@ import { type Airport } from "~/components/map";
 
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
 import { SearchBar } from "~/components/atc/searchbar";
-import { FocusTrap } from "~/components/ui/focus-trap";
+import { MobileSearchSheet } from "~/components/atc/MobileSearchSheet";
 import { Sidebar, type HistoryFlight } from "~/components/atc/sidebar";
 import { MultiAircraftSidebar } from "~/components/atc/MultiAircraftSidebar";
 import { FlightReplayControls } from "~/components/flight-replay/FlightReplayControls";
@@ -1418,6 +1418,7 @@ function ATCPageContent() {
             <button
               type="button"
               aria-label="Search flights, pilots or airports"
+              data-debug-id="radar-mobile-search-button"
               data-tour="radar-mobile-search"
               onClick={() => setShowMobileSearch(true)}
               className="pointer-events-auto flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-black/60 backdrop-blur-md"
@@ -1459,7 +1460,7 @@ function ATCPageContent() {
               )}
               {isRunning && (
                 <span className="block animate-pulse text-[10px] tracking-widest text-emerald-400 uppercase">
-                  Timer Active
+                  Timer active
                 </span>
               )}
             </button>
@@ -1551,61 +1552,25 @@ function ATCPageContent() {
 
       {/* Mobile search - bottom sheet (phone only) */}
       {!isUiHidden && isPhone && showMobileSearch && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-[10019] bg-black/50"
-            onClick={() => {
-              setShowMobileSearch(false);
-              setSearchTerm("");
-            }}
-          />
-          {/* Bottom sheet */}
-          <FocusTrap
-            onEscape={() => {
-              setShowMobileSearch(false);
-              setSearchTerm("");
-            }}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Search"
-            className="animate-in slide-in-from-bottom fixed inset-x-0 bottom-0 z-[10020] rounded-t-2xl border-t border-white/10 bg-[#0a1219] px-4 pt-3 pb-8 duration-200"
-            style={{
-              paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))",
-            }}
-          >
-            {/* Drag handle */}
-            <div className="mb-4 flex justify-center">
-              <div className="h-1 w-10 rounded-full bg-white/20" />
-            </div>
-
-            <SearchBar
-              variant="sheet"
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              searchResults={searchResults}
-              isMobile
-              autoFocus
-              dataTour="radar-mobile-search"
-              inputDebugId="radar-mobile-search-input"
-              onSelectAircraft={(aircraft) => {
-                setSelectedAircrafts([aircraft]);
-                drawFlightPlanOnMapRef.current?.(aircraft, true);
-                addAircraftSearch(aircraft);
-              }}
-              onSelectAirport={(airport) => selectAirport(airport)}
-              onSelectPilot={(pilot) => {
-                addPilotSearch(pilot);
-                router.push(`/pilot/${pilot._id}`);
-              }}
-              recentSearches={recentSearches}
-              onSelectRecentSearch={selectRecentSearch}
-              onClearRecentSearches={clearRecentSearches}
-              onAfterSelect={() => setShowMobileSearch(false)}
-              onEscape={() => setShowMobileSearch(false)}
-            />
-          </FocusTrap>
-        </>
+        <MobileSearchSheet
+          onClose={() => setShowMobileSearch(false)}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          searchResults={searchResults}
+          onSelectAircraft={(aircraft) => {
+            setSelectedAircrafts([aircraft]);
+            drawFlightPlanOnMapRef.current?.(aircraft, true);
+            addAircraftSearch(aircraft);
+          }}
+          onSelectAirport={(airport) => selectAirport(airport)}
+          onSelectPilot={(pilot) => {
+            addPilotSearch(pilot);
+            router.push(`/pilot/${pilot._id}`);
+          }}
+          recentSearches={recentSearches}
+          onSelectRecentSearch={selectRecentSearch}
+          onClearRecentSearches={clearRecentSearches}
+        />
       )}
 
       <main
@@ -1969,7 +1934,7 @@ function ATCPageContent() {
                     ? selectedAircrafts[0]?.flightNo ||
                       selectedAircrafts[0]?.callsign ||
                       "No callsign"
-                    : `${selectedAircrafts.length} SELECTED`}
+                    : `${selectedAircrafts.length} selected`}
                 </div>
               </div>
             ) : /* Expanded state - full sidebar content */

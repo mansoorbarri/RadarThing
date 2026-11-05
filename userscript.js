@@ -363,6 +363,8 @@
 
   window.addEventListener("radarthing-request-status", () => broadcastStatus());
   window.addEventListener("radarthing-retry-end-flight", () => {
+    // Never end a flight the pilot has since started.
+    if (info.active) return;
     void endFlight();
   });
 

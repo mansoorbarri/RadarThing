@@ -350,7 +350,7 @@ export const Sidebar = ({
       <div className="mt-6 space-y-2.5">
         <div className="flex items-center gap-2 px-1">
           <div className="h-[1px] flex-1 bg-white/20" />
-          <span className="font-mono text-[10px] font-black tracking-[0.3em] text-white/50 uppercase">
+          <span className="font-mono text-xs font-semibold tracking-[0.15em] text-white/80 uppercase">
             Enroute Path
           </span>
           <div className="h-[1px] flex-1 bg-white/20" />
@@ -535,7 +535,7 @@ export const Sidebar = ({
         </div>
       ) : history.length === 0 ? (
         <div className="py-20 text-center font-mono text-[10px] tracking-widest text-white/60 uppercase">
-          {currentFlightHistory ? "No Past Records" : "No Records"}
+          {currentFlightHistory ? "No past flights" : "No flights yet"}
         </div>
       ) : (
         history.map((f, histIdx) => (
@@ -1174,7 +1174,7 @@ const StatBox = ({
     style={{ animationDelay: `${150 + delay * 50}ms` }}
     disabled={!onClick}
   >
-    <div className="mb-2 font-mono text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase transition-colors group-hover:text-cyan-400/80">
+    <div className="mb-2 font-mono text-[11px] font-black tracking-[0.18em] text-slate-300 uppercase transition-colors group-hover:text-cyan-400/80">
       {label}
     </div>
     <div className="flex items-baseline gap-1.5">
@@ -1226,7 +1226,7 @@ const FlightTimelineCard = ({
       style={{ animationDelay: "120ms" }}
     >
       <div className="mb-3 flex items-center justify-between">
-        <span className="font-mono text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">
+        <span className="font-mono text-[11px] font-black tracking-[0.18em] text-slate-300 uppercase">
           Flight Timeline
         </span>
         <span className="font-mono text-[10px] font-black text-cyan-400">

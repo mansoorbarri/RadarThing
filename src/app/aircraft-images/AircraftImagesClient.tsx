@@ -113,6 +113,14 @@ export default function AircraftImagesClient({
   }, []);
   const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
   const [error, setError] = useState<string | null>(null);
+
+  // Once every highlighted field is fixed, drop the summary banner too.
+  useEffect(() => {
+    if (Object.keys(fieldErrors).length === 0)
+      setError((current) =>
+        current === "Fix the highlighted fields." ? null : current,
+      );
+  }, [fieldErrors]);
   const [hasSelectedFile, setHasSelectedFile] = useState(false);
   const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const uploaderRef = useRef<ImageUploaderRef>(null);
@@ -420,8 +428,8 @@ export default function AircraftImagesClient({
   const isProcessing = submitStage !== "idle" && submitStage !== "success";
 
   const closeUploadModal = () => {
-    setFieldErrors({});
     if (isProcessing) return; // Don't allow closing during processing
+    setFieldErrors({});
     setShowUploadModal(false);
     setError(null);
     setSubmitStage("idle");

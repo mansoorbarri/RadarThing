@@ -12,7 +12,14 @@ const FOCUSABLE =
 export function useFocusTrap(
   containerRef: RefObject<HTMLElement | null>,
   onEscape?: () => void,
-  { autoFocus = true }: { autoFocus?: boolean } = {},
+  {
+    autoFocus = true,
+    returnFocusTo,
+  }: {
+    autoFocus?: boolean;
+    /** Selector to focus on close if the opener is gone (e.g. re-rendered). */
+    returnFocusTo?: string;
+  } = {},
 ) {
   const onEscapeRef = useRef(onEscape);
   onEscapeRef.current = onEscape;
@@ -57,7 +64,13 @@ export function useFocusTrap(
     document.addEventListener("keydown", onKeyDown, true);
     return () => {
       document.removeEventListener("keydown", onKeyDown, true);
-      previouslyFocused?.focus?.();
+      // The opener may have been unmounted while the dialog was open; fall
+      // back to a stable selector so focus doesn't drop to <body>.
+      requestAnimationFrame(() => {
+        if (previouslyFocused?.isConnected) previouslyFocused.focus();
+        else if (returnFocusTo)
+          document.querySelector<HTMLElement>(returnFocusTo)?.focus();
+      });
     };
     // Run once per mount; callbacks are read through refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps

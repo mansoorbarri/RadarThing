@@ -1,6 +1,13 @@
 (function () {
   "use strict";
 
+  // If a previous boot got far enough to build the panel (e.g. a retry after
+  // a partial failure), don't inject a second copy of the UI and listeners.
+  if (document.getElementById("geofs-atc-radar-flightInfoUI")) {
+    console.info("[RadarThing] Panel already present; skipping re-init.");
+    return;
+  }
+
   // ==========================================
   // ATC FLIGHT INFO — Constants & State
   // ==========================================
@@ -98,9 +105,12 @@
     const googleId = resumeDeferredGoogleId;
     if (!googleId) return;
     resumeDeferredGoogleId = "";
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
     try {
       await fetch(RESUME_FLIGHT_API, {
         method: "POST",
+        signal: controller.signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "decline",
@@ -110,6 +120,8 @@
       });
     } catch (_) {
       // The server times old legs out on its own; don't block the new flight.
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
@@ -857,8 +869,7 @@
     const toast = document.createElement("div");
     toast.textContent = msg;
     if (action && action.label && typeof action.onClick === "function") {
-      // Actionable toasts need to be clickable inside the click-through region.
-      toast.style.pointerEvents = "auto";
+      toast.dataset.hasAction = "1";
       const btn = document.createElement("button");
       btn.type = "button";
       btn.textContent = action.label;
@@ -884,7 +895,15 @@
       transition:opacity 0.3s ease;
       box-shadow:0 10px 30px rgba(0,0,0,0.4);
     `;
+    if (toast.dataset.hasAction) {
+      // Actionable toasts must be clickable inside the click-through region.
+      toast.style.pointerEvents = "auto";
+      toast.style.display = "flex";
+      toast.style.alignItems = "center";
+    }
     getToastRegion(isError).appendChild(toast);
+    // Focus is deliberately not moved to the action: pilots may be flying with
+    // keyboard controls, and Space/Enter would trigger it by accident.
     requestAnimationFrame(() => (toast.style.opacity = "1"));
     setTimeout(
       () => {
@@ -1276,7 +1295,7 @@
           );
           return;
         }
-        showToast("Previous disconnected flight ended");
+        showToast("Your interrupted flight was saved to your history");
         resumePromptResolved = true;
         return;
       }
@@ -2407,7 +2426,8 @@
             ? `#${UI_CONTAINER_ID} { font-size:13px; }
         #${UI_CONTAINER_ID} input { height:40px !important; font-size:16px !important; }
         #${UI_CONTAINER_ID} button { min-height:40px; }
-        #${UI_CONTAINER_ID} [role="switch"] { min-height:0; }
+        #${UI_CONTAINER_ID} [role="switch"] { min-height:0; position:relative; overflow:visible; }
+        #${UI_CONTAINER_ID} [role="switch"]::after { content:""; position:absolute; inset:-11px -8px; }
         #${UI_CONTAINER_ID} label > div, #${UI_CONTAINER_ID} p, #${UI_CONTAINER_ID} [role="status"] { font-size:12px !important; }`
             : ""
         }
@@ -2826,38 +2846,45 @@
         return setFormError("Squawk must be 4 digits, each 0–7.", SQK_INPUT_ID);
       setFormError("");
 
-      const label = saveBtn.textContent;
+      // The button stays busy until tracking has actually started, so a
+      // second click can't submit twice while the checks run.
       saveBtn.disabled = true;
       saveBtn.setAttribute("aria-busy", "true");
       saveBtn.textContent = "Checking…";
-      let available = true;
+      const wasTracking = isTracking;
+      let closedDeferredLeg = false;
       try {
         const myId = geofs?.userRecord?.googleid || geofs?.userRecord?.callsign;
-        available = await checkFlightNoAvailable(flt, myId);
+        const available = await checkFlightNoAvailable(flt, myId);
+        if (!available) {
+          setFormError(
+            `${flt} is already in use by another pilot. Pick a different callsign.`,
+            FLT_INPUT_ID,
+          );
+          return;
+        }
+        if (!wasTracking && resumeDeferredGoogleId) {
+          saveBtn.textContent = "Starting…";
+          await closeDeferredResumeSession();
+          closedDeferredLeg = true;
+        }
+        window.dispatchEvent(
+          new CustomEvent("atc-data-sync", {
+            detail: { dep, arr, flt, sqk, af, active: true },
+          }),
+        );
       } finally {
         saveBtn.disabled = false;
         saveBtn.removeAttribute("aria-busy");
-        saveBtn.textContent = isTracking ? "Update flight" : label;
+        saveBtn.textContent = isTracking ? "Update flight" : "Start tracking";
       }
-      if (!available) {
-        setFormError(
-          `${flt} is already in use by another pilot. Pick a different callsign.`,
-          FLT_INPUT_ID,
-        );
-        return;
-      }
-
-      const wasTracking = isTracking;
-      if (!wasTracking) await closeDeferredResumeSession();
-      window.dispatchEvent(
-        new CustomEvent("atc-data-sync", {
-          detail: { dep, arr, flt, sqk, af, active: true },
-        }),
-      );
+      if (!isTracking) return;
       showToast(
         wasTracking
           ? `Flight updated · ${flt} ${dep} → ${arr}`
-          : `Tracking ${flt} · ${dep} → ${arr}`,
+          : closedDeferredLeg
+            ? `Tracking ${flt} · ${dep} → ${arr}. Your interrupted flight was saved.`
+            : `Tracking ${flt} · ${dep} → ${arr}`,
       );
     };
 
@@ -3629,6 +3656,11 @@
   window.addEventListener("atc-data-sync", (e) => {
     const detail = e.detail || {};
     setTrackingUi(detail.active === true);
+    // A new flight makes any "Retry ending" offer for the old one stale.
+    if (detail.active === true)
+      document
+        .querySelectorAll("#radarthing-toasts-alert [data-has-action]")
+        .forEach((toast) => toast.remove());
     if (detail.active === false) {
       const googleId = acarsSessionGoogleId;
       const endedSessionId = acarsSessionId;
@@ -3722,6 +3754,10 @@
     if (statusEl) statusEl.after(card);
     else flightUI.prepend(card);
   }
+
+  // If the loader showed "couldn't load" (e.g. a slow network finished after
+  // its timeout), the runtime did start after all, so drop that message.
+  document.getElementById("radarthing-load-failed")?.remove();
 
   // Live regions must exist before their first message to be announced.
   getToastRegion(false);

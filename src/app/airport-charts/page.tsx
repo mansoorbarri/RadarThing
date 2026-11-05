@@ -160,25 +160,34 @@ export default function AirportChartsPage() {
       });
   }, [charts, searchQuery, icaoFilter, typeFilter]);
 
+  const [icaoError, setIcaoError] = useState<string | null>(null);
+
   async function handleUploadAndSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    // Field problems are shown next to the field and focus moves there.
+    if (!/^[A-Z0-9]{3,4}$/.test(formData.icao)) {
+      setIcaoError(
+        formData.icao
+          ? "Use the airport's 3–4 character ICAO code, e.g. KJFK."
+          : "Enter the airport's ICAO code, e.g. KJFK.",
+      );
+      setError("Fix the highlighted field.");
+      requestAnimationFrame(() =>
+        document.getElementById("chart-upload-icao")?.focus(),
+      );
+      return;
+    }
     if (!hasSelectedFiles) {
-      toast.error("Please select at least one chart file");
-      setError("Please select at least one chart file");
+      setError("Choose at least one chart file to upload.");
       return;
     }
     if (!rightsConfirmed) {
-      toast.error("Confirm that you have permission to share these charts");
-      setError("You must confirm your rights before uploading");
-      return;
-    }
-    if (!formData.icao || formData.icao.length < 3) {
-      toast.error("Valid ICAO code required (3-4 characters)");
-      setError("Valid ICAO code required (3-4 characters)");
+      setError("Confirm that you have permission to share these charts.");
       return;
     }
 
+    setIcaoError(null);
     setError(null);
     setSubmitStage("uploading");
     setSubmitProgress(null);
@@ -305,6 +314,7 @@ export default function AirportChartsPage() {
 
   const closeUploadModal = () => {
     if (isProcessing) return;
+    setIcaoError(null);
     setShowUploadModal(false);
     setError(null);
     setSubmitStage("idle");
@@ -512,38 +522,62 @@ export default function AirportChartsPage() {
             className="space-y-4"
           >
             {error && (
-              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              <div
+                role="alert"
+                className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+              >
                 {error}
               </div>
             )}
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-2 block font-mono text-xs text-slate-400">
+                <label
+                  htmlFor="chart-upload-icao"
+                  className="mb-2 block font-mono text-xs text-slate-300"
+                >
                   ICAO CODE *
                 </label>
                 <input
+                  id="chart-upload-icao"
                   type="text"
+                  aria-invalid={Boolean(icaoError)}
+                  aria-describedby={
+                    icaoError ? "chart-upload-icao-error" : undefined
+                  }
                   value={formData.icao}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    setIcaoError(null);
                     setFormData({
                       ...formData,
                       icao: e.target.value.toUpperCase(),
-                    })
-                  }
+                    });
+                  }}
                   placeholder="e.g., KJFK"
                   maxLength={4}
                   required
                   disabled={isProcessing}
-                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
+                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50 aria-[invalid=true]:border-red-400/70"
                 />
+                {icaoError && (
+                  <p
+                    id="chart-upload-icao-error"
+                    className="mt-1 text-xs text-red-300"
+                  >
+                    {icaoError}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="mb-2 block font-mono text-xs text-slate-400">
+                <label
+                  htmlFor="chart-upload-type"
+                  className="mb-2 block font-mono text-xs text-slate-300"
+                >
                   CHART TYPE *
                 </label>
                 <select
+                  id="chart-upload-type"
                   value={formData.chartType}
                   onChange={(e) =>
                     setFormData({
@@ -565,10 +599,15 @@ export default function AirportChartsPage() {
             </div>
 
             <div>
-              <label className="mb-2 block font-mono text-xs text-slate-400">
+              <label
+                htmlFor="chart-upload-discord"
+                className="mb-2 block font-mono text-xs text-slate-300"
+              >
                 YOUR DISCORD USERNAME (OPTIONAL)
               </label>
               <input
+                id="chart-upload-discord"
+                autoComplete="username"
                 type="text"
                 value={formData.discordUsername}
                 onChange={(e) =>

@@ -447,7 +447,7 @@ export default function DashboardPage() {
                 <div className="mt-1">
                   <button
                     onClick={copySupportId}
-                    className="flex cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-400 transition-colors hover:text-slate-400"
+                    className="flex cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-400 transition-colors hover:text-white"
                     title="Click to copy - share this with support when reporting issues"
                   >
                     <span>ID: {supportId.slice(0, 8)}...</span>
@@ -769,7 +769,7 @@ export default function DashboardPage() {
                   }}
                   className="cursor-pointer rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40"
                 >
-                  Start 7-day PRO trial
+                  Start 7-day Pro trial
                 </button>
               </div>
             )}
@@ -1278,7 +1278,7 @@ function ProLockedContent() {
   return (
     <div className="flex flex-col items-center justify-center py-6 text-center">
       <Lock className="mb-2 h-8 w-8 text-slate-400" />
-      <p className="mb-3 text-sm text-slate-500">Available with PRO</p>
+      <p className="mb-3 text-sm text-slate-500">Available with Pro</p>
       <button
         onClick={() => {
           Analytics.upgradeButtonClicked({
