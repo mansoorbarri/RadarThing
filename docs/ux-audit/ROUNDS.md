@@ -15,7 +15,7 @@ code and these screenshots; nothing was profiled on real devices.
 | 4 | Round 3 fixes | 7.6 | 7.9 | 8.0 |
 | 5 | Round 4 fixes + dark theme everywhere | 7.8 | 8.0 | 8.1 |
 | 6 | Round 5 fixes | 7.8 | — | — |
-| 7 | Round 6 fixes | see below | — | — |
+| 7 | Round 6 fixes | 7.9 | — | — |
 
 ## Per-category scores: original vs latest
 

@@ -67,6 +67,7 @@ import { MobileSearchSheet } from "~/components/atc/MobileSearchSheet";
 import {
   DesktopRadarClock,
   PhoneRadarClock,
+  RadarTimerProvider,
 } from "~/components/atc/RadarClock";
 import { Sidebar, type HistoryFlight } from "~/components/atc/sidebar";
 import { MultiAircraftSidebar } from "~/components/atc/MultiAircraftSidebar";
@@ -1352,446 +1353,466 @@ function ATCPageContent() {
   ];
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-[#081722]">
-      <input
-        ref={importedFlightPlanInputRef}
-        type="file"
-        accept=".json,application/json"
-        className="hidden"
-        onChange={handleFlightPlanFileChange}
-      />
-      <VstripsFileFlightModal
-        open={showFileFlightModal}
-        isLoading={isLoadingVstripsSettings}
-        settings={vstripsSettings}
-        onClose={() => setShowFileFlightModal(false)}
-      />
-      <VirtualAirlineRegistrationModal
-        open={showVirtualAirlineRegistration}
-        onClose={() => setShowVirtualAirlineRegistration(false)}
-      />
-      <StatsExclusionsModal
-        open={showStatsExclusionsModal}
-        onClose={() => setShowStatsExclusionsModal(false)}
-      />
+    <RadarTimerProvider>
+      <div className="relative h-screen w-screen overflow-hidden bg-[#081722]">
+        <input
+          ref={importedFlightPlanInputRef}
+          type="file"
+          accept=".json,application/json"
+          className="hidden"
+          onChange={handleFlightPlanFileChange}
+        />
+        <VstripsFileFlightModal
+          open={showFileFlightModal}
+          isLoading={isLoadingVstripsSettings}
+          settings={vstripsSettings}
+          onClose={() => setShowFileFlightModal(false)}
+        />
+        <VirtualAirlineRegistrationModal
+          open={showVirtualAirlineRegistration}
+          onClose={() => setShowVirtualAirlineRegistration(false)}
+        />
+        <StatsExclusionsModal
+          open={showStatsExclusionsModal}
+          onClose={() => setShowStatsExclusionsModal(false)}
+        />
 
-      <div
-        className={`fixed inset-0 z-[10030] transition-opacity duration-500 ${isAppReady ? "pointer-events-none opacity-0" : "pointer-events-auto opacity-100"}`}
-      >
-        <MapSkeleton />
-      </div>
-
-      <header
-        className={`absolute top-0 right-0 left-0 z-[10010] flex items-center justify-between ${isPhone ? "h-14 px-3 pt-1" : isTablet ? "h-16 px-4 pt-3" : "h-20 px-6 pt-5"}`}
-      >
-        <div className="flex items-center gap-2">
-          {!isPhone && !isUiHidden && (
-            <Link
-              href="/"
-              aria-label="RadarThing home"
-              className="rounded-md focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
-            >
-              <Image
-                src={isDarkLayerMode ? "/logo-white.svg" : "/logo-black.svg"}
-                alt="RadarThing"
-                width={isPhone ? 100 : isTablet ? 100 : 130}
-                height={isPhone ? 32 : isTablet ? 32 : 40}
-                priority
-              />
-            </Link>
-          )}
-
-          {!isUiHidden && isMapLoaded && !isPhone && (
-            <div
-              className={`pointer-events-auto h-11 translate-x-2 -translate-y-1 ${isTablet ? "w-64" : "w-80 lg:w-96"}`}
-            >
-              <SearchBar
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                searchResults={searchResults}
-                isMobile={isMobile}
-                autoFocus={false}
-                inputDebugId="radar-header-search-input"
-                onSelectAircraft={(ac) => {
-                  setSelectedAircrafts([ac]);
-                  drawFlightPlanOnMapRef.current?.(ac, true);
-                  addAircraftSearch(ac);
-                  setSearchTerm("");
-                }}
-                onSelectAirport={(ap) => {
-                  selectAirport(ap);
-                  setSearchTerm("");
-                }}
-                onSelectPilot={(pilot) => {
-                  addPilotSearch(pilot);
-                  setSearchTerm("");
-                  router.push(`/pilot/${pilot._id}`);
-                }}
-                recentSearches={recentSearches}
-                onSelectRecentSearch={selectRecentSearch}
-                onClearRecentSearches={clearRecentSearches}
-              />
-            </div>
-          )}
-
-          {/* Mobile search button — phone only */}
-          {!isUiHidden && isMapLoaded && isPhone && !showMobileSearch && (
-            <button
-              type="button"
-              aria-label="Search flights, pilots or airports"
-              data-debug-id="radar-mobile-search-button"
-              data-tour="radar-mobile-search"
-              onClick={() => setShowMobileSearch(true)}
-              className="pointer-events-auto flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-black/60 backdrop-blur-md"
-            >
-              <svg
-                className="h-4 w-4 text-cyan-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </button>
-          )}
+        <div
+          className={`fixed inset-0 z-[10030] transition-opacity duration-500 ${isAppReady ? "pointer-events-none opacity-0" : "pointer-events-auto opacity-100"}`}
+        >
+          <MapSkeleton />
         </div>
 
-        {/* Radar clock */}
-        {!isUiHidden && !isPhone && (
-          <DesktopRadarClock
-            isTablet={isTablet}
-            open={showTimerPopup}
-            onOpenChange={setShowTimerPopup}
-          />
-        )}
-
-        {!isUiHidden && (
-          <div
-            className={`pointer-events-auto flex items-center ${isMobile ? "gap-2" : "gap-4"}`}
-          >
-            {/* Compact clock on phone */}
-            {isPhone && (
-              <PhoneRadarClock
-                open={showTimerPopup}
-                onOpenChange={setShowTimerPopup}
-              />
+        <header
+          className={`absolute top-0 right-0 left-0 z-[10010] flex items-center justify-between ${isPhone ? "h-14 px-3 pt-1" : isTablet ? "h-16 px-4 pt-3" : "h-20 px-6 pt-5"}`}
+        >
+          <div className="flex items-center gap-2">
+            {!isPhone && !isUiHidden && (
+              <Link
+                href="/"
+                aria-label="RadarThing home"
+                className="rounded-md focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+              >
+                <Image
+                  src={isDarkLayerMode ? "/logo-white.svg" : "/logo-black.svg"}
+                  alt="RadarThing"
+                  width={isPhone ? 100 : isTablet ? 100 : 130}
+                  height={isPhone ? 32 : isTablet ? 32 : 40}
+                  priority
+                />
+              </Link>
             )}
-            <ConnectionStatusIndicator
-              status={connectionStatus}
-              isMobile={isMobile}
-              isStale={isTrafficStale}
-              lastMessageAgeSeconds={lastMessageAgeSeconds}
-              error={streamError}
-            />
-            {!isPhone && (
+
+            {!isUiHidden && isMapLoaded && !isPhone && (
+              <div
+                className={`pointer-events-auto h-11 translate-x-2 -translate-y-1 ${isTablet ? "w-64" : "w-80 lg:w-96"}`}
+              >
+                <SearchBar
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  searchResults={searchResults}
+                  isMobile={isMobile}
+                  autoFocus={false}
+                  inputDebugId="radar-header-search-input"
+                  onSelectAircraft={(ac) => {
+                    setSelectedAircrafts([ac]);
+                    drawFlightPlanOnMapRef.current?.(ac, true);
+                    addAircraftSearch(ac);
+                    setSearchTerm("");
+                  }}
+                  onSelectAirport={(ap) => {
+                    selectAirport(ap);
+                    setSearchTerm("");
+                  }}
+                  onSelectPilot={(pilot) => {
+                    addPilotSearch(pilot);
+                    setSearchTerm("");
+                    router.push(`/pilot/${pilot._id}`);
+                  }}
+                  recentSearches={recentSearches}
+                  onSelectRecentSearch={selectRecentSearch}
+                  onClearRecentSearches={clearRecentSearches}
+                />
+              </div>
+            )}
+
+            {/* Mobile search button — phone only */}
+            {!isUiHidden && isMapLoaded && isPhone && !showMobileSearch && (
               <button
                 type="button"
-                onClick={() => setIsRadarGuideOpen(true)}
-                aria-label="Take the radar tour"
-                title="Take the radar tour"
-                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-cyan-400/30 bg-black/70 text-cyan-300 transition-colors hover:border-cyan-300/60 hover:bg-cyan-500/10 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+                aria-label="Search flights, pilots or airports"
+                data-debug-id="radar-mobile-search-button"
+                data-tour="radar-mobile-search"
+                onClick={() => setShowMobileSearch(true)}
+                className="pointer-events-auto flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-black/60 backdrop-blur-md"
               >
-                <CircleHelp size={18} strokeWidth={1.8} aria-hidden="true" />
+                <svg
+                  className="h-4 w-4 text-cyan-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
               </button>
             )}
-            <WhatsNew isMobile={isMobile} />
-            <UserAuth />
+          </div>
+
+          {/* Radar clock */}
+          {!isUiHidden && !isPhone && (
+            <DesktopRadarClock
+              isTablet={isTablet}
+              open={showTimerPopup}
+              onOpenChange={setShowTimerPopup}
+            />
+          )}
+
+          {!isUiHidden && (
+            <div
+              className={`pointer-events-auto flex items-center ${isMobile ? "gap-2" : "gap-4"}`}
+            >
+              {/* Compact clock on phone */}
+              {isPhone && (
+                <PhoneRadarClock
+                  open={showTimerPopup}
+                  onOpenChange={setShowTimerPopup}
+                />
+              )}
+              <ConnectionStatusIndicator
+                status={connectionStatus}
+                isMobile={isMobile}
+                isStale={isTrafficStale}
+                lastMessageAgeSeconds={lastMessageAgeSeconds}
+                error={streamError}
+              />
+              {!isPhone && (
+                <button
+                  type="button"
+                  onClick={() => setIsRadarGuideOpen(true)}
+                  aria-label="Take the radar tour"
+                  title="Take the radar tour"
+                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-cyan-400/30 bg-black/70 text-cyan-300 transition-colors hover:border-cyan-300/60 hover:bg-cyan-500/10 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+                >
+                  <CircleHelp size={18} strokeWidth={1.8} aria-hidden="true" />
+                </button>
+              )}
+              <WhatsNew isMobile={isMobile} />
+              <UserAuth />
+            </div>
+          )}
+        </header>
+
+        {isUiHidden && (
+          <button
+            type="button"
+            onClick={() => setIsUiHidden(false)}
+            className="fixed top-3 left-1/2 z-[10020] flex h-10 w-10 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-cyan-300/35 bg-[#071019]/90 text-cyan-200 shadow-lg shadow-black/30 backdrop-blur-md transition-colors hover:bg-cyan-400/15 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+            aria-label="Show radar UI"
+            title="Show radar UI"
+          >
+            <Eye size={18} strokeWidth={2} aria-hidden="true" />
+          </button>
+        )}
+
+        {/* Weather still loading after the radar appeared */}
+        {isAppReady && !isWeatherReady && !weatherHintExpired && (
+          <div
+            role="status"
+            className="pointer-events-none fixed bottom-24 left-1/2 z-[10011] -translate-x-1/2 rounded-full border border-white/10 bg-black/70 px-3 py-1.5 font-mono text-[11px] text-white/70 backdrop-blur-md"
+          >
+            Loading weather…
           </div>
         )}
-      </header>
 
-      {isUiHidden && (
-        <button
-          type="button"
-          onClick={() => setIsUiHidden(false)}
-          className="fixed top-3 left-1/2 z-[10020] flex h-10 w-10 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-cyan-300/35 bg-[#071019]/90 text-cyan-200 shadow-lg shadow-black/30 backdrop-blur-md transition-colors hover:bg-cyan-400/15 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
-          aria-label="Show radar UI"
-          title="Show radar UI"
-        >
-          <Eye size={18} strokeWidth={2} aria-hidden="true" />
-        </button>
-      )}
-
-      {/* Weather still loading after the radar appeared */}
-      {isAppReady && !isWeatherReady && !weatherHintExpired && (
-        <div
-          role="status"
-          className="pointer-events-none fixed bottom-24 left-1/2 z-[10011] -translate-x-1/2 rounded-full border border-white/10 bg-black/70 px-3 py-1.5 font-mono text-[11px] text-white/70 backdrop-blur-md"
-        >
-          Loading weather…
-        </div>
-      )}
-
-      {/* Mobile search - bottom sheet (phone only) */}
-      {!isUiHidden && isPhone && showMobileSearch && (
-        <MobileSearchSheet
-          onClose={() => setShowMobileSearch(false)}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          searchResults={searchResults}
-          onSelectAircraft={(aircraft) => {
-            setSelectedAircrafts([aircraft]);
-            drawFlightPlanOnMapRef.current?.(aircraft, true);
-            addAircraftSearch(aircraft);
-          }}
-          onSelectAirport={(airport) => selectAirport(airport)}
-          onSelectPilot={(pilot) => {
-            addPilotSearch(pilot);
-            router.push(`/pilot/${pilot._id}`);
-          }}
-          recentSearches={recentSearches}
-          onSelectRecentSearch={selectRecentSearch}
-          onClearRecentSearches={clearRecentSearches}
-        />
-      )}
-
-      <main
-        id="main-content"
-        className="absolute inset-0"
-        data-tour="radar-map"
-      >
-        <DynamicMapComponent
-          aircrafts={visibleAircrafts}
-          airports={airports}
-          runways={runways}
-          onlineAirports={onlineAirports}
-          isMobile={isPhone}
-          selectedAirport={selectedAirport}
-          selectedAircraftIds={selectedAircraftIds}
-          onAircraftSelect={handleAircraftSelect}
-          onAirportSelect={(airport) => {
-            selectAirport(airport);
-          }}
-          setDrawFlightPlanOnMap={(fn) => {
-            drawFlightPlanOnMapRef.current = fn;
-          }}
-          setDrawMultipleFlightPlansOnMap={(fn) => {
-            drawMultipleFlightPlansOnMapRef.current = fn;
-          }}
-          onMapReady={handleMapReady}
-          onInitialBaseLayerReady={handleInitialBaseLayerReady}
-          onInitialTrafficPaint={handleInitialTrafficPaint}
-          onWeatherReadyChange={setIsWeatherReady}
-          historyPath={historyPath}
-          onLayerModeChange={setIsDarkLayerMode}
-          replayState={replayState}
-          followAircraft={isFollowMode ? selectedAircrafts[0] : undefined}
-          onConflictReview={handleConflictReview}
-          onResetMapView={handleMapReset}
-          hideUi={isUiHidden}
-          importedFlightPlan={importedFlightPlan}
-          flightDisplayModeRequest={flightDisplayMode}
-          onFlightDisplayModeChange={setFlightDisplayMode}
-          headingModeEnabled={isHeadingMode}
-          onHeadingModeChange={setIsHeadingMode}
-          keybindPreferences={keybindPreferences}
-          onKeybindPreferencesChange={(preferences) => {
-            setKeybindPreferences(
-              setStoredRadarKeybindPreferences(preferences),
-            );
-          }}
-        />
-
-        {importedFlightPlan && showImportedFlightPlanPanel ? (
-          <ImportedFlightPlanPanel
-            flightPlan={importedFlightPlan}
-            isMobile={isPhone}
-            onClose={clearImportedFlightPlan}
+        {/* Mobile search - bottom sheet (phone only) */}
+        {!isUiHidden && isPhone && showMobileSearch && (
+          <MobileSearchSheet
+            onClose={() => setShowMobileSearch(false)}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            searchResults={searchResults}
+            onSelectAircraft={(aircraft) => {
+              setSelectedAircrafts([aircraft]);
+              drawFlightPlanOnMapRef.current?.(aircraft, true);
+              addAircraftSearch(aircraft);
+            }}
+            onSelectAirport={(airport) => selectAirport(airport)}
+            onSelectPilot={(pilot) => {
+              addPilotSearch(pilot);
+              router.push(`/pilot/${pilot._id}`);
+            }}
+            recentSearches={recentSearches}
+            onSelectRecentSearch={selectRecentSearch}
+            onClearRecentSearches={clearRecentSearches}
           />
-        ) : null}
-      </main>
+        )}
 
-      {/* Right panels — phone: bottom sheet, tablet: narrower side panel, desktop: full side panel */}
-      {!isUiHidden &&
-        activeRightPanel === "fids" &&
-        (isPhone ? (
-          <MobileSwipeSheet onClose={() => setActiveRightPanel(null)}>
-            <FIDSPanel
-              aircrafts={visibleLiveAircrafts}
-              onTrack={(ac) => {
-                setSelectedAircrafts([ac]);
-                setActiveRightPanel(null);
-                drawFlightPlanOnMapRef.current?.(ac, true);
-              }}
-            />
-          </MobileSwipeSheet>
-        ) : (
-          <aside
-            className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10012] w-full border-l border-white/10 bg-black/80 backdrop-blur-xl ${isTablet ? "max-w-[340px]" : "max-w-[420px]"}`}
-          >
-            <FIDSPanel
-              aircrafts={visibleLiveAircrafts}
-              onTrack={(ac) => {
-                setSelectedAircrafts([ac]);
-                setActiveRightPanel(null);
-                drawFlightPlanOnMapRef.current?.(ac, true);
-              }}
-            />
-          </aside>
-        ))}
-
-      {!isUiHidden &&
-        activeRightPanel === "filter" &&
-        (isPhone ? (
-          <MobileSwipeSheet onClose={() => setActiveRightPanel(null)}>
-            <CallsignFilter
-              aircrafts={visibleLiveAircrafts}
-              selectedCallsigns={selectedCallsigns}
-              onToggleCallsign={handleToggleCallsign}
-              onClearFilters={handleClearFilters}
-            />
-          </MobileSwipeSheet>
-        ) : (
-          <aside
-            className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10013] w-full border-l border-white/10 bg-black/80 backdrop-blur-xl ${isTablet ? "max-w-[300px]" : "max-w-[360px]"}`}
-          >
-            <CallsignFilter
-              aircrafts={visibleLiveAircrafts}
-              selectedCallsigns={selectedCallsigns}
-              onToggleCallsign={handleToggleCallsign}
-              onClearFilters={handleClearFilters}
-            />
-          </aside>
-        ))}
-
-      {!isUiHidden &&
-        activeRightPanel === "airports" &&
-        (isPhone ? (
-          <MobileSwipeSheet onClose={() => setActiveRightPanel(null)}>
-            <AirportActivityPanel
-              aircrafts={visibleLiveAircrafts}
-              airports={airports}
-              onlineAirports={onlineAirports}
-              selectedAirportIcao={selectedAirport?.icao}
-              isAirportDataLoading={isAirportDataLoading}
-              onSelectAirport={handleAirportExplorerSelect}
-            />
-          </MobileSwipeSheet>
-        ) : (
-          <aside
-            className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10013] w-full border-l border-white/10 bg-black/80 backdrop-blur-xl ${isTablet ? "max-w-[360px]" : "max-w-[420px]"}`}
-          >
-            <AirportActivityPanel
-              aircrafts={visibleLiveAircrafts}
-              airports={airports}
-              onlineAirports={onlineAirports}
-              selectedAirportIcao={selectedAirport?.icao}
-              isAirportDataLoading={isAirportDataLoading}
-              onSelectAirport={handleAirportExplorerSelect}
-            />
-          </aside>
-        ))}
-
-      {/* Control dock - compact on mobile, hidden when chart side panel is open */}
-      {!isUiHidden && !(chartOverlayActive && chartOverlayIcao) && (
-        <ControlDock side="right" isMobile={isMobile} sections={dockSections} />
-      )}
-
-      {!isUiHidden && selectedAirport && (
-        <div
-          className={`animate-fade-in-up fixed left-1/2 z-[10012] -translate-x-1/2 ${isPhone ? "bottom-3" : "bottom-6"}`}
+        <main
+          id="main-content"
+          className="absolute inset-0"
+          data-tour="radar-map"
         >
-          <div
-            className={`flex items-center rounded-2xl border border-white/10 bg-black/80 backdrop-blur-xl ${isPhone ? "max-w-[calc(100vw-2rem)] gap-1.5 px-2.5 py-2" : isTablet ? "gap-2.5 px-4 py-2.5" : "gap-4 px-5 py-3"}`}
-          >
-            <div>
-              <div
-                className={`font-mono text-cyan-300 ${isPhone ? "text-[11px]" : "text-xs"}`}
-              >
-                {selectedAirport.icao}
-              </div>
-              {!isPhone && (
-                <div className="text-[11px] text-slate-400">
-                  {selectedAirport.name}
-                </div>
-              )}
-            </div>
+          <DynamicMapComponent
+            aircrafts={visibleAircrafts}
+            airports={airports}
+            runways={runways}
+            onlineAirports={onlineAirports}
+            isMobile={isPhone}
+            selectedAirport={selectedAirport}
+            selectedAircraftIds={selectedAircraftIds}
+            onAircraftSelect={handleAircraftSelect}
+            onAirportSelect={(airport) => {
+              selectAirport(airport);
+            }}
+            setDrawFlightPlanOnMap={(fn) => {
+              drawFlightPlanOnMapRef.current = fn;
+            }}
+            setDrawMultipleFlightPlansOnMap={(fn) => {
+              drawMultipleFlightPlansOnMapRef.current = fn;
+            }}
+            onMapReady={handleMapReady}
+            onInitialBaseLayerReady={handleInitialBaseLayerReady}
+            onInitialTrafficPaint={handleInitialTrafficPaint}
+            onWeatherReadyChange={setIsWeatherReady}
+            historyPath={historyPath}
+            onLayerModeChange={setIsDarkLayerMode}
+            replayState={replayState}
+            followAircraft={isFollowMode ? selectedAircrafts[0] : undefined}
+            onConflictReview={handleConflictReview}
+            onResetMapView={handleMapReset}
+            hideUi={isUiHidden}
+            importedFlightPlan={importedFlightPlan}
+            flightDisplayModeRequest={flightDisplayMode}
+            onFlightDisplayModeChange={setFlightDisplayMode}
+            headingModeEnabled={isHeadingMode}
+            onHeadingModeChange={setIsHeadingMode}
+            keybindPreferences={keybindPreferences}
+            onKeybindPreferencesChange={(preferences) => {
+              setKeybindPreferences(
+                setStoredRadarKeybindPreferences(preferences),
+              );
+            }}
+          />
 
-            {canAccessSelectedAirportCharts ? (
-              <button
-                data-tour="airport-charts-button"
-                onClick={() => {
-                  setShowTaxiChart(true);
+          {importedFlightPlan && showImportedFlightPlanPanel ? (
+            <ImportedFlightPlanPanel
+              flightPlan={importedFlightPlan}
+              isMobile={isPhone}
+              onClose={clearImportedFlightPlan}
+            />
+          ) : null}
+        </main>
+
+        {/* Right panels — phone: bottom sheet, tablet: narrower side panel, desktop: full side panel */}
+        {!isUiHidden &&
+          activeRightPanel === "fids" &&
+          (isPhone ? (
+            <MobileSwipeSheet onClose={() => setActiveRightPanel(null)}>
+              <FIDSPanel
+                aircrafts={visibleLiveAircrafts}
+                onTrack={(ac) => {
+                  setSelectedAircrafts([ac]);
+                  setActiveRightPanel(null);
+                  drawFlightPlanOnMapRef.current?.(ac, true);
                 }}
-                className={`cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 ${isPhone ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[11px]"}`}
-              >
-                Charts
-              </button>
-            ) : (
-              <div
-                className={`flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 ${isPhone ? "px-2 py-1" : "px-3 py-1.5"}`}
-              >
-                <span
-                  className={`text-white/60 ${isPhone ? "text-[11px]" : "text-[11px]"}`}
+              />
+            </MobileSwipeSheet>
+          ) : (
+            <aside
+              className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10012] w-full border-l border-white/10 bg-black/80 backdrop-blur-xl ${isTablet ? "max-w-[340px]" : "max-w-[420px]"}`}
+            >
+              <FIDSPanel
+                aircrafts={visibleLiveAircrafts}
+                onTrack={(ac) => {
+                  setSelectedAircrafts([ac]);
+                  setActiveRightPanel(null);
+                  drawFlightPlanOnMapRef.current?.(ac, true);
+                }}
+              />
+            </aside>
+          ))}
+
+        {!isUiHidden &&
+          activeRightPanel === "filter" &&
+          (isPhone ? (
+            <MobileSwipeSheet onClose={() => setActiveRightPanel(null)}>
+              <CallsignFilter
+                aircrafts={visibleLiveAircrafts}
+                selectedCallsigns={selectedCallsigns}
+                onToggleCallsign={handleToggleCallsign}
+                onClearFilters={handleClearFilters}
+              />
+            </MobileSwipeSheet>
+          ) : (
+            <aside
+              className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10013] w-full border-l border-white/10 bg-black/80 backdrop-blur-xl ${isTablet ? "max-w-[300px]" : "max-w-[360px]"}`}
+            >
+              <CallsignFilter
+                aircrafts={visibleLiveAircrafts}
+                selectedCallsigns={selectedCallsigns}
+                onToggleCallsign={handleToggleCallsign}
+                onClearFilters={handleClearFilters}
+              />
+            </aside>
+          ))}
+
+        {!isUiHidden &&
+          activeRightPanel === "airports" &&
+          (isPhone ? (
+            <MobileSwipeSheet onClose={() => setActiveRightPanel(null)}>
+              <AirportActivityPanel
+                aircrafts={visibleLiveAircrafts}
+                airports={airports}
+                onlineAirports={onlineAirports}
+                selectedAirportIcao={selectedAirport?.icao}
+                isAirportDataLoading={isAirportDataLoading}
+                onSelectAirport={handleAirportExplorerSelect}
+              />
+            </MobileSwipeSheet>
+          ) : (
+            <aside
+              className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10013] w-full border-l border-white/10 bg-black/80 backdrop-blur-xl ${isTablet ? "max-w-[360px]" : "max-w-[420px]"}`}
+            >
+              <AirportActivityPanel
+                aircrafts={visibleLiveAircrafts}
+                airports={airports}
+                onlineAirports={onlineAirports}
+                selectedAirportIcao={selectedAirport?.icao}
+                isAirportDataLoading={isAirportDataLoading}
+                onSelectAirport={handleAirportExplorerSelect}
+              />
+            </aside>
+          ))}
+
+        {/* Control dock - compact on mobile, hidden when chart side panel is open */}
+        {!isUiHidden && !(chartOverlayActive && chartOverlayIcao) && (
+          <ControlDock
+            side="right"
+            isMobile={isMobile}
+            sections={dockSections}
+          />
+        )}
+
+        {!isUiHidden && selectedAirport && (
+          <div
+            className={`animate-fade-in-up fixed left-1/2 z-[10012] -translate-x-1/2 ${isPhone ? "bottom-3" : "bottom-6"}`}
+          >
+            <div
+              className={`flex items-center rounded-2xl border border-white/10 bg-black/80 backdrop-blur-xl ${isPhone ? "max-w-[calc(100vw-2rem)] gap-1.5 px-2.5 py-2" : isTablet ? "gap-2.5 px-4 py-2.5" : "gap-4 px-5 py-3"}`}
+            >
+              <div>
+                <div
+                  className={`font-mono text-cyan-300 ${isPhone ? "text-[11px]" : "text-xs"}`}
+                >
+                  {selectedAirport.icao}
+                </div>
+                {!isPhone && (
+                  <div className="text-[11px] text-slate-400">
+                    {selectedAirport.name}
+                  </div>
+                )}
+              </div>
+
+              {canAccessSelectedAirportCharts ? (
+                <button
+                  data-tour="airport-charts-button"
+                  onClick={() => {
+                    setShowTaxiChart(true);
+                  }}
+                  className={`cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 ${isPhone ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[11px]"}`}
                 >
                   Charts
-                </span>
-                <ProBadge source="radar_airport_charts_badge" />
-              </div>
-            )}
+                </button>
+              ) : (
+                <div
+                  className={`flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 ${isPhone ? "px-2 py-1" : "px-3 py-1.5"}`}
+                >
+                  <span
+                    className={`text-white/60 ${isPhone ? "text-[11px]" : "text-[11px]"}`}
+                  >
+                    Charts
+                  </span>
+                  <ProBadge source="radar_airport_charts_badge" />
+                </div>
+              )}
 
-            <button
-              onClick={() => setShowAirportFID(!showAirportFID)}
-              className={`cursor-pointer rounded-lg border transition-colors ${
-                showAirportFID
-                  ? "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
-                  : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
-              } ${isPhone ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[11px]"}`}
-            >
-              {isPhone ? "FIDs" : "Flights"}
-            </button>
-
-            {!isPhone && (
               <button
-                onClick={() => setShowAtcPlayer(!showAtcPlayer)}
-                className={`cursor-pointer rounded-lg border px-3 py-1.5 text-[11px] transition-colors ${
-                  showAtcPlayer
-                    ? onlineAtcForSelected
-                      ? "border-green-500/50 bg-green-500/20 text-green-300"
-                      : "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
-                    : onlineAtcForSelected
-                      ? "border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20"
-                      : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
-                }`}
+                onClick={() => setShowAirportFID(!showAirportFID)}
+                className={`cursor-pointer rounded-lg border transition-colors ${
+                  showAirportFID
+                    ? "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
+                    : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
+                } ${isPhone ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[11px]"}`}
               >
-                {onlineAtcForSelected ? "Live ATC" : "ATC Audio"}
+                {isPhone ? "FIDs" : "Flights"}
               </button>
-            )}
 
-            <button
-              onClick={() => {
-                setSelectedAirport(undefined);
-                setPendingAirportIcao(null);
-                setShowAtcPlayer(false);
-                setShowAirportFID(false);
-              }}
-              aria-label="Unselect airport"
-              className={`cursor-pointer rounded-lg border border-white/10 bg-white/5 text-white/70 ${isPhone ? "min-h-9 min-w-9 px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[11px]"}`}
-            >
-              {isPhone ? <span aria-hidden="true">×</span> : "Unselect"}
-            </button>
+              {!isPhone && (
+                <button
+                  onClick={() => setShowAtcPlayer(!showAtcPlayer)}
+                  className={`cursor-pointer rounded-lg border px-3 py-1.5 text-[11px] transition-colors ${
+                    showAtcPlayer
+                      ? onlineAtcForSelected
+                        ? "border-green-500/50 bg-green-500/20 text-green-300"
+                        : "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
+                      : onlineAtcForSelected
+                        ? "border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20"
+                        : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
+                  }`}
+                >
+                  {onlineAtcForSelected ? "Live ATC" : "ATC Audio"}
+                </button>
+              )}
+
+              <button
+                onClick={() => {
+                  setSelectedAirport(undefined);
+                  setPendingAirportIcao(null);
+                  setShowAtcPlayer(false);
+                  setShowAirportFID(false);
+                }}
+                aria-label="Unselect airport"
+                className={`cursor-pointer rounded-lg border border-white/10 bg-white/5 text-white/70 ${isPhone ? "min-h-9 min-w-9 px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[11px]"}`}
+              >
+                {isPhone ? <span aria-hidden="true">×</span> : "Unselect"}
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {!isUiHidden && showAtcPlayer && selectedAirport && (
-        <AtcPlayer
-          icao={selectedAirport.icao}
-          onClose={() => setShowAtcPlayer(false)}
-          onlineAtc={onlineAtcForSelected}
-        />
-      )}
+        {!isUiHidden && showAtcPlayer && selectedAirport && (
+          <AtcPlayer
+            icao={selectedAirport.icao}
+            onClose={() => setShowAtcPlayer(false)}
+            onlineAtc={onlineAtcForSelected}
+          />
+        )}
 
-      {!isUiHidden &&
-        showAirportFID &&
-        selectedAirport &&
-        (isPhone ? (
-          <MobileSwipeSheet onClose={() => setShowAirportFID(false)}>
+        {!isUiHidden &&
+          showAirportFID &&
+          selectedAirport &&
+          (isPhone ? (
+            <MobileSwipeSheet onClose={() => setShowAirportFID(false)}>
+              <AirportFIDPanel
+                icao={selectedAirport.icao}
+                airportLat={selectedAirport.lat}
+                airportLon={selectedAirport.lon}
+                aircrafts={visibleLiveAircrafts}
+                onTrack={(ac) => {
+                  setSelectedAircrafts([ac]);
+                  setShowAirportFID(false);
+                  drawFlightPlanOnMapRef.current?.(ac, true);
+                }}
+                onClose={() => setShowAirportFID(false)}
+                isMobile={true}
+              />
+            </MobileSwipeSheet>
+          ) : (
             <AirportFIDPanel
               icao={selectedAirport.icao}
               airportLat={selectedAirport.lat}
@@ -1803,268 +1824,256 @@ function ATCPageContent() {
                 drawFlightPlanOnMapRef.current?.(ac, true);
               }}
               onClose={() => setShowAirportFID(false)}
-              isMobile={true}
+              isMobile={false}
             />
-          </MobileSwipeSheet>
-        ) : (
-          <AirportFIDPanel
-            icao={selectedAirport.icao}
-            airportLat={selectedAirport.lat}
-            airportLon={selectedAirport.lon}
-            aircrafts={visibleLiveAircrafts}
-            onTrack={(ac) => {
-              setSelectedAircrafts([ac]);
-              setShowAirportFID(false);
-              drawFlightPlanOnMapRef.current?.(ac, true);
-            }}
-            onClose={() => setShowAirportFID(false)}
-            isMobile={false}
-          />
-        ))}
+          ))}
 
-      {!isUiHidden &&
-        !isReplayActive &&
-        selectedAircrafts.length > 0 &&
-        (isPhone ? (
-          <MobileDrawer onClose={() => setSelectedAircrafts([])}>
-            {selectedAircrafts.length === 1 ? (
-              <Sidebar
-                key={selectedAircrafts[0]!.id}
-                aircraft={selectedAircrafts[0]!}
-                onWaypointClick={undefined}
-                onHistoryClick={(flight) => {
-                  setReplayFlight(flight);
-                  setHistoryPath(flight.routeData || null);
-                  setIsViewingHistory(true);
-                }}
-                onAirportClick={handleAirportSelectByIcao}
-                isMobile={isMobile}
-                onClose={() => setSelectedAircrafts([])}
-                isFollowMode={isFollowMode}
-                onToggleFollow={() => setIsFollowMode((prev) => !prev)}
-                followKeyLabel={formatRadarKeybind(keybindPreferences.follow)}
-              />
-            ) : (
-              <MultiAircraftSidebar
-                aircrafts={selectedAircrafts}
-                onRemoveAircraft={(aircraft) => {
-                  const aircraftId = aircraft.callsign || aircraft.id;
-                  const newSelection = selectedAircrafts.filter(
-                    (ac) => (ac.callsign || ac.id) !== aircraftId,
-                  );
-                  setSelectedAircrafts(newSelection);
-                  if (newSelection.length > 0) {
-                    drawMultipleFlightPlansOnMapRef.current?.(
-                      newSelection,
-                      false,
+        {!isUiHidden &&
+          !isReplayActive &&
+          selectedAircrafts.length > 0 &&
+          (isPhone ? (
+            <MobileDrawer onClose={() => setSelectedAircrafts([])}>
+              {selectedAircrafts.length === 1 ? (
+                <Sidebar
+                  key={selectedAircrafts[0]!.id}
+                  aircraft={selectedAircrafts[0]!}
+                  onWaypointClick={undefined}
+                  onHistoryClick={(flight) => {
+                    setReplayFlight(flight);
+                    setHistoryPath(flight.routeData || null);
+                    setIsViewingHistory(true);
+                  }}
+                  onAirportClick={handleAirportSelectByIcao}
+                  isMobile={isMobile}
+                  onClose={() => setSelectedAircrafts([])}
+                  isFollowMode={isFollowMode}
+                  onToggleFollow={() => setIsFollowMode((prev) => !prev)}
+                  followKeyLabel={formatRadarKeybind(keybindPreferences.follow)}
+                />
+              ) : (
+                <MultiAircraftSidebar
+                  aircrafts={selectedAircrafts}
+                  onRemoveAircraft={(aircraft) => {
+                    const aircraftId = aircraft.callsign || aircraft.id;
+                    const newSelection = selectedAircrafts.filter(
+                      (ac) => (ac.callsign || ac.id) !== aircraftId,
                     );
-                  }
-                }}
-                onClose={() => setSelectedAircrafts([])}
-                isMobile={isMobile}
-              />
-            )}
-          </MobileDrawer>
-        ) : (
-          <aside
-            data-tour="flight-details"
-            className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10014] border-l border-white/10 bg-black/90 backdrop-blur-xl transition-[width] duration-300 ease-in-out ${
-              isSidebarCollapsed
-                ? "w-12"
-                : `w-full ${isTablet ? "max-w-[340px]" : "max-w-[400px]"}`
-            }`}
-          >
-            {/* Collapse/Expand toggle button */}
-            <button
-              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="absolute top-1/2 -left-3 z-10 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-slate-900 text-slate-400 shadow-lg transition-colors hover:bg-slate-800 hover:text-white"
-              title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              aria-label={
-                isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
-              }
-              aria-expanded={!isSidebarCollapsed}
+                    setSelectedAircrafts(newSelection);
+                    if (newSelection.length > 0) {
+                      drawMultipleFlightPlansOnMapRef.current?.(
+                        newSelection,
+                        false,
+                      );
+                    }
+                  }}
+                  onClose={() => setSelectedAircrafts([])}
+                  isMobile={isMobile}
+                />
+              )}
+            </MobileDrawer>
+          ) : (
+            <aside
+              data-tour="flight-details"
+              className={`animate-slide-in-right fixed inset-y-0 right-0 z-[10014] border-l border-white/10 bg-black/90 backdrop-blur-xl transition-[width] duration-300 ease-in-out ${
+                isSidebarCollapsed
+                  ? "w-12"
+                  : `w-full ${isTablet ? "max-w-[340px]" : "max-w-[400px]"}`
+              }`}
             >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={`transition-transform duration-300 ${isSidebarCollapsed ? "rotate-180" : ""}`}
+              {/* Collapse/Expand toggle button */}
+              <button
+                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                className="absolute top-1/2 -left-3 z-10 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-slate-900 text-slate-400 shadow-lg transition-colors hover:bg-slate-800 hover:text-white"
+                title={
+                  isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+                }
+                aria-label={
+                  isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+                }
+                aria-expanded={!isSidebarCollapsed}
               >
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </button>
-
-            {/* Collapsed state - minimal info */}
-            {isSidebarCollapsed ? (
-              <div className="flex h-full flex-col items-center py-6">
-                <div className="mb-4 h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
-                <div
-                  className="writing-vertical font-mono text-[11px] font-bold tracking-wider text-cyan-400 uppercase"
-                  style={{ writingMode: "vertical-rl" }}
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`transition-transform duration-300 ${isSidebarCollapsed ? "rotate-180" : ""}`}
                 >
-                  {selectedAircrafts.length === 1
-                    ? selectedAircrafts[0]?.flightNo ||
-                      selectedAircrafts[0]?.callsign ||
-                      "No callsign"
-                    : `${selectedAircrafts.length} selected`}
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+
+              {/* Collapsed state - minimal info */}
+              {isSidebarCollapsed ? (
+                <div className="flex h-full flex-col items-center py-6">
+                  <div className="mb-4 h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
+                  <div
+                    className="writing-vertical font-mono text-[11px] font-bold tracking-wider text-cyan-400 uppercase"
+                    style={{ writingMode: "vertical-rl" }}
+                  >
+                    {selectedAircrafts.length === 1
+                      ? selectedAircrafts[0]?.flightNo ||
+                        selectedAircrafts[0]?.callsign ||
+                        "No callsign"
+                      : `${selectedAircrafts.length} selected`}
+                  </div>
                 </div>
-              </div>
-            ) : /* Expanded state - full sidebar content */
-            selectedAircrafts.length === 1 ? (
-              <Sidebar
-                key={selectedAircrafts[0]!.id}
-                aircraft={selectedAircrafts[0]!}
-                onWaypointClick={undefined}
-                onHistoryClick={(flight) => {
-                  setReplayFlight(flight);
-                  setHistoryPath(flight.routeData || null);
-                  setIsViewingHistory(true);
-                }}
-                onAirportClick={handleAirportSelectByIcao}
-                isMobile={isMobile}
-                onClose={() => setSelectedAircrafts([])}
-                isFollowMode={isFollowMode}
-                onToggleFollow={() => setIsFollowMode((prev) => !prev)}
-                followKeyLabel={formatRadarKeybind(keybindPreferences.follow)}
-              />
-            ) : (
-              <MultiAircraftSidebar
-                aircrafts={selectedAircrafts}
-                onRemoveAircraft={(aircraft) => {
-                  const aircraftId = aircraft.callsign || aircraft.id;
-                  const newSelection = selectedAircrafts.filter(
-                    (ac) => (ac.callsign || ac.id) !== aircraftId,
-                  );
-                  setSelectedAircrafts(newSelection);
-                  if (newSelection.length > 0) {
-                    drawMultipleFlightPlansOnMapRef.current?.(
-                      newSelection,
-                      false,
+              ) : /* Expanded state - full sidebar content */
+              selectedAircrafts.length === 1 ? (
+                <Sidebar
+                  key={selectedAircrafts[0]!.id}
+                  aircraft={selectedAircrafts[0]!}
+                  onWaypointClick={undefined}
+                  onHistoryClick={(flight) => {
+                    setReplayFlight(flight);
+                    setHistoryPath(flight.routeData || null);
+                    setIsViewingHistory(true);
+                  }}
+                  onAirportClick={handleAirportSelectByIcao}
+                  isMobile={isMobile}
+                  onClose={() => setSelectedAircrafts([])}
+                  isFollowMode={isFollowMode}
+                  onToggleFollow={() => setIsFollowMode((prev) => !prev)}
+                  followKeyLabel={formatRadarKeybind(keybindPreferences.follow)}
+                />
+              ) : (
+                <MultiAircraftSidebar
+                  aircrafts={selectedAircrafts}
+                  onRemoveAircraft={(aircraft) => {
+                    const aircraftId = aircraft.callsign || aircraft.id;
+                    const newSelection = selectedAircrafts.filter(
+                      (ac) => (ac.callsign || ac.id) !== aircraftId,
                     );
-                  }
-                }}
-                onClose={() => setSelectedAircrafts([])}
-                isMobile={isMobile}
-              />
-            )}
-          </aside>
-        ))}
+                    setSelectedAircrafts(newSelection);
+                    if (newSelection.length > 0) {
+                      drawMultipleFlightPlansOnMapRef.current?.(
+                        newSelection,
+                        false,
+                      );
+                    }
+                  }}
+                  onClose={() => setSelectedAircrafts([])}
+                  isMobile={isMobile}
+                />
+              )}
+            </aside>
+          ))}
 
-      {!isUiHidden && showTaxiChart && selectedAirport?.icao && (
-        <TaxiChartViewer
-          icao={selectedAirport.icao}
-          onClose={() => setShowTaxiChart(false)}
-          onOpenSideView={() => {
-            setChartOverlayIcao(selectedAirport.icao);
-            setChartOverlayActive(true);
-          }}
-        />
-      )}
+        {!isUiHidden && showTaxiChart && selectedAirport?.icao && (
+          <TaxiChartViewer
+            icao={selectedAirport.icao}
+            onClose={() => setShowTaxiChart(false)}
+            onOpenSideView={() => {
+              setChartOverlayIcao(selectedAirport.icao);
+              setChartOverlayActive(true);
+            }}
+          />
+        )}
 
-      {!isUiHidden && chartOverlayActive && chartOverlayIcao && (
-        <ChartSidePanel
-          icao={chartOverlayIcao}
-          onClose={() => {
-            setChartOverlayActive(false);
-            setChartOverlayIcao(null);
-          }}
-        />
-      )}
+        {!isUiHidden && chartOverlayActive && chartOverlayIcao && (
+          <ChartSidePanel
+            icao={chartOverlayIcao}
+            onClose={() => {
+              setChartOverlayActive(false);
+              setChartOverlayIcao(null);
+            }}
+          />
+        )}
 
-      {/* Flight Replay Controls */}
-      {!isUiHidden && replayFlight && (
-        <FlightReplayControls
-          flight={replayFlight}
-          onClose={() => {
-            setReplayFlight(null);
-            setReplayState(null);
-            setHistoryPath(null);
-            setIsViewingHistory(false);
-          }}
-          onStateChange={setReplayState}
+        {/* Flight Replay Controls */}
+        {!isUiHidden && replayFlight && (
+          <FlightReplayControls
+            flight={replayFlight}
+            onClose={() => {
+              setReplayFlight(null);
+              setReplayState(null);
+              setHistoryPath(null);
+              setIsViewingHistory(false);
+            }}
+            onStateChange={setReplayState}
+            isMobile={isMobile}
+          />
+        )}
+
+        {/* Most Tracked Flights — tablet & desktop, hidden when airport selected */}
+        {!isUiHidden && !isPhone && !selectedAirport && (
+          <MostTrackedPanel
+            flights={isReplayActive ? [] : mostTrackedFlights}
+            onTrack={(ac) => {
+              drawFlightPlanOnMapRef.current?.(ac, true);
+              handleAircraftSelect(ac);
+            }}
+          />
+        )}
+
+        <ShortcutsMenu
+          open={showShortcutsMenu && !isUiHidden}
+          onClose={() => setShowShortcutsMenu(false)}
           isMobile={isMobile}
-        />
-      )}
-
-      {/* Most Tracked Flights — tablet & desktop, hidden when airport selected */}
-      {!isUiHidden && !isPhone && !selectedAirport && (
-        <MostTrackedPanel
-          flights={isReplayActive ? [] : mostTrackedFlights}
-          onTrack={(ac) => {
-            drawFlightPlanOnMapRef.current?.(ac, true);
-            handleAircraftSelect(ac);
+          showAircraftLabels={
+            flightDisplayMode === "default" ||
+            flightDisplayMode === "waypoints-hidden"
+          }
+          onAircraftLabelsChange={(showLabels) => {
+            const showWaypoints =
+              flightDisplayMode === "default" ||
+              flightDisplayMode === "labels-hidden";
+            setFlightDisplayMode(
+              showLabels
+                ? showWaypoints
+                  ? "default"
+                  : "waypoints-hidden"
+                : showWaypoints
+                  ? "labels-hidden"
+                  : "minimal",
+            );
+          }}
+          showRouteWaypoints={
+            flightDisplayMode === "default" ||
+            flightDisplayMode === "labels-hidden"
+          }
+          onRouteWaypointsChange={(showWaypoints) => {
+            const showLabels =
+              flightDisplayMode === "default" ||
+              flightDisplayMode === "waypoints-hidden";
+            setFlightDisplayMode(
+              showWaypoints
+                ? showLabels
+                  ? "default"
+                  : "labels-hidden"
+                : showLabels
+                  ? "waypoints-hidden"
+                  : "minimal",
+            );
+          }}
+          isHeadingMode={isHeadingMode}
+          onHeadingModeChange={setIsHeadingMode}
+          isUiHidden={isUiHidden}
+          onUiHiddenChange={(hidden) => {
+            setIsUiHidden(hidden);
+            if (hidden) setShowShortcutsMenu(false);
           }}
         />
-      )}
-
-      <ShortcutsMenu
-        open={showShortcutsMenu && !isUiHidden}
-        onClose={() => setShowShortcutsMenu(false)}
-        isMobile={isMobile}
-        showAircraftLabels={
-          flightDisplayMode === "default" ||
-          flightDisplayMode === "waypoints-hidden"
-        }
-        onAircraftLabelsChange={(showLabels) => {
-          const showWaypoints =
-            flightDisplayMode === "default" ||
-            flightDisplayMode === "labels-hidden";
-          setFlightDisplayMode(
-            showLabels
-              ? showWaypoints
-                ? "default"
-                : "waypoints-hidden"
-              : showWaypoints
-                ? "labels-hidden"
-                : "minimal",
-          );
-        }}
-        showRouteWaypoints={
-          flightDisplayMode === "default" ||
-          flightDisplayMode === "labels-hidden"
-        }
-        onRouteWaypointsChange={(showWaypoints) => {
-          const showLabels =
-            flightDisplayMode === "default" ||
-            flightDisplayMode === "waypoints-hidden";
-          setFlightDisplayMode(
-            showWaypoints
-              ? showLabels
-                ? "default"
-                : "labels-hidden"
-              : showLabels
-                ? "waypoints-hidden"
-                : "minimal",
-          );
-        }}
-        isHeadingMode={isHeadingMode}
-        onHeadingModeChange={setIsHeadingMode}
-        isUiHidden={isUiHidden}
-        onUiHiddenChange={(hidden) => {
-          setIsUiHidden(hidden);
-          if (hidden) setShowShortcutsMenu(false);
-        }}
-      />
-      <TrialStatusBanner hidden={isUiHidden || isRadarGuideOpen} />
-      <RadarGuide
-        open={isRadarGuideOpen}
-        onFinish={finishRadarGuide}
-        signals={{
-          hasSelectedAircraft: selectedAircrafts.length > 0,
-          hasSelectedFreeChartAirport: isFreeChartIcao(selectedAirport?.icao),
-          isChartOpen: showTaxiChart || chartOverlayActive,
-        }}
-        onOpenAircraftImages={() => {
-          window.open("/aircraft-images", "_blank", "noopener,noreferrer");
-        }}
-        onPrepareDock={prepareRadarGuideDock}
-      />
-    </div>
+        <TrialStatusBanner hidden={isUiHidden || isRadarGuideOpen} />
+        <RadarGuide
+          open={isRadarGuideOpen}
+          onFinish={finishRadarGuide}
+          signals={{
+            hasSelectedAircraft: selectedAircrafts.length > 0,
+            hasSelectedFreeChartAirport: isFreeChartIcao(selectedAirport?.icao),
+            isChartOpen: showTaxiChart || chartOverlayActive,
+          }}
+          onOpenAircraftImages={() => {
+            window.open("/aircraft-images", "_blank", "noopener,noreferrer");
+          }}
+          onPrepareDock={prepareRadarGuideDock}
+        />
+      </div>
+    </RadarTimerProvider>
   );
 }
 
