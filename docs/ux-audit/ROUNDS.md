@@ -16,6 +16,7 @@ code and these screenshots; nothing was profiled on real devices.
 | 5 | Round 4 fixes + dark theme everywhere | 7.8 | 8.0 | 8.1 |
 | 6 | Round 5 fixes | 7.8 | — | — |
 | 7 | Round 6 fixes | 7.9 | — | — |
+| 8 | Round 7 fixes | **8.0** | — | — |
 
 ## Per-category scores: original vs latest
 
@@ -26,16 +27,16 @@ code and these screenshots; nothing was profiled on real devices.
 | Navigation & discoverability | 5 | 8 | 4 | 8 | 4 | 8 |
 | Feedback & system status | 6 | 8 | 6 | 8 | 3 | 8 |
 | Onboarding & learnability | 7 | 8 | 6 | 8 | 5 | 8 |
-| Accessibility | 3 | 7 | 4 | 8 | 3 | 8 |
+| Accessibility | 3 | 8 | 4 | 8 | 3 | 8 |
 | Responsiveness & mobile | 5 | 8 | 6 | 8 | 6 | 8 |
-| Perceived performance | 5 | 7 | 5 | 8 | 5 | 8 |
+| Perceived performance | 5 | 8 | 5 | 8 | 5 | 8 |
 | Forms & input handling | 4 | 8 | 6 | 8 | 5 | 8 |
 | Copy & microcopy | 6 | 8 | 6 | 8 | 5 | 8 |
 | Error prevention & recovery | 6 | 8 | 5 | 8 | 4 | 8 |
 | Platform conventions | 5 | 8 | 5 | 8 | 5 | 8 |
-| **Overall** | **5.3** | **7.8** | **5.4** | **8.0** | **4.7** | **8.1** |
+| **Overall** | **5.3** | **8.0** | **5.4** | **8.0** | **4.7** | **8.1** |
 
-Radar "latest" is round 6, before the round 6 fixes (timer announcements,
-timer close, clock/timer split out of the radar page).
+Latest = radar round 8, website round 5, userscript round 5 (each reviewer
+stopped once every category reached 8).
 
 Screenshots: `before/` is `main`, `after/` is the final branch state.
