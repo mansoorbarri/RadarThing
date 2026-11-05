@@ -38,20 +38,22 @@ export default async function GuidePage({ params }: Props) {
   if (!guide) notFound();
   return (
     <div className="grid gap-12 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-20">
-      <aside>
+      {/* On phones the article comes first and the guide list follows it, so
+          readers don't scroll past 15 links to reach the content. */}
+      <aside className="order-last border-t border-white/10 pt-8 lg:order-first lg:border-t-0 lg:pt-0">
         <Link
           href="/guides"
-          className="font-mono text-xs tracking-widest text-cyan-300 uppercase hover:underline"
+          className="hidden font-mono text-xs tracking-widest text-cyan-300 uppercase hover:underline lg:inline"
         >
           ← All guides
         </Link>
         <nav
-          aria-label="Guide navigation"
-          className="mt-6 flex flex-col gap-1 lg:sticky lg:top-8"
+          aria-label="More guides"
+          className="flex flex-col gap-1 lg:sticky lg:top-8 lg:mt-6"
         >
           {getGuidesByCategory().map(({ category, guides: categoryGuides }) => (
             <div key={category} className="mb-4">
-              <p className="mb-1 font-mono text-[10px] tracking-[0.2em] text-slate-500 uppercase">
+              <p className="mb-1 font-mono text-[11px] tracking-[0.2em] text-slate-400 uppercase">
                 {category}
               </p>
               {categoryGuides.map((entry) => (
@@ -69,7 +71,13 @@ export default async function GuidePage({ params }: Props) {
         </nav>
       </aside>
       <article className="max-w-3xl min-w-0 [&_a]:text-cyan-200 [&_a]:underline [&_a]:underline-offset-4 [&_a:hover]:text-white [&_code]:rounded [&_code]:bg-white/10 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.9em] [&_code]:text-cyan-100 [&_h1]:mb-7 [&_h1]:text-4xl [&_h1]:leading-tight [&_h1]:font-semibold [&_h1]:tracking-tight md:[&_h1]:text-5xl [&_h2]:mt-12 [&_h2]:mb-4 [&_h2]:border-t [&_h2]:border-white/10 [&_h2]:pt-8 [&_h2]:text-xl [&_h2]:font-medium [&_h3]:mt-8 [&_h3]:mb-3 [&_h3]:text-lg [&_h3]:font-medium [&_li]:mb-3 [&_li]:leading-8 [&_li]:text-slate-300 [&_ol]:my-5 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-5 [&_p]:leading-8 [&_p]:text-slate-300 [&_pre]:my-6 [&_pre]:overflow-x-auto [&_pre]:border [&_pre]:border-white/10 [&_pre]:bg-black/40 [&_pre]:p-4 [&_pre]:text-sm [&_pre]:leading-6 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_strong]:text-white [&_ul]:list-disc [&_ul]:pl-6">
-        <div className="mb-6 font-mono text-xs tracking-widest text-slate-500 uppercase">
+        <Link
+          href="/guides"
+          className="mb-6 inline-block font-mono text-xs tracking-widest text-cyan-300 uppercase hover:underline lg:hidden"
+        >
+          ← All guides
+        </Link>
+        <div className="mb-6 font-mono text-xs tracking-widest text-slate-400 uppercase">
           {guide.category} · Updated{" "}
           <time dateTime={guide.updated}>
             {new Date(`${guide.updated}T00:00:00Z`).toLocaleDateString(

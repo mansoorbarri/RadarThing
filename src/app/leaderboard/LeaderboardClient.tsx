@@ -1,5 +1,6 @@
 "use client";
 
+import { SiteHeader } from "~/components/site/SiteHeader";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -94,7 +95,7 @@ export default function LeaderboardClient({
     new Set(),
   );
 
-  const currentUserRef = useRef<HTMLButtonElement>(null);
+  const currentUserRef = useRef<HTMLAnchorElement>(null);
   const hasActiveChallenge =
     challengeLeaderboard === undefined || challengeLeaderboard.length > 0;
   const sortOptions = [
@@ -184,23 +185,7 @@ export default function LeaderboardClient({
 
   return (
     <div className="leaderboard-theme-surface min-h-screen bg-[#0a0a0f] text-white">
-      <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
-          <button
-            onClick={() => router.push("/radar")}
-            className="cursor-pointer"
-          >
-            <SystemThemeLogo alt="RadarThing" width={100} height={30} />
-          </button>
-          <button
-            onClick={() => router.push("/radar")}
-            className="flex cursor-pointer items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Map
-          </button>
-        </div>
-      </header>
+      <SiteHeader tone="themed" />
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="mb-6 flex items-center gap-3 sm:mb-8">
@@ -246,7 +231,7 @@ export default function LeaderboardClient({
             </div>
             <div className="flex shrink-0 items-center gap-3 text-right sm:hidden">
               <div>
-                <div className="font-mono text-[10px] text-slate-600 uppercase">
+                <div className="font-mono text-[10px] text-slate-400 uppercase">
                   {getActiveSortLabel(sortBy)}
                 </div>
                 <div
@@ -280,7 +265,7 @@ export default function LeaderboardClient({
             </div>
             <div className="hidden shrink-0 items-center gap-4 text-right sm:flex">
               <div>
-                <div className="font-mono text-[10px] text-slate-600 uppercase">
+                <div className="font-mono text-[10px] text-slate-400 uppercase">
                   Flights
                 </div>
                 <div className="font-mono text-sm font-bold text-white">
@@ -288,7 +273,7 @@ export default function LeaderboardClient({
                 </div>
               </div>
               <div>
-                <div className="font-mono text-[10px] text-slate-600 uppercase">
+                <div className="font-mono text-[10px] text-slate-400 uppercase">
                   Distance
                 </div>
                 <div className="font-mono text-sm font-bold text-white">
@@ -296,7 +281,7 @@ export default function LeaderboardClient({
                 </div>
               </div>
               <div>
-                <div className="font-mono text-[10px] text-slate-600 uppercase">
+                <div className="font-mono text-[10px] text-slate-400 uppercase">
                   Time
                 </div>
                 <div className="font-mono text-sm font-bold whitespace-nowrap text-white">
@@ -304,7 +289,7 @@ export default function LeaderboardClient({
                 </div>
               </div>
               <div>
-                <div className="font-mono text-[10px] text-slate-600 uppercase">
+                <div className="font-mono text-[10px] text-slate-400 uppercase">
                   Streak
                 </div>
                 <div className="font-mono text-sm font-bold text-amber-400">
@@ -314,7 +299,7 @@ export default function LeaderboardClient({
                 </div>
               </div>
               <div>
-                <div className="font-mono text-[10px] text-slate-600 uppercase">
+                <div className="font-mono text-[10px] text-slate-400 uppercase">
                   Uploads
                 </div>
                 <div
@@ -355,9 +340,16 @@ export default function LeaderboardClient({
 
         <div className="mb-6 hidden sm:block">
           <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-            <div className="flex w-fit gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
+            <div
+              role="tablist"
+              aria-label="Leaderboard ranking"
+              className="flex w-fit gap-1 rounded-xl border border-white/10 bg-white/5 p-1"
+            >
               {sortOptions.map(({ key, label, icon: Icon }) => (
                 <button
+                  type="button"
+                  role="tab"
+                  aria-selected={sortBy === key}
                   key={key}
                   onClick={() => {
                     selectLeaderboardTab(key);
@@ -365,10 +357,13 @@ export default function LeaderboardClient({
                   className={`flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all sm:px-4 sm:py-2 sm:text-sm ${
                     sortBy === key
                       ? "bg-white/10 text-white"
-                      : "text-slate-500 hover:text-slate-300"
+                      : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
-                  <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  <Icon
+                    className="h-3 w-3 sm:h-3.5 sm:w-3.5"
+                    aria-hidden="true"
+                  />
                   {label}
                 </button>
               ))}
@@ -381,7 +376,7 @@ export default function LeaderboardClient({
             <LeaderboardSkeleton />
           ) : challengeLeaderboard.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-              <Flag className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+              <Flag className="mx-auto mb-4 h-12 w-12 text-slate-400" />
               <h3 className="mb-2 text-xl font-semibold text-white">
                 No Active Challenges
               </h3>
@@ -464,10 +459,10 @@ export default function LeaderboardClient({
                       <>
                         <div className="flex items-center gap-3 px-3 pb-3 sm:gap-4 sm:px-4">
                           <div className="w-8 shrink-0 sm:w-9" />
-                          <div className="min-w-0 flex-1 font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                          <div className="min-w-0 flex-1 font-mono text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
                             Pilot
                           </div>
-                          <div className="w-20 shrink-0 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                          <div className="w-20 shrink-0 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
                             Progress
                           </div>
                         </div>
@@ -495,11 +490,9 @@ export default function LeaderboardClient({
                                     : "";
 
                             return (
-                              <button
+                              <Link
                                 key={entry.userId}
-                                onClick={() =>
-                                  router.push(`/pilot/${entry.userId}`)
-                                }
+                                href={`/pilot/${entry.userId}`}
                                 className={`flex w-full cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition-all hover:border-cyan-500/30 hover:bg-white/10 sm:gap-4 sm:p-4 ${
                                   isHighlighted
                                     ? "border-cyan-500/40 bg-cyan-500/[0.08] ring-1 ring-cyan-500/20"
@@ -542,7 +535,7 @@ export default function LeaderboardClient({
                                     {progressPercent}%
                                   </div>
                                 </div>
-                              </button>
+                              </Link>
                             );
                           })}
                         </div>
@@ -565,7 +558,7 @@ export default function LeaderboardClient({
               <LeaderboardSkeleton />
             ) : visibleSorted.length === 0 ? (
               <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-                <Plane className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+                <Plane className="mx-auto mb-4 h-12 w-12 text-slate-400" />
                 <h3 className="mb-2 text-xl font-semibold text-white">
                   No Pilots Yet
                 </h3>
@@ -578,26 +571,26 @@ export default function LeaderboardClient({
               <div>
                 <div className="flex items-center gap-3 px-3 pb-3 sm:gap-4 sm:px-4">
                   <div className="w-8 shrink-0 sm:w-9" />
-                  <div className="min-w-0 flex-1 font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                  <div className="min-w-0 flex-1 font-mono text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
                     Pilot
                   </div>
-                  <div className="w-14 shrink-0 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase sm:hidden">
+                  <div className="w-14 shrink-0 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-400 uppercase sm:hidden">
                     {getActiveSortLabel(sortBy)}
                   </div>
                   <div className="hidden shrink-0 items-center gap-6 sm:flex">
-                    <div className="w-12 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                    <div className="w-12 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
                       Flights
                     </div>
-                    <div className="w-16 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                    <div className="w-16 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
                       Distance
                     </div>
-                    <div className="w-14 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                    <div className="w-14 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
                       Time
                     </div>
-                    <div className="w-12 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                    <div className="w-12 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
                       Streak
                     </div>
-                    <div className="w-14 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-600 uppercase">
+                    <div className="w-14 text-right font-mono text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
                       Uploads
                     </div>
                   </div>
@@ -618,10 +611,10 @@ export default function LeaderboardClient({
                             : "";
 
                     return (
-                      <button
+                      <Link
                         key={entry.userId}
                         ref={isCurrentUser ? currentUserRef : undefined}
-                        onClick={() => router.push(`/pilot/${entry.userId}`)}
+                        href={`/pilot/${entry.userId}`}
                         className={`flex w-full cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition-all hover:border-cyan-500/30 hover:bg-white/10 sm:gap-4 sm:p-4 ${
                           isCurrentUser
                             ? "border-cyan-500/40 bg-cyan-500/[0.08] ring-1 ring-cyan-500/20"
@@ -736,7 +729,7 @@ export default function LeaderboardClient({
                             {entry.approvedAircraftImages}
                           </div>
                         </div>
-                      </button>
+                      </Link>
                     );
                   })}
                 </div>

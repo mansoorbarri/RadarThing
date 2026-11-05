@@ -8,6 +8,7 @@ import Link from "next/link";
 import { LogOut, User } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
+import { useProStatus } from "~/hooks/useProStatus";
 
 export const UserAuth = ({
   hidePersonalInfo = false,
@@ -19,6 +20,7 @@ export const UserAuth = ({
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { isAdminUser } = useProStatus();
   const managedVirtualAirlines = useQuery(
     api.virtualAirlines.getManagedByAdmin,
     user?.id && isAuthenticated ? { adminClerkId: user.id } : "skip",
@@ -35,8 +37,17 @@ export const UserAuth = ({
         setOpen(false);
       }
     };
-    if (open) document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    if (open) {
+      document.addEventListener("mousedown", handler);
+      document.addEventListener("keydown", onKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, [open]);
 
   if (!mounted || !isLoaded) return null;
@@ -51,8 +62,12 @@ export const UserAuth = ({
     return (
       <div className="relative" ref={menuRef}>
         <button
+          type="button"
           onClick={() => setOpen(!open)}
-          className="flex h-full cursor-pointer items-center justify-center leading-none"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label="Account menu"
+          className="flex h-full cursor-pointer items-center justify-center rounded-full leading-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
         >
           {user?.imageUrl ? (
             <Image
@@ -80,6 +95,26 @@ export const UserAuth = ({
               <User className="h-4 w-4" />
               Dashboard
             </Link>
+            {isAdminUser && (
+              <>
+                <Link
+                  href="/admin"
+                  onClick={() => setOpen(false)}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-cyan-400/10 hover:text-cyan-400"
+                >
+                  <User className="h-4 w-4" />
+                  Admin
+                </Link>
+                <Link
+                  href="/airport-charts"
+                  onClick={() => setOpen(false)}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-cyan-400/10 hover:text-cyan-400"
+                >
+                  <User className="h-4 w-4" />
+                  Airport charts
+                </Link>
+              </>
+            )}
             {(managedVirtualAirlines?.length ?? 0) > 0 && (
               <Link
                 href="/va-admin"
@@ -104,7 +139,9 @@ export const UserAuth = ({
 
   return (
     <GoogleSignInButton>
-      <button className={`${baseStyle} ${cyanStyle}`}>SIGN IN</button>
+      <button type="button" className={`${baseStyle} ${cyanStyle}`}>
+        SIGN IN
+      </button>
     </GoogleSignInButton>
   );
 };

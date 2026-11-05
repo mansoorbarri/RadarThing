@@ -33,6 +33,7 @@ import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
 import { isFlightModeratorGoogleId } from "~/lib/flight-moderation";
 import { ConfirmModal } from "~/app/admin/_components/ConfirmModal";
 import { SystemThemeLogo } from "~/components/ui/SystemThemeLogo";
+import { SiteHeader } from "~/components/site/SiteHeader";
 import { useAircraftStream } from "~/hooks/useAircraftStream";
 
 function formatFlightTime(ms: number): string {
@@ -283,7 +284,7 @@ export default function PilotClient({
                   <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                     TOP AIRCRAFT
                   </h3>
-                  {!isPro && <Lock className="h-4 w-4 text-slate-600" />}
+                  {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
                 </div>
                 {isPro ? (
                   <div className="space-y-3">
@@ -323,7 +324,7 @@ export default function PilotClient({
                   <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                     TOP ROUTES
                   </h3>
-                  {!isPro && <Lock className="h-4 w-4 text-slate-600" />}
+                  {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
                 </div>
                 {isPro ? (
                   <div className="space-y-3">
@@ -361,7 +362,7 @@ export default function PilotClient({
                   <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                     TOP AIRPORTS
                   </h3>
-                  {!isPro && <Lock className="h-4 w-4 text-slate-600" />}
+                  {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
                 </div>
                 {isPro ? (
                   <div className="space-y-3">
@@ -483,26 +484,8 @@ export default function PilotClient({
   );
 }
 
-function Header({ router }: { router: ReturnType<typeof useRouter> }) {
-  return (
-    <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
-        <button
-          onClick={() => router.push("/radar")}
-          className="cursor-pointer"
-        >
-          <SystemThemeLogo alt="RadarThing" width={100} height={30} />
-        </button>
-        <button
-          onClick={() => router.push("/radar")}
-          className="flex shrink-0 cursor-pointer items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span className="hidden sm:inline">Back to Map</span>
-        </button>
-      </div>
-    </header>
-  );
+function Header(_props: { router?: ReturnType<typeof useRouter> }) {
+  return <SiteHeader tone="themed" />;
 }
 
 function StatCard({
@@ -540,14 +523,14 @@ function StatCard({
       </div>
       {locked ? (
         <div className="flex items-center gap-2">
-          <Lock className="h-4 w-4 text-slate-600" />
-          <span className="font-mono text-sm text-slate-600">PRO</span>
+          <Lock className="h-4 w-4 text-slate-400" />
+          <span className="font-mono text-sm text-slate-400">PRO</span>
         </div>
       ) : (
         <>
           <div className="text-2xl font-bold text-white">{value}</div>
           {subtitle && (
-            <div className="mt-0.5 font-mono text-xs text-slate-600">
+            <div className="mt-0.5 font-mono text-xs text-slate-400">
               {subtitle}
             </div>
           )}
@@ -561,7 +544,7 @@ function ProLockedContent() {
   const router = useRouter();
   return (
     <div className="flex flex-col items-center justify-center py-6 text-center">
-      <Lock className="mb-2 h-8 w-8 text-slate-600" />
+      <Lock className="mb-2 h-8 w-8 text-slate-400" />
       <p className="mb-3 text-sm text-slate-500">
         Unlock full pilot stats with PRO
       </p>
@@ -584,7 +567,7 @@ function ProLockedContent() {
 function EmptyState() {
   return (
     <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-      <Plane className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+      <Plane className="mx-auto mb-4 h-12 w-12 text-slate-400" />
       <h3 className="mb-2 text-xl font-semibold text-white">No Flights Yet</h3>
       <p className="text-slate-400">
         This pilot hasn&apos;t recorded any flights yet.

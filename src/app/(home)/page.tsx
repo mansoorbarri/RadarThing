@@ -1,5 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import { SiteFooter } from "~/components/site/SiteFooter";
+import { SiteHeader } from "~/components/site/SiteHeader";
 import {
   ArrowRight,
   Radio,
@@ -17,6 +19,7 @@ import {
 } from "lucide-react";
 import userscriptConfig from "../../../userscript-src/config.json";
 import { FREE_RECENT_FLIGHTS_LIMIT } from "~/lib/flightHistory";
+import { FREE_DAILY_ALLOWANCE } from "~/lib/freeAllowance";
 
 const USERSCRIPT_INSTALL_URL = "https://radarthing.com/userscript";
 const USERSCRIPT_LOADER_URL = `${userscriptConfig.siteUrl}/loader`;
@@ -85,30 +88,7 @@ export default function HomePage() {
         />
       </div>
 
-      {/* Header */}
-      <header className="relative z-10">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-          <div className="flex items-center gap-4">
-            <Image
-              src="/logo-white.svg"
-              alt="RadarThing"
-              width={120}
-              height={36}
-              priority
-            />
-            <div className="hidden h-4 w-px bg-white/10 sm:block" />
-            <span className="hidden text-xs text-white/30 sm:block">
-              for GeoFS
-            </span>
-          </div>
-          <Link
-            href="/guides"
-            className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70 transition-colors hover:border-cyan-300/40 hover:text-cyan-300"
-          >
-            Guide
-          </Link>
-        </div>
-      </header>
+      <SiteHeader />
 
       {/* Hero */}
       <main className="relative z-10">
@@ -117,14 +97,14 @@ export default function HomePage() {
             <h1 className="mb-6 text-4xl leading-[1.1] font-bold tracking-tight text-white md:text-5xl lg:text-6xl">
               See every flight.
               <br />
-              <span className="text-white/40">In real time.</span>
+              <span className="text-white/70">In real time.</span>
             </h1>
 
-            <p className="mb-4 max-w-md text-lg text-white/50">
+            <p className="mb-4 max-w-md text-lg text-white/70">
               The flight radar built exclusively for{" "}
               <span className="text-white">GeoFS</span> flight simulator.
             </p>
-            <p className="mb-10 max-w-md text-white/40">
+            <p className="mb-10 max-w-md text-white/70">
               Track aircraft, record routes, access weather data, airport
               charts, and more.
             </p>
@@ -132,6 +112,7 @@ export default function HomePage() {
             <div className="flex flex-col gap-4 sm:flex-row">
               <Link
                 href="/radar"
+                prefetch={false}
                 className="group inline-flex items-center justify-center gap-2 bg-white px-8 py-4 font-semibold text-black transition-all hover:bg-cyan-400"
               >
                 Open Radar
@@ -145,7 +126,29 @@ export default function HomePage() {
                 Install Script
               </Link>
             </div>
+            <p className="mt-5 text-sm text-white/70">
+              Free to use. Pro is $3/month with a{" "}
+              <Link
+                href="/pricing"
+                className="text-cyan-300 underline-offset-4 hover:underline"
+              >
+                7-day free trial
+              </Link>
+              , no card needed.
+            </p>
           </div>
+
+          <figure className="mt-12 overflow-hidden rounded-2xl border border-white/10 bg-black/40 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+            <Image
+              src="/images/radar-preview.png"
+              alt="The RadarThing live radar showing GeoFS flights around the world with callsign, altitude and speed labels"
+              width={1440}
+              height={900}
+              sizes="(min-width: 1152px) 1104px, 100vw"
+              className="h-auto w-full"
+              priority
+            />
+          </figure>
         </section>
 
         {/* Quick Install */}
@@ -190,65 +193,76 @@ export default function HomePage() {
               signed-out sessions are not shown on the radar.
             </p>
 
-            <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-6">
-                <p className="mb-2 text-xs font-semibold tracking-[0.24em] text-cyan-400 uppercase">
-                  No Extension
-                </p>
-                <h3 className="mb-3 text-xl font-semibold text-white">
-                  Paste the loader in the GeoFS console
-                </h3>
-                <p className="mb-6 max-w-md text-sm leading-6 text-white/45">
-                  This uses the same remote loader as Tampermonkey. It is useful
-                  for people who do not want to install an extension, but they
-                  will need to run it again after each full page reload.
-                </p>
-                <div className="space-y-3 text-sm text-white/55">
-                  <div className="rounded-xl border border-white/6 bg-black/20 p-4">
-                    <span className="mr-2 font-mono text-cyan-400">1.</span>
-                    Open GeoFS, then open DevTools with <code>F12</code> or{" "}
-                    <code>Cmd/Ctrl+Shift+I</code>.
-                  </div>
-                  <div className="rounded-xl border border-white/6 bg-black/20 p-4">
-                    <span className="mr-2 font-mono text-cyan-400">2.</span>
-                    Paste the snippet into the Console and press{" "}
-                    <code>Enter</code>.
-                  </div>
-                  <div className="rounded-xl border border-white/6 bg-black/20 p-4">
-                    <span className="mr-2 font-mono text-cyan-400">3.</span>
-                    Save it as a DevTools Snippet if you want a repeatable
-                    one-click launch without Tampermonkey.
+            <details className="group mt-8 rounded-2xl border border-white/10 bg-white/[0.02]">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl px-6 py-4 text-sm font-medium text-white/85 hover:bg-white/[0.03] focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none">
+                Can&apos;t install extensions? Use the console loader instead
+                <ArrowRight
+                  className="h-4 w-4 shrink-0 transition-transform group-open:rotate-90"
+                  aria-hidden="true"
+                />
+              </summary>
+              <div className="grid gap-6 px-6 pb-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-6">
+                  <p className="mb-2 text-xs font-semibold tracking-[0.24em] text-cyan-400 uppercase">
+                    No Extension
+                  </p>
+                  <h3 className="mb-3 text-xl font-semibold text-white">
+                    Paste the loader in the GeoFS console
+                  </h3>
+                  <p className="mb-6 max-w-md text-sm leading-6 text-white/70">
+                    This uses the same remote loader as Tampermonkey. It is
+                    useful for people who do not want to install an extension,
+                    but they will need to run it again after each full page
+                    reload.
+                  </p>
+                  <div className="space-y-3 text-sm text-white/75">
+                    <div className="rounded-xl border border-white/6 bg-black/20 p-4">
+                      <span className="mr-2 font-mono text-cyan-400">1.</span>
+                      Open GeoFS, then open DevTools with <code>
+                        F12
+                      </code> or <code>Cmd/Ctrl+Shift+I</code>.
+                    </div>
+                    <div className="rounded-xl border border-white/6 bg-black/20 p-4">
+                      <span className="mr-2 font-mono text-cyan-400">2.</span>
+                      Paste the snippet into the Console and press{" "}
+                      <code>Enter</code>.
+                    </div>
+                    <div className="rounded-xl border border-white/6 bg-black/20 p-4">
+                      <span className="mr-2 font-mono text-cyan-400">3.</span>
+                      Save it as a DevTools Snippet if you want a repeatable
+                      one-click launch without Tampermonkey.
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="rounded-2xl border border-cyan-400/15 bg-[#06141b] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.25)]">
-                <div className="mb-4 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-semibold tracking-[0.24em] text-cyan-400 uppercase">
-                      Console Loader
-                    </p>
-                    <h3 className="mt-2 text-lg font-semibold text-white">
-                      Paste this into the GeoFS console
-                    </h3>
+                <div className="rounded-2xl border border-cyan-400/15 bg-[#06141b] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.25)]">
+                  <div className="mb-4 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold tracking-[0.24em] text-cyan-400 uppercase">
+                        Console Loader
+                      </p>
+                      <h3 className="mt-2 text-lg font-semibold text-white">
+                        Paste this into the GeoFS console
+                      </h3>
+                    </div>
+                    <Link
+                      href="https://www.geo-fs.com/geofs.php"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 rounded-full border border-white/10 px-4 py-2 text-xs font-medium text-white/80 transition-colors hover:border-white/20 hover:bg-white/5 hover:text-white"
+                    >
+                      Open GeoFS
+                    </Link>
                   </div>
-                  <Link
-                    href="https://www.geo-fs.com/geofs.php"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 rounded-full border border-white/10 px-4 py-2 text-xs font-medium text-white/80 transition-colors hover:border-white/20 hover:bg-white/5 hover:text-white"
-                  >
-                    Open GeoFS
-                  </Link>
+                  <CodeSnippet code={CONSOLE_SNIPPET} />
+                  <p className="mt-4 text-sm leading-6 text-white/70">
+                    The snippet above only loads the stable hosted loader. The
+                    loader then resolves the current runtime bundle, so console
+                    users and Tampermonkey users stay on the same code path.
+                  </p>
                 </div>
-                <CodeSnippet code={CONSOLE_SNIPPET} />
-                <p className="mt-4 text-sm leading-6 text-white/40">
-                  The snippet above only loads the stable hosted loader. The
-                  loader then resolves the current runtime bundle, so console
-                  users and Tampermonkey users stay on the same code path.
-                </p>
               </div>
-            </div>
+            </details>
           </div>
         </section>
 
@@ -266,7 +280,7 @@ export default function HomePage() {
               <FeatureCard
                 icon={Radio}
                 title="Live Tracking"
-                description="Real-time aircraft positions streamed via SSE with sub-second latency"
+                description="Live aircraft positions from every tracked GeoFS pilot, updated every few seconds"
               />
               <FeatureCard
                 icon={Route}
@@ -320,7 +334,7 @@ export default function HomePage() {
               <h2 className="mb-3 text-2xl font-bold text-white md:text-3xl">
                 Free to use, Pro to unlock more
               </h2>
-              <p className="text-white/40">
+              <p className="text-white/70">
                 Core tracking is completely free. Upgrade for weather, charts,
                 and your full flight archive.
               </p>
@@ -331,11 +345,11 @@ export default function HomePage() {
               <div className="flex h-full flex-col rounded-xl border border-white/10 bg-white/[0.02] p-6">
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-white">Free</h3>
-                  <p className="text-sm text-white/40">For casual use</p>
+                  <p className="text-sm text-white/70">For casual use</p>
                 </div>
                 <div className="mb-6">
                   <span className="text-3xl font-bold text-white">$0</span>
-                  <span className="text-white/40"> / forever</span>
+                  <span className="text-white/70"> / forever</span>
                 </div>
                 <ul className="mb-6 flex-1 space-y-3">
                   <PricingFeature included>
@@ -366,7 +380,10 @@ export default function HomePage() {
                   </PricingFeature>
                   <PricingFeature>NOTAMs (decoded)</PricingFeature>
                   <PricingFeature>AIRMETs & SIGMETs</PricingFeature>
-                  <PricingFeature>Airport charts</PricingFeature>
+                  <PricingFeature included>
+                    Airport charts for {FREE_DAILY_ALLOWANCE.charts} US airports
+                    a day
+                  </PricingFeature>
                   <PricingFeature>Advanced analytics</PricingFeature>
                 </ul>
                 <Link
@@ -382,7 +399,9 @@ export default function HomePage() {
                 <div className="mb-6 flex items-start justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-white">Pro</h3>
-                    <p className="text-sm text-white/40">Full access</p>
+                    <p className="text-sm text-white/70">
+                      Full access · 7-day free trial
+                    </p>
                   </div>
                   <span className="rounded-full bg-cyan-400/20 px-2 py-0.5 text-xs font-medium text-cyan-400">
                     POPULAR
@@ -390,7 +409,7 @@ export default function HomePage() {
                 </div>
                 <div className="mb-6">
                   <span className="text-3xl font-bold text-white">$3</span>
-                  <span className="text-white/40"> / month</span>
+                  <span className="text-white/70"> / month</span>
                 </div>
                 <ul className="mb-6 flex-1 space-y-3">
                   <PricingFeature included>Everything in Free</PricingFeature>
@@ -400,7 +419,9 @@ export default function HomePage() {
                   <PricingFeature included>
                     AIRMETs & SIGMETs overlay
                   </PricingFeature>
-                  <PricingFeature included>Airport taxi charts</PricingFeature>
+                  <PricingFeature included>
+                    Unlimited airport charts worldwide
+                  </PricingFeature>
                   <PricingFeature included>
                     Approach & departure charts
                   </PricingFeature>
@@ -418,21 +439,9 @@ export default function HomePage() {
                   href="/pricing"
                   className="mt-auto block w-full rounded-lg bg-cyan-400 py-3 text-center font-semibold text-black transition-colors hover:bg-cyan-300"
                 >
-                  Upgrade to Pro
+                  Start 7-day free trial
                 </Link>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Stats */}
-        <section className="border-t border-white/5">
-          <div className="mx-auto max-w-6xl px-6 py-14">
-            <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-              <Stat label="Protocol" value="SSE" />
-              <Stat label="Latency" value="~3s" />
-              <Stat label="Coverage" value="Global" />
-              <Stat label="Updates" value="Real-time" />
             </div>
           </div>
         </section>
@@ -446,7 +455,7 @@ export default function HomePage() {
             <h2 className="mb-4 text-2xl font-bold text-white md:text-3xl">
               Ready for takeoff?
             </h2>
-            <p className="mb-8 text-white/40">
+            <p className="mb-8 text-white/70">
               Install the script and start tracking in under a minute.
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -471,45 +480,7 @@ export default function HomePage() {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-white/5">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-6 md:flex-row">
-          <span className="text-sm text-white/30">
-            © {new Date().getFullYear()} RadarThing
-          </span>
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-white/40">
-            <Link href="/guides" className="hover:text-white">
-              Guides
-            </Link>
-            <Link href="/about" className="hover:text-white">
-              About
-            </Link>
-            <Link href="/pricing" className="hover:text-white">
-              Pricing
-            </Link>
-            <Link href="/privacy" className="hover:text-white">
-              Privacy
-            </Link>
-            <Link href="/terms" className="hover:text-white">
-              Terms
-            </Link>
-            <Link href="/contact" className="hover:text-white">
-              Contact
-            </Link>
-            <Link
-              href="https://discord.gg/pbQF4txdRC"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-white"
-            >
-              Discord
-            </Link>
-            <Link href={USERSCRIPT_INSTALL_URL} className="hover:text-white">
-              Install Script
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
@@ -555,7 +526,7 @@ function SetupStep({
         {step}
       </div>
       <h3 className="mb-1 font-semibold text-white">{title}</h3>
-      <p className="mb-4 text-sm text-white/40">{description}</p>
+      <p className="mb-4 text-sm text-white/70">{description}</p>
       <Link
         href={link}
         target="_blank"
@@ -584,7 +555,7 @@ function FeatureCard({
         <Icon className="h-5 w-5 text-white/60 transition-colors group-hover:text-cyan-400" />
       </div>
       <h3 className="mb-1 font-semibold text-white">{title}</h3>
-      <p className="text-sm leading-relaxed text-white/40">{description}</p>
+      <p className="text-sm leading-relaxed text-white/70">{description}</p>
     </div>
   );
 }
@@ -603,19 +574,10 @@ function PricingFeature({
       ) : (
         <X className="h-4 w-4 shrink-0 text-white/20" />
       )}
-      <span className={included ? "text-white/70" : "text-white/30"}>
+      <span className={included ? "text-white/70" : "text-white/60"}>
         {children}
       </span>
     </li>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="text-center">
-      <p className="mb-1 text-sm text-white/40">{label}</p>
-      <p className="font-mono text-2xl font-bold text-white">{value}</p>
-    </div>
   );
 }
 

@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useDeferredValue,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { useDeferredValue, useMemo, useState, type ReactNode } from "react";
 import {
   ArrowRightLeft,
   Plane,
@@ -301,7 +296,8 @@ export function AirportActivityPanel({
   );
 
   const filteredRoutes = useMemo(
-    () => allRoutes.filter((route) => matchesRouteSearch(route, normalizedQuery)),
+    () =>
+      allRoutes.filter((route) => matchesRouteSearch(route, normalizedQuery)),
     [allRoutes, normalizedQuery],
   );
 
@@ -381,7 +377,7 @@ export function AirportActivityPanel({
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Search airport, controller, or route..."
-              className="w-full rounded-xl border border-white/10 bg-black/35 py-2.5 pr-10 pl-9 text-sm text-white placeholder:text-white/25 outline-none transition-colors focus:border-cyan-400/40"
+              className="w-full rounded-xl border border-white/10 bg-black/35 py-2.5 pr-10 pl-9 text-sm text-white transition-colors outline-none placeholder:text-white/55 focus:border-cyan-400/40"
             />
             {searchTerm && (
               <button
@@ -557,7 +553,7 @@ function SummaryCard({
       <div className="mt-3 font-mono text-2xl font-semibold text-white">
         {value}
       </div>
-      <div className="mt-1 text-[11px] tracking-[0.18em] text-white/35 uppercase">
+      <div className="mt-1 text-[11px] tracking-[0.18em] text-white/55 uppercase">
         {label}
       </div>
     </div>
@@ -662,7 +658,7 @@ function SectionHeader({
 
 function EmptySection({ message }: { message: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.025] px-4 py-5 text-sm text-white/35">
+    <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.025] px-4 py-5 text-sm text-white/55">
       {message}
     </div>
   );
@@ -732,7 +728,7 @@ function AirportRow({
           <div className="font-mono text-lg font-semibold text-cyan-200">
             {emphasisValue}
           </div>
-          <div className="text-[10px] tracking-[0.18em] text-white/30 uppercase">
+          <div className="text-[10px] tracking-[0.18em] text-white/55 uppercase">
             {emphasisLabel}
           </div>
         </div>
@@ -745,8 +741,18 @@ function AirportRow({
       </div>
 
       <div className="mt-3 space-y-2">
-        <ProgressRow label="Outbound" value={airport.departures} width={departuresWidth} colorClass="bg-cyan-300/85" />
-        <ProgressRow label="Inbound" value={airport.arrivals} width={arrivalsWidth} colorClass="bg-emerald-300/85" />
+        <ProgressRow
+          label="Outbound"
+          value={airport.departures}
+          width={departuresWidth}
+          colorClass="bg-cyan-300/85"
+        />
+        <ProgressRow
+          label="Inbound"
+          value={airport.arrivals}
+          width={arrivalsWidth}
+          colorClass="bg-emerald-300/85"
+        />
       </div>
     </button>
   );
@@ -874,7 +880,10 @@ function ProgressRow({
         <span>{value}</span>
       </div>
       <div className="h-1.5 overflow-hidden rounded-full bg-white/6">
-        <div className={`h-full rounded-full ${colorClass}`} style={{ width }} />
+        <div
+          className={`h-full rounded-full ${colorClass}`}
+          style={{ width }}
+        />
       </div>
     </div>
   );

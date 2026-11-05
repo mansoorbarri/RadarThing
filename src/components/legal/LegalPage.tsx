@@ -1,6 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { SiteFooter } from "~/components/site/SiteFooter";
+import { SiteHeader } from "~/components/site/SiteHeader";
 
 export function LegalPage({
   eyebrow,
@@ -26,45 +27,22 @@ export function LegalPage({
         }}
       />
 
-      <header className="relative border-b border-white/7">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
-          <Link href="/" aria-label="RadarThing home">
-            <Image
-              src="/logo-white.svg"
-              alt="RadarThing"
-              width={118}
-              height={36}
-              priority
-            />
-          </Link>
-          <div className="flex items-center gap-4 text-xs text-white/50 sm:gap-6">
-            <Link href="/about" className="hover:text-white">
-              About
-            </Link>
-            <Link href="/contact" className="hover:text-white">
-              Contact
-            </Link>
-            <Link
-              href="/radar"
-              className="border border-cyan-300/25 bg-cyan-300/8 px-3 py-2 font-medium text-cyan-200 hover:bg-cyan-300/15"
-            >
-              Open radar
-            </Link>
-          </div>
-        </nav>
-      </header>
+      <SiteHeader />
 
       <main className="relative mx-auto grid max-w-6xl gap-12 px-5 py-14 sm:px-8 md:grid-cols-[220px_minmax(0,1fr)] md:py-20">
         <aside>
           <p className="font-mono text-[10px] tracking-[0.24em] text-cyan-300/70 uppercase">
             {eyebrow}
           </p>
-          <p className="mt-4 text-xs leading-5 text-white/35">
+          <p className="mt-4 text-xs leading-5 text-white/60">
             Effective 28 August 2026
             <br />
             Last updated 28 August 2026
           </p>
-          <nav className="mt-8 hidden space-y-2 text-sm text-white/45 md:block">
+          <nav
+            aria-label="Legal pages"
+            className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-sm text-white/70 md:mt-8 md:block md:space-y-2"
+          >
             <LegalLink href="/privacy">Privacy</LegalLink>
             <LegalLink href="/cookies">Cookies</LegalLink>
             <LegalLink href="/terms">Terms</LegalLink>
@@ -77,35 +55,14 @@ export function LegalPage({
           <h1 className="text-4xl leading-tight font-semibold tracking-[-0.035em] text-white sm:text-5xl">
             {title}
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-white/55">
+          <p className="mt-5 max-w-2xl text-base leading-7 text-white/75">
             {summary}
           </p>
           <div className="legal-copy mt-12 space-y-10">{children}</div>
         </article>
       </main>
 
-      <footer className="relative border-t border-white/7">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-8 text-xs text-white/35 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-          <p>© {new Date().getFullYear()} RadarThing</p>
-          <div className="flex flex-wrap gap-x-5 gap-y-2">
-            <Link href="/privacy" className="hover:text-white">
-              Privacy
-            </Link>
-            <Link href="/cookies" className="hover:text-white">
-              Cookies
-            </Link>
-            <Link href="/terms" className="hover:text-white">
-              Terms
-            </Link>
-            <Link href="/copyright" className="hover:text-white">
-              Copyright
-            </Link>
-            <Link href="/contact" className="hover:text-white">
-              Contact
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
@@ -114,7 +71,7 @@ function LegalLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <Link
       href={href}
-      className="block border-l border-white/10 py-1 pl-3 transition-colors hover:border-cyan-300/50 hover:text-cyan-200"
+      className="block border-l border-white/20 py-1 pl-3 transition-colors hover:border-cyan-300/50 hover:text-cyan-200"
     >
       {children}
     </Link>
@@ -133,7 +90,7 @@ export function LegalSection({
       <h2 className="text-xl font-semibold tracking-tight text-white">
         {title}
       </h2>
-      <div className="mt-3 space-y-3 text-sm leading-7 text-white/58">
+      <div className="mt-3 space-y-3 text-sm leading-7 text-white/75">
         {children}
       </div>
     </section>

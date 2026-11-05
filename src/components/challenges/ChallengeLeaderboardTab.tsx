@@ -303,7 +303,7 @@ function ChallengeLeaderboardCard({
                     : "No submissions have landed yet."}
                 </span>
               </div>
-              <p className="font-mono text-xs text-slate-600">
+              <p className="font-mono text-xs text-slate-400">
                 {challenge.mode === "auto"
                   ? "Ranks appear as soon as flights start counting toward the challenge."
                   : "Manual challenges rank pilots once they submit work for review."}

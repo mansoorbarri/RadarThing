@@ -65,35 +65,6 @@
     };
   }
 
-  function showToast(message, isError = false) {
-    const toast = document.createElement("div");
-    toast.textContent = message;
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 24px;
-      left: 24px;
-      z-index: 1000002;
-      border-radius: 12px;
-      padding: 10px 14px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: #fff;
-      background: ${isError ? "rgba(239,68,68,0.92)" : "rgba(245,158,11,0.92)"};
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.38);
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    `;
-    document.body.appendChild(toast);
-    requestAnimationFrame(() => {
-      toast.style.opacity = "1";
-    });
-    setTimeout(() => {
-      toast.style.opacity = "0";
-      setTimeout(() => toast.remove(), 250);
-    }, 2400);
-  }
-
   // Command execution handlers
   function executeCommand(cmd) {
     const geofs = window.geofs;
@@ -256,7 +227,8 @@
           break;
 
         case "disconnectFlight":
-          stopFollow();
+          // Ending the flight clears the form and finalizes the session; the
+          // runtime UI listens for the disconnect event and shows the toast.
           window.dispatchEvent(
             new CustomEvent("atc-data-sync", {
               detail: { active: false },
@@ -265,7 +237,6 @@
           window.dispatchEvent(
             new CustomEvent("radarthing-flight-disconnected"),
           );
-          showToast("RADAR DISCONNECTED");
           break;
 
         default:
@@ -296,7 +267,8 @@
   // Poll for commands from RadarThing server
   async function pollCommands() {
     const geofs = window.geofs;
-    if (!geofs?.userRecord) return;
+    // Remote commands only target active flights, so stay quiet otherwise.
+    if (!info.active || !geofs?.userRecord) return;
 
     const id = getUserIdentifier(geofs);
     if (!id) return;
@@ -320,19 +292,62 @@
   // Start command polling
   setInterval(pollCommands, COMMAND_POLL_INTERVAL_MS);
 
-  function broadcastStatus() {
-    let status = { text: "Flight info required", color: "#94a3b8" };
-    if (info.active) {
-      status = { text: "Transmitting to API", color: "#27ae60" };
-    }
+  // Connection state shown in the panel. It is driven by real HTTP results
+  // rather than by the form being saved.
+  const STATUS = {
+    idle: { state: "idle", text: "Not tracking", color: "#94a3b8" },
+    connecting: { state: "connecting", text: "Connecting…", color: "#7dd3fc" },
+    live: { state: "live", text: "Live on radar", color: "#4ade80" },
+    retrying: {
+      state: "retrying",
+      text: "Connection issue · retrying",
+      color: "#fbbf24",
+    },
+    offline: {
+      state: "offline",
+      text: "Can't reach RadarThing · retrying",
+      color: "#f87171",
+    },
+  };
+  let consecutiveSendFailures = 0;
+  let nextSendAllowedAt = 0;
+  let currentStatus = STATUS.idle;
+
+  function broadcastStatus(next) {
+    if (next) currentStatus = next;
+    else if (!info.active) currentStatus = STATUS.idle;
     window.dispatchEvent(
-      new CustomEvent("atc-status-update", { detail: status }),
+      new CustomEvent("atc-status-update", {
+        detail: { ...currentStatus, source: "radarthing" },
+      }),
     );
   }
 
+  function recordSendSuccess() {
+    consecutiveSendFailures = 0;
+    nextSendAllowedAt = 0;
+    if (currentStatus !== STATUS.live) broadcastStatus(STATUS.live);
+  }
+
+  function recordSendFailure() {
+    consecutiveSendFailures += 1;
+    // Back off 2s, 4s, 8s … up to 30s so a dead server isn't hammered.
+    const delay = Math.min(30000, 1000 * 2 ** consecutiveSendFailures);
+    nextSendAllowedAt = Date.now() + delay;
+    const next =
+      consecutiveSendFailures >= 4 ? STATUS.offline : STATUS.retrying;
+    if (consecutiveSendFailures >= 2 && currentStatus !== next)
+      broadcastStatus(next);
+  }
+
+  window.addEventListener("radarthing-request-status", () => broadcastStatus());
+
   window.addEventListener("atc-data-sync", (e) => {
     const wasActive = info.active;
-    if (typeof e.detail?.takeoffTime === "string" && e.detail.takeoffTime.trim()) {
+    if (
+      typeof e.detail?.takeoffTime === "string" &&
+      e.detail.takeoffTime.trim()
+    ) {
       takeoffTimeUTC = e.detail.takeoffTime.trim();
     }
     info = {
@@ -340,7 +355,13 @@
       flt: sanitizeCallsign(e.detail?.flt),
       sqk: sanitizeSquawk(e.detail?.sqk),
     };
-    broadcastStatus();
+    if (info.active && !wasActive) {
+      consecutiveSendFailures = 0;
+      nextSendAllowedAt = 0;
+      broadcastStatus(STATUS.connecting);
+    } else if (!info.active) {
+      broadcastStatus(STATUS.idle);
+    }
 
     // If flight was active and is now cleared, end the flight immediately
     if (wasActive && !info.active) {
@@ -430,6 +451,7 @@
       : AIRBORNE_SEND_INTERVAL_MS;
     const now = Date.now();
     if (now - lastPositionSendAt < interval) return;
+    if (now < nextSendAllowedAt) return;
 
     lastPositionSendAt = now;
     positionUpdateInFlight = true;
@@ -517,7 +539,10 @@
         clearTimeout(timeoutId);
       }
 
-      if (!res.ok) {
+      if (res.ok) {
+        recordSendSuccess();
+      } else {
+        recordSendFailure();
         console.warn(
           `[RadarThing] Position update #${requestId} failed with HTTP ${res.status}`,
           {
@@ -530,6 +555,7 @@
         );
       }
     } catch (error) {
+      recordSendFailure();
       console.warn("[RadarThing] Position update failed before send", {
         requestId,
         elapsedMs:

@@ -36,6 +36,16 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   const [squawkInput, setSquawkInput] = useState("");
   const [flapsInput, setFlapsInput] = useState("");
   const [flapsError, setFlapsError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<ControlField, string>>
+  >({});
+  const clearFieldError = (field: ControlField) =>
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   const [modeInput, setModeInput] = useState<"nav" | "hdg">(
     aircraft.navMode ? "nav" : "hdg",
   );
@@ -128,6 +138,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     setSquawkInput("");
     setFlapsInput("");
     setFlapsError("");
+    setFieldErrors({});
     setModeInput(aircraft.navMode ? "nav" : "hdg");
     setWaypointInput(currentWaypointValue);
   }, [
@@ -138,6 +149,23 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
   ]);
 
   const handleSetAll = useCallback(async () => {
+    const errors = validateControlInputs({
+      speed: speedInput,
+      speedMode: speedModeInput,
+      altitude: altitudeInput,
+      heading: headingInput,
+      headingActive: modeInput === "hdg",
+      vs: vsInput,
+      flaps: flapsInput,
+      flapsMax: flapsMaxPosition,
+      squawk: squawkInput,
+    });
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      toast.error("Fix the highlighted fields before sending.");
+      return;
+    }
+
     const speed = parseFloat(speedInput);
     const altitude = parseInt(altitudeInput, 10);
     const heading = parseInt(headingInput, 10);
@@ -305,7 +333,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     <div className="mt-6 space-y-4">
       <div className="flex items-center gap-2 px-1">
         <div className="h-[1px] flex-1 bg-white/20" />
-        <span className="font-mono text-[9px] font-black tracking-[0.3em] text-cyan-400 uppercase">
+        <span className="font-mono text-[10px] font-black tracking-[0.3em] text-cyan-400 uppercase">
           Aircraft Control
         </span>
         <div className="h-[1px] flex-1 bg-white/20" />
@@ -313,10 +341,11 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
 
       <div className="space-y-3">
         <div className="space-y-1">
-          <p className="px-1 font-mono text-[9px] font-black tracking-[0.2em] text-white/40 uppercase">
+          <p className="px-1 font-mono text-[10px] font-black tracking-[0.2em] text-white/60 uppercase">
             Autopilot Mode
           </p>
           <StyledSelect
+            aria-label="Autopilot mode"
             value={modeInput}
             onChange={(event) =>
               setModeInput(event.target.value as "nav" | "hdg")
@@ -329,10 +358,11 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
 
         {modeInput === "nav" && (
           <div className="space-y-1">
-            <p className="px-1 font-mono text-[9px] font-black tracking-[0.2em] text-white/40 uppercase">
+            <p className="px-1 font-mono text-[10px] font-black tracking-[0.2em] text-white/60 uppercase">
               Waypoint
             </p>
             <StyledSelect
+              aria-label="Waypoint"
               value={waypointInput}
               onChange={(event) => setWaypointInput(event.target.value)}
             >
@@ -352,6 +382,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
           label="SPD"
           unit={
             <InlineUnitSelect
+              aria-label="Speed unit"
               value={speedModeInput}
               onChange={(event) =>
                 setSpeedModeInput(event.target.value as "knots" | "mach")
@@ -361,29 +392,48 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
               <option value="mach">MACH</option>
             </InlineUnitSelect>
           }
+          accessibleLabel="Speed"
+          error={fieldErrors.speed}
           value={speedInput}
-          onChange={setSpeedInput}
+          onChange={(v) => {
+            setSpeedInput(v);
+            clearFieldError("speed");
+          }}
           min={0}
-          max={speedModeInput === "mach" ? 3 : 999}
+          max={
+            speedModeInput === "mach"
+              ? CONTROL_LIMITS.mach.max
+              : CONTROL_LIMITS.knots.max
+          }
           step={speedModeInput === "mach" ? 0.01 : 1}
         />
 
         <ControlRow
           label="ALT"
+          accessibleLabel="Altitude"
+          error={fieldErrors.altitude}
           unit="FT"
           value={altitudeInput}
-          onChange={setAltitudeInput}
+          onChange={(v) => {
+            setAltitudeInput(v);
+            clearFieldError("altitude");
+          }}
           min={0}
-          max={60000}
+          max={CONTROL_LIMITS.altitude.max}
           step={100}
         />
 
         {modeInput === "hdg" && (
           <ControlRow
             label="HDG"
+            accessibleLabel="Heading"
+            error={fieldErrors.heading}
             unit="DEG"
             value={headingInput}
-            onChange={setHeadingInput}
+            onChange={(v) => {
+              setHeadingInput(v);
+              clearFieldError("heading");
+            }}
             min={0}
             max={360}
           />
@@ -391,29 +441,37 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
 
         <ControlRow
           label="V/S"
+          accessibleLabel="Vertical speed"
+          error={fieldErrors.vs}
           unit="FPM"
           value={vsInput}
-          onChange={setVsInput}
-          min={-9999}
-          max={9999}
+          onChange={(v) => {
+            setVsInput(v);
+            clearFieldError("vs");
+          }}
+          min={CONTROL_LIMITS.vs.min}
+          max={CONTROL_LIMITS.vs.max}
           step={100}
         />
 
         <div className="space-y-1">
           <ControlRow
             label="FLPS"
+            accessibleLabel="Flaps"
+            error={fieldErrors.flaps}
             unit={flapsMaxPosition > 0 ? `/${flapsMaxPosition}` : ""}
             value={flapsInput}
             onChange={(v) => {
               setFlapsInput(v);
               setFlapsError("");
+              clearFieldError("flaps");
             }}
             min={0}
             max={flapsMaxPosition || 10}
             step={1}
           />
           {flapsError && (
-            <p className="px-1 font-mono text-[9px] text-red-400">
+            <p className="px-1 font-mono text-[11px] text-red-300">
               {flapsError}
             </p>
           )}
@@ -421,27 +479,33 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
 
         <ControlRow
           label="SQK"
+          accessibleLabel="Squawk"
+          error={fieldErrors.squawk}
           unit=""
           value={squawkInput}
-          onChange={(v) => setSquawkInput(v.replace(/[^0-7]/g, "").slice(0, 4))}
+          onChange={(v) => {
+            setSquawkInput(v.replace(/[^0-7]/g, "").slice(0, 4));
+            clearFieldError("squawk");
+          }}
           isText
           placeholder="0000"
         />
       </div>
 
       <button
+        type="button"
         onClick={handleSetAll}
         disabled={isLoading || !hasAnyInput}
         className="w-full rounded-xl bg-cyan-600 py-3 font-mono text-xs font-bold tracking-wider text-white uppercase transition-colors hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        SET
+        {isLoading ? "Sending…" : "Send to aircraft"}
       </button>
 
       {!disconnectConfirmOpen ? (
         <button
           onClick={() => setDisconnectConfirmOpen(true)}
           disabled={isLoading}
-          title="Disconnect this flight from RadarThing SSE"
+          title="Stop this flight reporting to RadarThing"
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 py-3 font-mono text-xs font-bold tracking-wider text-red-200 uppercase transition-colors hover:border-red-300/50 hover:bg-red-500/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           <PowerIcon />
@@ -454,7 +518,8 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
               Disconnect flight?
             </p>
             <p className="mt-1 text-xs leading-relaxed text-white/50">
-              This stops your GeoFS flight from transmitting to RadarThing SSE.
+              The flight stops reporting to RadarThing and is saved to its
+              history. The pilot can start tracking again from GeoFS.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -477,12 +542,81 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
         </div>
       )}
 
-      <p className="px-1 font-mono text-[9px] text-white/30">
-        Commands sent to GeoFS. NAV can target any waypoint in the active flight
-        plan.
+      <p className="px-1 font-mono text-[11px] text-white/60">
+        Only filled-in fields are sent to GeoFS. NAV can target any waypoint in
+        the active flight plan.
       </p>
     </div>
   );
+}
+
+export type ControlField =
+  | "speed"
+  | "altitude"
+  | "heading"
+  | "vs"
+  | "flaps"
+  | "squawk";
+
+export const CONTROL_LIMITS = {
+  knots: { min: 0, max: 700 },
+  mach: { min: 0, max: 0.99 },
+  altitude: { min: 0, max: 60000 },
+  heading: { min: 0, max: 360 },
+  vs: { min: -8000, max: 8000 },
+} as const;
+
+/**
+ * Checks every filled-in field before anything is sent, so a typo like a
+ * 5000 kt speed is caught with a message instead of being sent to GeoFS.
+ */
+export function validateControlInputs(input: {
+  speed: string;
+  speedMode: "knots" | "mach";
+  altitude: string;
+  heading: string;
+  headingActive: boolean;
+  vs: string;
+  flaps: string;
+  flapsMax: number;
+  squawk: string;
+}): Partial<Record<ControlField, string>> {
+  const errors: Partial<Record<ControlField, string>> = {};
+  const outOfRange = (value: number, min: number, max: number) =>
+    !Number.isFinite(value) || value < min || value > max;
+
+  if (input.speed.trim()) {
+    const limits = CONTROL_LIMITS[input.speedMode];
+    if (outOfRange(Number(input.speed), limits.min, limits.max))
+      errors.speed =
+        input.speedMode === "mach"
+          ? `Mach must be between ${limits.min} and ${limits.max}.`
+          : `Speed must be between ${limits.min} and ${limits.max} kt.`;
+  }
+  if (input.altitude.trim()) {
+    const { min, max } = CONTROL_LIMITS.altitude;
+    if (outOfRange(Number(input.altitude), min, max))
+      errors.altitude = `Altitude must be between ${min.toLocaleString()} and ${max.toLocaleString()} ft.`;
+  }
+  if (input.headingActive && input.heading.trim()) {
+    const { min, max } = CONTROL_LIMITS.heading;
+    if (outOfRange(Number(input.heading), min, max))
+      errors.heading = `Heading must be between ${min} and ${max}°.`;
+  }
+  if (input.vs.trim()) {
+    const { min, max } = CONTROL_LIMITS.vs;
+    if (outOfRange(Number(input.vs), min, max))
+      errors.vs = `Vertical speed must be between ${min.toLocaleString()} and ${max.toLocaleString()} fpm.`;
+  }
+  if (input.flaps.trim()) {
+    const max = input.flapsMax > 0 ? input.flapsMax : 10;
+    const value = Number(input.flaps);
+    if (!Number.isInteger(value) || outOfRange(value, 0, max))
+      errors.flaps = `Flaps must be a whole notch from 0 to ${max}.`;
+  }
+  if (input.squawk && !/^[0-7]{4}$/.test(input.squawk))
+    errors.squawk = "Squawk must be 4 digits, each 0–7.";
+  return errors;
 }
 
 function PowerIcon({ size = 14 }: { size?: number }) {
@@ -537,6 +671,9 @@ function StyledSelect({ children, className, ...props }: StyledSelectProps) {
 
 interface ControlRowProps {
   label: string;
+  /** Spoken name for screen readers, e.g. "Speed" for "SPD". */
+  accessibleLabel: string;
+  error?: string;
   unit: React.ReactNode;
   value: string;
   onChange: (value: string) => void;
@@ -550,6 +687,8 @@ interface ControlRowProps {
 
 function ControlRow({
   label,
+  accessibleLabel,
+  error,
   unit,
   value,
   onChange,
@@ -600,52 +739,76 @@ function ControlRow({
     }
   };
 
+  const inputId = `control-${label.toLowerCase().replace(/[^a-z]/g, "")}`;
+  const errorId = `${inputId}-error`;
+
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 p-2 transition-all hover:border-white/20">
-      <span className="w-10 font-mono text-[10px] font-black tracking-wider text-cyan-400">
-        {label}
-      </span>
-
-      {!isText && (
-        <button
-          onClick={decrement}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 font-mono text-lg text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+    <div className="space-y-1">
+      <div
+        className={`flex items-center gap-2 rounded-xl border bg-black/40 p-2 transition-all hover:border-white/20 ${error ? "border-red-400/60" : "border-white/10"}`}
+      >
+        <label
+          htmlFor={inputId}
+          className="w-10 font-mono text-[11px] font-black tracking-wider text-cyan-300"
         >
-          −
-        </button>
+          <span aria-hidden="true">{label}</span>
+          <span className="sr-only">{accessibleLabel}</span>
+        </label>
+
+        {!isText && (
+          <button
+            type="button"
+            onClick={decrement}
+            aria-label={`Decrease ${accessibleLabel.toLowerCase()}`}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 font-mono text-lg text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            −
+          </button>
+        )}
+
+        <input
+          id={inputId}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? errorId : undefined}
+          inputMode={isText ? "numeric" : undefined}
+          type={isText ? "text" : "number"}
+          value={isPercentage ? displayValue : value}
+          onChange={(e) =>
+            isPercentage
+              ? handlePercentageChange(e.target.value)
+              : onChange(e.target.value)
+          }
+          placeholder={placeholder}
+          min={isText ? undefined : min}
+          max={isText ? undefined : max}
+          step={isText ? undefined : step}
+          className="w-20 flex-1 [appearance:textfield] rounded-lg border border-white/20 bg-black/60 px-2 py-1.5 text-center font-mono text-base font-bold text-white transition-colors outline-none focus:border-cyan-500/50 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        />
+
+        {!isText && (
+          <button
+            type="button"
+            onClick={increment}
+            aria-label={`Increase ${accessibleLabel.toLowerCase()}`}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 font-mono text-lg text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            +
+          </button>
+        )}
+
+        {typeof unit === "string" && unit ? (
+          <span className="w-8 font-mono text-[10px] font-bold text-white/60">
+            {unit}
+          </span>
+        ) : unit ? (
+          <div className="shrink-0">{unit}</div>
+        ) : null}
+      </div>
+      {error && (
+        <p id={errorId} className="px-1 text-[11px] text-red-300">
+          {error}
+        </p>
       )}
-
-      <input
-        type={isText ? "text" : "number"}
-        value={isPercentage ? displayValue : value}
-        onChange={(e) =>
-          isPercentage
-            ? handlePercentageChange(e.target.value)
-            : onChange(e.target.value)
-        }
-        placeholder={placeholder}
-        min={isText ? undefined : min}
-        max={isText ? undefined : max}
-        step={isText ? undefined : step}
-        className="w-20 flex-1 [appearance:textfield] rounded-lg border border-white/20 bg-black/60 px-2 py-1.5 text-center font-mono text-base font-bold text-white transition-colors outline-none focus:border-cyan-500/50 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-      />
-
-      {!isText && (
-        <button
-          onClick={increment}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 font-mono text-lg text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-        >
-          +
-        </button>
-      )}
-
-      {typeof unit === "string" && unit ? (
-        <span className="w-8 font-mono text-[9px] font-bold text-white/40">
-          {unit}
-        </span>
-      ) : unit ? (
-        <div className="shrink-0">{unit}</div>
-      ) : null}
     </div>
   );
 }

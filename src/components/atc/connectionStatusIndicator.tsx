@@ -38,24 +38,43 @@ export const ConnectionStatusIndicator: React.FC<
   const textMap: Record<typeof status, string> = {
     connected: isStale ? "◔ Stale" : "● Live",
     connecting: "◐ Connecting...",
-    disconnected: "○ Disconnected",
+    disconnected: "○ Offline",
   };
-  const title = [
-    ageLabel ? `Last packet ${ageLabel} ago` : null,
-    error ?? null,
-  ]
+  const title = [ageLabel ? `Last packet ${ageLabel} ago` : null, error ?? null]
     .filter(Boolean)
     .join(" | ");
 
+  const announcement =
+    status === "connected"
+      ? isStale
+        ? "Live traffic is delayed"
+        : "Live traffic connected"
+      : status === "connecting"
+        ? "Connecting to live traffic"
+        : "Live traffic disconnected, retrying";
+  const showInlineError = status === "disconnected" && !isMobile;
+
   return (
     <div
+      role="status"
+      aria-live="polite"
       className={clsx(baseStyle, stateClasses[status])}
       title={title || undefined}
     >
-      <span>
+      {/* Only the connection state is announced, not the ticking packet age. */}
+      <span className="sr-only">{announcement}</span>
+      <span aria-hidden="true">
         {textMap[status]}
         {shouldShowAgeLabel && ageLabel ? ` ${ageLabel}` : ""}
       </span>
+      {showInlineError && (
+        <span
+          aria-hidden="true"
+          className="ml-2 max-w-[200px] truncate font-sans text-[11px] font-normal text-red-200/90"
+        >
+          {error ? error : "Retrying…"}
+        </span>
+      )}
     </div>
   );
 };

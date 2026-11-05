@@ -1450,7 +1450,7 @@ function SeverityStat({
     <div
       className={`rounded-lg border px-2 py-1.5 text-center font-mono ${tone}`}
     >
-      <p className="text-[9px] tracking-[0.18em] uppercase">{label}</p>
+      <p className="text-[10px] tracking-[0.18em] uppercase">{label}</p>
       <p className="text-sm font-bold">{count}</p>
     </div>
   );
@@ -1591,7 +1591,7 @@ function ConflictAlertCard({
     <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 font-mono text-[11px]">
       <div className="flex items-center justify-between gap-3 text-white/85">
         <span className="truncate">{alert.callsignA}</span>
-        <span className="text-white/35">×</span>
+        <span className="text-white/55">×</span>
         <span className="truncate">{alert.callsignB}</span>
       </div>
       <div className="mt-1 flex items-center justify-between gap-3 text-[10px] text-white/50">
@@ -1603,7 +1603,7 @@ function ConflictAlertCard({
       </div>
       <div className="mt-2 flex items-center justify-between gap-2">
         <span
-          className={`rounded-full border px-2 py-0.5 text-[9px] tracking-[0.14em] uppercase ${getSeverityTone(alert.severity)}`}
+          className={`rounded-full border px-2 py-0.5 text-[10px] tracking-[0.14em] uppercase ${getSeverityTone(alert.severity)}`}
         >
           {alert.severity}
         </span>
@@ -1631,7 +1631,7 @@ function ConflictHistoryCard({
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-white/85">
             <span className="truncate">{event.callsignA}</span>
-            <span className="text-white/35">×</span>
+            <span className="text-white/55">×</span>
             <span className="truncate">{event.callsignB}</span>
           </div>
           <div className="mt-1 flex items-center gap-2 text-[10px] text-white/45">
@@ -1644,7 +1644,7 @@ function ConflictHistoryCard({
         </div>
         <div className="flex flex-col items-end gap-1">
           <span
-            className={`rounded-full border px-2 py-0.5 text-[9px] tracking-[0.14em] uppercase ${getSeverityTone(event.severity)}`}
+            className={`rounded-full border px-2 py-0.5 text-[10px] tracking-[0.14em] uppercase ${getSeverityTone(event.severity)}`}
           >
             {event.severity}
           </span>

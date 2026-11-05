@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, type ReactNode } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
@@ -20,6 +21,7 @@ function isPublicContentPage(pathname: string) {
     pathname.startsWith("/guides/") ||
     pathname === "/radar" ||
     pathname === "/aircraft-images" ||
+    pathname === "/pricing" ||
     pathname === "/leaderboard" ||
     pathname.startsWith("/leaderboard/") ||
     pathname.startsWith("/pilot/") ||
@@ -52,7 +54,9 @@ function AccountNotices({ children }: { children: ReactNode }) {
   const { signOut, openUserProfile } = useClerk();
   const pathname = usePathname();
   const router = useRouter();
-  const isLegalPage = pathname === "/terms" || pathname === "/privacy";
+  // Banned users can still read the legal pages and reach support to appeal.
+  const isLegalPage =
+    pathname === "/terms" || pathname === "/privacy" || pathname === "/contact";
   useEffect(() => {
     if (status && visitStartedAt === null) setVisitStartedAt(status.checkedAt);
   }, [status, visitStartedAt]);
@@ -86,10 +90,18 @@ function AccountNotices({ children }: { children: ReactNode }) {
             ACCOUNT RESTRICTED
           </p>
           <h1 className="mt-3 text-3xl font-semibold">
-            Your RT account is banned
+            Your RadarThing account is banned
           </h1>
           <p className="mt-4 text-sm text-slate-300">
-            This ban remains in place until the super-admin lifts it.
+            This ban stays in place until a RadarThing admin lifts it. If you
+            think it&apos;s a mistake, you can{" "}
+            <Link
+              href="/contact"
+              className="text-cyan-200 underline underline-offset-4"
+            >
+              contact us to appeal
+            </Link>
+            .
           </p>
           <div className="my-6 border-l-2 border-red-400/50 pl-4">
             <p className="break-words whitespace-pre-wrap">

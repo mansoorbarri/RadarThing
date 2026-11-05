@@ -66,10 +66,15 @@ export function ControlDock({
     }
   }, []);
 
-  const toggleSection = (sectionId: string) => {
+  // The first section (the main radar tools) starts open so the dock is
+  // useful on first click; the rest stay collapsed until the user opens them.
+  const isSectionCollapsed = (sectionId: string, index: number) =>
+    collapsedSections[sectionId] ?? index !== 0;
+
+  const toggleSection = (sectionId: string, index: number) => {
     const next = {
       ...collapsedSections,
-      [sectionId]: !(collapsedSections[sectionId] ?? true),
+      [sectionId]: !isSectionCollapsed(sectionId, index),
     };
     setCollapsedSections(next);
     try {
@@ -139,15 +144,15 @@ export function ControlDock({
             }}
           >
             <div className="flex flex-col gap-3.5">
-              {sections.map((section) => {
-                const collapsed = collapsedSections[section.id] ?? true;
+              {sections.map((section, index) => {
+                const collapsed = isSectionCollapsed(section.id, index);
                 return (
                   <div key={section.id}>
                     <button
                       type="button"
                       aria-expanded={!collapsed}
                       aria-controls={`${panelId}-${section.id}`}
-                      onClick={() => toggleSection(section.id)}
+                      onClick={() => toggleSection(section.id, index)}
                       className="flex min-h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-1 text-left text-[10px] font-medium tracking-[0.18em] text-cyan-300/80 uppercase transition-colors hover:bg-cyan-500/10 hover:text-cyan-200 focus-visible:outline-2 focus-visible:outline-cyan-300"
                     >
                       {section.label}

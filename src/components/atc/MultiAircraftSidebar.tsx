@@ -209,7 +209,7 @@ const AircraftCard = ({
                 {aircraft.flightNo || aircraft.callsign || "N/A"}
               </span>
               <span
-                className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold"
+                className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold"
                 style={{ backgroundColor: `${color}30`, color }}
               >
                 {displayValues.phase}
@@ -291,7 +291,7 @@ export const MultiAircraftSidebar = ({
 
       {/* Footer hint */}
       <div className="shrink-0 border-t border-white/10 px-4 py-2">
-        <p className="text-center font-mono text-[9px] text-white/30">
+        <p className="text-center font-mono text-[10px] text-white/55">
           CTRL+Click to add/remove aircraft
         </p>
       </div>

@@ -47,8 +47,11 @@ export default function GuidesPage() {
                     {guide.description}
                   </p>
                 </div>
-                <span aria-hidden="true" className="text-2xl text-cyan-300">
-                  ↗
+                <span
+                  aria-hidden="true"
+                  className="text-2xl text-cyan-300 transition-transform group-hover:translate-x-1"
+                >
+                  →
                 </span>
               </Link>
             ))}

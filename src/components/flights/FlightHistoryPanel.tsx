@@ -306,7 +306,7 @@ export function FlightHistoryPanel({
             RECENT FLIGHTS
           </h3>
           <div className="flex items-center gap-3">
-            <span className="font-mono text-xs text-slate-600">
+            <span className="font-mono text-xs text-slate-400">
               {FLIGHT_HISTORY_PAGE_SIZE} per page
             </span>
             <ChevronDown
@@ -319,7 +319,7 @@ export function FlightHistoryPanel({
           <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
             RECENT FLIGHTS
           </h3>
-          <span className="font-mono text-xs text-slate-600">
+          <span className="font-mono text-xs text-slate-400">
             {FLIGHT_HISTORY_PAGE_SIZE} per page
           </span>
         </div>
@@ -511,7 +511,7 @@ export function FlightHistoryPanel({
 
                 {paginatedFlights.length === 0 ? (
                   <div className="rounded-2xl border border-white/10 bg-black/30 p-10 text-center">
-                    <Search className="mx-auto mb-3 h-10 w-10 text-slate-600" />
+                    <Search className="mx-auto mb-3 h-10 w-10 text-slate-400" />
                     <h4 className="text-lg font-semibold text-white">
                       No matching flights
                     </h4>
@@ -569,7 +569,7 @@ export function FlightHistoryPanel({
                                       flight.id,
                                     )
                                       ? "border-cyan-400/40 bg-cyan-500/15 text-cyan-200"
-                                      : "border-white/10 bg-white/5 text-white/60 hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400 sm:text-white/40"
+                                      : "border-white/10 bg-white/5 text-white/60 hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400 sm:text-white/65"
                                   }`}
                                   title={
                                     selectedChallengeFlightIds.includes(
@@ -593,7 +593,7 @@ export function FlightHistoryPanel({
                               <>
                                 <button
                                   onClick={() => onShareFlight(flight)}
-                                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400 sm:h-8 sm:w-8 sm:text-white/40 sm:opacity-0 sm:group-hover:opacity-100"
+                                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400 sm:h-8 sm:w-8 sm:text-white/65 sm:opacity-0 sm:group-hover:opacity-100"
                                   title="Copy share link"
                                 >
                                   <Share2 className="h-3.5 w-3.5" />
@@ -603,7 +603,7 @@ export function FlightHistoryPanel({
                                   onClick={() =>
                                     void generateFlightCard(flight)
                                   }
-                                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-all hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400 sm:h-8 sm:w-8 sm:text-white/40 sm:opacity-0 sm:group-hover:opacity-100"
+                                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 transition-all hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-400 sm:h-8 sm:w-8 sm:text-white/65 sm:opacity-0 sm:group-hover:opacity-100"
                                   title={
                                     canGenerateFlightCard
                                       ? "Generate flight card"

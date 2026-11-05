@@ -46,8 +46,33 @@ function applyMetarStyleButton(
 ) {
   container.className =
     "map-control-btn flex h-10 w-10 items-center justify-center rounded-md border border-cyan-400/30 bg-black/70 text-cyan-400 shadow-[0_0_8px_rgba(0,255,255,0.28)] transition-all duration-200 hover:border-cyan-300/60 hover:bg-cyan-500/10";
-  container.innerHTML = `${iconHtml}<span class="map-tooltip">${title}</span>`;
+  container.innerHTML = `${iconHtml}<span class="map-tooltip" aria-hidden="true">${title}</span>`;
+  makeKeyboardAccessible(container, title);
   attachTooltipBehavior(container);
+}
+
+const keyboardHandlerMap = new WeakMap<
+  HTMLDivElement,
+  (event: KeyboardEvent) => void
+>();
+
+/**
+ * Leaflet controls are plain divs. Give them button semantics, a label and
+ * Enter/Space activation so they work with a keyboard and screen readers.
+ */
+function makeKeyboardAccessible(container: HTMLDivElement, label: string) {
+  container.setAttribute("role", "button");
+  container.setAttribute("aria-label", label);
+  container.tabIndex = 0;
+  if (keyboardHandlerMap.has(container)) return;
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    event.stopPropagation();
+    container.click();
+  };
+  keyboardHandlerMap.set(container, onKeyDown);
+  container.addEventListener("keydown", onKeyDown);
 }
 
 function clearTooltipHideTimer(container: HTMLDivElement) {
@@ -170,26 +195,10 @@ export class AltitudeModeControl extends IconButtonControl {
     this.toggle();
   }
 
-  private onKeyDown = (event: KeyboardEvent) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      event.stopPropagation();
-      this.toggle();
-    }
-  };
-
   onAdd() {
     const container = super.onAdd();
-    container.setAttribute("role", "button");
     container.setAttribute("aria-label", "Toggle 3D altitude");
-    container.tabIndex = 0;
-    container.addEventListener("keydown", this.onKeyDown);
     return container;
-  }
-
-  onRemove() {
-    this._container?.removeEventListener("keydown", this.onKeyDown);
-    super.onRemove();
   }
 
   updateState(enabled: boolean, estimated: boolean) {
@@ -406,8 +415,9 @@ export class LockedRadarModeControl extends L.Control {
     container.innerHTML = `
       <span style="opacity: 0.4">${ICONS.radar}</span>
       <span aria-hidden="true" style="position: absolute; z-index: 1; top: -6px; right: -6px; pointer-events: none; background: rgba(234, 179, 8, 0.2); color: #facc15; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: bold;">PRO</span>
-      <span class="map-tooltip">Radar Mode (PRO)</span>
+      <span class="map-tooltip" aria-hidden="true">Radar Mode (PRO)</span>
     `;
+    makeKeyboardAccessible(container, "Radar Mode (PRO feature)");
     container.dataset.control = "radar-mode-pro";
     attachTooltipBehavior(container);
     L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);

@@ -41,6 +41,7 @@ import {
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
 import { SystemThemeLogo } from "~/components/ui/SystemThemeLogo";
+import { SiteHeader } from "~/components/site/SiteHeader";
 import { ActiveChallengesPanel } from "~/components/challenges/ActiveChallengesPanel";
 import { FlightCardDialog } from "~/components/flight-card/FlightCardDialog";
 import type { FlightCardData } from "~/components/flight-card/FlightCard";
@@ -94,6 +95,7 @@ export default function DashboardPage() {
   const [copied, setCopied] = useState(false);
   const [profileCopied, setProfileCopied] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
   const [showNameEditor, setShowNameEditor] = useState(false);
@@ -439,7 +441,7 @@ export default function DashboardPage() {
                 <div className="mt-1">
                   <button
                     onClick={copySupportId}
-                    className="flex cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-600 transition-colors hover:text-slate-400"
+                    className="flex cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-400 transition-colors hover:text-slate-400"
                     title="Click to copy - share this with support when reporting issues"
                   >
                     <span>ID: {supportId.slice(0, 8)}...</span>
@@ -461,7 +463,7 @@ export default function DashboardPage() {
                     <button
                       onClick={disconnectDiscord}
                       disabled={discordLoading}
-                      className="cursor-pointer font-mono text-[10px] text-slate-600 transition-colors hover:text-red-400 disabled:opacity-50"
+                      className="cursor-pointer font-mono text-[10px] text-slate-400 transition-colors hover:text-red-400 disabled:opacity-50"
                     >
                       Disconnect
                     </button>
@@ -470,7 +472,7 @@ export default function DashboardPage() {
                   <button
                     onClick={connectDiscord}
                     disabled={discordLoading}
-                    className="flex cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-600 transition-colors hover:text-indigo-400 disabled:opacity-50"
+                    className="flex cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-400 transition-colors hover:text-indigo-400 disabled:opacity-50"
                   >
                     <DiscordIcon className="h-3.5 w-3.5" />
                     <span>
@@ -568,7 +570,7 @@ export default function DashboardPage() {
                   <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                     TOP AIRCRAFT
                   </h3>
-                  {!isPro && <Lock className="h-4 w-4 text-slate-600" />}
+                  {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
                 </div>
                 {isPro ? (
                   <div className="space-y-3">
@@ -608,7 +610,7 @@ export default function DashboardPage() {
                   <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                     TOP ROUTES
                   </h3>
-                  {!isPro && <Lock className="h-4 w-4 text-slate-600" />}
+                  {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
                 </div>
                 {isPro ? (
                   <div className="space-y-3">
@@ -646,7 +648,7 @@ export default function DashboardPage() {
                   <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                     TOP AIRPORTS
                   </h3>
-                  {!isPro && <Lock className="h-4 w-4 text-slate-600" />}
+                  {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
                 </div>
                 {isPro ? (
                   <div className="space-y-3">
@@ -893,8 +895,14 @@ export default function DashboardPage() {
                         try {
                           const url = await createPortalSession();
                           if (url) window.location.href = url;
+                          else
+                            toast.error(
+                              "Couldn't open subscription management. Please try again.",
+                            );
                         } catch {
-                          // silently fail
+                          toast.error(
+                            "Couldn't open subscription management. Please try again.",
+                          );
                         }
                       }}
                       tone="slate"
@@ -913,9 +921,9 @@ export default function DashboardPage() {
                 Danger Zone
               </h4>
             </div>
-            <p className="mb-4 text-xs text-slate-500">
-              Permanently delete your account and all associated data. This
-              action cannot be undone.
+            <p className="mb-4 text-xs text-slate-300">
+              Permanently delete your account, flight history and stats. This
+              can&apos;t be undone. An active Pro subscription is cancelled.
             </p>
 
             {!showDeleteConfirm ? (
@@ -927,34 +935,62 @@ export default function DashboardPage() {
                 Delete Account
               </button>
             ) : (
-              <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4">
-                <p className="mb-3 text-sm font-medium text-red-300">
-                  Are you sure? This will permanently delete your account.
-                </p>
+              <form
+                className="rounded-xl border border-red-500/30 bg-red-500/10 p-4"
+                onSubmit={async (event) => {
+                  event.preventDefault();
+                  if (deleteConfirmText.trim().toUpperCase() !== "DELETE")
+                    return;
+                  setIsDeleting(true);
+                  try {
+                    await user?.delete();
+                  } catch {
+                    setIsDeleting(false);
+                    toast.error(
+                      "Couldn't delete your account. Please try again or contact support.",
+                    );
+                  }
+                }}
+              >
+                <label
+                  htmlFor="delete-account-confirm"
+                  className="mb-3 block text-sm font-medium text-red-200"
+                >
+                  Type <strong className="font-mono">DELETE</strong> to confirm
+                  you want to permanently delete your account.
+                </label>
+                <input
+                  id="delete-account-confirm"
+                  value={deleteConfirmText}
+                  onChange={(event) => setDeleteConfirmText(event.target.value)}
+                  autoComplete="off"
+                  autoFocus
+                  disabled={isDeleting}
+                  className="mb-3 w-full max-w-xs rounded-lg border border-red-500/40 bg-black/40 px-3 py-2 font-mono text-sm text-white focus:border-red-400 focus:ring-2 focus:ring-red-400/30 focus:outline-none"
+                />
                 <div className="flex gap-3">
                   <button
-                    onClick={async () => {
-                      setIsDeleting(true);
-                      try {
-                        await user?.delete();
-                      } catch {
-                        setIsDeleting(false);
-                        setShowDeleteConfirm(false);
-                      }
-                    }}
-                    disabled={isDeleting}
+                    type="submit"
+                    disabled={
+                      isDeleting ||
+                      deleteConfirmText.trim().toUpperCase() !== "DELETE"
+                    }
                     className="flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-red-700 disabled:opacity-50"
                   >
-                    {isDeleting ? "Deleting..." : "Yes, delete my account"}
+                    {isDeleting ? "Deleting..." : "Delete my account"}
                   </button>
                   <button
-                    onClick={() => setShowDeleteConfirm(false)}
+                    type="button"
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setDeleteConfirmText("");
+                    }}
                     className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 transition-all hover:bg-white/10"
                   >
                     Cancel
                   </button>
                 </div>
-              </div>
+              </form>
             )}
           </div>
         </div>
@@ -1134,33 +1170,12 @@ export default function DashboardPage() {
 }
 
 function Header({
-  router,
   hidePersonalInfo = false,
 }: {
-  router: ReturnType<typeof useRouter>;
+  router?: ReturnType<typeof useRouter>;
   hidePersonalInfo?: boolean;
 }) {
-  return (
-    <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-        <button
-          onClick={() => router.push("/radar")}
-          className="cursor-pointer"
-        >
-          <SystemThemeLogo alt="RadarThing" width={100} height={30} />
-        </button>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.push("/radar")}
-            className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
-          >
-            Back to Map
-          </button>
-          <UserAuth hidePersonalInfo={hidePersonalInfo} />
-        </div>
-      </div>
-    </header>
-  );
+  return <SiteHeader tone="themed" hidePersonalInfo={hidePersonalInfo} />;
 }
 
 function StatCard({
@@ -1198,14 +1213,14 @@ function StatCard({
       </div>
       {locked ? (
         <div className="flex items-center gap-2">
-          <Lock className="h-4 w-4 text-slate-600" />
-          <span className="font-mono text-sm text-slate-600">PRO</span>
+          <Lock className="h-4 w-4 text-slate-400" />
+          <span className="font-mono text-sm text-slate-400">PRO</span>
         </div>
       ) : (
         <>
           <div className="text-2xl font-bold text-white">{value}</div>
           {subtitle && (
-            <div className="mt-0.5 font-mono text-xs text-slate-600">
+            <div className="mt-0.5 font-mono text-xs text-slate-400">
               {subtitle}
             </div>
           )}
@@ -1259,7 +1274,7 @@ function ProLockedContent() {
   const router = useRouter();
   return (
     <div className="flex flex-col items-center justify-center py-6 text-center">
-      <Lock className="mb-2 h-8 w-8 text-slate-600" />
+      <Lock className="mb-2 h-8 w-8 text-slate-400" />
       <p className="mb-3 text-sm text-slate-500">Available with PRO</p>
       <button
         onClick={() => {
@@ -1280,7 +1295,7 @@ function ProLockedContent() {
 function EmptyState() {
   return (
     <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-      <Plane className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+      <Plane className="mx-auto mb-4 h-12 w-12 text-slate-400" />
       <h3 className="mb-2 text-xl font-semibold text-white">No Flights Yet</h3>
       <p className="text-slate-400">
         Start flying in GeoFS to see your stats here.

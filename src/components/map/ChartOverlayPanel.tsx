@@ -86,7 +86,7 @@ function RunwayFilterBar({
           }`}
         >
           {group.label}
-          <span className="ml-1 text-[9px] opacity-60">
+          <span className="ml-1 text-[10px] opacity-60">
             {group.charts.length}
           </span>
         </button>
@@ -499,7 +499,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
                   }`}
                 >
                   {tab.label}
-                  <span className="ml-1 text-[9px] opacity-60">
+                  <span className="ml-1 text-[10px] opacity-60">
                     {chartsByType?.[tab.key].length}
                   </span>
                 </button>
@@ -518,18 +518,18 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
             {allCharts.length > 1 && (
               <div className="mb-2">
                 <div className="relative">
-                  <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
+                  <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-white/55" />
                   <input
                     type="text"
                     placeholder="Search charts..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full rounded-lg border border-white/10 bg-white/5 py-1.5 pr-8 pl-8 text-[11px] text-white/80 outline-none placeholder:text-white/30 focus:border-cyan-500/30"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 py-1.5 pr-8 pl-8 text-[11px] text-white/80 outline-none placeholder:text-white/55 focus:border-cyan-500/30"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery("")}
-                      className="absolute top-1/2 right-2 -translate-y-1/2 text-white/30 transition-colors hover:text-white/70"
+                      className="absolute top-1/2 right-2 -translate-y-1/2 text-white/55 transition-colors hover:text-white/70"
                       aria-label="Clear chart search"
                     >
                       <X size={14} />
@@ -572,7 +572,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
                           <div className="truncate text-[11px] font-medium">
                             {chart.chartName}
                           </div>
-                          <div className="mt-0.5 text-[10px] text-white/35">
+                          <div className="mt-0.5 text-[10px] text-white/55">
                             {typeLabel}
                           </div>
                         </button>
@@ -580,7 +580,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
                     },
                   )
                 ) : (
-                  <div className="px-2.5 py-3 text-center text-[11px] text-white/35">
+                  <div className="px-2.5 py-3 text-center text-[11px] text-white/55">
                     No matching charts
                   </div>
                 )}

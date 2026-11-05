@@ -183,7 +183,7 @@ export function WhatsNew({ isMobile }: { isMobile: boolean }) {
                       >
                         {typeBadge[entry.type].label}
                       </span>
-                      <span className="text-[11px] text-slate-600 tabular-nums">
+                      <span className="text-[11px] text-slate-400 tabular-nums">
                         {entry.date}
                       </span>
                     </div>

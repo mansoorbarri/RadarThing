@@ -31,10 +31,7 @@ import {
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  AIRCRAFT_IMAGE_REJECTION_REASONS,
-  RejectModal,
-} from "./RejectModal";
+import { AIRCRAFT_IMAGE_REJECTION_REASONS, RejectModal } from "./RejectModal";
 import { ConflictModal } from "./ConflictModal";
 import { ConfirmModal } from "./ConfirmModal";
 import {
@@ -321,7 +318,7 @@ function EditableCodes({
       )}
       <button
         onClick={() => setIsEditing(true)}
-        className="cursor-pointer rounded-md p-1 text-slate-600 opacity-0 transition-all group-hover/codes:opacity-100 hover:bg-white/10 hover:text-cyan-400"
+        className="cursor-pointer rounded-md p-1 text-slate-400 opacity-0 transition-all group-hover/codes:opacity-100 hover:bg-white/10 hover:text-cyan-400"
         title="Edit details"
       >
         <Pencil className="h-3.5 w-3.5" />
@@ -1169,7 +1166,7 @@ export function AircraftImagesTab({
         <>
           {filteredPendingImages.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-              <Clock className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+              <Clock className="mx-auto mb-4 h-12 w-12 text-slate-400" />
               <h3 className="mb-2 text-xl font-semibold text-white">
                 {hasActiveImageFilters
                   ? "No Matching Images"
@@ -1234,7 +1231,7 @@ export function AircraftImagesTab({
                         usersByClerkId={usersByClerkId}
                       />
                     </p>
-                    <p className="mb-3 text-xs text-slate-600">
+                    <p className="mb-3 text-xs text-slate-400">
                       {new Date(image.createdAt).toLocaleDateString()}
                     </p>
                     <div className="flex gap-2">
@@ -1268,7 +1265,7 @@ export function AircraftImagesTab({
         <>
           {filteredApprovedImages.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-              <Plane className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+              <Plane className="mx-auto mb-4 h-12 w-12 text-slate-400" />
               <h3 className="mb-2 text-xl font-semibold text-white">
                 {hasActiveImageFilters
                   ? "No Matching Images"
@@ -1346,7 +1343,7 @@ export function AircraftImagesTab({
                       />
                     </p>
                     {image.approvedAt && (
-                      <p className="mt-1 text-xs text-slate-600">
+                      <p className="mt-1 text-xs text-slate-400">
                         Approved{" "}
                         {new Date(image.approvedAt).toLocaleDateString()}
                       </p>

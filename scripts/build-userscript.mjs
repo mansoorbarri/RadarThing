@@ -144,11 +144,12 @@ function buildInstaller() {
 // @name         RadarThing
 // @namespace    ${siteUrl}/
 // @version      ${version}
-// @description  Loads the latest RadarThing runtime for GeoFS from radarthing.com
+// @description  Shows your GeoFS flight on the RadarThing live radar. Loads the latest runtime from radarthing.com and, while you track a flight, sends your position and flight plan to radarthing.com.
 // @author       xyzmani
 // @icon         ${iconUrl}
-// @match        http://*/geofs.php*
-// @match        https://*/geofs.php*
+// @match        https://www.geo-fs.com/geofs.php*
+// @match        https://geo-fs.com/geofs.php*
+// @match        https://*.geo-fs.com/geofs.php*
 // @grant        none
 // @downloadURL  ${installerUrl}
 // @updateURL    ${installerUrl}

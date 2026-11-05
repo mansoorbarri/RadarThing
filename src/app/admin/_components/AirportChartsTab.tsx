@@ -211,7 +211,7 @@ function EditableChartDetails({
         </span>
         <button
           onClick={() => setIsEditing(true)}
-          className="cursor-pointer rounded-md p-1 text-slate-600 opacity-0 transition-all group-hover/details:opacity-100 hover:bg-white/10 hover:text-cyan-400"
+          className="cursor-pointer rounded-md p-1 text-slate-400 opacity-0 transition-all group-hover/details:opacity-100 hover:bg-white/10 hover:text-cyan-400"
           title="Edit chart details"
         >
           <Pencil className="h-3.5 w-3.5" />
@@ -698,7 +698,7 @@ export function AirportChartsTab({
       {/* Charts Grid */}
       {filteredCharts.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-          <Map className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+          <Map className="mx-auto mb-4 h-12 w-12 text-slate-400" />
           <h3 className="mb-2 text-xl font-semibold text-white">
             {hasActiveFilters ? "No Matching Charts" : "No Charts Yet"}
           </h3>

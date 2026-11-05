@@ -1,5 +1,16 @@
 "use client";
 
+import { SiteHeader } from "~/components/site/SiteHeader";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "~/components/ui/alert-dialog";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useConvexAuth, useQuery } from "convex/react";
@@ -59,20 +70,7 @@ function truncateConvexId(id: string) {
 }
 
 function VaAdminHeader() {
-  return (
-    <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center px-6 py-5">
-        <Link href="/radar" className="inline-flex">
-          <Image
-            src="/logo-white.svg"
-            alt="RadarThing"
-            width={100}
-            height={30}
-          />
-        </Link>
-      </div>
-    </header>
-  );
+  return <SiteHeader />;
 }
 
 export default function VirtualAirlineAdminPage() {
@@ -266,6 +264,13 @@ export default function VirtualAirlineAdminPage() {
     }, 900);
   };
 
+  const [pendingConfirm, setPendingConfirm] = useState<{
+    title: string;
+    description: string;
+    confirmLabel: string;
+    run: () => Promise<void>;
+  } | null>(null);
+
   const handleDelete = async (image: (typeof images)[number]) => {
     setDeletingId(image.id);
     const result = await deleteVirtualAirlineAircraftImage({
@@ -426,6 +431,34 @@ export default function VirtualAirlineAdminPage() {
   return (
     <div className="min-h-screen bg-black text-white">
       <VaAdminHeader />
+      <AlertDialog
+        open={pendingConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingConfirm(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pendingConfirm?.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingConfirm?.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={() => {
+                const action = pendingConfirm;
+                setPendingConfirm(null);
+                if (action) void action.run();
+              }}
+            >
+              {pendingConfirm?.confirmLabel}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <main className="mx-auto max-w-4xl px-6 py-12">
         {/* Header */}
@@ -822,7 +855,15 @@ export default function VirtualAirlineAdminPage() {
                     <button
                       type="button"
                       disabled={memberActionId === member.id}
-                      onClick={() => handleRemoveMember(member)}
+                      aria-label={`Remove ${member.discordUsername ?? truncateConvexId(member.userId)} from this VA`}
+                      onClick={() =>
+                        setPendingConfirm({
+                          title: "Remove this pilot?",
+                          description: `${member.discordUsername ?? truncateConvexId(member.userId)} will no longer fly for ${selectedVirtualAirline?.name ?? "this VA"}. You can add them again later.`,
+                          confirmLabel: "Remove pilot",
+                          run: () => handleRemoveMember(member),
+                        })
+                      }
                       className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {memberActionId === member.id ? (
@@ -924,7 +965,16 @@ export default function VirtualAirlineAdminPage() {
                       <button
                         type="button"
                         disabled={deletingId === image.id}
-                        onClick={() => handleDelete(image)}
+                        aria-label="Delete this aircraft image"
+                        onClick={() =>
+                          setPendingConfirm({
+                            title: "Delete this image?",
+                            description:
+                              "The image is removed from your VA gallery and the radar. This can't be undone.",
+                            confirmLabel: "Delete image",
+                            run: () => handleDelete(image),
+                          })
+                        }
                         className="cursor-pointer rounded-lg border border-red-500/20 bg-red-500/10 p-2 text-red-300 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {deletingId === image.id ? (

@@ -33,8 +33,11 @@ export function MostTrackedPanel({ flights, onTrack }: Props) {
           </span>
         </div>
         <button
+          type="button"
           onClick={() => setDismissed(true)}
-          className="cursor-pointer text-slate-500 transition-colors hover:text-white"
+          aria-label="Dismiss most tracked flights"
+          title="Dismiss"
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-slate-400 transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
         >
           <X size={14} />
         </button>

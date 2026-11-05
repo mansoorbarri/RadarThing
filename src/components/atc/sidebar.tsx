@@ -204,6 +204,7 @@ export const Sidebar = ({
   onClose,
   isFollowMode,
   onToggleFollow,
+  followKeyLabel = "F",
 }: {
   aircraft: PositionUpdate & { altMSL?: number };
   onWaypointClick?: (waypoint: any, index: number) => void;
@@ -213,6 +214,8 @@ export const Sidebar = ({
   onClose?: () => void;
   isFollowMode?: boolean;
   onToggleFollow?: () => void;
+  /** Label for the user's current follow shortcut (it can be rebound). */
+  followKeyLabel?: string;
 }) => {
   const [tab, setTab] = useState<"info" | "history">("info");
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -346,7 +349,7 @@ export const Sidebar = ({
       <div className="mt-6 space-y-2.5">
         <div className="flex items-center gap-2 px-1">
           <div className="h-[1px] flex-1 bg-white/20" />
-          <span className="font-mono text-[9px] font-black tracking-[0.3em] text-white/50 uppercase">
+          <span className="font-mono text-[10px] font-black tracking-[0.3em] text-white/50 uppercase">
             Enroute Path
           </span>
           <div className="h-[1px] flex-1 bg-white/20" />
@@ -385,7 +388,7 @@ export const Sidebar = ({
                   isActive
                     ? "text-green-400"
                     : isPassed
-                      ? "text-white/30"
+                      ? "text-white/55"
                       : "text-cyan-400"
                 }`}
               >
@@ -404,7 +407,7 @@ export const Sidebar = ({
                   >
                     {wp.ident}
                   </span>
-                  <span className="font-mono text-[9px] font-bold text-white/40 uppercase">
+                  <span className="font-mono text-[10px] font-bold text-white/40 uppercase">
                     {wp.type}
                   </span>
                 </div>
@@ -435,7 +438,7 @@ export const Sidebar = ({
               </div>
               {!isPassed && (
                 <div className="shrink-0 text-right">
-                  <div className="font-mono text-[9px] font-black tracking-[0.18em] text-white/35 uppercase">
+                  <div className="font-mono text-[10px] font-black tracking-[0.18em] text-white/55 uppercase">
                     ETA
                   </div>
                   <div
@@ -446,7 +449,7 @@ export const Sidebar = ({
                     {etaLabel}
                   </div>
                   {distanceLabel && (
-                    <div className="font-mono text-[9px] text-white/35">
+                    <div className="font-mono text-[10px] text-white/55">
                       {distanceLabel}
                     </div>
                   )}
@@ -476,7 +479,7 @@ export const Sidebar = ({
             <span className="font-mono text-sm font-black text-white group-hover:text-cyan-300">
               {currentFlightHistory.depICAO} → {currentFlightHistory.arrICAO}
             </span>
-            <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-0.5 font-mono text-[9px] font-black tracking-widest text-cyan-300 uppercase">
+            <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-0.5 font-mono text-[10px] font-black tracking-widest text-cyan-300 uppercase">
               Live
             </span>
           </div>
@@ -559,7 +562,7 @@ export const Sidebar = ({
               <span className="font-mono text-sm font-black text-white group-hover:text-amber-400">
                 {f.depICAO} → {f.arrICAO}
               </span>
-              <span className="font-mono text-[10px] font-bold text-white/30">
+              <span className="font-mono text-[10px] font-bold text-white/55">
                 {new Date(f.startTime).toLocaleDateString()}
               </span>
             </div>
@@ -658,7 +661,7 @@ export const Sidebar = ({
           )}
 
           {isFactoryFallback && (
-            <p className="absolute top-2 left-1/2 z-20 w-max max-w-[calc(100%-1rem)] -translate-x-1/2 rounded-md bg-black/50 px-2 py-1 text-center font-mono text-[9px] leading-tight text-white/65 backdrop-blur-sm">
+            <p className="absolute top-2 left-1/2 z-20 w-max max-w-[calc(100%-1rem)] -translate-x-1/2 rounded-md bg-black/50 px-2 py-1 text-center font-mono text-[10px] leading-tight text-white/65 backdrop-blur-sm">
               Factory image shown — upload the airline image at{" "}
               <Link
                 href="/aircraft-images"
@@ -763,7 +766,10 @@ export const Sidebar = ({
           >
             {onToggleFollow && (
               <button
+                type="button"
                 onClick={onToggleFollow}
+                aria-pressed={Boolean(isFollowMode)}
+                aria-keyshortcuts={followKeyLabel}
                 className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-2.5 font-mono text-[10px] font-black tracking-wider uppercase transition-all ${
                   isFollowMode
                     ? "border-cyan-400/50 bg-cyan-500/20 text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.2)]"
@@ -785,7 +791,9 @@ export const Sidebar = ({
                   <path d="M12 2v3m0 14v3m10-10h-3M5 12H2m15.5-6.5l-2.1 2.1m-6.8 6.8l-2.1 2.1m0-11l2.1 2.1m6.8 6.8l2.1 2.1" />
                 </svg>
                 {isFollowMode ? "Following" : "Follow"}
-                <span className="text-[8px] text-white/40">(F)</span>
+                <span className="text-[10px] text-white/60" aria-hidden="true">
+                  ({followKeyLabel})
+                </span>
               </button>
             )}
 
@@ -796,9 +804,16 @@ export const Sidebar = ({
                     aircraft.flightNo || aircraft.callsign,
                   );
                   const url = `${window.location.origin}/radar?callsign=${identifier}&follow=true`;
-                  navigator.clipboard.writeText(url).then(() => {
-                    toast.success("Live tracking link copied to clipboard");
-                  });
+                  navigator.clipboard
+                    .writeText(url)
+                    .then(() => {
+                      toast.success("Live tracking link copied to clipboard");
+                    })
+                    .catch(() => {
+                      toast.error(
+                        "Couldn't copy the link. Copy it from the address bar instead.",
+                      );
+                    });
                 }}
                 className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 font-mono text-[10px] font-black tracking-wider text-white/60 uppercase transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400"
               >
@@ -823,23 +838,20 @@ export const Sidebar = ({
             )}
           </div>
 
-          <AcarsPanel
-            key={aircraft.googleId}
-            googleId={aircraft.googleId}
-          />
+          <AcarsPanel key={aircraft.googleId} googleId={aircraft.googleId} />
 
           <div
             className="animate-fade-in-up grid grid-cols-3 gap-1.5 rounded-2xl border border-white/10 bg-black/40 p-1.5 shadow-inner"
             style={{ animationDelay: "100ms" }}
           >
             <div className="flex flex-col items-center rounded-xl p-3.5">
-              <span className="mb-1.5 font-mono text-[9px] font-black text-slate-400 uppercase">
+              <span className="mb-1.5 font-mono text-[10px] font-black text-slate-400 uppercase">
                 Altitude
               </span>
               <span className="font-mono text-base leading-none font-black tracking-tight text-white">
                 {displayValues.altitude}
               </span>
-              <span className="mt-0.5 font-mono text-[8px] font-black tracking-widest text-cyan-400/80 uppercase">
+              <span className="mt-0.5 font-mono text-[10px] font-black tracking-widest text-cyan-400/80 uppercase">
                 {altitudeLabel(altitudeUnit)}
               </span>
             </div>
@@ -850,13 +862,13 @@ export const Sidebar = ({
               </span>
             </div>
             <div className="flex flex-col items-center rounded-xl p-3.5">
-              <span className="mb-1.5 font-mono text-[9px] font-black text-slate-400 uppercase">
+              <span className="mb-1.5 font-mono text-[10px] font-black text-slate-400 uppercase">
                 Speed
               </span>
               <span className="font-mono text-base leading-none font-black tracking-tight text-white">
                 {displayValues.speed}
               </span>
-              <span className="mt-0.5 font-mono text-[8px] font-black tracking-widest text-cyan-400/80 uppercase">
+              <span className="mt-0.5 font-mono text-[10px] font-black tracking-widest text-cyan-400/80 uppercase">
                 {speedLabel(speedUnit)}
               </span>
             </div>
@@ -867,8 +879,15 @@ export const Sidebar = ({
         {isMobile ? (
           <div className="px-4 pb-6">
             <nav className="mb-4 flex">
-              <div className="flex w-full rounded-2xl border border-white/10 bg-black/60 p-1">
+              <div
+                role="tablist"
+                aria-label="Flight details"
+                className="flex w-full rounded-2xl border border-white/10 bg-black/60 p-1"
+              >
                 <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === "info"}
                   onClick={() => setTab("info")}
                   className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2 font-mono text-[10px] font-black transition-all ${
                     tab === "info"
@@ -879,6 +898,9 @@ export const Sidebar = ({
                   <InfoCircleIcon size={13} /> LIVE DATA
                 </button>
                 <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === "history"}
                   onClick={() => setTab("history")}
                   className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2 font-mono text-[10px] font-black transition-all ${
                     tab === "history"
@@ -950,8 +972,15 @@ export const Sidebar = ({
         ) : (
           <>
             <nav className="mb-5 flex px-6">
-              <div className="flex w-full rounded-2xl border border-white/10 bg-black/60 p-1.5 shadow-xl">
+              <div
+                role="tablist"
+                aria-label="Flight details"
+                className="flex w-full rounded-2xl border border-white/10 bg-black/60 p-1.5 shadow-xl"
+              >
                 <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === "info"}
                   onClick={() => setTab("info")}
                   className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
                     tab === "info"
@@ -962,6 +991,9 @@ export const Sidebar = ({
                   <InfoCircleIcon size={14} /> LIVE DATA
                 </button>
                 <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === "history"}
                   onClick={() => setTab("history")}
                   className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
                     tab === "history"
@@ -1078,14 +1110,14 @@ const StatBox = ({
     style={{ animationDelay: `${150 + delay * 50}ms` }}
     disabled={!onClick}
   >
-    <div className="mb-2 font-mono text-[9px] font-black tracking-[0.2em] text-slate-400 uppercase transition-colors group-hover:text-cyan-400/80">
+    <div className="mb-2 font-mono text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase transition-colors group-hover:text-cyan-400/80">
       {label}
     </div>
     <div className="flex items-baseline gap-1.5">
       <div className="truncate font-mono text-lg font-black tracking-tighter text-white">
         {value}
       </div>
-      <span className="font-mono text-[9px] font-black tracking-tighter text-cyan-400 uppercase opacity-80">
+      <span className="font-mono text-[10px] font-black tracking-tighter text-cyan-400 uppercase opacity-80">
         {sub}
       </span>
     </div>
@@ -1100,7 +1132,7 @@ const DiversionStatusCard = ({
   plannedArrival: string;
 }) => (
   <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 shadow-lg">
-    <div className="font-mono text-[9px] font-black tracking-[0.2em] text-amber-300 uppercase">
+    <div className="font-mono text-[10px] font-black tracking-[0.2em] text-amber-300 uppercase">
       Diversion Status
     </div>
     <div className="mt-1 font-mono text-sm font-black text-amber-200">
@@ -1130,7 +1162,7 @@ const FlightTimelineCard = ({
       style={{ animationDelay: "120ms" }}
     >
       <div className="mb-3 flex items-center justify-between">
-        <span className="font-mono text-[9px] font-black tracking-[0.2em] text-slate-400 uppercase">
+        <span className="font-mono text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">
           Flight Timeline
         </span>
         <span className="font-mono text-[10px] font-black text-cyan-400">
@@ -1149,7 +1181,7 @@ const FlightTimelineCard = ({
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div>
-          <div className="font-mono text-[9px] tracking-wider text-white/40 uppercase">
+          <div className="font-mono text-[10px] tracking-wider text-white/40 uppercase">
             Departure
           </div>
           <div className="font-mono text-sm font-black text-white">
@@ -1157,7 +1189,7 @@ const FlightTimelineCard = ({
           </div>
         </div>
         <div className="text-right">
-          <div className="font-mono text-[9px] tracking-wider text-white/40 uppercase">
+          <div className="font-mono text-[10px] tracking-wider text-white/40 uppercase">
             Est. Arrival
           </div>
           <div className="font-mono text-sm font-black text-white">
@@ -1226,7 +1258,7 @@ const SquawkTooltip = ({
 
 const MiniStat = ({ label, value }: { label: string; value: string }) => (
   <div className="rounded-xl border border-white/10 bg-black/40 px-2 py-2 text-center">
-    <div className="font-mono text-[8px] font-black tracking-wider text-slate-400 uppercase">
+    <div className="font-mono text-[10px] font-black tracking-wider text-slate-400 uppercase">
       {label}
     </div>
     <div className="mt-0.5 truncate font-mono text-[10px] font-black text-white">

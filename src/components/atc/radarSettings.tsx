@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useId, useMemo, useState } from "react";
 import { Keyboard, Layers3, Monitor, Radar, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "~/components/ui/switch";
@@ -356,7 +356,7 @@ export const RadarSettings = ({
                   }}
                   maxLength={32}
                   placeholder="Preset name"
-                  className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none placeholder:text-white/25 focus:border-cyan-500/50"
+                  className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none placeholder:text-white/55 focus:border-cyan-500/50"
                 />
                 <button
                   onClick={handleSavePreset}
@@ -574,7 +574,7 @@ export const RadarSettings = ({
                   aria-label="Radar trail interval"
                 />
 
-                <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/35 uppercase">
+                <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/55 uppercase">
                   <span>
                     {radarTrailPreferences.mode === "minutes" ? "2" : "1"}
                   </span>
@@ -662,7 +662,7 @@ export const RadarSettings = ({
                     aria-label="Radar track line length"
                   />
 
-                  <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/35 uppercase">
+                  <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/55 uppercase">
                     <span>
                       {radarModeLinePreferences.mode === "minutes" ? "1" : "1"}
                     </span>
@@ -715,7 +715,7 @@ export const RadarSettings = ({
                     aria-label="Runway centerline extension length"
                   />
 
-                  <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/35 uppercase">
+                  <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/55 uppercase">
                     <span>3</span>
                     <span className="text-center text-[11px] font-semibold tracking-[0.14em] text-cyan-200">
                       {currentRunwayCenterlineLengthLabel}
@@ -855,6 +855,7 @@ function SettingsToggle({
   disabled?: boolean;
   proBadgeSource?: string;
 }) {
+  const id = useId();
   return (
     <div
       data-tour={tourId}
@@ -864,19 +865,26 @@ function SettingsToggle({
     >
       <div className="min-w-0">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          {label}
+          <label htmlFor={`${id}-switch`} className="cursor-pointer">
+            {label}
+          </label>
           {disabled && proBadgeSource ? (
             <ProBadge source={proBadgeSource} />
           ) : null}
         </span>
         {description ? (
-          <p className="mt-1 max-w-[220px] text-[11px] leading-5 text-white/45">
+          <p
+            id={`${id}-desc`}
+            className="mt-1 max-w-[220px] text-[11px] leading-5 text-white/65"
+          >
             {description}
           </p>
         ) : null}
       </div>
 
       <Switch
+        id={`${id}-switch`}
+        aria-describedby={description ? `${id}-desc` : undefined}
         checked={checked}
         disabled={disabled}
         onCheckedChange={onChange}

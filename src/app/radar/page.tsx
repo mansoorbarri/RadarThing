@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
@@ -32,7 +33,10 @@ import { useTimer } from "~/hooks/useTimer";
 import { useActiveFlightPath } from "~/hooks/useActiveFlightPath";
 // useAirportCharts hook moved into AirportChartsViewer component
 import { useProStatus } from "~/hooks/useProStatus";
-import { useRecentSearches } from "~/hooks/useRecentSearches";
+import {
+  useRecentSearches,
+  type RecentSearch,
+} from "~/hooks/useRecentSearches";
 import { useActiveTracker } from "~/hooks/useActiveTracker";
 import { useMostTrackedFlights } from "~/hooks/useMostTrackedFlights";
 import { useTileCacheWorker } from "~/hooks/useTileCacheWorker";
@@ -47,6 +51,7 @@ import {
 } from "~/lib/clientDiagnostics";
 import { setCookie } from "~/lib/cookies";
 import {
+  formatRadarKeybind,
   getStoredRadarKeybindPreferences,
   setStoredRadarKeybindPreferences,
   shouldIgnoreRadarShortcut,
@@ -116,7 +121,7 @@ const DynamicMapComponent = dynamic(() => import("~/components/map"), {
 });
 
 // Allow the initial weather tile requests to finish on slower connections.
-const APP_BOOT_TIMEOUT_MS = 15000;
+const APP_BOOT_TIMEOUT_MS = 8000;
 const DESKTOP_MAP_RENDERER_COOKIE = "desktop_map_renderer";
 
 type RightPanel = "fids" | "filter" | "airports" | null;
@@ -342,8 +347,8 @@ function ATCPageContent() {
     useState(false);
   const [hasInitialTrafficPainted, setHasInitialTrafficPainted] =
     useState(false);
-  const [isWeatherReady, setIsWeatherReady] = useState(false);
-  const [areLogosReady, setAreLogosReady] = useState(false);
+  const [, setIsWeatherReady] = useState(false);
+  const [, setAreLogosReady] = useState(false);
   const [hasBootTimedOut, setHasBootTimedOut] = useState(false);
   const [isAppReady, setIsAppReady] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -675,13 +680,14 @@ function ATCPageContent() {
   useEffect(() => {
     if (isAppReady) return;
 
+    // Reveal the radar as soon as the map and first traffic are on screen.
+    // Weather overlays and airline logos fill in afterwards instead of
+    // holding the whole app behind the loading screen.
     const hasCompletedInitialBoot =
       !isLoading &&
       isMapLoaded &&
       hasInitialBaseLayerLoaded &&
-      hasInitialTrafficPainted &&
-      isWeatherReady &&
-      areLogosReady;
+      hasInitialTrafficPainted;
 
     if (!hasCompletedInitialBoot && !hasBootTimedOut) return;
 
@@ -691,8 +697,6 @@ function ATCPageContent() {
 
     return () => window.cancelAnimationFrame(frameId);
   }, [
-    areLogosReady,
-    isWeatherReady,
     hasBootTimedOut,
     hasInitialBaseLayerLoaded,
     hasInitialTrafficPainted,
@@ -718,6 +722,30 @@ function ATCPageContent() {
       }
     },
     [airports, fetchAirports, isAirportDataLoading, selectAirport],
+  );
+
+  const selectRecentSearch = useCallback(
+    (search: RecentSearch) => {
+      if (search.type === "aircraft") {
+        const aircraft = aircrafts.find(
+          (ac) =>
+            ac.callsign === search.id ||
+            ac.flightNo === search.id ||
+            ac.id === search.id,
+        );
+        if (aircraft) {
+          setSelectedAircrafts([aircraft]);
+          drawFlightPlanOnMapRef.current?.(aircraft, true);
+        } else {
+          toast.info(`${search.displayName} isn't flying right now.`);
+        }
+      } else if (search.type === "airport") {
+        handleAirportSelectByIcao(search.id);
+      } else {
+        router.push(`/pilot/${search.id}`);
+      }
+    },
+    [aircrafts, handleAirportSelectByIcao, router],
   );
 
   const handleAirportExplorerSelect = useCallback(
@@ -1013,13 +1041,22 @@ function ATCPageContent() {
   const clearImportedFlightPlan = useCallback(() => {
     if (!importedFlightPlan) return;
 
+    const cleared = importedFlightPlan;
     setImportedFlightPlan(null);
     setShowImportedFlightPlanPanel(false);
     Analytics.track("flight_plan_import_cleared", {
       source: "dock",
-      display_name: importedFlightPlan.displayName,
+      display_name: cleared.displayName,
     });
-    toast.success("Imported flight plan cleared");
+    toast.success("Imported flight plan cleared", {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          setImportedFlightPlan(cleared);
+          setShowImportedFlightPlanPanel(true);
+        },
+      },
+    });
   }, [importedFlightPlan]);
 
   const handleFlightPlanImportClick = useCallback(() => {
@@ -1255,7 +1292,7 @@ function ATCPageContent() {
         },
         {
           id: "discord",
-          label: "Help",
+          label: "Discord community",
           icon: DiscordIcon,
           active: false,
           onClick: () => {
@@ -1315,15 +1352,19 @@ function ATCPageContent() {
       >
         <div className="flex items-center gap-2">
           {!isPhone && !isUiHidden && (
-            <Image
-              src={isDarkLayerMode ? "/logo-white.svg" : "/logo-black.svg"}
-              alt="RadarThing"
-              width={isPhone ? 100 : isTablet ? 100 : 130}
-              height={isPhone ? 32 : isTablet ? 32 : 40}
-              priority
-              className="cursor-pointer"
-              onClick={() => router.push("/radar")}
-            />
+            <Link
+              href="/"
+              aria-label="RadarThing home"
+              className="rounded-md focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+            >
+              <Image
+                src={isDarkLayerMode ? "/logo-white.svg" : "/logo-black.svg"}
+                alt="RadarThing"
+                width={isPhone ? 100 : isTablet ? 100 : 130}
+                height={isPhone ? 32 : isTablet ? 32 : 40}
+                priority
+              />
+            </Link>
           )}
 
           {!isUiHidden && isMapLoaded && !isPhone && (
@@ -1353,24 +1394,7 @@ function ATCPageContent() {
                   router.push(`/pilot/${pilot._id}`);
                 }}
                 recentSearches={recentSearches}
-                onSelectRecentSearch={(search) => {
-                  if (search.type === "aircraft") {
-                    const aircraft = aircrafts.find(
-                      (ac) =>
-                        ac.callsign === search.id ||
-                        ac.flightNo === search.id ||
-                        ac.id === search.id,
-                    );
-                    if (aircraft) {
-                      setSelectedAircrafts([aircraft]);
-                      drawFlightPlanOnMapRef.current?.(aircraft, true);
-                    }
-                  } else if (search.type === "airport") {
-                    handleAirportSelectByIcao(search.id);
-                  } else {
-                    router.push(`/pilot/${search.id}`);
-                  }
-                }}
+                onSelectRecentSearch={selectRecentSearch}
                 onClearRecentSearches={clearRecentSearches}
               />
             </div>
@@ -1419,7 +1443,7 @@ function ATCPageContent() {
                 </span>
               )}
               {isRunning && (
-                <span className="block animate-pulse text-[9px] tracking-widest text-emerald-400 uppercase">
+                <span className="block animate-pulse text-[10px] tracking-widest text-emerald-400 uppercase">
                   Timer Active
                 </span>
               )}
@@ -1468,21 +1492,19 @@ function ATCPageContent() {
               >
                 <span className="flex h-full items-center justify-center gap-1 font-mono text-[11px] leading-none text-cyan-400">
                   <span className="leading-none">{time}</span>
-                  <span className="text-[8px] leading-none text-slate-500">
+                  <span className="text-[10px] leading-none text-slate-500">
                     {zoneLabel}
                   </span>
                 </span>
               </button>
             )}
-            {!isPhone && (
-              <ConnectionStatusIndicator
-                status={connectionStatus}
-                isMobile={isMobile}
-                isStale={isTrafficStale}
-                lastMessageAgeSeconds={lastMessageAgeSeconds}
-                error={streamError}
-              />
-            )}
+            <ConnectionStatusIndicator
+              status={connectionStatus}
+              isMobile={isMobile}
+              isStale={isTrafficStale}
+              lastMessageAgeSeconds={lastMessageAgeSeconds}
+              error={streamError}
+            />
             <WhatsNew isMobile={isMobile} />
             <UserAuth />
           </div>
@@ -1524,188 +1546,31 @@ function ATCPageContent() {
               <div className="h-1 w-10 rounded-full bg-white/20" />
             </div>
 
-            {/* Search input */}
-            <input
-              type="text"
-              placeholder="Search flight, pilot, or airport..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+            <SearchBar
+              variant="sheet"
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              searchResults={searchResults}
+              isMobile
               autoFocus
-              data-tour="radar-mobile-search"
-              data-debug-id="radar-mobile-search-input"
-              className="w-full rounded-xl border border-cyan-400/30 bg-black/60 px-4 py-3 text-[15px] text-cyan-400 placeholder-cyan-500/40 outline-none focus:border-cyan-400"
+              dataTour="radar-mobile-search"
+              inputDebugId="radar-mobile-search-input"
+              onSelectAircraft={(aircraft) => {
+                setSelectedAircrafts([aircraft]);
+                drawFlightPlanOnMapRef.current?.(aircraft, true);
+                addAircraftSearch(aircraft);
+              }}
+              onSelectAirport={(airport) => selectAirport(airport)}
+              onSelectPilot={(pilot) => {
+                addPilotSearch(pilot);
+                router.push(`/pilot/${pilot._id}`);
+              }}
+              recentSearches={recentSearches}
+              onSelectRecentSearch={selectRecentSearch}
+              onClearRecentSearches={clearRecentSearches}
+              onAfterSelect={() => setShowMobileSearch(false)}
+              onEscape={() => setShowMobileSearch(false)}
             />
-
-            {/* Results */}
-            {searchTerm &&
-              (searchResults.aircrafts.length > 0 ||
-                searchResults.airports.length > 0 ||
-                searchResults.pilots.length > 0) && (
-                <div className="mt-3 max-h-[50vh] overflow-y-auto rounded-xl border border-white/10 bg-black/40">
-                  {searchResults.aircrafts.length > 0 && (
-                    <>
-                      <div className="border-b border-white/10 bg-cyan-950/30 px-4 py-2 text-[11px] font-semibold tracking-wider text-cyan-400 uppercase">
-                        Aircrafts
-                      </div>
-                      {searchResults.aircrafts.map((aircraft, index) => (
-                        <div
-                          key={
-                            aircraft.callsign ||
-                            aircraft.flightNo ||
-                            `ac-${index}`
-                          }
-                          onClick={() => {
-                            setSelectedAircrafts([aircraft]);
-                            drawFlightPlanOnMapRef.current?.(aircraft, true);
-                            addAircraftSearch(aircraft);
-                            setSearchTerm("");
-                            setShowMobileSearch(false);
-                          }}
-                          className="border-b border-white/5 px-4 py-3 last:border-b-0 active:bg-white/10"
-                        >
-                          <div className="font-medium text-white">
-                            {aircraft.callsign || aircraft.flightNo || "N/A"}
-                          </div>
-                          <div className="mt-0.5 text-[12px] text-white/50">
-                            {aircraft.type} • {aircraft.departure} →{" "}
-                            {aircraft.arrival || "UNK"}
-                          </div>
-                          {aircraft.pilotDiscordUsername && (
-                            <div className="mt-1 text-[12px] text-cyan-300/80">
-                              Pilot: {aircraft.pilotDiscordUsername}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </>
-                  )}
-                  {searchResults.pilots.length > 0 && (
-                    <>
-                      <div className="border-b border-white/10 bg-cyan-950/30 px-4 py-2 text-[11px] font-semibold tracking-wider text-cyan-400 uppercase">
-                        Pilots
-                      </div>
-                      {searchResults.pilots.map((pilot) => (
-                        <div
-                          key={`pilot-${pilot._id}`}
-                          onClick={() => {
-                            addPilotSearch(pilot);
-                            setSearchTerm("");
-                            setShowMobileSearch(false);
-                            router.push(`/pilot/${pilot._id}`);
-                          }}
-                          className="border-b border-white/5 px-4 py-3 last:border-b-0 active:bg-white/10"
-                        >
-                          <div className="font-medium text-white">
-                            {pilot.discordUsername ?? "Unknown Pilot"}
-                          </div>
-                          <div className="mt-0.5 text-[12px] text-white/50">
-                            {pilot.pilotCallsign
-                              ? `Pilot profile • ${pilot.pilotCallsign}`
-                              : "Pilot profile"}
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                  {searchResults.airports.length > 0 && (
-                    <>
-                      <div className="border-b border-white/10 bg-cyan-950/30 px-4 py-2 text-[11px] font-semibold tracking-wider text-cyan-400 uppercase">
-                        Airports
-                      </div>
-                      {searchResults.airports.map((airport) => (
-                        <div
-                          key={`ap-${airport.icao}`}
-                          onClick={() => {
-                            selectAirport(airport);
-                            setSearchTerm("");
-                            setShowMobileSearch(false);
-                          }}
-                          className="border-b border-white/5 px-4 py-3 last:border-b-0 active:bg-white/10"
-                        >
-                          <div className="font-medium text-white">
-                            {airport.icao}
-                          </div>
-                          <div className="mt-0.5 text-[12px] text-white/50">
-                            {airport.name}
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
-              )}
-
-            {/* Recent searches - shown when no search term */}
-            {!searchTerm && recentSearches.length > 0 && (
-              <div className="mt-3 max-h-[50vh] overflow-y-auto rounded-xl border border-white/10 bg-black/40">
-                <div className="flex items-center justify-between border-b border-white/10 bg-cyan-950/30 px-4 py-2">
-                  <div className="text-[11px] font-semibold tracking-wider text-cyan-400 uppercase">
-                    Recent Searches
-                  </div>
-                  <button
-                    onClick={clearRecentSearches}
-                    className="text-[10px] text-cyan-400/60 transition-colors hover:text-cyan-400"
-                  >
-                    Clear
-                  </button>
-                </div>
-                {recentSearches.map((search, index) => (
-                  <div
-                    key={`${search.type}-${search.id}-${index}`}
-                    onClick={() => {
-                      if (search.type === "aircraft") {
-                        const aircraft = aircrafts.find(
-                          (ac) =>
-                            ac.callsign === search.id ||
-                            ac.flightNo === search.id ||
-                            ac.id === search.id,
-                        );
-                        if (aircraft) {
-                          setSelectedAircrafts([aircraft]);
-                          drawFlightPlanOnMapRef.current?.(aircraft, true);
-                        }
-                      } else if (search.type === "airport") {
-                        handleAirportSelectByIcao(search.id);
-                      } else {
-                        router.push(`/pilot/${search.id}`);
-                      }
-                      setShowMobileSearch(false);
-                    }}
-                    className="border-b border-white/5 px-4 py-3 last:border-b-0 active:bg-white/10"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="text-[14px]">
-                        {search.type === "aircraft"
-                          ? "✈"
-                          : search.type === "pilot"
-                            ? "👤"
-                            : "🛫"}
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-medium text-white">
-                          {search.displayName}
-                        </div>
-                        {search.subtitle && (
-                          <div className="mt-0.5 text-[12px] text-white/50">
-                            {search.subtitle}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Empty state */}
-            {searchTerm &&
-              searchResults.aircrafts.length === 0 &&
-              searchResults.airports.length === 0 &&
-              searchResults.pilots.length === 0 && (
-                <div className="mt-6 text-center text-sm text-white/30">
-                  No results found
-                </div>
-              )}
           </div>
         </>
       )}
@@ -1874,7 +1739,7 @@ function ATCPageContent() {
                 onClick={() => {
                   setShowTaxiChart(true);
                 }}
-                className={`cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 ${isPhone ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
+                className={`cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 ${isPhone ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-[10px]"}`}
               >
                 Charts
               </button>
@@ -1883,7 +1748,7 @@ function ATCPageContent() {
                 className={`flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 ${isPhone ? "px-2 py-1" : "px-3 py-1.5"}`}
               >
                 <span
-                  className={`text-white/60 ${isPhone ? "text-[9px]" : "text-[10px]"}`}
+                  className={`text-white/60 ${isPhone ? "text-[10px]" : "text-[10px]"}`}
                 >
                   Charts
                 </span>
@@ -1897,7 +1762,7 @@ function ATCPageContent() {
                 showAirportFID
                   ? "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
                   : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
-              } ${isPhone ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
+              } ${isPhone ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-[10px]"}`}
             >
               {isPhone ? "FIDs" : "Flights"}
             </button>
@@ -1926,7 +1791,7 @@ function ATCPageContent() {
                 setShowAtcPlayer(false);
                 setShowAirportFID(false);
               }}
-              className={`cursor-pointer rounded-lg border border-white/10 bg-white/5 text-white/60 ${isPhone ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
+              className={`cursor-pointer rounded-lg border border-white/10 bg-white/5 text-white/60 ${isPhone ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-[10px]"}`}
             >
               {isPhone ? "×" : "Unselect"}
             </button>
@@ -1997,6 +1862,7 @@ function ATCPageContent() {
                 onClose={() => setSelectedAircrafts([])}
                 isFollowMode={isFollowMode}
                 onToggleFollow={() => setIsFollowMode((prev) => !prev)}
+                followKeyLabel={formatRadarKeybind(keybindPreferences.follow)}
               />
             ) : (
               <MultiAircraftSidebar
@@ -2080,6 +1946,7 @@ function ATCPageContent() {
                 onClose={() => setSelectedAircrafts([])}
                 isFollowMode={isFollowMode}
                 onToggleFollow={() => setIsFollowMode((prev) => !prev)}
+                followKeyLabel={formatRadarKeybind(keybindPreferences.follow)}
               />
             ) : (
               <MultiAircraftSidebar

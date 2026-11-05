@@ -93,10 +93,12 @@
     } catch {}
   }
 
+  // Seabus is an optional secondary feed. It must not overwrite the main
+  // RadarThing connection status, so it reports on its own event instead.
   function dispatchStatus(text, color) {
     window.dispatchEvent(
-      new CustomEvent("atc-status-update", {
-        detail: { text, color },
+      new CustomEvent("seabus-status-update", {
+        detail: { text, color, enabled: window.__radarPrefs?.seabus === true },
       }),
     );
   }

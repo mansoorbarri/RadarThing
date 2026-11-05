@@ -9,9 +9,9 @@ import { createPortalSession } from "~/app/actions/create-portal";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useProStatus } from "~/hooks/useProStatus";
 import { Check, Zap, ArrowLeft } from "lucide-react";
-import Loading from "~/components/loading";
+import { toast } from "sonner";
 import Image from "next/image";
-import { UserAuth } from "~/components/atc/userAuth";
+import { SiteHeader } from "~/components/site/SiteHeader";
 import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 import { Analytics } from "~/lib/analytics";
 import { FREE_RECENT_FLIGHTS_LIMIT } from "~/lib/flightHistory";
@@ -57,7 +57,7 @@ export default function PricingPage() {
         if (url) window.location.href = url;
       } catch (err) {
         console.error(err);
-        alert("Failed to create checkout session");
+        toast.error("Couldn't open checkout. Please try again in a moment.");
       } finally {
         setLoading(false);
       }
@@ -77,7 +77,7 @@ export default function PricingPage() {
         router.push("/radar");
       } catch (err) {
         console.error(err);
-        alert("Failed to start your free trial");
+        toast.error("Couldn't start your free trial. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -118,17 +118,18 @@ export default function PricingPage() {
       if (url) window.location.href = url;
     } catch (err) {
       console.error(err);
-      alert("Failed to open customer portal");
+      toast.error("Couldn't open subscription management. Please try again.");
     } finally {
       setLoading(false);
     }
   }
 
-  if (!mounted || !isLoaded || checkingStatus) {
-    return <Loading />;
-  }
+  // Show the plan details straight away; only the buttons wait for the
+  // account status, instead of the whole page sitting behind a loader.
+  const isStatusPending =
+    !mounted || !isLoaded || (Boolean(isSignedIn) && checkingStatus);
 
-  if (isTrialUser && trialEndsAt) {
+  if (!isStatusPending && isTrialUser && trialEndsAt) {
     // Matches create-checkout: too close to the end, billing starts at once.
     const keepsTrialDays = trialEndsAt - Date.now() > MIN_STRIPE_TRIAL_MS;
     const daysLeft = Math.max(
@@ -151,7 +152,7 @@ export default function PricingPage() {
               Free Trial Active
             </p>
             <h1 className="mb-3 text-3xl font-bold text-white">
-              {daysLeft} {daysLeft === 1 ? "day" : "days"} of PRO left
+              {daysLeft} {daysLeft === 1 ? "day" : "days"} of Pro left
             </h1>
             <p className="mb-8 text-slate-300">
               Subscribe now to keep weather intel, charts, and your full flight
@@ -165,7 +166,7 @@ export default function PricingPage() {
               disabled={loading}
               className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:from-cyan-300 hover:to-blue-400 disabled:opacity-50"
             >
-              {loading ? "Loading..." : "Keep PRO for $3/month"}
+              {loading ? "Loading..." : "Keep Pro for $3/month"}
             </button>
           </div>
         </main>
@@ -173,7 +174,7 @@ export default function PricingPage() {
     );
   }
 
-  if (isProUser) {
+  if (!isStatusPending && isProUser) {
     return (
       <div className="relative min-h-screen overflow-hidden bg-[#03070d] text-white">
         <div className="pointer-events-none absolute inset-0">
@@ -190,7 +191,7 @@ export default function PricingPage() {
               Subscription Active
             </p>
             <h1 className="mb-3 text-3xl font-bold text-white">
-              You&apos;re flying with PRO
+              You&apos;re flying with Pro
             </h1>
             <p className="mb-8 text-slate-300">
               Weather intel, charts, and full analytics are unlocked on your
@@ -242,7 +243,7 @@ export default function PricingPage() {
               Fly with full situational awareness
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-300 md:text-lg">
-              Upgrade to RadarThing PRO for advanced weather intelligence,
+              Upgrade to RadarThing Pro for advanced weather intelligence,
               airport charts, and deep flight analytics built for serious GeoFS
               pilots.
             </p>
@@ -256,7 +257,7 @@ export default function PricingPage() {
               <SignalCard
                 title="Flight History"
                 value="Full"
-                subtitle={`Free gets ${FREE_RECENT_FLIGHTS_LIMIT} recent flights, PRO gets your full archive`}
+                subtitle={`Free gets ${FREE_RECENT_FLIGHTS_LIMIT} recent flights, Pro gets your full archive`}
               />
               <SignalCard
                 title="Charts Access"
@@ -289,10 +290,10 @@ export default function PricingPage() {
 
               <FeatureSection
                 title="Comprehensive Analytics"
-                description={`Track your flying activity with meaningful stats. Free includes your last ${FREE_RECENT_FLIGHTS_LIMIT} flights, and PRO unlocks the full archive.`}
+                description={`Track your flying activity with meaningful stats. Free includes your last ${FREE_RECENT_FLIGHTS_LIMIT} flights, and Pro unlocks the full archive.`}
                 features={[
                   `Last ${FREE_RECENT_FLIGHTS_LIMIT} flights on Free`,
-                  "Full flight history on PRO",
+                  "Full flight history on Pro",
                   "Flight time & distance tracking",
                   "Top aircraft, routes, and airports",
                 ]}
@@ -311,12 +312,20 @@ export default function PricingPage() {
                 <div className="pb-1 text-slate-300">/ month</div>
               </div>
               <p className="mt-2 text-sm text-cyan-100/85">
-                {!isSignedIn || canStartTrial
+                {isStatusPending || !isSignedIn || canStartTrial
                   ? "Try it free for 7 days. No card needed."
                   : "Cancel anytime."}
               </p>
 
-              {!isSignedIn && (
+              {isStatusPending && (
+                <div
+                  role="status"
+                  aria-label="Checking your plan"
+                  className="mt-6 h-[52px] w-full animate-pulse rounded-xl bg-white/10"
+                />
+              )}
+
+              {!isStatusPending && !isSignedIn && (
                 <GoogleSignInButton redirectTo="/pricing?trial=1">
                   <button
                     onClick={() =>
@@ -332,7 +341,7 @@ export default function PricingPage() {
                 </GoogleSignInButton>
               )}
 
-              {isSignedIn && canStartTrial && (
+              {!isStatusPending && isSignedIn && canStartTrial && (
                 <>
                   <button
                     onClick={() => handleStartTrial("pricing_page")}
@@ -351,14 +360,14 @@ export default function PricingPage() {
                 </>
               )}
 
-              {isSignedIn && !canStartTrial && (
+              {!isStatusPending && isSignedIn && !canStartTrial && (
                 <>
                   <button
                     onClick={() => handleUpgrade("pricing_page")}
                     disabled={loading}
                     className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-white shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {loading ? "Loading..." : "Subscribe to PRO"}
+                    {loading ? "Loading..." : "Subscribe to Pro"}
                   </button>
                   <p className="mt-4 text-center text-[11px] text-slate-300/85">
                     Secure checkout by Stripe
@@ -368,7 +377,7 @@ export default function PricingPage() {
 
               <div className="mt-6 space-y-2 rounded-2xl border border-white/10 bg-white/5 p-4">
                 <p className="font-mono text-[10px] tracking-[0.14em] text-slate-400 uppercase">
-                  Included in PRO
+                  Included in Pro
                 </p>
                 <ul className="space-y-2 text-sm text-slate-200">
                   <li className="flex items-center gap-2">
@@ -447,32 +456,6 @@ function FeatureSection({
   );
 }
 
-function Header({ router }: { router: ReturnType<typeof useRouter> }) {
-  return (
-    <header className="relative z-10 border-b border-white/10 bg-black/35 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
-        <button
-          onClick={() => router.push("/radar")}
-          className="cursor-pointer"
-        >
-          <Image
-            src="/logo-white.svg"
-            alt="RadarThing"
-            width={100}
-            height={30}
-          />
-        </button>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.push("/radar")}
-            className="flex cursor-pointer items-center gap-2 text-sm text-slate-300 transition-colors hover:text-white"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
-          <UserAuth />
-        </div>
-      </div>
-    </header>
-  );
+function Header(_props: { router?: ReturnType<typeof useRouter> }) {
+  return <SiteHeader />;
 }

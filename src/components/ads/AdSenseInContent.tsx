@@ -64,7 +64,7 @@ export function AdSenseInContent({ placement }: AdSenseInContentProps) {
         />
       ) : (
         <div
-          className={`flex items-center justify-center px-4 text-center font-mono text-[10px] tracking-wider text-slate-600 uppercase ${
+          className={`flex items-center justify-center px-4 text-center font-mono text-[10px] tracking-wider text-slate-400 uppercase ${
             isGalleryCard ? "min-h-56 flex-1" : "h-[100px]"
           }`}
         >
