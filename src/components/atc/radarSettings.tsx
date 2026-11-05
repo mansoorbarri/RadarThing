@@ -301,7 +301,7 @@ export const RadarSettings = ({
                 className={`rounded-full border px-2.5 py-1 text-[10px] tracking-wider uppercase ${
                   activePreset
                     ? "border-cyan-400/40 bg-cyan-500/10 text-cyan-200"
-                    : "border-white/10 bg-white/5 text-white/55"
+                    : "border-white/10 bg-white/5 text-white/65"
                 }`}
               >
                 {activePreset ? activePreset.name : "Manual"}
@@ -356,7 +356,7 @@ export const RadarSettings = ({
                   }}
                   maxLength={32}
                   placeholder="Preset name"
-                  className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none placeholder:text-white/55 focus:border-cyan-500/50"
+                  className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none placeholder:text-white/65 focus:border-cyan-500/50"
                 />
                 <button
                   onClick={handleSavePreset}
@@ -574,7 +574,7 @@ export const RadarSettings = ({
                   aria-label="Radar trail interval"
                 />
 
-                <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/55 uppercase">
+                <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/65 uppercase">
                   <span>
                     {radarTrailPreferences.mode === "minutes" ? "2" : "1"}
                   </span>
@@ -662,7 +662,7 @@ export const RadarSettings = ({
                     aria-label="Radar track line length"
                   />
 
-                  <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/55 uppercase">
+                  <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/65 uppercase">
                     <span>
                       {radarModeLinePreferences.mode === "minutes" ? "1" : "1"}
                     </span>
@@ -715,7 +715,7 @@ export const RadarSettings = ({
                     aria-label="Runway centerline extension length"
                   />
 
-                  <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/55 uppercase">
+                  <div className="grid grid-cols-3 items-center text-[10px] tracking-[0.18em] text-white/65 uppercase">
                     <span>3</span>
                     <span className="text-center text-[11px] font-semibold tracking-[0.14em] text-cyan-200">
                       {currentRunwayCenterlineLengthLabel}
@@ -803,7 +803,7 @@ export const RadarSettings = ({
                 onClick={() =>
                   onKeybindPreferencesChange(DEFAULT_RADAR_KEYBINDS)
                 }
-                className="flex cursor-pointer items-center gap-1.5 text-[11px] font-medium text-white/50 transition-colors hover:text-white"
+                className="flex cursor-pointer items-center gap-1.5 text-[11px] font-medium text-white/65 transition-colors hover:text-white"
               >
                 <RotateCcw className="h-3.5 w-3.5" /> Reset defaults
               </button>

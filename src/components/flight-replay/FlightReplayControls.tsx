@@ -294,12 +294,12 @@ export function FlightReplayControls({
                   {flight.callsign || "Flight Replay"}
                 </span>
                 {route && (
-                  <span className="font-mono text-[10px] text-white/50">
+                  <span className="font-mono text-[11px] text-white/65">
                     {route}
                   </span>
                 )}
               </div>
-              <div className="font-mono text-[10px] text-white/60">
+              <div className="font-mono text-[11px] text-white/60">
                 {flight.aircraftType || "Unknown Aircraft"}
               </div>
             </div>
@@ -340,14 +340,14 @@ export function FlightReplayControls({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline justify-between gap-4">
-              <span className="font-mono text-[10px] font-semibold tracking-[0.18em] text-amber-300/65">
+              <span className="font-mono text-[11px] font-semibold tracking-[0.18em] text-amber-300/65">
                 ALTITUDE PROFILE
               </span>
               <span className="font-mono text-sm font-bold text-amber-300 tabular-nums">
                 {formatAltitude(replay.currentAltitude)}
               </span>
             </div>
-            <div className="mt-0.5 flex justify-between font-mono text-[10px] text-white/60">
+            <div className="mt-0.5 flex justify-between font-mono text-[11px] text-white/60">
               <span>
                 {replay.altitudeIsEstimated
                   ? "ESTIMATED PROFILE"
@@ -388,7 +388,7 @@ export function FlightReplayControls({
                 className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-amber-500 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500"
               />
               {/* Time display */}
-              <div className="flex justify-between font-mono text-[10px] text-white/50">
+              <div className="flex justify-between font-mono text-[11px] text-white/65">
                 <span>{formatTime(replay.elapsedTime)}</span>
                 <span>{formatTime(replay.totalDuration)}</span>
               </div>
@@ -404,7 +404,7 @@ export function FlightReplayControls({
                     aria-pressed={replay.speed === speedOption}
                     aria-label={`Playback speed ${speedOption}x`}
                     onClick={() => handleSpeedChange(speedOption)}
-                    className={`cursor-pointer rounded-md px-2 py-1 font-mono text-[10px] font-bold transition-colors ${
+                    className={`cursor-pointer rounded-md px-2 py-1 font-mono text-[11px] font-bold transition-colors ${
                       replay.speed === speedOption
                         ? "bg-amber-500 text-black"
                         : "text-white/60 hover:bg-white/10 hover:text-white"
@@ -427,7 +427,7 @@ export function FlightReplayControls({
                   aria-pressed={replay.speed === speedOption}
                   aria-label={`Playback speed ${speedOption}x`}
                   onClick={() => handleSpeedChange(speedOption)}
-                  className={`flex-1 cursor-pointer rounded-md py-1.5 font-mono text-[10px] font-bold transition-colors ${
+                  className={`flex-1 cursor-pointer rounded-md py-1.5 font-mono text-[11px] font-bold transition-colors ${
                     replay.speed === speedOption
                       ? "bg-amber-500 text-black"
                       : "text-white/60 hover:bg-white/10 hover:text-white"

@@ -521,7 +521,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
             <p className="font-mono text-[10px] font-black tracking-[0.16em] text-red-200 uppercase">
               Disconnect flight?
             </p>
-            <p className="mt-1 text-xs leading-relaxed text-white/50">
+            <p className="mt-1 text-xs leading-relaxed text-white/65">
               The flight stops reporting to RadarThing and is saved to its
               history. The pilot can start tracking again from GeoFS.
             </p>

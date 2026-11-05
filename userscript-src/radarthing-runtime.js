@@ -2561,15 +2561,15 @@
         ${buildInputRow("Air force", AF_INPUT_ID, "USAF")}
       </div>
 
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px;">
-        <button id="${SAVE_BTN_ID}" style="
+      <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:8px; margin-top:14px;">
+        <button id="${SAVE_BTN_ID}" type="button" style="
           ${actionButtonStyle}
-          border:1px solid rgba(125,211,252,0.35);
-          background:rgba(56,189,248,0.14);
-          color:#7dd3fc;
+          border:1px solid #22d3ee;
+          background:#22d3ee;
+          color:#04121a;
         ">Start tracking</button>
 
-        <button id="${CLEAR_BTN_ID}" style="
+        <button id="${CLEAR_BTN_ID}" type="button" style="
           ${actionButtonStyle}
           border:1px solid rgba(255,255,255,0.14);
           background:rgba(255,255,255,0.04);

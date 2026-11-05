@@ -377,7 +377,7 @@ export function AirportActivityPanel({
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Search airport, controller, or route..."
-              className="w-full rounded-xl border border-white/10 bg-black/35 py-2.5 pr-10 pl-9 text-sm text-white transition-colors outline-none placeholder:text-white/55 focus:border-cyan-400/40"
+              className="w-full rounded-xl border border-white/10 bg-black/35 py-2.5 pr-10 pl-9 text-sm text-white transition-colors outline-none placeholder:text-white/65 focus:border-cyan-400/40"
             />
             {searchTerm && (
               <button
@@ -404,7 +404,7 @@ export function AirportActivityPanel({
                 className={`cursor-pointer rounded-full border px-3 py-1.5 font-mono text-[10px] tracking-[0.18em] uppercase transition-colors ${
                   sortMode === mode
                     ? "border-cyan-400/40 bg-cyan-500/14 text-cyan-100"
-                    : "border-white/10 bg-white/[0.03] text-white/55 hover:border-white/20 hover:text-white/85"
+                    : "border-white/10 bg-white/[0.03] text-white/65 hover:border-white/20 hover:text-white/85"
                 }`}
               >
                 {label}
@@ -416,7 +416,7 @@ export function AirportActivityPanel({
               className={`cursor-pointer rounded-full border px-3 py-1.5 font-mono text-[10px] tracking-[0.18em] uppercase transition-colors ${
                 staffedOnly
                   ? "border-emerald-400/40 bg-emerald-500/14 text-emerald-100"
-                  : "border-white/10 bg-white/[0.03] text-white/55 hover:border-white/20 hover:text-white/85"
+                  : "border-white/10 bg-white/[0.03] text-white/65 hover:border-white/20 hover:text-white/85"
               }`}
             >
               Staffed Only
@@ -553,7 +553,7 @@ function SummaryCard({
       <div className="mt-3 font-mono text-2xl font-semibold text-white">
         {value}
       </div>
-      <div className="mt-1 text-[11px] tracking-[0.18em] text-white/55 uppercase">
+      <div className="mt-1 text-[11px] tracking-[0.18em] text-white/65 uppercase">
         {label}
       </div>
     </div>
@@ -658,7 +658,7 @@ function SectionHeader({
 
 function EmptySection({ message }: { message: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.025] px-4 py-5 text-sm text-white/55">
+    <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.025] px-4 py-5 text-sm text-white/65">
       {message}
     </div>
   );
@@ -728,13 +728,13 @@ function AirportRow({
           <div className="font-mono text-lg font-semibold text-cyan-200">
             {emphasisValue}
           </div>
-          <div className="text-[10px] tracking-[0.18em] text-white/55 uppercase">
+          <div className="text-[10px] tracking-[0.18em] text-white/65 uppercase">
             {emphasisLabel}
           </div>
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-3 gap-2 text-[11px] text-white/55">
+      <div className="mt-3 grid grid-cols-3 gap-2 text-[11px] text-white/65">
         <MetricPill label="Dep" value={airport.departures} />
         <MetricPill label="Arr" value={airport.arrivals} />
         <MetricPill label="ATC" value={airport.controllerCount} />

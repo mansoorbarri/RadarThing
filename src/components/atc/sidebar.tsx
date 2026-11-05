@@ -389,7 +389,7 @@ export const Sidebar = ({
                   isActive
                     ? "text-green-400"
                     : isPassed
-                      ? "text-white/55"
+                      ? "text-white/65"
                       : "text-cyan-400"
                 }`}
               >
@@ -402,17 +402,17 @@ export const Sidebar = ({
                       isActive
                         ? "text-green-300"
                         : isPassed
-                          ? "text-white/50"
+                          ? "text-white/65"
                           : "text-white"
                     }`}
                   >
                     {wp.ident}
                   </span>
-                  <span className="font-mono text-[10px] font-bold text-white/60 uppercase">
+                  <span className="font-mono text-[11px] font-bold text-white/60 uppercase">
                     {wp.type}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[10px] font-bold text-white/60">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] font-bold text-white/60">
                   <span>
                     ALT:{" "}
                     <span
@@ -439,7 +439,7 @@ export const Sidebar = ({
               </div>
               {!isPassed && (
                 <div className="shrink-0 text-right">
-                  <div className="font-mono text-[10px] font-black tracking-[0.18em] text-white/55 uppercase">
+                  <div className="font-mono text-[11px] font-black tracking-[0.18em] text-white/65 uppercase">
                     ETA
                   </div>
                   <div
@@ -450,7 +450,7 @@ export const Sidebar = ({
                     {etaLabel}
                   </div>
                   {distanceLabel && (
-                    <div className="font-mono text-[10px] text-white/55">
+                    <div className="font-mono text-[11px] text-white/65">
                       {distanceLabel}
                     </div>
                   )}
@@ -480,23 +480,23 @@ export const Sidebar = ({
             <span className="font-mono text-sm font-black text-white group-hover:text-cyan-300">
               {currentFlightHistory.depICAO} → {currentFlightHistory.arrICAO}
             </span>
-            <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-0.5 font-mono text-[10px] font-black tracking-widest text-cyan-300 uppercase">
+            <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-0.5 font-mono text-[11px] font-black tracking-widest text-cyan-300 uppercase">
               Live
             </span>
           </div>
           <div className="flex items-center gap-2">
             {currentFlightHistory.callsign && (
-              <span className="font-mono text-[10px] text-cyan-300/80">
+              <span className="font-mono text-[11px] text-cyan-300/80">
                 {currentFlightHistory.callsign}
               </span>
             )}
             {currentFlightHistory.aircraftType && (
-              <span className="font-mono text-[10px] text-white/60">
+              <span className="font-mono text-[11px] text-white/60">
                 {currentFlightHistory.aircraftType}
               </span>
             )}
           </div>
-          <p className="mt-2 font-mono text-[10px] text-white/50">
+          <p className="mt-2 font-mono text-[11px] text-white/65">
             Open the route flown so far.
           </p>
         </div>
@@ -517,7 +517,7 @@ export const Sidebar = ({
           <span className="mb-2 font-mono text-sm font-black tracking-wide text-white">
             PRO Feature
           </span>
-          <p className="mb-4 max-w-[240px] text-center font-mono text-[10px] leading-relaxed text-white/50">
+          <p className="mb-4 max-w-[240px] text-center font-mono text-[11px] leading-relaxed text-white/65">
             Flight history is available for Pro and Admin users only.
           </p>
           <Link
@@ -528,13 +528,13 @@ export const Sidebar = ({
                 feature: "flight_history",
               })
             }
-            className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 font-mono text-[10px] font-black tracking-wide text-black transition-all hover:shadow-lg hover:shadow-amber-500/20"
+            className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 font-mono text-[11px] font-black tracking-wide text-black transition-all hover:shadow-lg hover:shadow-amber-500/20"
           >
             START 7-DAY TRIAL
           </Link>
         </div>
       ) : history.length === 0 ? (
-        <div className="py-20 text-center font-mono text-[10px] tracking-widest text-white/60 uppercase">
+        <div className="py-20 text-center font-mono text-[11px] tracking-widest text-white/60 uppercase">
           {currentFlightHistory ? "No past flights" : "No flights yet"}
         </div>
       ) : (
@@ -567,18 +567,18 @@ export const Sidebar = ({
               <span className="font-mono text-sm font-black text-white group-hover:text-amber-400">
                 {f.depICAO} → {f.arrICAO}
               </span>
-              <span className="font-mono text-[10px] font-bold text-white/55">
+              <span className="font-mono text-[11px] font-bold text-white/65">
                 {new Date(f.startTime).toLocaleDateString()}
               </span>
             </div>
             <div className="flex items-center gap-2">
               {f.callsign && (
-                <span className="font-mono text-[10px] text-cyan-400/70">
+                <span className="font-mono text-[11px] text-cyan-400/70">
                   {f.callsign}
                 </span>
               )}
               {f.aircraftType && (
-                <span className="font-mono text-[10px] text-white/60">
+                <span className="font-mono text-[11px] text-white/60">
                   {f.aircraftType}
                 </span>
               )}
@@ -666,7 +666,7 @@ export const Sidebar = ({
           )}
 
           {isFactoryFallback && (
-            <p className="absolute top-2 left-1/2 z-20 w-max max-w-[calc(100%-1rem)] -translate-x-1/2 rounded-md bg-black/50 px-2 py-1 text-center font-mono text-[10px] leading-tight text-white/65 backdrop-blur-sm">
+            <p className="absolute top-2 left-1/2 z-20 w-max max-w-[calc(100%-1rem)] -translate-x-1/2 rounded-md bg-black/50 px-2 py-1 text-center font-mono text-[11px] leading-tight text-white/65 backdrop-blur-sm">
               Factory image shown — upload the airline image at{" "}
               <Link
                 href="/aircraft-images"
@@ -682,10 +682,10 @@ export const Sidebar = ({
             <div
               className={`${isMobile ? "mx-4 mt-3 mb-2 p-3" : "mx-6 mt-4 mb-3 p-3.5"} relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-sky-500/5 to-black/40`}
             >
-              <p className="font-mono text-[10px] font-black tracking-[0.18em] text-cyan-300/90 uppercase">
+              <p className="font-mono text-[11px] font-black tracking-[0.18em] text-cyan-300/90 uppercase">
                 No Aircraft Image
               </p>
-              <p className="mt-0.5 max-w-[280px] font-mono text-[10px] leading-relaxed text-white/60">
+              <p className="mt-0.5 max-w-[280px] font-mono text-[11px] leading-relaxed text-white/60">
                 {virtualAirline
                   ? `${virtualAirline.name} has not uploaded a fleet image for this aircraft yet.`
                   : "Help the community identify this aircraft by uploading a photo."}
@@ -693,7 +693,7 @@ export const Sidebar = ({
               {!virtualAirline && (
                 <Link
                   href="/aircraft-images"
-                  className="mt-2 inline-flex font-mono text-[10px] font-black tracking-wide text-cyan-300 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-200 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+                  className="mt-2 inline-flex font-mono text-[11px] font-black tracking-wide text-cyan-300 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-200 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
                 >
                   /aircraft-images
                 </Link>
@@ -714,13 +714,13 @@ export const Sidebar = ({
                     {aircraft.flightNo || aircraft.callsign || "No callsign"}
                   </h1>
                   {virtualAirline && (
-                    <span className="rounded-full border border-cyan-400/30 bg-cyan-500/15 px-2 py-1 font-mono text-[10px] font-black tracking-[0.18em] text-cyan-300 uppercase">
+                    <span className="rounded-full border border-cyan-400/30 bg-cyan-500/15 px-2 py-1 font-mono text-[11px] font-black tracking-[0.18em] text-cyan-300 uppercase">
                       VA
                     </span>
                   )}
                 </div>
                 {radioCallsign && (
-                  <p className="mt-1 truncate font-mono text-[10px] font-black tracking-[0.14em] text-cyan-300/85 uppercase drop-shadow-md">
+                  <p className="mt-1 truncate font-mono text-[11px] font-black tracking-[0.14em] text-cyan-300/85 uppercase drop-shadow-md">
                     {radioCallsign}
                   </p>
                 )}
@@ -733,12 +733,12 @@ export const Sidebar = ({
                       href={virtualAirline.website}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-1 block max-w-full truncate font-mono text-[10px] font-bold tracking-[0.14em] text-cyan-300/80 uppercase transition-colors hover:text-cyan-200"
+                      className="mt-1 block max-w-full truncate font-mono text-[11px] font-bold tracking-[0.14em] text-cyan-300/80 uppercase transition-colors hover:text-cyan-200"
                     >
                       {virtualAirline.name} - {virtualAirline.callsignPrefix}
                     </a>
                   ) : (
-                    <p className="mt-1 truncate font-mono text-[10px] font-bold tracking-[0.14em] text-cyan-300/80 uppercase">
+                    <p className="mt-1 truncate font-mono text-[11px] font-bold tracking-[0.14em] text-cyan-300/80 uppercase">
                       {virtualAirline.name} - {virtualAirline.callsignPrefix}
                     </p>
                   ))}
@@ -747,13 +747,13 @@ export const Sidebar = ({
                     <Link
                       data-tour="pilot-profile-link"
                       href={`/pilot/${pilotUser._id}?callsign=${encodeURIComponent(aircraft.callsign)}`}
-                      className="mt-1 flex items-center gap-1 font-mono text-[10px] font-bold text-cyan-400 transition-colors hover:text-cyan-300"
+                      className="mt-1 flex items-center gap-1 font-mono text-[11px] font-bold text-cyan-400 transition-colors hover:text-cyan-300"
                     >
                       <span className="text-white/60">Pilot:</span>{" "}
                       {aircraft.callsign}
                     </Link>
                   ) : (
-                    <p className="mt-1 font-mono text-[10px] font-bold text-white/60">
+                    <p className="mt-1 font-mono text-[11px] font-bold text-white/60">
                       <span className="text-white/60">Pilot:</span>{" "}
                       {aircraft.callsign}
                     </p>
@@ -775,7 +775,7 @@ export const Sidebar = ({
                 onClick={onToggleFollow}
                 aria-pressed={Boolean(isFollowMode)}
                 aria-keyshortcuts={followKeyLabel}
-                className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-2.5 font-mono text-[10px] font-black tracking-wider uppercase transition-all ${
+                className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-2.5 font-mono text-[11px] font-black tracking-wider uppercase transition-all ${
                   isFollowMode
                     ? "border-cyan-400/50 bg-cyan-500/20 text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.2)]"
                     : "border-white/10 bg-black/40 text-white/60 hover:border-cyan-500/30 hover:bg-black/60 hover:text-white"
@@ -796,7 +796,7 @@ export const Sidebar = ({
                   <path d="M12 2v3m0 14v3m10-10h-3M5 12H2m15.5-6.5l-2.1 2.1m-6.8 6.8l-2.1 2.1m0-11l2.1 2.1m6.8 6.8l2.1 2.1" />
                 </svg>
                 {isFollowMode ? "Following" : "Follow"}
-                <span className="text-[10px] text-white/60" aria-hidden="true">
+                <span className="text-[11px] text-white/60" aria-hidden="true">
                   ({followKeyLabel})
                 </span>
               </button>
@@ -820,7 +820,7 @@ export const Sidebar = ({
                       );
                     });
                 }}
-                className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 font-mono text-[10px] font-black tracking-wider text-white/60 uppercase transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400"
+                className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 font-mono text-[11px] font-black tracking-wider text-white/60 uppercase transition-all hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400"
               >
                 <svg
                   width="14"
@@ -850,30 +850,30 @@ export const Sidebar = ({
             style={{ animationDelay: "100ms" }}
           >
             <div className="flex flex-col items-center rounded-xl p-3.5">
-              <span className="mb-1.5 font-mono text-[10px] font-black text-slate-400 uppercase">
+              <span className="mb-1.5 font-mono text-[11px] font-black text-slate-400 uppercase">
                 Altitude
               </span>
               <span className="font-mono text-base leading-none font-black tracking-tight text-white">
                 {displayValues.altitude}
               </span>
-              <span className="mt-0.5 font-mono text-[10px] font-black tracking-widest text-cyan-400/80 uppercase">
+              <span className="mt-0.5 font-mono text-[11px] font-black tracking-widest text-cyan-400/80 uppercase">
                 {altitudeLabel(altitudeUnit)}
               </span>
             </div>
             <div className="z-10 flex scale-105 flex-col items-center rounded-xl border border-white/10 bg-white/10 p-3.5 shadow-lg">
               <PlaneInflightIcon size={20} className="text-cyan-400" />
-              <span className="mt-1.5 font-mono text-[10px] font-black tracking-wide text-white uppercase">
+              <span className="mt-1.5 font-mono text-[11px] font-black tracking-wide text-white uppercase">
                 {currentFlightPhase}
               </span>
             </div>
             <div className="flex flex-col items-center rounded-xl p-3.5">
-              <span className="mb-1.5 font-mono text-[10px] font-black text-slate-400 uppercase">
+              <span className="mb-1.5 font-mono text-[11px] font-black text-slate-400 uppercase">
                 Speed
               </span>
               <span className="font-mono text-base leading-none font-black tracking-tight text-white">
                 {displayValues.speed}
               </span>
-              <span className="mt-0.5 font-mono text-[10px] font-black tracking-widest text-cyan-400/80 uppercase">
+              <span className="mt-0.5 font-mono text-[11px] font-black tracking-widest text-cyan-400/80 uppercase">
                 {speedLabel(speedUnit)}
               </span>
             </div>
@@ -1181,7 +1181,7 @@ const StatBox = ({
       <div className="truncate font-mono text-lg font-black tracking-tighter text-white">
         {value}
       </div>
-      <span className="font-mono text-[10px] font-black tracking-tighter text-cyan-400 uppercase opacity-80">
+      <span className="font-mono text-[11px] font-black tracking-tighter text-cyan-400 uppercase opacity-80">
         {sub}
       </span>
     </div>
@@ -1196,13 +1196,13 @@ const DiversionStatusCard = ({
   plannedArrival: string;
 }) => (
   <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 shadow-lg">
-    <div className="font-mono text-[10px] font-black tracking-[0.2em] text-amber-300 uppercase">
+    <div className="font-mono text-[11px] font-black tracking-[0.2em] text-amber-300 uppercase">
       Diversion Status
     </div>
     <div className="mt-1 font-mono text-sm font-black text-amber-200">
       DIVERTING
     </div>
-    <p className="mt-1 font-mono text-[10px] text-white/60">
+    <p className="mt-1 font-mono text-[11px] text-white/60">
       Filed ARR {filedArrival} • Plan DST {plannedArrival}
     </p>
   </div>
@@ -1229,7 +1229,7 @@ const FlightTimelineCard = ({
         <span className="font-mono text-[11px] font-black tracking-[0.18em] text-slate-300 uppercase">
           Flight Timeline
         </span>
-        <span className="font-mono text-[10px] font-black text-cyan-400">
+        <span className="font-mono text-[11px] font-black text-cyan-400">
           {Math.max(0, Math.min(100, progress.progressPercent))}%
         </span>
       </div>
@@ -1245,7 +1245,7 @@ const FlightTimelineCard = ({
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div>
-          <div className="font-mono text-[10px] tracking-wider text-white/60 uppercase">
+          <div className="font-mono text-[11px] tracking-wider text-white/60 uppercase">
             Departure
           </div>
           <div className="font-mono text-sm font-black text-white">
@@ -1253,7 +1253,7 @@ const FlightTimelineCard = ({
           </div>
         </div>
         <div className="text-right">
-          <div className="font-mono text-[10px] tracking-wider text-white/60 uppercase">
+          <div className="font-mono text-[11px] tracking-wider text-white/60 uppercase">
             Est. Arrival
           </div>
           <div className="font-mono text-sm font-black text-white">
@@ -1262,7 +1262,7 @@ const FlightTimelineCard = ({
         </div>
       </div>
 
-      <div className="mt-2 text-center font-mono text-[11px] text-white/50">
+      <div className="mt-2 text-center font-mono text-[11px] text-white/65">
         {roundedDistanceLeftNm !== null ? (
           <>
             <span className="text-cyan-300">{roundedDistanceLeftNm} NM</span> in{" "}
@@ -1309,7 +1309,7 @@ const SquawkTooltip = ({
           <TooltipPrimitive.Content
             side="top"
             sideOffset={6}
-            className="z-[10000] rounded-lg border border-red-500/40 bg-black/90 px-2.5 py-1.5 font-mono text-[10px] font-black tracking-wide text-red-300 shadow-xl"
+            className="z-[10000] rounded-lg border border-red-500/40 bg-black/90 px-2.5 py-1.5 font-mono text-[11px] font-black tracking-wide text-red-300 shadow-xl"
           >
             {squawk} — {meaning}
             <TooltipPrimitive.Arrow className="fill-black/90" />
@@ -1322,10 +1322,10 @@ const SquawkTooltip = ({
 
 const MiniStat = ({ label, value }: { label: string; value: string }) => (
   <div className="rounded-xl border border-white/10 bg-black/40 px-2 py-2 text-center">
-    <div className="font-mono text-[10px] font-black tracking-wider text-slate-400 uppercase">
+    <div className="font-mono text-[11px] font-black tracking-wider text-slate-400 uppercase">
       {label}
     </div>
-    <div className="mt-0.5 truncate font-mono text-[10px] font-black text-white">
+    <div className="mt-0.5 truncate font-mono text-[11px] font-black text-white">
       {value}
     </div>
   </div>

@@ -1525,7 +1525,7 @@ function ConflictMonitorPanel({
 
         <div className="space-y-1.5">
           {alerts.length === 0 ? (
-            <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 font-mono text-[11px] text-white/50">
+            <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 font-mono text-[11px] text-white/65">
               No predicted conflicts in current traffic.
             </div>
           ) : (
@@ -1591,10 +1591,10 @@ function ConflictAlertCard({
     <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 font-mono text-[11px]">
       <div className="flex items-center justify-between gap-3 text-white/85">
         <span className="truncate">{alert.callsignA}</span>
-        <span className="text-white/55">×</span>
+        <span className="text-white/65">×</span>
         <span className="truncate">{alert.callsignB}</span>
       </div>
-      <div className="mt-1 flex items-center justify-between gap-3 text-[10px] text-white/50">
+      <div className="mt-1 flex items-center justify-between gap-3 text-[10px] text-white/65">
         <span>
           {alert.horizontalSeparationNm.toFixed(1)}nm /{" "}
           {Math.round(alert.verticalSeparationFt)}ft
@@ -1631,7 +1631,7 @@ function ConflictHistoryCard({
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-white/85">
             <span className="truncate">{event.callsignA}</span>
-            <span className="text-white/55">×</span>
+            <span className="text-white/65">×</span>
             <span className="truncate">{event.callsignB}</span>
           </div>
           <div className="mt-1 flex items-center gap-2 text-[10px] text-white/45">

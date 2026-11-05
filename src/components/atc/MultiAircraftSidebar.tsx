@@ -170,7 +170,7 @@ const AircraftCard = ({
     >
       {isMobile && (
         <div className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-red-500/18">
-          <span className="font-mono text-[10px] font-bold tracking-[0.18em] text-red-200 uppercase">
+          <span className="font-mono text-[11px] font-bold tracking-[0.18em] text-red-200 uppercase">
             Remove
           </span>
         </div>
@@ -209,23 +209,23 @@ const AircraftCard = ({
                 {aircraft.flightNo || aircraft.callsign || "No callsign"}
               </span>
               <span
-                className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold"
+                className="shrink-0 rounded px-1.5 py-0.5 text-[11px] font-bold"
                 style={{ backgroundColor: `${color}30`, color }}
               >
                 {displayValues.phase}
               </span>
             </div>
-            <div className="truncate font-mono text-[10px] text-white/50">
+            <div className="truncate font-mono text-[11px] text-white/65">
               {aircraft.type || "Unknown"}
             </div>
-            <div className="mt-1 font-mono text-[10px] text-white/60">
+            <div className="mt-1 font-mono text-[11px] text-white/60">
               {aircraft.departure || "---"} → {aircraft.arrival || "---"}
             </div>
           </div>
         </div>
 
         {/* Stats row */}
-        <div className="mt-2 flex gap-4 pl-2 font-mono text-[10px]">
+        <div className="mt-2 flex gap-4 pl-2 font-mono text-[11px]">
           <div>
             <span className="text-white/60">ALT </span>
             <span className="text-white/80">{displayValues.altitude}</span>
@@ -291,7 +291,7 @@ export const MultiAircraftSidebar = ({
 
       {/* Footer hint */}
       <div className="shrink-0 border-t border-white/10 px-4 py-2">
-        <p className="text-center font-mono text-[10px] text-white/55">
+        <p className="text-center font-mono text-[11px] text-white/65">
           CTRL+Click to add/remove aircraft
         </p>
       </div>

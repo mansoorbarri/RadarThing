@@ -145,7 +145,7 @@ function FlightRow({
           <span className="font-mono text-xs font-medium text-white">
             {ac.departure || "----"}
           </span>
-          <span className="text-[10px] text-white/55">→</span>
+          <span className="text-[10px] text-white/65">→</span>
           <span className="font-mono text-xs font-medium text-white">
             {ac.arrival || "----"}
           </span>
@@ -155,7 +155,7 @@ function FlightRow({
             </span>
           )}
         </div>
-        <div className="mt-0.5 truncate text-[10px] text-white/50">
+        <div className="mt-0.5 truncate text-[10px] text-white/65">
           {ac.callsign || "N/A"}
         </div>
       </div>
@@ -163,13 +163,13 @@ function FlightRow({
       {/* ETA (arrivals only) */}
       {isArrival && eta && (
         <div className="shrink-0 text-right">
-          <div className="text-[10px] text-white/55">ETA</div>
+          <div className="text-[10px] text-white/65">ETA</div>
           <div className="font-mono text-xs text-cyan-400">{eta}</div>
         </div>
       )}
 
       {/* Aircraft type */}
-      <div className="shrink-0 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-white/50">
+      <div className="shrink-0 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-white/65">
         {normalizeAircraftType(ac.type) || "???"}
       </div>
     </button>
@@ -253,7 +253,7 @@ export function AirportFIDPanel({
           className={`flex-1 cursor-pointer px-4 py-2 text-center text-xs font-medium transition-colors ${
             activeTab === "departures"
               ? "border-b-2 border-cyan-400 text-cyan-400"
-              : "text-white/50 hover:text-white/80"
+              : "text-white/65 hover:text-white/80"
           }`}
         >
           Departures ({departures.length})
@@ -263,7 +263,7 @@ export function AirportFIDPanel({
           className={`flex-1 cursor-pointer px-4 py-2 text-center text-xs font-medium transition-colors ${
             activeTab === "arrivals"
               ? "border-b-2 border-cyan-400 text-cyan-400"
-              : "text-white/50 hover:text-white/80"
+              : "text-white/65 hover:text-white/80"
           }`}
         >
           Arrivals ({arrivals.length})
@@ -273,7 +273,7 @@ export function AirportFIDPanel({
       {/* Flight list */}
       <div className="max-h-[40vh] overflow-y-auto">
         {currentList.length === 0 ? (
-          <div className="flex h-24 items-center justify-center text-xs text-white/55">
+          <div className="flex h-24 items-center justify-center text-xs text-white/65">
             No {activeTab} to/from {icao}
           </div>
         ) : (

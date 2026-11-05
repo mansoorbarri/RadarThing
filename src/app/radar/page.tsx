@@ -1451,7 +1451,7 @@ function ATCPageContent() {
                 className={`font-mono text-cyan-400 ${isTablet ? "text-base" : "text-xl"}`}
               >
                 {time}{" "}
-                <span className="text-[10px] text-slate-500">{zoneLabel}</span>
+                <span className="text-[11px] text-slate-500">{zoneLabel}</span>
               </span>
               {showTimerPopup && (
                 <span className="block font-mono text-sm text-emerald-400">
@@ -1459,7 +1459,7 @@ function ATCPageContent() {
                 </span>
               )}
               {isRunning && (
-                <span className="block animate-pulse text-[10px] tracking-widest text-emerald-400 uppercase">
+                <span className="block animate-pulse text-[11px] tracking-widest text-emerald-400 uppercase">
                   Timer active
                 </span>
               )}
@@ -1503,12 +1503,16 @@ function ATCPageContent() {
             {/* Compact clock on phone */}
             {isPhone && (
               <button
+                type="button"
                 onClick={() => setShowTimerPopup(!showTimerPopup)}
-                className="flex h-9 items-center justify-center rounded-lg border border-white/10 bg-black/40 px-2.5 backdrop-blur-md"
+                aria-label={`UTC time ${time}. Open timer`}
+                // On the narrowest phones (under 360px) the clock gives way so
+                // status, What's New and the account menu still fit.
+                className="flex h-9 items-center justify-center rounded-lg border border-white/10 bg-black/40 px-2.5 backdrop-blur-md max-[359px]:hidden"
               >
                 <span className="flex h-full items-center justify-center gap-1 font-mono text-[11px] leading-none text-cyan-400">
                   <span className="leading-none">{time}</span>
-                  <span className="text-[10px] leading-none text-slate-500">
+                  <span className="text-[11px] leading-none text-slate-500">
                     {zoneLabel}
                   </span>
                 </span>
@@ -1724,12 +1728,12 @@ function ATCPageContent() {
           >
             <div>
               <div
-                className={`font-mono text-cyan-300 ${isPhone ? "text-[10px]" : "text-xs"}`}
+                className={`font-mono text-cyan-300 ${isPhone ? "text-[11px]" : "text-xs"}`}
               >
                 {selectedAirport.icao}
               </div>
               {!isPhone && (
-                <div className="text-[10px] text-slate-400">
+                <div className="text-[11px] text-slate-400">
                   {selectedAirport.name}
                 </div>
               )}
@@ -1741,7 +1745,7 @@ function ATCPageContent() {
                 onClick={() => {
                   setShowTaxiChart(true);
                 }}
-                className={`cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 ${isPhone ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-[10px]"}`}
+                className={`cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 ${isPhone ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[11px]"}`}
               >
                 Charts
               </button>
@@ -1750,7 +1754,7 @@ function ATCPageContent() {
                 className={`flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 ${isPhone ? "px-2 py-1" : "px-3 py-1.5"}`}
               >
                 <span
-                  className={`text-white/60 ${isPhone ? "text-[10px]" : "text-[10px]"}`}
+                  className={`text-white/60 ${isPhone ? "text-[11px]" : "text-[11px]"}`}
                 >
                   Charts
                 </span>
@@ -1764,7 +1768,7 @@ function ATCPageContent() {
                 showAirportFID
                   ? "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
                   : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
-              } ${isPhone ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-[10px]"}`}
+              } ${isPhone ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[11px]"}`}
             >
               {isPhone ? "FIDs" : "Flights"}
             </button>
@@ -1772,7 +1776,7 @@ function ATCPageContent() {
             {!isPhone && (
               <button
                 onClick={() => setShowAtcPlayer(!showAtcPlayer)}
-                className={`cursor-pointer rounded-lg border px-3 py-1.5 text-[10px] transition-colors ${
+                className={`cursor-pointer rounded-lg border px-3 py-1.5 text-[11px] transition-colors ${
                   showAtcPlayer
                     ? onlineAtcForSelected
                       ? "border-green-500/50 bg-green-500/20 text-green-300"
@@ -1927,7 +1931,7 @@ function ATCPageContent() {
               <div className="flex h-full flex-col items-center py-6">
                 <div className="mb-4 h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
                 <div
-                  className="writing-vertical font-mono text-[10px] font-bold tracking-wider text-cyan-400 uppercase"
+                  className="writing-vertical font-mono text-[11px] font-bold tracking-wider text-cyan-400 uppercase"
                   style={{ writingMode: "vertical-rl" }}
                 >
                   {selectedAircrafts.length === 1

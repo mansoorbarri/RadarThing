@@ -42,13 +42,13 @@ export function FIDSPanel({ aircrafts, onTrack }: Props) {
 
       {/* Column headers */}
       <div className="grid shrink-0 grid-cols-[minmax(0,3fr)_minmax(0,3fr)_4rem_5.25rem] items-center gap-2 border-b border-white/10 px-4 py-1.5">
-        <span className="font-mono text-[10px] tracking-wider text-white/55 uppercase">
+        <span className="font-mono text-[10px] tracking-wider text-white/65 uppercase">
           Flight
         </span>
-        <span className="font-mono text-[10px] tracking-wider text-white/55 uppercase">
+        <span className="font-mono text-[10px] tracking-wider text-white/65 uppercase">
           Route
         </span>
-        <span className="font-mono text-[10px] tracking-wider text-white/55 uppercase">
+        <span className="font-mono text-[10px] tracking-wider text-white/65 uppercase">
           Aircraft
         </span>
         <span />
@@ -99,7 +99,7 @@ function FIDSRow({
         {aircraft.flightNo &&
           aircraft.callsign &&
           aircraft.flightNo !== aircraft.callsign && (
-            <div className="truncate font-mono text-[10px] text-white/55">
+            <div className="truncate font-mono text-[10px] text-white/65">
               {aircraft.callsign}
             </div>
           )}

@@ -548,6 +548,9 @@ export default function AirportChartsPage() {
                   value={formData.icao}
                   onChange={(e) => {
                     setIcaoError(null);
+                    setError((current) =>
+                      current === "Fix the highlighted field." ? null : current,
+                    );
                     setFormData({
                       ...formData,
                       icao: e.target.value.toUpperCase(),

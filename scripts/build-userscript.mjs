@@ -48,7 +48,17 @@ function buildBundle(sourceBlocks) {
     return;
   }
 
+  // A previous boot that failed partway has already registered some timers
+  // and listeners; running the sources again would duplicate them (double
+  // position sends, double toasts). Ask for a reload instead.
+  if (window.__radarThingBootAttempted) {
+    console.warn("[RadarThing] A previous start failed partway; reload GeoFS to retry.");
+    window.__radarThingNeedsReload = true;
+    return;
+  }
+
   window.__radarThingBooting = true;
+  window.__radarThingBootAttempted = true;
 
   try {
     window.__radarThingVersion = ${JSON.stringify(version)};
@@ -154,14 +164,21 @@ function buildLoader() {
     chip.setAttribute("role", "alert");
     chip.style.cssText =
       "position:fixed;top:72px;right:16px;z-index:999998;display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid rgba(248,113,113,0.5);border-radius:12px;background:rgba(23,28,42,0.95);color:#fecaca;font:600 12px system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,0.4);";
+    const needsReload = Boolean(window.__radarThingNeedsReload);
     const text = document.createElement("span");
-    text.textContent = "RadarThing couldn't load, so this flight isn't tracked.";
+    text.textContent = needsReload
+      ? "RadarThing didn't start properly. Reload GeoFS to try again."
+      : "RadarThing couldn't load, so this flight isn't tracked.";
     const retry = document.createElement("button");
     retry.type = "button";
-    retry.textContent = "Retry";
+    retry.textContent = needsReload ? "Reload GeoFS" : "Retry";
     retry.style.cssText =
       "padding:4px 10px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;background:transparent;color:#fff;font:600 12px system-ui,sans-serif;cursor:pointer;";
     retry.onclick = () => {
+      if (needsReload) {
+        window.location.reload();
+        return;
+      }
       chip.remove();
       state.promise = resolveBundleUrl()
         .then((bundleUrl) => injectScript(bundleUrl))

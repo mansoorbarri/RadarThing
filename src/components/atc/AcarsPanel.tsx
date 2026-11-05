@@ -73,11 +73,11 @@ export function AcarsPanel({ googleId }: { googleId?: string }) {
       >
         <h2 className="font-mono text-[10px] font-black tracking-[0.2em] text-cyan-300 uppercase">
           Pilot ACARS
-          <span className="ml-2 tracking-normal text-white/55">
+          <span className="ml-2 tracking-normal text-white/65">
             ({entries.length})
           </span>
         </h2>
-        <span className="flex items-center gap-2 font-mono text-[10px] text-white/55">
+        <span className="flex items-center gap-2 font-mono text-[10px] text-white/65">
           {expanded && "Latest first"}
           <svg
             width="12"
@@ -118,7 +118,7 @@ export function AcarsPanel({ googleId }: { googleId?: string }) {
               {(!user || (isAuthenticated && !entry.isOwnEntry)) && (
                 <button
                   type="button"
-                  className="cursor-pointer font-mono text-[10px] text-white/55 hover:text-amber-300"
+                  className="cursor-pointer font-mono text-[10px] text-white/65 hover:text-amber-300"
                   onClick={() => {
                     if (!user)
                       return toast.error("Sign in to report an ACARS entry");
