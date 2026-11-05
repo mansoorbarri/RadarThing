@@ -1365,10 +1365,19 @@ body {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
+    /* Calm decorative motion without freezing spinners/pulses mid-cycle. */
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  .animate-pulse,
+  .animate-bounce,
+  .animate-radarPulse,
+  .animate-fade-in-up,
+  .animate-fade-in,
+  .animate-slide-in-right,
+  .animate-slide-in-left,
+  .animate-scale-in {
+    animation: none !important;
   }
 }
 

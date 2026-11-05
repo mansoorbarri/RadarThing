@@ -27,12 +27,12 @@ export default function RouteError({
 
   return (
     <main
-      role="alert"
+      id="main-content"
       className="flex min-h-screen items-center justify-center bg-[#02090d] px-6 text-slate-100"
     >
       <div className="w-full max-w-lg rounded-2xl border border-red-400/25 bg-[#08151c] p-8">
         <AlertTriangle className="h-8 w-8 text-red-300" aria-hidden="true" />
-        <h1 className="mt-5 text-2xl font-semibold text-white">
+        <h1 role="alert" className="mt-5 text-2xl font-semibold text-white">
           Something went wrong on this page
         </h1>
         <p className="mt-3 leading-7 text-slate-300">

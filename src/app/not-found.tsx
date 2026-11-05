@@ -13,7 +13,10 @@ export default function NotFound() {
   return (
     <div className="flex min-h-screen flex-col bg-[#02090d] text-slate-100">
       <SiteHeader />
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-start justify-center px-6 py-20">
+      <main
+        id="main-content"
+        className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-start justify-center px-6 py-20"
+      >
         <p className="inline-flex items-center gap-2 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 font-mono text-xs tracking-widest text-cyan-200 uppercase">
           <Compass className="h-4 w-4" aria-hidden="true" />
           Error 404

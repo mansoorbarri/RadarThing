@@ -460,7 +460,7 @@ export default function VirtualAirlineAdminPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <main className="mx-auto max-w-4xl px-6 py-12">
+      <main id="main-content" className="mx-auto max-w-4xl px-6 py-12">
         {/* Header */}
         <div className="mb-8">
           <div>

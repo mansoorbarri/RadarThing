@@ -91,7 +91,7 @@ export default function HomePage() {
       <SiteHeader />
 
       {/* Hero */}
-      <main className="relative z-10">
+      <main id="main-content" className="relative z-10">
         <section className="mx-auto max-w-6xl px-6 pt-8 pb-16 md:pt-12 md:pb-24">
           <div className="max-w-2xl">
             <h1 className="mb-6 text-4xl leading-[1.1] font-bold tracking-tight text-white md:text-5xl lg:text-6xl">
@@ -181,8 +181,8 @@ export default function HomePage() {
               />
               <SetupStep
                 step={3}
-                title="Fly in GeoFS"
-                description="Open GeoFS and your position will appear on the radar automatically"
+                title="Start tracking in GeoFS"
+                description="Open GeoFS, enter your departure, arrival and callsign in the RadarThing panel, then press Start tracking"
                 link="https://geo-fs.com/geofs.php"
                 linkText="Open GeoFS"
               />

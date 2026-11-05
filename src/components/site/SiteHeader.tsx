@@ -63,7 +63,7 @@ export function SiteHeader({
   const linkClass = (href: string) =>
     `rounded-md px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none ${
       isActive(pathname, href)
-        ? "text-cyan-300"
+        ? "font-semibold text-cyan-300 underline decoration-2 underline-offset-8"
         : "text-slate-300 hover:text-white"
     }`;
 
@@ -142,7 +142,10 @@ export function SiteHeader({
           <ul className="flex flex-col py-2">
             {[
               ...SITE_NAV_LINKS,
-              { href: "/dashboard", label: accountLabel },
+              // Signed-out users already have the Sign in button in the bar.
+              ...(isLoaded && isSignedIn
+                ? [{ href: "/dashboard", label: accountLabel }]
+                : []),
             ].map((link) => (
               <li key={link.href}>
                 <Link

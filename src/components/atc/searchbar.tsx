@@ -194,6 +194,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         setIsOpen(isSheet);
       }
     } else if (event.key === "Escape") {
+      // Handle Escape here so it doesn't also clear the radar selection.
+      event.stopPropagation();
+      event.nativeEvent.stopImmediatePropagation();
       if (searchTerm) {
         setSearchTerm("");
       } else {
@@ -221,7 +224,19 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   let lastGroup: Option["group"] | null = null;
 
   return (
-    <div ref={rootRef} className="flex w-full flex-col" data-tour={dataTour}>
+    <div
+      ref={rootRef}
+      className="flex w-full flex-col"
+      data-tour={dataTour}
+      onBlur={(event) => {
+        // Close when keyboard focus moves outside the search entirely.
+        if (
+          !isSheet &&
+          !rootRef.current?.contains(event.relatedTarget as Node | null)
+        )
+          setIsOpen(false);
+      }}
+    >
       <label htmlFor={inputId} className="sr-only">
         Search flights, pilots or airports
       </label>

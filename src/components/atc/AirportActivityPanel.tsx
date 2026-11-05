@@ -382,7 +382,7 @@ export function AirportActivityPanel({
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm("")}
-                className="absolute top-1/2 right-2 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/8 hover:text-white/75"
+                className="absolute top-1/2 right-2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/8 hover:text-white/75"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -608,7 +608,7 @@ function SelectedAirportSpotlight({
         <MetricPill label="ATC" value={airport.controllerCount} />
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-xs text-white/40">
+      <div className="mt-3 flex items-center justify-between text-xs text-white/60">
         <span>{statusLabel}</span>
         {airport.controllerPositions.length > 0 ? (
           <div className="flex flex-wrap justify-end gap-1.5">
@@ -645,7 +645,7 @@ function SectionHeader({
         <div className="font-mono text-[11px] tracking-[0.24em] text-cyan-400 uppercase">
           {title}
         </div>
-        <div className="mt-1 text-xs leading-5 text-white/40">{subtitle}</div>
+        <div className="mt-1 text-xs leading-5 text-white/60">{subtitle}</div>
       </div>
       {badge && (
         <div className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[10px] tracking-[0.16em] text-white/45 uppercase">
@@ -719,7 +719,7 @@ function AirportRow({
               </span>
             )}
           </div>
-          <div className="mt-1 truncate text-xs text-white/40">
+          <div className="mt-1 truncate text-xs text-white/60">
             {formatAirportName(airport.name, airport.icao)}
           </div>
         </div>
@@ -781,7 +781,7 @@ function StaffedAirportRow({
           <div className="font-mono text-sm font-semibold text-white">
             {airport.icao}
           </div>
-          <div className="mt-1 truncate text-xs text-white/40">
+          <div className="mt-1 truncate text-xs text-white/60">
             {formatAirportName(airport.name, airport.icao)}
           </div>
         </div>
@@ -829,7 +829,7 @@ function RouteRow({
             <ArrowRightLeft className="h-3.5 w-3.5 text-cyan-300/70" />
             <span>{route.arrival}</span>
           </div>
-          <div className="mt-1 truncate text-xs text-white/40">
+          <div className="mt-1 truncate text-xs text-white/60">
             {formatAirportName(route.departureName, route.departure)} to{" "}
             {formatAirportName(route.arrivalName, route.arrival)}
           </div>

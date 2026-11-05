@@ -12,7 +12,6 @@ import { ConvexProvider } from "~/components/providers/ConvexProvider";
 import { PostHogProvider } from "~/components/providers/PostHogProvider";
 import { ThemeProvider } from "~/components/providers/ThemeProvider";
 import { PrivacyConsentProvider } from "~/components/privacy/PrivacyConsentProvider";
-import { PrivacyControl } from "~/components/privacy/PrivacyControl";
 import { ModerationGate } from "~/components/moderation/ModerationGate";
 import { AdSenseAnchor } from "~/components/ads/AdSenseAnchor";
 
@@ -79,6 +78,12 @@ export default function RootLayout({
     >
       <html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
         <body suppressHydrationWarning>
+          <a
+            href="#main-content"
+            className="sr-only z-[20000] rounded-md bg-cyan-300 px-4 py-2 font-semibold text-black focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+          >
+            Skip to main content
+          </a>
           <ThemeProvider>
             <PrivacyConsentProvider>
               <ConvexProvider>
@@ -103,7 +108,6 @@ export default function RootLayout({
                     />
                     <ModerationGate>
                       {children}
-                      <PrivacyControl />
                       <AdSenseAnchor />
                     </ModerationGate>
                   </Suspense>

@@ -30,7 +30,10 @@ export function AdminAccessDenied() {
           </button>
         </div>
       </header>
-      <main className="mx-auto max-w-2xl px-6 py-20 text-center">
+      <main
+        id="main-content"
+        className="mx-auto max-w-2xl px-6 py-20 text-center"
+      >
         <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2">
           <Plane className="h-4 w-4 text-red-400" />
           <span className="font-mono text-sm text-red-400">ACCESS DENIED</span>

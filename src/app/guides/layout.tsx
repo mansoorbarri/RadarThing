@@ -6,7 +6,9 @@ export default function GuidesLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-[#02090d] text-slate-100">
       <SiteHeader />
-      <main className="mx-auto max-w-6xl px-6 py-12 md:py-20">{children}</main>
+      <main id="main-content" className="mx-auto max-w-6xl px-6 py-12 md:py-20">
+        {children}
+      </main>
       <SiteFooter />
     </div>
   );

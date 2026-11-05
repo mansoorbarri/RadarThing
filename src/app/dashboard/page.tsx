@@ -41,6 +41,7 @@ import {
 import Image from "next/image";
 import { UserAuth } from "~/components/atc/userAuth";
 import { SystemThemeLogo } from "~/components/ui/SystemThemeLogo";
+import { SiteFooter } from "~/components/site/SiteFooter";
 import { SiteHeader } from "~/components/site/SiteHeader";
 import { ActiveChallengesPanel } from "~/components/challenges/ActiveChallengesPanel";
 import { FlightCardDialog } from "~/components/flight-card/FlightCardDialog";
@@ -352,8 +353,11 @@ export default function DashboardPage() {
   if (!isSignedIn) {
     return (
       <div className="dashboard-theme-surface min-h-screen bg-black text-white">
-        <Header router={router} />
-        <main className="mx-auto max-w-2xl px-6 py-20 text-center">
+        <Header />
+        <main
+          id="main-content"
+          className="mx-auto max-w-2xl px-6 py-20 text-center"
+        >
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
             <Plane className="h-4 w-4 text-cyan-400" />
             <span className="font-mono text-sm text-cyan-400">
@@ -372,15 +376,16 @@ export default function DashboardPage() {
             </button>
           </GoogleSignInButton>
         </main>
+        <SiteFooter />
       </div>
     );
   }
 
   return (
     <div className="dashboard-theme-surface min-h-screen bg-black text-white">
-      <Header router={router} />
+      <Header />
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
+      <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
         {/* Profile Header */}
         <div className="mb-10">
           <div className="mb-2 flex items-center gap-4">
@@ -835,7 +840,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-sm">
                       {isPro ? (
-                        <span className="text-emerald-400">PRO</span>
+                        <span className="text-emerald-400">Pro</span>
                       ) : (
                         <span className="text-slate-500">Free Tier</span>
                       )}
@@ -923,7 +928,8 @@ export default function DashboardPage() {
             </div>
             <p className="mb-4 text-xs text-slate-300">
               Permanently delete your account, flight history and stats. This
-              can&apos;t be undone. An active Pro subscription is cancelled.
+              can&apos;t be undone. Deleting your account doesn&apos;t cancel a
+              Pro subscription, so cancel it first under Manage subscription.
             </p>
 
             {!showDeleteConfirm ? (
@@ -995,6 +1001,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+      <SiteFooter />
 
       <AlertDialog
         open={showNameEditor}
@@ -1169,12 +1176,7 @@ export default function DashboardPage() {
   );
 }
 
-function Header({
-  hidePersonalInfo = false,
-}: {
-  router?: ReturnType<typeof useRouter>;
-  hidePersonalInfo?: boolean;
-}) {
+function Header({ hidePersonalInfo = false }: { hidePersonalInfo?: boolean }) {
   return <SiteHeader tone="themed" hidePersonalInfo={hidePersonalInfo} />;
 }
 
@@ -1391,7 +1393,7 @@ function DashboardSkeleton() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
+      <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
         {/* Profile Header */}
         <div className="mb-10">
           <div className="mb-2 flex items-center gap-4">
@@ -1460,6 +1462,7 @@ function DashboardSkeleton() {
           </div>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

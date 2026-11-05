@@ -1,3 +1,4 @@
+import { buttonLikeProps } from "~/lib/a11y";
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
@@ -44,12 +45,11 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
         <div className="max-w-[350px] rounded-lg border border-orange-400/40 bg-gradient-to-br from-black/90 to-orange-950/80 p-3 text-orange-300 shadow-[0_0_10px_rgba(255,150,0,0.2)]">
           <div
             className="flex cursor-pointer items-center gap-2"
-            onClick={() =>
-              isPro &&
-              notams &&
-              notams.length > 0 &&
-              setNotamsExpanded(!notamsExpanded)
-            }
+            {...buttonLikeProps(() => {
+              if (isPro && notams && notams.length > 0)
+                setNotamsExpanded(!notamsExpanded);
+            })}
+            aria-expanded={notamsExpanded}
           >
             <strong className="text-orange-400">NOTAMs</strong>
             {isPro && notamCount > 0 && (
@@ -109,7 +109,10 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
         <div className="max-w-[300px] rounded-lg border border-cyan-300/30 bg-gradient-to-br from-black/85 to-cyan-950/90 p-3 text-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.2)]">
           <div
             className="flex cursor-pointer items-center gap-2"
-            onClick={() => isPro && setAtisExpanded(!atisExpanded)}
+            {...buttonLikeProps(() => {
+              if (isPro) setAtisExpanded(!atisExpanded);
+            })}
+            aria-expanded={atisExpanded}
           >
             <strong className="text-cyan-300">
               ATIS{isPro && atisCode ? ` ${atisCode}` : ""}
@@ -147,7 +150,8 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
         <div className="max-w-[300px] rounded-lg border border-cyan-300/30 bg-gradient-to-br from-black/85 to-cyan-950/90 p-3 text-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.2)]">
           <div
             className="flex cursor-pointer items-center gap-2"
-            onClick={() => setMetarExpanded(!metarExpanded)}
+            {...buttonLikeProps(() => setMetarExpanded(!metarExpanded))}
+            aria-expanded={metarExpanded}
           >
             <strong className="text-cyan-300">METAR</strong>
             {metarExpanded ? (

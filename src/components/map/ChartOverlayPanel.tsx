@@ -446,7 +446,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
         </div>
         <button
           onClick={onClose}
-          className="cursor-pointer rounded-md p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+          className="cursor-pointer rounded-md p-1 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
         >
           <X size={16} />
         </button>
@@ -456,7 +456,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
         <div className="flex flex-1 items-center justify-center">
           <div className="flex flex-col items-center gap-2">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-cyan-500" />
-            <span className="text-xs text-white/40">Loading charts...</span>
+            <span className="text-xs text-white/60">Loading charts...</span>
           </div>
         </div>
       ) : errorCode ? (
@@ -469,7 +469,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
         </div>
       ) : !hasCharts ? (
         <div className="flex flex-1 items-center justify-center px-4">
-          <span className="text-center text-xs text-white/40">
+          <span className="text-center text-xs text-white/60">
             No charts available. Message{" "}
             <a
               href="https://discord.com/users/1203599506730651650"
@@ -611,12 +611,12 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
           >
             {!selectedChart ? (
               <div className="flex h-full items-center justify-center">
-                <span className="text-xs text-white/40">Select a chart</span>
+                <span className="text-xs text-white/60">Select a chart</span>
               </div>
             ) : isPdf ? (
               pdfError ? (
                 <div className="flex h-full flex-col items-center justify-center gap-3 p-4">
-                  <span className="text-xs text-white/40">
+                  <span className="text-xs text-white/60">
                     PDF preview unavailable
                   </span>
                   <a

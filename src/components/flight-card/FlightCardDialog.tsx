@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Download, Copy, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { FlightCard, type FlightCardData } from "./FlightCard";
@@ -30,6 +30,25 @@ export function FlightCardDialog({ data, onClose }: FlightCardDialogProps) {
     setIsClosing(true);
     setTimeout(() => onClose(), 200);
   };
+
+  // Escape closes the dialog; focus moves into it and returns afterwards.
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        setIsClosing(true);
+        setTimeout(() => onClose(), 200);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      previouslyFocused?.focus?.();
+    };
+  }, [onClose]);
 
   // Calculate scale to fit viewport
   useEffect(() => {
@@ -89,7 +108,12 @@ export function FlightCardDialog({ data, onClose }: FlightCardDialogProps) {
 
   return (
     <div
-      className={`fixed inset-0 z-[10050] flex items-center justify-center backdrop-blur-sm transition-all duration-200 ease-out ${
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Flight card for ${data.callsign || "this flight"}`}
+      tabIndex={-1}
+      className={`fixed inset-0 z-[10050] flex items-center justify-center backdrop-blur-sm transition-all duration-200 ease-out focus:outline-none ${
         isVisible && !isClosing ? "bg-black/80" : "bg-black/0"
       }`}
     >
@@ -105,7 +129,9 @@ export function FlightCardDialog({ data, onClose }: FlightCardDialogProps) {
       >
         {isCompactViewport && (
           <button
+            type="button"
             onClick={handleClose}
+            aria-label="Close flight card"
             className="absolute top-0 right-3 flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-black/70 text-white/60 backdrop-blur-md transition-all hover:bg-white/10 hover:text-white"
           >
             <X className="h-5 w-5" />

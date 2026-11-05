@@ -271,7 +271,7 @@ function Dashboard() {
   const liveValue = (value: number) => (live ? number(value) : "—");
 
   return (
-    <main className={styles.page}>
+    <main id="main-content" className={styles.page}>
       <header className={styles.header}>
         <Link href="/" aria-label="RadarThing home">
           <Image

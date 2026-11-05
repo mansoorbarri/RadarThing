@@ -11,6 +11,7 @@ import { useProStatus } from "~/hooks/useProStatus";
 import { Check, Zap, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
+import { SiteFooter } from "~/components/site/SiteFooter";
 import { SiteHeader } from "~/components/site/SiteHeader";
 import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 import { Analytics } from "~/lib/analytics";
@@ -142,8 +143,11 @@ export default function PricingPage() {
           <div className="absolute top-20 -left-24 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
           <div className="absolute -right-28 bottom-10 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
         </div>
-        <Header router={router} />
-        <main className="relative mx-auto max-w-2xl px-6 py-24">
+        <Header />
+        <main
+          id="main-content"
+          className="relative mx-auto max-w-2xl px-6 py-24"
+        >
           <div className="rounded-3xl border border-cyan-400/25 bg-gradient-to-br from-cyan-500/12 via-sky-500/8 to-blue-500/10 p-10 text-center shadow-[0_0_80px_rgba(6,182,212,0.12)] backdrop-blur-xl">
             <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-400/30 bg-cyan-500/15">
               <Zap className="h-7 w-7 text-cyan-300" />
@@ -164,12 +168,13 @@ export default function PricingPage() {
             <button
               onClick={() => handleUpgrade("pricing_page_trial_active")}
               disabled={loading}
-              className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:from-cyan-300 hover:to-blue-400 disabled:opacity-50"
+              className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:from-cyan-300 hover:to-blue-400 disabled:opacity-50"
             >
               {loading ? "Loading..." : "Keep Pro for $3/month"}
             </button>
           </div>
         </main>
+        <SiteFooter />
       </div>
     );
   }
@@ -181,8 +186,11 @@ export default function PricingPage() {
           <div className="absolute top-20 -left-24 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
           <div className="absolute -right-28 bottom-10 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
         </div>
-        <Header router={router} />
-        <main className="relative mx-auto max-w-2xl px-6 py-24">
+        <Header />
+        <main
+          id="main-content"
+          className="relative mx-auto max-w-2xl px-6 py-24"
+        >
           <div className="rounded-3xl border border-emerald-400/25 bg-gradient-to-br from-emerald-500/12 via-cyan-500/8 to-blue-500/10 p-10 text-center shadow-[0_0_80px_rgba(16,185,129,0.12)] backdrop-blur-xl">
             <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/30 bg-emerald-500/15">
               <Check className="h-7 w-7 text-emerald-300" />
@@ -206,6 +214,7 @@ export default function PricingPage() {
             </button>
           </div>
         </main>
+        <SiteFooter />
       </div>
     );
   }
@@ -228,9 +237,12 @@ export default function PricingPage() {
         <div className="absolute right-[-120px] bottom-[-60px] h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
       </div>
 
-      <Header router={router} />
+      <Header />
 
-      <main className="relative mx-auto max-w-5xl px-6 py-14 md:py-20">
+      <main
+        id="main-content"
+        className="relative mx-auto max-w-5xl px-6 py-14 md:py-20"
+      >
         <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
           <section>
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-cyan-400/35 bg-cyan-400/10 px-3 py-1.5">
@@ -301,7 +313,7 @@ export default function PricingPage() {
             </div>
           </section>
 
-          <aside className="lg:sticky lg:top-24 lg:self-start">
+          <aside className="order-first lg:sticky lg:top-24 lg:order-none lg:self-start">
             <div className="relative overflow-hidden rounded-3xl border border-cyan-400/25 bg-[#07101a]/85 p-7 shadow-[0_20px_70px_rgba(6,182,212,0.18)] backdrop-blur-xl">
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/70 to-transparent" />
               <p className="font-mono text-[11px] tracking-[0.16em] text-cyan-200/80 uppercase">
@@ -334,7 +346,7 @@ export default function PricingPage() {
                         feature: "pro_plan",
                       })
                     }
-                    className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-white shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400"
+                    className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400"
                   >
                     Start free trial with Google
                   </button>
@@ -346,7 +358,7 @@ export default function PricingPage() {
                   <button
                     onClick={() => handleStartTrial("pricing_page")}
                     disabled={loading}
-                    className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-white shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading ? "Loading..." : "Start 7-day free trial"}
                   </button>
@@ -365,7 +377,7 @@ export default function PricingPage() {
                   <button
                     onClick={() => handleUpgrade("pricing_page")}
                     disabled={loading}
-                    className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-white shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading ? "Loading..." : "Subscribe to Pro"}
                   </button>
@@ -404,6 +416,7 @@ export default function PricingPage() {
           </aside>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }
@@ -456,6 +469,6 @@ function FeatureSection({
   );
 }
 
-function Header(_props: { router?: ReturnType<typeof useRouter> }) {
+function Header() {
   return <SiteHeader />;
 }

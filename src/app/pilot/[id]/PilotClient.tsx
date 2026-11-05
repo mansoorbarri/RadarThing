@@ -33,6 +33,7 @@ import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
 import { isFlightModeratorGoogleId } from "~/lib/flight-moderation";
 import { ConfirmModal } from "~/app/admin/_components/ConfirmModal";
 import { SystemThemeLogo } from "~/components/ui/SystemThemeLogo";
+import { SiteFooter } from "~/components/site/SiteFooter";
 import { SiteHeader } from "~/components/site/SiteHeader";
 import { useAircraftStream } from "~/hooks/useAircraftStream";
 
@@ -130,8 +131,11 @@ export default function PilotClient({
   if (profileUser === null || stats === null) {
     return (
       <div className="pilot-theme-surface min-h-screen bg-black text-white">
-        <Header router={router} />
-        <main className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6 sm:py-20">
+        <Header />
+        <main
+          id="main-content"
+          className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6 sm:py-20"
+        >
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2">
             <Plane className="h-4 w-4 text-red-400" />
             <span className="font-mono text-sm text-red-400">
@@ -149,9 +153,10 @@ export default function PilotClient({
             onClick={() => router.push("/radar")}
             className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
           >
-            Back to Map
+            Back to the radar
           </button>
         </main>
+        <SiteFooter />
       </div>
     );
   }
@@ -168,9 +173,12 @@ export default function PilotClient({
 
   return (
     <div className="pilot-theme-surface min-h-screen bg-black text-white">
-      <Header router={router} />
+      <Header />
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      <main
+        id="main-content"
+        className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12"
+      >
         {/* Profile Header */}
         <div className="mb-8 sm:mb-10">
           <div className="mb-2 flex items-start gap-3 sm:items-center sm:gap-4">
@@ -458,6 +466,7 @@ export default function PilotClient({
           </>
         )}
       </main>
+      <SiteFooter />
 
       {cardFlight && (
         <FlightCardDialog
@@ -484,7 +493,7 @@ export default function PilotClient({
   );
 }
 
-function Header(_props: { router?: ReturnType<typeof useRouter> }) {
+function Header() {
   return <SiteHeader tone="themed" />;
 }
 
@@ -590,7 +599,7 @@ function PilotPageSkeleton({ callsign }: { callsign: string | null }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
+      <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
         {/* Profile Header */}
         <div className="mb-10">
           <div className="mb-2 flex items-center gap-4">
@@ -665,6 +674,7 @@ function PilotPageSkeleton({ callsign }: { callsign: string | null }) {
           </div>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

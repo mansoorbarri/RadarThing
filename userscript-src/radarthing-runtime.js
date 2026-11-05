@@ -89,6 +89,20 @@
   let resumePromptResolved = false;
   let resumeModalResolver = null;
   let resumeModalReturnFocus = null;
+  let isTracking = false;
+
+  function setTrackingUi(active) {
+    isTracking = active;
+    const startBtn = document.getElementById(SAVE_BTN_ID);
+    const endBtn = document.getElementById(CLEAR_BTN_ID);
+    if (startBtn && !startBtn.disabled)
+      startBtn.textContent = active ? "Update flight" : "Start tracking";
+    if (endBtn) {
+      endBtn.disabled = !active;
+      endBtn.style.opacity = active ? "1" : "0.5";
+      endBtn.style.cursor = active ? "pointer" : "not-allowed";
+    }
+  }
   let flightActiveForTrackingBadge = false;
   let trackingStatusRequestId = 0;
   let acarsBusy = false;
@@ -391,7 +405,12 @@
   // Airport idents in GeoFS flight plans are usually 4-letter ICAO codes, but
   // small fields use 3–4 character idents with digits (e.g. K1G4, 00AA).
   function isAirportCode(str) {
-    return /^[A-Z0-9]{3,4}$/.test(str) && /[A-Z]/.test(str);
+    if (!/[A-Z]/.test(str)) return false;
+    // 4-letter ICAO codes, or 3–4 character local idents that include a
+    // digit (e.g. K1G4, 0A9). Rejects 3-letter IATA codes like LHR.
+    return (
+      /^[A-Z]{4}$/.test(str) || (/\d/.test(str) && /^[A-Z0-9]{3,4}$/.test(str))
+    );
   }
 
   function isMobileBrowser() {
@@ -414,6 +433,7 @@
 
   function setFlightUIVisible(visible) {
     if (!flightUI) return;
+    if (!visible && keybindMode) finishKeybindCapture(null);
     flightUI.style.display = visible ? "block" : "none";
     if (mobileFlightUIOpenButton) {
       mobileFlightUIOpenButton.style.display = visible ? "none" : "flex";
@@ -784,34 +804,59 @@
     });
   }
 
+  function getToastRegion(isError) {
+    // Persistent live regions are announced reliably; freshly inserted ones
+    // often aren't. Errors use an assertive region, the rest polite.
+    const id = isError ? "radarthing-toasts-alert" : "radarthing-toasts";
+    let region = document.getElementById(id);
+    if (!region) {
+      region = document.createElement("div");
+      region.id = id;
+      region.setAttribute("role", isError ? "alert" : "status");
+      region.setAttribute("aria-live", isError ? "assertive" : "polite");
+      region.style.cssText = `
+        position:fixed;
+        bottom:20px;
+        right:20px;
+        display:flex;
+        flex-direction:column;
+        align-items:flex-end;
+        gap:8px;
+        max-width:min(360px, calc(100vw - 40px));
+        z-index:${Z.toast};
+        pointer-events:none;
+      `;
+      document.body.appendChild(region);
+    }
+    return region;
+  }
+
   function showToast(msg, isError = false) {
     const toast = document.createElement("div");
     toast.textContent = msg;
-    toast.setAttribute("role", isError ? "alert" : "status");
-    toast.setAttribute("aria-live", isError ? "assertive" : "polite");
     toast.style.cssText = `
-      position:fixed;
-      bottom:20px;
-      right:20px;
-      background:${isError ? "rgba(239,68,68,0.9)" : "rgba(16,185,129,0.9)"};
+      background:${isError ? "rgba(185,28,28,0.95)" : "rgba(4,120,87,0.95)"};
       color:#fff;
       padding:12px 16px;
       border-radius:12px;
       font-size:12px;
       font-weight:600;
-      letter-spacing:0.05em;
+      line-height:1.4;
+      letter-spacing:0.02em;
       font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
-      z-index:${Z.toast};
       opacity:0;
       transition:opacity 0.3s ease;
       box-shadow:0 10px 30px rgba(0,0,0,0.4);
     `;
-    document.body.appendChild(toast);
+    getToastRegion(isError).appendChild(toast);
     requestAnimationFrame(() => (toast.style.opacity = "1"));
-    setTimeout(() => {
-      toast.style.opacity = "0";
-      setTimeout(() => toast.remove(), 300);
-    }, 2500);
+    setTimeout(
+      () => {
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 300);
+      },
+      isError ? 5000 : 3000,
+    );
   }
 
   function updateSignInNotice() {
@@ -864,6 +909,8 @@
       z-index:${Z.dialog};
     `;
     modal.setAttribute("role", "dialog");
+    modal.tabIndex = -1;
+    modal.style.outline = "none";
     modal.setAttribute("aria-modal", "true");
     modal.setAttribute("aria-labelledby", "radarthing-resume-title");
     modal.setAttribute("aria-describedby", "radarthing-resume-desc");
@@ -928,7 +975,7 @@
                 RadarThing found an interrupted session waiting for you.
               </div>
             </div>
-            <button id="radarthing-resume-dismiss" type="button" aria-label="Close and start fresh" title="Close" style="
+            <button id="radarthing-resume-dismiss" type="button" aria-label="Decide later" title="Decide later" style="
               width:32px;
               height:32px;
               border-radius:999px;
@@ -1035,7 +1082,9 @@
     const declineBtn = modal.querySelector("#radarthing-resume-decline");
     const acceptBtn = modal.querySelector("#radarthing-resume-accept");
 
-    dismissBtn.onclick = () => closeResumeFlightModal(false);
+    // Closing with × or Esc means "not now": nothing is finalized and the
+    // offer comes back on the next GeoFS reload.
+    dismissBtn.onclick = () => closeResumeFlightModal("later");
     declineBtn.onclick = () => closeResumeFlightModal(false);
     acceptBtn.onclick = () => closeResumeFlightModal(true);
 
@@ -1045,7 +1094,7 @@
         if (modal.style.display === "none") return;
         if (e.key === "Escape") {
           e.stopPropagation();
-          closeResumeFlightModal(false);
+          closeResumeFlightModal("later");
           return;
         }
         // Keep keyboard focus inside the dialog while it is open.
@@ -1077,7 +1126,7 @@
       returnFocus.focus();
 
     if (!modal) {
-      if (resolver) resolver(Boolean(shouldResume));
+      if (resolver) resolver(shouldResume);
       return;
     }
 
@@ -1086,7 +1135,7 @@
 
     setTimeout(() => {
       modal.style.display = "none";
-      if (resolver) resolver(Boolean(shouldResume));
+      if (resolver) resolver(shouldResume);
     }, 220);
   }
 
@@ -1111,7 +1160,9 @@
     requestAnimationFrame(() => {
       modal.style.opacity = "1";
       modal.style.transform = "translate(-50%, 0)";
-      modal.querySelector("#radarthing-resume-accept")?.focus();
+      // Focus the dialog itself rather than a button, so a stray Enter or
+      // Space while flying can't accidentally resume or decline.
+      modal.focus({ preventScroll: true });
     });
 
     return new Promise((resolve) => {
@@ -1150,6 +1201,14 @@
         shouldResume = true;
       } else {
         shouldResume = await showResumeFlightModal(data.session);
+      }
+
+      // The pilot has decided (or deferred); never re-prompt in this session,
+      // even if the request below fails.
+      resumePromptResolved = true;
+      if (shouldResume === "later") {
+        showToast("No problem. We'll ask again next time you load GeoFS.");
+        return;
       }
 
       const actionRes = await fetch(RESUME_FLIGHT_API, {
@@ -2373,7 +2432,11 @@
       ">
         <span data-status-dot aria-hidden="true" style="flex:none;width:8px;height:8px;border-radius:50%;background:#94a3b8;"></span>
         <span data-status-text>Not tracking</span>
-        <span id="${HOTKEY_HINT_ID}" style="margin-left:auto;font-size:10px;font-weight:500;letter-spacing:0.02em;color:#94a3b8;white-space:nowrap;">${hotkeyHintText()}</span>
+        ${
+          isMobile
+            ? ""
+            : `<span id="${HOTKEY_HINT_ID}" style="margin-left:auto;font-size:10px;font-weight:500;letter-spacing:0.02em;color:#94a3b8;text-align:right;">${hotkeyHintText()}</span>`
+        }
       </div>
 
       <div id="${MOST_TRACKED_BADGE_ID}" role="status" aria-live="polite" style="
@@ -2488,6 +2551,7 @@
         ">
           ${buildToggleRow("Also share with Seabus Radar", SEABUS_TOGGLE_ID, radarPrefs.seabus, SEABUS_HINT_ID)}
           <p id="${SEABUS_HINT_ID}" style="margin:-4px 0 2px;font-size:10px;line-height:1.4;color:#94a3b8;">Sends your position to the separate community Seabus radar too. RadarThing works without it.</p>
+          <p id="atc-seabus-status" role="status" aria-live="polite" style="display:none;margin:-2px 0 2px;font-size:10px;line-height:1.4;"></p>
           <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:#cbd5e1; letter-spacing:0.04em;">
             <span id="${KEYBIND_BTN_ID}-label">Show/hide panel key</span>
             <button id="${KEYBIND_BTN_ID}" type="button" aria-labelledby="${KEYBIND_BTN_ID}-label ${KEYBIND_BTN_ID}" title="Click, then press a new key (Esc cancels)" style="${keybindButtonStyle}">${toggleKey.toUpperCase()}</button>
@@ -2692,13 +2756,13 @@
       if (!dep) return setFormError("Enter a departure airport.", DEP_INPUT_ID);
       if (!isAirportCode(dep))
         return setFormError(
-          "Departure must be an airport code, like EGLL.",
+          "Use the 4-letter ICAO code for departure, like EGLL (not LHR).",
           DEP_INPUT_ID,
         );
       if (!arr) return setFormError("Enter an arrival airport.", ARR_INPUT_ID);
       if (!isAirportCode(arr))
         return setFormError(
-          "Arrival must be an airport code, like KJFK.",
+          "Use the 4-letter ICAO code for arrival, like KJFK (not JFK).",
           ARR_INPUT_ID,
         );
       if (!flt) return setFormError("Enter a callsign.", FLT_INPUT_ID);
@@ -2717,7 +2781,7 @@
       } finally {
         saveBtn.disabled = false;
         saveBtn.removeAttribute("aria-busy");
-        saveBtn.textContent = label;
+        saveBtn.textContent = isTracking ? "Update flight" : label;
       }
       if (!available) {
         setFormError(
@@ -2727,43 +2791,62 @@
         return;
       }
 
+      const wasTracking = isTracking;
       window.dispatchEvent(
         new CustomEvent("atc-data-sync", {
           detail: { dep, arr, flt, sqk, af, active: true },
         }),
       );
-      showToast(`Tracking ${flt} · ${dep} → ${arr}`);
+      showToast(
+        wasTracking
+          ? `Flight updated · ${flt} ${dep} → ${arr}`
+          : `Tracking ${flt} · ${dep} → ${arr}`,
+      );
     };
 
-    document.getElementById(CLEAR_BTN_ID).onclick = () => {
-      [
-        DEP_INPUT_ID,
-        ARR_INPUT_ID,
-        FLT_INPUT_ID,
-        SQK_INPUT_ID,
-        AF_INPUT_ID,
-      ].forEach((id) => (document.getElementById(id).value = ""));
-      setMilitaryMode(false);
+    // Ending a flight is a two-step action so a stray click mid-flight
+    // doesn't finalize it. The form keeps its values so the pilot can start
+    // again quickly; the toast comes from the server's real response.
+    let endConfirmTimer = 0;
+    const endBtn = document.getElementById(CLEAR_BTN_ID);
+    const resetEndButton = () => {
+      clearTimeout(endConfirmTimer);
+      endBtn.dataset.confirming = "";
+      endBtn.textContent = "End flight";
+      endBtn.style.borderColor = "rgba(255,255,255,0.14)";
+      endBtn.style.color = "#e2e8f0";
+    };
+    endBtn.onclick = () => {
+      if (!isTracking) {
+        setFormError("You're not tracking a flight yet.");
+        return;
+      }
+      if (endBtn.dataset.confirming !== "1") {
+        endBtn.dataset.confirming = "1";
+        endBtn.textContent = "Tap again to end";
+        endBtn.style.borderColor = "rgba(248,113,113,0.6)";
+        endBtn.style.color = "#fca5a5";
+        endConfirmTimer = setTimeout(resetEndButton, 4000);
+        return;
+      }
+      resetEndButton();
       setFormError("");
       window.dispatchEvent(
         new CustomEvent("atc-data-sync", { detail: { active: false } }),
       );
-      showToast("Flight ended and saved");
+      showToast("Ending flight…");
     };
+    endBtn.addEventListener("blur", () => {
+      if (endBtn.dataset.confirming === "1") resetEndButton();
+    });
 
     window.addEventListener("radarthing-flight-disconnected", () => {
-      [
-        DEP_INPUT_ID,
-        ARR_INPUT_ID,
-        FLT_INPUT_ID,
-        SQK_INPUT_ID,
-        AF_INPUT_ID,
-      ].forEach((id) => {
-        const input = document.getElementById(id);
-        if (input) input.value = "";
-      });
-      setMilitaryMode(false);
-      showToast("Radar disconnected");
+      showToast("Flight ended from the RadarThing website");
+    });
+
+    window.addEventListener("radarthing-flight-end-result", (event) => {
+      const detail = event.detail || {};
+      if (detail.message) showToast(detail.message, detail.ok === false);
     });
 
     document.getElementById(CHARTS_BTN_ID).onclick = toggleChartsPanel;
@@ -2774,11 +2857,8 @@
   // ==========================================
 
   function injectChartsCSS() {
-    const fontLink = document.createElement("link");
-    fontLink.rel = "stylesheet";
-    fontLink.href =
-      "https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap";
-    document.head.appendChild(fontLink);
+    // Both panels use the system font stack: nothing extra to download
+    // inside GeoFS, and the charts panel matches the flight panel.
 
     const style = document.createElement("style");
     style.textContent = `
@@ -2795,7 +2875,7 @@
         width: ${CHARTS_DEFAULT_WIDTH}px;
         height: auto;
         max-height: calc(100vh - 16px);
-        font-family: 'Figtree', system-ui, sans-serif;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         color: #ffffff;
         background: rgba(1, 11, 16, 0.94);
         border: 1px solid rgba(34, 211, 238, 0.15);
@@ -2821,7 +2901,7 @@
 
       .gc-header h3 {
         margin: 0;
-        font-family: 'Figtree', system-ui, sans-serif;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-size: 0.95rem;
         font-weight: 700;
         color: #22d3ee;
@@ -2844,7 +2924,7 @@
         border: 1px solid rgba(255, 255, 255, 0.08);
         background: transparent;
         color: rgba(255, 255, 255, 0.4);
-        font-family: 'Figtree', system-ui, sans-serif;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-size: 0.7rem;
         font-weight: 600;
         cursor: pointer;
@@ -2904,7 +2984,7 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
         background: rgba(0, 0, 0, 0.4);
         color: #ffffff;
-        font-family: 'JetBrains Mono', monospace;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         font-size: 0.85rem;
         font-weight: 500;
         text-transform: uppercase;
@@ -2916,7 +2996,7 @@
 
       .gc-search input::placeholder {
         color: rgba(255, 255, 255, 0.2);
-        font-family: 'Figtree', system-ui, sans-serif;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-weight: 400;
         letter-spacing: 0;
         text-transform: none;
@@ -2934,7 +3014,7 @@
         border: none;
         background: #22d3ee;
         color: #010b10;
-        font-family: 'Figtree', system-ui, sans-serif;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-size: 0.78rem;
         font-weight: 700;
         letter-spacing: 0.02em;
@@ -2958,7 +3038,7 @@
         border: 1px solid rgba(255, 255, 255, 0.15);
         background: rgba(255, 255, 255, 0.06);
         color: rgba(255, 255, 255, 0.85);
-        font-family: 'Figtree', system-ui, sans-serif;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-size: 0.74rem;
         font-weight: 600;
         letter-spacing: 0.02em;
@@ -2998,7 +3078,7 @@
         border-radius: 6px;
         border: 1px solid rgba(255, 255, 255, 0.06);
         background: rgba(255, 255, 255, 0.03);
-        font-family: 'Figtree', system-ui, sans-serif;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-size: 0.65rem;
         font-weight: 600;
         letter-spacing: 0.03em;
@@ -3040,7 +3120,7 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
         background: rgba(0, 0, 0, 0.4);
         color: #ffffff;
-        font-family: 'Figtree', system-ui, sans-serif;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-size: 0.76rem;
         font-weight: 500;
         padding: 0 28px 0 10px;
@@ -3284,6 +3364,8 @@
     );
   }
 
+  let keybindCaptureTimer = 0;
+
   function startKeybindCapture(mode) {
     if (keybindMode) finishKeybindCapture(null);
     keybindMode = mode;
@@ -3291,12 +3373,20 @@
     if (btn) {
       btn.textContent = "Press a key…";
       btn.setAttribute("aria-pressed", "true");
+      // Leaving the button (clicking into the sim, tabbing away) cancels, so
+      // a later keystroke while flying never silently becomes the hotkey.
+      btn.addEventListener("blur", () => finishKeybindCapture(null), {
+        once: true,
+      });
     }
+    clearTimeout(keybindCaptureTimer);
+    keybindCaptureTimer = setTimeout(() => finishKeybindCapture(null), 8000);
   }
 
   function finishKeybindCapture(newKey) {
     const mode = keybindMode;
     keybindMode = null;
+    clearTimeout(keybindCaptureTimer);
     if (!mode) return;
     if (newKey) {
       if (mode === "charts") {
@@ -3325,6 +3415,8 @@
     "keydown",
     (e) => {
       if (!keybindMode) return;
+      // Let Tab move focus normally (which also cancels via blur).
+      if (e.key === "Tab") return;
       e.preventDefault();
       e.stopPropagation();
       if (e.key === "Escape") {
@@ -3434,6 +3526,18 @@
     statusEl.style.background = `${color}14`;
   });
 
+  window.addEventListener("seabus-status-update", (e) => {
+    const el = document.getElementById("atc-seabus-status");
+    if (!el || !e.detail) return;
+    if (!e.detail.enabled) {
+      el.style.display = "none";
+      return;
+    }
+    el.textContent = `Seabus: ${e.detail.text}`;
+    el.style.color = e.detail.color || "#94a3b8";
+    el.style.display = "block";
+  });
+
   window.addEventListener("atc-squawk-update", (e) => {
     const sqkEl = document.getElementById(SQK_INPUT_ID);
     if (sqkEl && e.detail.squawk) {
@@ -3443,6 +3547,7 @@
 
   window.addEventListener("atc-data-sync", (e) => {
     const detail = e.detail || {};
+    setTrackingUi(detail.active === true);
     if (detail.active === false) {
       const googleId = acarsSessionGoogleId;
       const endedSessionId = acarsSessionId;
@@ -3536,12 +3641,15 @@
   injectFlightUI();
   showWelcomeCardOnce();
   window.dispatchEvent(new CustomEvent("radarthing-request-status"));
+  const versionLabel = window.__radarThingVersion
+    ? ` v${window.__radarThingVersion}`
+    : "";
   showToast(
-    `RadarThing v${window.__radarThingVersion || ""} ready · ${toggleKey.toUpperCase()} to show/hide`.replace(
-      "v ready",
-      "ready",
-    ),
+    isMobileBrowser()
+      ? `RadarThing${versionLabel} ready`
+      : `RadarThing${versionLabel} ready · ${toggleKey.toUpperCase()} to show/hide`,
   );
+  setTrackingUi(false);
   setInterval(refreshMostTrackedBadge, TRACKING_STATUS_POLL_INTERVAL_MS);
   injectChartsCSS();
   createChartsPanel();

@@ -393,6 +393,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
             </InlineUnitSelect>
           }
           accessibleLabel="Speed"
+          placeholder={speedModeInput === "mach" ? "0–0.99" : "0–700"}
           error={fieldErrors.speed}
           value={speedInput}
           onChange={(v) => {
@@ -411,6 +412,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
         <ControlRow
           label="ALT"
           accessibleLabel="Altitude"
+          placeholder="0–60,000"
           error={fieldErrors.altitude}
           unit="FT"
           value={altitudeInput}
@@ -427,6 +429,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
           <ControlRow
             label="HDG"
             accessibleLabel="Heading"
+            placeholder="0–360"
             error={fieldErrors.heading}
             unit="DEG"
             value={headingInput}
@@ -442,6 +445,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
         <ControlRow
           label="V/S"
           accessibleLabel="Vertical speed"
+          placeholder="±8,000"
           error={fieldErrors.vs}
           unit="FPM"
           value={vsInput}

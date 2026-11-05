@@ -1,5 +1,6 @@
 "use client";
 
+import { SiteFooter } from "~/components/site/SiteFooter";
 import { SiteHeader } from "~/components/site/SiteHeader";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -187,7 +188,10 @@ export default function LeaderboardClient({
     <div className="leaderboard-theme-surface min-h-screen bg-[#0a0a0f] text-white">
       <SiteHeader tone="themed" />
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      <main
+        id="main-content"
+        className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12"
+      >
         <div className="mb-6 flex items-center gap-3 sm:mb-8">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-amber-500/50 bg-amber-500/10 sm:h-12 sm:w-12">
             <Trophy className="h-4 w-4 text-amber-400 sm:h-5 sm:w-5" />
@@ -341,15 +345,14 @@ export default function LeaderboardClient({
         <div className="mb-6 hidden sm:block">
           <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
             <div
-              role="tablist"
-              aria-label="Leaderboard ranking"
+              role="group"
+              aria-label="Rank pilots by"
               className="flex w-fit gap-1 rounded-xl border border-white/10 bg-white/5 p-1"
             >
               {sortOptions.map(({ key, label, icon: Icon }) => (
                 <button
                   type="button"
-                  role="tab"
-                  aria-selected={sortBy === key}
+                  aria-pressed={sortBy === key}
                   key={key}
                   onClick={() => {
                     selectLeaderboardTab(key);
@@ -758,6 +761,7 @@ export default function LeaderboardClient({
           </Link>
         </details>
       </main>
+      <SiteFooter />
     </div>
   );
 }

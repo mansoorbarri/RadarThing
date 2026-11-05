@@ -303,6 +303,11 @@
       text: "Connection issue · retrying",
       color: "#fbbf24",
     },
+    rejected: {
+      state: "rejected",
+      text: "Update rejected · check your flight info",
+      color: "#f87171",
+    },
     offline: {
       state: "offline",
       text: "Can't reach RadarThing · retrying",
@@ -312,6 +317,7 @@
   let consecutiveSendFailures = 0;
   let nextSendAllowedAt = 0;
   let currentStatus = STATUS.idle;
+  let activatedAt = 0;
 
   function broadcastStatus(next) {
     if (next) currentStatus = next;
@@ -324,23 +330,44 @@
   }
 
   function recordSendSuccess() {
+    lastSendSuccessAt = Date.now();
     consecutiveSendFailures = 0;
     nextSendAllowedAt = 0;
     if (currentStatus !== STATUS.live) broadcastStatus(STATUS.live);
   }
 
-  function recordSendFailure() {
+  let lastSendSuccessAt = 0;
+
+  function recordSendFailure(status) {
     consecutiveSendFailures += 1;
     // Back off 2s, 4s, 8s … up to 30s so a dead server isn't hammered.
     const delay = Math.min(30000, 1000 * 2 ** consecutiveSendFailures);
     nextSendAllowedAt = Date.now() + delay;
-    const next =
-      consecutiveSendFailures >= 4 ? STATUS.offline : STATUS.retrying;
-    if (consecutiveSendFailures >= 2 && currentStatus !== next)
+    // A 4xx means the server is up but refused the data, which is a different
+    // problem from being unreachable.
+    const isRejected =
+      typeof status === "number" && status >= 400 && status < 500;
+    const next = isRejected
+      ? STATUS.rejected
+      : consecutiveSendFailures >= 4
+        ? STATUS.offline
+        : STATUS.retrying;
+    if ((isRejected || consecutiveSendFailures >= 2) && currentStatus !== next)
       broadcastStatus(next);
   }
 
   window.addEventListener("radarthing-request-status", () => broadcastStatus());
+
+  // If nothing has been delivered for a while (aircraft not loaded, position
+  // invalid, requests hanging), stop claiming "Live".
+  setInterval(() => {
+    if (!info.active) return;
+    if (
+      (currentStatus === STATUS.live || currentStatus === STATUS.connecting) &&
+      Date.now() - Math.max(lastSendSuccessAt, activatedAt) > 30000
+    )
+      broadcastStatus(STATUS.retrying);
+  }, 5000);
 
   window.addEventListener("atc-data-sync", (e) => {
     const wasActive = info.active;
@@ -356,6 +383,7 @@
       sqk: sanitizeSquawk(e.detail?.sqk),
     };
     if (info.active && !wasActive) {
+      activatedAt = Date.now();
       consecutiveSendFailures = 0;
       nextSendAllowedAt = 0;
       broadcastStatus(STATUS.connecting);
@@ -371,6 +399,14 @@
   });
 
   // End flight and save to database immediately
+  function reportEndResult(ok, message) {
+    window.dispatchEvent(
+      new CustomEvent("radarthing-flight-end-result", {
+        detail: { ok, message },
+      }),
+    );
+  }
+
   async function endFlight() {
     const geofs = window.geofs;
     if (!geofs?.userRecord) {
@@ -400,16 +436,26 @@
         const data = await res.json();
         if (data.finalized) {
           console.log(`[RadarThing] Flight ended and saved: ${data.flightNo}`);
+          reportEndResult(true, "Flight ended and saved to your history");
         } else {
+          reportEndResult(true, "Flight ended");
           console.log(
             `[RadarThing] No active session to end: ${data.reason || "unknown"}`,
           );
         }
       } else {
         console.error(`[RadarThing] End flight request failed: ${res.status}`);
+        reportEndResult(
+          false,
+          "Couldn't save this flight to RadarThing. It will be saved when the server times it out.",
+        );
       }
     } catch (err) {
       console.error("[RadarThing] Error ending flight:", err);
+      reportEndResult(
+        false,
+        "Couldn't reach RadarThing to end the flight. It will be saved when the server times it out.",
+      );
     }
 
     // Reset takeoff time for next flight
@@ -542,7 +588,7 @@
       if (res.ok) {
         recordSendSuccess();
       } else {
-        recordSendFailure();
+        recordSendFailure(res.status);
         console.warn(
           `[RadarThing] Position update #${requestId} failed with HTTP ${res.status}`,
           {

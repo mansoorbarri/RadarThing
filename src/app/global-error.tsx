@@ -27,6 +27,7 @@ export default function GlobalError({
     <html lang="en" className="dark">
       <body className="bg-[#02090d]">
         <main
+          id="main-content"
           role="alert"
           className="flex min-h-screen flex-col items-center justify-center px-6 text-center text-white"
         >

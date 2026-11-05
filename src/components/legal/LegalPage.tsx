@@ -29,7 +29,10 @@ export function LegalPage({
 
       <SiteHeader />
 
-      <main className="relative mx-auto grid max-w-6xl gap-12 px-5 py-14 sm:px-8 md:grid-cols-[220px_minmax(0,1fr)] md:py-20">
+      <main
+        id="main-content"
+        className="relative mx-auto grid max-w-6xl gap-12 px-5 py-14 sm:px-8 md:grid-cols-[220px_minmax(0,1fr)] md:py-20"
+      >
         <aside>
           <p className="font-mono text-[10px] tracking-[0.24em] text-cyan-300/70 uppercase">
             {eyebrow}

@@ -1,6 +1,7 @@
 "use client";
 
 import { ModalShell } from "~/components/ui/modal-shell";
+import { SiteFooter } from "~/components/site/SiteFooter";
 import { SiteHeader } from "~/components/site/SiteHeader";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
@@ -322,7 +323,7 @@ export default function AirportChartsPage() {
     <div className="min-h-screen bg-black text-white">
       <SiteHeader />
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
+      <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
         <div className="mb-8 flex items-center justify-between">
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
@@ -340,14 +341,14 @@ export default function AirportChartsPage() {
           {canUpload ? (
             <button
               onClick={() => setShowUploadModal(true)}
-              className="flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
+              className="flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-sky-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
             >
               <Upload className="h-5 w-5" />
               Upload Chart
             </button>
           ) : (
             <GoogleSignInButton>
-              <button className="flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40">
+              <button className="flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-sky-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40">
                 <Upload className="h-5 w-5" />
                 Sign in to Upload
               </button>
@@ -364,14 +365,14 @@ export default function AirportChartsPage() {
               placeholder="Search by ICAO, chart name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
+              className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             />
           </div>
           <div className="flex gap-3">
             <select
               value={icaoFilter}
               onChange={(e) => setIcaoFilter(e.target.value)}
-              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             >
               <option value="">All Airports</option>
               {uniqueIcaos.map((icao) => (
@@ -383,7 +384,7 @@ export default function AirportChartsPage() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as ChartType | "")}
-              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             >
               <option value="">All Types</option>
               {CHART_TYPES.map((type) => (
@@ -474,6 +475,7 @@ export default function AirportChartsPage() {
           </div>
         )}
       </main>
+      <SiteFooter />
 
       {/* Upload Modal */}
       {showUploadModal && (
@@ -533,7 +535,7 @@ export default function AirportChartsPage() {
                   maxLength={4}
                   required
                   disabled={isProcessing}
-                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
 
@@ -551,7 +553,7 @@ export default function AirportChartsPage() {
                   }
                   required
                   disabled={isProcessing}
-                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 >
                   {CHART_TYPES.map((type) => (
                     <option key={type.value} value={type.value}>
@@ -577,7 +579,7 @@ export default function AirportChartsPage() {
                 }
                 placeholder="e.g., xyzmani"
                 disabled={isProcessing}
-                className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
               />
             </div>
 
@@ -641,7 +643,7 @@ export default function AirportChartsPage() {
               className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
                 submitStage === "success"
                   ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/20"
-                  : "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-cyan-500/20 hover:shadow-cyan-500/40"
+                  : "bg-gradient-to-r from-cyan-400 to-sky-400 text-slate-950 shadow-cyan-500/20 hover:shadow-cyan-500/40"
               }`}
             >
               {getButtonContent()}
@@ -792,7 +794,7 @@ function GallerySkeleton() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
+      <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
         <div className="mb-8 flex items-center justify-between">
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
@@ -824,6 +826,7 @@ function GallerySkeleton() {
           <ChartCardSkeleton />
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

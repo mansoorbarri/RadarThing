@@ -437,8 +437,20 @@ function ATCPageContent() {
     addAircraftSearch,
     addAirportSearch,
     addPilotSearch,
-    clearRecentSearches,
+    clearRecentSearches: clearRecentSearchesNow,
+    restoreRecentSearches,
   } = useRecentSearches();
+
+  const clearRecentSearches = useCallback(() => {
+    const previous = recentSearches;
+    clearRecentSearchesNow();
+    toast.success("Recent searches cleared", {
+      action: {
+        label: "Undo",
+        onClick: () => restoreRecentSearches(previous),
+      },
+    });
+  }, [recentSearches, clearRecentSearchesNow, restoreRecentSearches]);
 
   useActiveTracker(selectedAircrafts);
   const mostTrackedFlights = useMostTrackedFlights(aircrafts);
@@ -1403,6 +1415,8 @@ function ATCPageContent() {
           {/* Mobile search button — phone only */}
           {!isUiHidden && isMapLoaded && isPhone && !showMobileSearch && (
             <button
+              type="button"
+              aria-label="Search flights, pilots or airports"
               data-tour="radar-mobile-search"
               onClick={() => setShowMobileSearch(true)}
               className="pointer-events-auto flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-black/60 backdrop-blur-md"
@@ -1536,6 +1550,9 @@ function ATCPageContent() {
           />
           {/* Bottom sheet */}
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Search"
             className="animate-in slide-in-from-bottom fixed inset-x-0 bottom-0 z-[10020] rounded-t-2xl border-t border-white/10 bg-[#0a1219] px-4 pt-3 pb-8 duration-200"
             style={{
               paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))",
@@ -1575,7 +1592,11 @@ function ATCPageContent() {
         </>
       )}
 
-      <main className="absolute inset-0" data-tour="radar-map">
+      <main
+        id="main-content"
+        className="absolute inset-0"
+        data-tour="radar-map"
+      >
         <DynamicMapComponent
           aircrafts={visibleAircrafts}
           airports={airports}
@@ -1791,9 +1812,10 @@ function ATCPageContent() {
                 setShowAtcPlayer(false);
                 setShowAirportFID(false);
               }}
-              className={`cursor-pointer rounded-lg border border-white/10 bg-white/5 text-white/60 ${isPhone ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-[10px]"}`}
+              aria-label="Unselect airport"
+              className={`cursor-pointer rounded-lg border border-white/10 bg-white/5 text-white/70 ${isPhone ? "min-h-9 min-w-9 px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[11px]"}`}
             >
-              {isPhone ? "×" : "Unselect"}
+              {isPhone ? <span aria-hidden="true">×</span> : "Unselect"}
             </button>
           </div>
         </div>
@@ -1897,7 +1919,7 @@ function ATCPageContent() {
             {/* Collapse/Expand toggle button */}
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="absolute top-1/2 -left-3 z-10 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-slate-900 text-slate-400 shadow-lg transition-colors hover:bg-slate-800 hover:text-white"
+              className="absolute top-1/2 -left-3 z-10 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-slate-900 text-slate-400 shadow-lg transition-colors hover:bg-slate-800 hover:text-white"
               title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               <svg
@@ -1926,7 +1948,7 @@ function ATCPageContent() {
                   {selectedAircrafts.length === 1
                     ? selectedAircrafts[0]?.flightNo ||
                       selectedAircrafts[0]?.callsign ||
-                      "N/A"
+                      "No callsign"
                     : `${selectedAircrafts.length} SELECTED`}
                 </div>
               </div>

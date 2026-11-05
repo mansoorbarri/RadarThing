@@ -152,6 +152,11 @@ export const useRecentSearches = () => {
     });
   }, []);
 
+  /** Put back a list removed by clearRecentSearches (for an Undo action). */
+  const restoreRecentSearches = useCallback((searches: RecentSearch[]) => {
+    setRecentSearches(searches.slice(0, MAX_RECENT_SEARCHES));
+  }, []);
+
   const clearRecentSearches = useCallback(() => {
     setRecentSearches([]);
     try {
@@ -169,5 +174,6 @@ export const useRecentSearches = () => {
     addAirportSearch,
     addPilotSearch,
     clearRecentSearches,
+    restoreRecentSearches,
   };
 };

@@ -244,7 +244,10 @@ export default function AdminPage() {
     <div className="admin-theme-surface min-h-screen bg-black text-white">
       <AdminHeader />
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      <main
+        id="main-content"
+        className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12"
+      >
         <div className="mb-8">
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 sm:px-4">
             <Plane className="h-4 w-4 text-cyan-400" />

@@ -109,7 +109,7 @@ function FIDSRow({
         {aircraft.departure || "UNK"} → {aircraft.arrival || "UNK"}
       </div>
 
-      <div className="min-w-0 truncate font-mono text-white/40">
+      <div className="min-w-0 truncate font-mono text-white/60">
         {normalizeAircraftType(aircraft.type) || "—"}
       </div>
 

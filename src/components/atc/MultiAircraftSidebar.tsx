@@ -198,7 +198,7 @@ const AircraftCard = ({
           onClick={onRemove}
           className="absolute top-2 right-2 cursor-pointer rounded-full p-1 transition-colors hover:bg-white/10"
         >
-          <CloseIcon size={14} className="text-white/40 hover:text-white/80" />
+          <CloseIcon size={14} className="text-white/60 hover:text-white/80" />
         </button>
 
         <div className="flex items-start gap-3 pl-2">
@@ -206,7 +206,7 @@ const AircraftCard = ({
           <div className="min-w-0 flex-1 pr-4">
             <div className="flex items-center gap-2">
               <span className="truncate font-mono text-sm font-bold text-white">
-                {aircraft.flightNo || aircraft.callsign || "N/A"}
+                {aircraft.flightNo || aircraft.callsign || "No callsign"}
               </span>
               <span
                 className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold"
@@ -218,7 +218,7 @@ const AircraftCard = ({
             <div className="truncate font-mono text-[10px] text-white/50">
               {aircraft.type || "Unknown"}
             </div>
-            <div className="mt-1 font-mono text-[10px] text-white/40">
+            <div className="mt-1 font-mono text-[10px] text-white/60">
               {aircraft.departure || "---"} → {aircraft.arrival || "---"}
             </div>
           </div>
@@ -227,18 +227,18 @@ const AircraftCard = ({
         {/* Stats row */}
         <div className="mt-2 flex gap-4 pl-2 font-mono text-[10px]">
           <div>
-            <span className="text-white/40">ALT </span>
+            <span className="text-white/60">ALT </span>
             <span className="text-white/80">{displayValues.altitude}</span>
           </div>
           <div>
-            <span className="text-white/40">SPD </span>
+            <span className="text-white/60">SPD </span>
             <span className="text-white/80">
               {displayValues.speed}
               {speedSuffix(speedUnit)}
             </span>
           </div>
           <div>
-            <span className="text-white/40">HDG </span>
+            <span className="text-white/60">HDG </span>
             <span className="text-white/80">{displayValues.heading}</span>
           </div>
         </div>

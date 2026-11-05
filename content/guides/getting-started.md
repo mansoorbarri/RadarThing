@@ -17,9 +17,19 @@ Use a browser that supports the Tampermonkey extension. Keep the GeoFS tab open 
 
 The installed script loads the current RadarThing runtime. You do not need to copy a new script for each flight.
 
+## Start tracking your flight
+
+When GeoFS loads, the RadarThing panel appears on the right of the simulator. The first time, it shows a short welcome card.
+
+1. Enter your departure and arrival airports as 4-letter ICAO codes (for example EGLL and KJFK) and your callsign.
+2. Press **Start tracking**. The status at the top of the panel changes to **Connecting…** and then **Live on radar** once RadarThing receives your position.
+3. When you land, press **End flight** and then **Tap again to end**. The flight is saved to your history.
+
+Press **W** to show or hide the panel and **Q** to open airport charts. You can change both keys under **Settings & shortcuts**. If the status shows **Connection issue · retrying**, RadarThing keeps trying in the background; see [Aircraft not appearing](/guides/aircraft-not-appearing) if it doesn't recover.
+
 ## Find your first flight
 
-Start flying in GeoFS, then open [RadarThing](/radar) in another tab or window. Allow time for the simulator to start and send position updates.
+Once the panel says **Live on radar**, open [RadarThing](/radar) in another tab or window.
 
 Search for your callsign or pilot name. Choose a flight result to locate the aircraft and open its details. You should see a marker on the map and a panel with the available aircraft, altitude, speed, and route information. Select Follow if you want the map to stay with that aircraft.
 

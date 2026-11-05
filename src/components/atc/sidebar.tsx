@@ -9,6 +9,7 @@ import React, {
 } from "react";
 
 import { toast } from "sonner";
+import { buttonLikeProps } from "~/lib/a11y";
 import { useUserByGoogleId } from "~/hooks/useUserByGoogleId";
 import { getCompactAircraftType, normalizeCallsign } from "~/lib/utils";
 // Inline SVG icons to avoid bundling entire react-icons library (~7.8MB)
@@ -407,7 +408,7 @@ export const Sidebar = ({
                   >
                     {wp.ident}
                   </span>
-                  <span className="font-mono text-[10px] font-bold text-white/40 uppercase">
+                  <span className="font-mono text-[10px] font-bold text-white/60 uppercase">
                     {wp.type}
                   </span>
                 </div>
@@ -472,8 +473,8 @@ export const Sidebar = ({
     <div className="space-y-3">
       {currentFlightHistory && (
         <div
-          onClick={() => onHistoryClick?.(currentFlightHistory)}
-          className="animate-fade-in-up group relative cursor-pointer overflow-hidden rounded-2xl border border-cyan-400/20 bg-cyan-500/10 p-4 shadow-lg transition-all hover:border-cyan-400/40"
+          {...buttonLikeProps(() => onHistoryClick?.(currentFlightHistory))}
+          className="animate-fade-in-up group relative cursor-pointer overflow-hidden rounded-2xl border border-cyan-400/20 bg-cyan-500/10 p-4 shadow-lg transition-all hover:border-cyan-400/40 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
         >
           <div className="mb-1.5 flex items-center justify-between">
             <span className="font-mono text-sm font-black text-white group-hover:text-cyan-300">
@@ -490,7 +491,7 @@ export const Sidebar = ({
               </span>
             )}
             {currentFlightHistory.aircraftType && (
-              <span className="font-mono text-[10px] text-white/40">
+              <span className="font-mono text-[10px] text-white/60">
                 {currentFlightHistory.aircraftType}
               </span>
             )}
@@ -533,14 +534,14 @@ export const Sidebar = ({
           </Link>
         </div>
       ) : history.length === 0 ? (
-        <div className="py-20 text-center font-mono text-[10px] tracking-widest text-white/40 uppercase">
+        <div className="py-20 text-center font-mono text-[10px] tracking-widest text-white/60 uppercase">
           {currentFlightHistory ? "No Past Records" : "No Records"}
         </div>
       ) : (
         history.map((f, histIdx) => (
           <div
             key={f.id}
-            onClick={() => {
+            {...buttonLikeProps(() => {
               if (f.routeData) {
                 onHistoryClick?.({
                   id: f.id as string,
@@ -554,7 +555,7 @@ export const Sidebar = ({
                   routeData: f.routeData as [number, number][],
                 });
               }
-            }}
+            })}
             className="animate-fade-in-up group relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg transition-all hover:border-amber-500/40"
             style={{ animationDelay: `${histIdx * 50}ms` }}
           >
@@ -573,7 +574,7 @@ export const Sidebar = ({
                 </span>
               )}
               {f.aircraftType && (
-                <span className="font-mono text-[10px] text-white/40">
+                <span className="font-mono text-[10px] text-white/60">
                   {f.aircraftType}
                 </span>
               )}
@@ -706,7 +707,7 @@ export const Sidebar = ({
                   <h1
                     className={`truncate font-mono leading-none font-black tracking-tighter text-white uppercase drop-shadow-lg ${isMobile ? "text-2xl" : "text-4xl"}`}
                   >
-                    {aircraft.flightNo || aircraft.callsign || "N/A"}
+                    {aircraft.flightNo || aircraft.callsign || "No callsign"}
                   </h1>
                   {virtualAirline && (
                     <span className="rounded-full border border-cyan-400/30 bg-cyan-500/15 px-2 py-1 font-mono text-[10px] font-black tracking-[0.18em] text-cyan-300 uppercase">
@@ -744,12 +745,12 @@ export const Sidebar = ({
                       href={`/pilot/${pilotUser._id}?callsign=${encodeURIComponent(aircraft.callsign)}`}
                       className="mt-1 flex items-center gap-1 font-mono text-[10px] font-bold text-cyan-400 transition-colors hover:text-cyan-300"
                     >
-                      <span className="text-white/40">Pilot:</span>{" "}
+                      <span className="text-white/60">Pilot:</span>{" "}
                       {aircraft.callsign}
                     </Link>
                   ) : (
                     <p className="mt-1 font-mono text-[10px] font-bold text-white/60">
-                      <span className="text-white/40">Pilot:</span>{" "}
+                      <span className="text-white/60">Pilot:</span>{" "}
                       {aircraft.callsign}
                     </p>
                   ))}
@@ -882,12 +883,27 @@ export const Sidebar = ({
               <div
                 role="tablist"
                 aria-label="Flight details"
+                onKeyDown={(event) => {
+                  // Arrow keys move between tabs, per the WAI-ARIA tabs pattern.
+                  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight")
+                    return;
+                  event.preventDefault();
+                  const next = tab === "info" ? "history" : "info";
+                  setTab(next);
+                  requestAnimationFrame(() =>
+                    event.currentTarget
+                      .querySelector<HTMLButtonElement>(`[data-tab="${next}"]`)
+                      ?.focus(),
+                  );
+                }}
                 className="flex w-full rounded-2xl border border-white/10 bg-black/60 p-1"
               >
                 <button
                   type="button"
                   role="tab"
                   aria-selected={tab === "info"}
+                  tabIndex={tab === "info" ? 0 : -1}
+                  data-tab="info"
                   onClick={() => setTab("info")}
                   className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2 font-mono text-[10px] font-black transition-all ${
                     tab === "info"
@@ -901,6 +917,8 @@ export const Sidebar = ({
                   type="button"
                   role="tab"
                   aria-selected={tab === "history"}
+                  tabIndex={tab === "history" ? 0 : -1}
+                  data-tab="history"
                   onClick={() => setTab("history")}
                   className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2 font-mono text-[10px] font-black transition-all ${
                     tab === "history"
@@ -975,12 +993,27 @@ export const Sidebar = ({
               <div
                 role="tablist"
                 aria-label="Flight details"
+                onKeyDown={(event) => {
+                  // Arrow keys move between tabs, per the WAI-ARIA tabs pattern.
+                  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight")
+                    return;
+                  event.preventDefault();
+                  const next = tab === "info" ? "history" : "info";
+                  setTab(next);
+                  requestAnimationFrame(() =>
+                    event.currentTarget
+                      .querySelector<HTMLButtonElement>(`[data-tab="${next}"]`)
+                      ?.focus(),
+                  );
+                }}
                 className="flex w-full rounded-2xl border border-white/10 bg-black/60 p-1.5 shadow-xl"
               >
                 <button
                   type="button"
                   role="tab"
                   aria-selected={tab === "info"}
+                  tabIndex={tab === "info" ? 0 : -1}
+                  data-tab="info"
                   onClick={() => setTab("info")}
                   className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
                     tab === "info"
@@ -994,6 +1027,8 @@ export const Sidebar = ({
                   type="button"
                   role="tab"
                   aria-selected={tab === "history"}
+                  tabIndex={tab === "history" ? 0 : -1}
+                  data-tab="history"
                   onClick={() => setTab("history")}
                   className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
                     tab === "history"
@@ -1181,7 +1216,7 @@ const FlightTimelineCard = ({
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div>
-          <div className="font-mono text-[10px] tracking-wider text-white/40 uppercase">
+          <div className="font-mono text-[10px] tracking-wider text-white/60 uppercase">
             Departure
           </div>
           <div className="font-mono text-sm font-black text-white">
@@ -1189,7 +1224,7 @@ const FlightTimelineCard = ({
           </div>
         </div>
         <div className="text-right">
-          <div className="font-mono text-[10px] tracking-wider text-white/40 uppercase">
+          <div className="font-mono text-[10px] tracking-wider text-white/60 uppercase">
             Est. Arrival
           </div>
           <div className="font-mono text-sm font-black text-white">
