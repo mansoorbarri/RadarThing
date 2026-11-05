@@ -1487,11 +1487,11 @@ function ConflictMonitorPanel({
       <div className="relative">
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <p className="font-mono text-[10px] tracking-[0.2em] text-cyan-400/80 uppercase">
-              Conflict Monitor
-            </p>
-            <p className="font-mono text-xs text-white/60">
-              Live CPA prediction + review log
+            <h3 className="text-xs font-semibold tracking-[0.08em] text-white/85">
+              Conflict monitor
+            </h3>
+            <p className="font-mono text-xs text-white/65">
+              Live closest-approach prediction and review log
             </p>
           </div>
           <div className="flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-1">

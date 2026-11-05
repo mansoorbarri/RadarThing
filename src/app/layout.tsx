@@ -90,7 +90,7 @@ export default function RootLayout({
                 <PostHogProvider>
                   <Suspense fallback={null}>
                     <Toaster
-                      theme="system"
+                      theme="dark"
                       position="top-center"
                       toastOptions={{
                         className:

@@ -170,7 +170,7 @@ const AircraftCard = ({
     >
       {isMobile && (
         <div className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-red-500/18">
-          <span className="font-mono text-[11px] font-bold tracking-[0.18em] text-red-200 uppercase">
+          <span className="text-xs font-semibold tracking-[0.08em] text-red-200">
             Remove
           </span>
         </div>
@@ -264,8 +264,8 @@ export const MultiAircraftSidebar = ({
       <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_8px_#22d3ee]" />
-          <span className="font-mono text-[11px] font-bold tracking-wider text-cyan-400 uppercase">
-            {aircrafts.length} Aircraft Selected
+          <span className="text-xs font-semibold tracking-[0.08em] text-white/85">
+            {aircrafts.length} aircraft selected
           </span>
         </div>
         <button

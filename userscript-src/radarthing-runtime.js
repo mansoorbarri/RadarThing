@@ -2406,6 +2406,7 @@
           border-color:rgba(125,211,252,0.7);
           outline:none;
         }
+        #${SAVE_BTN_ID}:focus-visible { outline-color:#ffffff !important; }
         #${UI_CONTAINER_ID} button:focus-visible,
         #${UI_CONTAINER_ID} input:focus-visible,
         #${UI_CONTAINER_ID} textarea:focus-visible,

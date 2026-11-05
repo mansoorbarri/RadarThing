@@ -37,7 +37,7 @@ export const ConnectionStatusIndicator: React.FC<
     lastMessageAgeSeconds >= 5;
   const textMap: Record<typeof status, string> = {
     connected: isStale ? "◔ Stale" : "● Live",
-    connecting: "◐ Connecting...",
+    connecting: "◐ Connecting…",
     disconnected: "○ Offline",
   };
   const title = [ageLabel ? `Last packet ${ageLabel} ago` : null, error ?? null]

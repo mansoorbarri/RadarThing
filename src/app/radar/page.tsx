@@ -103,6 +103,7 @@ import {
 } from "~/utils/dockIcons";
 import {
   CircleHelp,
+  Clock3,
   Eye,
   FileText,
   Plane,
@@ -348,7 +349,14 @@ function ATCPageContent() {
     useState(false);
   const [hasInitialTrafficPainted, setHasInitialTrafficPainted] =
     useState(false);
-  const [, setIsWeatherReady] = useState(false);
+  const [isWeatherReady, setIsWeatherReady] = useState(false);
+  // The radar reveals before weather finishes; show a quiet hint meanwhile,
+  // but never leave it up forever (e.g. when weather layers are off).
+  const [weatherHintExpired, setWeatherHintExpired] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setWeatherHintExpired(true), 15000);
+    return () => window.clearTimeout(id);
+  }, []);
   const [, setAreLogosReady] = useState(false);
   const [hasBootTimedOut, setHasBootTimedOut] = useState(false);
   const [isAppReady, setIsAppReady] = useState(false);
@@ -1268,6 +1276,19 @@ function ATCPageContent() {
           onClick: () =>
             window.open("/guides", "_blank", "noopener,noreferrer"),
         },
+        // On the narrowest phones the header clock (which opens the timer) is
+        // hidden, so offer the timer here too.
+        ...(isPhone
+          ? [
+              {
+                id: "timer",
+                label: "Clock & timer",
+                icon: <Clock3 size={18} strokeWidth={1.8} />,
+                active: showTimerPopup,
+                onClick: () => setShowTimerPopup(true),
+              },
+            ]
+          : []),
         {
           id: "radar-guide",
           label: "Radar Tour",
@@ -1329,6 +1350,42 @@ function ATCPageContent() {
       ],
     },
   ];
+
+  const timerControls = (
+    <div className="rounded-xl border border-white/10 bg-black/90 p-3 backdrop-blur-xl">
+      <div
+        className="mb-2 font-mono text-sm text-emerald-400"
+        aria-live="polite"
+      >
+        {formattedTime}
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={start}
+          disabled={isRunning}
+          className="min-h-9 cursor-pointer rounded-lg bg-emerald-500/20 px-3 py-1 text-xs text-emerald-300 disabled:opacity-50"
+        >
+          Start
+        </button>
+        <button
+          type="button"
+          onClick={stop}
+          disabled={!isRunning}
+          className="min-h-9 cursor-pointer rounded-lg bg-red-500/20 px-3 py-1 text-xs text-red-300 disabled:opacity-50"
+        >
+          Stop
+        </button>
+        <button
+          type="button"
+          onClick={reset}
+          className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-slate-500/20 px-3 py-1 text-xs text-slate-300"
+        >
+          <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Reset
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#081722]">
@@ -1467,30 +1524,7 @@ function ATCPageContent() {
 
             {showTimerPopup && (
               <div className="animate-fade-in-up absolute top-full left-1/2 mt-2 -translate-x-1/2">
-                <div className="rounded-xl border border-white/10 bg-black/90 p-3 backdrop-blur-xl">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={start}
-                      disabled={isRunning}
-                      className="cursor-pointer rounded-lg bg-emerald-500/20 px-3 py-1 text-xs text-emerald-400 disabled:opacity-50"
-                    >
-                      Start
-                    </button>
-                    <button
-                      onClick={stop}
-                      disabled={!isRunning}
-                      className="cursor-pointer rounded-lg bg-red-500/20 px-3 py-1 text-xs text-red-400 disabled:opacity-50"
-                    >
-                      Stop
-                    </button>
-                    <button
-                      onClick={reset}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-slate-500/20 px-3 py-1 text-xs text-slate-400"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" /> Reset
-                    </button>
-                  </div>
-                </div>
+                {timerControls}
               </div>
             )}
           </div>
@@ -1505,7 +1539,7 @@ function ATCPageContent() {
               <button
                 type="button"
                 onClick={() => setShowTimerPopup(!showTimerPopup)}
-                aria-label={`UTC time ${time}. Open timer`}
+                aria-label={`${time} ${zoneLabel}. Open timer`}
                 // On the narrowest phones (under 360px) the clock gives way so
                 // status, What's New and the account menu still fit.
                 className="flex h-9 items-center justify-center rounded-lg border border-white/10 bg-black/40 px-2.5 backdrop-blur-md max-[359px]:hidden"
@@ -1555,6 +1589,24 @@ function ATCPageContent() {
       )}
 
       {/* Mobile search - bottom sheet (phone only) */}
+      {isAppReady && !isWeatherReady && !weatherHintExpired && (
+        <div
+          role="status"
+          className="pointer-events-none fixed bottom-24 left-1/2 z-[10011] -translate-x-1/2 rounded-full border border-white/10 bg-black/70 px-3 py-1.5 font-mono text-[11px] text-white/70 backdrop-blur-md"
+        >
+          Loading weather…
+        </div>
+      )}
+
+      {!isUiHidden && isPhone && showTimerPopup && (
+        <div className="animate-fade-in-up pointer-events-auto fixed top-16 right-3 z-[10012]">
+          <div className="mb-1 text-right font-mono text-xs text-cyan-300">
+            {time} {zoneLabel}
+          </div>
+          {timerControls}
+        </div>
+      )}
+
       {!isUiHidden && isPhone && showMobileSearch && (
         <MobileSearchSheet
           onClose={() => setShowMobileSearch(false)}

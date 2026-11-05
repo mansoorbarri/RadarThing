@@ -164,7 +164,12 @@ function buildLoader() {
     chip.setAttribute("role", "alert");
     chip.style.cssText =
       "position:fixed;top:72px;right:16px;z-index:999998;display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid rgba(248,113,113,0.5);border-radius:12px;background:rgba(23,28,42,0.95);color:#fecaca;font:600 12px system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,0.4);";
-    const needsReload = Boolean(window.__radarThingNeedsReload);
+    // If the bundle already ran and failed partway, a retry can't help (it
+    // would refuse to run twice), so offer a reload straight away.
+    const needsReload = Boolean(
+      window.__radarThingNeedsReload ||
+        (window.__radarThingBootAttempted && !window.__radarThingLoaded),
+    );
     const text = document.createElement("span");
     text.textContent = needsReload
       ? "RadarThing didn't start properly. Reload GeoFS to try again."

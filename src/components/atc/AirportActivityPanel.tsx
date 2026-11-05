@@ -1,5 +1,6 @@
 "use client";
 
+import { PanelHeading } from "~/components/ui/panel-heading";
 import { useDeferredValue, useMemo, useState, type ReactNode } from "react";
 import {
   ArrowRightLeft,
@@ -642,9 +643,7 @@ function SectionHeader({
   return (
     <div className="flex items-end justify-between gap-3">
       <div>
-        <div className="font-mono text-[11px] tracking-[0.24em] text-cyan-400 uppercase">
-          {title}
-        </div>
+        <PanelHeading>{title}</PanelHeading>
         <div className="mt-1 text-xs leading-5 text-white/60">{subtitle}</div>
       </div>
       {badge && (
