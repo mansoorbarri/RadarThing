@@ -1,5 +1,6 @@
 "use client";
 
+import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useState, useEffect, useMemo, useRef } from "react";
@@ -371,7 +372,7 @@ export default function DashboardPage() {
             Sign in to view your account, flight statistics, and history
           </p>
           <GoogleSignInButton>
-            <button className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-8 py-4 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40">
+            <button className="cursor-pointer rounded-xl bg-cyan-400 px-8 py-4 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40">
               Sign In / Sign Up
             </button>
           </GoogleSignInButton>
@@ -766,7 +767,7 @@ export default function DashboardPage() {
                     });
                     router.push("/pricing");
                   }}
-                  className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
+                  className="cursor-pointer rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40"
                 >
                   Start 7-day PRO trial
                 </button>
@@ -1295,15 +1296,64 @@ function ProLockedContent() {
 }
 
 function EmptyState() {
+  const steps = [
+    {
+      title: "Install the GeoFS script",
+      body: "Add the RadarThing userscript with Tampermonkey.",
+      href: "/userscript",
+      native: true,
+      cta: "Install script",
+    },
+    {
+      title: "Sign in to GeoFS",
+      body: "Use the same Google account you use here, so flights land on this dashboard.",
+      href: "https://www.geo-fs.com/geofs.php",
+      native: true,
+      cta: "Open GeoFS",
+    },
+    {
+      title: "Press Start tracking",
+      body: "Enter your route and callsign in the RadarThing panel inside GeoFS.",
+      href: "/guides/getting-started",
+      native: false,
+      cta: "Read the guide",
+    },
+  ];
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-      <Plane className="mx-auto mb-4 h-12 w-12 text-slate-400" />
-      <h3 className="mb-2 text-xl font-semibold text-white">No Flights Yet</h3>
-      <p className="text-slate-400">
-        Start flying in GeoFS to see your stats here.
-        <br />
-        Make sure you&apos;re signed in with the same Google account.
-      </p>
+    <div className="rounded-2xl border border-white/10 bg-black/40 p-8 backdrop-blur-xl sm:p-10">
+      <Plane className="mb-4 h-10 w-10 text-cyan-300" aria-hidden="true" />
+      <h3 className="mb-2 text-xl font-semibold text-white">
+        No flights yet. Here&apos;s how to log your first one
+      </h3>
+      <ol className="mt-6 grid gap-4 sm:grid-cols-3">
+        {steps.map((step, index) => (
+          <li
+            key={step.title}
+            className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
+          >
+            <span className="font-mono text-xs text-cyan-300">
+              Step {index + 1}
+            </span>
+            <p className="mt-1 font-semibold text-white">{step.title}</p>
+            <p className="mt-1 text-sm text-slate-300">{step.body}</p>
+            {step.native ? (
+              <a
+                href={step.href}
+                className="mt-3 inline-block text-sm font-medium text-cyan-300 underline-offset-4 hover:underline"
+              >
+                {step.cta}
+              </a>
+            ) : (
+              <NextLink
+                href={step.href}
+                className="mt-3 inline-block text-sm font-medium text-cyan-300 underline-offset-4 hover:underline"
+              >
+                {step.cta}
+              </NextLink>
+            )}
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }
@@ -1382,16 +1432,7 @@ function DiscordIcon({ className }: { className?: string }) {
 function DashboardSkeleton() {
   return (
     <div className="dashboard-theme-surface min-h-screen bg-black text-white">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <div className="h-[30px] w-[100px] animate-pulse rounded bg-white/10" />
-          <div className="flex items-center gap-4">
-            <div className="h-4 w-20 animate-pulse rounded bg-white/10" />
-            <div className="h-8 w-8 animate-pulse rounded-full bg-white/10" />
-          </div>
-        </div>
-      </header>
+      <SiteHeader tone="themed" />
 
       <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
         {/* Profile Header */}

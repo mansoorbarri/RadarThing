@@ -46,7 +46,7 @@ export function AdminAccessDenied() {
         </p>
         <button
           onClick={() => router.push("/radar")}
-          className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-8 py-4 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
+          className="cursor-pointer rounded-xl bg-cyan-400 px-8 py-4 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40"
         >
           Back to Map
         </button>

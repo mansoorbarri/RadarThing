@@ -1,5 +1,6 @@
 "use client";
 
+import { SiteFooter } from "~/components/site/SiteFooter";
 import { SiteHeader } from "~/components/site/SiteHeader";
 import {
   AlertDialog,
@@ -685,7 +686,7 @@ export default function VirtualAirlineAdminPage() {
                 <button
                   type="submit"
                   disabled={isSavingSettings}
-                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 transition-opacity hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSavingSettings ? (
                     <>
@@ -800,7 +801,7 @@ export default function VirtualAirlineAdminPage() {
                     !hasSelectedFile ||
                     !selectedVirtualAirline?.isActive
                   }
-                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 transition-opacity hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitStage === "uploading" ? (
                     <>
@@ -996,6 +997,7 @@ export default function VirtualAirlineAdminPage() {
           </div>
         )}
       </main>
+      <SiteFooter />
     </div>
   );
 }

@@ -341,14 +341,14 @@ export default function AirportChartsPage() {
           {canUpload ? (
             <button
               onClick={() => setShowUploadModal(true)}
-              className="flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-sky-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
+              className="flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40"
             >
               <Upload className="h-5 w-5" />
               Upload Chart
             </button>
           ) : (
             <GoogleSignInButton>
-              <button className="flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-sky-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40">
+              <button className="flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40">
                 <Upload className="h-5 w-5" />
                 Sign in to Upload
               </button>
@@ -517,7 +517,7 @@ export default function AirportChartsPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-2 block font-mono text-xs text-slate-400">
                   ICAO CODE *
@@ -640,10 +640,10 @@ export default function AirportChartsPage() {
                 !rightsConfirmed ||
                 submitStage === "success"
               }
-              className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-slate-950 shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
                 submitStage === "success"
                   ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/20"
-                  : "bg-gradient-to-r from-cyan-400 to-sky-400 text-slate-950 shadow-cyan-500/20 hover:shadow-cyan-500/40"
+                  : "bg-cyan-400 text-slate-950 shadow-cyan-500/20 hover:bg-cyan-300 hover:shadow-cyan-500/40"
               }`}
             >
               {getButtonContent()}
@@ -784,15 +784,7 @@ function ChartCardSkeleton() {
 function GallerySkeleton() {
   return (
     <div className="min-h-screen bg-black text-white">
-      <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <Skeleton className="h-8 w-24" />
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-8 w-20 rounded-lg" />
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
         <div className="mb-8 flex items-center justify-between">

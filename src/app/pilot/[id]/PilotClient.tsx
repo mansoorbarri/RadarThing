@@ -1,5 +1,6 @@
 "use client";
 
+import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
@@ -149,12 +150,12 @@ export default function PilotClient({
             The pilot you&apos;re looking for may have been deleted or never
             existed.
           </p>
-          <button
-            onClick={() => router.push("/radar")}
-            className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
+          <NextLink
+            href="/radar"
+            className="inline-flex rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40"
           >
             Back to the radar
-          </button>
+          </NextLink>
         </main>
         <SiteFooter />
       </div>
@@ -577,9 +578,16 @@ function EmptyState() {
   return (
     <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
       <Plane className="mx-auto mb-4 h-12 w-12 text-slate-400" />
-      <h3 className="mb-2 text-xl font-semibold text-white">No Flights Yet</h3>
-      <p className="text-slate-400">
-        This pilot hasn&apos;t recorded any flights yet.
+      <h3 className="mb-2 text-xl font-semibold text-white">No flights yet</h3>
+      <p className="text-slate-300">
+        This pilot hasn&apos;t recorded any flights yet. Want yours here?{" "}
+        <NextLink
+          href="/guides/getting-started"
+          className="text-cyan-300 underline-offset-4 hover:underline"
+        >
+          Get started
+        </NextLink>
+        .
       </p>
     </div>
   );
@@ -588,16 +596,7 @@ function EmptyState() {
 function PilotPageSkeleton({ callsign }: { callsign: string | null }) {
   return (
     <div className="pilot-theme-surface min-h-screen bg-black text-white">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <div className="h-[30px] w-[100px] animate-pulse rounded bg-white/10" />
-          <div className="flex items-center gap-2">
-            <div className="h-4 w-4 animate-pulse rounded bg-white/10" />
-            <div className="h-4 w-20 animate-pulse rounded bg-white/10" />
-          </div>
-        </div>
-      </header>
+      <SiteHeader tone="themed" />
 
       <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
         {/* Profile Header */}

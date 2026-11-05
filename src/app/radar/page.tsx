@@ -65,6 +65,7 @@ import { type Airport } from "~/components/map";
 
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
 import { SearchBar } from "~/components/atc/searchbar";
+import { FocusTrap } from "~/components/ui/focus-trap";
 import { Sidebar, type HistoryFlight } from "~/components/atc/sidebar";
 import { MultiAircraftSidebar } from "~/components/atc/MultiAircraftSidebar";
 import { FlightReplayControls } from "~/components/flight-replay/FlightReplayControls";
@@ -1502,7 +1503,7 @@ function ATCPageContent() {
             {isPhone && (
               <button
                 onClick={() => setShowTimerPopup(!showTimerPopup)}
-                className="flex h-7 items-center justify-center rounded-lg border border-white/10 bg-black/40 px-2.5 backdrop-blur-md"
+                className="flex h-9 items-center justify-center rounded-lg border border-white/10 bg-black/40 px-2.5 backdrop-blur-md"
               >
                 <span className="flex h-full items-center justify-center gap-1 font-mono text-[11px] leading-none text-cyan-400">
                   <span className="leading-none">{time}</span>
@@ -1519,6 +1520,17 @@ function ATCPageContent() {
               lastMessageAgeSeconds={lastMessageAgeSeconds}
               error={streamError}
             />
+            {!isPhone && (
+              <button
+                type="button"
+                onClick={() => setIsRadarGuideOpen(true)}
+                aria-label="Take the radar tour"
+                title="Take the radar tour"
+                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-cyan-400/30 bg-black/70 text-cyan-300 transition-colors hover:border-cyan-300/60 hover:bg-cyan-500/10 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+              >
+                <CircleHelp size={18} strokeWidth={1.8} aria-hidden="true" />
+              </button>
+            )}
             <WhatsNew isMobile={isMobile} />
             <UserAuth />
           </div>
@@ -1549,7 +1561,11 @@ function ATCPageContent() {
             }}
           />
           {/* Bottom sheet */}
-          <div
+          <FocusTrap
+            onEscape={() => {
+              setShowMobileSearch(false);
+              setSearchTerm("");
+            }}
             role="dialog"
             aria-modal="true"
             aria-label="Search"
@@ -1588,7 +1604,7 @@ function ATCPageContent() {
               onAfterSelect={() => setShowMobileSearch(false)}
               onEscape={() => setShowMobileSearch(false)}
             />
-          </div>
+          </FocusTrap>
         </>
       )}
 
@@ -1921,6 +1937,10 @@ function ATCPageContent() {
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
               className="absolute top-1/2 -left-3 z-10 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-slate-900 text-slate-400 shadow-lg transition-colors hover:bg-slate-800 hover:text-white"
               title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-label={
+                isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+              }
+              aria-expanded={!isSidebarCollapsed}
             >
               <svg
                 width="12"

@@ -505,7 +505,7 @@ export function VirtualAirlinesTab({
           <button
             type="button"
             onClick={openCreateModal}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 text-sm font-medium text-slate-950 transition-opacity hover:bg-cyan-300 hover:opacity-90"
           >
             <Plus className="h-4 w-4" />
             New VA
@@ -583,7 +583,7 @@ export function VirtualAirlinesTab({
       {/* ── Modal ── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-          <div className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-2xl">
+          <div className="border-border bg-card text-card-foreground relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border shadow-2xl">
             {/* Header */}
             <div className="flex items-start justify-between gap-4 border-b border-white/10 px-6 py-5">
               <div>
@@ -848,7 +848,7 @@ export function VirtualAirlinesTab({
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-3 font-medium text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 font-medium text-slate-950 transition-opacity hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {form.id ? (
                       <Save className="h-4 w-4" />
@@ -1038,7 +1038,7 @@ export function VirtualAirlinesTab({
                             fleetSubmitStage === "submitting" ||
                             !hasFleetFile
                           }
-                          className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2.5 text-sm font-medium text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                          className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-cyan-400 px-4 py-2.5 text-sm font-medium text-slate-950 transition-opacity hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {fleetSubmitStage === "uploading" ||
                           fleetSubmitStage === "submitting" ? (

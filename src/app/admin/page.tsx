@@ -426,7 +426,7 @@ export default function AdminPage() {
       {(mainTab === "images" || mainTab === "charts") && (
         <button
           onClick={() => setShowUploadModal(true)}
-          className="fixed right-4 bottom-4 z-40 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-4 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all hover:scale-105 hover:shadow-cyan-500/50 sm:right-8 sm:bottom-8 sm:h-14 sm:w-14 sm:px-0"
+          className="fixed right-4 bottom-4 z-40 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-cyan-400 px-4 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/30 transition-all hover:scale-105 hover:bg-cyan-300 hover:shadow-cyan-500/50 sm:right-8 sm:bottom-8 sm:h-14 sm:w-14 sm:px-0"
           title={
             mainTab === "images"
               ? "Upload Aircraft Image"

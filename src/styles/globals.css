@@ -1360,24 +1360,18 @@ body {
   border-radius: 6px;
 }
 
-/* Respect the OS "reduce motion" setting site-wide. */
+/* Respect the OS "reduce motion" setting site-wide. Everything stops except
+   spinners, which only signal "still working" and are slowed down instead. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    /* Calm decorative motion without freezing spinners/pulses mid-cycle. */
+    animation: none !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .animate-pulse,
-  .animate-bounce,
-  .animate-radarPulse,
-  .animate-fade-in-up,
-  .animate-fade-in,
-  .animate-slide-in-right,
-  .animate-slide-in-left,
-  .animate-scale-in {
-    animation: none !important;
+  .animate-spin {
+    animation: spin 2s linear infinite !important;
   }
 }
 

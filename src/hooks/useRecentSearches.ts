@@ -72,8 +72,8 @@ export const useRecentSearches = () => {
       return;
     }
 
-    const displayName = aircraft.callsign || aircraft.flightNo || "N/A";
-    const subtitle = `${aircraft.type || "N/A"} • ${aircraft.departure || "N/A"} → ${aircraft.arrival || "UNK"}`;
+    const displayName = aircraft.callsign || aircraft.flightNo || "No callsign";
+    const subtitle = `${aircraft.type || "Unknown aircraft"} · ${aircraft.departure || "—"} → ${aircraft.arrival || "—"}`;
 
     setRecentSearches((prev) => {
       // Remove existing entry if present

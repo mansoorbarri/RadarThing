@@ -8,7 +8,7 @@ import { useProStatus } from "~/hooks/useProStatus";
 import { Analytics } from "~/lib/analytics";
 
 const buttonClassName =
-  "cursor-pointer rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 text-xs font-semibold text-white transition-all hover:from-cyan-400 hover:to-blue-400";
+  "cursor-pointer rounded-lg bg-cyan-400 hover:bg-cyan-300 px-4 py-2 text-xs font-semibold text-slate-950 transition-all ";
 
 export function ChartsAccessPrompt({
   code,

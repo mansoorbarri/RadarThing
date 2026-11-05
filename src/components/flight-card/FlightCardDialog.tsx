@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useFocusTrap } from "~/hooks/useFocusTrap";
 import { X, Download, Copy, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { FlightCard, type FlightCardData } from "./FlightCard";
@@ -31,24 +32,10 @@ export function FlightCardDialog({ data, onClose }: FlightCardDialogProps) {
     setTimeout(() => onClose(), 200);
   };
 
-  // Escape closes the dialog; focus moves into it and returns afterwards.
+  // Focus stays inside the dialog, Escape closes it, and focus returns to
+  // the opener afterwards.
   const dialogRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    dialogRef.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.stopPropagation();
-        setIsClosing(true);
-        setTimeout(() => onClose(), 200);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown, true);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown, true);
-      previouslyFocused?.focus?.();
-    };
-  }, [onClose]);
+  useFocusTrap(dialogRef, handleClose);
 
   // Calculate scale to fit viewport
   useEffect(() => {

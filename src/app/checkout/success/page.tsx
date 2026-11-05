@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { syncAfterCheckout } from "~/app/actions/sync-stripe";
 import { Check, Clock, Loader2 } from "lucide-react";
 import { Analytics } from "~/lib/analytics";
+import { SiteFooter } from "~/components/site/SiteFooter";
 import { SiteHeader } from "~/components/site/SiteHeader";
 
 export default function CheckoutSuccessPage() {
@@ -116,6 +117,7 @@ export default function CheckoutSuccessPage() {
           )}
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

@@ -541,22 +541,26 @@ export const Sidebar = ({
         history.map((f, histIdx) => (
           <div
             key={f.id}
-            {...buttonLikeProps(() => {
-              if (f.routeData) {
-                onHistoryClick?.({
-                  id: f.id as string,
-                  depICAO: f.depICAO,
-                  arrICAO: f.arrICAO,
-                  startTime: f.startTime.getTime(),
-                  endTime: f.endTime,
-                  aircraftType: f.aircraftType,
-                  callsign: f.callsign,
-                  duration: f.duration,
-                  routeData: f.routeData as [number, number][],
-                });
-              }
-            })}
-            className="animate-fade-in-up group relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg transition-all hover:border-amber-500/40"
+            // Only flights with a recorded route can be replayed, so only
+            // those rows are interactive.
+            {...(f.routeData
+              ? buttonLikeProps(() => {
+                  if (f.routeData) {
+                    onHistoryClick?.({
+                      id: f.id as string,
+                      depICAO: f.depICAO,
+                      arrICAO: f.arrICAO,
+                      startTime: f.startTime.getTime(),
+                      endTime: f.endTime,
+                      aircraftType: f.aircraftType,
+                      callsign: f.callsign,
+                      duration: f.duration,
+                      routeData: f.routeData as [number, number][],
+                    });
+                  }
+                })
+              : {})}
+            className={`animate-fade-in-up group relative overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4 shadow-lg transition-all ${f.routeData ? "cursor-pointer hover:border-amber-500/40 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none" : ""}`}
             style={{ animationDelay: `${histIdx * 50}ms` }}
           >
             <div className="mb-1.5 flex items-center justify-between">
@@ -904,14 +908,16 @@ export const Sidebar = ({
                   aria-selected={tab === "info"}
                   tabIndex={tab === "info" ? 0 : -1}
                   data-tab="info"
+                  id="flight-tab-info"
+                  aria-controls="flight-tabpanel"
                   onClick={() => setTab("info")}
-                  className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2 font-mono text-[10px] font-black transition-all ${
+                  className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2 font-mono text-[11px] font-black transition-all ${
                     tab === "info"
                       ? "bg-white text-black shadow-lg"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  <InfoCircleIcon size={13} /> LIVE DATA
+                  <InfoCircleIcon size={13} /> Live data
                 </button>
                 <button
                   type="button"
@@ -919,20 +925,27 @@ export const Sidebar = ({
                   aria-selected={tab === "history"}
                   tabIndex={tab === "history" ? 0 : -1}
                   data-tab="history"
+                  id="flight-tab-history"
+                  aria-controls="flight-tabpanel"
                   onClick={() => setTab("history")}
-                  className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2 font-mono text-[10px] font-black transition-all ${
+                  className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2 font-mono text-[11px] font-black transition-all ${
                     tab === "history"
                       ? "bg-white text-black shadow-lg"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  <HistoryIcon size={13} /> LOGBOOK
+                  <HistoryIcon size={13} /> Logbook
                 </button>
               </div>
             </nav>
 
             {tab === "info" ? (
-              <div className="space-y-4">
+              <div
+                className="space-y-4"
+                role="tabpanel"
+                id="flight-tabpanel"
+                aria-labelledby="flight-tab-info"
+              >
                 {diversionStatus.isDiverting && (
                   <DiversionStatusCard
                     filedArrival={diversionStatus.filedArrival}
@@ -984,7 +997,14 @@ export const Sidebar = ({
                 {renderFlightPlan()}
               </div>
             ) : (
-              <div className="pb-2">{renderHistoryContent()}</div>
+              <div
+                className="pb-2"
+                role="tabpanel"
+                id="flight-tabpanel"
+                aria-labelledby="flight-tab-history"
+              >
+                {renderHistoryContent()}
+              </div>
             )}
           </div>
         ) : (
@@ -1014,14 +1034,16 @@ export const Sidebar = ({
                   aria-selected={tab === "info"}
                   tabIndex={tab === "info" ? 0 : -1}
                   data-tab="info"
+                  id="flight-tab-info"
+                  aria-controls="flight-tabpanel"
                   onClick={() => setTab("info")}
-                  className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
+                  className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[11px] font-black transition-all ${
                     tab === "info"
                       ? "bg-white text-black shadow-lg"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  <InfoCircleIcon size={14} /> LIVE DATA
+                  <InfoCircleIcon size={14} /> Live data
                 </button>
                 <button
                   type="button"
@@ -1029,19 +1051,26 @@ export const Sidebar = ({
                   aria-selected={tab === "history"}
                   tabIndex={tab === "history" ? 0 : -1}
                   data-tab="history"
+                  id="flight-tab-history"
+                  aria-controls="flight-tabpanel"
                   onClick={() => setTab("history")}
-                  className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[10px] font-black transition-all ${
+                  className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[11px] font-black transition-all ${
                     tab === "history"
                       ? "bg-white text-black shadow-lg"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  <HistoryIcon size={14} /> LOGBOOK
+                  <HistoryIcon size={14} /> Logbook
                 </button>
               </div>
             </nav>
 
-            <div className="px-6 pb-12">
+            <div
+              className="px-6 pb-12"
+              role="tabpanel"
+              id="flight-tabpanel"
+              aria-labelledby={`flight-tab-${tab}`}
+            >
               {tab === "info" ? (
                 <div className="space-y-6">
                   {diversionStatus.isDiverting && (

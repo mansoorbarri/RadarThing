@@ -90,6 +90,28 @@
   let resumeModalResolver = null;
   let resumeModalReturnFocus = null;
   let isTracking = false;
+  // Set when the pilot chose "decide later" on the resume dialog. Starting a
+  // new flight first closes that old leg so the two don't get merged.
+  let resumeDeferredGoogleId = "";
+
+  async function closeDeferredResumeSession() {
+    const googleId = resumeDeferredGoogleId;
+    if (!googleId) return;
+    resumeDeferredGoogleId = "";
+    try {
+      await fetch(RESUME_FLIGHT_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "decline",
+          googleId,
+          currentId: geofs?.userRecord?.googleid || geofs?.userRecord?.callsign,
+        }),
+      });
+    } catch (_) {
+      // The server times old legs out on its own; don't block the new flight.
+    }
+  }
 
   function setTrackingUi(active) {
     isTracking = active;
@@ -831,9 +853,23 @@
     return region;
   }
 
-  function showToast(msg, isError = false) {
+  function showToast(msg, isError = false, action = null) {
     const toast = document.createElement("div");
     toast.textContent = msg;
+    if (action && action.label && typeof action.onClick === "function") {
+      // Actionable toasts need to be clickable inside the click-through region.
+      toast.style.pointerEvents = "auto";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = action.label;
+      btn.style.cssText =
+        "margin-left:12px;padding:4px 10px;border:1px solid rgba(255,255,255,0.5);border-radius:8px;background:transparent;color:#fff;font:700 12px system-ui,sans-serif;cursor:pointer;";
+      btn.onclick = () => {
+        toast.remove();
+        action.onClick();
+      };
+      toast.appendChild(btn);
+    }
     toast.style.cssText = `
       background:${isError ? "rgba(185,28,28,0.95)" : "rgba(4,120,87,0.95)"};
       color:#fff;
@@ -855,7 +891,7 @@
         toast.style.opacity = "0";
         setTimeout(() => toast.remove(), 300);
       },
-      isError ? 5000 : 3000,
+      action ? 10000 : isError ? 5000 : 3000,
     );
   }
 
@@ -1207,6 +1243,7 @@
       // even if the request below fails.
       resumePromptResolved = true;
       if (shouldResume === "later") {
+        resumeDeferredGoogleId = googleId;
         showToast("No problem. We'll ask again next time you load GeoFS.");
         return;
       }
@@ -1222,7 +1259,10 @@
       });
 
       if (!actionRes.ok) {
-        showToast("Failed to update disconnected flight", true);
+        showToast(
+          "Couldn't reach RadarThing about your interrupted flight. We'll ask again next time you load GeoFS.",
+          true,
+        );
         return;
       }
 
@@ -1230,7 +1270,10 @@
 
       if (!shouldResume) {
         if (!actionData?.finalized) {
-          showToast("Failed to end previous disconnected flight", true);
+          showToast(
+            "Couldn't save your interrupted flight yet. It will be saved automatically when it times out.",
+            true,
+          );
           return;
         }
         showToast("Previous disconnected flight ended");
@@ -2359,6 +2402,15 @@
           #${UI_CONTAINER_ID} *, #${UI_CONTAINER_ID} *::before { transition:none !important; animation:none !important; }
         }
         @keyframes atc-status-pulse { 0%,100% { opacity:1 } 50% { opacity:.35 } }
+        ${
+          isMobile
+            ? `#${UI_CONTAINER_ID} { font-size:13px; }
+        #${UI_CONTAINER_ID} input { height:40px !important; font-size:16px !important; }
+        #${UI_CONTAINER_ID} button { min-height:40px; }
+        #${UI_CONTAINER_ID} [role="switch"] { min-height:0; }
+        #${UI_CONTAINER_ID} label > div, #${UI_CONTAINER_ID} p, #${UI_CONTAINER_ID} [role="status"] { font-size:12px !important; }`
+            : ""
+        }
       </style>
 
       <div id="${FLIGHT_UI_HEADER_ID}" style="
@@ -2756,13 +2808,17 @@
       if (!dep) return setFormError("Enter a departure airport.", DEP_INPUT_ID);
       if (!isAirportCode(dep))
         return setFormError(
-          "Use the 4-letter ICAO code for departure, like EGLL (not LHR).",
+          dep.length === 3
+            ? `Use the 4-letter ICAO code for departure, like EGLL (not ${dep}).`
+            : "Use the 4-letter ICAO code for departure, like EGLL.",
           DEP_INPUT_ID,
         );
       if (!arr) return setFormError("Enter an arrival airport.", ARR_INPUT_ID);
       if (!isAirportCode(arr))
         return setFormError(
-          "Use the 4-letter ICAO code for arrival, like KJFK (not JFK).",
+          arr.length === 3
+            ? `Use the 4-letter ICAO code for arrival, like KJFK (not ${arr}).`
+            : "Use the 4-letter ICAO code for arrival, like KJFK.",
           ARR_INPUT_ID,
         );
       if (!flt) return setFormError("Enter a callsign.", FLT_INPUT_ID);
@@ -2792,6 +2848,7 @@
       }
 
       const wasTracking = isTracking;
+      if (!wasTracking) await closeDeferredResumeSession();
       window.dispatchEvent(
         new CustomEvent("atc-data-sync", {
           detail: { dep, arr, flt, sqk, af, active: true },
@@ -2823,7 +2880,9 @@
       }
       if (endBtn.dataset.confirming !== "1") {
         endBtn.dataset.confirming = "1";
-        endBtn.textContent = "Tap again to end";
+        endBtn.textContent = isMobileBrowser()
+          ? "Tap again to end"
+          : "Click again to end";
         endBtn.style.borderColor = "rgba(248,113,113,0.6)";
         endBtn.style.color = "#fca5a5";
         endConfirmTimer = setTimeout(resetEndButton, 4000);
@@ -2834,19 +2893,38 @@
       window.dispatchEvent(
         new CustomEvent("atc-data-sync", { detail: { active: false } }),
       );
+      // End is now disabled; keep keyboard focus somewhere useful.
+      document.getElementById(SAVE_BTN_ID)?.focus();
       showToast("Ending flight…");
     };
     endBtn.addEventListener("blur", () => {
       if (endBtn.dataset.confirming === "1") resetEndButton();
     });
 
+    let endedRemotely = false;
     window.addEventListener("radarthing-flight-disconnected", () => {
-      showToast("Flight ended from the RadarThing website");
+      // The end-result toast follows; prefix it instead of showing two.
+      endedRemotely = true;
     });
 
     window.addEventListener("radarthing-flight-end-result", (event) => {
       const detail = event.detail || {};
-      if (detail.message) showToast(detail.message, detail.ok === false);
+      const prefix = endedRemotely ? "Ended from the RadarThing website. " : "";
+      endedRemotely = false;
+      if (!detail.message) return;
+      showToast(
+        prefix + detail.message,
+        detail.ok === false,
+        detail.ok === false
+          ? {
+              label: "Retry",
+              onClick: () =>
+                window.dispatchEvent(
+                  new CustomEvent("radarthing-retry-end-flight"),
+                ),
+            }
+          : null,
+      );
     });
 
     document.getElementById(CHARTS_BTN_ID).onclick = toggleChartsPanel;
@@ -3487,6 +3565,7 @@
           type === "keydown" &&
           e.key === "Enter" &&
           e.target.tagName === "INPUT" &&
+          e.target.type !== "checkbox" &&
           e.target.closest(`#${UI_CONTAINER_ID}`)
         ) {
           e.preventDefault();
@@ -3516,7 +3595,9 @@
     if (dot) {
       dot.style.background = color;
       dot.style.animation =
-        e.detail.state === "connecting" || e.detail.state === "retrying"
+        e.detail.state === "connecting" ||
+        e.detail.state === "retrying" ||
+        e.detail.state === "waiting"
           ? "atc-status-pulse 1.2s ease-in-out infinite"
           : "none";
     }
@@ -3623,7 +3704,11 @@
         <li>Press <strong>Start tracking</strong>. Your position, speed, altitude and flight plan are shared on radarthing.com.</li>
         <li>Press <strong>End flight</strong> when you land to save it to your history.</li>
       </ol>
-      <p style="margin:0 0 10px;color:#94a3b8;font-size:11px;">Press <strong>${escapeHtml(toggleKey.toUpperCase())}</strong> to show or hide this panel and <strong>${escapeHtml(chartsToggleKey.toUpperCase())}</strong> for airport charts.</p>
+      ${
+        isMobileBrowser()
+          ? `<p style="margin:0 0 10px;color:#94a3b8;font-size:12px;">Use the arrow tab on the right to show this panel again after closing it.</p>`
+          : `<p style="margin:0 0 10px;color:#94a3b8;font-size:11px;">Press <strong>${escapeHtml(toggleKey.toUpperCase())}</strong> to show or hide this panel and <strong>${escapeHtml(chartsToggleKey.toUpperCase())}</strong> for airport charts.</p>`
+      }
       <button type="button" data-welcome-dismiss style="width:100%;height:32px;border:1px solid rgba(125,211,252,0.35);border-radius:10px;background:rgba(56,189,248,0.14);color:#7dd3fc;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;">Got it</button>
     `;
     card.querySelector("[data-welcome-dismiss]").onclick = () => {
@@ -3638,6 +3723,9 @@
     else flightUI.prepend(card);
   }
 
+  // Live regions must exist before their first message to be announced.
+  getToastRegion(false);
+  getToastRegion(true);
   injectFlightUI();
   showWelcomeCardOnce();
   window.dispatchEvent(new CustomEvent("radarthing-request-status"));

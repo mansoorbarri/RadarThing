@@ -168,7 +168,7 @@ export default function PricingPage() {
             <button
               onClick={() => handleUpgrade("pricing_page_trial_active")}
               disabled={loading}
-              className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:from-cyan-300 hover:to-blue-400 disabled:opacity-50"
+              className="cursor-pointer rounded-xl bg-cyan-400 px-6 py-3 text-sm font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:bg-cyan-300 disabled:opacity-50"
             >
               {loading ? "Loading..." : "Keep Pro for $3/month"}
             </button>
@@ -346,7 +346,7 @@ export default function PricingPage() {
                         feature: "pro_plan",
                       })
                     }
-                    className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400"
+                    className="mt-6 w-full cursor-pointer rounded-xl bg-cyan-400 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:bg-cyan-300"
                   >
                     Start free trial with Google
                   </button>
@@ -358,7 +358,7 @@ export default function PricingPage() {
                   <button
                     onClick={() => handleStartTrial("pricing_page")}
                     disabled={loading}
-                    className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-6 w-full cursor-pointer rounded-xl bg-cyan-400 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading ? "Loading..." : "Start 7-day free trial"}
                   </button>
@@ -377,7 +377,7 @@ export default function PricingPage() {
                   <button
                     onClick={() => handleUpgrade("pricing_page")}
                     disabled={loading}
-                    className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:from-cyan-300 hover:to-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-6 w-full cursor-pointer rounded-xl bg-cyan-400 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading ? "Loading..." : "Subscribe to Pro"}
                   </button>

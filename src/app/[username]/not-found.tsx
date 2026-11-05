@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plane } from "lucide-react";
 import type { Metadata } from "next";
+import { SiteFooter } from "~/components/site/SiteFooter";
 import { SiteHeader } from "~/components/site/SiteHeader";
 
 export const metadata: Metadata = {
@@ -32,12 +33,13 @@ export default function PilotNotFound() {
           </p>
           <Link
             href="/radar"
-            className="mt-8 inline-flex rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-shadow hover:shadow-cyan-500/40"
+            className="mt-8 inline-flex rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-shadow hover:bg-cyan-300 hover:shadow-cyan-500/40"
           >
             Back to the radar
           </Link>
         </section>
       </main>
+      <SiteFooter />
     </div>
   );
 }

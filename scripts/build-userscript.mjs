@@ -96,9 +96,21 @@ function buildLoader() {
       script.src = withCacheBust(url);
       script.async = true;
       script.dataset.radarthing = "bundle";
-      script.onload = () => resolve();
-      script.onerror = () =>
+      // A hung request or a bundle that throws while booting should surface
+      // the same "couldn't load" message as a network failure.
+      const timeoutId = setTimeout(
+        () => reject(new Error("[RadarThing] Runtime bundle timed out.")),
+        20000,
+      );
+      script.onload = () => {
+        clearTimeout(timeoutId);
+        if (window.__radarThingLoaded) resolve();
+        else reject(new Error("[RadarThing] Runtime failed to start."));
+      };
+      script.onerror = () => {
+        clearTimeout(timeoutId);
         reject(new Error("[RadarThing] Failed to load runtime bundle."));
+      };
       document.documentElement.appendChild(script);
     });
   }

@@ -38,18 +38,23 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
   const [atisExpanded, setAtisExpanded] = useState(false);
   const [notamsExpanded, setNotamsExpanded] = useState(false);
 
+  // Only Pro users with NOTAMs can expand the list; for everyone else the
+  // header is plain text (with the upgrade link beside it).
+  const canExpandNotams = Boolean(isPro && notams && notams.length > 0);
+
   return (
     <div className="absolute bottom-5 left-5 z-[1000] flex flex-col items-start gap-2.5 font-mono">
       {/* NOTAMs Panel - show for all users when ICAO is valid */}
       {effectiveIcao.length >= 4 && (
         <div className="max-w-[350px] rounded-lg border border-orange-400/40 bg-gradient-to-br from-black/90 to-orange-950/80 p-3 text-orange-300 shadow-[0_0_10px_rgba(255,150,0,0.2)]">
           <div
-            className="flex cursor-pointer items-center gap-2"
-            {...buttonLikeProps(() => {
-              if (isPro && notams && notams.length > 0)
-                setNotamsExpanded(!notamsExpanded);
-            })}
-            aria-expanded={notamsExpanded}
+            className={`flex items-center gap-2 ${canExpandNotams ? "cursor-pointer rounded focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none" : ""}`}
+            {...(canExpandNotams
+              ? {
+                  ...buttonLikeProps(() => setNotamsExpanded(!notamsExpanded)),
+                  "aria-expanded": notamsExpanded,
+                }
+              : {})}
           >
             <strong className="text-orange-400">NOTAMs</strong>
             {isPro && notamCount > 0 && (
@@ -108,11 +113,13 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
       {atisText && (
         <div className="max-w-[300px] rounded-lg border border-cyan-300/30 bg-gradient-to-br from-black/85 to-cyan-950/90 p-3 text-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.2)]">
           <div
-            className="flex cursor-pointer items-center gap-2"
-            {...buttonLikeProps(() => {
-              if (isPro) setAtisExpanded(!atisExpanded);
-            })}
-            aria-expanded={atisExpanded}
+            className={`flex items-center gap-2 ${isPro ? "cursor-pointer rounded focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none" : ""}`}
+            {...(isPro
+              ? {
+                  ...buttonLikeProps(() => setAtisExpanded(!atisExpanded)),
+                  "aria-expanded": atisExpanded,
+                }
+              : {})}
           >
             <strong className="text-cyan-300">
               ATIS{isPro && atisCode ? ` ${atisCode}` : ""}
@@ -149,7 +156,7 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
       {metarText && (
         <div className="max-w-[300px] rounded-lg border border-cyan-300/30 bg-gradient-to-br from-black/85 to-cyan-950/90 p-3 text-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.2)]">
           <div
-            className="flex cursor-pointer items-center gap-2"
+            className="flex cursor-pointer items-center gap-2 rounded focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
             {...buttonLikeProps(() => setMetarExpanded(!metarExpanded))}
             aria-expanded={metarExpanded}
           >

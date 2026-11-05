@@ -303,6 +303,11 @@
       text: "Connection issue · retrying",
       color: "#fbbf24",
     },
+    waiting: {
+      state: "waiting",
+      text: "Waiting for your aircraft…",
+      color: "#7dd3fc",
+    },
     rejected: {
       state: "rejected",
       text: "Update rejected · check your flight info",
@@ -357,6 +362,9 @@
   }
 
   window.addEventListener("radarthing-request-status", () => broadcastStatus());
+  window.addEventListener("radarthing-retry-end-flight", () => {
+    void endFlight();
+  });
 
   // If nothing has been delivered for a while (aircraft not loaded, position
   // invalid, requests hanging), stop claiming "Live".
@@ -411,12 +419,20 @@
     const geofs = window.geofs;
     if (!geofs?.userRecord) {
       console.warn("[RadarThing] Cannot end flight - no userRecord");
+      reportEndResult(
+        false,
+        "Couldn't end the flight because GeoFS hasn't loaded your account. Sign in to GeoFS and try again.",
+      );
       return;
     }
 
     const id = getUserIdentifier(geofs);
     if (!id) {
       console.warn("[RadarThing] Cannot end flight - no id");
+      reportEndResult(
+        false,
+        "Couldn't end the flight because GeoFS hasn't loaded your account. Sign in to GeoFS and try again.",
+      );
       return;
     }
 
@@ -485,7 +501,13 @@
 
   setInterval(async () => {
     const geofs = window.geofs;
-    if (!info.active || !geofs?.aircraft?.instance) return;
+    if (!info.active) return;
+    if (!geofs?.aircraft?.instance) {
+      // The sim hasn't spawned an aircraft yet: say so rather than letting
+      // the stale check report a connection problem.
+      if (currentStatus !== STATUS.waiting) broadcastStatus(STATUS.waiting);
+      return;
+    }
     if (positionUpdateInFlight) return;
 
     const onGround =
@@ -512,6 +534,7 @@
 
       const lla = inst.llaLocation || [];
       if (!Number.isFinite(lla[0]) || !Number.isFinite(lla[1])) {
+        if (currentStatus !== STATUS.waiting) broadcastStatus(STATUS.waiting);
         return;
       }
 

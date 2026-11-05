@@ -292,6 +292,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               </span>
               <button
                 type="button"
+                // Keep focus in the search so the panel doesn't close
+                // before the click lands (Safari doesn't focus buttons).
+                onPointerDown={(e) => e.preventDefault()}
                 onClick={onClearRecentSearches}
                 className="rounded px-1 text-[11px] text-cyan-200/80 transition-colors hover:text-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-300/60 focus-visible:outline-none"
               >

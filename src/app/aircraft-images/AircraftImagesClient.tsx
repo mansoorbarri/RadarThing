@@ -80,6 +80,9 @@ export default function AircraftImagesClient({
     useState<(typeof PAGE_SIZE_OPTIONS)[number]>(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [isMilitary, setIsMilitary] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<"airlineIata" | "airlineIcao" | "aircraftType", string>>
+  >({});
   const [formData, setFormData] = useState({
     airlineIata: "",
     airlineIcao: "",
@@ -87,6 +90,21 @@ export default function AircraftImagesClient({
     imageUrl: "",
     imageKey: "",
   });
+
+  // Clear a field's error as soon as the user fills it in.
+  useEffect(() => {
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const key of Object.keys(prev) as (keyof typeof prev)[]) {
+        if (formData[key]) {
+          delete next[key];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [formData]);
 
   // Track page view
   useEffect(() => {
@@ -224,31 +242,48 @@ export default function AircraftImagesClient({
     setFormData((prev) => ({ ...prev, imageUrl: url, imageKey: key }));
   };
 
+  type UploadField = "airlineIata" | "airlineIcao" | "aircraftType";
+
   async function handleUploadAndSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // Basic validation
+    // Validate every field up front and show each problem next to its field.
+    const errors: Partial<Record<UploadField, string>> = {};
+    if (isMilitary) {
+      if (!formData.airlineIcao)
+        errors.airlineIcao = "Enter the air force, e.g. USAF or PAF.";
+    } else {
+      if (!formData.airlineIata)
+        errors.airlineIata = "Enter the airline's 2-letter IATA code.";
+      if (!formData.airlineIcao)
+        errors.airlineIcao = "Enter the airline's 3-letter ICAO code.";
+    }
+    if (!formData.aircraftType)
+      errors.aircraftType = "Enter the aircraft type, e.g. A320.";
+    setFieldErrors(errors);
+    const firstInvalid = (
+      ["airlineIata", "airlineIcao", "aircraftType"] as const
+    ).find((field) => errors[field]);
+    if (firstInvalid) {
+      setError("Fix the highlighted fields.");
+      const fieldIds: Partial<Record<UploadField, string>> = isMilitary
+        ? { airlineIcao: "upload-field-1", aircraftType: "upload-field-2" }
+        : {
+            airlineIata: "upload-field-3",
+            airlineIcao: "upload-field-4",
+            aircraftType: "upload-field-5",
+          };
+      const firstId = fieldIds[firstInvalid];
+      if (firstId)
+        requestAnimationFrame(() => document.getElementById(firstId)?.focus());
+      return;
+    }
     if (!hasSelectedFile) {
-      setError("Please select an image first");
+      setError("Choose an image to upload.");
       return;
     }
     if (!rightsConfirmed) {
-      setError("You must confirm your rights before uploading");
-      return;
-    }
-    if (isMilitary) {
-      if (!formData.airlineIcao) {
-        setError("Air force name is required (e.g., USAF, PAF)");
-        return;
-      }
-    } else {
-      if (!formData.airlineIata || !formData.airlineIcao) {
-        setError("Both IATA and ICAO airline codes are required");
-        return;
-      }
-    }
-    if (!formData.aircraftType) {
-      setError("Aircraft type is required");
+      setError("Confirm that you have permission to share this image.");
       return;
     }
 
@@ -385,6 +420,7 @@ export default function AircraftImagesClient({
   const isProcessing = submitStage !== "idle" && submitStage !== "success";
 
   const closeUploadModal = () => {
+    setFieldErrors({});
     if (isProcessing) return; // Don't allow closing during processing
     setShowUploadModal(false);
     setError(null);
@@ -430,14 +466,14 @@ export default function AircraftImagesClient({
           {isSignedIn ? (
             <button
               onClick={() => setShowUploadModal(true)}
-              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-sky-400 px-5 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40 sm:w-auto sm:px-6"
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 sm:w-auto sm:px-6"
             >
               <Upload className="h-5 w-5" />
               Upload Image
             </button>
           ) : (
             <GoogleSignInButton>
-              <button className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-sky-400 px-5 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40 sm:w-auto sm:px-6">
+              <button className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 sm:w-auto sm:px-6">
                 <Upload className="h-5 w-5" />
                 Sign in to Upload
               </button>
@@ -591,14 +627,12 @@ export default function AircraftImagesClient({
               {paginatedImages.map((image, index) => (
                 <Fragment key={image.id}>
                   {/* Ad sits after the first row of real content, not first. */}
-                  {index === Math.min(3, paginatedImages.length - 1) && (
-                    <AdSenseInContent placement="gallery-card" />
-                  )}
+                  {index === 3 && <AdSenseInContent placement="gallery-card" />}
                   <div className="group overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl transition-all hover:border-cyan-500/30">
                     <div className="relative aspect-video">
                       <Image
                         src={image.imageUrl}
-                        alt={`${image.airlineIata || image.airlineIcao} ${image.aircraftType}`}
+                        alt={`${[image.airlineIata, image.airlineIcao].find((code) => code && code !== "-") ?? "Aircraft"} ${image.aircraftType}`}
                         fill
                         sizes="(min-width: 1024px) 352px, (min-width: 640px) 50vw, 100vw"
                         className="object-cover"
@@ -806,7 +840,7 @@ export default function AircraftImagesClient({
             </div>
 
             {isMilitary ? (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label
                     htmlFor="upload-field-1"
@@ -816,6 +850,12 @@ export default function AircraftImagesClient({
                   </label>
                   <input
                     id="upload-field-1"
+                    aria-invalid={Boolean(fieldErrors.airlineIcao)}
+                    aria-describedby={
+                      fieldErrors.airlineIcao
+                        ? "upload-field-1-error"
+                        : undefined
+                    }
                     type="text"
                     value={formData.airlineIcao}
                     onChange={(e) =>
@@ -828,8 +868,16 @@ export default function AircraftImagesClient({
                     maxLength={10}
                     required
                     disabled={isProcessing}
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50 aria-[invalid=true]:border-red-400/70"
                   />
+                  {fieldErrors.airlineIcao && (
+                    <p
+                      id="upload-field-1-error"
+                      className="mt-1 text-xs text-red-300"
+                    >
+                      {fieldErrors.airlineIcao}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -841,6 +889,12 @@ export default function AircraftImagesClient({
                   </label>
                   <input
                     id="upload-field-2"
+                    aria-invalid={Boolean(fieldErrors.aircraftType)}
+                    aria-describedby={
+                      fieldErrors.aircraftType
+                        ? "upload-field-2-error"
+                        : undefined
+                    }
                     type="text"
                     value={formData.aircraftType}
                     onChange={(e) =>
@@ -854,12 +908,20 @@ export default function AircraftImagesClient({
                     required
                     disabled={isProcessing}
                     title="Use base model only (e.g., F16, C130)"
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50 aria-[invalid=true]:border-red-400/70"
                   />
+                  {fieldErrors.aircraftType && (
+                    <p
+                      id="upload-field-2-error"
+                      className="mt-1 text-xs text-red-300"
+                    >
+                      {fieldErrors.aircraftType}
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                   <label
                     htmlFor="upload-field-3"
@@ -869,6 +931,12 @@ export default function AircraftImagesClient({
                   </label>
                   <input
                     id="upload-field-3"
+                    aria-invalid={Boolean(fieldErrors.airlineIata)}
+                    aria-describedby={
+                      fieldErrors.airlineIata
+                        ? "upload-field-3-error"
+                        : undefined
+                    }
                     type="text"
                     value={formData.airlineIata}
                     onChange={(e) =>
@@ -881,8 +949,16 @@ export default function AircraftImagesClient({
                     maxLength={2}
                     required
                     disabled={isProcessing}
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50 aria-[invalid=true]:border-red-400/70"
                   />
+                  {fieldErrors.airlineIata && (
+                    <p
+                      id="upload-field-3-error"
+                      className="mt-1 text-xs text-red-300"
+                    >
+                      {fieldErrors.airlineIata}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -894,6 +970,12 @@ export default function AircraftImagesClient({
                   </label>
                   <input
                     id="upload-field-4"
+                    aria-invalid={Boolean(fieldErrors.airlineIcao)}
+                    aria-describedby={
+                      fieldErrors.airlineIcao
+                        ? "upload-field-4-error"
+                        : undefined
+                    }
                     type="text"
                     value={formData.airlineIcao}
                     onChange={(e) =>
@@ -906,8 +988,16 @@ export default function AircraftImagesClient({
                     maxLength={4}
                     required
                     disabled={isProcessing}
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50 aria-[invalid=true]:border-red-400/70"
                   />
+                  {fieldErrors.airlineIcao && (
+                    <p
+                      id="upload-field-4-error"
+                      className="mt-1 text-xs text-red-300"
+                    >
+                      {fieldErrors.airlineIcao}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -919,6 +1009,12 @@ export default function AircraftImagesClient({
                   </label>
                   <input
                     id="upload-field-5"
+                    aria-invalid={Boolean(fieldErrors.aircraftType)}
+                    aria-describedby={
+                      fieldErrors.aircraftType
+                        ? "upload-field-5-error"
+                        : undefined
+                    }
                     type="text"
                     value={formData.aircraftType}
                     onChange={(e) =>
@@ -932,8 +1028,16 @@ export default function AircraftImagesClient({
                     required
                     disabled={isProcessing}
                     title="Use base model only (e.g., B777, A350) — not variants"
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50 aria-[invalid=true]:border-red-400/70"
                   />
+                  {fieldErrors.aircraftType && (
+                    <p
+                      id="upload-field-5-error"
+                      className="mt-1 text-xs text-red-300"
+                    >
+                      {fieldErrors.aircraftType}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -995,10 +1099,10 @@ export default function AircraftImagesClient({
                 !rightsConfirmed ||
                 submitStage === "success"
               }
-              className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-slate-950 shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
                 submitStage === "success"
                   ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/20"
-                  : "bg-gradient-to-r from-cyan-400 to-sky-400 text-slate-950 shadow-cyan-500/20 hover:shadow-cyan-500/40"
+                  : "bg-cyan-400 text-slate-950 shadow-cyan-500/20 hover:bg-cyan-300 hover:shadow-cyan-500/40"
               }`}
             >
               {getButtonContent()}

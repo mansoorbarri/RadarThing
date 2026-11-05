@@ -106,7 +106,7 @@ function FIDSRow({
       </div>
 
       <div className="min-w-0 truncate font-mono text-slate-400">
-        {aircraft.departure || "UNK"} → {aircraft.arrival || "UNK"}
+        {aircraft.departure || "—"} → {aircraft.arrival || "—"}
       </div>
 
       <div className="min-w-0 truncate font-mono text-white/60">
