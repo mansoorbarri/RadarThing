@@ -7,7 +7,6 @@ import { useUser } from "@clerk/nextjs";
 import { Menu, X } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { UserAuth } from "~/components/atc/userAuth";
-import { SystemThemeLogo } from "~/components/ui/SystemThemeLogo";
 
 export const SITE_NAV_LINKS = [
   { href: "/radar", label: "Radar" },
@@ -18,10 +17,7 @@ export const SITE_NAV_LINKS = [
 ] as const;
 
 interface SiteHeaderProps {
-  /**
-   * "dark" is for pages that are always dark (landing, guides, legal).
-   * "themed" follows the light/dark theme surfaces used by the app pages.
-   */
+  /** @deprecated The site is always dark now; kept so callers still compile. */
   tone?: "dark" | "themed";
   className?: string;
   /** Hide the signed-in user's name/avatar (privacy mode on the dashboard). */
@@ -38,7 +34,6 @@ function isActive(pathname: string | null, href: string) {
  * to the radar, leaderboard, gallery, guides, pricing and their account.
  */
 export function SiteHeader({
-  tone = "dark",
   className = "",
   hidePersonalInfo = false,
 }: SiteHeaderProps) {
@@ -82,19 +77,13 @@ export function SiteHeader({
           aria-label="RadarThing home"
           className="flex shrink-0 items-center rounded-md focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
         >
-          {tone === "themed" ? (
-            <span className="block h-[30px] w-[100px]">
-              <SystemThemeLogo alt="RadarThing" width={100} height={30} />
-            </span>
-          ) : (
-            <Image
-              src="/logo-white.svg"
-              alt="RadarThing"
-              width={110}
-              height={33}
-              priority
-            />
-          )}
+          <Image
+            src="/logo-white.svg"
+            alt="RadarThing"
+            width={110}
+            height={33}
+            priority
+          />
         </Link>
 
         <ul className="hidden items-center gap-1 md:flex">

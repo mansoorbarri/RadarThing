@@ -28,8 +28,6 @@ import { useAircraftStream } from "~/hooks/useAircraftStream";
 import { useAirlineTelephony } from "~/hooks/useAirlineTelephony";
 import { useAirportData } from "~/hooks/useAirportData";
 import { useAircraftSearch } from "~/hooks/useAircraftSearch";
-import { useDisplayedTime } from "~/hooks/useDisplayedTime";
-import { useTimer } from "~/hooks/useTimer";
 import { useActiveFlightPath } from "~/hooks/useActiveFlightPath";
 // useAirportCharts hook moved into AirportChartsViewer component
 import { useProStatus } from "~/hooks/useProStatus";
@@ -66,6 +64,10 @@ import { type Airport } from "~/components/map";
 import { ConnectionStatusIndicator } from "~/components/atc/connectionStatusIndicator";
 import { SearchBar } from "~/components/atc/searchbar";
 import { MobileSearchSheet } from "~/components/atc/MobileSearchSheet";
+import {
+  DesktopRadarClock,
+  PhoneRadarClock,
+} from "~/components/atc/RadarClock";
 import { Sidebar, type HistoryFlight } from "~/components/atc/sidebar";
 import { MultiAircraftSidebar } from "~/components/atc/MultiAircraftSidebar";
 import { FlightReplayControls } from "~/components/flight-replay/FlightReplayControls";
@@ -353,13 +355,14 @@ function ATCPageContent() {
   // The radar reveals before weather finishes; show a quiet hint meanwhile,
   // but never leave it up forever (e.g. when weather layers are off).
   const [weatherHintExpired, setWeatherHintExpired] = useState(false);
-  useEffect(() => {
-    const id = window.setTimeout(() => setWeatherHintExpired(true), 15000);
-    return () => window.clearTimeout(id);
-  }, []);
   const [, setAreLogosReady] = useState(false);
   const [hasBootTimedOut, setHasBootTimedOut] = useState(false);
   const [isAppReady, setIsAppReady] = useState(false);
+  useEffect(() => {
+    if (!isAppReady) return;
+    const id = window.setTimeout(() => setWeatherHintExpired(true), 15000);
+    return () => window.clearTimeout(id);
+  }, [isAppReady]);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showShortcutsMenu, setShowShortcutsMenu] = useState(false);
   const [isDarkLayerMode, setIsDarkLayerMode] = useState(false);
@@ -463,9 +466,6 @@ function ATCPageContent() {
 
   useActiveTracker(selectedAircrafts);
   const mostTrackedFlights = useMostTrackedFlights(aircrafts);
-
-  const { time, zoneLabel } = useDisplayedTime();
-  const { formattedTime, isRunning, start, stop, reset } = useTimer();
 
   const drawFlightPlanOnMapRef = useRef<
     ((ac: PositionUpdate, zoom?: boolean) => void) | null
@@ -1285,7 +1285,7 @@ function ATCPageContent() {
                 label: "Clock & timer",
                 icon: <Clock3 size={18} strokeWidth={1.8} />,
                 active: showTimerPopup,
-                onClick: () => setShowTimerPopup(true),
+                onClick: () => setShowTimerPopup((open) => !open),
               },
             ]
           : []),
@@ -1350,42 +1350,6 @@ function ATCPageContent() {
       ],
     },
   ];
-
-  const timerControls = (
-    <div className="rounded-xl border border-white/10 bg-black/90 p-3 backdrop-blur-xl">
-      <div
-        className="mb-2 font-mono text-sm text-emerald-400"
-        aria-live="polite"
-      >
-        {formattedTime}
-      </div>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={start}
-          disabled={isRunning}
-          className="min-h-9 cursor-pointer rounded-lg bg-emerald-500/20 px-3 py-1 text-xs text-emerald-300 disabled:opacity-50"
-        >
-          Start
-        </button>
-        <button
-          type="button"
-          onClick={stop}
-          disabled={!isRunning}
-          className="min-h-9 cursor-pointer rounded-lg bg-red-500/20 px-3 py-1 text-xs text-red-300 disabled:opacity-50"
-        >
-          Stop
-        </button>
-        <button
-          type="button"
-          onClick={reset}
-          className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-slate-500/20 px-3 py-1 text-xs text-slate-300"
-        >
-          <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Reset
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#081722]">
@@ -1499,35 +1463,11 @@ function ATCPageContent() {
 
         {/* Radar clock */}
         {!isUiHidden && !isPhone && (
-          <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2">
-            <button
-              onClick={() => setShowTimerPopup(!showTimerPopup)}
-              className={`cursor-pointer rounded-lg border border-white/10 bg-black/40 backdrop-blur-md ${isTablet ? "px-3 py-1" : "px-4 py-1.5"}`}
-            >
-              <span
-                className={`font-mono text-cyan-400 ${isTablet ? "text-base" : "text-xl"}`}
-              >
-                {time}{" "}
-                <span className="text-[11px] text-slate-500">{zoneLabel}</span>
-              </span>
-              {showTimerPopup && (
-                <span className="block font-mono text-sm text-emerald-400">
-                  {formattedTime}
-                </span>
-              )}
-              {isRunning && (
-                <span className="block animate-pulse text-[11px] tracking-widest text-emerald-400 uppercase">
-                  Timer active
-                </span>
-              )}
-            </button>
-
-            {showTimerPopup && (
-              <div className="animate-fade-in-up absolute top-full left-1/2 mt-2 -translate-x-1/2">
-                {timerControls}
-              </div>
-            )}
-          </div>
+          <DesktopRadarClock
+            isTablet={isTablet}
+            open={showTimerPopup}
+            onOpenChange={setShowTimerPopup}
+          />
         )}
 
         {!isUiHidden && (
@@ -1536,21 +1476,10 @@ function ATCPageContent() {
           >
             {/* Compact clock on phone */}
             {isPhone && (
-              <button
-                type="button"
-                onClick={() => setShowTimerPopup(!showTimerPopup)}
-                aria-label={`${time} ${zoneLabel}. Open timer`}
-                // On the narrowest phones (under 360px) the clock gives way so
-                // status, What's New and the account menu still fit.
-                className="flex h-9 items-center justify-center rounded-lg border border-white/10 bg-black/40 px-2.5 backdrop-blur-md max-[359px]:hidden"
-              >
-                <span className="flex h-full items-center justify-center gap-1 font-mono text-[11px] leading-none text-cyan-400">
-                  <span className="leading-none">{time}</span>
-                  <span className="text-[11px] leading-none text-slate-500">
-                    {zoneLabel}
-                  </span>
-                </span>
-              </button>
+              <PhoneRadarClock
+                open={showTimerPopup}
+                onOpenChange={setShowTimerPopup}
+              />
             )}
             <ConnectionStatusIndicator
               status={connectionStatus}
@@ -1588,7 +1517,7 @@ function ATCPageContent() {
         </button>
       )}
 
-      {/* Mobile search - bottom sheet (phone only) */}
+      {/* Weather still loading after the radar appeared */}
       {isAppReady && !isWeatherReady && !weatherHintExpired && (
         <div
           role="status"
@@ -1598,15 +1527,7 @@ function ATCPageContent() {
         </div>
       )}
 
-      {!isUiHidden && isPhone && showTimerPopup && (
-        <div className="animate-fade-in-up pointer-events-auto fixed top-16 right-3 z-[10012]">
-          <div className="mb-1 text-right font-mono text-xs text-cyan-300">
-            {time} {zoneLabel}
-          </div>
-          {timerControls}
-        </div>
-      )}
-
+      {/* Mobile search - bottom sheet (phone only) */}
       {!isUiHidden && isPhone && showMobileSearch && (
         <MobileSearchSheet
           onClose={() => setShowMobileSearch(false)}
