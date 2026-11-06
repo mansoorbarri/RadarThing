@@ -81,7 +81,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
     }
 
     setSubmitStage("submitting");
-    setSubmitProgress(`Creating ${results.length} entries...`);
+    setSubmitProgress(`Creating ${results.length} entries…`);
 
     const dbResults = await Promise.all(
       results.map((upload) =>
@@ -229,12 +229,12 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
             {submitStage === "uploading" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Uploading...
+                Uploading…
               </>
             ) : submitStage === "submitting" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                {submitProgress ?? "Submitting..."}
+                {submitProgress ?? "Submitting…"}
               </>
             ) : submitStage === "success" ? (
               <>

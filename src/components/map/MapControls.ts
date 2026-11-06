@@ -218,7 +218,7 @@ export class AltitudeModeControl extends IconButtonControl {
 
   onAdd() {
     const container = super.onAdd();
-    container.setAttribute("aria-label", "Toggle 3D altitude");
+    container.setAttribute("aria-label", "3D altitude");
     return container;
   }
 
@@ -439,7 +439,7 @@ export class LockedRadarModeControl extends L.Control {
       "map-control-btn relative flex h-10 w-10 items-center justify-center rounded-md border border-yellow-500/30 bg-black/70 text-white/60 shadow-[0_0_6px_rgba(234,179,8,0.25)] transition-all duration-200 hover:border-yellow-500/60 hover:bg-yellow-500/10 hover:shadow-[0_0_10px_rgba(234,179,8,0.4)]";
     container.innerHTML = `
       <span style="opacity: 0.4">${ICONS.radar}</span>
-      <span aria-hidden="true" style="position: absolute; z-index: 1; top: -6px; right: -6px; pointer-events: none; background: rgba(234, 179, 8, 0.2); color: #facc15; font-size: 10px; padding: 1px 4px; border-radius: 4px; font-weight: bold;">Pro</span>
+      <span aria-hidden="true" style="position: absolute; z-index: 1; top: 1px; right: 1px; pointer-events: none; background: rgba(0, 0, 0, 0.75); color: #facc15; font-size: 9px; line-height: 1; padding: 2px 3px; border-radius: 4px; font-weight: bold;">Pro</span>
       <span class="map-tooltip" aria-hidden="true">Radar mode (Pro)</span>
     `;
     makeKeyboardAccessible(container, "Radar mode (Pro feature)");

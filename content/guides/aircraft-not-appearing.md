@@ -21,7 +21,20 @@ The tracker only sends your position after you enter your flight details and pre
 1. In GeoFS, find the RadarThing panel on the right of the simulator. If it is hidden, press **W** to show it.
 2. Check that **Departure**, **Arrival**, and **Callsign** are filled in. All three are required.
 3. Press **Start tracking**.
-4. Check the status at the top of the panel. It should change from **Connecting…** to **Live on radar**. If it still says **Not tracking**, the flight is not being sent. If it says **Connection issue · retrying**, RadarThing can't reach the server yet and keeps retrying in the background.
+4. Check the status at the top of the panel. It should change from **Connecting…** to **Live on radar**, with the time since the last update next to it (for example *· 3s ago*).
+
+What the other statuses mean:
+
+| Status | What it means | What to do |
+|---|---|---|
+| **Not tracking** | Your flight isn't being sent. | Fill in the panel and press **Start tracking**. |
+| **Waiting for your aircraft…** | GeoFS hasn't placed your aircraft yet. | Wait for the simulator to finish loading. |
+| **Connection issue · retrying** | Updates aren't reaching RadarThing. | It keeps retrying by itself. Press **Retry now** to try straight away. |
+| **Can't reach RadarThing · retrying** | Several attempts in a row have failed. | Check your connection, then press **Retry now**. |
+| **You're offline · waiting for a connection** | Your browser has no network. | Tracking resumes as soon as you're back online. |
+| **RadarThing is busy · retrying** | The server asked for fewer updates for a moment. | Nothing; it slows down and carries on. |
+| **Update rejected · check your flight info** | The server refused the flight details. | Check the airports and callsign, then press **Edit flight** and **Update flight**. |
+| **Flight plan too large · shorten your route** | Your GeoFS flight plan has too many waypoints. | Remove some waypoints in GeoFS. |
 
 If the panel reports *Callsign already in use*, another pilot is flying with that callsign. Change a digit and press **Start tracking** again. If it reports that the squawk is invalid, the squawk must be four digits, each 0–7, or left empty.
 
@@ -32,9 +45,10 @@ If GeoFS disconnected unexpectedly, the panel may offer to resume your previous 
 For a Tampermonkey installation:
 
 1. Open the extension menu while you are on the GeoFS tab.
-2. Confirm that both Tampermonkey and the RadarThing script are enabled for that page.
+2. Confirm that both Tampermonkey and the RadarThing script are enabled for that page. The Tampermonkey menu also has RadarThing shortcuts: **Show or hide the RadarThing panel**, **Open airport charts** and **Reset panel position**. If you can see these, the script is running.
 3. If you just installed or enabled the script, reload GeoFS and let it load again.
-4. If the script is missing, install it from the [official installation link](/userscript), then repeat the check.
+4. In Chrome, Edge and other Chromium browsers, open the extensions page, choose **Details** under Tampermonkey and make sure **Allow User Scripts** is on. Without it, Tampermonkey shows the script as enabled but never runs it.
+5. If the script is missing, install it from the [official installation link](/userscript), then repeat the check.
 
 For a console installation, run the snippet from the [homepage](/#install) again after a full simulator page reload. A snippet run in the radar tab will not start tracking your GeoFS session; it needs to run in the simulator tab.
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { GuideSearch } from "~/components/site/GuideSearch";
-import { getGuidesByCategory, guides } from "~/lib/guides";
+import { getGuide, getGuidesByCategory, guides } from "~/lib/guides";
 
 export const metadata: Metadata = {
   title: "Help & Guides",
@@ -10,8 +10,21 @@ export const metadata: Metadata = {
   alternates: { canonical: "/guides" },
 };
 
-export default function GuidesPage() {
+export default async function GuidesPage() {
   const categories = getGuidesByCategory();
+  // Section headings let the search find topics inside each guide.
+  const sectionsBySlug = new Map(
+    await Promise.all(
+      guides.map(async (guide) => {
+        const full = await getGuide(guide.slug);
+        const sections = Array.from(
+          full?.markdown.matchAll(/^##+ (.+)$/gm) ?? [],
+          (match) => match[1]!.replace(/[`*_]/g, "").trim(),
+        );
+        return [guide.slug, sections] as const;
+      }),
+    ),
+  );
 
   return (
     <>
@@ -34,6 +47,7 @@ export default function GuidesPage() {
             title: guide.title,
             description: guide.description,
             category: category.title,
+            sections: sectionsBySlug.get(guide.slug) ?? [],
           })),
         )}
       />

@@ -16,7 +16,7 @@ import { SiteHeader } from "~/components/site/SiteHeader";
 import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 import { Analytics } from "~/lib/analytics";
 import { FREE_RECENT_FLIGHTS_LIMIT } from "~/lib/flightHistory";
-import { planRows } from "~/lib/plans";
+import { NOT_INCLUDED, planRows, proPlanItems } from "~/lib/plans";
 import { FREE_DAILY_ALLOWANCE } from "~/lib/freeAllowance";
 import { MIN_STRIPE_TRIAL_MS } from "~/lib/proAccess";
 
@@ -28,7 +28,11 @@ export default function PricingPage() {
     null,
   );
   const { isSignedIn, isLoaded } = useUser();
-  const [loading, setLoading] = useState(false);
+  // Which action is in progress, so each button can say what it's doing.
+  const [pendingAction, setPendingAction] = useState<
+    "checkout" | "trial" | "billing" | null
+  >(null);
+  const loading = pendingAction !== null;
   const [mounted, setMounted] = useState(false);
   const autoCheckoutStartedRef = useRef(false);
 
@@ -59,14 +63,14 @@ export default function PricingPage() {
       Analytics.upgradeButtonClicked({ source, feature: "pro_plan" });
       Analytics.checkoutStarted({ source });
       try {
-        setLoading(true);
+        setPendingAction("checkout");
         const url = await createCheckoutSession();
         if (url) window.location.href = url;
       } catch (err) {
         console.error(err);
         toast.error("Couldn't open checkout. Please try again in a moment.");
       } finally {
-        setLoading(false);
+        setPendingAction(null);
       }
     },
     [isSignedIn],
@@ -78,7 +82,7 @@ export default function PricingPage() {
 
       Analytics.upgradeButtonClicked({ source, feature: "free_trial" });
       try {
-        setLoading(true);
+        setPendingAction("trial");
         await startFreeTrial({});
         Analytics.freeTrialStarted({ source });
         router.push("/radar");
@@ -86,7 +90,7 @@ export default function PricingPage() {
         console.error(err);
         toast.error("Couldn't start your free trial. Please try again.");
       } finally {
-        setLoading(false);
+        setPendingAction(null);
       }
     },
     [isSignedIn, startFreeTrial, router],
@@ -120,14 +124,14 @@ export default function PricingPage() {
 
   async function handleManageSubscription() {
     try {
-      setLoading(true);
+      setPendingAction("billing");
       const url = await createPortalSession();
       if (url) window.location.href = url;
     } catch (err) {
       console.error(err);
       toast.error("Couldn't open subscription management. Please try again.");
     } finally {
-      setLoading(false);
+      setPendingAction(null);
     }
   }
 
@@ -177,7 +181,9 @@ export default function PricingPage() {
               aria-busy={loading}
               className="cursor-pointer rounded-xl bg-cyan-400 px-6 py-3 text-sm font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:bg-cyan-300 disabled:opacity-50"
             >
-              {loading ? "Opening checkout…" : "Keep Pro for $3/month"}
+              {pendingAction === "checkout"
+                ? "Opening checkout…"
+                : "Keep Pro for $3/month"}
             </button>
           </div>
         </main>
@@ -218,7 +224,9 @@ export default function PricingPage() {
               aria-busy={loading}
               className="cursor-pointer rounded-xl border border-white/20 bg-white/8 px-6 py-3 text-sm font-semibold text-white transition-all hover:border-cyan-300/40 hover:bg-white/14 disabled:opacity-50"
             >
-              {loading ? "Opening billing…" : "Manage subscription"}
+              {pendingAction === "billing"
+                ? "Opening billing…"
+                : "Manage subscription"}
             </button>
           </div>
         </main>
@@ -270,17 +278,17 @@ export default function PricingPage() {
 
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <SignalCard
-                title="Aviation Weather"
+                title="Aviation weather"
                 value="Live"
                 subtitle="NOTAMs, AIRMETs, SIGMETs, D-ATIS"
               />
               <SignalCard
-                title="Flight History"
+                title="Flight history"
                 value="Full"
                 subtitle={`Free gets ${FREE_RECENT_FLIGHTS_LIMIT} recent flights, Pro gets your full archive`}
               />
               <SignalCard
-                title="Charts Access"
+                title="Charts access"
                 value="Global"
                 subtitle={`Unlimited airports worldwide. Free gets ${FREE_DAILY_ALLOWANCE.charts} US airports a day`}
               />
@@ -288,7 +296,7 @@ export default function PricingPage() {
 
             <div className="mt-10 space-y-6">
               <FeatureSection
-                title="Weather Intelligence"
+                title="Weather intelligence"
                 description="Stay ahead of hazardous conditions with real-time aviation weather feeds."
                 features={[
                   "D-ATIS for US airports",
@@ -299,7 +307,7 @@ export default function PricingPage() {
               />
 
               <FeatureSection
-                title="Airport Data"
+                title="Airport data"
                 description="Procedures and charts where you need them while tracking flights."
                 features={[
                   "Unlimited interactive airport charts",
@@ -309,13 +317,13 @@ export default function PricingPage() {
               />
 
               <FeatureSection
-                title="Comprehensive Analytics"
+                title="Pilot analytics"
                 description={`Track your flying activity with meaningful stats. Free includes your last ${FREE_RECENT_FLIGHTS_LIMIT} flights, and Pro unlocks the full archive.`}
                 features={[
                   `Last ${FREE_RECENT_FLIGHTS_LIMIT} flights on Free`,
                   "Full flight history on Pro",
-                  "Flight time & distance tracking",
-                  "Top aircraft, routes, and airports",
+                  "Total flight time on Pro",
+                  "Top aircraft, routes, and airports on Pro",
                 ]}
               />
             </div>
@@ -325,7 +333,7 @@ export default function PricingPage() {
             <div className="relative overflow-hidden rounded-3xl border border-cyan-400/25 bg-[#07101a]/85 p-7 shadow-[0_20px_70px_rgba(6,182,212,0.18)] backdrop-blur-xl">
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/70 to-transparent" />
               <p className="font-mono text-[11px] tracking-[0.16em] text-cyan-200/80 uppercase">
-                Pro Subscription
+                Pro subscription
               </p>
               <div className="mt-3 flex items-end gap-2">
                 <div className="text-5xl font-bold text-white">$3</div>
@@ -369,7 +377,7 @@ export default function PricingPage() {
                     aria-busy={loading}
                     className="mt-6 w-full cursor-pointer rounded-xl bg-cyan-400 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {loading
+                    {pendingAction === "trial"
                       ? "Starting your trial…"
                       : "Start 7-day free trial"}
                   </button>
@@ -379,7 +387,9 @@ export default function PricingPage() {
                     aria-busy={loading}
                     className="mt-3 w-full cursor-pointer text-center text-xs text-slate-300 underline-offset-2 hover:text-white hover:underline disabled:opacity-60"
                   >
-                    Or add a card now (still 7 days free)
+                    {pendingAction === "checkout"
+                      ? "Opening checkout…"
+                      : "Or add a card now (still 7 days free)"}
                   </button>
                 </>
               )}
@@ -392,7 +402,9 @@ export default function PricingPage() {
                     aria-busy={loading}
                     className="mt-6 w-full cursor-pointer rounded-xl bg-cyan-400 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {loading ? "Opening checkout…" : "Subscribe to Pro"}
+                    {pendingAction === "checkout"
+                      ? "Opening checkout…"
+                      : "Subscribe to Pro"}
                   </button>
                   <p className="mt-4 text-center text-[11px] text-slate-300/85">
                     Secure checkout by Stripe
@@ -405,24 +417,15 @@ export default function PricingPage() {
                   Included in Pro
                 </p>
                 <ul className="space-y-2 text-sm text-slate-200">
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-cyan-300" />
-                    Full NOTAM/AIRMET/SIGMET access
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-cyan-300" />
-                    Unlimited airport charts and procedures
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-cyan-300" />
-                    Complete pilot analytics
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-cyan-300" />
-                    Full flight history beyond the free{" "}
-                    {FREE_RECENT_FLIGHTS_LIMIT}
-                    -flight view
-                  </li>
+                  {proPlanItems().map((item) => (
+                    <li key={item.label} className="flex items-start gap-2">
+                      <Check
+                        className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300"
+                        aria-hidden="true"
+                      />
+                      {item.label}
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>
@@ -478,8 +481,12 @@ function PlanComparison() {
                 >
                   {row.feature}
                 </th>
-                <td className="px-5 py-3 text-slate-400">{row.free}</td>
-                <td className="px-5 py-3 text-cyan-100">{row.pro}</td>
+                <td className="px-5 py-3 text-slate-400">
+                  <PlanCell value={row.free} />
+                </td>
+                <td className="px-5 py-3 text-cyan-100">
+                  <PlanCell value={row.pro} />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -507,7 +514,7 @@ const faqs: { question: string; answer: string }[] = [
   {
     question: "How do I cancel or change my payment details?",
     answer:
-      "Open this page while signed in and choose Manage Subscription. You will be taken to the secure Stripe customer portal, where you can cancel, update your card, or download invoices.",
+      "Open this page while signed in and choose Manage subscription. You will be taken to the secure Stripe customer portal, where you can cancel, update your card, or download invoices.",
   },
   {
     question: "Which airports have charts?",
@@ -516,7 +523,7 @@ const faqs: { question: string; answer: string }[] = [
   {
     question: "Where does my subscription go?",
     answer:
-      "PRO subscriptions pay for the servers, weather and aviation data feeds, and ongoing development that keep RadarThing running for everyone, including free users.",
+      "Pro subscriptions pay for the servers, weather and aviation data feeds, and ongoing development that keep RadarThing running for everyone, including free users.",
   },
 ];
 
@@ -605,5 +612,16 @@ function FeatureSection({
         ))}
       </ul>
     </div>
+  );
+}
+
+/** "—" is read as nothing by screen readers, so say "Not included". */
+function PlanCell({ value }: { value: string }) {
+  if (value !== NOT_INCLUDED) return <>{value}</>;
+  return (
+    <>
+      <span aria-hidden="true">—</span>
+      <span className="sr-only">Not included</span>
+    </>
   );
 }

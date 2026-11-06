@@ -178,7 +178,7 @@ export function ActiveChallengesPanel({
         </div>
         <div className="flex items-center gap-2 text-sm text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading challenges...
+          Loading challenges…
         </div>
       </div>
     );
@@ -195,7 +195,7 @@ export function ActiveChallengesPanel({
         </div>
         <div className="flex items-center gap-2 text-sm text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading challenges...
+          Loading challenges…
         </div>
       </div>
     );

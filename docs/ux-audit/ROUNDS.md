@@ -51,3 +51,4 @@ after every round.
 | Round | Reviewed commit | Radar | Website | Userscript |
 |---|---|---|---|---|
 | 1 | `895561f` (after merging main) | 8.0 | 8.1 | 8.0 |
+| 2 | `5b6ba9e` (round 1 fixes) | 8.4 | 8.5 | 8.3 |

@@ -23,6 +23,9 @@ export const useAircraftStream = () => {
   const [onlineAirports, setOnlineAirports] = useState<OnlineAirport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // When the next automatic reconnect happens, for a live countdown.
+  const [nextRetryAt, setNextRetryAt] = useState<number | null>(null);
+  const [retryInSeconds, setRetryInSeconds] = useState<number | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<
     "connecting" | "connected" | "disconnected"
   >("connecting");
@@ -51,6 +54,7 @@ export const useAircraftStream = () => {
     es.onopen = () => {
       setConnectionStatus("connected");
       setError(null);
+      setNextRetryAt(null);
       reconnectAttempts.current = 0;
     };
 
@@ -117,12 +121,20 @@ export const useAircraftStream = () => {
         const message =
           err instanceof Error ? err.message : "Unknown stream parse error";
         console.error("Failed to process aircraft stream payload:", message);
-        setError(`Stream payload error: ${message}`);
+        console.warn("[RadarThing] Stream payload error:", message);
+        setError(
+          "Some live data couldn't be read; waiting for the next update.",
+        );
       }
     };
 
     es.onerror = () => {
       setConnectionStatus("disconnected");
+      setError(
+        typeof navigator !== "undefined" && navigator.onLine === false
+          ? "You're offline."
+          : "Connection lost.",
+      );
       es.close();
       scheduleReconnect();
     };
@@ -138,7 +150,7 @@ export const useAircraftStream = () => {
       30000,
     );
     reconnectAttempts.current++;
-    setError(`Connection lost. Reconnecting in ${backoff / 1000}s…`);
+    setNextRetryAt(Date.now() + backoff);
     reconnectTimeoutRef.current = setTimeout(() => connectToStream(), backoff);
   }, [connectToStream]);
 
@@ -148,9 +160,7 @@ export const useAircraftStream = () => {
       const elapsedMs = Date.now() - lastMessageTime.current;
       if (elapsedMs > 30000) {
         setConnectionStatus("disconnected");
-        setError(
-          `No live data for ${Math.floor(elapsedMs / 1000)}s. Reconnecting…`,
-        );
+        setError(`No live data for ${Math.floor(elapsedMs / 1000)}s.`);
         if (eventSourceRef.current) eventSourceRef.current.close();
         scheduleReconnect();
       }
@@ -178,6 +188,7 @@ export const useAircraftStream = () => {
     if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
     reconnectAttempts.current = 0;
     lastMessageTime.current = Date.now();
+    setNextRetryAt(null);
     connectToStream();
   }, [connectToStream]);
 
@@ -189,6 +200,20 @@ export const useAircraftStream = () => {
     window.addEventListener("online", handleOnline);
     return () => window.removeEventListener("online", handleOnline);
   }, [reconnectNow]);
+
+  useEffect(() => {
+    if (nextRetryAt === null) {
+      setRetryInSeconds(null);
+      return;
+    }
+    const tick = () =>
+      setRetryInSeconds(
+        Math.max(0, Math.ceil((nextRetryAt - Date.now()) / 1000)),
+      );
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [nextRetryAt]);
 
   useEffect(() => {
     connectToStream();
@@ -210,5 +235,6 @@ export const useAircraftStream = () => {
     lastMessageAt,
     lastMessageAgeSeconds,
     reconnectNow,
+    retryInSeconds,
   };
 };

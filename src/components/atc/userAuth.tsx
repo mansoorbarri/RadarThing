@@ -139,7 +139,7 @@ export const UserAuth = ({
   return (
     <GoogleSignInButton>
       <button type="button" className={`${baseStyle} ${cyanStyle}`}>
-        SIGN IN
+        Sign in
       </button>
     </GoogleSignInButton>
   );

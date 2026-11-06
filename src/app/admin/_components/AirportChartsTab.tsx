@@ -499,7 +499,7 @@ export function AirportChartsTab({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by ICAO, chart name, type, email, user ID..."
+            placeholder="Search by ICAO, chart name, type, email, user ID…"
             className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
           />
         </div>

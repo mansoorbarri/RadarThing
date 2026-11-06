@@ -1,5 +1,6 @@
 "use client";
 
+import { copyText } from "~/lib/clipboard";
 import React, {
   useMemo,
   useState,
@@ -670,8 +671,7 @@ export const Sidebar = ({
               type="button"
               onClick={onClose}
               aria-label="Close flight details"
-              title="Close (Esc)"
-              aria-keyshortcuts="Escape"
+              title="Close flight details"
               className="absolute top-3 right-3 z-30 flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/15 bg-black/60 text-white/80 backdrop-blur-sm transition-colors hover:border-white/30 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
             >
               <svg
@@ -829,8 +829,7 @@ export const Sidebar = ({
                     aircraft.flightNo || aircraft.callsign,
                   );
                   const url = `${window.location.origin}/radar?callsign=${identifier}&follow=true`;
-                  navigator.clipboard
-                    .writeText(url)
+                  copyText(url)
                     .then(() => {
                       toast.success("Live tracking link copied to clipboard");
                     })

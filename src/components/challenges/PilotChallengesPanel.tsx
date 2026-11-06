@@ -31,7 +31,7 @@ export function PilotChallengesPanel({ userId }: { userId: Id<"users"> }) {
       <div className="mb-8 rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
         <div className="flex items-center gap-2 text-sm text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading challenge progress...
+          Loading challenge progress…
         </div>
       </div>
     );

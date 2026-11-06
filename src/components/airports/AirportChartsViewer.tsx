@@ -247,7 +247,7 @@ function ChartSidebar({
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Search all charts..."
+              placeholder="Search all charts…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-md border border-white/10 bg-slate-800/50 py-1.5 pr-8 pl-8 text-xs text-white placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
@@ -708,7 +708,7 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
                 <div className="flex flex-col items-center gap-2">
                   <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-cyan-500" />
                   <span className="text-sm text-slate-400">
-                    Loading charts...
+                    Loading charts…
                   </span>
                 </div>
               </div>

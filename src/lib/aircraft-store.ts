@@ -261,21 +261,20 @@ class AircraftStore {
     // Keep live positions that arrived after the route's last point, such as
     // ones streamed while the route was being fetched.
     // The server may round or thin its points, so join at the nearest live
-    // point within ~1 km rather than requiring an exact match. The latest
-    // match wins if the aircraft passed the same spot twice.
+    // point within ~1 km rather than requiring an exact match. Searching from
+    // the newest point, the first match wins, so passing the same spot twice
+    // never duplicates the newer stretch.
     const lastRoutePoint = flightPath[flightPath.length - 1]!;
     let lastRouteIndex = -1;
-    let bestDistance = Infinity;
     for (let index = currentPath.length - 1; index >= 0; index--) {
       const [lat, lon] = currentPath[index]!;
       const distance = Math.max(
         Math.abs(lat - lastRoutePoint[0]),
         Math.abs(lon - lastRoutePoint[1]),
       );
-      if (distance <= ROUTE_JOIN_TOLERANCE_DEG && distance < bestDistance) {
-        bestDistance = distance;
+      if (distance <= ROUTE_JOIN_TOLERANCE_DEG) {
         lastRouteIndex = index;
-        if (distance === 0) break;
+        break;
       }
     }
     const liveSuffix =

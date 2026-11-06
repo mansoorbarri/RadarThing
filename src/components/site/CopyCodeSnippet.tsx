@@ -1,5 +1,6 @@
 "use client";
 
+import { copyText } from "~/lib/clipboard";
 import { useEffect, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { toast } from "sonner";
@@ -21,8 +22,7 @@ export function CopyCodeSnippet({
   }, [copied]);
 
   const copy = () => {
-    navigator.clipboard
-      .writeText(code)
+    copyText(code)
       .then(() => setCopied(true))
       .catch(() =>
         toast.error("Couldn't copy. Select the code and copy it manually."),

@@ -156,8 +156,9 @@ function buildLoader() {
     .catch((error) => {
       console.error("[RadarThing] Loader failed.", error);
       state.promise = null;
+      // Handled here (logged and shown to the pilot); re-throwing would only
+      // add an unhandled-rejection error to the console.
       showLoadFailure();
-      throw error;
     });
 
   // Without this the only sign of a failed load is a console message, so
@@ -274,7 +275,6 @@ function buildInstaller() {
   }).catch((error) => {
     console.error(error);
     state.promise = null;
-    throw error;
   });
 })();
 `;

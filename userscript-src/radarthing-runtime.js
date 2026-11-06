@@ -136,12 +136,15 @@
     const startBtn = document.getElementById(SAVE_BTN_ID);
     if (!summary || !fields || !startBtn) return;
     const compact = isTracking && !editingFlight;
+    // If the button about to be hidden has focus, keep focus in the panel.
+    const startHadFocus = document.activeElement === startBtn;
     summary.hidden = !isTracking;
     // While tracking the pill shows "· 4s ago" instead of the key hint.
     const hint = document.getElementById(HOTKEY_HINT_ID);
     if (hint) hint.hidden = isTracking;
     fields.hidden = compact;
     startBtn.hidden = compact;
+    if (compact && startHadFocus) editBtn?.focus();
     startBtn.parentElement.style.gridTemplateColumns = compact
       ? "1fr"
       : "1.4fr 1fr";
@@ -989,8 +992,22 @@
     toast.style.gap = "4px";
 
     const region = getToastRegion(isError);
-    // Keep the stack short so it never covers the instruments.
-    while (region.children.length >= 3) region.firstElementChild.remove();
+    // The same message twice in a row (e.g. a repeated remote command) just
+    // refreshes the existing toast instead of stacking a copy.
+    const duplicate = Array.from(region.children).find(
+      (existing) =>
+        !existing.dataset.hasAction && existing.dataset.message === msg,
+    );
+    if (duplicate && !action) duplicate.remove();
+    toast.dataset.message = msg;
+    // Keep the stack short so it never covers the instruments, but never
+    // drop one the pilot still has to act on (e.g. "Retry ending").
+    while (region.children.length >= 3) {
+      const oldest =
+        Array.from(region.children).find((child) => !child.dataset.hasAction) ||
+        region.firstElementChild;
+      oldest.remove();
+    }
     region.appendChild(toast);
     // Focus is deliberately not moved to the toast: pilots may be flying with
     // keyboard controls, and Space/Enter would trigger it by accident.
@@ -1019,19 +1036,17 @@
 
   // Changes made from the RadarThing website show up in the sim, so say so.
   const COMMAND_LABELS = {
-    setAltitude: (v) =>
-      `Autopilot altitude set to ${Number(v).toLocaleString()} ft`,
-    setSpeed: (v) => `Autopilot speed set to ${v} kt`,
-    setHeading: (v) =>
-      `Autopilot heading set to ${String(v).padStart(3, "0")}°`,
-    setVS: (v) => `Vertical speed set to ${Number(v).toLocaleString()} ft/min`,
-    setSquawk: (v) => `Squawk set to ${v}`,
+    setAltitude: (v) => `Altitude ${Number(v).toLocaleString()} ft`,
+    setSpeed: (v) => `Speed ${v} kt`,
+    setHeading: (v) => `Heading ${String(v).padStart(3, "0")}°`,
+    setVS: (v) => `Vertical speed ${Number(v).toLocaleString()} ft/min`,
+    setSquawk: (v) => `Squawk ${v}`,
     setSpeedMode: (v) =>
-      `Autopilot speed mode set to ${String(v).toLowerCase() === "mach" ? "Mach" : "knots"}`,
-    setFlaps: (v) => `Flaps set to notch ${v}`,
-    enableNav: () => "Autopilot NAV mode on",
-    disableNav: () => "Autopilot switched to heading mode",
-    setWaypoint: (v) => `Flying direct to ${String(v).toUpperCase()}`,
+      `Speed in ${String(v).toLowerCase() === "mach" ? "Mach" : "knots"}`,
+    setFlaps: (v) => `Flaps notch ${v}`,
+    enableNav: () => "NAV mode on",
+    disableNav: () => "Heading mode on",
+    setWaypoint: (v) => `Direct to ${String(v).toUpperCase()}`,
     toggleAutopilot: (v) => (v ? "Autopilot on" : "Autopilot off"),
   };
   window.addEventListener("radarthing-command-executed", (e) => {
@@ -1041,12 +1056,12 @@
     const describe = COMMAND_LABELS[detail.type];
     if (detail.success === false) {
       showToast(
-        `A change from RadarThing couldn't be applied${describe ? ` (${describe(detail.value).toLowerCase()})` : ""}.`,
+        `A change from the website couldn't be applied${describe ? `: ${describe(detail.value).toLowerCase()}` : ""}.`,
         true,
       );
       return;
     }
-    if (describe) showToast(`${describe(detail.value)} · from RadarThing`);
+    if (describe) showToast(`${describe(detail.value)} (from the website)`);
   });
 
   function updateSignInNotice() {
@@ -2354,19 +2369,20 @@
     }
   }
 
-  function hideChartsPanel() {
+  function hideChartsPanel({ returnFocus = false } = {}) {
     const panel = document.getElementById(CHARTS_PANEL_ID);
     if (!panel) return;
     // Don't leave keyboard focus inside a hidden panel: it would keep
-    // swallowing the flight keys.
+    // swallowing the flight keys. Only the close button hands focus back to
+    // the opener; after Escape or the hotkey the pilot is flying, and a
+    // focused button would turn the next Space/Enter into "open charts".
     const hadFocus = panel.contains(document.activeElement);
     panel.style.display = "none";
-    if (hadFocus) {
-      document.activeElement?.blur?.();
-      const opener = document.getElementById(CHARTS_BTN_ID);
-      if (opener && flightUI && flightUI.style.display !== "none")
-        opener.focus();
-    }
+    if (!hadFocus) return;
+    document.activeElement?.blur?.();
+    const opener = document.getElementById(CHARTS_BTN_ID);
+    if (returnFocus && opener && flightUI && flightUI.style.display !== "none")
+      opener.focus();
   }
 
   // ==========================================
@@ -2579,6 +2595,8 @@
           border-color:rgba(248,113,113,0.8) !important;
         }
         #${UI_CONTAINER_ID} button[disabled] { opacity:0.6; cursor:progress; }
+        /* Inline display styles would otherwise beat the hidden attribute. */
+        #${UI_CONTAINER_ID} [hidden] { display:none !important; }
         @media (prefers-reduced-motion: reduce) {
           #${UI_CONTAINER_ID} *, #${UI_CONTAINER_ID} *::before { transition:none !important; animation:none !important; }
         }
@@ -2669,7 +2687,7 @@
         letter-spacing:0.06em;
       ">
         <span data-status-dot aria-hidden="true" style="flex:none;width:8px;height:8px;border-radius:50%;background:#94a3b8;"></span>
-        <span data-status-text>Not tracking</span>
+        <span data-status-text style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0.02em;">Not tracking</span>
         <span data-status-age aria-hidden="true" style="font-weight:500;letter-spacing:0.02em;color:#94a3b8;"></span>
         ${
           isMobile
@@ -2679,9 +2697,9 @@
       </div>
 
       <button id="atc-retry-now-btn" type="button" hidden style="
-        width:100%;
-        margin:-4px 0 12px;
-        padding:7px 10px;
+        display:block;
+        margin:-6px 0 12px auto;
+        padding:5px 10px;
         border:1px solid rgba(251,191,36,0.45);
         border-radius:10px;
         background:rgba(251,191,36,0.1);
@@ -2715,6 +2733,7 @@
         display:flex;
         align-items:center;
         gap:8px;
+        margin-bottom:12px;
         padding:8px 10px;
         border:1px solid rgba(255,255,255,0.1);
         border-radius:10px;
@@ -2863,7 +2882,7 @@
           cursor:pointer;
         ">Open airport charts
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M7 17 17 7M9 7h8v8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
       </div>
@@ -3245,7 +3264,7 @@
         border-radius: 6px;
         border: 1px solid rgba(255, 255, 255, 0.08);
         background: transparent;
-        color: rgba(255, 255, 255, 0.4);
+        color: rgba(255, 255, 255, 0.65);
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-size: 11px;
         font-weight: 600;
@@ -3279,7 +3298,7 @@
         border-radius: 6px;
         border: 1px solid rgba(255, 255, 255, 0.08);
         background: transparent;
-        color: rgba(255, 255, 255, 0.35);
+        color: rgba(255, 255, 255, 0.65);
         font-size: 18px;
         line-height: 1;
         cursor: pointer;
@@ -3317,7 +3336,7 @@
       }
 
       .gc-search input::placeholder {
-        color: rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.65);
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-weight: 400;
         letter-spacing: 0;
@@ -3382,7 +3401,7 @@
         margin-top: 6px;
         min-height: 16px;
         font-size: 12px;
-        color: rgba(255, 255, 255, 0.3);
+        color: rgba(255, 255, 255, 0.65);
         flex-shrink: 0;
       }
 
@@ -3404,7 +3423,7 @@
         font-size: 11px;
         font-weight: 600;
         letter-spacing: 0.03em;
-        color: rgba(255, 255, 255, 0.4);
+        color: rgba(255, 255, 255, 0.65);
         cursor: pointer;
         transition: all 0.15s ease;
         text-align: center;
@@ -3480,7 +3499,7 @@
       }
 
       .gc-empty {
-        color: rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.65);
         font-size: 12px;
         padding: 12px 10px;
       }
@@ -3663,7 +3682,8 @@
 
     document.getElementById("gc-search-btn").onclick = chartsSearch;
     document.getElementById("gc-reset-btn").onclick = resetChartsAndRefetch;
-    panel.querySelector(".gc-close").onclick = hideChartsPanel;
+    panel.querySelector(".gc-close").onclick = () =>
+      hideChartsPanel({ returnFocus: true });
     panel.querySelector(".gc-invert-toggle").onclick = () => {
       chartsState.invertColors = !chartsState.invertColors;
       renderChartsContent();
@@ -3879,6 +3899,7 @@
       dot.style.animation =
         e.detail.state === "connecting" ||
         e.detail.state === "retrying" ||
+        e.detail.state === "busy" ||
         e.detail.state === "waiting"
           ? "atc-status-pulse 1.2s ease-in-out infinite"
           : "none";
@@ -3890,11 +3911,23 @@
     lastStatusSuccessAt =
       e.detail.state === "live" ? e.detail.lastSuccessAt || 0 : 0;
     updateStatusAge();
+    // Retry now helps when the connection dropped, not when the server asked
+    // us to slow down (busy).
     const retryBtn = document.getElementById("atc-retry-now-btn");
-    if (retryBtn)
-      retryBtn.hidden = !(
-        e.detail.state === "retrying" || e.detail.state === "offline"
-      );
+    if (retryBtn) {
+      const showRetry =
+        e.detail.state === "retrying" || e.detail.state === "offline";
+      if (!showRetry && document.activeElement === retryBtn)
+        document.getElementById(CLEAR_BTN_ID)?.focus();
+      retryBtn.hidden = !showRetry;
+    }
+  });
+
+  // Each successful send only moves the "Ns ago" clock.
+  window.addEventListener("radarthing-last-success", (e) => {
+    if (typeof e.detail?.at !== "number") return;
+    lastStatusSuccessAt = e.detail.at;
+    updateStatusAge();
   });
 
   // "Live · 4s ago" tells the pilot updates are really flowing. The age sits
@@ -3966,7 +3999,9 @@
     }
     // The pilot's own save already matches the form; only refill it when the
     // values came from elsewhere, so unsaved edits are never overwritten.
-    if (detail.resumed || detail.remote) {
+    // While the pilot is editing, a remote squawk change only updates the
+    // squawk field (via atc-squawk-update) and leaves their other edits.
+    if (detail.resumed || (detail.remote && !editingFlight)) {
       fillFlightForm(detail);
       applyCompactMode();
     }

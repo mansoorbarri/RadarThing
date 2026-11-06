@@ -9,6 +9,8 @@ interface ConnectionStatusIndicatorProps {
   lastMessageAgeSeconds?: number | null;
   error?: string | null;
   onReconnect?: () => void;
+  /** Seconds until the next automatic reconnect, for the countdown. */
+  retryInSeconds?: number | null;
 }
 
 export const ConnectionStatusIndicator: React.FC<
@@ -20,6 +22,7 @@ export const ConnectionStatusIndicator: React.FC<
   lastMessageAgeSeconds,
   error,
   onReconnect,
+  retryInSeconds,
 }) => {
   const baseStyle = isMobile
     ? "flex items-center rounded-md border font-mono text-[11px] font-semibold px-2 py-1 transition-all duration-200 shadow-[0_0_6px_rgba(0,255,255,0.25)]"
@@ -111,9 +114,16 @@ export const ConnectionStatusIndicator: React.FC<
         {showInlineError && (
           <span
             aria-hidden="true"
-            className="ml-2 max-w-[200px] truncate font-sans text-[11px] font-normal text-red-200/90"
+            className="ml-2 max-w-[260px] truncate font-sans text-[11px] font-normal text-red-200/90"
           >
-            {error ? error : "Retrying…"}
+            {[
+              error,
+              typeof retryInSeconds === "number" && retryInSeconds > 0
+                ? `Retrying in ${retryInSeconds}s`
+                : "Retrying…",
+            ]
+              .filter(Boolean)
+              .join(" ")}
           </span>
         )}
       </div>

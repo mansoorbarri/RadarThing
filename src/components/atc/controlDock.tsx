@@ -103,8 +103,8 @@ export function ControlDock({
     : "bottom-6";
   const sidePos = isMobile
     ? isRight
-      ? "right-3"
-      : "left-3"
+      ? "right-[max(0.75rem,env(safe-area-inset-right))]"
+      : "left-[max(0.75rem,env(safe-area-inset-left))]"
     : isRight && !rightOffset
       ? "right-4"
       : !isRight

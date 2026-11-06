@@ -34,7 +34,7 @@ export function TrialStatusBanner({ hidden = false }: { hidden?: boolean }) {
   const daysLeft = Math.max(1, Math.ceil((trialEndsAt - now) / DAY_MS));
   const message = ended
     ? "Your Pro trial has ended."
-    : `Your PRO trial ends in ${daysLeft} ${daysLeft === 1 ? "day" : "days"}.`;
+    : `Your Pro trial ends in ${daysLeft} ${daysLeft === 1 ? "day" : "days"}.`;
 
   return (
     <div className="absolute top-24 left-1/2 z-[10005] flex w-max max-w-[calc(100vw-1.5rem)] -translate-x-1/2 items-center gap-3 rounded-xl border border-cyan-400/30 bg-[#07101a]/90 px-4 py-2 font-mono text-xs text-slate-200 shadow-[0_0_30px_rgba(6,182,212,0.2)] backdrop-blur-xl">

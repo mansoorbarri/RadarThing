@@ -74,11 +74,15 @@
 
     console.log("[RadarThing] Executing command:", cmd.type, cmd.value);
 
+    // Only report success when GeoFS actually changed something, so the
+    // pilot never sees "Flaps set" for a command that did nothing.
+    let applied = false;
     try {
       switch (cmd.type) {
         case "setSpeed":
           if (typeof geofs.autopilot.setSpeed === "function") {
             geofs.autopilot.setSpeed(Number(cmd.value));
+            applied = true;
           }
           break;
 
@@ -87,6 +91,7 @@
             String(cmd.value || "").toLowerCase() === "mach" ? "mach" : "knots";
           if (typeof geofs.autopilot.setSpeedMode === "function") {
             geofs.autopilot.setSpeedMode(speedMode);
+            applied = true;
           }
           break;
         }
@@ -94,6 +99,7 @@
         case "setAltitude":
           if (typeof geofs.autopilot.setAltitude === "function") {
             geofs.autopilot.setAltitude(Number(cmd.value));
+            applied = true;
           }
           break;
 
@@ -101,16 +107,19 @@
           // Switch to heading mode using the proper GeoFS API
           if (typeof geofs.autopilot.setMode === "function") {
             geofs.autopilot.setMode("HDG");
+            applied = true;
           }
           // Set the course value
           if (typeof geofs.autopilot.setCourse === "function") {
             geofs.autopilot.setCourse(Number(cmd.value));
+            applied = true;
           }
           break;
 
         case "setVS":
           if (typeof geofs.autopilot.setVerticalSpeed === "function") {
             geofs.autopilot.setVerticalSpeed(Number(cmd.value));
+            applied = true;
           }
           break;
 
@@ -123,6 +132,7 @@
               throw new Error(`Invalid squawk ${String(cmd.value ?? "")}`);
             }
             info.sqk = sanitizeSquawk(cmd.value);
+            applied = true;
             window.dispatchEvent(
               new CustomEvent("atc-data-sync", {
                 detail: { ...info, remote: true },
@@ -139,8 +149,9 @@
 
         case "setFlaps":
           // Set flaps by notch number (value is the notch, e.g., 2 out of 3 steps)
-          if (window.controls?.flaps) {
-            const controls = window.controls;
+          // GeoFS has exposed controls both as a global and on geofs.
+          const controls = window.controls ?? geofs.controls;
+          if (controls?.flaps) {
             const maxPos = controls.flaps.maxPosition || 6;
             const flapsSteps = geofs.animation?.values?.flapsSteps || maxPos;
             const notch = Math.round(Number(cmd.value));
@@ -154,12 +165,14 @@
             const flapPos = Math.round((notch / flapsSteps) * maxPos);
             controls.flaps.target = flapPos;
             controls.flaps.position = flapPos;
+            applied = true;
           }
           break;
 
         case "enableNav":
           if (typeof geofs.autopilot.setMode === "function") {
             geofs.autopilot.setMode("NAV");
+            applied = true;
           }
           break;
 
@@ -167,6 +180,7 @@
           // Switch to heading mode using the proper GeoFS API
           if (typeof geofs.autopilot.setMode === "function") {
             geofs.autopilot.setMode("HDG");
+            applied = true;
           }
           break;
 
@@ -206,6 +220,7 @@
 
           if (typeof flightPlan.selectWaypoint === "function") {
             flightPlan.selectWaypoint(waypointIndex);
+            applied = true;
           } else {
             console.warn(
               "[RadarThing] setWaypoint - selectWaypoint is not available",
@@ -213,10 +228,12 @@
 
             if ("trackedWaypoint" in flightPlan) {
               flightPlan.trackedWaypoint = waypoint;
+              applied = true;
             }
 
             if (typeof geofs.autopilot.setMode === "function") {
               geofs.autopilot.setMode("NAV");
+              applied = true;
             }
           }
           break;
@@ -225,11 +242,13 @@
         case "toggleAutopilot":
           if (cmd.value && typeof geofs.autopilot.turnOn === "function") {
             geofs.autopilot.turnOn();
+            applied = true;
           } else if (
             !cmd.value &&
             typeof geofs.autopilot.turnOff === "function"
           ) {
             geofs.autopilot.turnOff();
+            applied = true;
           }
           break;
 
@@ -241,6 +260,7 @@
               detail: { active: false, remote: true },
             }),
           );
+          applied = true;
           break;
 
         default:
@@ -250,7 +270,14 @@
       // Notify UI of command execution
       window.dispatchEvent(
         new CustomEvent("radarthing-command-executed", {
-          detail: { type: cmd.type, value: cmd.value, success: true },
+          detail: applied
+            ? { type: cmd.type, value: cmd.value, success: true }
+            : {
+                type: cmd.type,
+                value: cmd.value,
+                success: false,
+                error: "GeoFS couldn't apply this change",
+              },
         }),
       );
     } catch (err) {
@@ -298,7 +325,7 @@
       color: "#f87171",
     },
     busy: {
-      state: "retrying",
+      state: "busy",
       text: "RadarThing is busy · retrying",
       color: "#fbbf24",
     },
@@ -342,8 +369,15 @@
     lastSendSuccessAt = Date.now();
     consecutiveSendFailures = 0;
     nextSendAllowedAt = 0;
-    // Rebroadcast every success so the panel can show "updated Xs ago".
-    broadcastStatus(STATUS.live);
+    // The full status only goes out when it changes; every success just
+    // sends the timestamp so the panel can show "updated Xs ago".
+    if (currentStatus !== STATUS.live) broadcastStatus(STATUS.live);
+    else
+      window.dispatchEvent(
+        new CustomEvent("radarthing-last-success", {
+          detail: { at: lastSendSuccessAt },
+        }),
+      );
   }
 
   function recordSendFailure(status) {
@@ -377,8 +411,12 @@
   }
 
   // Let the panel's "Retry now" button skip the remaining backoff.
+  // Set when the pilot retries or the network comes back, so the stale check
+  // gives the new request time to finish before calling it a problem.
+  let reconnectRequestedAt = 0;
   window.addEventListener("radarthing-retry-now", () => {
     if (!info.active) return;
+    reconnectRequestedAt = Date.now();
     nextSendAllowedAt = 0;
     lastPositionSendAt = 0;
     broadcastStatus(STATUS.connecting);
@@ -389,6 +427,7 @@
   });
   window.addEventListener("online", () => {
     if (!info.active) return;
+    reconnectRequestedAt = Date.now();
     consecutiveSendFailures = 0;
     nextSendAllowedAt = 0;
     lastPositionSendAt = 0;
@@ -406,9 +445,12 @@
   // invalid, requests hanging), stop claiming "Live".
   setInterval(() => {
     if (!info.active) return;
+    if (positionUpdateInFlight) return;
     if (
       (currentStatus === STATUS.live || currentStatus === STATUS.connecting) &&
-      Date.now() - Math.max(lastSendSuccessAt, activatedAt) > 30000
+      Date.now() -
+        Math.max(lastSendSuccessAt, activatedAt, reconnectRequestedAt) >
+        30000
     )
       broadcastStatus(STATUS.retrying);
   }, 5000);
@@ -620,10 +662,11 @@
         vspeed: Math.floor(geofs?.animation?.values?.verticalSpeed || 0),
         navMode: geofs?.autopilot?.mode === "NAV",
         speedMode: geofs?.autopilot?.speedMode === "mach" ? "mach" : "knots",
-        flapsPosition: window.controls?.flaps?.position || 0,
+        flapsPosition:
+          (window.controls ?? geofs?.controls)?.flaps?.position || 0,
         flapsMaxPosition:
           geofs?.animation?.values?.flapsSteps ||
-          window.controls?.flaps?.maxPosition ||
+          (window.controls ?? geofs?.controls)?.flaps?.maxPosition ||
           0,
       };
 

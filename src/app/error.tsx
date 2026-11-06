@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Analytics } from "~/lib/analytics";
 import { getClientDiagnosticsContext } from "~/lib/clientDiagnostics";
+import { SiteFooter } from "~/components/site/SiteFooter";
 import { SiteHeader } from "~/components/site/SiteHeader";
 
 /**
@@ -70,6 +71,7 @@ export default function RouteError({
           </div>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

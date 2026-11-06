@@ -322,17 +322,17 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
             {submitStage === "validating" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Validating...
+                Validating…
               </>
             ) : submitStage === "uploading" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Uploading...
+                Uploading…
               </>
             ) : submitStage === "submitting" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Submitting...
+                Submitting…
               </>
             ) : submitStage === "success" ? (
               <>

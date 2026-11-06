@@ -1,5 +1,6 @@
 "use client";
 
+import { copyText } from "~/lib/clipboard";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
@@ -120,6 +121,11 @@ export default function DashboardPage() {
 
   // Real-time queries
   const { isProUser: isPro, isLoading: proLoading } = useProStatus();
+  const [confirmDiscordDisconnect, setConfirmDiscordDisconnect] =
+    useState(false);
+  // While the plan is still loading, show placeholders rather than flashing
+  // Free-plan locks and upgrade prompts at Pro users.
+  const showProLocks = !isPro && !proLoading;
   const statsQuery = useQuery(
     api.flights.getStatsByClerkId,
     clerkId ? { clerkId } : "skip",
@@ -225,7 +231,9 @@ export default function DashboardPage() {
         window.location.href = url.toString();
       }
     } catch {
-      toast.error("Failed to connect Discord");
+      toast.error(
+        "We couldn't open Discord. Allow pop-ups and redirects for this site, then try again.",
+      );
       setDiscordLoading(false);
     }
   };
@@ -246,8 +254,7 @@ export default function DashboardPage() {
 
   const copySupportId = () => {
     if (supportId) {
-      navigator.clipboard
-        .writeText(supportId)
+      copyText(supportId)
         .then(() => {
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
@@ -259,8 +266,7 @@ export default function DashboardPage() {
   const copyProfileLink = () => {
     if (supportId) {
       const url = `${window.location.origin}/pilot/${supportId}`;
-      navigator.clipboard
-        .writeText(url)
+      copyText(url)
         .then(() => {
           setProfileCopied(true);
           toast.success("Profile link copied to clipboard");
@@ -372,10 +378,10 @@ export default function DashboardPage() {
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
             <Plane className="h-4 w-4 text-cyan-400" />
             <span className="font-mono text-sm text-cyan-400">
-              SIGN IN REQUIRED
+              Sign in required
             </span>
           </div>
-          <h1 className="mb-4 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-5xl font-bold text-transparent">
+          <h1 className="mb-4 text-4xl font-bold text-white sm:text-5xl">
             Your Account
           </h1>
           <p className="mb-12 text-xl text-slate-400">
@@ -383,7 +389,7 @@ export default function DashboardPage() {
           </p>
           <GoogleSignInButton>
             <button className="cursor-pointer rounded-xl bg-cyan-400 px-8 py-4 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40">
-              Sign In / Sign Up
+              Sign in or sign up
             </button>
           </GoogleSignInButton>
         </main>
@@ -462,11 +468,17 @@ export default function DashboardPage() {
               {supportId && (
                 <div className="mt-1">
                   <button
+                    type="button"
                     onClick={copySupportId}
-                    className="flex cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-400 transition-colors hover:text-white"
-                    title="Click to copy - share this with support when reporting issues"
+                    className="flex min-h-10 cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-400 transition-colors hover:text-white"
+                    title="Copy your support ID to share with support when reporting a problem"
+                    aria-label={
+                      copied
+                        ? "Support ID copied"
+                        : "Copy your support ID for support requests"
+                    }
                   >
-                    <span>ID: {supportId.slice(0, 8)}...</span>
+                    <span>Support ID: {supportId.slice(0, 8)}…</span>
                     {copied ? (
                       <Check className="h-3 w-3 text-emerald-400" />
                     ) : (
@@ -483,22 +495,35 @@ export default function DashboardPage() {
                       <span>{discordUsername ?? "Discord connected"}</span>
                     </div>
                     <button
-                      onClick={disconnectDiscord}
+                      type="button"
+                      onClick={() => {
+                        // Two steps, like the other destructive actions.
+                        if (!confirmDiscordDisconnect) {
+                          setConfirmDiscordDisconnect(true);
+                          return;
+                        }
+                        setConfirmDiscordDisconnect(false);
+                        void disconnectDiscord();
+                      }}
+                      onBlur={() => setConfirmDiscordDisconnect(false)}
                       disabled={discordLoading}
-                      className="cursor-pointer font-mono text-[11px] text-slate-400 transition-colors hover:text-red-400 disabled:opacity-50"
+                      className={`inline-flex min-h-10 cursor-pointer items-center font-mono text-xs transition-colors disabled:opacity-50 ${confirmDiscordDisconnect ? "font-semibold text-red-300" : "text-slate-400 hover:text-red-400"}`}
                     >
-                      Disconnect
+                      {confirmDiscordDisconnect
+                        ? "Click again to disconnect"
+                        : "Disconnect"}
                     </button>
                   </div>
                 ) : (
                   <button
+                    type="button"
                     onClick={connectDiscord}
                     disabled={discordLoading}
-                    className="flex cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-400 transition-colors hover:text-indigo-400 disabled:opacity-50"
+                    className="flex min-h-10 cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-400 transition-colors hover:text-indigo-400 disabled:opacity-50"
                   >
                     <DiscordIcon className="h-3.5 w-3.5" />
                     <span>
-                      {discordLoading ? "Connecting..." : "Connect Discord"}
+                      {discordLoading ? "Connecting…" : "Connect Discord"}
                     </span>
                   </button>
                 )}
@@ -527,29 +552,29 @@ export default function DashboardPage() {
             <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard
                 icon={<Plane className="h-5 w-5" />}
-                label="Total Flights"
+                label="Total flights"
                 value={stats.totalFlights.toString()}
                 color="cyan"
               />
               <StatCard
                 icon={<Navigation className="h-5 w-5" />}
-                label="Distance Flown"
+                label="Distance flown"
                 value={`${stats.totalDistanceNm.toLocaleString()} nm`}
                 color="blue"
               />
               <StatCard
                 icon={<Clock className="h-5 w-5" />}
-                label="Flight Time"
+                label="Flight time"
                 value={formatFlightTime(stats.totalFlightTimeMs)}
                 color="purple"
-                locked={!isPro}
+                locked={showProLocks}
               />
               <StatCard
                 icon={<MapPin className="h-5 w-5" />}
-                label="Airports Visited"
+                label="Airports visited"
                 value={stats.uniqueAirports.toString()}
                 color="emerald"
-                locked={!isPro}
+                locked={showProLocks}
               />
             </div>
 
@@ -559,7 +584,7 @@ export default function DashboardPage() {
             (approvedAirportCharts !== undefined &&
               approvedAirportCharts > 0) ? (
               <div className="mb-8">
-                <h2 className="mb-4 font-mono text-sm font-bold tracking-wider text-slate-400">
+                <h2 className="mb-4 font-mono text-xs font-bold tracking-widest text-slate-300 uppercase">
                   YOUR CONTRIBUTIONS
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -567,7 +592,7 @@ export default function DashboardPage() {
                     approvedAircraftImages > 0 && (
                       <StatCard
                         icon={<Camera className="h-5 w-5" />}
-                        label="Aircraft Images"
+                        label="Aircraft images"
                         value={approvedAircraftImages.toString()}
                         color="purple"
                       />
@@ -576,7 +601,7 @@ export default function DashboardPage() {
                     approvedAirportCharts > 0 && (
                       <StatCard
                         icon={<FileText className="h-5 w-5" />}
-                        label="Airport Charts"
+                        label="Airport charts"
                         value={approvedAirportCharts.toString()}
                         color="emerald"
                       />
@@ -589,12 +614,22 @@ export default function DashboardPage() {
               {/* Top Aircraft - Pro */}
               <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
                 <div className="mb-4 flex items-center justify-between">
-                  <h2 className="font-mono text-sm font-bold tracking-wider text-slate-400">
-                    TOP AIRCRAFT
+                  <h2 className="font-mono text-xs font-bold tracking-widest text-slate-300 uppercase">
+                    Top aircraft
                   </h2>
-                  {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
+                  {showProLocks && (
+                    <Lock
+                      className="h-4 w-4 text-slate-400"
+                      aria-hidden="true"
+                    />
+                  )}
                 </div>
-                {isPro ? (
+                {proLoading ? (
+                  <div
+                    aria-hidden="true"
+                    className="h-24 animate-pulse rounded-xl bg-white/[0.04] motion-reduce:animate-none"
+                  />
+                ) : isPro ? (
                   <div className="space-y-3">
                     {stats.topAircraft.length === 0 ? (
                       <p className="text-sm text-slate-400">No data yet</p>
@@ -629,12 +664,22 @@ export default function DashboardPage() {
               {/* Top Routes - Pro */}
               <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
                 <div className="mb-4 flex items-center justify-between">
-                  <h2 className="font-mono text-sm font-bold tracking-wider text-slate-400">
-                    TOP ROUTES
+                  <h2 className="font-mono text-xs font-bold tracking-widest text-slate-300 uppercase">
+                    Top routes
                   </h2>
-                  {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
+                  {showProLocks && (
+                    <Lock
+                      className="h-4 w-4 text-slate-400"
+                      aria-hidden="true"
+                    />
+                  )}
                 </div>
-                {isPro ? (
+                {proLoading ? (
+                  <div
+                    aria-hidden="true"
+                    className="h-24 animate-pulse rounded-xl bg-white/[0.04] motion-reduce:animate-none"
+                  />
+                ) : isPro ? (
                   <div className="space-y-3">
                     {stats.topRoutes.length === 0 ? (
                       <p className="text-sm text-slate-400">No data yet</p>
@@ -667,12 +712,22 @@ export default function DashboardPage() {
               {/* Top Airports - Pro */}
               <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
                 <div className="mb-4 flex items-center justify-between">
-                  <h2 className="font-mono text-sm font-bold tracking-wider text-slate-400">
-                    TOP AIRPORTS
+                  <h2 className="font-mono text-xs font-bold tracking-widest text-slate-300 uppercase">
+                    Top airports
                   </h2>
-                  {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
+                  {showProLocks && (
+                    <Lock
+                      className="h-4 w-4 text-slate-400"
+                      aria-hidden="true"
+                    />
+                  )}
                 </div>
-                {isPro ? (
+                {proLoading ? (
+                  <div
+                    aria-hidden="true"
+                    className="h-24 animate-pulse rounded-xl bg-white/[0.04] motion-reduce:animate-none"
+                  />
+                ) : isPro ? (
                   <div className="space-y-3">
                     {stats.topAirports.length === 0 ? (
                       <p className="text-sm text-slate-400">No data yet</p>
@@ -716,8 +771,7 @@ export default function DashboardPage() {
                 deletingFlightId={deletingFlightId}
                 onShareFlight={(flight) => {
                   const url = `${window.location.origin}/radar?replay=${flight.id}`;
-                  navigator.clipboard
-                    .writeText(url)
+                  copyText(url)
                     .then(() => {
                       toast.success("Flight replay link copied to clipboard");
                       Analytics.flightReplayShared({
@@ -768,7 +822,7 @@ export default function DashboardPage() {
             )}
 
             {/* Upgrade CTA for Free Users */}
-            {!isPro && (
+            {showProLocks && (
               <div className="mt-8 rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 p-8 text-center backdrop-blur-xl">
                 <TrendingUp className="mx-auto mb-4 h-10 w-10 text-cyan-400" />
                 <h2 className="mb-2 text-xl font-bold text-white">
@@ -797,7 +851,7 @@ export default function DashboardPage() {
 
         {/* Account Section */}
         <div className="mt-12">
-          <h2 className="mb-4 font-mono text-sm font-bold tracking-wider text-slate-400">
+          <h2 className="mb-4 font-mono text-xs font-bold tracking-widest text-slate-300 uppercase">
             ACCOUNT
           </h2>
 
@@ -1003,7 +1057,7 @@ export default function DashboardPage() {
                     }
                     className="flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-red-700 disabled:opacity-50"
                   >
-                    {isDeleting ? "Deleting..." : "Delete my account"}
+                    {isDeleting ? "Deleting…" : "Delete my account"}
                   </button>
                   <button
                     type="button"
@@ -1100,7 +1154,7 @@ export default function DashboardPage() {
                 {isSavingName ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Saving...
+                    Saving…
                   </>
                 ) : (
                   "Save name"
@@ -1175,7 +1229,7 @@ export default function DashboardPage() {
                 {deletingFlightId === flightPendingDelete?.id ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Deleting flight...
+                    Deleting flight…
                   </>
                 ) : (
                   "Delete flight"

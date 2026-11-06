@@ -1,5 +1,6 @@
 "use client";
 
+import { copyText } from "~/lib/clipboard";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
@@ -119,10 +120,15 @@ export default function PilotClient({
 
   const copyProfileLink = () => {
     const url = window.location.href;
-    navigator.clipboard.writeText(url);
-    setLinkCopied(true);
-    toast.success("Profile link copied to clipboard");
-    setTimeout(() => setLinkCopied(false), 2000);
+    copyText(url)
+      .then(() => {
+        setLinkCopied(true);
+        toast.success("Profile link copied to clipboard");
+        setTimeout(() => setLinkCopied(false), 2000);
+      })
+      .catch(() =>
+        toast.error("Couldn't copy the link. Copy it from the address bar."),
+      );
   };
 
   if (profileUser === undefined) {
@@ -412,16 +418,18 @@ export default function PilotClient({
               deletingFlightId={deletingFlightId}
               onShareFlight={(flight) => {
                 const url = `${window.location.origin}/radar?replay=${flight.id}`;
-                navigator.clipboard.writeText(url).then(() => {
-                  toast.success("Flight replay link copied to clipboard");
-                  Analytics.flightReplayShared({
-                    callsign: flight.callsign,
-                    aircraftType: flight.aircraftType,
-                    depICAO: flight.depICAO,
-                    arrICAO: flight.arrICAO,
-                    flightId: flight.id as string,
-                  });
-                });
+                copyText(url)
+                  .then(() => {
+                    toast.success("Flight replay link copied to clipboard");
+                    Analytics.flightReplayShared({
+                      callsign: flight.callsign,
+                      aircraftType: flight.aircraftType,
+                      depICAO: flight.depICAO,
+                      arrICAO: flight.arrICAO,
+                      flightId: flight.id as string,
+                    });
+                  })
+                  .catch(() => toast.error("Couldn't copy the replay link."));
               }}
               onGenerateFlightCard={(flight: FlightHistoryPanelFlight) => {
                 if (!isPro) {

@@ -128,14 +128,14 @@ export default function HomePage() {
               <Link
                 href="/radar"
                 prefetch={false}
-                className="group inline-flex items-center justify-center gap-2 bg-white px-8 py-4 font-semibold text-black transition-all hover:bg-cyan-400"
+                className="group inline-flex items-center justify-center gap-2 rounded-lg bg-white px-8 py-4 font-semibold text-black transition-all hover:bg-cyan-400"
               >
                 Open the radar
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
                 href="#install"
-                className="inline-flex items-center justify-center gap-2 border border-white/10 px-8 py-4 font-medium text-white transition-all hover:border-white/25 hover:bg-white/5"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 px-8 py-4 font-medium text-white transition-all hover:border-white/25 hover:bg-white/5"
               >
                 <Download className="h-4 w-4" />
                 Install the script
@@ -183,7 +183,7 @@ export default function HomePage() {
               <SetupStep
                 step={1}
                 title="Install Tampermonkey"
-                description="Get the browser extension from your browser's extension store"
+                description="Get it from your browser's extension store. In Chrome or Edge, also turn on Allow User Scripts in Tampermonkey's extension details."
                 link="https://www.tampermonkey.net/"
                 linkText="Get Tampermonkey"
               />
@@ -308,12 +308,12 @@ export default function HomePage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <FeatureCard
                 icon={Radio}
-                title="Live Tracking"
+                title="Live tracking"
                 description="Live aircraft positions from every tracked GeoFS pilot, updated every few seconds"
               />
               <FeatureCard
                 icon={Route}
-                title="Flight Paths"
+                title="Flight paths"
                 description="Automatic flight recording with route visualization and replay"
               />
               <FeatureCard
@@ -323,18 +323,18 @@ export default function HomePage() {
               />
               <FeatureCard
                 icon={Gamepad2}
-                title="Remote Control"
+                title="Remote control"
                 description="Send autopilot commands: speed, altitude, heading, and more"
               />
               <FeatureCard
                 icon={Cloud}
-                title="Weather Data"
-                description="METARs, TAFs, NOTAMs, AIRMETs, SIGMETs, and precipitation overlay"
+                title="Weather data"
+                description="METARs and precipitation for everyone. Pro adds NOTAMs, AIRMETs, SIGMETs and D-ATIS"
               />
               <FeatureCard
                 icon={Building2}
-                title="Airport Info"
-                description="Taxi charts, approach procedures, SIDs, STARs, and frequencies"
+                title="Airport charts"
+                description="Taxi charts, SIDs, STARs and approaches. Three US airports a day free, unlimited with Pro"
               />
               <FeatureCard
                 icon={Headphones}
@@ -343,12 +343,12 @@ export default function HomePage() {
               />
               <FeatureCard
                 icon={Clock}
-                title="Flight Stats"
+                title="Flight stats"
                 description="Track your flight time, distance, top routes, and airports"
               />
               <FeatureCard
                 icon={Camera}
-                title="Aircraft Gallery"
+                title="Aircraft gallery"
                 description="Community-uploaded aircraft photos and livery images"
               />
             </div>
@@ -391,7 +391,7 @@ export default function HomePage() {
                   href="/radar"
                   className="mt-auto block w-full rounded-lg border border-white/10 py-3 text-center font-medium text-white transition-colors hover:bg-white/5"
                 >
-                  Get started
+                  Open the radar
                 </Link>
               </div>
 
@@ -410,9 +410,9 @@ export default function HomePage() {
                   <span className="text-white/70"> / month</span>
                 </div>
                 <ul className="mb-6 flex-1 space-y-3">
-                  <PricingFeature included>
+                  <li className="text-sm font-medium text-white">
                     Everything in Free, plus:
-                  </PricingFeature>
+                  </li>
                   {proPlanItems().map((item) => (
                     <PricingFeature key={item.label} included>
                       {item.label}
@@ -491,19 +491,20 @@ export default function HomePage() {
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
                 href="/radar"
-                className="group inline-flex items-center gap-2 bg-cyan-400 px-10 py-4 font-semibold text-black transition-all hover:bg-cyan-300 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)]"
+                className="group inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-10 py-4 font-semibold text-black transition-all hover:bg-cyan-300 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)]"
               >
-                Launch Radar
+                Open the radar
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
                 href="https://discord.gg/pbQF4txdRC"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 border border-white/10 px-8 py-4 font-medium text-white transition-all hover:border-white/25 hover:bg-white/5"
+                className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-8 py-4 font-medium text-white transition-all hover:border-white/25 hover:bg-white/5"
               >
                 <DiscordIcon className="h-4 w-4" />
-                Join Discord
+                Join the Discord
+                <span className="sr-only"> (opens in a new tab)</span>
               </Link>
             </div>
           </div>

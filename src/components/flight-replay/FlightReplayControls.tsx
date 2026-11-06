@@ -1,5 +1,6 @@
 "use client";
 
+import { copyText } from "~/lib/clipboard";
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { type FlightData, useFlightReplay } from "~/hooks/useFlightReplay";
@@ -198,8 +199,7 @@ export function FlightReplayControls({
   // Share flight replay link
   const handleShare = useCallback(() => {
     const url = `${window.location.origin}/radar?replay=${flight.id}`;
-    navigator.clipboard
-      .writeText(url)
+    copyText(url)
       .then(() => {
         toast.success("Flight replay link copied to clipboard");
         Analytics.flightReplayShared({

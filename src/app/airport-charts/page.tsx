@@ -200,7 +200,7 @@ export default function AirportChartsPage() {
     }
 
     setSubmitStage("submitting");
-    setSubmitProgress(`Creating ${results.length} entries...`);
+    setSubmitProgress(`Creating ${results.length} entries…`);
 
     const dbResults = await Promise.all(
       results.map((upload) =>
@@ -257,14 +257,14 @@ export default function AirportChartsPage() {
         return (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            Uploading...
+            Uploading…
           </>
         );
       case "submitting":
         return (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            {submitProgress ?? "Submitting..."}
+            {submitProgress ?? "Submitting…"}
           </>
         );
       case "success":
@@ -292,20 +292,30 @@ export default function AirportChartsPage() {
 
   if (!isAdminUser) {
     return (
-      <div className="bg-site flex min-h-screen flex-col items-center justify-center text-white">
-        <div className="flex max-w-md flex-col items-center rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-          <ShieldAlert className="mb-4 h-12 w-12 text-red-400" />
-          <h2 className="mb-2 text-xl font-bold">Admin Access Required</h2>
-          <p className="mb-6 text-slate-400">
-            This page is restricted to administrators only.
-          </p>
-          <button
-            onClick={() => router.push("/radar")}
-            className="cursor-pointer rounded-lg bg-cyan-500/20 px-6 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-cyan-500/30"
-          >
-            Back to Radar
-          </button>
-        </div>
+      <div className="bg-site flex min-h-screen flex-col text-white">
+        <SiteHeader />
+        <main
+          id="main-content"
+          className="flex flex-1 items-center justify-center px-6 py-16"
+        >
+          <div className="flex max-w-md flex-col items-center rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
+            <ShieldAlert
+              className="mb-4 h-12 w-12 text-red-400"
+              aria-hidden="true"
+            />
+            <h1 className="mb-2 text-xl font-bold">Admin access required</h1>
+            <p className="mb-6 text-slate-300">
+              This page is for RadarThing administrators. Charts for pilots are
+              on the radar: select an airport and open its charts.
+            </p>
+            <Link
+              href="/radar"
+              className="rounded-lg bg-cyan-500/20 px-6 py-2.5 text-sm font-medium text-cyan-300 transition-colors hover:bg-cyan-500/30"
+            >
+              Back to the radar
+            </Link>
+          </div>
+        </main>
       </div>
     );
   }

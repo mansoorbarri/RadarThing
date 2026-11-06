@@ -912,7 +912,7 @@ export function AircraftImagesTab({
             type="text"
             value={imageSearchQuery}
             onChange={(e) => setImageSearchQuery(e.target.value)}
-            placeholder="Search by airline, aircraft, Discord username, Convex ID..."
+            placeholder="Search by airline, aircraft, Discord username, Convex ID…"
             className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
           />
         </div>

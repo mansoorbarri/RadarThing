@@ -52,7 +52,7 @@ export const planRows: PlanRow[] = [
   {
     feature: "Pilot stats",
     free: "Basic totals",
-    pro: "Top routes, airports and total flight time",
+    pro: "Top aircraft, routes, airports and total flight time",
   },
   {
     feature: "Airport charts",

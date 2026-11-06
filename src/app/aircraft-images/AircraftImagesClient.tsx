@@ -263,8 +263,12 @@ export default function AircraftImagesClient({
     } else {
       if (!formData.airlineIata)
         errors.airlineIata = "Enter the airline's 2-letter IATA code.";
+      else if (!/^[A-Z0-9]{2}$/.test(formData.airlineIata))
+        errors.airlineIata = "IATA codes are 2 characters, e.g. BA.";
       if (!formData.airlineIcao)
         errors.airlineIcao = "Enter the airline's 3-letter ICAO code.";
+      else if (!/^[A-Z]{3}$/.test(formData.airlineIcao))
+        errors.airlineIcao = "ICAO codes are 3 letters, e.g. BAW.";
     }
     if (!formData.aircraftType)
       errors.aircraftType = "Enter the aircraft type, e.g. A320.";
@@ -391,21 +395,21 @@ export default function AircraftImagesClient({
         return (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            Validating...
+            Validating…
           </>
         );
       case "uploading":
         return (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            Uploading Image...
+            Uploading Image…
           </>
         );
       case "submitting":
         return (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            Submitting...
+            Submitting…
           </>
         );
       case "success":
@@ -496,7 +500,7 @@ export default function AircraftImagesClient({
             <input
               type="search"
               aria-label="Search aircraft images by airline, aircraft type or Discord username"
-              placeholder="Search by airline, aircraft type, discord username..."
+              placeholder="Search by airline, aircraft type, discord username…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"

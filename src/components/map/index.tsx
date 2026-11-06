@@ -189,6 +189,9 @@ interface MapComponentProps {
   onConflictReview?: (aircrafts: PositionUpdate[]) => void;
   onResetMapView?: () => void;
   hideUi?: boolean;
+  /** Phones: show the weather panel in a bottom sheet. */
+  showMobileWeather?: boolean;
+  onCloseMobileWeather?: () => void;
   importedFlightPlan?: ImportedFlightPlan | null;
   flightDisplayModeRequest?: FlightDisplayMode;
   onFlightDisplayModeChange?: (mode: FlightDisplayMode) => void;
@@ -236,6 +239,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onConflictReview,
   onResetMapView,
   hideUi = false,
+  showMobileWeather = false,
+  onCloseMobileWeather,
   importedFlightPlan = null,
   flightDisplayModeRequest,
   onFlightDisplayModeChange,
@@ -1093,10 +1098,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
     mapRefs.mapReady,
   ]);
 
-  const { metar, status: metarStatus } = useMetarOverlay(
-    mapRefs.mapInstance,
-    icaoInput || selectedAirport?.icao,
-  );
+  const {
+    metar,
+    status: metarStatus,
+    retry: retryMetar,
+  } = useMetarOverlay(mapRefs.mapInstance, icaoInput || selectedAirport?.icao);
 
   const { atis } = useAtisOverlay(icaoInput || selectedAirport?.icao);
 
@@ -1433,7 +1439,47 @@ const MapComponent: React.FC<MapComponentProps> = ({
         </div>
       ) : null}
 
-      {/* Hide METAR panel on mobile */}
+      {/* Phones: METAR, ATIS and NOTAMs in a bottom sheet from the dock. */}
+      {isMobile && !hideUi && showMobileWeather && (
+        <div
+          role="dialog"
+          aria-label="Airport weather"
+          className="fixed inset-x-0 bottom-0 z-[10018] max-h-[70dvh] overflow-y-auto rounded-t-2xl border-t border-white/10 bg-[#0a1219] px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+          onKeyDown={(event) => {
+            if (event.key === "Escape") onCloseMobileWeather?.();
+          }}
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-white">
+              Airport weather
+            </h2>
+            <button
+              type="button"
+              onClick={onCloseMobileWeather}
+              aria-label="Close airport weather"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-slate-300 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+            >
+              <span aria-hidden="true" className="text-xl leading-none">
+                ×
+              </span>
+            </button>
+          </div>
+          <MetarPanel
+            variant="sheet"
+            icaoInput={icaoInput}
+            onChange={setIcaoInput}
+            selectedAirportIcao={selectedAirport?.icao}
+            metarText={metar?.raw || null}
+            metarStatus={metarStatus}
+            onRetryMetar={retryMetar}
+            atisText={atis?.datis || null}
+            atisCode={atis?.code || null}
+            notams={notamData?.notams || null}
+            notamCount={notamData?.count || 0}
+            isPro={isProUser}
+          />
+        </div>
+      )}
       {!isMobile && !hideUi && (
         <MetarPanel
           icaoInput={icaoInput}
@@ -1441,6 +1487,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           selectedAirportIcao={selectedAirport?.icao}
           metarText={metar?.raw || null}
           metarStatus={metarStatus}
+          onRetryMetar={retryMetar}
           atisText={atis?.datis || null}
           atisCode={atis?.code || null}
           notams={notamData?.notams || null}
@@ -1517,7 +1564,7 @@ function ConflictMonitorPanel({
               <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />
             </span>
             <span className="font-mono text-[11px] font-bold text-cyan-300">
-              {alerts.length} ACTIVE
+              {alerts.length} active
             </span>
           </div>
         </div>
@@ -1562,7 +1609,7 @@ function ConflictMonitorPanel({
           <div className="mb-2 flex items-center justify-between gap-2">
             <div>
               <p className="font-mono text-[11px] tracking-[0.18em] text-cyan-300/80 uppercase">
-                Recent Events
+                Recent events
               </p>
               <p className="text-[11px] text-white/60">
                 Keeps the latest live alerts for quick review.

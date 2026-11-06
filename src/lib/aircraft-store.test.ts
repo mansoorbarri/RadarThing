@@ -193,3 +193,31 @@ test("a route whose last point was rounded still keeps the newer live points", (
     globalThis.cancelAnimationFrame = originalCancel;
   }
 });
+
+test("joining a route keeps only live points after the latest visit to its end", () => {
+  const originalRequest = globalThis.requestAnimationFrame;
+  const originalCancel = globalThis.cancelAnimationFrame;
+  globalThis.requestAnimationFrame = () => 1;
+  globalThis.cancelAnimationFrame = () => undefined;
+  try {
+    activeAircraft.clear();
+    // Out and back past 6.0: the earlier pass is an exact match, the later
+    // one is 0.004 away.
+    for (const lat of [6.0, 6.05, 6.1, 6.05, 6.004, 5.95]) {
+      activeAircraft.set(aircraft.id, { ...aircraft, lat });
+    }
+    activeAircraft.mergeFlightPath(aircraft.id, [
+      [5.9, 20],
+      [6.0, 20],
+    ]);
+    assert.deepEqual(
+      activeAircraft.get(aircraft.id)!.flightPath!.map(([lat]) => lat),
+      [5.9, 6.0, 5.95],
+    );
+  } finally {
+    activeAircraft.clear();
+    activeAircraft.destroy();
+    globalThis.requestAnimationFrame = originalRequest;
+    globalThis.cancelAnimationFrame = originalCancel;
+  }
+});

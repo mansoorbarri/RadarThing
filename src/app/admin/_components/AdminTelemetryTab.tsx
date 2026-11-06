@@ -29,8 +29,8 @@ const ACTION_LABELS = {
   edit: "Edited",
   delete: "Removed",
   create: "Created",
-  grant_pro: "Granted PRO",
-  revoke_pro: "Revoked PRO",
+  grant_pro: "Granted Pro",
+  revoke_pro: "Revoked Pro",
   warn: "Warned user",
   ban: "Banned user",
   revoke_warning: "Revoked warning",
@@ -41,7 +41,7 @@ const RESOURCE_LABELS = {
   aircraft_image: "Aircraft image",
   airport_chart: "Airport chart",
   virtual_airline: "Virtual airline",
-  pro_access: "PRO access",
+  pro_access: "Pro access",
   user_moderation: "User moderation",
 } as const;
 
@@ -234,7 +234,7 @@ export function AdminTelemetryTab({
             type="text"
             value={userFilter}
             onChange={(event) => setUserFilter(event.target.value)}
-            placeholder="Filter by user, email, Discord, or Clerk ID..."
+            placeholder="Filter by user, email, Discord, or Clerk ID…"
             className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus:bg-white/[0.07]"
           />
         </div>

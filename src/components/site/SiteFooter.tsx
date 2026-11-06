@@ -9,6 +9,7 @@ const FOOTER_GROUPS = [
       { href: "/leaderboard", label: "Leaderboard" },
       { href: "/aircraft-images", label: "Aircraft gallery" },
       { href: "/pricing", label: "Pricing" },
+      { href: "/dashboard", label: "Your dashboard" },
       // Redirects to the .user.js file, which Tampermonkey intercepts, so it
       // must be a normal anchor rather than a client-side route.
       { href: "/userscript", label: "Install the GeoFS script", native: true },

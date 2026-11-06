@@ -17,7 +17,6 @@ import { api } from "../../../convex/_generated/api";
 import { type Id } from "../../../convex/_generated/dataModel";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
-import { FirstVisitTourHint } from "~/components/onboarding/FirstVisitTourHint";
 import { activeAircraft } from "~/lib/aircraft-store";
 import { type FlightRoutePoint } from "~/lib/flightTelemetry";
 import {
@@ -93,7 +92,6 @@ import { WhatsNew } from "~/components/ui/WhatsNew";
 import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
 import { MobileDrawer } from "~/components/ui/MobileDrawer";
 import { ShortcutsMenu } from "~/components/ui/ShortcutsMenu";
-import { RadarGuide } from "~/components/onboarding/RadarGuide";
 import { TrialStatusBanner } from "~/components/ui/trial-status-banner";
 import {
   AirportsIcon,
@@ -110,6 +108,7 @@ import {
   CircleHelp,
   Clock3,
   Eye,
+  CloudSun,
   FileText,
   Plane,
   Radar,
@@ -121,6 +120,21 @@ import {
 import { openPrivacySettings } from "~/components/privacy/PrivacyConsentProvider";
 import { UnitPreferencesProvider } from "~/hooks/useUnitPreferences";
 import { TimeDisplayPreferenceProvider } from "~/hooks/useTimeDisplayPreference";
+
+// The tour and its first-visit offer are only needed once; keep them out of
+// the radar's initial bundle.
+const RadarGuide = dynamic(
+  () =>
+    import("~/components/onboarding/RadarGuide").then((mod) => mod.RadarGuide),
+  { ssr: false },
+);
+const FirstVisitTourHint = dynamic(
+  () =>
+    import("~/components/onboarding/FirstVisitTourHint").then(
+      (mod) => mod.FirstVisitTourHint,
+    ),
+  { ssr: false },
+);
 
 const DynamicMapComponent = dynamic(() => import("~/components/map"), {
   ssr: false,
@@ -180,6 +194,7 @@ function ATCPageContent() {
     error: streamError,
     lastMessageAgeSeconds,
     reconnectNow,
+    retryInSeconds,
   } = useAircraftStream();
   const aircrafts = useAirlineTelephony(streamedAircrafts);
   const {
@@ -200,6 +215,7 @@ function ATCPageContent() {
   const shouldShowRadarGuide = useQuery(api.users.shouldShowRadarGuide);
   const completeRadarGuide = useMutation(api.users.completeRadarGuide);
   const [isRadarGuideOpen, setIsRadarGuideOpen] = useState(false);
+  const [showMobileWeather, setShowMobileWeather] = useState(false);
   const hasOpenedRadarGuide = useRef(false);
 
   const finishRadarGuide = useCallback(() => {
@@ -963,19 +979,29 @@ function ATCPageContent() {
 
       // "/" jumps to search and "?" lists the shortcuts, as on most web apps.
       const hasModifier = e.ctrlKey || e.metaKey || e.altKey;
-      if (!isEditableContext && !hasModifier && e.key === "/") {
+      // Never pull focus out of an open dialog to the page behind it.
+      const dialogOpen = Boolean(
+        document.querySelector('[aria-modal="true"], dialog[open]'),
+      );
+      const canUseGlobalShortcut =
+        !isEditableContext && !hasModifier && !dialogOpen;
+      if (canUseGlobalShortcut && e.key === "/") {
         e.preventDefault();
         if (isPhone) {
           setShowMobileSearch(true);
         } else {
           setIsUiHidden(false);
-          document
-            .querySelector<HTMLInputElement>('input[role="combobox"]')
-            ?.focus();
+          // If the UI was hidden, the search box only exists after the next
+          // render, so focus it on the following frame.
+          requestAnimationFrame(() =>
+            document
+              .querySelector<HTMLInputElement>('input[role="combobox"]')
+              ?.focus(),
+          );
         }
         return;
       }
-      if (!isEditableContext && !hasModifier && e.key === "?") {
+      if (canUseGlobalShortcut && e.key === "?") {
         e.preventDefault();
         setIsUiHidden(false);
         setShowShortcutsMenu(true);
@@ -1208,6 +1234,17 @@ function ATCPageContent() {
           active: Boolean(importedFlightPlan),
           onClick: handleFlightPlanImportClick,
         },
+        ...(isPhone
+          ? [
+              {
+                id: "weather",
+                label: "Weather",
+                icon: <CloudSun size={18} strokeWidth={1.8} />,
+                active: showMobileWeather,
+                onClick: () => setShowMobileWeather((current) => !current),
+              },
+            ]
+          : []),
         {
           id: "file-flight",
           label: "File flight",
@@ -1553,6 +1590,7 @@ function ATCPageContent() {
                 lastMessageAgeSeconds={lastMessageAgeSeconds}
                 error={streamError}
                 onReconnect={reconnectNow}
+                retryInSeconds={retryInSeconds}
               />
               {/* On narrow phones the header has no room; the tour is offered
                   on first visit and stays in the dock's Help section. */}
@@ -1650,6 +1688,8 @@ function ATCPageContent() {
             onConflictReview={handleConflictReview}
             onResetMapView={handleMapReset}
             hideUi={isUiHidden}
+            showMobileWeather={showMobileWeather}
+            onCloseMobileWeather={() => setShowMobileWeather(false)}
             importedFlightPlan={importedFlightPlan}
             flightDisplayModeRequest={flightDisplayMode}
             onFlightDisplayModeChange={setFlightDisplayMode}
@@ -2135,15 +2175,26 @@ function ATCPageContent() {
           aircrafts.length === 0 && (
             <p
               role="status"
-              className={`pointer-events-auto fixed left-1/2 z-[10011] w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-xl border border-white/10 bg-black/80 px-4 py-2.5 text-center text-sm text-slate-200 shadow-lg shadow-black/40 ${isPhone ? "bottom-20" : "bottom-24"}`}
+              className={`pointer-events-auto fixed left-1/2 z-[10011] w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-xl border border-white/10 bg-black/80 px-4 py-2.5 text-center text-sm text-slate-200 shadow-lg shadow-black/40 ${isPhone ? "bottom-[calc(5rem+env(safe-area-inset-bottom))]" : "bottom-24"}`}
             >
               No pilots are broadcasting right now.{" "}
+              {/* A plain link: /userscript redirects to the .user.js file,
+                  which Tampermonkey intercepts on a full navigation. */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+              <a
+                href="/userscript"
+                className="font-semibold text-cyan-300 underline underline-offset-4 hover:text-cyan-200"
+              >
+                Install the script
+              </a>{" "}
+              to put your own flight on the radar, or{" "}
               <Link
                 href="/guides/getting-started"
                 className="font-semibold text-cyan-300 underline underline-offset-4 hover:text-cyan-200"
               >
-                Put your own flight on the radar
+                read how
               </Link>
+              .
             </p>
           )}
         <FirstVisitTourHint

@@ -9,6 +9,8 @@ export interface GuideSearchEntry {
   title: string;
   description: string;
   category: string;
+  /** Section headings, so a search can match inside a guide. */
+  sections?: string[];
 }
 
 /** Filters the guides by title, description or section as you type. */
@@ -22,7 +24,7 @@ export function GuideSearch({ guides }: { guides: GuideSearchEntry[] }) {
     if (terms.length === 0) return null;
     return guides.filter((guide) => {
       const haystack =
-        `${guide.title} ${guide.description} ${guide.category}`.toLowerCase();
+        `${guide.title} ${guide.description} ${guide.category} ${(guide.sections ?? []).join(" ")}`.toLowerCase();
       return terms.every((term) => haystack.includes(term));
     });
   }, [guides, query]);
@@ -48,7 +50,16 @@ export function GuideSearch({ guides }: { guides: GuideSearchEntry[] }) {
           className="h-12 w-full border border-white/15 bg-white/[0.03] pr-4 pl-11 text-base text-white placeholder:text-slate-400 focus:border-cyan-300/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
         />
       </div>
-      <div id={resultsId} aria-live="polite">
+      {/* Always present so screen readers announce the count reliably;
+          the list itself isn't read out on every keystroke. */}
+      <p aria-live="polite" className="sr-only">
+        {results
+          ? results.length === 0
+            ? `No guides match ${query.trim()}`
+            : `${results.length} ${results.length === 1 ? "guide" : "guides"} found`
+          : ""}
+      </p>
+      <div id={resultsId}>
         {results && (
           <div className="mt-3 border border-white/10 bg-black/30">
             <p className="border-b border-white/10 px-4 py-2 text-sm text-slate-400">

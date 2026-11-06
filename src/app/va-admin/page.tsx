@@ -691,7 +691,7 @@ export default function VirtualAirlineAdminPage() {
                   {isSavingSettings ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      Saving...
+                      Saving…
                     </>
                   ) : (
                     <>
@@ -806,12 +806,12 @@ export default function VirtualAirlineAdminPage() {
                   {submitStage === "uploading" ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      Uploading...
+                      Uploading…
                     </>
                   ) : submitStage === "submitting" ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      Saving...
+                      Saving…
                     </>
                   ) : submitStage === "success" ? (
                     <>

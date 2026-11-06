@@ -353,7 +353,7 @@ export function FlightHistoryPanel({
                   type="text"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search anything: route, callsign, aircraft, date, time..."
+                  placeholder="Search anything: route, callsign, aircraft, date, time…"
                   className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pr-12 pl-10 text-sm text-white placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
                 />
                 {hasSearchQuery && (
@@ -630,7 +630,7 @@ export function FlightHistoryPanel({
                                 className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 transition-all hover:bg-red-500/20 disabled:cursor-not-allowed disabled:hover:bg-red-500/10 sm:h-8 sm:w-8 sm:opacity-0 sm:group-hover:opacity-100"
                                 title={
                                   deletingFlightId === flight.id
-                                    ? "Deleting flight..."
+                                    ? "Deleting flight…"
                                     : "Delete this flight"
                                 }
                                 aria-label={
@@ -709,7 +709,7 @@ export function FlightHistoryPanel({
                               className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 font-mono text-[11px] tracking-wider text-red-300 uppercase transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:hover:bg-red-500/10"
                               title={
                                 deletingFlightId === flight.id
-                                  ? "Deleting flight..."
+                                  ? "Deleting flight…"
                                   : "Delete this flight"
                               }
                               aria-label={

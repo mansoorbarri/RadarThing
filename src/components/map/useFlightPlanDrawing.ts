@@ -191,7 +191,7 @@ export const useFlightPlanDrawing = ({
           }; background-color: ${
             isRadarMode ? "rgba(0,0,0,0.88)" : "white"
           }; border: ${isRadarMode ? "1px solid rgba(34,211,238,0.65)" : "none"};">
-            <div style="font-size: 10px; color: ${
+            <div style="font-size: 11px; color: ${
               isRadarMode ? "#67e8f9" : "#0f766e"
             }; margin-bottom: 4px;">Imported flight plan</div>
             <strong style="color: ${
@@ -385,7 +385,7 @@ export const useFlightPlanDrawing = ({
               }; background-color: ${
                 isRadarMode ? "rgba(0,0,0,0.8)" : "white"
               }; border: ${isRadarMode ? "1px solid #00ff00" : "none"};">
-                <div style="font-size: 10px; color: ${color}; margin-bottom: 4px;">${aircraft.flightNo || aircraft.callsign}</div>
+                <div style="font-size: 11px; color: ${color}; margin-bottom: 4px;">${aircraft.flightNo || aircraft.callsign}</div>
                 <strong style="color: ${
                   isRadarMode ? "#00ffff" : "#f542e3"
                 }; font-size: 14px;">${wp.ident ?? `WP${wpIndex + 1}`}</strong>

@@ -158,9 +158,14 @@ export default async function GuidePage({ params }: Props) {
           {category ? (
             <span className="text-cyan-300/80">{category.title}</span>
           ) : null}
-          <span aria-hidden="true">·</span>
+          {/* Separators hide on phones, where the row wraps. */}
+          <span aria-hidden="true" className="max-sm:hidden">
+            ·
+          </span>
           <span>{guide.readingMinutes} min read</span>
-          <span aria-hidden="true">·</span>
+          <span aria-hidden="true" className="max-sm:hidden">
+            ·
+          </span>
           <span>
             Updated{" "}
             <time dateTime={guide.updated}>
@@ -175,7 +180,7 @@ export default async function GuidePage({ params }: Props) {
               aria-label="On this page"
               className="my-8 border-l-2 border-cyan-300/40 bg-cyan-300/[0.03] px-5 py-4"
             >
-              <p className="mb-2 font-mono text-xs tracking-widest text-slate-400 uppercase">
+              <p className="!mt-0 !mb-2 font-mono !text-xs !leading-5 tracking-widest !text-slate-400 uppercase">
                 On this page
               </p>
               <ol className="!my-0 !list-none columns-1 gap-8 !pl-0 sm:columns-2">

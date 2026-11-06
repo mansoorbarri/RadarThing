@@ -521,7 +521,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
                   <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-white/65" />
                   <input
                     type="text"
-                    placeholder="Search charts..."
+                    placeholder="Search charts…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full rounded-lg border border-white/10 bg-white/5 py-1.5 pr-8 pl-8 text-[11px] text-white/80 outline-none placeholder:text-white/65 focus:border-cyan-500/30"

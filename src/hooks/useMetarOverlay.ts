@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type L from "leaflet";
 
 interface MetarData {
@@ -25,6 +25,9 @@ export const useMetarOverlay = (
 ) => {
   const [metar, setMetar] = useState<MetarData | null>(null);
   const [status, setStatus] = useState<MetarStatus>("idle");
+  // Bumped by retry() to run the lookup again straight away.
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => setAttempt((value) => value + 1), []);
 
   useEffect(() => {
     setMetar(null);
@@ -78,7 +81,7 @@ export const useMetarOverlay = (
       clearInterval(interval);
       controller?.abort();
     };
-  }, [icao]);
+  }, [icao, attempt]);
 
-  return { metar, status };
+  return { metar, status, retry };
 };

@@ -338,7 +338,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       <div className="flex items-center gap-2 px-1">
         <div className="h-[1px] flex-1 bg-white/20" />
         <span className="font-mono text-[11px] font-black tracking-[0.3em] text-cyan-400 uppercase">
-          Aircraft Control
+          Aircraft control
         </span>
         <div className="h-[1px] flex-1 bg-white/20" />
       </div>
