@@ -5,6 +5,7 @@ import { SiteHeader } from "~/components/site/SiteHeader";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { LeaderboardSkeleton } from "./LeaderboardSkeleton";
 import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import {
@@ -826,32 +827,6 @@ export default function LeaderboardClient({
         </section>
       </main>
       <SiteFooter />
-    </div>
-  );
-}
-
-function LeaderboardSkeleton() {
-  return (
-    <div className="space-y-2">
-      {[...Array(8)].map((_, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3 sm:gap-4 sm:p-4"
-        >
-          <div className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-white/10 sm:h-9 sm:w-9" />
-          <div className="flex-1">
-            <div className="h-4 w-20 animate-pulse rounded bg-white/10 sm:w-28" />
-          </div>
-          <div className="h-4 w-14 animate-pulse rounded bg-white/10 sm:hidden" />
-          <div className="hidden items-center gap-6 sm:flex">
-            <div className="h-4 w-12 animate-pulse rounded bg-white/10" />
-            <div className="h-4 w-16 animate-pulse rounded bg-white/10" />
-            <div className="h-4 w-14 animate-pulse rounded bg-white/10" />
-            <div className="h-4 w-12 animate-pulse rounded bg-white/10" />
-            <div className="h-4 w-14 animate-pulse rounded bg-white/10" />
-          </div>
-        </div>
-      ))}
     </div>
   );
 }

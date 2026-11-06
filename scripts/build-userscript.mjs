@@ -62,6 +62,7 @@ function buildBundle(sourceBlocks) {
 
   try {
     window.__radarThingVersion = ${JSON.stringify(version)};
+    window.__radarThingSiteUrl = ${JSON.stringify(siteUrl)};
 
 ${wrappedSources}
 

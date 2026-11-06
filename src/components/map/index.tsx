@@ -54,6 +54,7 @@ import { useWeatherOverlayLayer } from "~/hooks/useWeatherOverlayLayer";
 import { useWaypointOverlayLayer } from "~/hooks/useWaypointOverlayLayer";
 import { MetarPanel } from "./MetarPanel";
 import { FocusTrap } from "~/components/ui/focus-trap";
+import { useBackToClose } from "~/hooks/useBackToClose";
 import { RadarSettings } from "~/components/atc/radarSettings";
 import { MapSettingsSidebar } from "~/components/map/MapSettingsSidebar";
 import { Analytics } from "~/lib/analytics";
@@ -1099,6 +1100,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
     mapRefs.mapReady,
   ]);
 
+  // Android Back closes the phone weather sheet.
+  useBackToClose(isMobile && showMobileWeather, () => onCloseMobileWeather?.());
+
   const {
     metar,
     status: metarStatus,
@@ -1445,7 +1449,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         <>
           <div
             aria-hidden="true"
-            className="fixed inset-0 z-[10013] bg-black/40"
+            className="fixed inset-0 z-[10018] bg-black/40"
             onClick={onCloseMobileWeather}
           />
           <FocusTrap
@@ -1453,11 +1457,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
             aria-modal="true"
             aria-label="Airport weather"
             onEscape={onCloseMobileWeather}
-            className="fixed inset-x-0 bottom-0 z-[10014] max-h-[70dvh] overflow-y-auto rounded-t-2xl border-t border-white/10 bg-[#0a1219] px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+            className="fixed inset-x-0 bottom-0 z-[10019] max-h-[70dvh] overflow-y-auto rounded-t-2xl border-t border-white/10 bg-[#0a1219] px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
           >
-            <div className="mb-3 flex justify-center" aria-hidden="true">
-              <div className="h-1 w-10 rounded-full bg-white/20" />
-            </div>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-white">
                 Airport weather

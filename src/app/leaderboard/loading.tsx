@@ -1,5 +1,5 @@
-import { PageSkeleton } from "~/components/site/PageSkeleton";
+import { LeaderboardPageSkeleton } from "./LeaderboardSkeleton";
 
 export default function Loading() {
-  return <PageSkeleton label="Loading the leaderboard…" />;
+  return <LeaderboardPageSkeleton />;
 }

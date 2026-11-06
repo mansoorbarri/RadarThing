@@ -305,7 +305,7 @@ export function FlightHistoryPanel({
           className="flex w-full cursor-pointer items-center justify-between p-6"
         >
           <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
-            RECENT FLIGHTS
+            Recent flights
           </h3>
           <div className="flex items-center gap-3">
             <span className="font-mono text-xs text-slate-400">
@@ -319,7 +319,7 @@ export function FlightHistoryPanel({
       ) : (
         <div className="flex flex-col gap-2 border-b border-white/5 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
-            RECENT FLIGHTS
+            Recent flights
           </h3>
           <span className="font-mono text-xs text-slate-400">
             {FLIGHT_HISTORY_PAGE_SIZE} per page

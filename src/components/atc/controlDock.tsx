@@ -49,6 +49,33 @@ export function ControlDock({
   const panelRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
+  // Like any menu: Escape or a click outside closes it, focus goes back to
+  // the Menu button.
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      setOpen(false);
+      toggleRef.current?.focus();
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (
+        panelRef.current?.contains(target) ||
+        toggleRef.current?.contains(target)
+      )
+        return;
+      setOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown, true);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, true);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [open]);
+
   useEffect(() => {
     try {
       const stored: unknown = JSON.parse(
@@ -227,6 +254,7 @@ export function ControlDock({
         <button
           type="button"
           ref={toggleRef}
+          data-dock-toggle=""
           // Matches the visible "Menu" label (WCAG 2.5.3).
           aria-label={open ? "Close menu" : "Menu"}
           aria-expanded={open}

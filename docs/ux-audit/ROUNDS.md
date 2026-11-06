@@ -53,3 +53,4 @@ after every round.
 | 1 | `895561f` (after merging main) | 8.0 | 8.1 | 8.0 |
 | 2 | `5b6ba9e` (round 1 fixes) | 8.4 | 8.5 | 8.3 |
 | 3 | `274e681` (round 2 fixes) | 8.7 | 8.7 | 8.5 |
+| 4 | `056e125` (round 3 fixes) | 8.7 | 8.8 | 8.8 |

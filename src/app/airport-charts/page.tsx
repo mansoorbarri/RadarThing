@@ -349,7 +349,7 @@ export default function AirportChartsPage() {
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
               <Map className="h-4 w-4 text-cyan-400" />
               <span className="font-mono text-sm text-cyan-400">
-                AIRPORT CHARTS
+                Airport charts
               </span>
             </div>
             <h1 className="text-3xl font-bold text-white">Airport charts</h1>
@@ -625,7 +625,7 @@ export default function AirportChartsPage() {
                 htmlFor="chart-upload-discord"
                 className="mb-2 block font-mono text-xs text-slate-300"
               >
-                YOUR DISCORD USERNAME (OPTIONAL)
+                Your Discord username (optional)
               </label>
               <input
                 id="chart-upload-discord"
@@ -669,7 +669,7 @@ export default function AirportChartsPage() {
 
             <div>
               <label className="mb-2 block font-mono text-xs text-slate-400">
-                SELECT CHART FILES
+                Select chart files
                 {hasSelectedFiles && uploaderRef.current && (
                   <span className="ml-2 rounded-full bg-cyan-500/20 px-2 py-0.5 text-cyan-400">
                     {uploaderRef.current.fileCount()} file
@@ -853,7 +853,7 @@ function GallerySkeleton() {
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
               <Map className="h-4 w-4 text-cyan-400" />
               <span className="font-mono text-sm text-cyan-400">
-                AIRPORT CHARTS
+                Airport charts
               </span>
             </div>
             <Skeleton className="mt-2 h-9 w-48" />

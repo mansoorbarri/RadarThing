@@ -36,7 +36,7 @@ The installed script loads the latest RadarThing runtime each time you open GeoF
 
 Open [GeoFS](https://www.geo-fs.com/geofs.php) and sign in to your GeoFS account. If GeoFS was already open when you installed the script, reload the page.
 
-To confirm the script is running, open the Tampermonkey menu while on the GeoFS tab. The RadarThing script should be listed and enabled.
+To confirm the script is running, open the Tampermonkey menu while on the GeoFS tab. The RadarThing script should be listed and enabled, with its own shortcuts underneath: **Show or hide the RadarThing panel**, **Open airport charts**, **Reset panel position** and **Open the RadarThing radar**. If you can see those, it's running.
 
 ## Step 4: Fill in the RadarThing panel and start tracking
 

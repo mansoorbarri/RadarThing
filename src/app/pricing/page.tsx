@@ -382,7 +382,7 @@ export default function PricingPage() {
           </aside>
 
           <section className="lg:col-start-1 lg:row-start-2">
-            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-3 lg:mt-8">
               <SignalCard
                 title="Aviation weather"
                 value="Live"

@@ -8,7 +8,14 @@ export function DashboardSkeleton() {
     <div className="dashboard-theme-surface bg-site min-h-screen text-white">
       <SiteHeader tone="themed" />
 
-      <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
+      <main
+        id="main-content"
+        aria-busy="true"
+        className="mx-auto max-w-6xl px-6 py-12"
+      >
+        <p role="status" className="sr-only">
+          Loading your dashboard…
+        </p>
         {/* Profile Header */}
         <div className="mb-10">
           <div className="mb-2 flex items-center gap-4">

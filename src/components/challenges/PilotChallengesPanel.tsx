@@ -45,7 +45,7 @@ export function PilotChallengesPanel({ userId }: { userId: Id<"users"> }) {
         <div className="flex items-center gap-2">
           <Flag className="h-4 w-4 text-cyan-400" />
           <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
-            ACTIVE CHALLENGES
+            Active challenges
           </h3>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

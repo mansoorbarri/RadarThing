@@ -463,7 +463,7 @@ export default function AircraftImagesClient({
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 sm:px-4">
               <Plane className="h-4 w-4 text-cyan-400" />
               <span className="font-mono text-xs text-cyan-400 sm:text-sm">
-                AIRCRAFT GALLERY
+                Aircraft gallery
               </span>
             </div>
             <h1 className="text-3xl leading-tight font-bold text-white sm:text-4xl">
@@ -851,7 +851,7 @@ export default function AircraftImagesClient({
                 id="military-aircraft-label"
                 className="font-mono text-xs text-slate-300"
               >
-                MILITARY AIRCRAFT
+                Military aircraft
               </span>
             </div>
 
@@ -1065,7 +1065,7 @@ export default function AircraftImagesClient({
 
             <div>
               <label className="mb-2 block font-mono text-xs text-slate-400">
-                SELECT IMAGE
+                Select image
               </label>
               <ImageUploader
                 ref={uploaderRef}

@@ -1,5 +1,7 @@
 "use client";
 
+import { FocusTrap } from "~/components/ui/focus-trap";
+
 import Image from "next/image";
 import type { AircraftImage } from "~/app/actions/aircraft-images";
 
@@ -26,8 +28,17 @@ export function ConflictModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="border-border bg-card text-card-foreground w-full max-w-4xl rounded-2xl border p-6 shadow-2xl">
-        <h3 className="text-foreground mb-2 text-lg font-semibold">
+      <FocusTrap
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="conflictModal-title"
+        onEscape={onCancel}
+        className="border-border bg-card text-card-foreground w-full max-w-4xl rounded-2xl border p-6 shadow-2xl"
+      >
+        <h3
+          id="conflictModal-title"
+          className="text-foreground mb-2 text-lg font-semibold"
+        >
           Image Conflict Detected
         </h3>
         <p className="text-muted-foreground mb-6 text-sm">
@@ -79,6 +90,7 @@ export function ConflictModal({
                 {new Date(pendingImage.createdAt).toLocaleDateString()}
               </p>
               <button
+                type="button"
                 onClick={onKeepPending}
                 disabled={isLoading}
                 className="mt-4 w-full cursor-pointer rounded-lg bg-emerald-500/15 py-2.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-500/25 disabled:cursor-not-allowed disabled:opacity-50 dark:text-emerald-400"
@@ -127,6 +139,7 @@ export function ConflictModal({
                   : "N/A"}
               </p>
               <button
+                type="button"
                 onClick={onKeepExisting}
                 disabled={isLoading}
                 className="mt-4 w-full cursor-pointer rounded-lg bg-blue-500/15 py-2.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-500/25 disabled:cursor-not-allowed disabled:opacity-50 dark:text-blue-400"
@@ -139,6 +152,7 @@ export function ConflictModal({
 
         <div className="flex justify-center">
           <button
+            type="button"
             onClick={onCancel}
             disabled={isLoading}
             className="border-border text-muted-foreground hover:bg-muted cursor-pointer rounded-lg border px-6 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
@@ -146,7 +160,7 @@ export function ConflictModal({
             Cancel
           </button>
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

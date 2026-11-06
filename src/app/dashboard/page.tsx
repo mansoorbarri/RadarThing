@@ -247,7 +247,9 @@ export default function DashboardPage() {
       await updateDiscordUsername({ clerkId, discordUsername: undefined });
       toast.success("Discord disconnected");
     } catch {
-      toast.error("Failed to disconnect Discord");
+      toast.error(
+        "Couldn't disconnect Discord. Check your connection and try again.",
+      );
     } finally {
       setDiscordLoading(false);
     }
@@ -906,10 +908,13 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-sm">
                       {proLoading ? (
-                        <span
-                          aria-label="Loading plan"
-                          className="inline-block h-4 w-12 animate-pulse rounded bg-white/10 align-middle motion-reduce:animate-none"
-                        />
+                        <>
+                          <span
+                            aria-hidden="true"
+                            className="inline-block h-4 w-12 animate-pulse rounded bg-white/10 align-middle motion-reduce:animate-none"
+                          />
+                          <span className="sr-only">Loading plan…</span>
+                        </>
                       ) : isPro ? (
                         <span className="text-emerald-400">Pro</span>
                       ) : (
@@ -1239,9 +1244,11 @@ export default function DashboardPage() {
 
       <AlertDialog
         open={confirmDiscordDisconnect}
-        onOpenChange={setConfirmDiscordDisconnect}
+        onOpenChange={(open) => {
+          if (!discordLoading) setConfirmDiscordDisconnect(open);
+        }}
       >
-        <AlertDialogContent className="border-white/10 bg-[#0a0f14]">
+        <AlertDialogContent className="bg-site border-white/10">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">
               Disconnect Discord?
@@ -1257,10 +1264,28 @@ export default function DashboardPage() {
               Keep connected
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => void disconnectDiscord()}
+              onClick={(event) => {
+                // Stay open until the request finishes, so the result is clear.
+                event.preventDefault();
+                void disconnectDiscord().finally(() =>
+                  setConfirmDiscordDisconnect(false),
+                );
+              }}
+              disabled={discordLoading}
+              aria-busy={discordLoading}
               className="border border-red-500/30 bg-red-500/85 text-white hover:bg-red-500"
             >
-              Disconnect
+              {discordLoading ? (
+                <>
+                  <Loader2
+                    className="h-4 w-4 animate-spin"
+                    aria-hidden="true"
+                  />
+                  Disconnecting…
+                </>
+              ) : (
+                "Disconnect"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1317,10 +1342,13 @@ function StatCard({
         {label}
       </div>
       {loading ? (
-        <div
-          aria-label="Loading"
-          className="h-8 w-20 animate-pulse rounded bg-white/10 motion-reduce:animate-none"
-        />
+        <>
+          <div
+            aria-hidden="true"
+            className="h-8 w-20 animate-pulse rounded bg-white/10 motion-reduce:animate-none"
+          />
+          <span className="sr-only">Loading…</span>
+        </>
       ) : locked ? (
         <div className="flex items-center gap-2">
           <Lock className="h-4 w-4 text-slate-400" aria-hidden="true" />

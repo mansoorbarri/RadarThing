@@ -192,7 +192,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
 
           <div>
             <label className="mb-2 block font-mono text-xs text-slate-400">
-              SELECT CHART FILES
+              Select chart files
               {hasSelectedFiles && uploaderRef.current && (
                 <span className="ml-2 rounded-full bg-cyan-500/20 px-2 py-0.5 text-cyan-400">
                   {uploaderRef.current.fileCount()} file

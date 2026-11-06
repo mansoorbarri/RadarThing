@@ -68,6 +68,16 @@
   function executeCommand(cmd) {
     const geofs = window.geofs;
     if (!geofs?.autopilot || !geofs?.aircraft?.instance) {
+      // GeoFS is still loading: hold the command and replay it shortly,
+      // and only report a failure if the aircraft never appears.
+      if ((cmd.__attempts ?? 0) < 30) {
+        setTimeout(
+          () =>
+            executeCommand({ ...cmd, __attempts: (cmd.__attempts ?? 0) + 1 }),
+          1000,
+        );
+        return;
+      }
       console.warn("[RadarThing] Cannot execute command - GeoFS not ready");
       window.dispatchEvent(
         new CustomEvent("radarthing-command-executed", {
@@ -302,7 +312,8 @@
             type: cmd.type,
             value: cmd.value,
             success: false,
-            error: err.message,
+            // Pilots see a plain explanation; the details stay in the console.
+            error: "GeoFS couldn't apply this change",
           },
         }),
       );

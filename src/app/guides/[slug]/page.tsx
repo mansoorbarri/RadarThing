@@ -121,30 +121,32 @@ export default async function GuidePage({ params }: Props) {
         >
           ← All guides
         </Link>
-        <nav
-          aria-label="Guide navigation"
-          className="mt-6 hidden flex-col gap-7 lg:sticky lg:top-8 lg:flex lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto lg:pb-8"
-        >
-          {categories.map((section) => (
-            <div key={section.id}>
-              <p className="mb-2 font-mono text-[11px] tracking-[0.18em] text-slate-400 uppercase">
-                {section.title}
-              </p>
-              <div className="flex flex-col">
-                {section.guides.map((entry) => (
-                  <Link
-                    key={entry.slug}
-                    href={`/guides/${entry.slug}`}
-                    aria-current={slug === entry.slug ? "page" : undefined}
-                    className={`border-l-2 py-1.5 pl-4 text-sm leading-6 ${slug === entry.slug ? "border-cyan-300 text-cyan-200" : "border-white/10 text-slate-400 hover:border-white/40 hover:text-white"}`}
-                  >
-                    {entry.title}
-                  </Link>
-                ))}
+        <div className="mt-6 hidden lg:sticky lg:top-8 lg:block lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto lg:pb-8">
+          {sections.length >= 3 && (
+            <GuideToc sections={sections} variant="sidebar" />
+          )}
+          <nav aria-label="Guide navigation" className="flex flex-col gap-7">
+            {categories.map((section) => (
+              <div key={section.id}>
+                <p className="mb-2 font-mono text-[11px] tracking-[0.18em] text-slate-400 uppercase">
+                  {section.title}
+                </p>
+                <div className="flex flex-col">
+                  {section.guides.map((entry) => (
+                    <Link
+                      key={entry.slug}
+                      href={`/guides/${entry.slug}`}
+                      aria-current={slug === entry.slug ? "page" : undefined}
+                      className={`border-l-2 py-1.5 pl-4 text-sm leading-6 ${slug === entry.slug ? "border-cyan-300 text-cyan-200" : "border-white/10 text-slate-400 hover:border-white/40 hover:text-white"}`}
+                    >
+                      {entry.title}
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </nav>
+            ))}
+          </nav>
+        </div>
       </aside>
       <div className="min-w-0">
         <p className="mb-6 flex flex-wrap gap-x-3 gap-y-1 font-mono text-xs tracking-wider text-slate-400 uppercase">

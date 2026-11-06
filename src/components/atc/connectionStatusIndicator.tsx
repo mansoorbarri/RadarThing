@@ -6,7 +6,8 @@ interface ConnectionStatusIndicatorProps {
   status: "connecting" | "connected" | "disconnected";
   isMobile: boolean;
   isStale?: boolean;
-  lastMessageAgeSeconds?: number | null;
+  /** When the last stream message arrived; the pill counts its own age. */
+  lastMessageAt?: number | null;
   error?: string | null;
   onReconnect?: () => void;
   /** When the next automatic reconnect happens, for the countdown. */
@@ -19,11 +20,14 @@ export const ConnectionStatusIndicator: React.FC<
   status,
   isMobile,
   isStale = false,
-  lastMessageAgeSeconds,
+  lastMessageAt,
   error,
   onReconnect,
   nextRetryAt,
 }) => {
+  const lastMessageAgeSeconds = useAgeSeconds(
+    status === "connected" ? (lastMessageAt ?? null) : null,
+  );
   const retryInSeconds = useRetryCountdown(
     status === "disconnected" ? (nextRetryAt ?? null) : null,
   );
@@ -90,21 +94,31 @@ export const ConnectionStatusIndicator: React.FC<
         <button
           type="button"
           onClick={onReconnect}
-          aria-label="Live traffic disconnected. Reconnect now"
+          aria-label={
+            isOffline
+              ? "Live traffic disconnected: no network. Reconnect now"
+              : typeof retryInSeconds === "number" && retryInSeconds > 0
+                ? `Live traffic disconnected, retrying in ${retryInSeconds} seconds. Reconnect now`
+                : "Live traffic disconnected. Reconnect now"
+          }
           title={title || undefined}
           className={clsx(
             baseStyle,
             stateClasses[status],
-            "cursor-pointer gap-1 hover:bg-red-500/15 focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:outline-none",
+            "cursor-pointer gap-1 whitespace-nowrap hover:bg-red-500/15 focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:outline-none",
           )}
         >
           {pillText}
-          {typeof retryInSeconds === "number" && retryInSeconds > 0 && (
-            <span aria-hidden="true" className="tabular-nums">
-              {retryInSeconds}s
-            </span>
-          )}
+          {/* The refresh icon marks the number as "retry in", not "offline
+              for"; the full wording is in the accessible name. */}
           <RotateCw className="h-3 w-3 shrink-0" aria-hidden="true" />
+          {!isOffline &&
+            typeof retryInSeconds === "number" &&
+            retryInSeconds > 0 && (
+              <span aria-hidden="true" className="tabular-nums">
+                {retryInSeconds}s
+              </span>
+            )}
         </button>
       </>
     );
@@ -163,4 +177,16 @@ function useRetryCountdown(target: number | null) {
   }, [target]);
   if (target === null) return null;
   return Math.max(0, Math.ceil((target - now) / 1000));
+}
+
+/** Whole seconds since `since`, ticking once a second while it's set. */
+function useAgeSeconds(since: number | null) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (since === null) return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [since]);
+  if (since === null) return null;
+  return Math.max(0, Math.floor((now - since) / 1000));
 }

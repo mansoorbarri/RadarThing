@@ -1,5 +1,7 @@
 "use client";
 
+import { FocusTrap } from "~/components/ui/focus-trap";
+
 import { AlertTriangle, Trash2, X as XIcon } from "lucide-react";
 
 export type ConfirmVariant = "danger" | "warning";
@@ -33,7 +35,13 @@ export function ConfirmModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="border-border bg-card text-card-foreground w-full max-w-md rounded-2xl border p-6 shadow-2xl">
+      <FocusTrap
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirmModal-title"
+        onEscape={onCancel}
+        className="border-border bg-card text-card-foreground w-full max-w-md rounded-2xl border p-6 shadow-2xl"
+      >
         {/* Icon */}
         <div className="mb-4 flex justify-center">
           <div
@@ -50,7 +58,10 @@ export function ConfirmModal({
         </div>
 
         {/* Title */}
-        <h3 className="text-foreground mb-2 text-center text-lg font-semibold">
+        <h3
+          id="confirmModal-title"
+          className="text-foreground mb-2 text-center text-lg font-semibold"
+        >
           {title}
         </h3>
 
@@ -62,6 +73,7 @@ export function ConfirmModal({
         {/* Buttons */}
         <div className="flex gap-3">
           <button
+            type="button"
             onClick={onCancel}
             disabled={isLoading}
             className="border-border text-muted-foreground hover:bg-muted flex-1 cursor-pointer rounded-lg border py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
@@ -69,6 +81,7 @@ export function ConfirmModal({
             {cancelLabel}
           </button>
           <button
+            type="button"
             onClick={onConfirm}
             disabled={isLoading}
             className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
@@ -87,7 +100,7 @@ export function ConfirmModal({
             )}
           </button>
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

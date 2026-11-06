@@ -30,13 +30,22 @@ export function GuideSearch({ guides }: { guides: GuideSearchEntry[] }) {
         return terms.every((term) => haystack.includes(term));
       })
       .map((guide) => {
-        // When the match is inside the guide, point straight at that section.
+        // Deep-link only for words the title and description don't cover,
+        // and pick the heading that matches most of them.
         const intro = `${guide.title} ${guide.description}`.toLowerCase();
-        const section = terms.every((term) => intro.includes(term))
-          ? undefined
-          : guide.sections?.find((heading) =>
-              terms.some((term) => heading.toLowerCase().includes(term)),
-            );
+        const sectionTerms = terms.filter((term) => !intro.includes(term));
+        let section: string | undefined;
+        let bestScore = 0;
+        for (const heading of guide.sections ?? []) {
+          const lower = heading.toLowerCase();
+          const score = sectionTerms.filter((term) =>
+            lower.includes(term),
+          ).length;
+          if (score > bestScore) {
+            bestScore = score;
+            section = heading;
+          }
+        }
         return { ...guide, matchedSection: section };
       });
   }, [guides, query]);

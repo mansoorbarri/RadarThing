@@ -1,5 +1,7 @@
 "use client";
 
+import { FocusTrap } from "~/components/ui/focus-trap";
+
 export const AIRCRAFT_IMAGE_REJECTION_REASONS = [
   "Low quality image",
   "Image already exists",
@@ -48,8 +50,17 @@ export function RejectModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="border-border bg-card text-card-foreground w-full max-w-md rounded-2xl border p-6 shadow-2xl">
-        <h3 className="text-foreground mb-4 text-lg font-semibold">
+      <FocusTrap
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rejectModal-title"
+        onEscape={onCancel}
+        className="border-border bg-card text-card-foreground w-full max-w-md rounded-2xl border p-6 shadow-2xl"
+      >
+        <h3
+          id="rejectModal-title"
+          className="text-foreground mb-4 text-lg font-semibold"
+        >
           Reject {targetCount} image{targetCount > 1 ? "s" : ""}
         </h3>
         <p className="text-muted-foreground mb-4 text-sm">
@@ -94,12 +105,14 @@ export function RejectModal({
         </div>
         <div className="flex gap-3">
           <button
+            type="button"
             onClick={onCancel}
             className="border-border text-muted-foreground hover:bg-muted flex-1 cursor-pointer rounded-lg border py-2 text-sm transition-colors"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={onConfirm}
             disabled={!hasReason}
             className="flex-1 cursor-pointer rounded-lg bg-red-500/15 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400"
@@ -107,7 +120,7 @@ export function RejectModal({
             Reject
           </button>
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

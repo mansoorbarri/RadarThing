@@ -192,7 +192,8 @@ function ATCPageContent() {
     connectionStatus,
     onlineAirports,
     error: streamError,
-    lastMessageAgeSeconds,
+    lastMessageAt,
+    isStreamStale,
     reconnectNow,
     nextRetryAt,
   } = useAircraftStream();
@@ -706,10 +707,7 @@ function ATCPageContent() {
   const isReplayActive = isViewingHistory || replayFlight !== null;
   const visibleAircrafts = isReplayActive ? [] : filteredAircrafts;
   const visibleLiveAircrafts = isReplayActive ? [] : aircrafts;
-  const isTrafficStale =
-    connectionStatus === "connected" &&
-    lastMessageAgeSeconds !== null &&
-    lastMessageAgeSeconds >= 15;
+  const isTrafficStale = connectionStatus === "connected" && isStreamStale;
 
   // Memoize selected aircraft IDs to avoid recalculating on every render
   const selectedAircraftIds = useMemo(
@@ -1259,7 +1257,16 @@ function ATCPageContent() {
                 label: "Weather",
                 icon: <CloudSun size={18} strokeWidth={1.8} />,
                 active: showMobileWeather,
-                onClick: () => setShowMobileWeather((current) => !current),
+                onClick: () =>
+                  setShowMobileWeather((current) => {
+                    // Opening weather closes the other phone sheets.
+                    if (!current) {
+                      setSelectedAircrafts([]);
+                      setShowMobileSearch(false);
+                      setActiveRightPanel(null);
+                    }
+                    return !current;
+                  }),
               },
             ]
           : []),
@@ -1605,7 +1612,7 @@ function ATCPageContent() {
                 status={connectionStatus}
                 isMobile={isMobile}
                 isStale={isTrafficStale}
-                lastMessageAgeSeconds={lastMessageAgeSeconds}
+                lastMessageAt={lastMessageAt}
                 error={streamError}
                 onReconnect={reconnectNow}
                 nextRetryAt={nextRetryAt}
@@ -1734,7 +1741,10 @@ function ATCPageContent() {
         {!isUiHidden &&
           activeRightPanel === "fids" &&
           (isPhone ? (
-            <MobileSwipeSheet onClose={() => setActiveRightPanel(null)}>
+            <MobileSwipeSheet
+              label="Flight board"
+              onClose={() => setActiveRightPanel(null)}
+            >
               <FIDSPanel
                 aircrafts={visibleLiveAircrafts}
                 onTrack={(ac) => {
@@ -1762,7 +1772,10 @@ function ATCPageContent() {
         {!isUiHidden &&
           activeRightPanel === "filter" &&
           (isPhone ? (
-            <MobileSwipeSheet onClose={() => setActiveRightPanel(null)}>
+            <MobileSwipeSheet
+              label="Callsign filter"
+              onClose={() => setActiveRightPanel(null)}
+            >
               <CallsignFilter
                 aircrafts={visibleLiveAircrafts}
                 selectedCallsigns={selectedCallsigns}
@@ -1786,7 +1799,10 @@ function ATCPageContent() {
         {!isUiHidden &&
           activeRightPanel === "airports" &&
           (isPhone ? (
-            <MobileSwipeSheet onClose={() => setActiveRightPanel(null)}>
+            <MobileSwipeSheet
+              label="Airport activity"
+              onClose={() => setActiveRightPanel(null)}
+            >
               <AirportActivityPanel
                 aircrafts={visibleLiveAircrafts}
                 airports={airports}
@@ -1923,7 +1939,10 @@ function ATCPageContent() {
           showAirportFID &&
           selectedAirport &&
           (isPhone ? (
-            <MobileSwipeSheet onClose={() => setShowAirportFID(false)}>
+            <MobileSwipeSheet
+              label="Airport departures and arrivals"
+              onClose={() => setShowAirportFID(false)}
+            >
               <AirportFIDPanel
                 icao={selectedAirport.icao}
                 airportLat={selectedAirport.lat}
@@ -2227,7 +2246,13 @@ function ATCPageContent() {
         {tourHintEligible && (
           <FirstVisitTourHint
             ready={isAppReady}
-            hidden={isUiHidden || isRadarGuideOpen}
+            hidden={
+              isUiHidden ||
+              isRadarGuideOpen ||
+              showMobileWeather ||
+              showMobileSearch ||
+              selectedAircrafts.length > 0
+            }
             onStartTour={() => setIsRadarGuideOpen(true)}
           />
         )}

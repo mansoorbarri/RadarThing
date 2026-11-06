@@ -258,7 +258,7 @@ export const RadarSettings = ({
       <div className="flex flex-col gap-3 border-b border-white/10 p-3.5 sm:p-4">
         <div>
           <h3 className="text-[14px] font-bold tracking-widest text-white uppercase">
-            RADAR CONFIGURATION
+            Map settings
           </h3>
         </div>
 

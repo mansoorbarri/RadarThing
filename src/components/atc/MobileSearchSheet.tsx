@@ -1,5 +1,7 @@
 "use client";
 
+import { useBackToClose } from "~/hooks/useBackToClose";
+
 import type { ComponentProps } from "react";
 import { SearchBar } from "~/components/atc/searchbar";
 import { FocusTrap } from "~/components/ui/focus-trap";
@@ -29,6 +31,8 @@ export function MobileSearchSheet({
     onClose();
     setSearchTerm("");
   };
+  // Android Back closes the search sheet.
+  useBackToClose(true, dismiss);
 
   return (
     <>

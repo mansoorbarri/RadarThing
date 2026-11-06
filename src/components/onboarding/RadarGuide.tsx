@@ -188,7 +188,7 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "toolkit",
-    eyebrow: "Control dock",
+    eyebrow: "Menu",
     title: "Open the menu",
     description:
       "The Menu button in the bottom-right opens live flight and airport lists, filters, shortcuts, community pages, uploads, and Help.",
@@ -242,6 +242,16 @@ function getFocusableElements(container: HTMLElement) {
       element.getClientRects().length > 0 &&
       element.getAttribute("aria-hidden") !== "true",
   );
+}
+
+// On touch screens the steps should say "Tap", not "Click".
+function forPointer(text: string) {
+  if (
+    typeof window === "undefined" ||
+    !window.matchMedia?.("(pointer: coarse)").matches
+  )
+    return text;
+  return text.replace(/\bClick\b/g, "Tap").replace(/\bclick\b/g, "tap");
 }
 
 export function RadarGuide({
@@ -639,7 +649,7 @@ export function RadarGuide({
             {step.title}
           </h2>
           <p className="mt-3 text-sm leading-6 text-slate-300">
-            {step.description}
+            {forPointer(step.description)}
           </p>
           {step.details && (
             <ul className="mt-4 space-y-2 rounded-xl border border-white/8 bg-black/25 px-4 py-3 text-xs leading-5 text-slate-300">
@@ -654,7 +664,7 @@ export function RadarGuide({
           {step.hint && (
             <div className="mt-4 flex gap-2 rounded-xl border border-cyan-300/10 bg-cyan-300/[0.055] px-3 py-2.5 text-xs leading-5 text-cyan-100/75">
               <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-cyan-300" />
-              <span>{step.hint}</span>
+              <span>{forPointer(step.hint)}</span>
             </div>
           )}
 

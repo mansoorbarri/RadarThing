@@ -146,7 +146,7 @@ export default function PilotClient({
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2">
             <Plane className="h-4 w-4 text-red-400" />
             <span className="font-mono text-sm text-red-400">
-              PILOT NOT FOUND
+              Pilot not found
             </span>
           </div>
           <h1 className="mb-4 text-3xl font-bold text-white">
@@ -297,7 +297,7 @@ export default function PilotClient({
               <div className="rounded-2xl border border-white/10 bg-black/40 p-4 backdrop-blur-xl sm:p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
-                    TOP AIRCRAFT
+                    Top aircraft
                   </h3>
                   {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
                 </div>
@@ -337,7 +337,7 @@ export default function PilotClient({
               <div className="rounded-2xl border border-white/10 bg-black/40 p-4 backdrop-blur-xl sm:p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
-                    TOP ROUTES
+                    Top routes
                   </h3>
                   {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
                 </div>
@@ -375,7 +375,7 @@ export default function PilotClient({
               <div className="rounded-2xl border border-white/10 bg-black/40 p-4 backdrop-blur-xl sm:p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
-                    TOP AIRPORTS
+                    Top airports
                   </h3>
                   {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
                 </div>

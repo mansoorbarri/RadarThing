@@ -170,7 +170,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
               />
             </div>
             <span className="text-muted-foreground font-mono text-xs">
-              MILITARY AIRCRAFT
+              Military aircraft
             </span>
           </label>
 
@@ -254,7 +254,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                     })
                   }
                   placeholder="e.g., UAE"
-                  maxLength={4}
+                  maxLength={3}
                   required
                   disabled={isProcessing}
                   className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
@@ -291,7 +291,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
 
           <div>
             <label className="text-muted-foreground mb-2 block font-mono text-xs">
-              SELECT IMAGE
+              Select image
             </label>
             <ImageUploader
               ref={uploaderRef}

@@ -609,7 +609,7 @@ export default function VirtualAirlineAdminPage() {
               <div className="mt-5 space-y-4">
                 <div>
                   <label className="mb-2 block font-mono text-xs text-slate-400">
-                    VA NAME
+                    VA name
                   </label>
                   <input
                     type="text"
@@ -628,7 +628,7 @@ export default function VirtualAirlineAdminPage() {
 
                 <div>
                   <label className="mb-2 block font-mono text-xs text-slate-400">
-                    CALLSIGN PREFIX
+                    Callsign prefix
                   </label>
                   <input
                     type="text"
@@ -653,7 +653,7 @@ export default function VirtualAirlineAdminPage() {
 
                 <div>
                   <label className="mb-2 block font-mono text-xs text-slate-400">
-                    WEBSITE / DISCORD
+                    Website or Discord
                   </label>
                   <input
                     type="url"
@@ -752,7 +752,7 @@ export default function VirtualAirlineAdminPage() {
               <div className="mt-5 space-y-4">
                 <div>
                   <label className="mb-2 block font-mono text-xs text-slate-400">
-                    AIRCRAFT TYPE
+                    Aircraft type
                   </label>
                   <input
                     type="text"
@@ -769,7 +769,7 @@ export default function VirtualAirlineAdminPage() {
 
                 <div>
                   <label className="mb-2 block font-mono text-xs text-slate-400">
-                    SELECT IMAGE
+                    Select image
                   </label>
                   <ImageUploader
                     ref={uploaderRef}

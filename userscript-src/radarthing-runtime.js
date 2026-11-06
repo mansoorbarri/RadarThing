@@ -555,6 +555,9 @@
   function refreshHotkeyHints() {
     const hint = document.getElementById(HOTKEY_HINT_ID);
     if (hint) hint.textContent = hotkeyHintText();
+    const summary = document.querySelector("[data-shortcut-summary]");
+    if (summary)
+      summary.textContent = `(${toggleKey.toUpperCase()} / ${chartsToggleKey.toUpperCase()})`;
     const hideBtn = document.getElementById(FLIGHT_UI_HIDE_BTN_ID);
     if (hideBtn) {
       hideBtn.title = `Hide panel (${toggleKey.toUpperCase()})`;
@@ -633,8 +636,8 @@
       moveButton.textContent = moveMode ? "Done" : "Move";
       moveButton.setAttribute("aria-pressed", String(moveMode));
       moveButton.title = moveMode
-        ? "Lock panel in place"
-        : "Enable panel moving";
+        ? "Drag the header or use the arrow keys, then press Done"
+        : "Move the panel";
       moveButton.style.background = moveMode
         ? "rgba(34,211,238,0.22)"
         : "transparent";
@@ -650,6 +653,35 @@
       event.stopPropagation();
       moveMode = !moveMode;
       updateMoveMode();
+    });
+
+    // Keyboard moving: while Move is on, arrow keys nudge the panel (hold
+    // Shift for bigger steps) and Escape or Enter finishes.
+    moveButton.addEventListener("keydown", (event) => {
+      if (!moveMode) return;
+      const step = event.shiftKey ? 40 : 10;
+      const delta = {
+        ArrowLeft: [-step, 0],
+        ArrowRight: [step, 0],
+        ArrowUp: [0, -step],
+        ArrowDown: [0, step],
+      }[event.key];
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        moveMode = false;
+        updateMoveMode();
+        return;
+      }
+      if (!delta) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const rect = flightUI.getBoundingClientRect();
+      flightUI.style.left = `${rect.left + delta[0]}px`;
+      flightUI.style.top = `${rect.top + delta[1]}px`;
+      flightUI.style.right = "auto";
+      clampFlightUiToViewport();
+      saveFlightUiPosition();
     });
 
     resetButton.addEventListener("click", (event) => {
@@ -1004,9 +1036,9 @@
     const close = document.createElement("button");
     close.type = "button";
     close.setAttribute("aria-label", "Dismiss notification");
-    close.textContent = "×";
+    close.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="display:block"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`;
     close.style.cssText =
-      "margin-left:8px;width:24px;height:24px;flex:none;padding:0;border:0;border-radius:6px;background:transparent;color:rgba(255,255,255,0.8);font:400 18px/1 system-ui,sans-serif;cursor:pointer;";
+      "margin-left:8px;width:32px;height:32px;display:grid;place-items:center;flex:none;padding:0;border:0;border-radius:6px;background:transparent;color:rgba(255,255,255,0.8);font:400 18px/1 system-ui,sans-serif;cursor:pointer;";
     toast.appendChild(close);
     toast.style.pointerEvents = "auto";
     toast.style.display = "flex";
@@ -1185,7 +1217,7 @@
                 letter-spacing:0.18em;
                 text-transform:uppercase;
               ">
-                Resume Flight
+                Resume flight
               </div>
               <div id="radarthing-resume-title" style="
                 margin-bottom:4px;
@@ -1230,7 +1262,7 @@
               padding:12px 14px;
             ">
               <div>
-                <div style="margin-bottom:4px; color:#64748b; font-size:11px; letter-spacing:0.16em; text-transform:uppercase;">Callsign</div>
+                <div style="margin-bottom:4px; color:#94a3b8; font-size:11px; letter-spacing:0.08em; text-transform:uppercase;">Callsign</div>
                 <div id="radarthing-resume-callsign" style="color:#f8fafc; font-size:15px; font-weight:700;">Unknown</div>
               </div>
               <div style="
@@ -1257,7 +1289,7 @@
                 background:rgba(15,23,42,0.68);
                 padding:10px 12px;
               ">
-                <div style="margin-bottom:4px; color:#64748b; font-size:11px; letter-spacing:0.16em; text-transform:uppercase;">Aircraft</div>
+                <div style="margin-bottom:4px; color:#94a3b8; font-size:11px; letter-spacing:0.08em; text-transform:uppercase;">Aircraft</div>
                 <div id="radarthing-resume-aircraft" style="color:#f8fafc; font-size:13px; font-weight:700;">Unknown</div>
               </div>
               <div style="
@@ -1266,7 +1298,7 @@
                 background:linear-gradient(180deg, rgba(120,53,15,0.18), rgba(15,23,42,0.72));
                 padding:10px 12px;
               ">
-                <div style="margin-bottom:4px; color:#fbbf24; font-size:11px; letter-spacing:0.16em; text-transform:uppercase;">Next Waypoint</div>
+                <div style="margin-bottom:4px; color:#fbbf24; font-size:11px; letter-spacing:0.16em; text-transform:uppercase;">Next waypoint</div>
                 <div id="radarthing-resume-waypoint" style="color:#fef3c7; font-size:13px; font-weight:700;">Unknown</div>
               </div>
             </div>
@@ -1521,11 +1553,10 @@
       <label style="display:block; min-width:0;">
         <div style="
           margin-bottom:5px;
-          font-size:11px;
+          font-size:12px;
           font-weight:600;
-          letter-spacing:0.14em;
-          text-transform:uppercase;
-          color:#94a3b8;
+          letter-spacing:0.01em;
+          color:#cbd5e1;
         ">${label}</div>
         <input id="${id}"
           placeholder="${placeholder}"
@@ -2311,7 +2342,8 @@
     syncSelectedChartRotation();
     invertToggle.classList.toggle("active", chartsState.invertColors);
     invertToggle.setAttribute("aria-pressed", String(chartsState.invertColors));
-    rotateToggle.disabled = !sel;
+    // aria-disabled keeps it focusable, so its tooltip can say why.
+    rotateToggle.setAttribute("aria-disabled", String(!sel));
     rotateToggle.classList.toggle("disabled", !sel);
     rotateToggle.title = sel
       ? `Rotate chart (${chartsState.rotation}\u00b0)`
@@ -2331,6 +2363,21 @@
     }
 
     status.textContent = `Loading charts for ${icao}…`;
+    // Busy button and placeholder rows while the charts are fetched.
+    const loadBtn = document.getElementById("gc-search-btn");
+    const list = chartsUi.chartList;
+    if (loadBtn) {
+      loadBtn.disabled = true;
+      loadBtn.setAttribute("aria-busy", "true");
+      loadBtn.textContent = "Loading…";
+    }
+    if (list) {
+      list.innerHTML = Array.from(
+        { length: 4 },
+        () =>
+          '<div aria-hidden="true" style="height:34px;margin:6px 14px;border-radius:8px;background:rgba(255,255,255,0.06);"></div>',
+      ).join("");
+    }
     try {
       const { byType, fromCache } = await fetchChartsForAirport(icao, opts);
       chartsState.currentIcao = icao;
@@ -2350,7 +2397,14 @@
       renderChartsContent();
     } catch (err) {
       console.error("Charts fetch failed:", err);
-      status.textContent = "Failed to load charts.";
+      status.textContent = `Couldn't load charts for ${icao}. Check your connection and press Load again.`;
+      renderChartsContent();
+    } finally {
+      if (loadBtn) {
+        loadBtn.disabled = false;
+        loadBtn.removeAttribute("aria-busy");
+        loadBtn.textContent = "Load";
+      }
     }
   }
 
@@ -2549,12 +2603,13 @@
     }
 
     const headerButtonStyle = `
-      padding:5px 7px;
+      min-height:28px;
+      padding:5px 8px;
       border:1px solid rgba(255,255,255,0.1);
       border-radius:6px;
       background:transparent;
       color:#cbd5e1;
-      font-size:11px;
+      font-size:12px;
       font-weight:600;
       line-height:1;
       cursor:pointer;
@@ -2576,11 +2631,10 @@
       border:0;
       background:none;
       cursor:pointer;
-      font-size:11px;
+      font-size:12px;
       font-weight:700;
-      letter-spacing:0.12em;
-      text-transform:uppercase;
-      color:#cbd5e1;
+      letter-spacing:0.01em;
+            color:#cbd5e1;
       user-select:none;
     `;
     const keybindButtonStyle = `
@@ -2632,7 +2686,12 @@
         #${UI_CONTAINER_ID} button { min-height:44px; }
         #${UI_CONTAINER_ID} [role="switch"] { min-height:0; position:relative; overflow:visible; }
         #${UI_CONTAINER_ID} [role="switch"]::after { content:""; position:absolute; inset:-11px -8px; }
-        #${UI_CONTAINER_ID} label > div, #${UI_CONTAINER_ID} p, #${UI_CONTAINER_ID} [role="status"] { font-size:12px !important; }`;
+        #${UI_CONTAINER_ID} label > div, #${UI_CONTAINER_ID} p, #${UI_CONTAINER_ID} [role="status"] { font-size:12px !important; }
+        #atc-status-help { display:inline-flex; align-items:center; min-height:44px; }
+        #${STATUS_INDICATOR_ID} [data-status-text] { white-space:normal !important; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+        #${CHARTS_PANEL_ID} .gc-close, #${CHARTS_PANEL_ID} .gc-invert-toggle, #${CHARTS_PANEL_ID} .gc-rotate-toggle, #${CHARTS_PANEL_ID} .gc-type-tab, #${CHARTS_PANEL_ID} .gc-search-btn, #${CHARTS_PANEL_ID} .gc-reset-btn { min-height:44px; }
+        #${CHARTS_PANEL_ID} .gc-close { min-width:44px; }
+        #radarthing-toast-stack button { min-width:44px; min-height:44px; }`;
           return isMobile
             ? touchCss
             : `@media (pointer: coarse), (max-width: 640px) { ${touchCss} }`;
@@ -2689,7 +2748,7 @@
                 font-weight:400;
                 line-height:1;
                 cursor:pointer;
-              ">&times;</button>`
+              "><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="display:block"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>`
             : ""
         }
       </div>
@@ -2725,7 +2784,7 @@
         gap:8px;
         margin:-6px 0 12px;
       ">
-        <a id="atc-status-help" hidden href="https://radarthing.com/guides/aircraft-not-appearing#check-that-your-flight-is-live" target="_blank" rel="noopener noreferrer" style="
+        <a id="atc-status-help" hidden href="${escapeHtml(window.__radarThingSiteUrl || "https://radarthing.com")}/guides/aircraft-not-appearing#check-that-your-flight-is-live" target="_blank" rel="noopener noreferrer" style="
           color:#7dd3fc;
           font-size:12px;
           text-decoration:underline;
@@ -2795,7 +2854,7 @@
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px 8px;">
         ${buildInputRow("Departure", DEP_INPUT_ID, "e.g. EGLL", 'aria-describedby="atc-form-error"')}
         ${buildInputRow("Arrival", ARR_INPUT_ID, "e.g. KJFK", 'aria-describedby="atc-form-error"')}
-        ${buildInputRow("Callsign", FLT_INPUT_ID, "ABC123", 'aria-describedby="atc-form-error"')}
+        ${buildInputRow("Callsign", FLT_INPUT_ID, "e.g. BAW117", 'aria-describedby="atc-form-error"')}
         ${buildInputRow("Squawk", SQK_INPUT_ID, "Optional", 'inputmode="numeric" aria-describedby="atc-form-error"')}
       </div>
 
@@ -2859,7 +2918,7 @@
 
       <section id="${ACARS_PANEL_ID}" style="display:none; margin-top:10px; border-top:1px solid rgba(255,255,255,0.08); padding-top:10px;">
         <button id="${ACARS_TOGGLE_ID}" type="button" aria-expanded="false" aria-controls="${ACARS_BODY_ID}" style="${sectionHeaderStyle}">
-          <span>ACARS Updates</span>
+          <span>ACARS updates</span>
           <span aria-hidden="true" data-acars-chevron style="display:inline-block;transition:transform .2s"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="display:block"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         </button>
         <div id="${ACARS_BODY_ID}" hidden style="margin-top:10px">
@@ -2872,7 +2931,7 @@
 
       <div style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.08); padding-top:10px;">
         <button id="${RADAR_SETTINGS_HEADER_ID}" type="button" aria-expanded="false" aria-controls="${RADAR_SETTINGS_BODY_ID}" style="${sectionHeaderStyle}">
-          <span>Settings &amp; shortcuts</span>
+          <span>Settings &amp; shortcuts <span data-shortcut-summary style="font-weight:500;color:#94a3b8;">(${escapeHtml(toggleKey.toUpperCase())} / ${escapeHtml(chartsToggleKey.toUpperCase())})</span></span>
           <span id="${RADAR_SETTINGS_ARROW_ID}" aria-hidden="true" style="
             display:inline-block;
             transition:transform 0.2s;
@@ -3074,10 +3133,14 @@
       setFlightEditing(!editingFlight);
     };
 
-    document.getElementById("atc-retry-now-btn").onclick = () => {
+    document.getElementById("atc-retry-now-btn").onclick = (event) => {
+      // Show that something is happening until the next status arrives.
+      event.currentTarget.textContent = "Retrying…";
+      event.currentTarget.disabled = true;
       window.dispatchEvent(new CustomEvent("radarthing-retry-now"));
     };
 
+    let sameAirportConfirmedFor = "";
     document.getElementById(SAVE_BTN_ID).onclick = async () => {
       const dep = document.getElementById(DEP_INPUT_ID).value.trim();
       const arr = document.getElementById(ARR_INPUT_ID).value.trim();
@@ -3113,6 +3176,16 @@
             : "Use the 4-letter ICAO code for arrival, like KJFK.",
           ARR_INPUT_ID,
         );
+      // Same airport twice is usually a typo, but circuits are real: warn
+      // once, and a second press with the same airports goes ahead.
+      const routeKey = `${dep}>${arr}`;
+      if (arr === dep && sameAirportConfirmedFor !== routeKey) {
+        sameAirportConfirmedFor = routeKey;
+        return setFormError(
+          "Arrival is the same as departure. Flying a circuit? Press the button again to confirm.",
+          ARR_INPUT_ID,
+        );
+      }
       if (!flt) return setFormError("Enter a callsign.", FLT_INPUT_ID);
       if (sqk && !validateSquawk(sqk))
         return setFormError("Squawk must be 4 digits, each 0–7.", SQK_INPUT_ID);
@@ -3384,7 +3457,8 @@
       }
 
       .gc-search-btn {
-        width: 64px;
+        min-width: 64px;
+        padding: 0 12px;
         height: 36px;
         border-radius: 7px;
         border: none;
@@ -3408,7 +3482,8 @@
       }
 
       .gc-reset-btn {
-        width: 64px;
+        min-width: 64px;
+        padding: 0 12px;
         height: 36px;
         border-radius: 7px;
         border: 1px solid rgba(255, 255, 255, 0.15);
@@ -3661,7 +3736,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15A9 9 0 1 1 23 10"/></svg>
             Rotate
           </button>
-          <button type="button" class="gc-close" title="Close charts" aria-label="Close airport charts">&times;</button>
+          <button type="button" class="gc-close" title="Close charts" aria-label="Close airport charts"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="display:block"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
         </div>
       </div>
       <div class="gc-search">
@@ -3955,8 +4030,12 @@
     // us to slow down (busy).
     const retryBtn = document.getElementById("atc-retry-now-btn");
     if (retryBtn) {
+      // Retrying can't help while the browser itself has no network.
       const showRetry =
-        e.detail.state === "retrying" || e.detail.state === "offline";
+        e.detail.state === "retrying" ||
+        (e.detail.state === "offline" && navigator.onLine !== false);
+      retryBtn.textContent = "Retry now";
+      retryBtn.disabled = false;
       if (!showRetry && document.activeElement === retryBtn)
         (
           document.getElementById("atc-edit-flight-btn") ||

@@ -66,10 +66,18 @@ export function useFocusTrap(
       document.removeEventListener("keydown", onKeyDown, true);
       // The opener may have been unmounted while the dialog was open; fall
       // back to a stable selector so focus doesn't drop to <body>.
+      // The opener may also sit inside something that has since gone inert
+      // (a menu that closed when its item was chosen); focusing it would do
+      // nothing, so use the fallback then too.
       requestAnimationFrame(() => {
-        if (previouslyFocused?.isConnected) previouslyFocused.focus();
+        const canRestore =
+          previouslyFocused?.isConnected &&
+          !previouslyFocused.closest("[inert]");
+        if (canRestore) previouslyFocused.focus();
         else if (returnFocusTo)
           document.querySelector<HTMLElement>(returnFocusTo)?.focus();
+        else if (previouslyFocused?.closest("[inert]"))
+          document.querySelector<HTMLElement>("[data-dock-toggle]")?.focus();
       });
     };
     // Run once per mount; callbacks are read through refs.

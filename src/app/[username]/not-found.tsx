@@ -21,7 +21,7 @@ export default function PilotNotFound() {
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2">
             <Plane className="h-4 w-4 text-red-400" aria-hidden="true" />
             <span className="font-mono text-sm text-red-400">
-              PILOT NOT FOUND
+              Pilot not found
             </span>
           </div>
           <h1 className="text-3xl font-bold text-white sm:text-4xl">

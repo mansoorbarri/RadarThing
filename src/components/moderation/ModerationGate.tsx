@@ -87,7 +87,7 @@ function AccountNotices({ children }: { children: ReactNode }) {
         <div className="w-full max-w-xl rounded-xl border border-red-400/25 bg-[#08151c] p-8 shadow-2xl">
           <Ban className="mb-6 text-red-300" size={32} />
           <p className="font-mono text-xs tracking-widest text-red-300">
-            ACCOUNT RESTRICTED
+            Account restricted
           </p>
           <h1 className="mt-3 text-3xl font-semibold">
             Your RadarThing account is banned

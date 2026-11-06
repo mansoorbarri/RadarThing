@@ -651,7 +651,7 @@ export function VirtualAirlinesTab({
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div>
                       <label className="mb-2 block font-mono text-xs text-slate-400">
-                        VA NAME
+                        VA name
                       </label>
                       <input
                         type="text"
@@ -670,7 +670,7 @@ export function VirtualAirlinesTab({
 
                     <div>
                       <label className="mb-2 block font-mono text-xs text-slate-400">
-                        CALLSIGN PREFIX
+                        Callsign prefix
                       </label>
                       <input
                         type="text"
@@ -696,7 +696,7 @@ export function VirtualAirlinesTab({
 
                   <div>
                     <label className="mb-2 block font-mono text-xs text-slate-400">
-                      WEBSITE / DISCORD
+                      Website or Discord
                     </label>
                     <input
                       type="url"
@@ -718,7 +718,7 @@ export function VirtualAirlinesTab({
 
                   <div>
                     <label className="mb-2 block font-mono text-xs text-slate-400">
-                      VA ADMIN
+                      VA admin
                     </label>
                     <div className="relative">
                       <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -993,7 +993,7 @@ export function VirtualAirlinesTab({
                     <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto]">
                       <div>
                         <label className="mb-1.5 block font-mono text-[11px] text-slate-400">
-                          AIRCRAFT TYPE
+                          Aircraft type
                         </label>
                         <input
                           type="text"
@@ -1012,7 +1012,7 @@ export function VirtualAirlinesTab({
                       </div>
                       <div>
                         <label className="mb-1.5 block font-mono text-[11px] text-slate-400">
-                          IMAGE
+                          Image
                         </label>
                         <ImageUploader
                           ref={fleetUploaderRef}
