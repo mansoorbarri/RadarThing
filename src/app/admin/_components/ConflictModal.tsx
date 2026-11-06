@@ -83,7 +83,7 @@ export function ConflictModal({
                 disabled={isLoading}
                 className="mt-4 w-full cursor-pointer rounded-lg bg-emerald-500/15 py-2.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-500/25 disabled:cursor-not-allowed disabled:opacity-50 dark:text-emerald-400"
               >
-                {isLoading ? "Processing…" : "Keep This (Approve New)"}
+                {isLoading ? "Processing…" : "Keep this (approve new)"}
               </button>
             </div>
           </div>
@@ -131,7 +131,7 @@ export function ConflictModal({
                 disabled={isLoading}
                 className="mt-4 w-full cursor-pointer rounded-lg bg-blue-500/15 py-2.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-500/25 disabled:cursor-not-allowed disabled:opacity-50 dark:text-blue-400"
               >
-                {isLoading ? "Processing…" : "Keep This (Reject New)"}
+                {isLoading ? "Processing…" : "Keep this (reject new)"}
               </button>
             </div>
           </div>

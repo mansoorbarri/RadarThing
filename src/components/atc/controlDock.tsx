@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { DockIcon } from "~/utils/dockIcons";
 
@@ -46,6 +46,8 @@ export function ControlDock({
     Record<string, boolean>
   >({});
   const panelId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     try {
@@ -96,7 +98,7 @@ export function ControlDock({
 
   const isRight = side === "right";
 
-  const btnSize = isMobile ? "h-11 w-11" : "h-13 w-13";
+  const btnSize = isMobile ? "h-12 w-12" : "h-13 w-13";
   const panelWidth = isMobile ? "w-[220px]" : "w-[236px]";
   const bottomPos = isMobile
     ? "bottom-[max(0.75rem,env(safe-area-inset-bottom))]"
@@ -125,6 +127,7 @@ export function ControlDock({
       <div className="relative">
         {/* Tool buttons (absolute, so dock never moves) */}
         <div
+          ref={panelRef}
           id={panelId}
           inert={!open}
           aria-hidden={!open}
@@ -183,6 +186,18 @@ export function ControlDock({
                               onClick={() => {
                                 item.onClick();
                                 setOpen(false);
+                                // The panel goes inert as it closes; if the
+                                // item didn't move focus somewhere else, put
+                                // it back on the Menu button.
+                                requestAnimationFrame(() => {
+                                  const active = document.activeElement;
+                                  if (
+                                    !active ||
+                                    active === document.body ||
+                                    panelRef.current?.contains(active)
+                                  )
+                                    toggleRef.current?.focus();
+                                });
                               }}
                               className={`flex w-full cursor-pointer items-center gap-2 rounded-xl border ${isMobile ? "px-3 py-2 text-[11px]" : "px-4 py-2 text-xs"} backdrop-blur-md transition-all duration-150 ${
                                 item.active
@@ -211,7 +226,9 @@ export function ControlDock({
         {/* Dock toggle (anchored, never moves) */}
         <button
           type="button"
-          aria-label={open ? "Close control dock" : "Open control dock"}
+          ref={toggleRef}
+          // Matches the visible "Menu" label (WCAG 2.5.3).
+          aria-label={open ? "Close menu" : "Menu"}
           aria-expanded={open}
           aria-controls={panelId}
           onClick={() => setOpen(!open)}
@@ -223,14 +240,12 @@ export function ControlDock({
         >
           {DockIcon}
           {/* A visible word makes the grid icon discoverable on desktop. */}
-          {!isMobile && (
-            <span
-              aria-hidden="true"
-              className="text-[11px] leading-none font-semibold tracking-normal"
-            >
-              Menu
-            </span>
-          )}
+          <span
+            aria-hidden="true"
+            className={`${isMobile ? "text-[10px]" : "text-[11px]"} leading-none font-semibold tracking-normal`}
+          >
+            Menu
+          </span>
         </button>
       </div>
 

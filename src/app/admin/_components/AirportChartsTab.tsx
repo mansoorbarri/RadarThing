@@ -146,7 +146,7 @@ function EditableChartDetails({
             onKeyDown={handleKeyDown}
             placeholder="ICAO"
             maxLength={4}
-            className="w-16 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400"
+            className="w-16 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             disabled={isSaving}
             autoFocus
           />
@@ -177,7 +177,7 @@ function EditableChartDetails({
           onChange={(e) => setChartName(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Chart Name"
-          className="w-full rounded-md border border-white/20 bg-black/60 px-2 py-1 text-sm text-white outline-none focus:border-white/40"
+          className="w-full rounded-md border border-white/20 bg-black/60 px-2 py-1 text-sm text-white outline-none focus:border-white/40 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           disabled={isSaving}
         />
         <div className="flex gap-2">
@@ -500,7 +500,7 @@ export function AirportChartsTab({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by ICAO, chart name, type, email, user ID…"
-            className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
+            className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">

@@ -235,7 +235,7 @@ export default function PilotClient({
                 {stats.userRole === "PRO" || stats.userRole === "ADMIN" ? (
                   <span className="text-emerald-400">Pro member</span>
                 ) : (
-                  <span className="text-slate-400">Free Tier</span>
+                  <span className="text-slate-400">Free</span>
                 )}
               </p>
             </div>

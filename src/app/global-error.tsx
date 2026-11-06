@@ -28,7 +28,7 @@ export default function GlobalError({
   // (the app's providers aren't available here).
   return (
     <html lang="en" className="dark">
-      <body className="bg-[#02090d]">
+      <body className="bg-site">
         <main
           id="main-content"
           role="alert"

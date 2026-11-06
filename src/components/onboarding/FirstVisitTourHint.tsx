@@ -43,24 +43,20 @@ export function FirstVisitTourHint({
     }
   }, []);
 
-  // Escape dismisses it, unless a dialog or text field has the key.
-  useEffect(() => {
-    if (!visible || hidden) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      if (document.querySelector('[aria-modal="true"]')) return;
-      dismiss();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [visible, hidden, dismiss]);
-
   if (!visible || hidden) return null;
 
   return (
     <section
       role="status"
       aria-label="Radar tour"
+      // Escape dismisses it only while focus is inside the offer, so Escape
+      // used elsewhere on the radar (search, deselecting) never hides it.
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.stopPropagation();
+          dismiss();
+        }
+      }}
       className="animate-fade-in-up pointer-events-auto fixed top-[calc(4rem+env(safe-area-inset-top))] right-3 left-[3.75rem] z-[10014] flex items-center gap-3 rounded-xl border border-cyan-400/30 bg-[#06121a]/95 p-3 text-sm text-slate-200 shadow-lg shadow-black/40 sm:top-20 sm:right-auto sm:left-1/2 sm:w-[32rem] sm:-translate-x-1/2"
     >
       <CircleHelp

@@ -917,6 +917,30 @@
     });
   }
 
+  // One fixed stack holds both live regions, so error and info toasts sit
+  // one above the other instead of drawing on top of each other.
+  function getToastStack() {
+    let stack = document.getElementById("radarthing-toast-stack");
+    if (!stack) {
+      stack = document.createElement("div");
+      stack.id = "radarthing-toast-stack";
+      stack.style.cssText = `
+        position:fixed;
+        bottom:max(20px, env(safe-area-inset-bottom));
+        right:max(20px, env(safe-area-inset-right));
+        display:flex;
+        flex-direction:column;
+        align-items:flex-end;
+        gap:8px;
+        max-width:min(360px, calc(100vw - 40px));
+        z-index:${Z.toast};
+        pointer-events:none;
+      `;
+      document.body.appendChild(stack);
+    }
+    return stack;
+  }
+
   function getToastRegion(isError) {
     // Persistent live regions are announced reliably; freshly inserted ones
     // often aren't. Errors use an assertive region, the rest polite.
@@ -928,18 +952,16 @@
       region.setAttribute("role", isError ? "alert" : "status");
       region.setAttribute("aria-live", isError ? "assertive" : "polite");
       region.style.cssText = `
-        position:fixed;
-        bottom:20px;
-        right:20px;
         display:flex;
         flex-direction:column;
         align-items:flex-end;
         gap:8px;
-        max-width:min(360px, calc(100vw - 40px));
-        z-index:${Z.toast};
         pointer-events:none;
       `;
-      document.body.appendChild(region);
+      const stack = getToastStack();
+      // Errors go on top so they're the first thing the pilot sees.
+      if (isError) stack.prepend(region);
+      else stack.appendChild(region);
     }
     return region;
   }
@@ -1056,7 +1078,7 @@
     const describe = COMMAND_LABELS[detail.type];
     if (detail.success === false) {
       showToast(
-        `A change from the website couldn't be applied${describe ? `: ${describe(detail.value).toLowerCase()}` : ""}.`,
+        `Couldn't apply from the website${describe ? `: ${describe(detail.value)}` : ""}.${detail.error ? ` ${detail.error}.` : ""}`,
         true,
       );
       return;
@@ -2226,10 +2248,12 @@
 
     const total = getChartCount(chartsState.chartsByType);
     title.textContent = chartsState.currentIcao
-      ? `${chartsState.currentIcao} Charts (${total})`
+      ? `${chartsState.currentIcao} charts (${total})`
       : "Airport charts";
 
     typeTabs.innerHTML = "";
+    // Tabs only mean something once an airport is loaded.
+    typeTabs.hidden = !chartsState.currentIcao;
     for (const type of CHART_TYPES) {
       const count = chartsState.chartsByType[type].length;
       const tab = document.createElement("button");
@@ -2538,11 +2562,9 @@
     const actionButtonStyle = `
       height:36px;
       border-radius:10px;
-      font-size:11px;
+      font-size:13px;
       font-weight:700;
-      letter-spacing:0.06em;
       white-space:nowrap;
-      text-transform:uppercase;
       cursor:pointer;
     `;
     const sectionHeaderStyle = `
@@ -2606,8 +2628,8 @@
           // applies it when the window is resized small or the pointer is
           // coarse (e.g. a touchscreen laptop in tablet mode).
           const touchCss = `#${UI_CONTAINER_ID} { font-size:13px; }
-        #${UI_CONTAINER_ID} input { height:40px !important; font-size:16px !important; }
-        #${UI_CONTAINER_ID} button { min-height:40px; }
+        #${UI_CONTAINER_ID} input { height:44px !important; font-size:16px !important; }
+        #${UI_CONTAINER_ID} button { min-height:44px; }
         #${UI_CONTAINER_ID} [role="switch"] { min-height:0; position:relative; overflow:visible; }
         #${UI_CONTAINER_ID} [role="switch"]::after { content:""; position:absolute; inset:-11px -8px; }
         #${UI_CONTAINER_ID} label > div, #${UI_CONTAINER_ID} p, #${UI_CONTAINER_ID} [role="status"] { font-size:12px !important; }`;
@@ -2688,7 +2710,7 @@
       ">
         <span data-status-dot aria-hidden="true" style="flex:none;width:8px;height:8px;border-radius:50%;background:#94a3b8;"></span>
         <span data-status-text style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0.02em;">Not tracking</span>
-        <span data-status-age aria-hidden="true" style="font-weight:500;letter-spacing:0.02em;color:#94a3b8;"></span>
+        <span data-status-age aria-hidden="true" style="flex:none;white-space:nowrap;font-weight:500;letter-spacing:0.02em;color:#94a3b8;"></span>
         ${
           isMobile
             ? ""
@@ -2696,18 +2718,31 @@
         }
       </div>
 
-      <button id="atc-retry-now-btn" type="button" hidden style="
-        display:block;
-        margin:-6px 0 12px auto;
-        padding:5px 10px;
-        border:1px solid rgba(251,191,36,0.45);
-        border-radius:10px;
-        background:rgba(251,191,36,0.1);
-        color:#fde68a;
-        font-size:12px;
-        font-weight:700;
-        cursor:pointer;
-      ">Retry now</button>
+      <div id="atc-status-actions" hidden style="
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+        margin:-6px 0 12px;
+      ">
+        <a id="atc-status-help" hidden href="https://radarthing.com/guides/aircraft-not-appearing#check-that-your-flight-is-live" target="_blank" rel="noopener noreferrer" style="
+          color:#7dd3fc;
+          font-size:12px;
+          text-decoration:underline;
+          text-underline-offset:3px;
+        ">What does this mean?</a>
+        <button id="atc-retry-now-btn" type="button" hidden style="
+          margin-left:auto;
+          padding:5px 10px;
+          border:1px solid rgba(251,191,36,0.45);
+          border-radius:10px;
+          background:rgba(251,191,36,0.1);
+          color:#fde68a;
+          font-size:12px;
+          font-weight:700;
+          cursor:pointer;
+        ">Retry now</button>
+      </div>
 
       <div id="${MOST_TRACKED_BADGE_ID}" role="status" aria-live="polite" style="
         display:none;
@@ -2761,7 +2796,7 @@
         ${buildInputRow("Departure", DEP_INPUT_ID, "e.g. EGLL", 'aria-describedby="atc-form-error"')}
         ${buildInputRow("Arrival", ARR_INPUT_ID, "e.g. KJFK", 'aria-describedby="atc-form-error"')}
         ${buildInputRow("Callsign", FLT_INPUT_ID, "ABC123", 'aria-describedby="atc-form-error"')}
-        ${buildInputRow("Squawk", SQK_INPUT_ID, "7000", 'inputmode="numeric" aria-describedby="atc-form-error"')}
+        ${buildInputRow("Squawk", SQK_INPUT_ID, "Optional", 'inputmode="numeric" aria-describedby="atc-form-error"')}
       </div>
 
       <label style="
@@ -2825,12 +2860,12 @@
       <section id="${ACARS_PANEL_ID}" style="display:none; margin-top:10px; border-top:1px solid rgba(255,255,255,0.08); padding-top:10px;">
         <button id="${ACARS_TOGGLE_ID}" type="button" aria-expanded="false" aria-controls="${ACARS_BODY_ID}" style="${sectionHeaderStyle}">
           <span>ACARS Updates</span>
-          <span aria-hidden="true" data-acars-chevron style="display:inline-block;font-size:11px;transition:transform .2s">&#9654;</span>
+          <span aria-hidden="true" data-acars-chevron style="display:inline-block;transition:transform .2s"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="display:block"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         </button>
         <div id="${ACARS_BODY_ID}" hidden style="margin-top:10px">
         <textarea id="${ACARS_DRAFT_ID}" maxlength="500" rows="3" placeholder="Write a flight update for viewers…" aria-label="New ACARS entry" style="box-sizing:border-box;width:100%;resize:vertical;padding:8px 10px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.04);color:#e5e7eb;font:12px system-ui;outline:none"></textarea>
         <div style="margin-top:4px;color:#94a3b8;font-size:11px">Shown on your radar flight card until you remove it.</div>
-        <button id="${ACARS_PUBLISH_ID}" type="button" style="width:100%;margin-top:8px;height:34px;border:1px solid rgba(125,211,252,.35);border-radius:10px;background:rgba(56,189,248,.14);color:#7dd3fc;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Publish ACARS</button>
+        <button id="${ACARS_PUBLISH_ID}" type="button" style="width:100%;margin-top:8px;height:34px;border:1px solid rgba(125,211,252,.35);border-radius:10px;background:rgba(56,189,248,.14);color:#7dd3fc;font-size:12px;font-weight:700;cursor:pointer">Publish ACARS update</button>
         <div id="${ACARS_LIST_ID}" aria-live="polite" style="margin-top:8px;max-height:160px;overflow-y:auto;color:#cbd5e1;font-size:11px">No ACARS entries yet.</div>
         </div>
       </section>
@@ -2839,9 +2874,9 @@
         <button id="${RADAR_SETTINGS_HEADER_ID}" type="button" aria-expanded="false" aria-controls="${RADAR_SETTINGS_BODY_ID}" style="${sectionHeaderStyle}">
           <span>Settings &amp; shortcuts</span>
           <span id="${RADAR_SETTINGS_ARROW_ID}" aria-hidden="true" style="
-            font-size:11px;
+            display:inline-block;
             transition:transform 0.2s;
-          ">&#9654;</span>
+          "><svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="display:block"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         </button>
         <div id="${RADAR_SETTINGS_BODY_ID}" style="
           display:none;
@@ -2875,10 +2910,8 @@
           border:0;
           background:none;
           color:#7dd3fc;
-          font-size:11px;
+          font-size:12px;
           font-weight:700;
-          letter-spacing:0.1em;
-          text-transform:uppercase;
           cursor:pointer;
         ">Open airport charts
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -3245,7 +3278,7 @@
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-size: 15px;
         font-weight: 700;
-        color: #22d3ee;
+        color: #ffffff;
         letter-spacing: -0.01em;
       }
 
@@ -3284,8 +3317,10 @@
         color: #22d3ee;
       }
 
+      /* Disabled, but still readable (about 4.5:1). */
       .gc-rotate-toggle.disabled {
-        opacity: 0.45;
+        color: rgba(255, 255, 255, 0.55);
+        border-style: dashed;
         cursor: not-allowed;
       }
 
@@ -3404,6 +3439,8 @@
         color: rgba(255, 255, 255, 0.65);
         flex-shrink: 0;
       }
+
+      #${CHARTS_PANEL_ID} [hidden] { display: none !important; }
 
       .gc-type-tabs {
         display: flex;
@@ -3892,8 +3929,11 @@
     const color = e.detail.color || "#94a3b8";
     const text = statusEl.querySelector("[data-status-text]");
     const dot = statusEl.querySelector("[data-status-dot]");
-    if (text && text.textContent !== (e.detail.text || ""))
+    if (text && text.textContent !== (e.detail.text || "")) {
       text.textContent = e.detail.text || "";
+      // The pill can cut long statuses short; hovering shows all of it.
+      statusEl.title = e.detail.text || "";
+    }
     if (dot) {
       dot.style.background = color;
       dot.style.animation =
@@ -3918,9 +3958,27 @@
       const showRetry =
         e.detail.state === "retrying" || e.detail.state === "offline";
       if (!showRetry && document.activeElement === retryBtn)
-        document.getElementById(CLEAR_BTN_ID)?.focus();
+        (
+          document.getElementById("atc-edit-flight-btn") ||
+          document.getElementById(SAVE_BTN_ID)
+        )?.focus();
       retryBtn.hidden = !showRetry;
     }
+    // Any problem state links to the guide that explains it.
+    const help = document.getElementById("atc-status-help");
+    if (help)
+      help.hidden = ![
+        "retrying",
+        "offline",
+        "rejected",
+        "busy",
+        "waiting",
+      ].includes(e.detail.state);
+    const actions = document.getElementById("atc-status-actions");
+    if (actions)
+      actions.hidden = Boolean(
+        (!help || help.hidden) && (!retryBtn || retryBtn.hidden),
+      );
   });
 
   // Each successful send only moves the "Ns ago" clock.
@@ -3967,6 +4025,8 @@
     const sqkEl = document.getElementById(SQK_INPUT_ID);
     if (sqkEl && e.detail.squawk) {
       sqkEl.value = sanitizeSquawk(e.detail.squawk);
+      // Keep the one-line summary in step with the new squawk.
+      applyCompactMode();
     }
   });
 
@@ -4066,7 +4126,7 @@
           ? `<p style="margin:0 0 10px;color:#94a3b8;font-size:12px;">Use the arrow tab on the right to show this panel again after closing it.</p>`
           : `<p style="margin:0 0 10px;color:#94a3b8;font-size:11px;">Press <strong>${escapeHtml(toggleKey.toUpperCase())}</strong> to show or hide this panel and <strong>${escapeHtml(chartsToggleKey.toUpperCase())}</strong> for airport charts.</p>`
       }
-      <button type="button" data-welcome-dismiss style="width:100%;height:32px;border:1px solid rgba(125,211,252,0.35);border-radius:10px;background:rgba(56,189,248,0.14);color:#7dd3fc;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;">Got it</button>
+      <button type="button" data-welcome-dismiss style="width:100%;height:32px;border:1px solid rgba(125,211,252,0.35);border-radius:10px;background:rgba(56,189,248,0.14);color:#7dd3fc;font-size:12px;font-weight:700;cursor:pointer;">Got it</button>
     `;
     card.querySelector("[data-welcome-dismiss]").onclick = () => {
       try {

@@ -194,7 +194,7 @@ function ATCPageContent() {
     error: streamError,
     lastMessageAgeSeconds,
     reconnectNow,
-    retryInSeconds,
+    nextRetryAt,
   } = useAircraftStream();
   const aircrafts = useAirlineTelephony(streamedAircrafts);
   const {
@@ -216,6 +216,18 @@ function ATCPageContent() {
   const completeRadarGuide = useMutation(api.users.completeRadarGuide);
   const [isRadarGuideOpen, setIsRadarGuideOpen] = useState(false);
   const [showMobileWeather, setShowMobileWeather] = useState(false);
+  const [emptySkyDismissed, setEmptySkyDismissed] = useState(false);
+  // Only load the first-visit tour offer for people who haven't dismissed it.
+  const [tourHintEligible, setTourHintEligible] = useState(false);
+  useEffect(() => {
+    try {
+      setTourHintEligible(
+        !localStorage.getItem("radarthing-tour-hint-dismissed"),
+      );
+    } catch {
+      setTourHintEligible(false);
+    }
+  }, []);
   const hasOpenedRadarGuide = useRef(false);
 
   const finishRadarGuide = useCallback(() => {
@@ -1060,6 +1072,12 @@ function ATCPageContent() {
     keybindPreferences,
   ]);
 
+  // Phone sheets don't stack: anything else opening closes the weather sheet.
+  useEffect(() => {
+    if (selectedAircrafts.length > 0 || showMobileSearch || showShortcutsMenu)
+      setShowMobileWeather(false);
+  }, [selectedAircrafts.length, showMobileSearch, showShortcutsMenu]);
+
   // Keep the sideview open on the last airport unless the user closes it.
   useEffect(() => {
     setShowAirportFID(false);
@@ -1590,7 +1608,7 @@ function ATCPageContent() {
                 lastMessageAgeSeconds={lastMessageAgeSeconds}
                 error={streamError}
                 onReconnect={reconnectNow}
-                retryInSeconds={retryInSeconds}
+                nextRetryAt={nextRetryAt}
               />
               {/* On narrow phones the header has no room; the tour is offered
                   on first visit and stays in the dock's Help section. */}
@@ -2172,7 +2190,8 @@ function ATCPageContent() {
           !isUiHidden &&
           !isLoading &&
           connectionStatus === "connected" &&
-          aircrafts.length === 0 && (
+          aircrafts.length === 0 &&
+          !emptySkyDismissed && (
             <p
               role="status"
               className={`pointer-events-auto fixed left-1/2 z-[10011] w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-xl border border-white/10 bg-black/80 px-4 py-2.5 text-center text-sm text-slate-200 shadow-lg shadow-black/40 ${isPhone ? "bottom-[calc(5rem+env(safe-area-inset-bottom))]" : "bottom-24"}`}
@@ -2195,26 +2214,40 @@ function ATCPageContent() {
                 read how
               </Link>
               .
+              <button
+                type="button"
+                onClick={() => setEmptySkyDismissed(true)}
+                aria-label="Dismiss this message"
+                className="ml-2 inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md align-middle text-slate-400 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+              >
+                <span aria-hidden="true">×</span>
+              </button>
             </p>
           )}
-        <FirstVisitTourHint
-          ready={isAppReady}
-          hidden={isUiHidden || isRadarGuideOpen}
-          onStartTour={() => setIsRadarGuideOpen(true)}
-        />
-        <RadarGuide
-          open={isRadarGuideOpen}
-          onFinish={finishRadarGuide}
-          signals={{
-            hasSelectedAircraft: selectedAircrafts.length > 0,
-            hasSelectedFreeChartAirport: isFreeChartIcao(selectedAirport?.icao),
-            isChartOpen: showTaxiChart || chartOverlayActive,
-          }}
-          onOpenAircraftImages={() => {
-            window.open("/aircraft-images", "_blank", "noopener,noreferrer");
-          }}
-          onPrepareDock={prepareRadarGuideDock}
-        />
+        {tourHintEligible && (
+          <FirstVisitTourHint
+            ready={isAppReady}
+            hidden={isUiHidden || isRadarGuideOpen}
+            onStartTour={() => setIsRadarGuideOpen(true)}
+          />
+        )}
+        {isRadarGuideOpen && (
+          <RadarGuide
+            open={isRadarGuideOpen}
+            onFinish={finishRadarGuide}
+            signals={{
+              hasSelectedAircraft: selectedAircrafts.length > 0,
+              hasSelectedFreeChartAirport: isFreeChartIcao(
+                selectedAirport?.icao,
+              ),
+              isChartOpen: showTaxiChart || chartOverlayActive,
+            }}
+            onOpenAircraftImages={() => {
+              window.open("/aircraft-images", "_blank", "noopener,noreferrer");
+            }}
+            onPrepareDock={prepareRadarGuideDock}
+          />
+        )}
       </div>
     </RadarTimerProvider>
   );

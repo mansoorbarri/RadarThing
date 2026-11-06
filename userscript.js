@@ -69,6 +69,16 @@
     const geofs = window.geofs;
     if (!geofs?.autopilot || !geofs?.aircraft?.instance) {
       console.warn("[RadarThing] Cannot execute command - GeoFS not ready");
+      window.dispatchEvent(
+        new CustomEvent("radarthing-command-executed", {
+          detail: {
+            type: cmd.type,
+            value: cmd.value,
+            success: false,
+            error: "GeoFS is still loading your aircraft",
+          },
+        }),
+      );
       return;
     }
 
@@ -77,6 +87,8 @@
     // Only report success when GeoFS actually changed something, so the
     // pilot never sees "Flaps set" for a command that did nothing.
     let applied = false;
+    // Why a command couldn't be applied, shown to the pilot.
+    let reason = "GeoFS couldn't apply this change";
     try {
       switch (cmd.type) {
         case "setSpeed":
@@ -104,12 +116,10 @@
           break;
 
         case "setHeading":
-          // Switch to heading mode using the proper GeoFS API
+          // Only counts as applied once the course itself is set.
           if (typeof geofs.autopilot.setMode === "function") {
             geofs.autopilot.setMode("HDG");
-            applied = true;
           }
-          // Set the course value
           if (typeof geofs.autopilot.setCourse === "function") {
             geofs.autopilot.setCourse(Number(cmd.value));
             applied = true;
@@ -147,7 +157,7 @@
           }
           break;
 
-        case "setFlaps":
+        case "setFlaps": {
           // Set flaps by notch number (value is the notch, e.g., 2 out of 3 steps)
           // GeoFS has exposed controls both as a global and on geofs.
           const controls = window.controls ?? geofs.controls;
@@ -159,6 +169,7 @@
               console.warn(
                 `[RadarThing] setFlaps - invalid notch ${notch}, must be 0-${flapsSteps}`,
               );
+              reason = `This aircraft has flap notches 0 to ${flapsSteps}`;
               break;
             }
             // Convert notch to actual position: notch/steps * maxPosition
@@ -168,6 +179,7 @@
             applied = true;
           }
           break;
+        }
 
         case "enableNav":
           if (typeof geofs.autopilot.setMode === "function") {
@@ -193,6 +205,7 @@
 
           if (!waypointIdent || !Array.isArray(route) || route.length === 0) {
             console.warn("[RadarThing] setWaypoint - no usable flight plan");
+            reason = "No flight plan is loaded in GeoFS";
             break;
           }
 
@@ -213,6 +226,7 @@
             console.warn(
               `[RadarThing] setWaypoint - waypoint ${waypointIdent} not found`,
             );
+            reason = `${waypointIdent} isn't in your GeoFS flight plan`;
             break;
           }
 
@@ -226,14 +240,14 @@
               "[RadarThing] setWaypoint - selectWaypoint is not available",
             );
 
+            // Fallback: only counts once the waypoint is really tracked.
             if ("trackedWaypoint" in flightPlan) {
               flightPlan.trackedWaypoint = waypoint;
-              applied = true;
+              applied = flightPlan.trackedWaypoint === waypoint;
             }
 
-            if (typeof geofs.autopilot.setMode === "function") {
+            if (applied && typeof geofs.autopilot.setMode === "function") {
               geofs.autopilot.setMode("NAV");
-              applied = true;
             }
           }
           break;
@@ -276,7 +290,7 @@
                 type: cmd.type,
                 value: cmd.value,
                 success: false,
-                error: "GeoFS couldn't apply this change",
+                error: reason,
               },
         }),
       );
@@ -331,12 +345,12 @@
     },
     tooLarge: {
       state: "rejected",
-      text: "Flight plan too large · shorten your route",
+      text: "Route too long · remove waypoints",
       color: "#f87171",
     },
     noNetwork: {
       state: "offline",
-      text: "You're offline · waiting for a connection",
+      text: "Offline · waiting for network",
       color: "#f87171",
     },
     offline: {

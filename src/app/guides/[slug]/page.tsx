@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Markdown, { type Components } from "react-markdown";
+import { GuideToc } from "~/components/site/GuideToc";
 import { getGuide, getGuidesByCategory, guides } from "~/lib/guides";
+import { slugify } from "~/lib/slugify";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -55,15 +57,6 @@ const articleStyles = [
   "[&_pre]:my-6 [&_pre]:overflow-x-auto [&_pre]:border [&_pre]:border-white/10 [&_pre]:bg-black/40 [&_pre]:p-4 [&_pre]:text-sm [&_pre]:leading-6",
   "[&_pre_code]:bg-transparent [&_pre_code]:p-0",
 ].join(" ");
-
-/** Same slug for the heading id and the "On this page" link. */
-function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/[`*_]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 function textOf(node: React.ReactNode): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
@@ -175,28 +168,7 @@ export default async function GuidePage({ params }: Props) {
         </p>
         <article className={articleStyles}>
           <Markdown components={markdownComponents}>{intro}</Markdown>
-          {sections.length >= 3 && (
-            <nav
-              aria-label="On this page"
-              className="my-8 border-l-2 border-cyan-300/40 bg-cyan-300/[0.03] px-5 py-4"
-            >
-              <p className="!mt-0 !mb-2 font-mono !text-xs !leading-5 tracking-widest !text-slate-400 uppercase">
-                On this page
-              </p>
-              <ol className="!my-0 !list-none columns-1 gap-8 !pl-0 sm:columns-2">
-                {sections.map((section) => (
-                  <li key={section.id} className="!mb-1 !pl-0 !leading-7">
-                    <a
-                      href={`#${section.id}`}
-                      className="!text-slate-300 !no-underline hover:!text-cyan-200"
-                    >
-                      {section.title}
-                    </a>
-                  </li>
-                ))}
-              </ol>
-            </nav>
-          )}
+          {sections.length >= 3 && <GuideToc sections={sections} />}
           <Markdown components={markdownComponents}>{body}</Markdown>
         </article>
         {category && (

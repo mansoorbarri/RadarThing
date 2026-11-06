@@ -243,7 +243,7 @@ function EditableCodes({
             onKeyDown={handleKeyDown}
             placeholder="IATA"
             maxLength={2}
-            className="w-14 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400"
+            className="w-14 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             disabled={isSaving}
             autoFocus
           />
@@ -255,7 +255,7 @@ function EditableCodes({
           onKeyDown={handleKeyDown}
           placeholder={draftIsMilitary ? "AF Name" : "ICAO"}
           maxLength={draftIsMilitary ? 10 : 4}
-          className={`rounded-md border bg-black/60 px-2 py-1 font-mono text-sm outline-none ${draftIsMilitary ? "w-20 border-amber-500/50 text-amber-400 focus:border-amber-400" : "w-16 border-blue-500/50 text-blue-400 focus:border-blue-400"}`}
+          className={`rounded-md border bg-black/60 px-2 py-1 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 ${draftIsMilitary ? "w-20 border-amber-500/50 text-amber-400 focus:border-amber-400" : "w-16 border-blue-500/50 text-blue-400 focus:border-blue-400"}`}
           disabled={isSaving}
           autoFocus={draftIsMilitary}
         />
@@ -265,7 +265,7 @@ function EditableCodes({
           onChange={(e) => setAircraftType(e.target.value.toUpperCase())}
           onKeyDown={handleKeyDown}
           placeholder="Aircraft"
-          className="w-24 rounded-md border border-white/20 bg-black/60 px-2 py-1 font-mono text-sm text-white outline-none focus:border-white/40"
+          className="w-24 rounded-md border border-white/20 bg-black/60 px-2 py-1 font-mono text-sm text-white outline-none focus:border-white/40 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           disabled={isSaving}
         />
         <button
@@ -913,7 +913,7 @@ export function AircraftImagesTab({
             value={imageSearchQuery}
             onChange={(e) => setImageSearchQuery(e.target.value)}
             placeholder="Search by airline, aircraft, Discord username, Convex ID…"
-            className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
+            className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

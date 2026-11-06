@@ -163,7 +163,7 @@ export default function PricingPage() {
               <Zap className="h-7 w-7 text-cyan-300" />
             </div>
             <p className="mb-2 font-mono text-[11px] tracking-[0.18em] text-cyan-300/80 uppercase">
-              Free Trial Active
+              Free trial active
             </p>
             <h1 className="mb-3 text-3xl font-bold text-white">
               {daysLeft} {daysLeft === 1 ? "day" : "days"} of Pro left
@@ -209,7 +209,7 @@ export default function PricingPage() {
               <Check className="h-7 w-7 text-emerald-300" />
             </div>
             <p className="mb-2 font-mono text-[11px] tracking-[0.18em] text-emerald-300/80 uppercase">
-              Subscription Active
+              Subscription active
             </p>
             <h1 className="mb-3 text-3xl font-bold text-white">
               You&apos;re flying with Pro
@@ -259,8 +259,10 @@ export default function PricingPage() {
         id="main-content"
         className="relative mx-auto max-w-5xl px-6 py-14 md:py-20"
       >
-        <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
-          <section>
+        {/* Phones read heading, then the plan card, then the details; on
+            desktop the card sits in the right column beside both. */}
+        <div className="grid gap-x-10 gap-y-8 lg:grid-cols-[1.15fr_0.85fr] lg:gap-y-0">
+          <div className="lg:col-start-1 lg:row-start-1">
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-cyan-400/35 bg-cyan-400/10 px-3 py-1.5">
               <Zap className="h-3.5 w-3.5 text-cyan-300" />
               <span className="font-mono text-[11px] tracking-wider text-cyan-200 uppercase">
@@ -275,61 +277,9 @@ export default function PricingPage() {
               airport charts, and deep flight analytics built for serious GeoFS
               pilots.
             </p>
+          </div>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              <SignalCard
-                title="Aviation weather"
-                value="Live"
-                subtitle="NOTAMs, AIRMETs, SIGMETs, D-ATIS"
-              />
-              <SignalCard
-                title="Flight history"
-                value="Full"
-                subtitle={`Free gets ${FREE_RECENT_FLIGHTS_LIMIT} recent flights, Pro gets your full archive`}
-              />
-              <SignalCard
-                title="Charts access"
-                value="Global"
-                subtitle={`Unlimited airports worldwide. Free gets ${FREE_DAILY_ALLOWANCE.charts} US airports a day`}
-              />
-            </div>
-
-            <div className="mt-10 space-y-6">
-              <FeatureSection
-                title="Weather intelligence"
-                description="Stay ahead of hazardous conditions with real-time aviation weather feeds."
-                features={[
-                  "D-ATIS for US airports",
-                  "International AIRMETs & SIGMETs",
-                  "Full NOTAM access with decoded information",
-                  "Global weather coverage",
-                ]}
-              />
-
-              <FeatureSection
-                title="Airport data"
-                description="Procedures and charts where you need them while tracking flights."
-                features={[
-                  "Unlimited interactive airport charts",
-                  "Detailed airport diagrams",
-                  "Approach, SID, and STAR procedures",
-                ]}
-              />
-
-              <FeatureSection
-                title="Pilot analytics"
-                description={`Track your flying activity with meaningful stats. Free includes your last ${FREE_RECENT_FLIGHTS_LIMIT} flights, and Pro unlocks the full archive.`}
-                features={[
-                  `Last ${FREE_RECENT_FLIGHTS_LIMIT} flights on Free`,
-                  "Full flight history on Pro",
-                  "Total flight time on Pro",
-                  "Top aircraft, routes, and airports on Pro",
-                ]}
-              />
-            </div>
-          </section>
-
-          <aside className="order-first lg:sticky lg:top-24 lg:order-none lg:self-start">
+          <aside className="lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
             <div className="relative overflow-hidden rounded-3xl border border-cyan-400/25 bg-[#07101a]/85 p-7 shadow-[0_20px_70px_rgba(6,182,212,0.18)] backdrop-blur-xl">
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/70 to-transparent" />
               <p className="font-mono text-[11px] tracking-[0.16em] text-cyan-200/80 uppercase">
@@ -430,6 +380,60 @@ export default function PricingPage() {
               </div>
             </div>
           </aside>
+
+          <section className="lg:col-start-1 lg:row-start-2">
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              <SignalCard
+                title="Aviation weather"
+                value="Live"
+                subtitle="NOTAMs, AIRMETs, SIGMETs, D-ATIS"
+              />
+              <SignalCard
+                title="Flight history"
+                value="Full"
+                subtitle={`Free gets ${FREE_RECENT_FLIGHTS_LIMIT} recent flights, Pro gets your full archive`}
+              />
+              <SignalCard
+                title="Charts access"
+                value="Global"
+                subtitle={`Unlimited airports worldwide. Free gets ${FREE_DAILY_ALLOWANCE.charts} US airports a day`}
+              />
+            </div>
+
+            <div className="mt-10 space-y-6">
+              <FeatureSection
+                title="Weather intelligence"
+                description="Stay ahead of hazardous conditions with real-time aviation weather feeds."
+                features={[
+                  "D-ATIS for US airports",
+                  "International AIRMETs & SIGMETs",
+                  "Full NOTAM access with decoded information",
+                  "Global weather coverage",
+                ]}
+              />
+
+              <FeatureSection
+                title="Airport data"
+                description="Procedures and charts where you need them while tracking flights."
+                features={[
+                  "Unlimited interactive airport charts",
+                  "Detailed airport diagrams",
+                  "Approach, SID, and STAR procedures",
+                ]}
+              />
+
+              <FeatureSection
+                title="Pilot analytics"
+                description={`Track your flying activity with meaningful stats. Free includes your last ${FREE_RECENT_FLIGHTS_LIMIT} flights, and Pro unlocks the full archive.`}
+                features={[
+                  `Last ${FREE_RECENT_FLIGHTS_LIMIT} flights on Free`,
+                  "Full flight history on Pro",
+                  "Total flight time on Pro",
+                  "Top aircraft, routes, and airports on Pro",
+                ]}
+              />
+            </div>
+          </section>
         </div>
 
         <PlanComparison />

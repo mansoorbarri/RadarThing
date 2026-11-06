@@ -155,7 +155,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
                 maxLength={4}
                 required
                 disabled={isProcessing}
-                className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
               />
             </div>
             <div>

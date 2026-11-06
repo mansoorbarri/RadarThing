@@ -3,6 +3,7 @@
 import { useId, useMemo, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
+import { slugify } from "~/lib/slugify";
 
 export interface GuideSearchEntry {
   slug: string;
@@ -22,11 +23,22 @@ export function GuideSearch({ guides }: { guides: GuideSearchEntry[] }) {
   const results = useMemo(() => {
     const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
     if (terms.length === 0) return null;
-    return guides.filter((guide) => {
-      const haystack =
-        `${guide.title} ${guide.description} ${guide.category} ${(guide.sections ?? []).join(" ")}`.toLowerCase();
-      return terms.every((term) => haystack.includes(term));
-    });
+    return guides
+      .filter((guide) => {
+        const haystack =
+          `${guide.title} ${guide.description} ${guide.category} ${(guide.sections ?? []).join(" ")}`.toLowerCase();
+        return terms.every((term) => haystack.includes(term));
+      })
+      .map((guide) => {
+        // When the match is inside the guide, point straight at that section.
+        const intro = `${guide.title} ${guide.description}`.toLowerCase();
+        const section = terms.every((term) => intro.includes(term))
+          ? undefined
+          : guide.sections?.find((heading) =>
+              terms.some((term) => heading.toLowerCase().includes(term)),
+            );
+        return { ...guide, matchedSection: section };
+      });
   }, [guides, query]);
 
   return (
@@ -75,12 +87,17 @@ export function GuideSearch({ guides }: { guides: GuideSearchEntry[] }) {
                     className="border-b border-white/5 last:border-b-0"
                   >
                     <Link
-                      href={`/guides/${guide.slug}`}
-                      className="block px-4 py-3 hover:bg-cyan-300/5 focus-visible:bg-cyan-300/5 focus-visible:outline-none"
+                      href={`/guides/${guide.slug}${guide.matchedSection ? `#${slugify(guide.matchedSection)}` : ""}`}
+                      className="block px-4 py-3 hover:bg-cyan-300/5 focus-visible:bg-cyan-300/5 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none focus-visible:ring-inset"
                     >
                       <span className="block font-medium text-white">
                         {guide.title}
                       </span>
+                      {guide.matchedSection && (
+                        <span className="mt-0.5 block text-sm text-cyan-200">
+                          Section: {guide.matchedSection}
+                        </span>
+                      )}
                       <span className="mt-0.5 block text-sm text-slate-400">
                         {guide.category} · {guide.description}
                       </span>

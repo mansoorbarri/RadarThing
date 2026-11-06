@@ -189,11 +189,20 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
           )}
         </div>
       )}
-      {effectiveIcao.length > 0 && effectiveIcao.length < 4 && (
-        <p className="max-w-[300px] rounded-lg border border-white/10 bg-black/85 px-3 py-2 text-[12px] text-slate-300">
-          Enter all 4 characters of the ICAO code.
-        </p>
-      )}
+      {/* Always rendered so the message is announced when it appears. */}
+      <p
+        id="metar-icao-partial"
+        aria-live="polite"
+        className={
+          effectiveIcao.length > 0 && effectiveIcao.length < 4
+            ? "max-w-[300px] rounded-lg border border-white/10 bg-black/85 px-3 py-2 text-[12px] text-slate-300"
+            : "sr-only"
+        }
+      >
+        {effectiveIcao.length > 0 && effectiveIcao.length < 4
+          ? "Enter all 4 characters of the ICAO code."
+          : ""}
+      </p>
       {metarText && (
         <div className="max-w-[300px] rounded-lg border border-cyan-300/30 bg-gradient-to-br from-black/85 to-cyan-950/90 p-3 text-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.2)]">
           <button
@@ -247,7 +256,7 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
           autoComplete="off"
           spellCheck={false}
           placeholder="e.g. KJFK"
-          aria-describedby="metar-icao-hint"
+          aria-describedby="metar-icao-hint metar-icao-partial"
           className="w-24 flex-1 rounded border border-cyan-300/40 bg-transparent px-2 py-[5px] text-[13px] text-cyan-300 transition-all outline-none placeholder:text-cyan-200/50 focus:border-cyan-300 focus:bg-cyan-400/10 focus-visible:ring-2 focus-visible:ring-cyan-300"
         />
         <span id="metar-icao-hint" className="sr-only">

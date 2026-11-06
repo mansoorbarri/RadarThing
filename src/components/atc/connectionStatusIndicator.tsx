@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import clsx from "clsx";
 import { RotateCw } from "lucide-react";
 
@@ -9,8 +9,8 @@ interface ConnectionStatusIndicatorProps {
   lastMessageAgeSeconds?: number | null;
   error?: string | null;
   onReconnect?: () => void;
-  /** Seconds until the next automatic reconnect, for the countdown. */
-  retryInSeconds?: number | null;
+  /** When the next automatic reconnect happens, for the countdown. */
+  nextRetryAt?: number | null;
 }
 
 export const ConnectionStatusIndicator: React.FC<
@@ -22,8 +22,13 @@ export const ConnectionStatusIndicator: React.FC<
   lastMessageAgeSeconds,
   error,
   onReconnect,
-  retryInSeconds,
+  nextRetryAt,
 }) => {
+  const retryInSeconds = useRetryCountdown(
+    status === "disconnected" ? (nextRetryAt ?? null) : null,
+  );
+  const isOffline =
+    typeof navigator !== "undefined" && navigator.onLine === false;
   const baseStyle = isMobile
     ? "flex items-center rounded-md border font-mono text-[11px] font-semibold px-2 py-1 transition-all duration-200 shadow-[0_0_6px_rgba(0,255,255,0.25)]"
     : "flex items-center rounded-md border font-mono text-[12px] font-semibold px-3 py-1.5 transition-all duration-200 shadow-[0_0_6px_rgba(0,255,255,0.25)]";
@@ -94,6 +99,11 @@ export const ConnectionStatusIndicator: React.FC<
           )}
         >
           {pillText}
+          {typeof retryInSeconds === "number" && retryInSeconds > 0 && (
+            <span aria-hidden="true" className="tabular-nums">
+              {retryInSeconds}s
+            </span>
+          )}
           <RotateCw className="h-3 w-3 shrink-0" aria-hidden="true" />
         </button>
       </>
@@ -118,9 +128,11 @@ export const ConnectionStatusIndicator: React.FC<
           >
             {[
               error,
-              typeof retryInSeconds === "number" && retryInSeconds > 0
-                ? `Retrying in ${retryInSeconds}s`
-                : "Retrying…",
+              isOffline
+                ? "Waiting for network…"
+                : typeof retryInSeconds === "number" && retryInSeconds > 0
+                  ? `Retrying in ${retryInSeconds}s`
+                  : "Retrying…",
             ]
               .filter(Boolean)
               .join(" ")}
@@ -139,3 +151,16 @@ export const ConnectionStatusIndicator: React.FC<
     </div>
   );
 };
+
+/** Seconds left until `target`, ticking once a second. */
+function useRetryCountdown(target: number | null) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (target === null) return;
+    setNow(Date.now());
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [target]);
+  if (target === null) return null;
+  return Math.max(0, Math.ceil((target - now) / 1000));
+}

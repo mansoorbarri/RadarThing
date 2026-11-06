@@ -20,6 +20,7 @@ import {
   Download,
 } from "lucide-react";
 import userscriptConfig from "../../../userscript-src/config.json";
+import { FREE_DAILY_ALLOWANCE } from "~/lib/freeAllowance";
 import { freePlanItems, proPlanItems } from "~/lib/plans";
 import { guides } from "~/lib/guides";
 
@@ -334,7 +335,7 @@ export default function HomePage() {
               <FeatureCard
                 icon={Building2}
                 title="Airport charts"
-                description="Taxi charts, SIDs, STARs and approaches. Three US airports a day free, unlimited with Pro"
+                description={`Taxi charts, SIDs, STARs and approaches. ${FREE_DAILY_ALLOWANCE.charts} US airports a day free, unlimited with Pro`}
               />
               <FeatureCard
                 icon={Headphones}

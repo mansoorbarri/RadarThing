@@ -235,7 +235,7 @@ export function AdminTelemetryTab({
             value={userFilter}
             onChange={(event) => setUserFilter(event.target.value)}
             placeholder="Filter by user, email, Discord, or Clerk ID…"
-            className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus:bg-white/[0.07]"
+            className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus:bg-white/[0.07] focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </div>
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">

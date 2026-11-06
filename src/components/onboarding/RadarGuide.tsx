@@ -189,12 +189,12 @@ const STEPS: GuideStep[] = [
   {
     id: "toolkit",
     eyebrow: "Control dock",
-    title: "Open the control dock",
+    title: "Open the menu",
     description:
-      "The dock icon in the bottom-right opens live flight and airport lists, filters, shortcuts, community pages, uploads, and Help.",
-    hint: "Click the highlighted dock icon to continue.",
+      "The Menu button in the bottom-right opens live flight and airport lists, filters, shortcuts, community pages, uploads, and Help.",
+    hint: "Click the highlighted Menu button to continue.",
     targets: ['[data-tour="radar-tools"]'],
-    task: { type: "event", eventName: "click", prompt: "Open the dock" },
+    task: { type: "event", eventName: "click", prompt: "Open the menu" },
     icon: Wrench,
   },
   {

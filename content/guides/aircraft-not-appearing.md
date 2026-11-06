@@ -31,10 +31,10 @@ What the other statuses mean:
 | **Waiting for your aircraft…** | GeoFS hasn't placed your aircraft yet. | Wait for the simulator to finish loading. |
 | **Connection issue · retrying** | Updates aren't reaching RadarThing. | It keeps retrying by itself. Press **Retry now** to try straight away. |
 | **Can't reach RadarThing · retrying** | Several attempts in a row have failed. | Check your connection, then press **Retry now**. |
-| **You're offline · waiting for a connection** | Your browser has no network. | Tracking resumes as soon as you're back online. |
+| **Offline · waiting for network** | Your browser has no network. | Tracking resumes as soon as you're back online. |
 | **RadarThing is busy · retrying** | The server asked for fewer updates for a moment. | Nothing; it slows down and carries on. |
 | **Update rejected · check your flight info** | The server refused the flight details. | Check the airports and callsign, then press **Edit flight** and **Update flight**. |
-| **Flight plan too large · shorten your route** | Your GeoFS flight plan has too many waypoints. | Remove some waypoints in GeoFS. |
+| **Route too long · remove waypoints** | Your GeoFS flight plan has too many waypoints. | Remove some waypoints in GeoFS. |
 
 If the panel reports *Callsign already in use*, another pilot is flying with that callsign. Change a digit and press **Start tracking** again. If it reports that the squawk is invalid, the squawk must be four digits, each 0–7, or left empty.
 

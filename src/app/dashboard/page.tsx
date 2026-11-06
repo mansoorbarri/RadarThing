@@ -45,6 +45,7 @@ import { UserAuth } from "~/components/atc/userAuth";
 import { SystemThemeLogo } from "~/components/ui/SystemThemeLogo";
 import { SiteFooter } from "~/components/site/SiteFooter";
 import { SiteHeader } from "~/components/site/SiteHeader";
+import { DashboardSkeleton } from "./DashboardSkeleton";
 import { ActiveChallengesPanel } from "~/components/challenges/ActiveChallengesPanel";
 import { FlightCardDialog } from "~/components/flight-card/FlightCardDialog";
 import type { FlightCardData } from "~/components/flight-card/FlightCard";
@@ -496,22 +497,11 @@ export default function DashboardPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => {
-                        // Two steps, like the other destructive actions.
-                        if (!confirmDiscordDisconnect) {
-                          setConfirmDiscordDisconnect(true);
-                          return;
-                        }
-                        setConfirmDiscordDisconnect(false);
-                        void disconnectDiscord();
-                      }}
-                      onBlur={() => setConfirmDiscordDisconnect(false)}
+                      onClick={() => setConfirmDiscordDisconnect(true)}
                       disabled={discordLoading}
-                      className={`inline-flex min-h-10 cursor-pointer items-center font-mono text-xs transition-colors disabled:opacity-50 ${confirmDiscordDisconnect ? "font-semibold text-red-300" : "text-slate-400 hover:text-red-400"}`}
+                      className="inline-flex min-h-10 cursor-pointer items-center font-mono text-xs text-slate-400 transition-colors hover:text-red-400 disabled:opacity-50"
                     >
-                      {confirmDiscordDisconnect
-                        ? "Click again to disconnect"
-                        : "Disconnect"}
+                      Disconnect
                     </button>
                   </div>
                 ) : (
@@ -568,6 +558,7 @@ export default function DashboardPage() {
                 value={formatFlightTime(stats.totalFlightTimeMs)}
                 color="purple"
                 locked={showProLocks}
+                loading={proLoading}
               />
               <StatCard
                 icon={<MapPin className="h-5 w-5" />}
@@ -575,6 +566,7 @@ export default function DashboardPage() {
                 value={stats.uniqueAirports.toString()}
                 color="emerald"
                 locked={showProLocks}
+                loading={proLoading}
               />
             </div>
 
@@ -585,7 +577,7 @@ export default function DashboardPage() {
               approvedAirportCharts > 0) ? (
               <div className="mb-8">
                 <h2 className="mb-4 font-mono text-xs font-bold tracking-widest text-slate-300 uppercase">
-                  YOUR CONTRIBUTIONS
+                  Your contributions
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   {approvedAircraftImages !== undefined &&
@@ -852,7 +844,7 @@ export default function DashboardPage() {
         {/* Account Section */}
         <div className="mt-12">
           <h2 className="mb-4 font-mono text-xs font-bold tracking-widest text-slate-300 uppercase">
-            ACCOUNT
+            Account
           </h2>
 
           <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
@@ -913,10 +905,15 @@ export default function DashboardPage() {
                       Plan
                     </div>
                     <div className="text-sm">
-                      {isPro ? (
+                      {proLoading ? (
+                        <span
+                          aria-label="Loading plan"
+                          className="inline-block h-4 w-12 animate-pulse rounded bg-white/10 align-middle motion-reduce:animate-none"
+                        />
+                      ) : isPro ? (
                         <span className="text-emerald-400">Pro</span>
                       ) : (
-                        <span className="text-slate-400">Free Tier</span>
+                        <span className="text-slate-400">Free</span>
                       )}
                     </div>
                   </div>
@@ -947,7 +944,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <h3 className="mb-3 px-2 font-mono text-xs font-bold tracking-widest text-slate-400 uppercase">
-                  Account Actions
+                  Account actions
                 </h3>
                 <div className="flex flex-col gap-2 md:h-14 md:flex-row">
                   <AccountActionButton
@@ -1240,6 +1237,35 @@ export default function DashboardPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog
+        open={confirmDiscordDisconnect}
+        onOpenChange={setConfirmDiscordDisconnect}
+      >
+        <AlertDialogContent className="border-white/10 bg-[#0a0f14]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">
+              Disconnect Discord?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-300">
+              Your Discord username will no longer show on your profile or the
+              leaderboard. Your flights and stats stay as they are, and you can
+              connect again at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-white/12 bg-white/[0.04] text-slate-200 hover:bg-white/[0.08] hover:text-white">
+              Keep connected
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => void disconnectDiscord()}
+              className="border border-red-500/30 bg-red-500/85 text-white hover:bg-red-500"
+            >
+              Disconnect
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {cardFlight && (
         <FlightCardDialog
           data={cardFlight}
@@ -1260,6 +1286,7 @@ function StatCard({
   value,
   color,
   locked = false,
+  loading = false,
   subtitle,
 }: {
   icon: React.ReactNode;
@@ -1267,6 +1294,8 @@ function StatCard({
   value: string;
   color: "cyan" | "blue" | "purple" | "emerald" | "amber";
   locked?: boolean;
+  /** Plan still loading: show a placeholder, not a value that may lock. */
+  loading?: boolean;
   subtitle?: string;
 }) {
   const colorClasses = {
@@ -1287,9 +1316,14 @@ function StatCard({
       <div className="mb-1 font-mono text-xs tracking-wider text-slate-400 uppercase">
         {label}
       </div>
-      {locked ? (
+      {loading ? (
+        <div
+          aria-label="Loading"
+          className="h-8 w-20 animate-pulse rounded bg-white/10 motion-reduce:animate-none"
+        />
+      ) : locked ? (
         <div className="flex items-center gap-2">
-          <Lock className="h-4 w-4 text-slate-400" />
+          <Lock className="h-4 w-4 text-slate-400" aria-hidden="true" />
           <span className="font-mono text-sm text-slate-400">Pro</span>
         </div>
       ) : (
@@ -1499,84 +1533,5 @@ function DiscordIcon({ className }: { className?: string }) {
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
       <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
     </svg>
-  );
-}
-
-function DashboardSkeleton() {
-  return (
-    <div className="dashboard-theme-surface bg-site min-h-screen text-white">
-      <SiteHeader tone="themed" />
-
-      <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
-        {/* Profile Header */}
-        <div className="mb-10">
-          <div className="mb-2 flex items-center gap-4">
-            <div className="h-14 w-14 animate-pulse rounded-full bg-white/10" />
-            <div>
-              <div className="mb-2 h-8 w-48 animate-pulse rounded bg-white/10" />
-              <div className="h-4 w-24 animate-pulse rounded bg-white/10" />
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-white/10 bg-black/40 p-5 backdrop-blur-xl"
-            >
-              <div className="mb-3 h-9 w-9 animate-pulse rounded-lg bg-white/10" />
-              <div className="mb-2 h-3 w-20 animate-pulse rounded bg-white/10" />
-              <div className="h-8 w-24 animate-pulse rounded bg-white/10" />
-            </div>
-          ))}
-        </div>
-
-        {/* Three Column Grid */}
-        <div className="mb-8 grid gap-6 lg:grid-cols-3">
-          {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl"
-            >
-              <div className="mb-4 h-4 w-28 animate-pulse rounded bg-white/10" />
-              <div className="space-y-3">
-                {[...Array(5)].map((_, j) => (
-                  <div key={j} className="flex items-center justify-between">
-                    <div className="h-4 w-24 animate-pulse rounded bg-white/10" />
-                    <div className="h-4 w-16 animate-pulse rounded bg-white/10" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Recent Flights */}
-        <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
-          <div className="mb-6 flex items-center justify-between">
-            <div className="h-4 w-32 animate-pulse rounded bg-white/10" />
-            <div className="h-3 w-24 animate-pulse rounded bg-white/10" />
-          </div>
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4"
-              >
-                <div className="h-10 w-10 animate-pulse rounded-lg bg-white/10" />
-                <div className="flex-1">
-                  <div className="mb-2 h-4 w-40 animate-pulse rounded bg-white/10" />
-                  <div className="h-3 w-32 animate-pulse rounded bg-white/10" />
-                </div>
-                <div className="h-3 w-16 animate-pulse rounded bg-white/10" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </main>
-      <SiteFooter />
-    </div>
   );
 }

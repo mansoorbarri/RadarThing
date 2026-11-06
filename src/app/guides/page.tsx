@@ -18,7 +18,7 @@ export default async function GuidesPage() {
       guides.map(async (guide) => {
         const full = await getGuide(guide.slug);
         const sections = Array.from(
-          full?.markdown.matchAll(/^##+ (.+)$/gm) ?? [],
+          full?.markdown.matchAll(/^## (.+)$/gm) ?? [],
           (match) => match[1]!.replace(/[`*_]/g, "").trim(),
         );
         return [guide.slug, sections] as const;

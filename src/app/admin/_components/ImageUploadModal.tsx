@@ -193,7 +193,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   maxLength={10}
                   required
                   disabled={isProcessing}
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
               <div>
@@ -214,7 +214,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   required
                   disabled={isProcessing}
                   title="Use base model only (e.g., F16, C130)"
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -237,7 +237,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   maxLength={2}
                   required
                   disabled={isProcessing}
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
               <div>
@@ -257,7 +257,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   maxLength={4}
                   required
                   disabled={isProcessing}
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
               <div>
@@ -278,7 +278,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   required
                   disabled={isProcessing}
                   title="Use base model only (e.g., B777, A350) — not variants"
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
             </div>

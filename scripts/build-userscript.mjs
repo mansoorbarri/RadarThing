@@ -253,6 +253,9 @@ function buildInstaller() {
     GM_registerMenuCommand("Reset panel position", () =>
       send("radarthing-menu-reset-position"),
     );
+    GM_registerMenuCommand("Open the RadarThing radar", () =>
+      window.open(${JSON.stringify(siteUrl + "/radar")}, "_blank", "noopener"),
+    );
   }
 
   if (pageWindow.__radarThingLoaded || pageWindow.__radarThingBooting) {

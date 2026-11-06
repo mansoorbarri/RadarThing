@@ -25,7 +25,7 @@ export const useAircraftStream = () => {
   const [error, setError] = useState<string | null>(null);
   // When the next automatic reconnect happens, for a live countdown.
   const [nextRetryAt, setNextRetryAt] = useState<number | null>(null);
-  const [retryInSeconds, setRetryInSeconds] = useState<number | null>(null);
+
   const [connectionStatus, setConnectionStatus] = useState<
     "connecting" | "connected" | "disconnected"
   >("connecting");
@@ -202,20 +202,6 @@ export const useAircraftStream = () => {
   }, [reconnectNow]);
 
   useEffect(() => {
-    if (nextRetryAt === null) {
-      setRetryInSeconds(null);
-      return;
-    }
-    const tick = () =>
-      setRetryInSeconds(
-        Math.max(0, Math.ceil((nextRetryAt - Date.now()) / 1000)),
-      );
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, [nextRetryAt]);
-
-  useEffect(() => {
     connectToStream();
     return () => {
       if (eventSourceRef.current) eventSourceRef.current.close();
@@ -235,6 +221,8 @@ export const useAircraftStream = () => {
     lastMessageAt,
     lastMessageAgeSeconds,
     reconnectNow,
-    retryInSeconds,
+    // The status pill counts down to this itself, so the radar page doesn't
+    // re-render every second while offline.
+    nextRetryAt,
   };
 };

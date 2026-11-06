@@ -402,7 +402,7 @@ export default function AircraftImagesClient({
         return (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            Uploading Image…
+            Uploading image…
           </>
         );
       case "submitting":
@@ -500,7 +500,7 @@ export default function AircraftImagesClient({
             <input
               type="search"
               aria-label="Search aircraft images by airline, aircraft type or Discord username"
-              placeholder="Search by airline, aircraft type, discord username…"
+              placeholder="Search by airline, aircraft type or Discord username…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
@@ -1001,7 +1001,7 @@ export default function AircraftImagesClient({
                       })
                     }
                     placeholder="e.g., UAE"
-                    maxLength={4}
+                    maxLength={3}
                     required
                     disabled={isProcessing}
                     className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50 aria-[invalid=true]:border-red-400/70"

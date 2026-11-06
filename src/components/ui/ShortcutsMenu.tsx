@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { FocusTrap } from "~/components/ui/focus-trap";
 
 interface ShortcutGroup {
   title: string;
@@ -60,50 +60,32 @@ export function ShortcutsMenu({
   isUiHidden,
   onUiHiddenChange,
 }: ShortcutsMenuProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-
-    const handleMouseDown = (event: MouseEvent) => {
-      if (
-        panelRef.current &&
-        !panelRef.current.contains(event.target as Node)
-      ) {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("mousedown", handleMouseDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("mousedown", handleMouseDown);
-    };
-  }, [open, onClose]);
-
   if (!open) return null;
 
   if (isMobile) {
     return (
-      <div className="fixed inset-0 z-[10024] flex items-end bg-black/70 px-3 pb-3 backdrop-blur-sm">
-        <div
-          ref={panelRef}
+      <div
+        className="fixed inset-0 z-[10024] flex items-end bg-black/70 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) onClose();
+        }}
+      >
+        <FocusTrap
+          onEscape={onClose}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="radar-controls-title"
           className="w-full overflow-hidden rounded-2xl border border-cyan-400/20 bg-[#071019]/95 shadow-[0_24px_80px_rgba(0,0,0,0.65)]"
         >
           <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4">
             <div>
               <p className="font-mono text-[11px] tracking-[0.24em] text-cyan-400/75 uppercase">
-                Radar Controls
+                Radar controls
               </p>
-              <h2 className="mt-1 text-lg font-semibold text-white">
+              <h2
+                id="radar-controls-title"
+                className="mt-1 text-lg font-semibold text-white"
+              >
                 Quick toggles
               </h2>
             </div>
@@ -142,29 +124,39 @@ export function ShortcutsMenu({
               onChange={(enabled) => onUiHiddenChange(!enabled)}
             />
           </div>
-        </div>
+        </FocusTrap>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-[10024] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-      <div
-        ref={panelRef}
+    <div
+      className="fixed inset-0 z-[10024] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <FocusTrap
+        onEscape={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="radar-shortcuts-title"
         className={`w-full overflow-hidden rounded-2xl border border-cyan-400/20 bg-[#071019]/95 shadow-[0_24px_80px_rgba(0,0,0,0.65)] ${isMobile ? "max-w-sm" : "max-w-4xl"}`}
       >
         <div className="border-b border-white/10 px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-mono text-[11px] tracking-[0.24em] text-cyan-400/75 uppercase">
-                Radar Shortcuts
+                Radar shortcuts
               </p>
-              <h2 className="mt-1 text-xl font-semibold text-white">
-                Shortcut Reference
+              <h2
+                id="radar-shortcuts-title"
+                className="mt-1 text-xl font-semibold text-white"
+              >
+                Keyboard and mouse shortcuts
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
-                Keyboard bindings can be customized in Radar Settings under
-                Misc. Mouse shortcuts are listed below.
+                You can change the U and F keys in Map settings, under Misc.
               </p>
             </div>
 
@@ -210,7 +202,7 @@ export function ShortcutsMenu({
             </section>
           ))}
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

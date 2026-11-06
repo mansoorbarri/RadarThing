@@ -664,7 +664,7 @@ export function VirtualAirlinesTab({
                         }
                         placeholder="Example Virtual"
                         disabled={submitting}
-                        className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
+                        className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
                       />
                     </div>
 
@@ -686,7 +686,7 @@ export function VirtualAirlinesTab({
                         placeholder="RVA"
                         maxLength={8}
                         disabled={submitting}
-                        className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 font-mono text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
+                        className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 font-mono text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
                       />
                       <p className="mt-1.5 text-xs text-slate-400">
                         Flights starting with this prefix get VA status.
@@ -709,7 +709,7 @@ export function VirtualAirlinesTab({
                       }
                       placeholder="https://example.com or discord.gg/your-va"
                       disabled={submitting}
-                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
+                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
                     />
                     <p className="mt-1.5 text-xs text-slate-400">
                       Used for the VA link in the radar sidebar.
@@ -728,7 +728,7 @@ export function VirtualAirlinesTab({
                         onChange={(event) => setSearch(event.target.value)}
                         placeholder="Search by Discord or Convex ID"
                         disabled={submitting}
-                        className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
+                        className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
                       />
                     </div>
 
@@ -941,7 +941,7 @@ export function VirtualAirlinesTab({
                           setMemberSearch(event.target.value)
                         }
                         placeholder="Search by Discord or Convex ID"
-                        className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
+                        className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
                       />
                     </div>
                     <div className="mt-2 space-y-1">
@@ -1007,7 +1007,7 @@ export function VirtualAirlinesTab({
                             fleetSubmitStage === "uploading" ||
                             fleetSubmitStage === "submitting"
                           }
-                          className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 font-mono text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
+                          className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 font-mono text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
                         />
                       </div>
                       <div>
