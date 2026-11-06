@@ -12,7 +12,7 @@ The result type matters: a flight locates live traffic, a pilot opens a profile,
 
 Selecting an aircraft opens its flight panel and draws its available route. The panel includes aircraft, altitude, speed, route, progress, and flight-plan details when that information is available.
 
-Read the unit shown beside a value, especially if you have changed the radar's unit settings. Missing route or flight-plan information should not be interpreted as a zero value or proof that the aircraft is not flying.
+Read the unit shown beside a value, especially if you have changed the radar's unit settings. [Reading flight telemetry](/guides/reading-flight-telemetry) explains each value in detail. Missing route or flight-plan information should not be interpreted as a zero value or proof that the aircraft is not flying.
 
 The highlighted Pilot link, when available, opens the aircraft's associated public pilot profile. This is also a useful route to that pilot's recent flight records.
 
@@ -26,18 +26,18 @@ On desktop, Ctrl + click adds or removes an aircraft from the current selection.
 
 OpenStreetMap provides geographic context, while OpenAIP offers an aviation-oriented map. Radar Mode is a Pro layer. Choose the layer that makes the current area easiest to read.
 
-Open Configuration using the gear control to adjust overlays, visibility, units, keyboard bindings, and saved layer presets. Check your configured bindings there rather than relying on shortcuts from someone else's setup.
+Open Configuration using the gear control to adjust overlays, visibility, units, keyboard bindings, and saved layer presets. [Radar settings, layers, and keyboard shortcuts](/guides/radar-settings-and-shortcuts) walks through every option.
 
 Precipitation is available to everyone. AIRMETs and SIGMETs are Pro overlays. Turning off an overlay changes the information drawn on your map; it does not stop a pilot's tracker.
 
 ## Open airport charts
 
-Search for an airport and select its airport result, then use Charts in the selected-airport bar. The viewer contains community-contributed ground, departure, arrival, and approach charts where available.
+Search for an airport and select its airport result, then use Charts in the selected-airport bar. The viewer has ground, SID, STAR, and approach charts where available. [Reading airport charts](/guides/airport-charts) explains how to use each type.
 
-Charts for US airports and territories are free once you sign in with Google, for up to three different airports per UTC day. Unlimited charts, and charts outside that coverage, are included with Pro. [Reading airport charts](/guides/reading-airport-charts) explains each chart type. Availability also depends on which charts the community has contributed, so an airport selection does not guarantee every procedure will be present.
+Free accounts can open charts for up to three US airports per UTC day; reopening an airport you have already viewed that day does not count again. Pro removes the limit and adds airports worldwide. Not every airport has every procedure yet.
 
 These resources support simulator flying only and must not be used for real-world flight planning or navigation.
 
 ## Get help without losing your place
 
-The radar menu's Help section includes Radar Tour for replaying the interactive introduction. The written guides are available from Guides in the same menu, including [Aircraft not appearing](/guides/aircraft-not-appearing) and [Flight history and replay](/guides/flight-history-and-replay).
+The radar menu includes Help for replaying the interactive tour. The written guides are available from Guides in the same menu, including [Aircraft not appearing](/guides/aircraft-not-appearing) and [Flight history and replay](/guides/flight-history-and-replay).

@@ -28,6 +28,7 @@ import { useAircraftStream } from "~/hooks/useAircraftStream";
 import { useAirlineTelephony } from "~/hooks/useAirlineTelephony";
 import { useAirportData } from "~/hooks/useAirportData";
 import { useAircraftSearch } from "~/hooks/useAircraftSearch";
+import { useTrackChange } from "~/hooks/useTrackChange";
 import { useActiveFlightPath } from "~/hooks/useActiveFlightPath";
 // useAirportCharts hook moved into AirportChartsViewer component
 import { useProStatus } from "~/hooks/useProStatus";
@@ -417,6 +418,50 @@ function ATCPageContent() {
     fetchAirports,
   );
 
+  // Report a search once the user stops typing, rather than on every keystroke.
+  const searchResultCount =
+    searchResults.aircrafts.length +
+    searchResults.airports.length +
+    searchResults.pilots.length;
+  useEffect(() => {
+    const query = searchTerm.trim();
+    if (query.length < 2) return;
+    const timer = setTimeout(() => {
+      Analytics.aircraftSearched({
+        query: query.slice(0, 32).toUpperCase(),
+        resultCount: searchResultCount,
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [searchTerm, searchResultCount]);
+
+  const selectedAircraftKey = selectedAircrafts
+    .map((ac) => ac.id || ac.callsign)
+    .join("|");
+  useTrackChange(selectedAircraftKey, (_key, previousKey) => {
+    const previousIds = new Set(previousKey.split("|"));
+    const added = selectedAircrafts.find(
+      (ac) => !previousIds.has(ac.id || ac.callsign),
+    );
+    if (!added) return;
+    Analytics.aircraftSelected({
+      callsign: added.callsign || added.flightNo || "unknown",
+      aircraftType: added.type,
+      selectionCount: selectedAircrafts.length,
+    });
+  });
+
+  useTrackChange(selectedAirport?.icao, (icao) => {
+    if (icao) Analytics.airportSelected({ icao });
+  });
+
+  useTrackChange(isFollowMode, (enabled) => {
+    Analytics.followModeToggled({
+      enabled,
+      callsign: selectedAircrafts[0]?.callsign,
+    });
+  });
+
   const prepareRadarGuideDock = useCallback(() => {
     setSelectedAircrafts([]);
     setSelectedAirport(undefined);
@@ -441,9 +486,7 @@ function ATCPageContent() {
 
   const selectedAircraft =
     selectedAircrafts.length === 1 ? selectedAircrafts[0]! : null;
-  const { flightPath: activeFlightPath } = useActiveFlightPath(
-    !isViewingHistory ? selectedAircraft : null,
-  );
+  useActiveFlightPath(!isViewingHistory ? selectedAircraft : null);
 
   const {
     recentSearches,
@@ -659,6 +702,7 @@ function ATCPageContent() {
       }
       return next;
     });
+    Analytics.aircraftFiltered({ prefix });
   }, []);
 
   const handleClearFilters = useCallback(() => {
@@ -810,13 +854,6 @@ function ATCPageContent() {
       drawMultipleFlightPlansOnMapRef.current(updatedSelection, false);
     }
   }, [aircrafts, isViewingHistory, selectedAircrafts]);
-
-  useEffect(() => {
-    if (!selectedAircraft || !activeFlightPath || isViewingHistory) return;
-
-    const aircraftId = selectedAircraft.callsign || selectedAircraft.id;
-    activeAircraft.mergeFlightPath(aircraftId, activeFlightPath);
-  }, [activeFlightPath, isViewingHistory, selectedAircraft]);
 
   useEffect(() => {
     if (!isReplayActive) return;
@@ -1723,6 +1760,10 @@ function ATCPageContent() {
                   data-tour="airport-charts-button"
                   onClick={() => {
                     setShowTaxiChart(true);
+                    Analytics.taxiChartViewed({
+                      icao: selectedAirport.icao,
+                      hasAccess: true,
+                    });
                   }}
                   className={`cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 ${isPhone ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[11px]"}`}
                 >
@@ -1970,6 +2011,7 @@ function ATCPageContent() {
             onOpenSideView={() => {
               setChartOverlayIcao(selectedAirport.icao);
               setChartOverlayActive(true);
+              Analytics.chartSideViewOpened({ icao: selectedAirport.icao });
             }}
           />
         )}

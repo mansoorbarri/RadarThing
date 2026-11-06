@@ -1,70 +1,84 @@
 # ACARS flight updates
 
-Publish short text updates from the cockpit so people watching your flight on the radar know what you are doing, and learn how to read and report updates from other pilots.
+Post short text updates from your GeoFS flight for radar viewers to read, and learn the rules that keep them friendly.
 
-## What ACARS is
+## What ACARS is in real aviation
 
-In real airliners, ACARS (Aircraft Communications Addressing and Reporting System) is a datalink that sends short text messages between the aircraft and the ground. Crews use it for things like departure clearances, weather requests, gate assignments, and position or delay reports to their airline's operations centre. It exists so that routine information doesn't have to compete with voice traffic on a busy radio frequency.
+ACARS, the Aircraft Communications Addressing and Reporting System, is a digital datalink used by real airlines. It lets the aircraft and the airline's operations centre exchange short text messages: departure and arrival times, weather requests, maintenance reports, and clearances. Pilots often call it the aircraft's "text messaging".
 
-RadarThing borrows the name for a simpler idea: a short log of updates that a pilot writes during a flight and that anyone watching the aircraft on the radar can read. It is one-way, from the pilot to viewers. It is not a chat system, and it does not send anything back into the cockpit.
+RadarThing borrows the name for something simpler: a way for pilots to post short updates about their flight, which anyone watching that flight on the radar can read.
 
-## Before you can publish
+## Why use ACARS updates
 
-ACARS posting lives in the RadarThing panel inside GeoFS, which the userscript adds. You need:
+Updates make your flight more interesting to follow. A line or two at the right moments turns a moving dot into a story:
 
-1. The RadarThing tracker installed and running. See [Getting started](/guides/getting-started).
-2. To be signed into GeoFS. ACARS is tied to your GeoFS account, so signed-out sessions cannot publish.
-3. An active flight. The ACARS Updates section turns on once your flight is being tracked. The text box and Publish ACARS button stay disabled until then.
+- *"Pushing back from stand 23, expecting runway 27R."*
+- *"Level FL360, smooth ride, ETA 14:20Z."*
+- *"Holding at LAM due to traffic. Expect 10 minutes."*
+- *"Go-around on the first approach, gusts 28 kt. Trying again."*
 
-The first time you use ACARS on a browser, the script registers that browser as an ACARS device for your pilot account. This happens automatically. It stops other people from posting under your name from a different machine.
+They are especially useful during group flights, VA events, and long-haul flights that friends are following.
 
-## Writing an update
+## Before you can post
 
-Open the ACARS Updates section of the panel, type your message, and choose **Publish ACARS**. Each update:
+To publish ACARS entries you need:
 
-- Can be **1 to 500 characters** long.
-- Can be published **once every 30 seconds**. If you try sooner, you will be asked to wait.
-- Belongs to the current flight. When you start a new flight, a new ACARS session begins, and updates from your previous flight stay behind.
+1. **A RadarThing account linked to your GeoFS account.** Sign in to RadarThing with the same Google account you use in GeoFS.
+2. **An active flight.** Fill in the RadarThing panel in GeoFS and press **Start tracking**. ACARS is tied to your current flight, so it is not available before you start tracking or after you end the flight.
 
-Your most recent **20 updates** are kept. Publishing a 21st removes the oldest, so the log always shows the latest part of the story. You can also remove any of your own updates from the list in the panel.
+If either is missing, the ACARS section of the panel will tell you what to do.
 
-## What to write
+## Posting an update
 
-Good ACARS updates are short and useful to someone who has just clicked on your aircraft. Some ideas, in roughly the order a flight happens:
+1. In GeoFS, open the RadarThing panel (press **W** by default).
+2. Expand the **ACARS** section.
+3. Write your update. Each entry can be up to 500 characters.
+4. Publish it.
 
-- **Before departure:** "EGLL–LIRF, BAW548, A320. Departing 27R via CPT, cruise FL360."
-- **Climb or cruise:** "Level FL360, light chop over the Alps, ETA 1540Z."
-- **Changes:** "Holding at ROKUM for 10 min, arrival traffic at KJFK."
-- **Abnormal or training scenarios:** "Simulated hydraulic failure, diverting to EDDM." This pairs well with an [emergency squawk](/guides/emergency-squawk-codes) so viewers know it is a scenario.
-- **Arrival:** "Landed 16R, taxiing to gate. Thanks for watching."
+Your entry appears in the ACARS section of your flight's panel on the radar. Viewers see the most recent 20 entries for the flight.
 
-Times in Zulu (UTC) are a good habit because viewers are spread across time zones. Use real airport ICAO codes so people can search for them on the radar.
+There is a 30-second interval between entries. If you try to publish sooner, wait a moment and try again. This keeps updates readable and prevents accidental floods.
 
-## Content rules
-
-ACARS updates are public, so every update is screened before it is published. Updates containing profanity, slurs or hate speech are rejected with the message "This ACARS entry could not be published under the content rules", and the attempt is logged for moderators. The filter matches whole words and common letter substitutions, so ordinary aviation words such as "cockpit" or "pass" are not caught by accident.
-
-Repeated abuse can lead to ACARS posting being switched off for a pilot. In that case you will see "ACARS posting is unavailable for this pilot". The wider rules in the [terms](/terms) apply to ACARS like everything else on RadarThing.
+To remove an entry you have published, delete it from the ACARS section of the panel.
 
 ## Reading updates on the radar
 
-Select an aircraft on [the radar](/radar). If the pilot has published updates for the current flight, the flight panel shows a **Pilot ACARS** section. Expand it to see the updates, latest first.
+On [the radar](/radar), select a flight and open its **ACARS** section in the flight panel. The section can be collapsed when you do not need it. Entries are tied to the flight session, so when the pilot starts a new flight, its ACARS feed starts fresh.
 
-ACARS is especially useful when:
+## Community rules
 
-- An aircraft is doing something unusual, such as holding, circling or diverting, and you want to know why.
-- You are following a friend or a virtual airline group flight and want to keep up without a separate chat.
-- You are watching an event and want to know which runway or procedure a pilot is using.
+ACARS entries are public, so they follow the same standards as the rest of RadarThing:
 
-## Reporting an update
+- **Keep it about the flight.** Status updates, weather, delays, and fun observations are all welcome.
+- **No offensive language, harassment, or personal information.** Entries are automatically screened before publication, and entries containing prohibited words are rejected.
+- **No spam or advertising.**
 
-If you see an update that breaks the rules, use the report action next to it. You need to be signed in to report, you cannot report your own entries, and each entry can only be reported once per person. Add a short reason (up to 2,000 characters) explaining the problem. Reports go to RadarThing moderators, who can remove the update and restrict the pilot's posting.
+### Reporting an entry
+
+If you see an entry that breaks the rules, sign in and use the report action next to it. Add a short reason. Reports go to the moderation team, who can remove entries and warn or ban accounts that misuse ACARS. You cannot report your own entries, and you can only report each entry once.
+
+## Writing good updates
+
+A few tips borrowed from real airline messages:
+
+- **Lead with the phase of flight.** *"Climbing"*, *"Cruise"*, *"Descending"* tells viewers immediately where you are.
+- **Use Zulu time.** If you mention a time, use UTC so that viewers in every time zone read it the same way.
+- **Be brief.** One or two sentences is usually enough. Viewers can see your altitude and speed already; tell them what the numbers cannot.
+- **Post at milestones.** Departure, top of climb, any notable event, top of descent, and arrival make a natural rhythm.
+
+A sample set for a two-hour flight might be:
+
+1. *"Boarding complete, pushing back. Departure runway 09L."*
+2. *"Airborne, climbing to FL340."*
+3. *"Top of climb. Light chop over the Alps, otherwise smooth."*
+4. *"Starting descent, expecting ILS 34L."*
+5. *"Landed, taxiing to stand. Thanks for following!"*
 
 ## Troubleshooting
 
-- **The text box is greyed out.** Your flight is not active yet. Make sure the tracker shows you as tracked, then wait a moment.
-- **"Sign in to GeoFS to publish ACARS".** You are flying signed out. Sign into GeoFS and reload the simulator.
-- **"ACARS flight session is no longer active".** Your flight ended or restarted, for example after a GeoFS reload. Wait for the tracker to pick the new flight up, then publish again.
-- **Updates do not appear on the radar.** Check that you are looking at the right aircraft and the current flight. Updates from earlier flights are not shown with a new session.
+- **The ACARS section says to save an active flight.** Press **Start tracking** in the RadarThing panel and make sure you are signed in to GeoFS.
+- **"Enter 1–500 ACARS characters."** Your entry is empty or too long.
+- **Your entry was rejected.** It probably contained a prohibited word. Rephrase it and try again.
+- **Your entry does not appear on the radar.** Check that the radar is showing the correct flight and that the ACARS section is expanded.
 
-If none of that helps, work through [Aircraft not appearing](/guides/aircraft-not-appearing), since ACARS depends on the tracker working.
+ACARS on RadarThing is a simulator community feature and has no connection to real-world aircraft datalink systems.

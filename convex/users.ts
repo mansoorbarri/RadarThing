@@ -678,20 +678,46 @@ export const getProDiscordRoleMembers = query({
   handler: async (ctx, args) => {
     requireSystem(ctx, args.systemSecret);
 
-    const members: {
-      discordUserId: string | null;
-      discordUsername: string | null;
-    }[] = [];
-    for await (const user of ctx.db.query("users")) {
-      if (!user.isDeleted && hasEffectiveProAccess(user)) {
-        members.push({
+    // Read only users matching one of the ways to have PRO, rather than
+    // scanning the whole table.
+    const now = Date.now();
+    const candidates = (
+      await Promise.all([
+        ctx.db
+          .query("users")
+          .withIndex("by_role", (q) => q.eq("role", "PRO"))
+          .collect(),
+        ctx.db
+          .query("users")
+          .withIndex("by_role", (q) => q.eq("role", "ADMIN"))
+          .collect(),
+        ctx.db
+          .query("users")
+          .withIndex("by_adminProExpiresAt", (q) =>
+            q.gt("adminProExpiresAt", now),
+          )
+          .collect(),
+        ctx.db
+          .query("users")
+          .withIndex("by_trialEndsAt", (q) => q.gt("trialEndsAt", now))
+          .collect(),
+      ])
+    ).flat();
+
+    const members = new Map<
+      string,
+      { discordUserId: string | null; discordUsername: string | null }
+    >();
+    for (const user of candidates) {
+      if (!user.isDeleted && hasEffectiveProAccess(user, now)) {
+        members.set(user._id, {
           discordUserId: user.discordUserId ?? null,
           discordUsername: user.discordUsername ?? null,
         });
       }
     }
 
-    return members;
+    return Array.from(members.values());
   },
 });
 

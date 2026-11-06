@@ -26,7 +26,10 @@ export default defineSchema({
     .index("by_email", ["email"])
     .index("by_googleId", ["googleId"])
     .index("by_stripeCustomerId", ["stripeCustomerId"])
-    .index("by_discordUsernameLower", ["discordUsernameLower"]),
+    .index("by_discordUsernameLower", ["discordUsernameLower"])
+    .index("by_role", ["role"])
+    .index("by_adminProExpiresAt", ["adminProExpiresAt"])
+    .index("by_trialEndsAt", ["trialEndsAt"]),
 
   // Daily metered allowances for FREE users (e.g. distinct chart airports).
   freeUsage: defineTable({
@@ -344,6 +347,14 @@ export default defineSchema({
     .index("by_clerkId", ["clerkId"])
     .index("by_callsign", ["callsign"])
     .index("by_lastSeen", ["lastSeen"]),
+
+  // Single-document rollup of activeTrackers, refreshed by cron. Readers
+  // subscribe to this instead of the raw table, so heartbeats don't
+  // re-run every viewer's query.
+  activeTrackerSummary: defineTable({
+    ranked: v.array(v.object({ callsign: v.string(), count: v.number() })),
+    updatedAt: v.number(),
+  }),
 
   acarsDevices: defineTable({
     googleId: v.string(),

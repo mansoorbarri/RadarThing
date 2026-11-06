@@ -79,13 +79,13 @@ export function useActiveTracker(selectedAircrafts: PositionUpdate[]) {
     prevTrackedRef.current = { trackerId, key: trackedKey };
   }, [trackerId, trackedCallsigns, trackedKey, startTracking, stopTracking]);
 
-  // Heartbeat every 60 seconds while tracking
+  // Heartbeat every 2 minutes while tracking (stale after 5 on the server)
   useEffect(() => {
     if (!trackerId || trackedCallsigns.length === 0) return;
 
     const interval = setInterval(() => {
       void heartbeat({ clerkId: trackerId });
-    }, 60_000);
+    }, 120_000);
 
     return () => clearInterval(interval);
   }, [trackerId, trackedCallsigns.length, heartbeat]);

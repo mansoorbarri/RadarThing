@@ -7,11 +7,14 @@ export function LegalPage({
   eyebrow,
   title,
   summary,
+  lastUpdated,
   children,
 }: {
   eyebrow: string;
   title: string;
   summary: string;
+  /** Overrides the legal effective/updated dates for non-legal pages. */
+  lastUpdated?: string;
   children: ReactNode;
 }) {
   return (
@@ -38,9 +41,15 @@ export function LegalPage({
             {eyebrow}
           </p>
           <p className="mt-4 text-xs leading-5 text-white/60">
-            Effective 28 August 2026
-            <br />
-            Last updated 28 August 2026
+            {lastUpdated ? (
+              <>Last updated {lastUpdated}</>
+            ) : (
+              <>
+                Effective 28 August 2026
+                <br />
+                Last updated 28 August 2026
+              </>
+            )}
           </p>
           <nav
             aria-label="Legal pages"

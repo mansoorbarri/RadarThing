@@ -1,58 +1,81 @@
 # Contributing aircraft images
 
-Learn how RadarThing chooses the photo shown behind a selected flight, and how to submit an image that gets approved the first time.
+How aircraft images appear on the radar, what makes a good submission, and how review works.
 
-## Where aircraft images appear
+## Why aircraft images matter
 
-When you select a flight on [the radar](/radar), the top of the flight panel can show a photo of that aircraft in the airline's livery: a British Airways A320 shows a British Airways A320, and an Emirates B777 shows an Emirates B777. These photos come from the community. Pilots submit them, RadarThing reviews them, and approved images go into the public [aircraft image gallery](/aircraft-images).
+When you select a flight on [the radar](/radar), the flight panel shows an image of the aircraft behind the flight details. If an image exists for that airline and aircraft type, the panel shows it, so an Emirates 777 looks like an Emirates 777 and a Lufthansa A320 looks like a Lufthansa A320.
 
-Every approved image counts toward the contributor's total on the **Contribution** tab of the [leaderboard](/leaderboard).
+Those images come from the community. Every image in the [aircraft gallery](/aircraft-images) was submitted by a RadarThing pilot and approved by a moderator. The more airline and aircraft combinations are covered, the better the radar looks for everyone.
 
-## How an image is matched to a flight
+Approved contributions also count towards the **Contribution** tab on the [leaderboard](/leaderboard).
 
-RadarThing needs two pieces of information from a live flight to find a photo:
+## How images are matched
 
-1. **The airline code**, taken from the start of the flight's callsign. `BAW123` gives the ICAO airline code `BAW`, and `BA123` gives the IATA code `BA`. RadarThing tries the two-letter IATA code first, then the three-letter ICAO code. [Callsigns and airline codes](/guides/callsigns-and-airline-codes) explains the difference.
-2. **The aircraft type**, normalised to an ICAO type designator. GeoFS aircraft names such as "Airbus A320neo" or "Boeing 737-800" are reduced to the base model (`A320`, `B737`) so one image can cover the whole family.
+Each image is attached to two things:
 
-If both match an approved image, it is shown. If the airline has no image for that type, RadarThing can fall back to a manufacturer house livery. Airbus, Boeing, Embraer and Bombardier types can show a factory image, which matches the way those manufacturers fly test aircraft under their own callsigns. Otherwise the panel simply has no photo.
+1. **An airline**, identified by its two-character IATA code and three-letter ICAO code. For example, British Airways is **BA** and **BAW**.
+2. **An aircraft type**, using the base model, such as **B777**, **A320**, or **A350**.
 
-That is why the codes on a submission matter so much: an image filed under the wrong airline code or a variant type will never be matched to a real flight.
+When a pilot flies with a callsign that starts with that airline's code, in an aircraft of that type, the radar shows the matching image. This is one reason it is worth using a realistic ICAO callsign; [Callsigns explained](/guides/callsigns-explained) covers the format.
+
+Military images work slightly differently. Instead of an airline, they use an **air force name**, such as USAF, RAF, or PAF, and a base military model such as **F16** or **C130**.
 
 ## Before you upload
 
-Open the [gallery](/aircraft-images) and search for the airline and aircraft. Only one approved image is kept for each combination of IATA code, ICAO code and aircraft type, so if a good one already exists there is nothing to add. You also cannot have two pending submissions for the same combination.
+Check the gallery first. Search by airline or aircraft type to see whether the combination is already covered. Duplicate submissions are usually rejected, so it is worth spending a moment checking.
 
-You need to be signed in to upload. If your Discord account is connected, your Discord username is shown as the contributor on the image.
+Then make sure your image meets these guidelines:
 
-## The upload rules
+- **You have the right to share it.** Upload only images you took yourself or have explicit permission to use. You will be asked to confirm this before uploading. Do not upload images copied from photo websites without permission.
+- **It is a real aircraft.** Simulator screenshots are not accepted in the main gallery.
+- **It is high quality.** The image should be sharp, well exposed, and show the aircraft clearly. Avoid heavy filters, watermarks across the aircraft, and very small images.
+- **The aircraft is the subject.** A clear side or three-quarter view works best. Images where the aircraft is tiny, cropped, or hidden behind objects are less useful.
+- **The details are correct.** The livery must match the airline you enter, and the aircraft must match the type.
 
-These are the rules reviewers check, along with what each one means in practice.
+## Choosing the aircraft type
 
-**Enter the base aircraft model, not a variant.** Use `B777`, not `B77W` or `777-300ER`. Use `A350`, not `A359`. Use `B737`, not `B738`. Matching works on the family, so a variant code splits images that should be shared.
+Use the **base model**, not a variant or sub-type:
 
-**Use a high-quality image.** Sharp, well-exposed and reasonably high resolution. Avoid heavy filters, watermarks across the aircraft, or images upscaled from a thumbnail.
+- **B777**, not B77W or 777-300ER
+- **A350**, not A359 or A350-900
+- **B737**, not B738
+- **F16** and **C130** for military types
 
-**Show the complete aircraft, uncropped, with the livery clearly visible.** A side or three-quarter view of the whole airframe works best. Close-ups of an engine or tail, cabin shots and aircraft mostly hidden behind another object are rejected.
+Using the base model means one image covers every variant that pilots fly, which gives far better coverage on the radar.
 
-**Make sure the ICAO, IATA and aircraft name match the aircraft in the photo.** The airline in the picture must be the airline whose codes you enter. A Lufthansa A320 photo filed as `LH` / `DLH` / `A320` is correct. The same photo filed under Eurowings is not.
+## Uploading
 
-**Check that the image is not already uploaded.** Search first, as described above.
+1. Sign in to RadarThing.
+2. Open the [aircraft gallery](/aircraft-images), or choose **Upload** in the radar's control dock.
+3. Select your image.
+4. Enter the airline's IATA and ICAO codes and the aircraft type. For a military aircraft, tick the military option and enter the air force name instead.
+5. Confirm that you have permission to share the image.
+6. Submit.
 
-**Use a real airline. Military uploads must name the correct air force.** For military aircraft, switch on the military option and enter the air force (for example `USAF`, `RAF` or `PAF`) along with the aircraft model (for example `F16` or `C130`). Airline codes are not used for military images.
+Your submission goes into a review queue.
 
-**Only share images you have the right to share.** You must confirm this before uploading. Photos taken by someone else need the photographer's permission. See [copyright](/copyright) if you believe an image infringes your rights.
+## How review works
 
-## Finding the right codes
+A moderator checks each submission against the guidelines above: rights, quality, accuracy, and whether the combination is already covered. Approved images appear in the gallery and on the radar for every matching flight. Images that do not meet the guidelines are removed from the queue. If yours does not appear, check it against the list above before submitting again.
 
-- **IATA airline code:** two characters, for example `BA`, `EK` or `U2`. You will see it on boarding passes and flight numbers.
-- **ICAO airline code:** three letters, for example `BAW`, `UAE` or `EZY`. It is used in ATC callsigns and flight plans.
-- **ICAO aircraft type:** an up-to-four-character designator, for example `A320`, `B737`, `E190`, `CRJ9`, `AT76` or `DH8D`. For RadarThing, use the base family where one exists.
+## Reporting a problem with an image
 
-Airline websites, ICAO's published designators and many flight-tracking references list these codes. If you are unsure, compare with images of the same airline already in the gallery.
+If you see an image that is incorrectly labelled, low quality, or that you believe infringes your rights, let us know:
 
-## What happens after you submit
+- For incorrect details, [contact support](/contact) with the airline and aircraft type.
+- For copyright concerns, use the [copyright contact](/copyright). We review every report.
 
-Your image enters a review queue and does not appear publicly until it is approved. Reviewers may correct a code or reject the image if it breaks the rules above. Once approved, it shows in the gallery straight away and on the next matching flight you select on the radar.
+## Virtual airline imagery
 
-Virtual airlines have a separate image system for their own liveries. See [Running a virtual airline](/guides/virtual-airlines).
+Registered [virtual airlines](/guides/virtual-airlines) can upload their own fleet images from the VA admin page. These appear for the VA's own pilots. VA images must be real aircraft photos with a livery edited for the VA, not simulator screenshots.
+
+## Making a bigger impact
+
+Some ideas if you want to make a real difference to the gallery:
+
+- **Fill the gaps on busy routes.** Watch the radar for common airline and aircraft combinations that show no image.
+- **Cover regional airlines.** Major airlines are well covered; smaller regional carriers often are not.
+- **Photograph at your local airport.** If you enjoy plane spotting, your own photos are ideal contributions because you own the rights.
+
+Every approved image improves the radar for every pilot who flies that combination.

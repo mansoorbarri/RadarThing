@@ -1,79 +1,90 @@
-# Running a virtual airline on RadarThing
+# Virtual airlines on RadarThing
 
-Register your GeoFS virtual airline, add pilots to its roster, and give your members' flights your own branding and fleet images on the radar.
+What a virtual airline is, how to register one on RadarThing, and how to run it well once it is approved.
 
 ## What a virtual airline is
 
-A virtual airline (VA) is a community of simulator pilots who fly under a shared brand. They have a common callsign, a fleet, a set of routes and usually a hub airport. Most VAs organise themselves on Discord, schedule group flights and events, and keep some kind of record of who has flown what. VAs make simulator flying more social and give pilots structure: instead of "where shall I fly today?", there is a timetable to follow.
+A virtual airline (VA) is a community of simulator pilots who fly together under a shared brand. Members use the same callsign prefix, fly the VA's routes and fleet, and often take part in group flights and events. Some VAs model a real airline closely; others invent their own.
 
-RadarThing does not replace your VA's own website or Discord server. What it adds is visibility. When your members fly, viewers on the radar can see at a glance that a flight belongs to your VA, and see your livery behind it.
+For many GeoFS pilots, joining a VA is what turns casual flying into a hobby. It gives each flight a purpose, a schedule, and people to share it with.
 
-## What registration gives you
-
-Once your VA is approved:
-
-- **A reserved callsign prefix.** Your VA owns a prefix of 2 to 8 letters or numbers, for example `EVA` or `SKYV1`. No other VA can register the same prefix.
-- **VA branding on flights.** When a roster member flies with a callsign starting with your prefix, their flight panel shows a VA badge next to the flight number.
-- **Your own fleet images.** You can upload one image per aircraft type in your VA livery, and it is shown behind your members' flights instead of a generic airline photo.
-- **Roster control.** You decide which RadarThing pilots count as members.
-
-Branding is only applied to roster members (and the VA owner). Someone outside your VA who happens to use your prefix does not get your badge or your images, which protects your brand.
+RadarThing supports virtual airlines directly. Registered VAs can manage their pilots and show their own aircraft imagery on the radar, so that a VA's flights are recognisable to everyone watching.
 
 ## Before you register
 
-You will need:
+Registration is for the person who runs the VA. Before you start, check that:
 
-1. **A RadarThing account with Discord connected.** Connect Discord from your [dashboard](/dashboard). Registration is refused without it, because VA reviews and communication happen through Discord.
-2. **To be the VA's owner or admin.** Only someone responsible for the VA should register it. Each account can own one VA.
-3. **A name** of 2 to 60 characters and **a callsign prefix** of 2 to 8 letters or numbers.
-4. Optionally, **a website or Discord invite link** for your VA.
+1. **You are the VA's owner or an admin.** Only someone with authority over the VA should register it.
+2. **Your Discord account is connected to RadarThing.** Connect it from your dashboard. Registration is not available until it is linked, and RadarThing uses it to contact you about your application.
+3. **You have chosen a callsign prefix.** This is the code your pilots will use at the start of their callsigns, usually three letters in the ICAO style. [Callsigns explained](/guides/callsigns-explained) covers the format. Avoid prefixes that are already in common use by real airlines or other VAs on the radar.
 
-### Choosing a prefix
+It also helps to have a website or Discord server where pilots can learn about your VA, though a website is optional.
 
-Your prefix is matched against the start of each member's callsign, so choose it carefully:
+## Registering
 
-- **Avoid real ICAO airline codes** that your members will also want to fly as. If your prefix is `BAW`, every member flying British Airways would appear as your VA.
-- **Shorter prefixes match more callsigns.** `EV` matches `EV123`, `EVA123` and `EVX1`. When two registered prefixes both match a callsign, the longest one wins, but it is better not to rely on that.
-- **Make it pronounceable or memorable.** Members will be typing it before every flight.
+1. Open [the radar](/radar) and choose **Register VA** in the control dock.
+2. Read the VA community rules. The form becomes available after a short review period.
+3. Enter your VA's name, callsign prefix, and optionally its website.
+4. Submit the registration.
 
-See [Callsigns and airline codes](/guides/callsigns-and-airline-codes) for more on how RadarThing reads callsigns.
+New registrations remain inactive until an administrator reviews them. If your application is approved, your VA becomes active and you gain access to the VA admin page. If it is rejected, you will receive an email explaining why, so you can fix the issue and apply again.
 
-## Registering your VA
+## The community rules
 
-1. Open [the radar](/radar) and choose **Register VA** from the radar menu.
-2. Read and accept the rules shown in the form. In summary: your Discord must be connected, fleet images must be real aircraft with your livery and not simulator screenshots, pilots should only be accepted when their Discord is connected to RadarThing, and you must be the VA's admin or owner.
-3. Enter your VA name, callsign prefix and website, then submit.
+Every VA on RadarThing agrees to a short set of rules:
 
-Your registration starts as **pending**. RadarThing reviews it before it becomes active. Branding does not appear on flights until then.
+- **Your Discord must be connected to RadarThing.**
+- **Only upload real aircraft photos with a livery edited for your VA.** Simulator screenshots are not accepted as VA aircraft images.
+- **Only accept pilots whose Discord is connected to RadarThing.** This is how RadarThing links a pilot to your VA.
+- **You must be the VA's admin or owner.**
+
+The ATCThing Discord community is also a good place to get support and meet other VA staff.
 
 ## Managing your VA
 
-After approval, open the VA admin area from your account. From there you can:
+Once your VA is approved, the VA admin page gives you three main tools.
 
-- **Edit VA settings** such as the name, prefix and website.
-- **Add pilots to the roster.** Search for a pilot by their Discord name. They must have a RadarThing account linked to GeoFS so their flights can be matched to them. Removing a pilot takes away their VA branding on future flights.
-- **Upload fleet images**, one for each aircraft type you fly.
+### Pilots
 
-If RadarThing disables a VA, for example after a rules breach, you will not be able to make changes until the issue is resolved.
+Add pilots to your VA by searching for their Discord username or account ID. Pilots must have connected Discord to their RadarThing account first. Remove pilots who have left, so that your roster stays accurate.
 
-## Fleet image rules
+### Aircraft images
 
-Fleet images are what make VA flights stand out on the radar, and they are also the most common reason a VA gets into trouble. The rules are:
+Upload images of your VA's fleet. Each image is attached to an aircraft type, so that when one of your pilots flies that type, the radar's flight panel shows your VA's livery instead of a generic image. Use high-quality images, and use the base aircraft model as the type, for example **B777** rather than a variant.
 
-1. **Use a real aircraft with your VA livery**, either edited (Photoshopped) or generated with AI. Simulator screenshots are not accepted.
-2. **Use a high-quality image.**
-3. **Show the full aircraft.** Do not crop any part of it.
-4. **Match the aircraft to its type code.** An image saved as `B777` must actually show a Boeing 777. As with [community aircraft images](/guides/contributing-aircraft-images), use the base family (`B737`, `A320`), not a variant.
+### Settings
 
-Breaking these rules can result in your VA being removed from RadarThing.
+Keep your VA's details up to date from the settings section. If your VA becomes inactive or is disabled, its pilots' flights will no longer show its branding.
 
-## Running good VA events
+## Running a successful VA
 
-A few habits that work well with RadarThing:
+Registration is the easy part. The VAs that thrive tend to share a few habits.
 
-- **Share the radar link** in your Discord before a group flight, so members and spectators can watch the whole fleet move.
-- **Ask members to publish [ACARS updates](/guides/acars-flight-updates)** at key points such as departure, top of descent and landing. It gives spectators a running commentary.
-- **Use replays for debriefs.** Every member's flight is recorded, so you can walk through an event afterwards. See [Flight history and replay](/guides/flight-history-and-replay).
-- **Use challenges and the leaderboard** for friendly competition. See [Leaderboards, streaks and challenges](/guides/leaderboards-streaks-and-challenges).
+### Give pilots a reason to fly
 
-If you have questions about a registration or need a prefix changed, [contact support](/contact).
+- **Publish a route network.** A list of routes with suggested aircraft gives new pilots an obvious first flight.
+- **Hold regular events.** A weekly group flight is the simplest way to build community. Pick a route, a time in UTC, and an aircraft type.
+- **Set goals.** Use the same ideas as [pilot challenges](/guides/pilot-challenges): visit every hub, fly a set number of hours each month, or complete a long-haul tour.
+
+### Make it easy to follow along
+
+- **Encourage consistent callsigns.** Ask pilots to use your prefix and a flight number, so the whole VA can be found by searching the prefix on the radar.
+- **Ask pilots to file flight plans.** Routes on the radar look far more professional. See [Flight plans and navigation](/guides/flight-plans-and-navigation).
+- **Share replays.** A replay link from [flight history](/guides/flight-history-and-replay) is a great way to celebrate a pilot's first long-haul or a tricky landing.
+
+### Set standards, kindly
+
+- Write simple rules for realistic flying, such as realistic speeds and no teleporting mid-flight. Flights that break RadarThing's [stats rules](/guides/pilot-stats-and-leaderboards) will not count towards anyone's statistics anyway.
+- Teach new pilots basic [phraseology](/guides/atc-and-phraseology) and how to read [charts](/guides/airport-charts).
+- Be welcoming to pilots who are still learning. Most experienced VA pilots started out the same way.
+
+## Joining a VA as a pilot
+
+If you want to join rather than run a VA:
+
+1. Connect your Discord account to RadarThing from your dashboard.
+2. Find a VA whose style suits you. The radar is a good place to look: search for a VA's callsign prefix to see how active its pilots are.
+3. Apply through the VA's own website or Discord.
+4. Once a VA admin adds you, fly with the VA's callsign prefix.
+
+Virtual airlines on RadarThing are community simulator groups. They are not affiliated with any real airline.

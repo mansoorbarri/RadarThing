@@ -5,8 +5,19 @@
 import { env } from "./src/env.js";
 import { withPostHogConfig } from "@posthog/nextjs-config";
 
+// PostHog requests go through our own domain so ad blockers that block
+// *.posthog.com do not drop analytics from users who opted in.
+const POSTHOG_PROXY_PATH = "/rt";
+const posthogHost = env.NEXT_PUBLIC_POSTHOG_HOST.replace(/\/$/, "");
+const posthogAssetsHost = posthogHost.replace(
+  ".i.posthog.com",
+  "-assets.i.posthog.com",
+);
+
 /** @type {import("next").NextConfig} */
 const config = {
+  // PostHog API paths end in a slash; redirecting them would break ingestion.
+  skipTrailingSlashRedirect: true,
   // Skip during build - CI already runs these
   typescript: {
     ignoreBuildErrors: true,
@@ -26,6 +37,22 @@ const config = {
         hostname: "img.clerk.com",
       },
     ],
+  },
+  async rewrites() {
+    return [
+      {
+        source: `${POSTHOG_PROXY_PATH}/static/:path*`,
+        destination: `${posthogAssetsHost}/static/:path*`,
+      },
+      {
+        source: `${POSTHOG_PROXY_PATH}/array/:path*`,
+        destination: `${posthogAssetsHost}/array/:path*`,
+      },
+      {
+        source: `${POSTHOG_PROXY_PATH}/:path*`,
+        destination: `${posthogHost}/:path*`,
+      },
+    ];
   },
   async redirects() {
     return [

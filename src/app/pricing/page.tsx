@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -11,6 +11,7 @@ import { useProStatus } from "~/hooks/useProStatus";
 import { Check, Zap, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
+import Link from "next/link";
 import { SiteFooter } from "~/components/site/SiteFooter";
 import { SiteHeader } from "~/components/site/SiteHeader";
 import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
@@ -21,7 +22,11 @@ import { MIN_STRIPE_TRIAL_MS } from "~/lib/proAccess";
 
 export default function PricingPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  // Read the query after mount: useSearchParams would opt the whole page out
+  // of static rendering, leaving crawlers and first paint with an empty shell.
+  const [searchParams, setSearchParams] = useState<URLSearchParams | null>(
+    null,
+  );
   const { isSignedIn, isLoaded } = useUser();
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -38,6 +43,7 @@ export default function PricingPage() {
 
   useEffect(() => {
     setMounted(true);
+    setSearchParams(new URLSearchParams(window.location.search));
   }, []);
 
   useEffect(() => {
@@ -87,7 +93,7 @@ export default function PricingPage() {
   );
 
   useEffect(() => {
-    if (!isLoaded || checkingStatus || !isSignedIn) return;
+    if (!isLoaded || checkingStatus || !isSignedIn || !searchParams) return;
     if (autoCheckoutStartedRef.current) return;
 
     if (searchParams?.get("trial") === "1") {
@@ -415,9 +421,176 @@ export default function PricingPage() {
             </div>
           </aside>
         </div>
+
+        <PlanComparison />
+        <PricingFaq />
       </main>
       <SiteFooter />
     </div>
+  );
+}
+
+const planRows: { feature: string; free: string; pro: string }[] = [
+  {
+    feature: "Live radar and flight tracking",
+    free: "Included",
+    pro: "Included",
+  },
+  {
+    feature: "Flight history on pilot profiles",
+    free: `Last ${FREE_RECENT_FLIGHTS_LIMIT} flights`,
+    pro: "Full archive",
+  },
+  {
+    feature: "Flight replay and share links",
+    free: "Included",
+    pro: "Included",
+  },
+  {
+    feature: "Airport METARs and precipitation",
+    free: "Included",
+    pro: "Included",
+  },
+  {
+    feature: "Airport charts",
+    free: `${FREE_DAILY_ALLOWANCE.charts} US airports per day`,
+    pro: "Unlimited, worldwide",
+  },
+  {
+    feature: "AIRMETs, SIGMETs, NOTAMs, and D-ATIS",
+    free: "—",
+    pro: "Included",
+  },
+  {
+    feature: "Radar Mode, trails, and track lines",
+    free: "—",
+    pro: "Included",
+  },
+  { feature: "Conflict alerts", free: "—", pro: "Included" },
+  { feature: "Shareable flight card images", free: "—", pro: "Included" },
+  { feature: "Advertising", free: "Shown on some pages", pro: "None" },
+];
+
+function PlanComparison() {
+  return (
+    <section aria-labelledby="compare-plans" className="mt-20">
+      <h2
+        id="compare-plans"
+        className="text-2xl font-semibold tracking-tight text-white"
+      >
+        Compare plans
+      </h2>
+      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
+        Tracking your flights and watching live traffic will always be free. PRO
+        adds deeper weather, charts, and controller tools for pilots who want
+        more.
+      </p>
+      <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.03]">
+        <table className="w-full min-w-[32rem] text-left text-sm">
+          <thead>
+            <tr className="border-b border-white/10 font-mono text-[11px] tracking-wider text-slate-400 uppercase">
+              <th scope="col" className="px-5 py-3 font-medium">
+                Feature
+              </th>
+              <th scope="col" className="px-5 py-3 font-medium">
+                Free
+              </th>
+              <th scope="col" className="px-5 py-3 font-medium text-cyan-200">
+                PRO
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {planRows.map((row) => (
+              <tr
+                key={row.feature}
+                className="border-b border-white/5 last:border-b-0"
+              >
+                <th
+                  scope="row"
+                  className="px-5 py-3 font-normal text-slate-200"
+                >
+                  {row.feature}
+                </th>
+                <td className="px-5 py-3 text-slate-400">{row.free}</td>
+                <td className="px-5 py-3 text-cyan-100">{row.pro}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+const faqs: { question: string; answer: string }[] = [
+  {
+    question: "Do I need PRO to appear on the radar?",
+    answer:
+      "No. Anyone with the RadarThing userscript can transmit their GeoFS flight and appear on the live radar for free, and anyone can watch traffic without an account.",
+  },
+  {
+    question: "How does the free trial work?",
+    answer:
+      "Sign in with Google and start a 7-day trial without entering a card. When the trial ends, your account returns to the free plan unless you choose to subscribe. If you prefer, you can add a card when you start; you will not be charged until the 7 days are over.",
+  },
+  {
+    question: "What happens to my flights if I cancel?",
+    answer: `Nothing is deleted. Your full history stays recorded, and your profile shows your ${FREE_RECENT_FLIGHTS_LIMIT} most recent flights on the free plan. Subscribe again at any time to see the full archive.`,
+  },
+  {
+    question: "How do I cancel or change my payment details?",
+    answer:
+      "Open this page while signed in and choose Manage Subscription. You will be taken to the secure Stripe customer portal, where you can cancel, update your card, or download invoices.",
+  },
+  {
+    question: "Which airports have charts?",
+    answer: `Free accounts can open charts for up to ${FREE_DAILY_ALLOWANCE.charts} US airports per UTC day, and reopening an airport you have already viewed that day does not count again. PRO removes the limit and includes airports worldwide. Not every airport has every procedure yet.`,
+  },
+  {
+    question: "Where does my subscription go?",
+    answer:
+      "PRO subscriptions pay for the servers, weather and aviation data feeds, and ongoing development that keep RadarThing running for everyone, including free users.",
+  },
+];
+
+function PricingFaq() {
+  return (
+    <section aria-labelledby="pricing-faq" className="mt-20">
+      <h2
+        id="pricing-faq"
+        className="text-2xl font-semibold tracking-tight text-white"
+      >
+        Frequently asked questions
+      </h2>
+      <dl className="mt-6 grid gap-x-10 gap-y-8 md:grid-cols-2">
+        {faqs.map((faq) => (
+          <div key={faq.question}>
+            <dt className="font-medium text-white">{faq.question}</dt>
+            <dd className="mt-2 text-sm leading-relaxed text-slate-400">
+              {faq.answer}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-10 text-sm text-slate-400">
+        New to RadarThing? Read{" "}
+        <Link
+          href="/guides/getting-started"
+          className="text-cyan-300 underline-offset-4 hover:underline"
+        >
+          Getting started
+        </Link>{" "}
+        or browse all{" "}
+        <Link
+          href="/guides"
+          className="text-cyan-300 underline-offset-4 hover:underline"
+        >
+          guides
+        </Link>
+        .
+      </p>
+    </section>
   );
 }
 

@@ -42,7 +42,8 @@ export const useAircraftStream = () => {
 
     setConnectionStatus("connecting");
 
-    const url = "https://sse.radarthing.com/api/stream";
+    // Opt in to deltas that omit unchanged flight plans (handled below).
+    const url = "https://sse.radarthing.com/api/stream?flightPlans=changed";
 
     const es = new EventSource(url);
     eventSourceRef.current = es;
@@ -74,8 +75,14 @@ export const useAircraftStream = () => {
 
         // Update the store with each aircraft (this tracks flight paths)
         // Use callsign as primary key for consistency (id can be inconsistent)
+        // Deltas omit flightPlan when it hasn't changed, so keep the last one.
         processed.forEach((ac) => {
           const key = ac.callsign || ac.id;
+          const flightPlan = (ac as { flightPlan?: string | null }).flightPlan;
+          ac.flightPlan =
+            flightPlan === undefined
+              ? (activeAircraft.get(key)?.flightPlan ?? "")
+              : (flightPlan ?? "");
           activeAircraft.set(key, ac);
         });
 

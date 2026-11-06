@@ -11,6 +11,7 @@ interface BaseEventProps {
 interface AircraftEventProps extends BaseEventProps {
   callsign: string;
   aircraftType?: string;
+  selectionCount?: number;
 }
 
 interface SearchEventProps extends BaseEventProps {
@@ -74,6 +75,10 @@ interface ImageEventProps extends BaseEventProps {
 
 interface AirportEventProps extends BaseEventProps {
   icao: string;
+}
+
+interface ToggleEventProps extends BaseEventProps {
+  enabled: boolean;
 }
 
 interface MapEventProps extends BaseEventProps {
@@ -154,9 +159,14 @@ export const Analytics = {
     if (process.env.NODE_ENV === "development") return;
     if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) return;
 
+    const posthogHost =
+      process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com";
+
     posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-      api_host:
-        process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
+      // Proxied through next.config.js rewrites so ad blockers don't drop events.
+      api_host: "/rt",
+      // Links into the PostHog app (toolbar, replays) still need the real UI host.
+      ui_host: posthogHost.replace(".i.posthog.com", ".posthog.com"),
       person_profiles: "identified_only",
       capture_pageview: true,
       capture_pageleave: true,
@@ -332,6 +342,22 @@ export const Analytics = {
     track("heading_mode_toggled", props);
   },
 
+  followModeToggled: (props: ToggleEventProps & { callsign?: string }) => {
+    track("follow_mode_toggled", props);
+  },
+
+  openAipOverlayToggled: (props: ToggleEventProps) => {
+    track("openaip_overlay_toggled", props);
+  },
+
+  altitude3dToggled: (props: ToggleEventProps) => {
+    track("altitude_3d_toggled", props);
+  },
+
+  flightDisplayModeChanged: (props: { mode: string }) => {
+    track("flight_display_mode_changed", props);
+  },
+
   conflictLayerToggled: (props: ConflictLayerProps) => {
     track("conflict_layer_toggled", props);
   },
@@ -355,6 +381,10 @@ export const Analytics = {
 
   taxiChartViewed: (props: AirportEventProps & { hasAccess: boolean }) => {
     track("taxi_chart_viewed", props);
+  },
+
+  chartSideViewOpened: (props: AirportEventProps) => {
+    track("chart_side_view_opened", props);
   },
 
   // ===== PRICING & MONETIZATION =====

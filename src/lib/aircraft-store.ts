@@ -40,6 +40,9 @@ export interface PositionUpdate {
 type Subscriber = (aircraft: Map<string, PositionUpdate>) => void;
 
 const MAX_FLIGHT_PATH_POINTS = 150;
+// Paths seeded with the server's route history keep it while the stream
+// extends them, rather than dropping it a point at a time.
+const MAX_HISTORY_FLIGHT_PATH_POINTS = 5_000;
 const MAX_FLIGHT_TELEMETRY_POINTS = 300;
 const MAX_RECENT_SAMPLE_POINTS = 180;
 const MAX_SPEED_SAMPLE_AGE_MS = 90_000;
@@ -88,6 +91,7 @@ function distanceNm(
 class AircraftStore {
   private store = new Map<string, PositionUpdate>();
   private flightPaths = new Map<string, [number, number][]>();
+  private flightPathHistoryIds = new Set<string>();
   private flightTelemetry = new Map<string, FlightTelemetrySample[]>();
   private recentSamples = new Map<string, TimedPositionSample[]>();
   private trailSamples = new Map<string, TimedPositionSample[]>();
@@ -117,7 +121,10 @@ class AircraftStore {
     ) {
       existingPath.push(currentPosition);
       // Limit to max points
-      if (existingPath.length > MAX_FLIGHT_PATH_POINTS) {
+      const maxPoints = this.flightPathHistoryIds.has(id)
+        ? MAX_HISTORY_FLIGHT_PATH_POINTS
+        : MAX_FLIGHT_PATH_POINTS;
+      if (existingPath.length > maxPoints) {
         existingPath.shift();
       }
       this.flightPaths.set(id, existingPath);
@@ -162,6 +169,7 @@ class AircraftStore {
 
     const existed = this.store.delete(id);
     this.flightPaths.delete(id);
+    this.flightPathHistoryIds.delete(id);
     this.flightTelemetry.delete(id);
     this.recentSamples.delete(id);
     this.trailSamples.delete(id);
@@ -187,6 +195,7 @@ class AircraftStore {
     this.removalTimers.clear();
     this.store.clear();
     this.flightPaths.clear();
+    this.flightPathHistoryIds.clear();
     this.flightTelemetry.clear();
     this.recentSamples.clear();
     this.trailSamples.clear();
@@ -226,16 +235,41 @@ class AircraftStore {
     }
   }
 
+  hasFlightPathHistory(id: string) {
+    return this.flightPathHistoryIds.has(id);
+  }
+
   mergeFlightPath(id: string, flightPath: [number, number][]) {
     const existing = this.store.get(id);
     if (!existing || flightPath.length === 0) return;
 
+    // The first server route replaces the live-only path, which only covers
+    // what this page has seen. After that, only take a longer route.
     const currentPath = this.flightPaths.get(id) || [];
-    if (flightPath.length <= currentPath.length) return;
+    if (
+      this.flightPathHistoryIds.has(id) &&
+      flightPath.length <= currentPath.length
+    ) {
+      return;
+    }
+    this.flightPathHistoryIds.add(id);
 
-    const nextPath = flightPath.map(
-      ([lat, lon]) => [lat, lon] as [number, number],
-    );
+    // Keep live positions that arrived after the route's last point, such as
+    // ones streamed while the route was being fetched.
+    const lastRoutePoint = flightPath[flightPath.length - 1]!;
+    let lastRouteIndex = currentPath.length - 1;
+    while (
+      lastRouteIndex >= 0 &&
+      (currentPath[lastRouteIndex]![0] !== lastRoutePoint[0] ||
+        currentPath[lastRouteIndex]![1] !== lastRoutePoint[1])
+    ) {
+      lastRouteIndex--;
+    }
+    const liveSuffix =
+      lastRouteIndex >= 0 ? currentPath.slice(lastRouteIndex + 1) : [];
+    const nextPath = [...flightPath, ...liveSuffix]
+      .slice(-MAX_HISTORY_FLIGHT_PATH_POINTS)
+      .map(([lat, lon]) => [lat, lon] as [number, number]);
     this.flightPaths.set(id, nextPath);
     this.flightTelemetry.delete(id);
     this.store.set(id, {

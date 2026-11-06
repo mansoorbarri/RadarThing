@@ -2,20 +2,37 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 export const guideCategories = [
-  "Getting started",
-  "Using the radar",
-  "Flying skills",
-  "Community",
+  {
+    id: "start",
+    title: "Get started",
+    description: "Install the tracker and put your first flight on the radar.",
+  },
+  {
+    id: "radar",
+    title: "Using the radar",
+    description: "Read traffic, tune the map, and get more from each layer.",
+  },
+  {
+    id: "flying",
+    title: "Flying better",
+    description:
+      "Weather, charts, navigation, and radio for realistic flights.",
+  },
+  {
+    id: "community",
+    title: "Community",
+    description: "Stats, challenges, virtual airlines, and contributions.",
+  },
 ] as const;
 
-export type GuideCategory = (typeof guideCategories)[number];
+export type GuideCategoryId = (typeof guideCategories)[number]["id"];
 
 interface GuideEntry {
   slug: string;
   title: string;
   description: string;
-  category: GuideCategory;
-  /** ISO date (YYYY-MM-DD) of the last substantive content update. */
+  category: GuideCategoryId;
+  /** ISO date of the last substantive content update. */
   updated: string;
 }
 
@@ -24,47 +41,105 @@ export const guides = [
   {
     slug: "getting-started",
     title: "Getting started with RadarThing",
-    description: "Install the tracker and find your first GeoFS flight.",
-    category: "Getting started",
-    updated: "2026-09-14",
+    description:
+      "Install the tracker, transmit your first GeoFS flight, and find it on the live map.",
+    category: "start",
+    updated: "2026-11-02",
   },
   {
     slug: "aircraft-not-appearing",
     title: "Aircraft not appearing on the radar",
-    description: "Check sign-in, installation, filters, and your connection.",
-    category: "Getting started",
-    updated: "2026-09-14",
+    description:
+      "Check transmission, sign-in, installation, filters, and your connection.",
+    category: "start",
+    updated: "2026-11-02",
   },
   {
     slug: "using-the-radar",
     title: "Using the radar",
     description:
       "Find flights, read telemetry, follow aircraft, and explore map layers.",
-    category: "Using the radar",
+    category: "radar",
     updated: "2026-11-02",
   },
   {
-    slug: "radar-tools-and-shortcuts",
-    title: "Radar tools, keyboard shortcuts and presets",
+    slug: "reading-flight-telemetry",
+    title: "Reading flight telemetry",
     description:
-      "Measure heading and distance, cycle the display, compare aircraft, and save layer presets.",
-    category: "Using the radar",
+      "What altitude, flight levels, knots, Mach, heading, and vertical speed tell you.",
+    category: "radar",
     updated: "2026-11-02",
   },
   {
-    slug: "altitude-flight-levels-and-units",
-    title: "Altitude, flight levels, speed and time",
+    slug: "radar-settings-and-shortcuts",
+    title: "Radar settings, layers, and keyboard shortcuts",
     description:
-      "Feet versus flight levels, indicated airspeed versus Mach, Zulu time, and the route altitude colours.",
-    category: "Using the radar",
+      "Every Configuration option, the default shortcuts, and saving layer presets.",
+    category: "radar",
     updated: "2026-11-02",
   },
   {
-    slug: "traffic-conflict-alerts",
-    title: "Traffic conflict alerts",
+    slug: "squawk-codes",
+    title: "Squawk codes and transponders explained",
     description:
-      "How RadarThing predicts loss of separation, what the alert colours mean, and what is filtered out.",
-    category: "Using the radar",
+      "What four-digit squawk codes mean, the emergency codes, and squawk etiquette.",
+    category: "radar",
+    updated: "2026-11-02",
+  },
+  {
+    slug: "conflict-alerts",
+    title: "How conflict alerts work",
+    description:
+      "The prediction model, separation thresholds, and how to act on an alert.",
+    category: "radar",
+    updated: "2026-11-02",
+  },
+  {
+    slug: "planning-a-realistic-flight",
+    title: "Planning a realistic flight in GeoFS",
+    description:
+      "A phase-by-phase method from route choice to descent planning and review.",
+    category: "flying",
+    updated: "2026-11-02",
+  },
+  {
+    slug: "reading-metars",
+    title: "How to read a METAR",
+    description:
+      "Decode airport weather reports group by group and choose the right runway.",
+    category: "flying",
+    updated: "2026-11-02",
+  },
+  {
+    slug: "airport-charts",
+    title: "Reading airport charts: ground, SID, STAR, and approach",
+    description:
+      "What each chart type is for, how to read it, and how to open charts on RadarThing.",
+    category: "flying",
+    updated: "2026-11-02",
+  },
+  {
+    slug: "flight-plans-and-navigation",
+    title: "Flight plans, waypoints, and navigation",
+    description:
+      "Share your GeoFS route, preview plans from a file, and measure headings on the map.",
+    category: "flying",
+    updated: "2026-11-02",
+  },
+  {
+    slug: "atc-and-phraseology",
+    title: "ATC and radio phraseology for GeoFS pilots",
+    description:
+      "The structure of a radio call, standard phrases, and flying with community controllers.",
+    category: "flying",
+    updated: "2026-11-02",
+  },
+  {
+    slug: "callsigns-explained",
+    title: "Callsigns explained",
+    description:
+      "Airline, registration, and military callsigns, and ICAO versus IATA codes.",
+    category: "flying",
     updated: "2026-11-02",
   },
   {
@@ -72,71 +147,47 @@ export const guides = [
     title: "Flight history and replay",
     description:
       "Find recorded flights, understand access limits, and share a replay.",
-    category: "Using the radar",
+    category: "community",
     updated: "2026-09-14",
   },
   {
-    slug: "emergency-squawk-codes",
-    title: "Emergency squawk codes: 7500, 7600 and 7700",
+    slug: "pilot-stats-and-leaderboards",
+    title: "Pilot stats, streaks, and leaderboards",
     description:
-      "What each emergency transponder code means, how the radar highlights it, and how to practise responsibly.",
-    category: "Flying skills",
+      "How totals and streaks are calculated, and why some flights do not count.",
+    category: "community",
     updated: "2026-11-02",
   },
   {
-    slug: "reading-airport-charts",
-    title: "Reading airport charts",
+    slug: "pilot-challenges",
+    title: "Pilot challenges",
     description:
-      "Ground diagrams, SIDs, STARs and approach charts explained, and how to open them beside the radar.",
-    category: "Flying skills",
+      "How weekly and monthly challenges are tracked, and how to submit manual ones.",
+    category: "community",
     updated: "2026-11-02",
   },
   {
-    slug: "importing-flight-plans",
-    title: "Importing and planning flight plans",
+    slug: "virtual-airlines",
+    title: "Virtual airlines on RadarThing",
     description:
-      "Preview a route on the map, read leg distance and time estimates, and file flights for events.",
-    category: "Flying skills",
-    updated: "2026-11-02",
-  },
-  {
-    slug: "callsigns-and-airline-codes",
-    title: "Callsigns and airline codes explained",
-    description:
-      "ICAO versus IATA codes, radio telephony callsigns, and how your callsign drives liveries and branding.",
-    category: "Flying skills",
-    updated: "2026-11-02",
-  },
-  {
-    slug: "acars-flight-updates",
-    title: "ACARS flight updates",
-    description:
-      "Publish short cockpit updates for radar viewers, and read or report updates from other pilots.",
-    category: "Community",
-    updated: "2026-11-02",
-  },
-  {
-    slug: "leaderboards-streaks-and-challenges",
-    title: "Leaderboards, streaks and challenges",
-    description:
-      "How stats are calculated, why a flight may not count, how UTC streaks work, and how to complete challenges.",
-    category: "Community",
+      "Register a virtual airline, manage pilots and fleet images, and grow your community.",
+    category: "community",
     updated: "2026-11-02",
   },
   {
     slug: "contributing-aircraft-images",
     title: "Contributing aircraft images",
     description:
-      "How livery photos are matched to flights, and how to submit an image that gets approved.",
-    category: "Community",
+      "How images are matched to flights, submission guidelines, and review.",
+    category: "community",
     updated: "2026-11-02",
   },
   {
-    slug: "virtual-airlines",
-    title: "Running a virtual airline",
+    slug: "acars-flight-updates",
+    title: "ACARS flight updates",
     description:
-      "Register your VA, choose a callsign prefix, manage your roster, and upload fleet images.",
-    category: "Community",
+      "Post short updates from your flight for radar viewers, and the rules that apply.",
+    category: "community",
     updated: "2026-11-02",
   },
 ] as const satisfies readonly GuideEntry[];
@@ -145,10 +196,19 @@ export type Guide = (typeof guides)[number];
 
 export function getGuidesByCategory() {
   return guideCategories.map((category) => ({
-    category,
-    guides: guides.filter((guide) => guide.category === category),
+    ...category,
+    guides: guides.filter((guide) => guide.category === category.id),
   }));
 }
+
+export function getLatestGuideUpdate(): string {
+  return guides.reduce<string>(
+    (latest, guide) => (guide.updated > latest ? guide.updated : latest),
+    guides[0].updated,
+  );
+}
+
+const WORDS_PER_MINUTE = 220;
 
 export async function getGuide(slug: string) {
   const index = guides.findIndex((entry) => entry.slug === slug);
@@ -158,9 +218,11 @@ export async function getGuide(slug: string) {
     path.join(process.cwd(), "content/guides", `${guide.slug}.md`),
     "utf8",
   );
+  const words = markdown.split(/\s+/).filter(Boolean).length;
   return {
     ...guide,
     markdown,
+    readingMinutes: Math.max(1, Math.round(words / WORDS_PER_MINUTE)),
     previous: guides[index - 1] ?? null,
     next: guides[index + 1] ?? null,
   };

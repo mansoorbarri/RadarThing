@@ -6,7 +6,6 @@
   const AIRBORNE_SEND_INTERVAL_MS = 3000;
   const GROUND_SEND_INTERVAL_MS = 1000;
   const POSITION_REQUEST_TIMEOUT_MS = 10000;
-  const COMMAND_POLL_INTERVAL_MS = 2000;
 
   let info = { active: false, dep: "", arr: "", flt: "", sqk: "", af: "" };
   let wasOnGround = true;
@@ -264,33 +263,13 @@
     }
   }
 
-  // Poll for commands from RadarThing server
-  async function pollCommands() {
-    const geofs = window.geofs;
-    // Remote commands only target active flights, so stay quiet otherwise.
-    if (!info.active || !geofs?.userRecord) return;
-
-    const id = getUserIdentifier(geofs);
-    if (!id) return;
-
-    try {
-      const res = await fetch(
-        `${API_BASE}/api/commands/${encodeURIComponent(id)}`,
-      );
-      if (!res.ok) return;
-
-      const data = await res.json();
-      if (data.commands && data.commands.length > 0) {
-        console.log(`[RadarThing] Received ${data.commands.length} commands`);
-        data.commands.forEach(executeCommand);
-      }
-    } catch (err) {
-      // Silent fail - server might be unavailable
-    }
+  // Queued commands come back in the position response, so there is no
+  // separate command poll.
+  function runReceivedCommands(commands) {
+    if (!Array.isArray(commands) || commands.length === 0) return;
+    console.log(`[RadarThing] Received ${commands.length} commands`);
+    commands.forEach(executeCommand);
   }
-
-  // Start command polling
-  setInterval(pollCommands, COMMAND_POLL_INTERVAL_MS);
 
   // Connection state shown in the panel. It is driven by real HTTP results
   // rather than by the form being saved.
@@ -600,30 +579,38 @@
       );
       let res;
       try {
-        res = await fetch(`${API_BASE}/api/atc/position`, {
+        res = await fetch(`${API_BASE}/api/atc/position?commands=1`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
           signal: controller.signal,
         });
-      } finally {
-        clearTimeout(timeoutId);
-      }
 
-      if (res.ok) {
-        recordSendSuccess();
-      } else {
-        recordSendFailure(res.status);
-        console.warn(
-          `[RadarThing] Position update #${requestId} failed with HTTP ${res.status}`,
-          {
-            requestId,
-            status: res.status,
-            statusText: res.statusText,
-            elapsedMs: Date.now() - requestStartedAt,
-            payload: payloadDiagnostics,
-          },
-        );
+        if (!res.ok) {
+          recordSendFailure(res.status);
+          console.warn(
+            `[RadarThing] Position update #${requestId} failed with HTTP ${res.status}`,
+            {
+              requestId,
+              status: res.status,
+              statusText: res.statusText,
+              elapsedMs: Date.now() - requestStartedAt,
+              payload: payloadDiagnostics,
+            },
+          );
+        } else {
+          recordSendSuccess();
+          let data = null;
+          try {
+            data = await res.json();
+          } catch {
+            // A body without commands is fine.
+          }
+          runReceivedCommands(data?.commands);
+        }
+      } finally {
+        // Keep the abort timeout until the body is read, too.
+        clearTimeout(timeoutId);
       }
     } catch (error) {
       recordSendFailure();

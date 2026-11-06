@@ -14,6 +14,19 @@ Sign into your GeoFS account in the simulator tab. A RadarThing sign-in alone is
 
 Let the simulator finish loading and start your flight. Keep this tab open during the checks. Closing the radar tab and closing the simulator tab have different effects: the tracker runs inside GeoFS, so closing GeoFS stops that session from sending updates.
 
+## Check that your flight is transmitting
+
+The tracker only sends your position after you enter your flight details and press **Start tracking**. This is the most common reason a new pilot's aircraft is missing.
+
+1. In GeoFS, find the RadarThing panel on the right of the simulator. If it is hidden, press **W** to show it.
+2. Check that **Departure**, **Arrival**, and **Callsign** are filled in. All three are required.
+3. Press **Start tracking**.
+4. Check the status at the top of the panel. It should change from **Connecting…** to **Live on radar**. If it still says **Not tracking**, the flight is not being sent. If it says **Connection issue · retrying**, RadarThing can't reach the server yet and keeps retrying in the background.
+
+If the panel reports *Callsign already in use*, another pilot is flying with that callsign. Change a digit and press **Start tracking** again. If it reports that the squawk is invalid, the squawk must be four digits, each 0–7, or left empty.
+
+If GeoFS disconnected unexpectedly, the panel may offer to resume your previous flight when you reload. Accept it to continue the same recording.
+
 ## Check that the tracker is running
 
 For a Tampermonkey installation:
@@ -41,7 +54,7 @@ If a browser extension reports that it blocked a RadarThing request, inspect tha
 
 ## Ask for help with useful details
 
-If the flight is still missing, [contact support](/contact) with your browser, installation method, callsign, approximate time of the problem, whether GeoFS was signed in, and whether other flights were visible. Include the exact error text if the browser Console shows a failed RadarThing request.
+If the flight is still missing, [contact support](/contact) with your browser, installation method, callsign, whether the panel showed it was transmitting, approximate time of the problem, whether GeoFS was signed in, and whether other flights were visible. Include the exact error text if the browser Console shows a failed RadarThing request.
 
 Do not share cookies, account tokens, or an unreviewed full console dump. A short description of the failed step is more useful than repeatedly reinstalling the tracker.
 

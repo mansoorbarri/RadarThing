@@ -78,6 +78,8 @@ test("telemetry follows appended path points, resets on replacement, and survive
     activeAircraft.mergeFlightPath(aircraft.id, [[0, 0]]);
     assert.equal(activeAircraft.get(aircraft.id)!.flightTelemetry!.length, 1);
 
+    // Start over without server history so the live path is trimmed.
+    activeAircraft.delete(aircraft.id);
     for (let index = 0; index < 350; index++) {
       activeAircraft.set(aircraft.id, {
         ...aircraft,
@@ -96,6 +98,70 @@ test("telemetry follows appended path points, resets on replacement, and survive
     assert.equal(profile.isEstimated, false);
     assert.equal(profile.altitudes[0], 10200);
     assert.equal(profile.altitudes.at(-1), 10349);
+  } finally {
+    activeAircraft.clear();
+    activeAircraft.destroy();
+    globalThis.requestAnimationFrame = originalRequest;
+    globalThis.cancelAnimationFrame = originalCancel;
+  }
+});
+
+test("server route history replaces the live path once and is kept as the stream extends it", () => {
+  const originalRequest = globalThis.requestAnimationFrame;
+  const originalCancel = globalThis.cancelAnimationFrame;
+  globalThis.requestAnimationFrame = () => 1;
+  globalThis.cancelAnimationFrame = () => undefined;
+  try {
+    activeAircraft.clear();
+    for (let index = 0; index < 200; index++) {
+      activeAircraft.set(aircraft.id, { ...aircraft, lat: 30 + index / 1000 });
+    }
+    assert.equal(activeAircraft.get(aircraft.id)!.flightPath!.length, 150);
+    assert.equal(activeAircraft.hasFlightPathHistory(aircraft.id), false);
+
+    // The first route wins even though it has fewer points than the live path.
+    const history = Array.from(
+      { length: 100 },
+      (_, index) => [index / 100, 20] as [number, number],
+    );
+    activeAircraft.mergeFlightPath(aircraft.id, history);
+    assert.equal(activeAircraft.hasFlightPathHistory(aircraft.id), true);
+    assert.deepEqual(activeAircraft.get(aircraft.id)!.flightPath, history);
+
+    // Later shorter routes are ignored.
+    activeAircraft.mergeFlightPath(aircraft.id, history.slice(0, 50));
+    assert.equal(activeAircraft.get(aircraft.id)!.flightPath!.length, 100);
+
+    // Live points after the route's last point survive the first merge.
+    activeAircraft.delete(aircraft.id);
+    for (const lat of [0.97, 0.98, 0.99, 1, 1.01]) {
+      activeAircraft.set(aircraft.id, { ...aircraft, lat });
+    }
+    activeAircraft.mergeFlightPath(aircraft.id, history);
+    assert.deepEqual(
+      activeAircraft.get(aircraft.id)!.flightPath!.slice(-3),
+      [
+        [0.99, 20],
+        [1, 20],
+        [1.01, 20],
+      ],
+    );
+    activeAircraft.delete(aircraft.id);
+    activeAircraft.set(aircraft.id, aircraft);
+    activeAircraft.mergeFlightPath(aircraft.id, history);
+
+    // Stream updates extend the history instead of trimming it at 150.
+    for (let index = 0; index < 300; index++) {
+      activeAircraft.set(aircraft.id, { ...aircraft, lat: 40 + index / 1000 });
+    }
+    const path = activeAircraft.get(aircraft.id)!.flightPath!;
+    assert.equal(path.length, 400);
+    assert.deepEqual(path[0], [0, 20]);
+
+    // Losing the aircraft (or a reconnect snapshot) drops the history.
+    activeAircraft.clear();
+    activeAircraft.set(aircraft.id, aircraft);
+    assert.equal(activeAircraft.hasFlightPathHistory(aircraft.id), false);
   } finally {
     activeAircraft.clear();
     activeAircraft.destroy();
