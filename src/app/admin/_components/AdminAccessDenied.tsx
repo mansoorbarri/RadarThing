@@ -8,7 +8,7 @@ export function AdminAccessDenied() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="bg-site min-h-screen text-white">
       <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <button
@@ -30,7 +30,10 @@ export function AdminAccessDenied() {
           </button>
         </div>
       </header>
-      <main className="mx-auto max-w-2xl px-6 py-20 text-center">
+      <main
+        id="main-content"
+        className="mx-auto max-w-2xl px-6 py-20 text-center"
+      >
         <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2">
           <Plane className="h-4 w-4 text-red-400" />
           <span className="font-mono text-sm text-red-400">ACCESS DENIED</span>
@@ -43,7 +46,7 @@ export function AdminAccessDenied() {
         </p>
         <button
           onClick={() => router.push("/radar")}
-          className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-8 py-4 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
+          className="cursor-pointer rounded-xl bg-cyan-400 px-8 py-4 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40"
         >
           Back to Map
         </button>

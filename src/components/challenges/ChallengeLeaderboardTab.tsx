@@ -103,9 +103,9 @@ export function ChallengeLeaderboardTab({
 }) {
   if (isLoading || challenges === undefined) {
     return (
-      <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-sm text-slate-500">
+      <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-sm text-slate-400">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Loading challenge leaderboard...
+        Loading challenge leaderboard…
       </div>
     );
   }
@@ -166,11 +166,11 @@ function ChallengeLeaderboardCard({
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="mb-2 flex flex-wrap gap-2">
-            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
+            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[11px] tracking-wider text-slate-400 uppercase">
               {challenge.cadence}
             </span>
             <span
-              className={`rounded-full border px-2.5 py-1 font-mono text-[10px] tracking-wider uppercase ${
+              className={`rounded-full border px-2.5 py-1 font-mono text-[11px] tracking-wider uppercase ${
                 challenge.mode === "auto"
                   ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
                   : "border-amber-500/30 bg-amber-500/10 text-amber-300"
@@ -178,7 +178,7 @@ function ChallengeLeaderboardCard({
             >
               {challenge.mode === "auto" ? "auto" : "manual"}
             </span>
-            <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 font-mono text-[10px] tracking-wider text-cyan-200 uppercase">
+            <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 font-mono text-[11px] tracking-wider text-cyan-200 uppercase">
               {visibleEntries.length} ranked
             </span>
           </div>
@@ -194,7 +194,7 @@ function ChallengeLeaderboardCard({
           </p>
         </div>
 
-        <div className="flex items-center gap-1 text-xs text-slate-500">
+        <div className="flex items-center gap-1 text-xs text-slate-400">
           <Clock3 className="h-3.5 w-3.5" />
           <span>{formatWindow(challenge.startAt, challenge.endAt)}</span>
         </div>
@@ -252,14 +252,14 @@ function ChallengeLeaderboardCard({
                         </div>
                         {entry.callsign &&
                           entry.callsign !== entry.displayName && (
-                            <p className="mt-1 font-mono text-[11px] text-slate-500">
+                            <p className="mt-1 font-mono text-[11px] text-slate-400">
                               {entry.callsign}
                             </p>
                           )}
 
                         {challenge.mode === "auto" && (
                           <div className="mt-3">
-                            <div className="mb-1 flex items-center justify-between text-[11px] text-slate-500">
+                            <div className="mb-1 flex items-center justify-between text-[11px] text-slate-400">
                               <span>{entry.progressLabel}</span>
                               <span className="font-mono">
                                 {progressPercent}%
@@ -280,7 +280,7 @@ function ChallengeLeaderboardCard({
                       </div>
 
                       <div
-                        className={`shrink-0 rounded-full border px-2.5 py-1 text-right font-mono text-[10px] tracking-wider uppercase ${getStatusTone(entry.status)}`}
+                        className={`shrink-0 rounded-full border px-2.5 py-1 text-right font-mono text-[11px] tracking-wider uppercase ${getStatusTone(entry.status)}`}
                       >
                         {getStatusLabel(entry)}
                       </div>
@@ -290,7 +290,7 @@ function ChallengeLeaderboardCard({
               })}
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 px-4 py-6 text-sm text-slate-500">
+            <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 px-4 py-6 text-sm text-slate-400">
               <div className="mb-2 flex items-center gap-2 text-slate-400">
                 {challenge.mode === "auto" ? (
                   <Trophy className="h-4 w-4 text-cyan-300" />
@@ -303,7 +303,7 @@ function ChallengeLeaderboardCard({
                     : "No submissions have landed yet."}
                 </span>
               </div>
-              <p className="font-mono text-xs text-slate-600">
+              <p className="font-mono text-xs text-slate-400">
                 {challenge.mode === "auto"
                   ? "Ranks appear as soon as flights start counting toward the challenge."
                   : "Manual challenges rank pilots once they submit work for review."}

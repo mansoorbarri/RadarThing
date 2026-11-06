@@ -241,10 +241,13 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="admin-theme-surface min-h-screen bg-black text-white">
+    <div className="admin-theme-surface bg-site min-h-screen text-white">
       <AdminHeader />
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      <main
+        id="main-content"
+        className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12"
+      >
         <div className="mb-8">
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 sm:px-4">
             <Plane className="h-4 w-4 text-cyan-400" />
@@ -423,14 +426,19 @@ export default function AdminPage() {
       {(mainTab === "images" || mainTab === "charts") && (
         <button
           onClick={() => setShowUploadModal(true)}
-          className="fixed right-4 bottom-4 z-40 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-4 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all hover:scale-105 hover:shadow-cyan-500/50 sm:right-8 sm:bottom-8 sm:h-14 sm:w-14 sm:px-0"
+          className="fixed right-4 bottom-4 z-40 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-cyan-400 px-4 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/30 transition-all hover:scale-105 hover:bg-cyan-300 hover:shadow-cyan-500/50 sm:right-8 sm:bottom-8 sm:h-14 sm:w-14 sm:px-0"
           title={
             mainTab === "images"
-              ? "Upload Aircraft Image"
-              : "Upload Airport Chart"
+              ? "Upload aircraft image"
+              : "Upload airport chart"
+          }
+          aria-label={
+            mainTab === "images"
+              ? "Upload aircraft image"
+              : "Upload airport chart"
           }
         >
-          <Upload className="h-6 w-6 text-white" />
+          <Upload className="h-6 w-6" aria-hidden="true" />
           <span className="sm:hidden">
             {mainTab === "images" ? "Upload image" : "Upload chart"}
           </span>

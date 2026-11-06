@@ -15,7 +15,7 @@ Statistics only include flights that reached RadarThing. A flight flown with the
 
 ## What counts as a flight
 
-A flight begins when you press **Transmit** in the RadarThing panel and ends when you clear or disconnect it, or when RadarThing stops receiving updates. If the simulator disconnects unexpectedly, the userscript will offer to resume your previous flight the next time you load GeoFS, so a short interruption does not have to split one journey into two records.
+A flight begins when you press **Start tracking** in the RadarThing panel and ends when you press **End flight** or disconnect, or when RadarThing stops receiving updates. If the simulator disconnects unexpectedly, the userscript will offer to resume your previous flight the next time you load GeoFS, so a short interruption does not have to split one journey into two records.
 
 Distance is measured along the route you actually flew, not as a straight line between airports. Flight time is the time between the start and end of the recording.
 
@@ -29,7 +29,7 @@ A flight is excluded from statistics when:
 - **It is a Concorde or a recognised military or high-performance aircraft and its maximum speed is above 1,333 knots.** These aircraft can legitimately fly faster than 750 knots, so they have a higher limit.
 - **It has been reviewed and judged invalid.** RadarThing may exclude a flight that is clearly unrealistic, such as one with impossible jumps in position.
 
-An excluded flight still appears in your flight history and can still be replayed. It is simply skipped when your totals are calculated. You can read the same rules at any time from **Stats Rules** in the radar's control dock.
+An excluded flight still appears in your flight history and can still be replayed. It is simply skipped when your totals are calculated. You can read the same rules at any time from **Stats rules** in the radar's control dock.
 
 Excluded flights affect:
 

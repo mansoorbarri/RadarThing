@@ -1,18 +1,23 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import { FocusTrap } from "~/components/ui/focus-trap";
+import { useBackToClose } from "~/hooks/useBackToClose";
 
 type SheetState = "half" | "full" | "closed";
 
 interface MobileSwipeSheetProps {
   children: React.ReactNode;
   onClose: () => void;
+  /** Accessible name for the sheet, e.g. "Flight board". */
+  label?: string;
   initialState?: SheetState;
 }
 
 export const MobileSwipeSheet = ({
   children,
   onClose,
+  label = "Panel",
   initialState = "half",
 }: MobileSwipeSheetProps) => {
   const [state, setState] = useState<SheetState>(initialState);
@@ -107,16 +112,8 @@ export const MobileSwipeSheet = ({
     return `${newHeight}dvh`;
   };
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        requestClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [requestClose]);
+  // Android Back closes the sheet instead of leaving the radar.
+  useBackToClose(true, requestClose);
 
   useEffect(
     () => () => {
@@ -131,12 +128,17 @@ export const MobileSwipeSheet = ({
     <div className="fixed inset-0 z-[10014]">
       <button
         type="button"
-        aria-label="Close panel"
+        tabIndex={-1}
+        aria-label={`Close ${label.toLowerCase()}`}
         className="absolute inset-0 bg-black/45"
         onClick={requestClose}
       />
 
-      <div
+      <FocusTrap
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        onEscape={requestClose}
         className={`absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-white/10 bg-black/90 backdrop-blur-xl ${
           isDragging ? "" : "transition-[height] duration-200 ease-out"
         }`}
@@ -156,7 +158,7 @@ export const MobileSwipeSheet = ({
         <div className="h-[calc(100%-28px)] overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]">
           {children}
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 };

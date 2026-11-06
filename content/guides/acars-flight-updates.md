@@ -24,7 +24,7 @@ They are especially useful during group flights, VA events, and long-haul flight
 To publish ACARS entries you need:
 
 1. **A RadarThing account linked to your GeoFS account.** Sign in to RadarThing with the same Google account you use in GeoFS.
-2. **An active flight.** Fill in the RadarThing panel in GeoFS and press **Transmit**. ACARS is tied to your current flight, so it is not available before you transmit or after you clear the flight.
+2. **An active flight.** Fill in the RadarThing panel in GeoFS and press **Start tracking**. ACARS is tied to your current flight, so it is not available before you start tracking or after you end the flight.
 
 If either is missing, the ACARS section of the panel will tell you what to do.
 
@@ -76,7 +76,7 @@ A sample set for a two-hour flight might be:
 
 ## Troubleshooting
 
-- **The ACARS section says to save an active flight.** Press **Transmit** in the RadarThing panel and make sure you are signed in to GeoFS.
+- **The ACARS section says to save an active flight.** Press **Start tracking** in the RadarThing panel and make sure you are signed in to GeoFS.
 - **"Enter 1–500 ACARS characters."** Your entry is empty or too long.
 - **Your entry was rejected.** It probably contained a prohibited word. Rephrase it and try again.
 - **Your entry does not appear on the radar.** Check that the radar is showing the correct flight and that the ACARS section is expanded.

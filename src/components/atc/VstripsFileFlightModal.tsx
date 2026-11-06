@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { FocusTrap } from "~/components/ui/focus-trap";
 import type { FormEvent, MouseEvent } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
@@ -77,6 +78,12 @@ export function VstripsFileFlightModal({
   const [form, setForm] = useState<FlightForm>(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  // Move focus to a new error so keyboard and screen-reader users land on it.
+  useEffect(() => {
+    if (result?.type === "error") errorRef.current?.focus();
+  }, [result]);
 
   const activeATCList = useMemo(() => {
     if (!settings) return [];
@@ -202,7 +209,7 @@ export function VstripsFileFlightModal({
       if (!response.ok) {
         setResult({
           type: "error",
-          message: data.error || "Unable to file flight",
+          message: data.error || "We couldn't file your flight.",
           issues: data.issues,
         });
         return;
@@ -213,7 +220,11 @@ export function VstripsFileFlightModal({
         message: data.message || "Thank you. Your flight is filed.",
       });
     } catch {
-      setResult({ type: "error", message: "Unable to reach vstrips." });
+      setResult({
+        type: "error",
+        message:
+          "We couldn't reach vstrips. Check your connection and try again.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -230,21 +241,29 @@ export function VstripsFileFlightModal({
       className="pointer-events-auto fixed inset-0 z-[10040] flex items-center justify-center bg-black/65 p-3 backdrop-blur-sm"
       onMouseDown={handleBackdropMouseDown}
     >
-      <div className="max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-xl border border-cyan-400/25 bg-[#050b10]/96 text-slate-100 shadow-[0_24px_90px_rgba(0,0,0,0.7)]">
+      <FocusTrap
+        onEscape={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="file-flight-title"
+        className="max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-xl border border-cyan-400/25 bg-[#050b10]/96 text-slate-100 shadow-[0_24px_90px_rgba(0,0,0,0.7)]"
+      >
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
           <div>
-            <div className="text-[10px] font-semibold tracking-[0.2em] text-cyan-300 uppercase">
+            <div className="text-[11px] font-semibold tracking-[0.2em] text-cyan-300 uppercase">
               vstrips
             </div>
-            <h2 className="text-lg font-semibold">File Flight</h2>
+            <h2 id="file-flight-title" className="text-lg font-semibold">
+              File a flight
+            </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="grid h-9 w-9 place-items-center rounded-md border border-white/10 text-slate-300 transition hover:border-cyan-300/40 hover:text-cyan-200"
-            aria-label="Close file flight modal"
+            aria-label="Close"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -254,7 +273,7 @@ export function VstripsFileFlightModal({
               <p className="mb-3 font-medium">Sign in to file a flight.</p>
               <GoogleSignInButton>
                 <button className="rounded-md border border-amber-300/40 bg-amber-300/15 px-3 py-2 text-xs font-semibold text-amber-100">
-                  Sign In
+                  Sign in
                 </button>
               </GoogleSignInButton>
             </div>
@@ -289,7 +308,7 @@ export function VstripsFileFlightModal({
           ) : result?.type === "success" ? (
             <div className="rounded-lg border border-emerald-400/25 bg-emerald-400/10 p-5 text-center text-emerald-100">
               <CheckCircle className="mx-auto mb-3 h-10 w-10" />
-              <p className="text-base font-semibold">Flight Filed</p>
+              <p className="text-base font-semibold">Flight filed</p>
               <p className="mt-1 text-sm text-emerald-100/75">
                 {result.message}
               </p>
@@ -297,7 +316,12 @@ export function VstripsFileFlightModal({
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               {result?.type === "error" && (
-                <div className="rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100">
+                <div
+                  ref={errorRef}
+                  role="alert"
+                  tabIndex={-1}
+                  className="rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100 focus:outline-none"
+                >
                   <p className="font-medium">{result.message}</p>
                   {result.issues && result.issues.length > 0 && (
                     <ul className="mt-2 list-disc space-y-1 pl-4 text-red-100/80">
@@ -444,13 +468,18 @@ export function VstripsFileFlightModal({
                 disabled={!canSubmit}
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-cyan-300/35 bg-cyan-400/15 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200/60 hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isSubmitting ? "Submitting..." : "File Flight Plan"}
+                {isSubmitting && (
+                  <Loader2
+                    className="h-4 w-4 animate-spin"
+                    aria-hidden="true"
+                  />
+                )}
+                {isSubmitting ? "Filing…" : "File flight plan"}
               </button>
             </form>
           )}
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

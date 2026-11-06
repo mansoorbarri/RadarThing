@@ -131,7 +131,7 @@ function ModerationDialog({
             <X size={18} />
           </Dialog.Close>
           <p className="mb-2 font-mono text-xs tracking-widest text-slate-400">
-            ACCOUNT MODERATION
+            Account moderation
           </p>
           <Dialog.Title className="pr-6 text-xl font-semibold">
             {kind === "ban" ? "Ban" : "Warn"} {label}

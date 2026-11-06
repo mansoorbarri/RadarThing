@@ -23,13 +23,16 @@ export const useAircraftStream = () => {
   const [onlineAirports, setOnlineAirports] = useState<OnlineAirport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // When the next automatic reconnect happens, for a live countdown.
+  const [nextRetryAt, setNextRetryAt] = useState<number | null>(null);
+
   const [connectionStatus, setConnectionStatus] = useState<
     "connecting" | "connected" | "disconnected"
   >("connecting");
   const [lastMessageAt, setLastMessageAt] = useState<number | null>(null);
-  const [lastMessageAgeSeconds, setLastMessageAgeSeconds] = useState<
-    number | null
-  >(null);
+  // Only flips when the stream crosses the 15s threshold, so the page
+  // doesn't re-render every second just to count.
+  const [isStreamStale, setIsStreamStale] = useState(false);
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -51,6 +54,7 @@ export const useAircraftStream = () => {
     es.onopen = () => {
       setConnectionStatus("connected");
       setError(null);
+      setNextRetryAt(null);
       reconnectAttempts.current = 0;
     };
 
@@ -112,17 +116,25 @@ export const useAircraftStream = () => {
         setIsLoading(false);
         setError(null);
         setLastMessageAt(receivedAt);
-        setLastMessageAgeSeconds(0);
+        setIsStreamStale(false);
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Unknown stream parse error";
         console.error("Failed to process aircraft stream payload:", message);
-        setError(`Stream payload error: ${message}`);
+        console.warn("[RadarThing] Stream payload error:", message);
+        setError(
+          "Some live data couldn't be read; waiting for the next update.",
+        );
       }
     };
 
     es.onerror = () => {
       setConnectionStatus("disconnected");
+      setError(
+        typeof navigator !== "undefined" && navigator.onLine === false
+          ? "You're offline."
+          : "Connection lost.",
+      );
       es.close();
       scheduleReconnect();
     };
@@ -138,19 +150,22 @@ export const useAircraftStream = () => {
       30000,
     );
     reconnectAttempts.current++;
-    setError(`Connection lost. Reconnecting in ${backoff / 1000}s...`);
-    reconnectTimeoutRef.current = setTimeout(() => connectToStream(), backoff);
+    setNextRetryAt(Date.now() + backoff);
+    reconnectTimeoutRef.current = setTimeout(() => {
+      reconnectTimeoutRef.current = null;
+      connectToStream();
+    }, backoff);
   }, [connectToStream]);
 
   const startWatchdog = useCallback(() => {
     if (watchdogIntervalRef.current) clearInterval(watchdogIntervalRef.current);
     watchdogIntervalRef.current = setInterval(() => {
       const elapsedMs = Date.now() - lastMessageTime.current;
+      // A reconnect is already scheduled; don't restart its countdown.
+      if (reconnectTimeoutRef.current) return;
       if (elapsedMs > 30000) {
         setConnectionStatus("disconnected");
-        setError(
-          `No stream data received for ${Math.floor(elapsedMs / 1000)}s. Reconnecting...`,
-        );
+        setError(`No live data for ${Math.floor(elapsedMs / 1000)}s.`);
         if (eventSourceRef.current) eventSourceRef.current.close();
         scheduleReconnect();
       }
@@ -159,18 +174,34 @@ export const useAircraftStream = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!lastMessageAt) {
-        setLastMessageAgeSeconds(null);
-        return;
-      }
-
-      setLastMessageAgeSeconds(
-        Math.max(0, Math.floor((Date.now() - lastMessageAt) / 1000)),
+      setIsStreamStale(
+        lastMessageAt !== null &&
+          lastMessageAt !== undefined &&
+          Date.now() - lastMessageAt >= 15000,
       );
     }, 1000);
-
     return () => clearInterval(interval);
   }, [lastMessageAt]);
+
+  // Skip the remaining backoff when the user asks, or when the browser comes
+  // back online.
+  const reconnectNow = useCallback(() => {
+    if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+    reconnectTimeoutRef.current = null;
+    reconnectAttempts.current = 0;
+    lastMessageTime.current = Date.now();
+    setNextRetryAt(null);
+    connectToStream();
+  }, [connectToStream]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      if (eventSourceRef.current?.readyState !== EventSource.OPEN)
+        reconnectNow();
+    };
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [reconnectNow]);
 
   useEffect(() => {
     connectToStream();
@@ -190,6 +221,10 @@ export const useAircraftStream = () => {
     connectionStatus,
     onlineAirports,
     lastMessageAt,
-    lastMessageAgeSeconds,
+    isStreamStale,
+    reconnectNow,
+    // The status pill counts down to this itself, so the radar page doesn't
+    // re-render every second while offline.
+    nextRetryAt,
   };
 };

@@ -1,5 +1,7 @@
 "use client";
 
+import { FocusTrap } from "~/components/ui/focus-trap";
+
 import { AlertTriangle, Trash2, X as XIcon } from "lucide-react";
 
 export type ConfirmVariant = "danger" | "warning";
@@ -33,7 +35,13 @@ export function ConfirmModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-2xl">
+      <FocusTrap
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirmModal-title"
+        onEscape={onCancel}
+        className="border-border bg-card text-card-foreground w-full max-w-md rounded-2xl border p-6 shadow-2xl"
+      >
         {/* Icon */}
         <div className="mb-4 flex justify-center">
           <div
@@ -50,25 +58,30 @@ export function ConfirmModal({
         </div>
 
         {/* Title */}
-        <h3 className="mb-2 text-center text-lg font-semibold text-foreground">
+        <h3
+          id="confirmModal-title"
+          className="text-foreground mb-2 text-center text-lg font-semibold"
+        >
           {title}
         </h3>
 
         {/* Message */}
-        <p className="mb-6 text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground mb-6 text-center text-sm">
           {message}
         </p>
 
         {/* Buttons */}
         <div className="flex gap-3">
           <button
+            type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="flex-1 cursor-pointer rounded-lg border border-border py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            className="border-border text-muted-foreground hover:bg-muted flex-1 cursor-pointer rounded-lg border py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
             {cancelLabel}
           </button>
           <button
+            type="button"
             onClick={onConfirm}
             disabled={isLoading}
             className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
@@ -80,14 +93,14 @@ export function ConfirmModal({
             {isLoading ? (
               <>
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Processing...
+                Processing…
               </>
             ) : (
               confirmLabel
             )}
           </button>
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

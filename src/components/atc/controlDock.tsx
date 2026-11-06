@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { DockIcon } from "~/utils/dockIcons";
 
@@ -46,6 +46,35 @@ export function ControlDock({
     Record<string, boolean>
   >({});
   const panelId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
+  // Like any menu: Escape or a click outside closes it, focus goes back to
+  // the Menu button.
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      setOpen(false);
+      toggleRef.current?.focus();
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (
+        panelRef.current?.contains(target) ||
+        toggleRef.current?.contains(target)
+      )
+        return;
+      setOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown, true);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, true);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [open]);
 
   useEffect(() => {
     try {
@@ -66,10 +95,15 @@ export function ControlDock({
     }
   }, []);
 
-  const toggleSection = (sectionId: string) => {
+  // The first section (the main radar tools) starts open so the dock is
+  // useful on first click; the rest stay collapsed until the user opens them.
+  const isSectionCollapsed = (sectionId: string, index: number) =>
+    collapsedSections[sectionId] ?? index !== 0;
+
+  const toggleSection = (sectionId: string, index: number) => {
     const next = {
       ...collapsedSections,
-      [sectionId]: !(collapsedSections[sectionId] ?? true),
+      [sectionId]: !isSectionCollapsed(sectionId, index),
     };
     setCollapsedSections(next);
     try {
@@ -91,13 +125,15 @@ export function ControlDock({
 
   const isRight = side === "right";
 
-  const btnSize = isMobile ? "h-11 w-11" : "h-13 w-13";
+  const btnSize = isMobile ? "h-12 w-12" : "h-13 w-13";
   const panelWidth = isMobile ? "w-[220px]" : "w-[236px]";
-  const bottomPos = isMobile ? "bottom-3" : "bottom-6";
+  const bottomPos = isMobile
+    ? "bottom-[max(0.75rem,env(safe-area-inset-bottom))]"
+    : "bottom-6";
   const sidePos = isMobile
     ? isRight
-      ? "right-3"
-      : "left-3"
+      ? "right-[max(0.75rem,env(safe-area-inset-right))]"
+      : "left-[max(0.75rem,env(safe-area-inset-left))]"
     : isRight && !rightOffset
       ? "right-4"
       : !isRight
@@ -118,6 +154,7 @@ export function ControlDock({
       <div className="relative">
         {/* Tool buttons (absolute, so dock never moves) */}
         <div
+          ref={panelRef}
           id={panelId}
           inert={!open}
           aria-hidden={!open}
@@ -139,16 +176,16 @@ export function ControlDock({
             }}
           >
             <div className="flex flex-col gap-3.5">
-              {sections.map((section) => {
-                const collapsed = collapsedSections[section.id] ?? true;
+              {sections.map((section, index) => {
+                const collapsed = isSectionCollapsed(section.id, index);
                 return (
                   <div key={section.id}>
                     <button
                       type="button"
                       aria-expanded={!collapsed}
                       aria-controls={`${panelId}-${section.id}`}
-                      onClick={() => toggleSection(section.id)}
-                      className="flex min-h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-1 text-left text-[10px] font-medium tracking-[0.18em] text-cyan-300/80 uppercase transition-colors hover:bg-cyan-500/10 hover:text-cyan-200 focus-visible:outline-2 focus-visible:outline-cyan-300"
+                      onClick={() => toggleSection(section.id, index)}
+                      className="flex min-h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-1 text-left text-[11px] font-medium tracking-[0.16em] text-cyan-300/90 uppercase transition-colors hover:bg-cyan-500/10 hover:text-cyan-200 focus-visible:outline-2 focus-visible:outline-cyan-300"
                     >
                       {section.label}
                       <ChevronDown
@@ -176,6 +213,18 @@ export function ControlDock({
                               onClick={() => {
                                 item.onClick();
                                 setOpen(false);
+                                // The panel goes inert as it closes; if the
+                                // item didn't move focus somewhere else, put
+                                // it back on the Menu button.
+                                requestAnimationFrame(() => {
+                                  const active = document.activeElement;
+                                  if (
+                                    !active ||
+                                    active === document.body ||
+                                    panelRef.current?.contains(active)
+                                  )
+                                    toggleRef.current?.focus();
+                                });
                               }}
                               className={`flex w-full cursor-pointer items-center gap-2 rounded-xl border ${isMobile ? "px-3 py-2 text-[11px]" : "px-4 py-2 text-xs"} backdrop-blur-md transition-all duration-150 ${
                                 item.active
@@ -204,17 +253,27 @@ export function ControlDock({
         {/* Dock toggle (anchored, never moves) */}
         <button
           type="button"
-          aria-label={open ? "Close control dock" : "Open control dock"}
+          ref={toggleRef}
+          data-dock-toggle=""
+          // Matches the visible "Menu" label (WCAG 2.5.3).
+          aria-label={open ? "Close menu" : "Menu"}
           aria-expanded={open}
           aria-controls={panelId}
           onClick={() => setOpen(!open)}
-          className={`flex ${btnSize} cursor-pointer items-center justify-center rounded-md border font-mono font-bold transition-all duration-200 ${
+          className={`flex ${btnSize} cursor-pointer flex-col items-center justify-center gap-0.5 rounded-md border font-mono font-bold transition-all duration-200 ${
             open
               ? "border-cyan-400/50 bg-cyan-400/15 text-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.5)]"
               : "border-cyan-400/30 bg-black/80 text-cyan-400 shadow-[0_0_6px_rgba(0,255,255,0.25)] hover:border-cyan-400/50 hover:bg-cyan-400/15 hover:shadow-[0_0_10px_rgba(0,255,255,0.5)]"
           }`}
         >
           {DockIcon}
+          {/* A visible word makes the grid icon discoverable on desktop. */}
+          <span
+            aria-hidden="true"
+            className={`${isMobile ? "text-[10px]" : "text-[11px]"} leading-none font-semibold tracking-normal`}
+          >
+            Menu
+          </span>
         </button>
       </div>
 

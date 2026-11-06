@@ -72,8 +72,8 @@ export const useRecentSearches = () => {
       return;
     }
 
-    const displayName = aircraft.callsign || aircraft.flightNo || "N/A";
-    const subtitle = `${aircraft.type || "N/A"} • ${aircraft.departure || "N/A"} → ${aircraft.arrival || "UNK"}`;
+    const displayName = aircraft.callsign || aircraft.flightNo || "No callsign";
+    const subtitle = `${aircraft.type || "Unknown aircraft"} · ${aircraft.departure || "—"} → ${aircraft.arrival || "—"}`;
 
     setRecentSearches((prev) => {
       // Remove existing entry if present
@@ -152,6 +152,11 @@ export const useRecentSearches = () => {
     });
   }, []);
 
+  /** Put back a list removed by clearRecentSearches (for an Undo action). */
+  const restoreRecentSearches = useCallback((searches: RecentSearch[]) => {
+    setRecentSearches(searches.slice(0, MAX_RECENT_SEARCHES));
+  }, []);
+
   const clearRecentSearches = useCallback(() => {
     setRecentSearches([]);
     try {
@@ -169,5 +174,6 @@ export const useRecentSearches = () => {
     addAirportSearch,
     addPilotSearch,
     clearRecentSearches,
+    restoreRecentSearches,
   };
 };

@@ -362,7 +362,7 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-cyan-500/50 bg-cyan-500/10 p-8">
           <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
           <span className="mt-3 font-medium text-white">
-            Compressing image...
+            Compressing image…
           </span>
           <span className="mt-1 text-sm text-slate-400">
             This will only take a moment
@@ -410,7 +410,7 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
               </p>
             </div>
 
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-400">
               JPG, PNG, GIF or WebP • Auto-compressed
             </p>
           </div>

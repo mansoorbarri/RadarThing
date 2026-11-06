@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { ModerationControls } from "~/components/moderation/ModerationControls";
+import { ConfirmModal } from "./ConfirmModal";
 import { moderationErrorMessage } from "~/lib/moderation-error";
 
 export function AcarsModerationTab() {
@@ -24,6 +25,8 @@ export function AcarsModerationTab() {
   const review = useMutation(api.acars.markReportReviewed);
   const releaseDevice = useMutation(api.acars.adminReleaseDevice);
   const [releaseRtId, setReleaseRtId] = useState("");
+  const [confirmRelease, setConfirmRelease] = useState(false);
+  const [releasing, setReleasing] = useState(false);
 
   return (
     <section className="space-y-8 text-white">
@@ -48,13 +51,21 @@ export function AcarsModerationTab() {
           <button
             disabled={!releaseRtId}
             className="rounded-lg border border-amber-400/30 px-3 py-2 text-xs text-amber-200 disabled:opacity-40"
-            onClick={async () => {
-              if (
-                !window.confirm(
-                  `Release the ACARS device claim for RT ID ${releaseRtId}?`,
-                )
-              )
-                return;
+            type="button"
+            onClick={() => setConfirmRelease(true)}
+          >
+            Release claim
+          </button>
+          <ConfirmModal
+            isOpen={confirmRelease}
+            title="Release this device claim?"
+            message={`The ACARS device claim for RT ID ${releaseRtId} will be released, so the pilot can register a new device.`}
+            confirmLabel="Release claim"
+            variant="warning"
+            isLoading={releasing}
+            onCancel={() => setConfirmRelease(false)}
+            onConfirm={async () => {
+              setReleasing(true);
               try {
                 const count = await releaseDevice({
                   userId: releaseRtId as Id<"users">,
@@ -70,11 +81,12 @@ export function AcarsModerationTab() {
                     "Could not release the device claim. Check the RT ID and try again.",
                   ),
                 );
+              } finally {
+                setReleasing(false);
+                setConfirmRelease(false);
               }
             }}
-          >
-            Release claim
-          </button>
+          />
         </div>
       </div>
       <div>

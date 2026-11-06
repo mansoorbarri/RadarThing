@@ -29,8 +29,8 @@ const ACTION_LABELS = {
   edit: "Edited",
   delete: "Removed",
   create: "Created",
-  grant_pro: "Granted PRO",
-  revoke_pro: "Revoked PRO",
+  grant_pro: "Granted Pro",
+  revoke_pro: "Revoked Pro",
   warn: "Warned user",
   ban: "Banned user",
   revoke_warning: "Revoked warning",
@@ -41,7 +41,7 @@ const RESOURCE_LABELS = {
   aircraft_image: "Aircraft image",
   airport_chart: "Airport chart",
   virtual_airline: "Virtual airline",
-  pro_access: "PRO access",
+  pro_access: "Pro access",
   user_moderation: "User moderation",
 } as const;
 
@@ -229,13 +229,13 @@ export function AdminTelemetryTab({
 
       <div className="flex flex-col gap-4">
         <div className="relative flex-1">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={userFilter}
             onChange={(event) => setUserFilter(event.target.value)}
-            placeholder="Filter by user, email, Discord, or Clerk ID..."
-            className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus:bg-white/[0.07]"
+            placeholder="Filter by user, email, Discord, or Clerk ID…"
+            className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus:bg-white/[0.07] focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </div>
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -285,7 +285,7 @@ export function AdminTelemetryTab({
 
       <div className="border-y border-white/10">
         {filteredEvents?.length === 0 ? (
-          <div className="py-16 text-center text-sm text-slate-500">
+          <div className="py-16 text-center text-sm text-slate-400">
             {events.length === 0
               ? "No admin activity has been recorded yet."
               : "No admin activity matches the current filters."}
@@ -313,21 +313,21 @@ export function AdminTelemetryTab({
                         <span className="font-medium text-white">
                           {formatActor(event)}
                         </span>
-                        <span className="font-mono text-xs text-slate-500 uppercase">
+                        <span className="font-mono text-xs text-slate-400 uppercase">
                           {ACTION_LABELS[event.action]}
                         </span>
                         <span className="text-slate-300">
                           {event.resourceLabel}
                         </span>
                       </div>
-                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 font-mono text-xs text-slate-500">
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 font-mono text-xs text-slate-400">
                         <span>{RESOURCE_LABELS[event.resourceType]}</span>
                         {target && <span>Affected: {target}</span>}
                         {note && <span>{note}</span>}
                       </div>
                     </div>
                   </div>
-                  <time className="font-mono text-xs text-slate-500 sm:pt-2 sm:text-right">
+                  <time className="font-mono text-xs text-slate-400 sm:pt-2 sm:text-right">
                     {formatTimestamp(event.createdAt)}
                   </time>
                 </div>
@@ -343,7 +343,7 @@ export function AdminTelemetryTab({
 function TelemetryStat({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3">
-      <div className="flex items-center gap-2 text-xs tracking-wider text-slate-500 uppercase">
+      <div className="flex items-center gap-2 text-xs tracking-wider text-slate-400 uppercase">
         <Activity className="h-3.5 w-3.5" />
         {label}
       </div>

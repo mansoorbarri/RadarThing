@@ -188,13 +188,13 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "toolkit",
-    eyebrow: "Control dock",
-    title: "Open the control dock",
+    eyebrow: "Menu",
+    title: "Open the menu",
     description:
-      "The dock icon in the bottom-right opens live flight and airport lists, filters, shortcuts, community pages, uploads, and Help.",
-    hint: "Click the highlighted dock icon to continue.",
+      "The Menu button in the bottom-right opens live flight and airport lists, filters, shortcuts, community pages, uploads, and Help.",
+    hint: "Click the highlighted Menu button to continue.",
     targets: ['[data-tour="radar-tools"]'],
-    task: { type: "event", eventName: "click", prompt: "Open the dock" },
+    task: { type: "event", eventName: "click", prompt: "Open the menu" },
     icon: Wrench,
   },
   {
@@ -242,6 +242,16 @@ function getFocusableElements(container: HTMLElement) {
       element.getClientRects().length > 0 &&
       element.getAttribute("aria-hidden") !== "true",
   );
+}
+
+// On touch screens the steps should say "Tap", not "Click".
+function forPointer(text: string) {
+  if (
+    typeof window === "undefined" ||
+    !window.matchMedia?.("(pointer: coarse)").matches
+  )
+    return text;
+  return text.replace(/\bClick\b/g, "Tap").replace(/\bclick\b/g, "tap");
 }
 
 export function RadarGuide({
@@ -530,10 +540,7 @@ export function RadarGuide({
         );
         return {
           bottom,
-          maxHeight: Math.max(
-            160,
-            viewportHeight - bottom - viewportMargin,
-          ),
+          maxHeight: Math.max(160, viewportHeight - bottom - viewportMargin),
         };
       })()
     : undefined;
@@ -615,10 +622,10 @@ export function RadarGuide({
                 <Icon size={19} strokeWidth={1.8} />
               </div>
               <div>
-                <p className="font-mono text-[10px] tracking-[0.22em] text-cyan-300 uppercase">
+                <p className="font-mono text-[11px] tracking-[0.22em] text-cyan-300 uppercase">
                   {step.eyebrow}
                 </p>
-                <p className="mt-1 font-mono text-[10px] text-slate-500">
+                <p className="mt-1 font-mono text-[11px] text-slate-400">
                   {String(stepIndex + 1).padStart(2, "0")} /{" "}
                   {String(STEPS.length).padStart(2, "0")}
                 </p>
@@ -627,7 +634,7 @@ export function RadarGuide({
             <button
               type="button"
               onClick={() => void onFinish()}
-              className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
               aria-label="Skip tour"
               title="Skip tour"
             >
@@ -642,7 +649,7 @@ export function RadarGuide({
             {step.title}
           </h2>
           <p className="mt-3 text-sm leading-6 text-slate-300">
-            {step.description}
+            {forPointer(step.description)}
           </p>
           {step.details && (
             <ul className="mt-4 space-y-2 rounded-xl border border-white/8 bg-black/25 px-4 py-3 text-xs leading-5 text-slate-300">
@@ -657,13 +664,13 @@ export function RadarGuide({
           {step.hint && (
             <div className="mt-4 flex gap-2 rounded-xl border border-cyan-300/10 bg-cyan-300/[0.055] px-3 py-2.5 text-xs leading-5 text-cyan-100/75">
               <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-cyan-300" />
-              <span>{step.hint}</span>
+              <span>{forPointer(step.hint)}</span>
             </div>
           )}
 
           {step.task && (
             <div
-              className={`mt-3 flex items-center gap-2 rounded-lg border px-3 py-2 font-mono text-[10px] tracking-[0.08em] uppercase ${isStepComplete ? "border-emerald-400/25 bg-emerald-400/8 text-emerald-300" : "border-amber-300/25 bg-amber-300/8 text-amber-200"}`}
+              className={`mt-3 flex items-center gap-2 rounded-lg border px-3 py-2 font-mono text-[11px] tracking-[0.08em] uppercase ${isStepComplete ? "border-emerald-400/25 bg-emerald-400/8 text-emerald-300" : "border-amber-300/25 bg-amber-300/8 text-amber-200"}`}
               role="status"
             >
               <span
@@ -698,7 +705,7 @@ export function RadarGuide({
                 type="button"
                 onClick={handlePrimaryAction}
                 disabled={!isStepComplete && taskNeedsExternalAction}
-                className="flex min-h-9 items-center gap-1.5 rounded-lg border border-cyan-200/30 bg-cyan-300 px-4 py-2 text-xs font-semibold text-[#041016] shadow-[0_0_18px_rgba(34,211,238,0.18)] transition-colors hover:bg-cyan-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/8 disabled:text-white/35 disabled:shadow-none"
+                className="flex min-h-9 items-center gap-1.5 rounded-lg border border-cyan-200/30 bg-cyan-300 px-4 py-2 text-xs font-semibold text-[#041016] shadow-[0_0_18px_rgba(34,211,238,0.18)] transition-colors hover:bg-cyan-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/8 disabled:text-white/55 disabled:shadow-none"
               >
                 {primaryLabel}
                 {isStepComplete && !isLastStep && <ChevronRight size={14} />}

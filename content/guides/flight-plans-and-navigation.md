@@ -27,7 +27,7 @@ If you change your plan mid-flight, the update is picked up automatically. There
 
 ## Previewing a route from a file
 
-If you prepare your route outside GeoFS, you can preview it on the radar before you fly. Choose **Import Plan** in the Radar section of the control dock and select a JSON file. Use **Plan Details** to reopen the summary and **Clear Plan** to remove it.
+If you prepare your route outside GeoFS, you can preview it on the radar before you fly. Choose **Import plan** in the Radar section of the control dock and select a JSON file. Use **Plan details** to reopen the summary and **Clear plan** to remove it.
 
 The file must be a JSON array of waypoints. Each entry needs a latitude and longitude; an identifier, type, altitude, and speed are optional:
 

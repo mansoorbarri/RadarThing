@@ -297,7 +297,7 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
                 {entry.chartName}
               </span>
               {!isUploading && (
-                <Pencil className="h-3 w-3 flex-shrink-0 text-slate-500" />
+                <Pencil className="h-3 w-3 flex-shrink-0 text-slate-400" />
               )}
             </button>
           )}
@@ -411,7 +411,7 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
                 </p>
               </div>
 
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-400">
                 PNG only (max 3MB each, up to 20 files)
               </p>
             </div>

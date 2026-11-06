@@ -59,9 +59,25 @@
       if (obj.type === "position_update" && obj.payload) {
         lastAircraftId =
           obj.payload.id || obj.payload.callsign || lastAircraftId;
-        postJSON("/api/report/position", obj.payload, options).catch((e) => {
-          console.warn("[ATC-Reporter] HTTP position error", e);
-        });
+        positionInFlight = true;
+        postJSON("/api/report/position", obj.payload, options)
+          .then(() => {
+            seabusFailures = 0;
+            seabusNextAllowedAt = 0;
+            setSeabusStatus("Sharing your flight", "#22c55e");
+          })
+          .catch((e) => {
+            console.warn("[ATC-Reporter] HTTP position error", e);
+            seabusFailures += 1;
+            // Back off 2s, 4s, 8s … up to 60s; Seabus is optional extra.
+            seabusNextAllowedAt =
+              Date.now() + Math.min(60000, 1000 * 2 ** seabusFailures);
+            if (seabusFailures >= 2)
+              setSeabusStatus("Can't reach Seabus · retrying", "#fbbf24");
+          })
+          .finally(() => {
+            positionInFlight = false;
+          });
         return;
       }
 
@@ -93,10 +109,25 @@
     } catch {}
   }
 
+  // Seabus is an optional secondary feed. It must not overwrite the main
+  // RadarThing connection status, so it reports on its own event instead.
+  let seabusFailures = 0;
+  let seabusNextAllowedAt = 0;
+  let positionInFlight = false;
+  let lastSeabusStatus = "";
+
+  // Only announce changes, not every successful send.
+  function setSeabusStatus(text, color) {
+    const key = `${text}|${color}|${window.__radarPrefs?.seabus === true}`;
+    if (key === lastSeabusStatus) return;
+    lastSeabusStatus = key;
+    dispatchStatus(text, color);
+  }
+
   function dispatchStatus(text, color) {
     window.dispatchEvent(
-      new CustomEvent("atc-status-update", {
-        detail: { text, color },
+      new CustomEvent("seabus-status-update", {
+        detail: { text, color, enabled: window.__radarPrefs?.seabus === true },
       }),
     );
   }
@@ -536,7 +567,7 @@
       flightInfo.isDiverted = false;
       flightInfo.active = false;
       reportDisconnect();
-      dispatchStatus("Flight info required", "#f87171");
+      setSeabusStatus("Not sharing", "#94a3b8");
       return;
     }
 
@@ -552,9 +583,11 @@
     );
     flightInfo.active = Boolean(detail.active && flightInfo.confirmed);
 
-    dispatchStatus(
-      flightInfo.active ? "Transmitting" : "Flight info required",
-      flightInfo.active ? "#22c55e" : "#f87171",
+    seabusFailures = 0;
+    seabusNextAllowedAt = 0;
+    setSeabusStatus(
+      flightInfo.active ? "Connecting…" : "Not sharing",
+      flightInfo.active ? "#7dd3fc" : "#94a3b8",
     );
   }
 
@@ -567,6 +600,7 @@
   setInterval(() => {
     if (window.__radarPrefs?.seabus !== true) return;
     if (!flightInfo.active) return;
+    if (positionInFlight || Date.now() < seabusNextAllowedAt) return;
 
     const snap = readSnapshot();
     if (!snap) return;

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 
@@ -7,6 +7,13 @@ export const metadata: Metadata = {
   description:
     "Explore participating GeoFS flights on a live map, inspect flight paths and pilot profiles, and find airports and weather layers.",
   alternates: { canonical: "/radar" },
+};
+
+// The radar is a full-screen map, so let it run under the notch and home
+// indicator; the header, dock and drawers pad themselves with the
+// env(safe-area-inset-*) values this enables.
+export const viewport: Viewport = {
+  viewportFit: "cover",
 };
 
 export default function RadarLayout({ children }: { children: ReactNode }) {

@@ -81,7 +81,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
     }
 
     setSubmitStage("submitting");
-    setSubmitProgress(`Creating ${results.length} entries...`);
+    setSubmitProgress(`Creating ${results.length} entries…`);
 
     const dbResults = await Promise.all(
       results.map((upload) =>
@@ -155,7 +155,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
                 maxLength={4}
                 required
                 disabled={isProcessing}
-                className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
               />
             </div>
             <div>
@@ -192,7 +192,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
 
           <div>
             <label className="mb-2 block font-mono text-xs text-slate-400">
-              SELECT CHART FILES
+              Select chart files
               {hasSelectedFiles && uploaderRef.current && (
                 <span className="ml-2 rounded-full bg-cyan-500/20 px-2 py-0.5 text-cyan-400">
                   {uploaderRef.current.fileCount()} file
@@ -220,21 +220,21 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
             disabled={
               isProcessing || !hasSelectedFiles || submitStage === "success"
             }
-            className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-slate-950 shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
               submitStage === "success"
                 ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/20"
-                : "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-cyan-500/20 hover:shadow-cyan-500/40"
+                : "bg-cyan-400 shadow-cyan-500/20 hover:bg-cyan-300 hover:shadow-cyan-500/40"
             }`}
           >
             {submitStage === "uploading" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Uploading...
+                Uploading…
               </>
             ) : submitStage === "submitting" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                {submitProgress ?? "Submitting..."}
+                {submitProgress ?? "Submitting…"}
               </>
             ) : submitStage === "success" ? (
               <>

@@ -146,7 +146,7 @@ function EditableChartDetails({
             onKeyDown={handleKeyDown}
             placeholder="ICAO"
             maxLength={4}
-            className="w-16 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400"
+            className="w-16 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             disabled={isSaving}
             autoFocus
           />
@@ -177,7 +177,7 @@ function EditableChartDetails({
           onChange={(e) => setChartName(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Chart Name"
-          className="w-full rounded-md border border-white/20 bg-black/60 px-2 py-1 text-sm text-white outline-none focus:border-white/40"
+          className="w-full rounded-md border border-white/20 bg-black/60 px-2 py-1 text-sm text-white outline-none focus:border-white/40 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           disabled={isSaving}
         />
         <div className="flex gap-2">
@@ -211,7 +211,7 @@ function EditableChartDetails({
         </span>
         <button
           onClick={() => setIsEditing(true)}
-          className="cursor-pointer rounded-md p-1 text-slate-600 opacity-0 transition-all group-hover/details:opacity-100 hover:bg-white/10 hover:text-cyan-400"
+          className="cursor-pointer rounded-md p-1 text-slate-400 opacity-0 transition-all group-hover/details:opacity-100 hover:bg-white/10 hover:text-cyan-400"
           title="Edit chart details"
         >
           <Pencil className="h-3.5 w-3.5" />
@@ -499,8 +499,8 @@ export function AirportChartsTab({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by ICAO, chart name, type, email, user ID..."
-            className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
+            placeholder="Search by ICAO, chart name, type, email, user ID…"
+            className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -605,7 +605,7 @@ export function AirportChartsTab({
             : `Showing ${pageStart}-${pageEnd} of ${filteredCharts.length} chart${filteredCharts.length !== 1 ? "s" : ""}${hasActiveFilters && filteredCharts.length !== approvedCharts.length ? ` (${approvedCharts.length} total)` : ""}`}
         </p>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-500">Per page</span>
+          <span className="text-sm text-slate-400">Per page</span>
           <Select
             value={String(pageSize)}
             onValueChange={(value) =>
@@ -698,7 +698,7 @@ export function AirportChartsTab({
       {/* Charts Grid */}
       {filteredCharts.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-          <Map className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+          <Map className="mx-auto mb-4 h-12 w-12 text-slate-400" />
           <h3 className="mb-2 text-xl font-semibold text-white">
             {hasActiveFilters ? "No Matching Charts" : "No Charts Yet"}
           </h3>
@@ -779,7 +779,7 @@ export function AirportChartsTab({
 
       {filteredCharts.length > 0 && totalPages > 1 && (
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-400">
             Page {currentPage} of {totalPages}
           </p>
           <div className="flex items-center gap-2">

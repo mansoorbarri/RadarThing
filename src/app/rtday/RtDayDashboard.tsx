@@ -150,7 +150,7 @@ function Dashboard() {
   const {
     aircrafts: streamedAircrafts,
     connectionStatus,
-    lastMessageAgeSeconds,
+    lastMessageAt,
   } = useAircraftStream();
   const decoratedAircrafts = useAirlineTelephony(streamedAircrafts);
   const [now, setNow] = useState<number | null>(null);
@@ -217,8 +217,9 @@ function Dashboard() {
   }, []);
   const live =
     connectionStatus === "connected" &&
-    lastMessageAgeSeconds !== null &&
-    lastMessageAgeSeconds < 30;
+    lastMessageAt !== null &&
+    now !== null &&
+    now - lastMessageAt < 30_000;
   const aircrafts = useMemo(
     () =>
       now === null || !live
@@ -271,7 +272,7 @@ function Dashboard() {
   const liveValue = (value: number) => (live ? number(value) : "—");
 
   return (
-    <main className={styles.page}>
+    <main id="main-content" className={styles.page}>
       <header className={styles.header}>
         <Link href="/" aria-label="RadarThing home">
           <Image

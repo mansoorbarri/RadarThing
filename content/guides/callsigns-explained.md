@@ -45,7 +45,7 @@ The same split exists for airports. `KJFK` is JFK's four-letter ICAO code; `JFK`
 
 1. **Use the ICAO format.** Three letters and a number reads correctly on the radar and helps RadarThing find the radio callsign.
 2. **Keep it short.** Flight numbers of one to four digits are realistic. The userscript accepts up to eight characters.
-3. **Make it unique.** The userscript checks whether your callsign is already in use when you press Transmit. If it is, add or change a digit.
+3. **Make it unique.** The userscript checks whether your callsign is already in use when you press **Start tracking**. If it is, add or change a digit.
 4. **Be consistent.** Using the same callsign for a regular route makes it easy for friends to find you and for you to find the flight in your history.
 5. **Use your virtual airline's code** if you fly for one. See [Virtual airlines](/guides/virtual-airlines).
 6. **Avoid misleading or offensive callsigns.** Callsigns are public, and misuse can lead to moderation action.

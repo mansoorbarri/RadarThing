@@ -170,7 +170,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
               />
             </div>
             <span className="text-muted-foreground font-mono text-xs">
-              MILITARY AIRCRAFT
+              Military aircraft
             </span>
           </label>
 
@@ -193,7 +193,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   maxLength={10}
                   required
                   disabled={isProcessing}
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
               <div>
@@ -214,7 +214,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   required
                   disabled={isProcessing}
                   title="Use base model only (e.g., F16, C130)"
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -237,7 +237,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   maxLength={2}
                   required
                   disabled={isProcessing}
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
               <div>
@@ -254,10 +254,10 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                     })
                   }
                   placeholder="e.g., UAE"
-                  maxLength={4}
+                  maxLength={3}
                   required
                   disabled={isProcessing}
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
               <div>
@@ -278,7 +278,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   required
                   disabled={isProcessing}
                   title="Use base model only (e.g., B777, A350) — not variants"
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -291,7 +291,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
 
           <div>
             <label className="text-muted-foreground mb-2 block font-mono text-xs">
-              SELECT IMAGE
+              Select image
             </label>
             <ImageUploader
               ref={uploaderRef}
@@ -313,26 +313,26 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
             disabled={
               isProcessing || !hasSelectedFile || submitStage === "success"
             }
-            className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-slate-950 shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
               submitStage === "success"
                 ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/20"
-                : "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-cyan-500/20 hover:shadow-cyan-500/40"
+                : "bg-cyan-400 shadow-cyan-500/20 hover:bg-cyan-300 hover:shadow-cyan-500/40"
             }`}
           >
             {submitStage === "validating" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Validating...
+                Validating…
               </>
             ) : submitStage === "uploading" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Uploading...
+                Uploading…
               </>
             ) : submitStage === "submitting" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Submitting...
+                Submitting…
               </>
             ) : submitStage === "success" ? (
               <>

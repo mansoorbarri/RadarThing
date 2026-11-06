@@ -137,7 +137,7 @@ export function PrivacyConsentProvider({
               <div>
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="font-mono text-[10px] tracking-[0.24em] text-cyan-300/70 uppercase">
+                    <p className="font-mono text-[11px] tracking-[0.24em] text-cyan-300/70 uppercase">
                       Privacy clearance
                     </p>
                     <h2
@@ -152,7 +152,7 @@ export function PrivacyConsentProvider({
                       type="button"
                       onClick={() => setIsOpen(false)}
                       aria-label="Close privacy settings"
-                      className="rounded-lg p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white"
+                      className="rounded-lg p-2 text-white/60 transition-colors hover:bg-white/5 hover:text-white"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -184,7 +184,7 @@ export function PrivacyConsentProvider({
                   </button>
                 </div>
 
-                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-white/45">
+                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-white/60">
                   <Link href="/privacy" className="hover:text-cyan-200">
                     Privacy policy
                   </Link>

@@ -82,11 +82,11 @@ function RunwayFilterBar({
           className={`cursor-pointer rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors ${
             selectedRunwayKey === group.key
               ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
-              : "border-white/10 text-white/50 hover:bg-white/10 hover:text-white/80"
+              : "border-white/10 text-white/75 hover:bg-white/10 hover:text-white"
           }`}
         >
           {group.label}
-          <span className="ml-1 text-[9px] opacity-60">
+          <span className="ml-1 text-[11px] opacity-90">
             {group.charts.length}
           </span>
         </button>
@@ -446,7 +446,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
         </div>
         <button
           onClick={onClose}
-          className="cursor-pointer rounded-md p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+          className="cursor-pointer rounded-md p-1 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
         >
           <X size={16} />
         </button>
@@ -456,7 +456,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
         <div className="flex flex-1 items-center justify-center">
           <div className="flex flex-col items-center gap-2">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-cyan-500" />
-            <span className="text-xs text-white/40">Loading charts...</span>
+            <span className="text-xs text-white/60">Loading charts…</span>
           </div>
         </div>
       ) : errorCode ? (
@@ -469,7 +469,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
         </div>
       ) : !hasCharts ? (
         <div className="flex flex-1 items-center justify-center px-4">
-          <span className="text-center text-xs text-white/40">
+          <span className="text-center text-xs text-white/60">
             No charts available. Message{" "}
             <a
               href="https://discord.com/users/1203599506730651650"
@@ -495,11 +495,11 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
                   className={`cursor-pointer rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${
                     selectedType === tab.key
                       ? "bg-cyan-500/20 text-cyan-300"
-                      : "text-white/50 hover:bg-white/10 hover:text-white/80"
+                      : "text-white/65 hover:bg-white/10 hover:text-white/80"
                   }`}
                 >
                   {tab.label}
-                  <span className="ml-1 text-[9px] opacity-60">
+                  <span className="ml-1 text-[11px] opacity-90">
                     {chartsByType?.[tab.key].length}
                   </span>
                 </button>
@@ -518,18 +518,18 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
             {allCharts.length > 1 && (
               <div className="mb-2">
                 <div className="relative">
-                  <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
+                  <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-white/65" />
                   <input
                     type="text"
-                    placeholder="Search charts..."
+                    placeholder="Search charts…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full rounded-lg border border-white/10 bg-white/5 py-1.5 pr-8 pl-8 text-[11px] text-white/80 outline-none placeholder:text-white/30 focus:border-cyan-500/30"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 py-1.5 pr-8 pl-8 text-[11px] text-white/80 outline-none placeholder:text-white/65 focus:border-cyan-500/30"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery("")}
-                      className="absolute top-1/2 right-2 -translate-y-1/2 text-white/30 transition-colors hover:text-white/70"
+                      className="absolute top-1/2 right-2 -translate-y-1/2 text-white/65 transition-colors hover:text-white/70"
                       aria-label="Clear chart search"
                     >
                       <X size={14} />
@@ -572,7 +572,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
                           <div className="truncate text-[11px] font-medium">
                             {chart.chartName}
                           </div>
-                          <div className="mt-0.5 text-[10px] text-white/35">
+                          <div className="mt-0.5 text-[11px] text-white/65">
                             {typeLabel}
                           </div>
                         </button>
@@ -580,7 +580,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
                     },
                   )
                 ) : (
-                  <div className="px-2.5 py-3 text-center text-[11px] text-white/35">
+                  <div className="px-2.5 py-3 text-center text-[11px] text-white/65">
                     No matching charts
                   </div>
                 )}
@@ -598,7 +598,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
                 ))}
               </select>
             ) : currentCharts.length === 1 ? (
-              <div className="truncate text-[11px] text-white/50">
+              <div className="truncate text-[11px] text-white/65">
                 {currentCharts[0]!.chartName}
               </div>
             ) : null}
@@ -611,12 +611,12 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
           >
             {!selectedChart ? (
               <div className="flex h-full items-center justify-center">
-                <span className="text-xs text-white/40">Select a chart</span>
+                <span className="text-xs text-white/60">Select a chart</span>
               </div>
             ) : isPdf ? (
               pdfError ? (
                 <div className="flex h-full flex-col items-center justify-center gap-3 p-4">
-                  <span className="text-xs text-white/40">
+                  <span className="text-xs text-white/60">
                     PDF preview unavailable
                   </span>
                   <a

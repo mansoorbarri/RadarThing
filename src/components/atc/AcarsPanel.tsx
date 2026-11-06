@@ -53,7 +53,7 @@ export function AcarsPanel({ googleId }: { googleId?: string }) {
         }[result.status],
       );
     } catch {
-      setReportError("Could not send the report. Please try again.");
+      setReportError("We couldn't send the report. Try again in a moment.");
     } finally {
       setBusy(false);
     }
@@ -71,13 +71,13 @@ export function AcarsPanel({ googleId }: { googleId?: string }) {
         onClick={() => setExpanded((value) => !value)}
         className="flex w-full cursor-pointer items-center justify-between gap-2 text-left"
       >
-        <h2 className="font-mono text-[10px] font-black tracking-[0.2em] text-cyan-300 uppercase">
+        <h2 className="font-mono text-[11px] font-black tracking-[0.2em] text-cyan-300 uppercase">
           Pilot ACARS
-          <span className="ml-2 tracking-normal text-white/35">
+          <span className="ml-2 tracking-normal text-white/65">
             ({entries.length})
           </span>
         </h2>
-        <span className="flex items-center gap-2 font-mono text-[9px] text-white/35">
+        <span className="flex items-center gap-2 font-mono text-[11px] text-white/65">
           {expanded && "Latest first"}
           <svg
             width="12"
@@ -110,7 +110,7 @@ export function AcarsPanel({ googleId }: { googleId?: string }) {
           >
             <div className="mb-1.5 flex items-center justify-between gap-2">
               <time
-                className="font-mono text-[9px] text-cyan-300/70"
+                className="font-mono text-[11px] text-cyan-300/70"
                 dateTime={new Date(entry.createdAt).toISOString()}
               >
                 {new Date(entry.createdAt).toLocaleString()}
@@ -118,7 +118,7 @@ export function AcarsPanel({ googleId }: { googleId?: string }) {
               {(!user || (isAuthenticated && !entry.isOwnEntry)) && (
                 <button
                   type="button"
-                  className="cursor-pointer font-mono text-[9px] text-white/35 hover:text-amber-300"
+                  className="cursor-pointer font-mono text-[11px] text-white/65 hover:text-amber-300"
                   onClick={() => {
                     if (!user)
                       return toast.error("Sign in to report an ACARS entry");
@@ -145,7 +145,7 @@ export function AcarsPanel({ googleId }: { googleId?: string }) {
                 }}
               >
                 <label
-                  className="block font-mono text-[9px] text-white/60"
+                  className="block font-mono text-[11px] text-white/60"
                   htmlFor={`acars-report-${entry._id}`}
                 >
                   Why are you reporting this?
@@ -161,7 +161,7 @@ export function AcarsPanel({ googleId }: { googleId?: string }) {
                 <button
                   type="submit"
                   disabled={busy || !reason.trim()}
-                  className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-1.5 font-mono text-[9px] font-bold text-amber-200 disabled:opacity-40"
+                  className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-1.5 font-mono text-[11px] font-bold text-amber-200 disabled:opacity-40"
                 >
                   Send report
                 </button>

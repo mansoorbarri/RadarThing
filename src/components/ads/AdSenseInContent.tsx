@@ -45,7 +45,7 @@ export function AdSenseInContent({ placement }: AdSenseInContentProps) {
           : "overflow-hidden rounded-2xl border border-white/10 bg-black/30"
       }
     >
-      <div className="border-b border-white/10 px-3 py-2 text-center font-mono text-[8px] font-bold tracking-[0.22em] text-slate-500 uppercase">
+      <div className="border-b border-white/10 px-3 py-2 text-center font-mono text-[11px] font-bold tracking-[0.22em] text-slate-400 uppercase">
         Advertisement
       </div>
       {process.env.NODE_ENV === "production" ? (
@@ -64,7 +64,7 @@ export function AdSenseInContent({ placement }: AdSenseInContentProps) {
         />
       ) : (
         <div
-          className={`flex items-center justify-center px-4 text-center font-mono text-[10px] tracking-wider text-slate-600 uppercase ${
+          className={`flex items-center justify-center px-4 text-center font-mono text-[11px] tracking-wider text-slate-400 uppercase ${
             isGalleryCard ? "min-h-56 flex-1" : "h-[100px]"
           }`}
         >

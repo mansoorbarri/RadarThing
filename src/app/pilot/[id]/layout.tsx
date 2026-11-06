@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { convex, api } from "~/server/convex";
 
+// Profiles with very few counted flights are mostly empty templates. Keep them
+// out of search indexes so thin pages don't dilute the site's quality signals.
+const MIN_INDEXABLE_FLIGHTS = 5;
+
 export async function generateMetadata({
   params,
 }: {
@@ -8,11 +12,18 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id: profileIdentifier } = await params;
 
+  const fallback: Metadata = {
+    title: "Pilot Profile",
+    description: "View pilot stats and flight history on RadarThing.",
+  };
+
   try {
     const user = await convex.query(api.users.getByProfileIdentifier, {
       profileIdentifier,
     });
-    if (!user) throw new Error("Pilot not found");
+    // Only a profile that really doesn't exist is kept out of search; a
+    // temporary backend error must not de-index an established profile.
+    if (!user) return { ...fallback, robots: { index: false, follow: true } };
 
     const stats = await convex.query(api.flights.getStatsById, {
       userId: user._id,
@@ -28,6 +39,10 @@ export async function generateMetadata({
     return {
       title,
       description,
+      robots:
+        flights >= MIN_INDEXABLE_FLIGHTS
+          ? undefined
+          : { index: false, follow: true },
       openGraph: {
         title,
         description,
@@ -39,10 +54,7 @@ export async function generateMetadata({
       },
     };
   } catch {
-    return {
-      title: "Pilot Profile",
-      description: "View pilot stats and flight history on RadarThing.",
-    };
+    return fallback;
   }
 }
 

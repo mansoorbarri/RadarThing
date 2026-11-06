@@ -60,3 +60,6 @@ convex-backup/
 /radarthing.dev.user.js
 /public/userscript/
 .env.local
+
+# clerk configuration (can include secrets)
+/.clerk/

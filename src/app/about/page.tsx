@@ -41,9 +41,9 @@ export default function AboutPage() {
       <LegalSection title="How it works">
         <p>
           Pilots install a small userscript that runs inside GeoFS. When a pilot
-          enters their departure, arrival, and callsign and chooses Transmit,
-          the script sends that flight&apos;s position and telemetry to
-          RadarThing every few seconds. The radar receives those updates as a
+          enters their departure, arrival, and callsign and presses Start
+          tracking, the script sends that flight&apos;s position and telemetry
+          to RadarThing every few seconds. The radar receives those updates as a
           live stream and draws them on the map.
         </p>
         <p>

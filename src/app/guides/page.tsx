@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getGuidesByCategory, guides } from "~/lib/guides";
+import { GuideSearch } from "~/components/site/GuideSearch";
+import { getGuide, getGuidesByCategory, guides } from "~/lib/guides";
 
 export const metadata: Metadata = {
   title: "Help & Guides",
@@ -9,8 +10,21 @@ export const metadata: Metadata = {
   alternates: { canonical: "/guides" },
 };
 
-export default function GuidesPage() {
+export default async function GuidesPage() {
   const categories = getGuidesByCategory();
+  // Section headings let the search find topics inside each guide.
+  const sectionsBySlug = new Map(
+    await Promise.all(
+      guides.map(async (guide) => {
+        const full = await getGuide(guide.slug);
+        const sections = Array.from(
+          full?.markdown.matchAll(/^## (.+)$/gm) ?? [],
+          (match) => match[1]!.replace(/[`*_]/g, "").trim(),
+        );
+        return [guide.slug, sections] as const;
+      }),
+    ),
+  );
 
   return (
     <>
@@ -20,21 +34,33 @@ export default function GuidesPage() {
       <h1 className="max-w-2xl text-4xl font-semibold tracking-tight md:text-6xl">
         A clearer view of your next flight.
       </h1>
-      <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-400">
+      <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
         {guides.length} guides for GeoFS pilots. Set up your tracker, learn the
         radar, and fly more realistic flights with practical explanations of
         weather, charts, navigation, and radio calls.
       </p>
 
+      <GuideSearch
+        guides={categories.flatMap((category) =>
+          category.guides.map((guide) => ({
+            slug: guide.slug,
+            title: guide.title,
+            description: guide.description,
+            category: category.title,
+            sections: sectionsBySlug.get(guide.slug) ?? [],
+          })),
+        )}
+      />
+
       <nav
         aria-label="Guide sections"
-        className="mt-10 flex flex-wrap gap-3 text-sm"
+        className="mt-8 flex flex-wrap gap-3 text-sm"
       >
         {categories.map((category) => (
           <a
             key={category.id}
             href={`#${category.id}`}
-            className="border border-white/15 px-4 py-2 text-slate-300 transition-colors hover:border-cyan-300/50 hover:text-cyan-200"
+            className="inline-flex min-h-10 items-center border border-white/15 px-4 py-2 text-slate-300 transition-colors hover:border-cyan-300/50 hover:text-cyan-200"
           >
             {category.title}
           </a>
@@ -74,7 +100,7 @@ export default function GuidesPage() {
                 </div>
                 <span
                   aria-hidden="true"
-                  className="hidden text-xl text-cyan-300 sm:block"
+                  className="hidden text-xl text-cyan-300 transition-transform group-hover:translate-x-1 sm:block"
                 >
                   →
                 </span>

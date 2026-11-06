@@ -1,5 +1,10 @@
 // hooks/useMobileDetection.ts
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
+
+// Layout effects run before the first paint, so phones don't flash the desktop
+// layout after hydration. Fall back to useEffect on the server.
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 export type DeviceType = "phone" | "tablet" | "desktop";
 
@@ -10,11 +15,10 @@ const isTouchDevice = () =>
 export const useMobileDetection = (breakpoint = 1024) => {
   const [isMobile, setIsMobile] = useState(false);
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const checkMobile = () => {
       const isNarrow = window.innerWidth < breakpoint;
-      const isTablet =
-        window.innerWidth < 1400 && isTouchDevice();
+      const isTablet = window.innerWidth < 1400 && isTouchDevice();
       setIsMobile(isNarrow || isTablet);
     };
 
@@ -30,7 +34,7 @@ export const useMobileDetection = (breakpoint = 1024) => {
 export const useDeviceType = (): DeviceType => {
   const [deviceType, setDeviceType] = useState<DeviceType>("desktop");
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const check = () => {
       const w = window.innerWidth;
       const touch = isTouchDevice();

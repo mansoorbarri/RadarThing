@@ -54,7 +54,7 @@ export function CallsignFilter({
       {/* List */}
       <div className="flex-1 overflow-y-auto">
         {callsignPrefixes.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500">
+          <div className="p-8 text-center text-sm text-slate-400">
             No flights with callsigns
           </div>
         ) : (
@@ -109,7 +109,7 @@ function AirlineRow({
         {/* Airline info */}
         <div className="flex flex-col items-start">
           <span className="font-mono text-lg leading-tight">{prefix}</span>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-slate-400">
             {count} flight{count > 1 ? "s" : ""}
           </span>
         </div>

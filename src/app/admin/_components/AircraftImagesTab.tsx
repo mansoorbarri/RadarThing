@@ -31,10 +31,7 @@ import {
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  AIRCRAFT_IMAGE_REJECTION_REASONS,
-  RejectModal,
-} from "./RejectModal";
+import { AIRCRAFT_IMAGE_REJECTION_REASONS, RejectModal } from "./RejectModal";
 import { ConflictModal } from "./ConflictModal";
 import { ConfirmModal } from "./ConfirmModal";
 import {
@@ -246,7 +243,7 @@ function EditableCodes({
             onKeyDown={handleKeyDown}
             placeholder="IATA"
             maxLength={2}
-            className="w-14 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400"
+            className="w-14 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             disabled={isSaving}
             autoFocus
           />
@@ -258,7 +255,7 @@ function EditableCodes({
           onKeyDown={handleKeyDown}
           placeholder={draftIsMilitary ? "AF Name" : "ICAO"}
           maxLength={draftIsMilitary ? 10 : 4}
-          className={`rounded-md border bg-black/60 px-2 py-1 font-mono text-sm outline-none ${draftIsMilitary ? "w-20 border-amber-500/50 text-amber-400 focus:border-amber-400" : "w-16 border-blue-500/50 text-blue-400 focus:border-blue-400"}`}
+          className={`rounded-md border bg-black/60 px-2 py-1 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 ${draftIsMilitary ? "w-20 border-amber-500/50 text-amber-400 focus:border-amber-400" : "w-16 border-blue-500/50 text-blue-400 focus:border-blue-400"}`}
           disabled={isSaving}
           autoFocus={draftIsMilitary}
         />
@@ -268,7 +265,7 @@ function EditableCodes({
           onChange={(e) => setAircraftType(e.target.value.toUpperCase())}
           onKeyDown={handleKeyDown}
           placeholder="Aircraft"
-          className="w-24 rounded-md border border-white/20 bg-black/60 px-2 py-1 font-mono text-sm text-white outline-none focus:border-white/40"
+          className="w-24 rounded-md border border-white/20 bg-black/60 px-2 py-1 font-mono text-sm text-white outline-none focus:border-white/40 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           disabled={isSaving}
         />
         <button
@@ -321,7 +318,7 @@ function EditableCodes({
       )}
       <button
         onClick={() => setIsEditing(true)}
-        className="cursor-pointer rounded-md p-1 text-slate-600 opacity-0 transition-all group-hover/codes:opacity-100 hover:bg-white/10 hover:text-cyan-400"
+        className="cursor-pointer rounded-md p-1 text-slate-400 opacity-0 transition-all group-hover/codes:opacity-100 hover:bg-white/10 hover:text-cyan-400"
         title="Edit details"
       >
         <Pencil className="h-3.5 w-3.5" />
@@ -915,8 +912,8 @@ export function AircraftImagesTab({
             type="text"
             value={imageSearchQuery}
             onChange={(e) => setImageSearchQuery(e.target.value)}
-            placeholder="Search by airline, aircraft, Discord username, Convex ID..."
-            className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
+            placeholder="Search by airline, aircraft, Discord username, Convex ID…"
+            className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -1021,7 +1018,7 @@ export function AircraftImagesTab({
             : `Showing ${pageStart}-${pageEnd} of ${currentTabImages.length} ${imageSubTab} images`}
         </p>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-500">Per page</span>
+          <span className="text-sm text-slate-400">Per page</span>
           <Select
             value={String(pageSize)}
             onValueChange={(value) =>
@@ -1169,7 +1166,7 @@ export function AircraftImagesTab({
         <>
           {filteredPendingImages.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-              <Clock className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+              <Clock className="mx-auto mb-4 h-12 w-12 text-slate-400" />
               <h3 className="mb-2 text-xl font-semibold text-white">
                 {hasActiveImageFilters
                   ? "No Matching Images"
@@ -1227,14 +1224,14 @@ export function AircraftImagesTab({
                         isMilitary={image.isMilitary}
                       />
                     </div>
-                    <p className="mb-1 text-xs text-slate-500">
+                    <p className="mb-1 text-xs text-slate-400">
                       Uploaded by{" "}
                       <UploaderLink
                         image={image}
                         usersByClerkId={usersByClerkId}
                       />
                     </p>
-                    <p className="mb-3 text-xs text-slate-600">
+                    <p className="mb-3 text-xs text-slate-400">
                       {new Date(image.createdAt).toLocaleDateString()}
                     </p>
                     <div className="flex gap-2">
@@ -1268,7 +1265,7 @@ export function AircraftImagesTab({
         <>
           {filteredApprovedImages.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-              <Plane className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+              <Plane className="mx-auto mb-4 h-12 w-12 text-slate-400" />
               <h3 className="mb-2 text-xl font-semibold text-white">
                 {hasActiveImageFilters
                   ? "No Matching Images"
@@ -1338,7 +1335,7 @@ export function AircraftImagesTab({
                       />
                       <CheckCircle className="ml-auto h-4 w-4 text-emerald-400" />
                     </div>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-slate-400">
                       Uploaded by{" "}
                       <UploaderLink
                         image={image}
@@ -1346,7 +1343,7 @@ export function AircraftImagesTab({
                       />
                     </p>
                     {image.approvedAt && (
-                      <p className="mt-1 text-xs text-slate-600">
+                      <p className="mt-1 text-xs text-slate-400">
                         Approved{" "}
                         {new Date(image.approvedAt).toLocaleDateString()}
                       </p>
@@ -1361,7 +1358,7 @@ export function AircraftImagesTab({
 
       {currentTabImages.length > 0 && totalPages > 1 && (
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-400">
             Page {currentPage} of {totalPages}
           </p>
           <div className="flex items-center gap-2">

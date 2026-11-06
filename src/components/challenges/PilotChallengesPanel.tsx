@@ -29,9 +29,9 @@ export function PilotChallengesPanel({ userId }: { userId: Id<"users"> }) {
   if (challenges === undefined) {
     return (
       <div className="mb-8 rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
-        <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2 text-sm text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading challenge progress...
+          Loading challenge progress…
         </div>
       </div>
     );
@@ -45,27 +45,27 @@ export function PilotChallengesPanel({ userId }: { userId: Id<"users"> }) {
         <div className="flex items-center gap-2">
           <Flag className="h-4 w-4 text-cyan-400" />
           <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
-            ACTIVE CHALLENGES
+            Active challenges
           </h3>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="grid w-full grid-cols-2 rounded-xl border border-white/10 bg-white/5 p-1 sm:flex sm:w-auto">
             <button
               onClick={() => setActiveTab("challenges")}
-              className={`cursor-pointer rounded-lg px-3 py-2 font-mono text-[10px] tracking-wider uppercase transition-colors sm:px-3 sm:py-1.5 ${
+              className={`cursor-pointer rounded-lg px-3 py-2 font-mono text-[11px] tracking-wider uppercase transition-colors sm:px-3 sm:py-1.5 ${
                 activeTab === "challenges"
                   ? "bg-white/10 text-white"
-                  : "text-slate-500 hover:text-slate-300"
+                  : "text-slate-400 hover:text-slate-300"
               }`}
             >
               Challenges
             </button>
             <button
               onClick={() => setActiveTab("leaderboard")}
-              className={`cursor-pointer rounded-lg px-3 py-2 font-mono text-[10px] tracking-wider uppercase transition-colors sm:px-3 sm:py-1.5 ${
+              className={`cursor-pointer rounded-lg px-3 py-2 font-mono text-[11px] tracking-wider uppercase transition-colors sm:px-3 sm:py-1.5 ${
                 activeTab === "leaderboard"
                   ? "bg-white/10 text-white"
-                  : "text-slate-500 hover:text-slate-300"
+                  : "text-slate-400 hover:text-slate-300"
               }`}
             >
               Leaderboard
@@ -99,15 +99,15 @@ export function PilotChallengesPanel({ userId }: { userId: Id<"users"> }) {
                 <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
                     <div className="mb-2 flex flex-wrap gap-2">
-                      <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
+                      <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[11px] tracking-wider text-slate-400 uppercase">
                         {challenge.cadence}
                       </span>
                       {isComplete ? (
-                        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 font-mono text-[10px] tracking-wider text-emerald-300 uppercase">
+                        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 font-mono text-[11px] tracking-wider text-emerald-300 uppercase">
                           completed
                         </span>
                       ) : (
-                        <span className="rounded-full border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
+                        <span className="rounded-full border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[11px] tracking-wider text-slate-400 uppercase">
                           in progress
                         </span>
                       )}
@@ -116,7 +116,7 @@ export function PilotChallengesPanel({ userId }: { userId: Id<"users"> }) {
                       {challenge.title}
                     </h4>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-slate-500">
+                  <div className="flex items-center gap-1 text-xs text-slate-400">
                     <Clock3 className="h-3.5 w-3.5" />
                     <span>
                       {formatWindow(challenge.startAt, challenge.endAt)}
@@ -164,7 +164,7 @@ export function PilotChallengesPanel({ userId }: { userId: Id<"users"> }) {
                         challenge.progressLabel
                       )}
                     </span>
-                    <span className="font-mono text-slate-500">
+                    <span className="font-mono text-slate-400">
                       {progressPercent}%
                     </span>
                   </div>

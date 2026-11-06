@@ -64,50 +64,47 @@
     };
   }
 
-  function showToast(message, isError = false) {
-    const toast = document.createElement("div");
-    toast.textContent = message;
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 24px;
-      left: 24px;
-      z-index: 1000002;
-      border-radius: 12px;
-      padding: 10px 14px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: #fff;
-      background: ${isError ? "rgba(239,68,68,0.92)" : "rgba(245,158,11,0.92)"};
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.38);
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    `;
-    document.body.appendChild(toast);
-    requestAnimationFrame(() => {
-      toast.style.opacity = "1";
-    });
-    setTimeout(() => {
-      toast.style.opacity = "0";
-      setTimeout(() => toast.remove(), 250);
-    }, 2400);
-  }
-
   // Command execution handlers
   function executeCommand(cmd) {
     const geofs = window.geofs;
     if (!geofs?.autopilot || !geofs?.aircraft?.instance) {
+      // GeoFS is still loading: hold the command and replay it shortly,
+      // and only report a failure if the aircraft never appears.
+      if ((cmd.__attempts ?? 0) < 30) {
+        setTimeout(
+          () =>
+            executeCommand({ ...cmd, __attempts: (cmd.__attempts ?? 0) + 1 }),
+          1000,
+        );
+        return;
+      }
       console.warn("[RadarThing] Cannot execute command - GeoFS not ready");
+      window.dispatchEvent(
+        new CustomEvent("radarthing-command-executed", {
+          detail: {
+            type: cmd.type,
+            value: cmd.value,
+            success: false,
+            error: "GeoFS is still loading your aircraft",
+          },
+        }),
+      );
       return;
     }
 
     console.log("[RadarThing] Executing command:", cmd.type, cmd.value);
 
+    // Only report success when GeoFS actually changed something, so the
+    // pilot never sees "Flaps set" for a command that did nothing.
+    let applied = false;
+    // Why a command couldn't be applied, shown to the pilot.
+    let reason = "GeoFS couldn't apply this change";
     try {
       switch (cmd.type) {
         case "setSpeed":
           if (typeof geofs.autopilot.setSpeed === "function") {
             geofs.autopilot.setSpeed(Number(cmd.value));
+            applied = true;
           }
           break;
 
@@ -116,6 +113,7 @@
             String(cmd.value || "").toLowerCase() === "mach" ? "mach" : "knots";
           if (typeof geofs.autopilot.setSpeedMode === "function") {
             geofs.autopilot.setSpeedMode(speedMode);
+            applied = true;
           }
           break;
         }
@@ -123,32 +121,42 @@
         case "setAltitude":
           if (typeof geofs.autopilot.setAltitude === "function") {
             geofs.autopilot.setAltitude(Number(cmd.value));
+            applied = true;
           }
           break;
 
         case "setHeading":
-          // Switch to heading mode using the proper GeoFS API
+          // Only counts as applied once the course itself is set.
           if (typeof geofs.autopilot.setMode === "function") {
             geofs.autopilot.setMode("HDG");
           }
-          // Set the course value
           if (typeof geofs.autopilot.setCourse === "function") {
             geofs.autopilot.setCourse(Number(cmd.value));
+            applied = true;
           }
           break;
 
         case "setVS":
           if (typeof geofs.autopilot.setVerticalSpeed === "function") {
             geofs.autopilot.setVerticalSpeed(Number(cmd.value));
+            applied = true;
           }
           break;
 
         case "setSquawk":
           // Update the squawk in flight info
           if (info) {
+            // Transponder codes are four octal digits; refuse anything else
+            // so a bad command can't put a nonsense squawk on the radar.
+            if (!/^[0-7]{4}$/.test(String(cmd.value ?? "").trim())) {
+              throw new Error(`Invalid squawk ${String(cmd.value ?? "")}`);
+            }
             info.sqk = sanitizeSquawk(cmd.value);
+            applied = true;
             window.dispatchEvent(
-              new CustomEvent("atc-data-sync", { detail: info }),
+              new CustomEvent("atc-data-sync", {
+                detail: { ...info, remote: true },
+              }),
             );
             // Also update the squawk input field in the UI
             window.dispatchEvent(
@@ -159,8 +167,10 @@
           }
           break;
 
-        case "setFlaps":
+        case "setFlaps": {
           // Set flaps by notch number (value is the notch, e.g., 2 out of 3 steps)
+          // GeoFS has exposed controls both as a global and on geofs.
+          const controls = window.controls ?? geofs.controls;
           if (controls?.flaps) {
             const maxPos = controls.flaps.maxPosition || 6;
             const flapsSteps = geofs.animation?.values?.flapsSteps || maxPos;
@@ -169,18 +179,22 @@
               console.warn(
                 `[RadarThing] setFlaps - invalid notch ${notch}, must be 0-${flapsSteps}`,
               );
+              reason = `This aircraft has flap notches 0 to ${flapsSteps}`;
               break;
             }
             // Convert notch to actual position: notch/steps * maxPosition
             const flapPos = Math.round((notch / flapsSteps) * maxPos);
             controls.flaps.target = flapPos;
             controls.flaps.position = flapPos;
+            applied = true;
           }
           break;
+        }
 
         case "enableNav":
           if (typeof geofs.autopilot.setMode === "function") {
             geofs.autopilot.setMode("NAV");
+            applied = true;
           }
           break;
 
@@ -188,6 +202,7 @@
           // Switch to heading mode using the proper GeoFS API
           if (typeof geofs.autopilot.setMode === "function") {
             geofs.autopilot.setMode("HDG");
+            applied = true;
           }
           break;
 
@@ -200,6 +215,7 @@
 
           if (!waypointIdent || !Array.isArray(route) || route.length === 0) {
             console.warn("[RadarThing] setWaypoint - no usable flight plan");
+            reason = "No flight plan is loaded in GeoFS";
             break;
           }
 
@@ -220,6 +236,7 @@
             console.warn(
               `[RadarThing] setWaypoint - waypoint ${waypointIdent} not found`,
             );
+            reason = `${waypointIdent} isn't in your GeoFS flight plan`;
             break;
           }
 
@@ -227,16 +244,19 @@
 
           if (typeof flightPlan.selectWaypoint === "function") {
             flightPlan.selectWaypoint(waypointIndex);
+            applied = true;
           } else {
             console.warn(
               "[RadarThing] setWaypoint - selectWaypoint is not available",
             );
 
+            // Fallback: only counts once the waypoint is really tracked.
             if ("trackedWaypoint" in flightPlan) {
               flightPlan.trackedWaypoint = waypoint;
+              applied = flightPlan.trackedWaypoint === waypoint;
             }
 
-            if (typeof geofs.autopilot.setMode === "function") {
+            if (applied && typeof geofs.autopilot.setMode === "function") {
               geofs.autopilot.setMode("NAV");
             }
           }
@@ -246,25 +266,25 @@
         case "toggleAutopilot":
           if (cmd.value && typeof geofs.autopilot.turnOn === "function") {
             geofs.autopilot.turnOn();
+            applied = true;
           } else if (
             !cmd.value &&
             typeof geofs.autopilot.turnOff === "function"
           ) {
             geofs.autopilot.turnOff();
+            applied = true;
           }
           break;
 
         case "disconnectFlight":
-          stopFollow();
+          // Ending the flight clears the form and finalizes the session; the
+          // runtime UI listens for the disconnect event and shows the toast.
           window.dispatchEvent(
             new CustomEvent("atc-data-sync", {
-              detail: { active: false },
+              detail: { active: false, remote: true },
             }),
           );
-          window.dispatchEvent(
-            new CustomEvent("radarthing-flight-disconnected"),
-          );
-          showToast("RADAR DISCONNECTED");
+          applied = true;
           break;
 
         default:
@@ -274,7 +294,14 @@
       // Notify UI of command execution
       window.dispatchEvent(
         new CustomEvent("radarthing-command-executed", {
-          detail: { type: cmd.type, value: cmd.value, success: true },
+          detail: applied
+            ? { type: cmd.type, value: cmd.value, success: true }
+            : {
+                type: cmd.type,
+                value: cmd.value,
+                success: false,
+                error: reason,
+              },
         }),
       );
     } catch (err) {
@@ -285,7 +312,8 @@
             type: cmd.type,
             value: cmd.value,
             success: false,
-            error: err.message,
+            // Pilots see a plain explanation; the details stay in the console.
+            error: "GeoFS couldn't apply this change",
           },
         }),
       );
@@ -300,19 +328,164 @@
     commands.forEach(executeCommand);
   }
 
-  function broadcastStatus() {
-    let status = { text: "Flight info required", color: "#94a3b8" };
-    if (info.active) {
-      status = { text: "Transmitting to API", color: "#27ae60" };
-    }
+  // Connection state shown in the panel. It is driven by real HTTP results
+  // rather than by the form being saved.
+  const STATUS = {
+    idle: { state: "idle", text: "Not tracking", color: "#94a3b8" },
+    connecting: { state: "connecting", text: "Connecting…", color: "#7dd3fc" },
+    live: { state: "live", text: "Live on radar", color: "#4ade80" },
+    retrying: {
+      state: "retrying",
+      text: "Connection issue · retrying",
+      color: "#fbbf24",
+    },
+    waiting: {
+      state: "waiting",
+      text: "Waiting for your aircraft…",
+      color: "#7dd3fc",
+    },
+    rejected: {
+      state: "rejected",
+      text: "Update rejected · check your flight info",
+      color: "#f87171",
+    },
+    busy: {
+      state: "busy",
+      text: "RadarThing is busy · retrying",
+      color: "#fbbf24",
+    },
+    tooLarge: {
+      state: "rejected",
+      text: "Route too long · remove waypoints",
+      color: "#f87171",
+    },
+    noNetwork: {
+      state: "offline",
+      text: "Offline · waiting for network",
+      color: "#f87171",
+    },
+    offline: {
+      state: "offline",
+      text: "Can't reach RadarThing · retrying",
+      color: "#f87171",
+    },
+  };
+  let lastSendSuccessAt = 0;
+  let consecutiveSendFailures = 0;
+  let nextSendAllowedAt = 0;
+  let currentStatus = STATUS.idle;
+  let activatedAt = 0;
+
+  function broadcastStatus(next) {
+    if (next) currentStatus = next;
+    else if (!info.active) currentStatus = STATUS.idle;
     window.dispatchEvent(
-      new CustomEvent("atc-status-update", { detail: status }),
+      new CustomEvent("atc-status-update", {
+        detail: {
+          ...currentStatus,
+          source: "radarthing",
+          lastSuccessAt: lastSendSuccessAt || null,
+        },
+      }),
     );
   }
 
+  function recordSendSuccess() {
+    lastSendSuccessAt = Date.now();
+    consecutiveSendFailures = 0;
+    nextSendAllowedAt = 0;
+    // The full status only goes out when it changes; every success just
+    // sends the timestamp so the panel can show "updated Xs ago".
+    if (currentStatus !== STATUS.live) broadcastStatus(STATUS.live);
+    else
+      window.dispatchEvent(
+        new CustomEvent("radarthing-last-success", {
+          detail: { at: lastSendSuccessAt },
+        }),
+      );
+  }
+
+  function recordSendFailure(status) {
+    consecutiveSendFailures += 1;
+    // Back off 2s, 4s, 8s … up to 30s so a dead server isn't hammered.
+    const delay = Math.min(30000, 1000 * 2 ** consecutiveSendFailures);
+    nextSendAllowedAt = Date.now() + delay;
+    if (navigator.onLine === false) {
+      if (currentStatus !== STATUS.noNetwork) broadcastStatus(STATUS.noNetwork);
+      return;
+    }
+    // Most 4xx responses mean the server is up but refused the data, which is
+    // a different problem from being unreachable. 408 and 429 are temporary,
+    // so they retry like a server error.
+    const isNumber = typeof status === "number";
+    const isTemporary =
+      isNumber && (status === 408 || status === 429 || status >= 500);
+    const next =
+      status === 413
+        ? STATUS.tooLarge
+        : isNumber && status >= 400 && !isTemporary
+          ? STATUS.rejected
+          : status === 429
+            ? STATUS.busy
+            : consecutiveSendFailures >= 4
+              ? STATUS.offline
+              : STATUS.retrying;
+    const isImmediate = next === STATUS.rejected || next === STATUS.tooLarge;
+    if ((isImmediate || consecutiveSendFailures >= 2) && currentStatus !== next)
+      broadcastStatus(next);
+  }
+
+  // Let the panel's "Retry now" button skip the remaining backoff.
+  // Set when the pilot retries or the network comes back, so the stale check
+  // gives the new request time to finish before calling it a problem.
+  let reconnectRequestedAt = 0;
+  window.addEventListener("radarthing-retry-now", () => {
+    if (!info.active) return;
+    reconnectRequestedAt = Date.now();
+    nextSendAllowedAt = 0;
+    lastPositionSendAt = 0;
+    broadcastStatus(STATUS.connecting);
+  });
+
+  window.addEventListener("offline", () => {
+    if (info.active) broadcastStatus(STATUS.noNetwork);
+  });
+  window.addEventListener("online", () => {
+    if (!info.active) return;
+    reconnectRequestedAt = Date.now();
+    consecutiveSendFailures = 0;
+    nextSendAllowedAt = 0;
+    lastPositionSendAt = 0;
+    broadcastStatus(STATUS.connecting);
+  });
+
+  window.addEventListener("radarthing-request-status", () => broadcastStatus());
+  window.addEventListener("radarthing-retry-end-flight", () => {
+    // Never end a flight the pilot has since started.
+    if (info.active) return;
+    void endFlight();
+  });
+
+  // If nothing has been delivered for a while (aircraft not loaded, position
+  // invalid, requests hanging), stop claiming "Live".
+  setInterval(() => {
+    if (!info.active) return;
+    if (positionUpdateInFlight) return;
+    if (
+      (currentStatus === STATUS.live || currentStatus === STATUS.connecting) &&
+      Date.now() -
+        Math.max(lastSendSuccessAt, activatedAt, reconnectRequestedAt) >
+        30000
+    )
+      broadcastStatus(STATUS.retrying);
+  }, 5000);
+
   window.addEventListener("atc-data-sync", (e) => {
     const wasActive = info.active;
-    if (typeof e.detail?.takeoffTime === "string" && e.detail.takeoffTime.trim()) {
+    if (
+      typeof e.detail?.takeoffTime === "string" &&
+      e.detail.takeoffTime.trim()
+    ) {
       takeoffTimeUTC = e.detail.takeoffTime.trim();
     }
     info = {
@@ -320,26 +493,52 @@
       flt: sanitizeCallsign(e.detail?.flt),
       sqk: sanitizeSquawk(e.detail?.sqk),
     };
-    broadcastStatus();
+    if (info.active && !wasActive) {
+      activatedAt = Date.now();
+      consecutiveSendFailures = 0;
+      nextSendAllowedAt = 0;
+      broadcastStatus(STATUS.connecting);
+    } else if (!info.active) {
+      broadcastStatus(STATUS.idle);
+    }
 
     // If flight was active and is now cleared, end the flight immediately
     if (wasActive && !info.active) {
       console.log("[RadarThing] Flight cleared, ending immediately...");
-      endFlight();
+      // The end result says whether the website ended it, so the panel can
+      // word its message without tracking that separately.
+      endFlight({ remote: e.detail?.remote === true });
     }
   });
 
   // End flight and save to database immediately
-  async function endFlight() {
+  function reportEndResult(ok, message, remote = false) {
+    window.dispatchEvent(
+      new CustomEvent("radarthing-flight-end-result", {
+        detail: { ok, message, remote },
+      }),
+    );
+  }
+
+  async function endFlight({ remote = false } = {}) {
+    const report = (ok, message) => reportEndResult(ok, message, remote);
     const geofs = window.geofs;
     if (!geofs?.userRecord) {
       console.warn("[RadarThing] Cannot end flight - no userRecord");
+      report(
+        false,
+        "Couldn't end the flight because GeoFS hasn't loaded your account. Sign in to GeoFS and try again.",
+      );
       return;
     }
 
     const id = getUserIdentifier(geofs);
     if (!id) {
       console.warn("[RadarThing] Cannot end flight - no id");
+      report(
+        false,
+        "Couldn't end the flight because GeoFS hasn't loaded your account. Sign in to GeoFS and try again.",
+      );
       return;
     }
 
@@ -359,16 +558,26 @@
         const data = await res.json();
         if (data.finalized) {
           console.log(`[RadarThing] Flight ended and saved: ${data.flightNo}`);
+          report(true, "Flight ended and saved to your history");
         } else {
+          report(true, "Flight ended");
           console.log(
             `[RadarThing] No active session to end: ${data.reason || "unknown"}`,
           );
         }
       } else {
         console.error(`[RadarThing] End flight request failed: ${res.status}`);
+        report(
+          false,
+          "Couldn't save this flight to RadarThing. It will be saved when the server times it out.",
+        );
       }
     } catch (err) {
       console.error("[RadarThing] Error ending flight:", err);
+      report(
+        false,
+        "Couldn't reach RadarThing to end the flight. It will be saved when the server times it out.",
+      );
     }
 
     // Reset takeoff time for next flight
@@ -398,7 +607,13 @@
 
   setInterval(async () => {
     const geofs = window.geofs;
-    if (!info.active || !geofs?.aircraft?.instance) return;
+    if (!info.active) return;
+    if (!geofs?.aircraft?.instance) {
+      // The sim hasn't spawned an aircraft yet: say so rather than letting
+      // the stale check report a connection problem.
+      if (currentStatus !== STATUS.waiting) broadcastStatus(STATUS.waiting);
+      return;
+    }
     if (positionUpdateInFlight) return;
 
     const onGround =
@@ -410,6 +625,7 @@
       : AIRBORNE_SEND_INTERVAL_MS;
     const now = Date.now();
     if (now - lastPositionSendAt < interval) return;
+    if (now < nextSendAllowedAt) return;
 
     lastPositionSendAt = now;
     positionUpdateInFlight = true;
@@ -424,6 +640,7 @@
 
       const lla = inst.llaLocation || [];
       if (!Number.isFinite(lla[0]) || !Number.isFinite(lla[1])) {
+        if (currentStatus !== STATUS.waiting) broadcastStatus(STATUS.waiting);
         return;
       }
 
@@ -470,10 +687,11 @@
         vspeed: Math.floor(geofs?.animation?.values?.verticalSpeed || 0),
         navMode: geofs?.autopilot?.mode === "NAV",
         speedMode: geofs?.autopilot?.speedMode === "mach" ? "mach" : "knots",
-        flapsPosition: controls?.flaps?.position || 0,
+        flapsPosition:
+          (window.controls ?? geofs?.controls)?.flaps?.position || 0,
         flapsMaxPosition:
           geofs?.animation?.values?.flapsSteps ||
-          controls?.flaps?.maxPosition ||
+          (window.controls ?? geofs?.controls)?.flaps?.maxPosition ||
           0,
       };
 
@@ -495,6 +713,7 @@
         });
 
         if (!res.ok) {
+          recordSendFailure(res.status);
           console.warn(
             `[RadarThing] Position update #${requestId} failed with HTTP ${res.status}`,
             {
@@ -506,6 +725,7 @@
             },
           );
         } else {
+          recordSendSuccess();
           let data = null;
           try {
             data = await res.json();
@@ -519,6 +739,7 @@
         clearTimeout(timeoutId);
       }
     } catch (error) {
+      recordSendFailure();
       console.warn("[RadarThing] Position update failed before send", {
         requestId,
         elapsedMs:

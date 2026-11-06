@@ -62,7 +62,7 @@ export function AdminTabSkeleton() {
 
 export function AdminSkeleton() {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="bg-site min-h-screen text-white">
       {/* Header */}
       <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
@@ -75,7 +75,7 @@ export function AdminSkeleton() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
+      <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
         {/* Title */}
         <div className="mb-8">
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">

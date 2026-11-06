@@ -42,7 +42,7 @@ export const useProStatus = () => {
     hasActiveTrial(dbUser) && dbUser?.role === "FREE" && !isSuperAdmin;
 
   return {
-    isProUser: isProUser || isSuperAdmin, // Super admins also have PRO access
+    isProUser: isProUser || isSuperAdmin, // Super admins also have Pro access
     isAdminUser,
     isSuperAdmin,
     // Signed-in users who can still claim the one-time no-card trial.

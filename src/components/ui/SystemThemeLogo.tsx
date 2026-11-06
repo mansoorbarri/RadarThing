@@ -1,8 +1,4 @@
-"use client";
-
 import Image from "next/image";
-import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
 
 type SystemThemeLogoProps = Omit<
   React.ComponentProps<typeof Image>,
@@ -11,24 +7,14 @@ type SystemThemeLogoProps = Omit<
   alt?: string;
 };
 
+/**
+ * The RadarThing logo. The site is always dark now, so this renders the white
+ * logo immediately (it used to wait for the client theme, which made the logo
+ * pop in after load).
+ */
 export function SystemThemeLogo({
   alt = "RadarThing",
   ...props
 }: SystemThemeLogoProps) {
-  const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
-  return (
-    <Image
-      src={resolvedTheme === "light" ? "/logo-black.svg" : "/logo-white.svg"}
-      alt={alt}
-      {...props}
-    />
-  );
+  return <Image src="/logo-white.svg" alt={alt} {...props} />;
 }

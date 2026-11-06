@@ -17,7 +17,7 @@ export function ProBadge({
   const router = useRouter();
 
   const sizeClasses = {
-    sm: "px-1.5 py-0.5 text-[10px]",
+    sm: "px-1.5 py-0.5 text-[11px]",
     md: "px-2 py-1 text-xs",
   };
 
@@ -30,7 +30,7 @@ export function ProBadge({
       }}
       className={`cursor-pointer rounded bg-yellow-500/20 font-mono font-bold tracking-wider text-yellow-400 transition-all hover:scale-105 hover:bg-yellow-500/30 ${sizeClasses[size]} ${className}`}
     >
-      PRO
+      Pro
     </button>
   );
 }
