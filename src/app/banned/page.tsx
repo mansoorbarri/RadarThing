@@ -6,7 +6,7 @@ import { SiteHeader } from "~/components/site/SiteHeader";
 // Anyone else who lands here gets a normal page with a way back.
 export default function BannedPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-[#02090d] text-slate-100">
+    <div className="bg-site flex min-h-screen flex-col text-slate-100">
       <SiteHeader />
       <main
         id="main-content"

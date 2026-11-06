@@ -515,7 +515,7 @@ export const Sidebar = ({
             <HistoryIcon size={28} className="text-amber-400" />
           </div>
           <span className="mb-2 font-mono text-sm font-black tracking-wide text-white">
-            PRO Feature
+            Pro feature
           </span>
           <p className="mb-4 max-w-[240px] text-center font-mono text-[11px] leading-relaxed text-white/65">
             Flight history is available for Pro and Admin users only.
@@ -665,40 +665,60 @@ export const Sidebar = ({
             <div className="absolute inset-0 animate-pulse bg-white/5 motion-reduce:animate-none" />
           )}
 
+          {!isMobile && onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close flight details"
+              title="Close (Esc)"
+              aria-keyshortcuts="Escape"
+              className="absolute top-3 right-3 z-30 flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/15 bg-black/60 text-white/80 backdrop-blur-sm transition-colors hover:border-white/30 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+
           {isFactoryFallback && (
-            <p className="absolute top-2 left-1/2 z-20 w-max max-w-[calc(100%-1rem)] -translate-x-1/2 rounded-md bg-black/50 px-2 py-1 text-center font-mono text-[11px] leading-tight text-white/65 backdrop-blur-sm">
-              Factory image shown — upload the airline image at{" "}
+            <p className="absolute top-2 left-1/2 z-20 w-max max-w-[calc(100%-6rem)] -translate-x-1/2 rounded-md bg-black/60 px-2 py-1 text-center text-[11px] leading-tight text-white/80 backdrop-blur-sm">
+              Factory image shown.{" "}
               <Link
                 href="/aircraft-images"
-                className="font-bold text-cyan-300 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-200 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+                className="font-semibold text-cyan-300 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-200 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
               >
-                /aircraft-images
+                Upload the airline photo
               </Link>
-              .
             </p>
           )}
 
           {!isAircraftImagePending && !hasCommunityImage && (
-            <div
-              className={`${isMobile ? "mx-4 mt-3 mb-2 p-3" : "mx-6 mt-4 mb-3 p-3.5"} relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-sky-500/5 to-black/40`}
+            <p
+              className={`${isMobile ? "mx-4 mt-3 mb-2" : "mt-4 mr-16 mb-3 ml-6"} text-[11px] leading-relaxed text-slate-400`}
             >
-              <p className="font-mono text-[11px] font-black tracking-[0.18em] text-cyan-300/90 uppercase">
-                No Aircraft Image
-              </p>
-              <p className="mt-0.5 max-w-[280px] font-mono text-[11px] leading-relaxed text-white/60">
-                {virtualAirline
-                  ? `${virtualAirline.name} has not uploaded a fleet image for this aircraft yet.`
-                  : "Help the community identify this aircraft by uploading a photo."}
-              </p>
-              {!virtualAirline && (
-                <Link
-                  href="/aircraft-images"
-                  className="mt-2 inline-flex font-mono text-[11px] font-black tracking-wide text-cyan-300 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-200 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
-                >
-                  /aircraft-images
-                </Link>
+              {virtualAirline ? (
+                `${virtualAirline.name} hasn't added a fleet photo for this aircraft yet.`
+              ) : (
+                <>
+                  No photo of this aircraft yet.{" "}
+                  <Link
+                    href="/aircraft-images"
+                    className="font-semibold text-cyan-300 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-200 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+                  >
+                    Upload a photo
+                  </Link>
+                </>
               )}
-            </div>
+            </p>
           )}
 
           {/* Flight Info Overlay */}
@@ -894,8 +914,11 @@ export const Sidebar = ({
                   event.preventDefault();
                   const next = tab === "info" ? "history" : "info";
                   setTab(next);
+                  // React clears currentTarget after the handler returns, so
+                  // keep the tablist before waiting for the next frame.
+                  const tablist = event.currentTarget;
                   requestAnimationFrame(() =>
-                    event.currentTarget
+                    tablist
                       .querySelector<HTMLButtonElement>(`[data-tab="${next}"]`)
                       ?.focus(),
                   );
@@ -1020,8 +1043,11 @@ export const Sidebar = ({
                   event.preventDefault();
                   const next = tab === "info" ? "history" : "info";
                   setTab(next);
+                  // React clears currentTarget after the handler returns, so
+                  // keep the tablist before waiting for the next frame.
+                  const tablist = event.currentTarget;
                   requestAnimationFrame(() =>
-                    event.currentTarget
+                    tablist
                       .querySelector<HTMLButtonElement>(`[data-tab="${next}"]`)
                       ?.focus(),
                   );

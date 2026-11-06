@@ -263,7 +263,9 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       }
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to send controls";
+        error instanceof Error
+          ? error.message
+          : "We couldn't send those changes. Try again.";
       toast.error(message);
     }
   }, [
@@ -305,7 +307,9 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       setDisconnectConfirmOpen(false);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to disconnect flight";
+        error instanceof Error
+          ? error.message
+          : "We couldn't end that flight. Try again.";
       toast.error(message);
     }
   }, [
@@ -333,7 +337,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
     <div className="mt-6 space-y-4">
       <div className="flex items-center gap-2 px-1">
         <div className="h-[1px] flex-1 bg-white/20" />
-        <span className="font-mono text-[10px] font-black tracking-[0.3em] text-cyan-400 uppercase">
+        <span className="font-mono text-[11px] font-black tracking-[0.3em] text-cyan-400 uppercase">
           Aircraft Control
         </span>
         <div className="h-[1px] flex-1 bg-white/20" />
@@ -341,7 +345,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
 
       <div className="space-y-3">
         <div className="space-y-1">
-          <p className="px-1 font-mono text-[10px] font-black tracking-[0.2em] text-white/60 uppercase">
+          <p className="px-1 font-mono text-[11px] font-black tracking-[0.2em] text-white/60 uppercase">
             Autopilot Mode
           </p>
           <StyledSelect
@@ -358,7 +362,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
 
         {modeInput === "nav" && (
           <div className="space-y-1">
-            <p className="px-1 font-mono text-[10px] font-black tracking-[0.2em] text-white/60 uppercase">
+            <p className="px-1 font-mono text-[11px] font-black tracking-[0.2em] text-white/60 uppercase">
               Waypoint
             </p>
             <StyledSelect
@@ -518,7 +522,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       ) : (
         <div className="space-y-3 rounded-xl border border-red-400/30 bg-red-500/10 p-3">
           <div>
-            <p className="font-mono text-[10px] font-black tracking-[0.16em] text-red-200 uppercase">
+            <p className="font-mono text-[11px] font-black tracking-[0.16em] text-red-200 uppercase">
               Disconnect flight?
             </p>
             <p className="mt-1 text-xs leading-relaxed text-white/65">
@@ -530,14 +534,14 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
             <button
               onClick={() => setDisconnectConfirmOpen(false)}
               disabled={isLoading}
-              className="rounded-lg border border-white/10 bg-white/5 py-2.5 font-mono text-[10px] font-bold tracking-wider text-white/60 uppercase transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-white/10 bg-white/5 py-2.5 font-mono text-[11px] font-bold tracking-wider text-white/60 uppercase transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={handleDisconnectFlight}
               disabled={isLoading}
-              className="flex items-center justify-center gap-1.5 rounded-lg bg-red-500/25 py-2.5 font-mono text-[10px] font-bold tracking-wider text-red-100 uppercase transition-colors hover:bg-red-500/35 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center justify-center gap-1.5 rounded-lg bg-red-500/25 py-2.5 font-mono text-[11px] font-bold tracking-wider text-red-100 uppercase transition-colors hover:bg-red-500/35 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               <PowerIcon size={12} />
               Disconnect
@@ -574,6 +578,15 @@ export const CONTROL_LIMITS = {
  * Checks every filled-in field before anything is sent, so a typo like a
  * 5000 kt speed is caught with a message instead of being sent to GeoFS.
  */
+// What's sent is parseInt(value), so only accept values it keeps intact
+// (no "1e3", no "1500.5").
+function isWholeNumber(value: string) {
+  const trimmed = value.trim();
+  return (
+    trimmed !== "" && String(parseInt(trimmed, 10)) === String(Number(trimmed))
+  );
+}
+
 export function validateControlInputs(input: {
   speed: string;
   speedMode: "knots" | "mach";
@@ -601,16 +614,22 @@ export function validateControlInputs(input: {
     const { min, max } = CONTROL_LIMITS.altitude;
     if (outOfRange(Number(input.altitude), min, max))
       errors.altitude = `Altitude must be between ${min.toLocaleString()} and ${max.toLocaleString()} ft.`;
+    else if (!isWholeNumber(input.altitude))
+      errors.altitude = "Enter the altitude as a whole number of feet.";
   }
   if (input.headingActive && input.heading.trim()) {
     const { min, max } = CONTROL_LIMITS.heading;
     if (outOfRange(Number(input.heading), min, max))
       errors.heading = `Heading must be between ${min} and ${max}°.`;
+    else if (!isWholeNumber(input.heading))
+      errors.heading = "Enter the heading as a whole number of degrees.";
   }
   if (input.vs.trim()) {
     const { min, max } = CONTROL_LIMITS.vs;
     if (outOfRange(Number(input.vs), min, max))
       errors.vs = `Vertical speed must be between ${min.toLocaleString()} and ${max.toLocaleString()} fpm.`;
+    else if (!isWholeNumber(input.vs))
+      errors.vs = "Enter the vertical speed as a whole number.";
   }
   if (input.flaps.trim()) {
     const max = input.flapsMax > 0 ? input.flapsMax : 10;
@@ -801,7 +820,7 @@ function ControlRow({
         )}
 
         {typeof unit === "string" && unit ? (
-          <span className="w-8 font-mono text-[10px] font-bold text-white/60">
+          <span className="w-8 font-mono text-[11px] font-bold text-white/60">
             {unit}
           </span>
         ) : unit ? (
@@ -826,7 +845,7 @@ function InlineUnitSelect({
     <div className="relative">
       <select
         {...props}
-        className={`h-8 w-[88px] appearance-none rounded-lg border border-white/10 bg-black/40 px-2 pr-6 font-mono text-[10px] font-bold text-white transition-colors outline-none hover:bg-black/60 focus:border-cyan-500/50 ${className ?? ""}`}
+        className={`h-8 w-[88px] appearance-none rounded-lg border border-white/10 bg-black/40 px-2 pr-6 font-mono text-[11px] font-bold text-white transition-colors outline-none hover:bg-black/60 focus:border-cyan-500/50 ${className ?? ""}`}
       >
         {children}
       </select>

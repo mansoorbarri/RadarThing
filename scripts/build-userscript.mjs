@@ -114,8 +114,13 @@ function buildLoader() {
       );
       script.onload = () => {
         clearTimeout(timeoutId);
-        if (window.__radarThingLoaded) resolve();
-        else reject(new Error("[RadarThing] Runtime failed to start."));
+        if (window.__radarThingLoaded) {
+          // A slow bundle can still start after the timeout has shown the
+          // failure alert; take the alert down so it doesn't contradict the
+          // working panel.
+          document.getElementById("radarthing-load-failed")?.remove();
+          resolve();
+        } else reject(new Error("[RadarThing] Runtime failed to start."));
       };
       script.onerror = () => {
         clearTimeout(timeoutId);
@@ -214,7 +219,11 @@ function buildInstaller() {
 // @match        https://www.geo-fs.com/geofs.php*
 // @match        https://geo-fs.com/geofs.php*
 // @match        https://*.geo-fs.com/geofs.php*
-// @grant        none
+// @run-at       document-idle
+// @grant        GM_registerMenuCommand
+// @grant        unsafeWindow
+// @homepageURL  ${siteUrl}/
+// @supportURL   ${siteUrl}/guides/aircraft-not-appearing
 // @downloadURL  ${installerUrl}
 // @updateURL    ${installerUrl}
 // ==/UserScript==
@@ -222,11 +231,30 @@ function buildInstaller() {
 (function () {
   "use strict";
 
+  // Granting the menu API runs this file in Tampermonkey's sandbox, so page
+  // globals are read through unsafeWindow. The runtime itself still loads
+  // into the page through a script tag.
+  const pageWindow = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
   const LOADER_URL = ${JSON.stringify(loaderUrl)};
   const STATE_KEY = "__radarThingInstallerState";
-  const state = (window[STATE_KEY] = window[STATE_KEY] || {});
+  const state = (pageWindow[STATE_KEY] = pageWindow[STATE_KEY] || {});
 
-  if (window.__radarThingLoaded || window.__radarThingBooting) {
+  // Extension-menu shortcuts, for pilots who don't remember the hotkeys.
+  if (typeof GM_registerMenuCommand === "function" && !state.menuRegistered) {
+    state.menuRegistered = true;
+    const send = (name) => document.dispatchEvent(new Event(name));
+    GM_registerMenuCommand("Show or hide the RadarThing panel", () =>
+      send("radarthing-menu-toggle-panel"),
+    );
+    GM_registerMenuCommand("Open airport charts", () =>
+      send("radarthing-menu-open-charts"),
+    );
+    GM_registerMenuCommand("Reset panel position", () =>
+      send("radarthing-menu-reset-position"),
+    );
+  }
+
+  if (pageWindow.__radarThingLoaded || pageWindow.__radarThingBooting) {
     return;
   }
 

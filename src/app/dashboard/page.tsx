@@ -246,19 +246,29 @@ export default function DashboardPage() {
 
   const copySupportId = () => {
     if (supportId) {
-      navigator.clipboard.writeText(supportId);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      navigator.clipboard
+        .writeText(supportId)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        })
+        .catch(() => toast.error("Couldn't copy. Select the ID and copy it."));
     }
   };
 
   const copyProfileLink = () => {
     if (supportId) {
       const url = `${window.location.origin}/pilot/${supportId}`;
-      navigator.clipboard.writeText(url);
-      setProfileCopied(true);
-      toast.success("Profile link copied to clipboard");
-      setTimeout(() => setProfileCopied(false), 2000);
+      navigator.clipboard
+        .writeText(url)
+        .then(() => {
+          setProfileCopied(true);
+          toast.success("Profile link copied to clipboard");
+          setTimeout(() => setProfileCopied(false), 2000);
+        })
+        .catch(() =>
+          toast.error("Couldn't copy the link. Open your profile to share it."),
+        );
     }
   };
 
@@ -353,8 +363,8 @@ export default function DashboardPage() {
 
   if (!isSignedIn) {
     return (
-      <div className="dashboard-theme-surface min-h-screen bg-black text-white">
-        <Header />
+      <div className="dashboard-theme-surface bg-site min-h-screen text-white">
+        <Header hidePersonalInfo={hidePersonalInfo} />
         <main
           id="main-content"
           className="mx-auto max-w-2xl px-6 py-20 text-center"
@@ -383,8 +393,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="dashboard-theme-surface min-h-screen bg-black text-white">
-      <Header />
+    <div className="dashboard-theme-surface bg-site min-h-screen text-white">
+      <Header hidePersonalInfo={hidePersonalInfo} />
 
       <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
         {/* Profile Header */}
@@ -395,10 +405,13 @@ export default function DashboardPage() {
                 onClick={copyProfileLink}
                 className="group/icon relative h-14 w-14 cursor-pointer overflow-hidden rounded-full border-2 border-cyan-500/50 transition-all hover:border-cyan-400"
                 title="Copy profile link"
+                aria-label={
+                  profileCopied ? "Profile link copied" : "Copy profile link"
+                }
               >
                 <Image
                   src={user.imageUrl}
-                  alt="Profile"
+                  alt=""
                   width={56}
                   height={56}
                   className={`rounded-full transition-all duration-300 ease-out will-change-[filter,opacity] group-hover/icon:opacity-20 ${
@@ -418,6 +431,9 @@ export default function DashboardPage() {
                 onClick={copyProfileLink}
                 className="group/icon flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border-2 border-cyan-500/50 bg-cyan-500/10 transition-all hover:border-cyan-400 hover:bg-cyan-500/20"
                 title="Copy profile link"
+                aria-label={
+                  profileCopied ? "Profile link copied" : "Copy profile link"
+                }
               >
                 <Plane className="h-6 w-6 text-cyan-400 transition-all group-hover/icon:hidden" />
                 {profileCopied ? (
@@ -436,7 +452,7 @@ export default function DashboardPage() {
                 </h1>
                 <button
                   onClick={openNameEditor}
-                  className="cursor-pointer rounded-full border border-white/8 bg-white/[0.03] p-2 text-slate-500 transition-all hover:border-emerald-400/30 hover:bg-emerald-500/10 hover:text-emerald-300 focus-visible:ring-2 focus-visible:ring-emerald-400/40 focus-visible:outline-none"
+                  className="cursor-pointer rounded-full border border-white/8 bg-white/[0.03] p-2 text-slate-400 transition-all hover:border-emerald-400/30 hover:bg-emerald-500/10 hover:text-emerald-300 focus-visible:ring-2 focus-visible:ring-emerald-400/40 focus-visible:outline-none"
                   title="Change name"
                   aria-label="Change name"
                 >
@@ -469,7 +485,7 @@ export default function DashboardPage() {
                     <button
                       onClick={disconnectDiscord}
                       disabled={discordLoading}
-                      className="cursor-pointer font-mono text-[10px] text-slate-400 transition-colors hover:text-red-400 disabled:opacity-50"
+                      className="cursor-pointer font-mono text-[11px] text-slate-400 transition-colors hover:text-red-400 disabled:opacity-50"
                     >
                       Disconnect
                     </button>
@@ -543,9 +559,9 @@ export default function DashboardPage() {
             (approvedAirportCharts !== undefined &&
               approvedAirportCharts > 0) ? (
               <div className="mb-8">
-                <h3 className="mb-4 font-mono text-sm font-bold tracking-wider text-slate-400">
+                <h2 className="mb-4 font-mono text-sm font-bold tracking-wider text-slate-400">
                   YOUR CONTRIBUTIONS
-                </h3>
+                </h2>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   {approvedAircraftImages !== undefined &&
                     approvedAircraftImages > 0 && (
@@ -570,18 +586,18 @@ export default function DashboardPage() {
             ) : null}
 
             <div className="mb-8 grid gap-6 lg:grid-cols-3">
-              {/* Top Aircraft - PRO */}
+              {/* Top Aircraft - Pro */}
               <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
+                  <h2 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                     TOP AIRCRAFT
-                  </h3>
+                  </h2>
                   {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
                 </div>
                 {isPro ? (
                   <div className="space-y-3">
                     {stats.topAircraft.length === 0 ? (
-                      <p className="text-sm text-slate-500">No data yet</p>
+                      <p className="text-sm text-slate-400">No data yet</p>
                     ) : (
                       stats.topAircraft.map((aircraft, i) => (
                         <div
@@ -610,18 +626,18 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* Top Routes - PRO */}
+              {/* Top Routes - Pro */}
               <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
+                  <h2 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                     TOP ROUTES
-                  </h3>
+                  </h2>
                   {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
                 </div>
                 {isPro ? (
                   <div className="space-y-3">
                     {stats.topRoutes.length === 0 ? (
-                      <p className="text-sm text-slate-500">No data yet</p>
+                      <p className="text-sm text-slate-400">No data yet</p>
                     ) : (
                       stats.topRoutes.map((route, i) => (
                         <div
@@ -648,18 +664,18 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* Top Airports - PRO */}
+              {/* Top Airports - Pro */}
               <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
+                  <h2 className="font-mono text-sm font-bold tracking-wider text-slate-400">
                     TOP AIRPORTS
-                  </h3>
+                  </h2>
                   {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
                 </div>
                 {isPro ? (
                   <div className="space-y-3">
                     {stats.topAirports.length === 0 ? (
-                      <p className="text-sm text-slate-500">No data yet</p>
+                      <p className="text-sm text-slate-400">No data yet</p>
                     ) : (
                       stats.topAirports.map((airport, i) => (
                         <div
@@ -700,16 +716,19 @@ export default function DashboardPage() {
                 deletingFlightId={deletingFlightId}
                 onShareFlight={(flight) => {
                   const url = `${window.location.origin}/radar?replay=${flight.id}`;
-                  navigator.clipboard.writeText(url).then(() => {
-                    toast.success("Flight replay link copied to clipboard");
-                    Analytics.flightReplayShared({
-                      callsign: flight.callsign,
-                      aircraftType: flight.aircraftType,
-                      depICAO: flight.depICAO,
-                      arrICAO: flight.arrICAO,
-                      flightId: flight.id as string,
-                    });
-                  });
+                  navigator.clipboard
+                    .writeText(url)
+                    .then(() => {
+                      toast.success("Flight replay link copied to clipboard");
+                      Analytics.flightReplayShared({
+                        callsign: flight.callsign,
+                        aircraftType: flight.aircraftType,
+                        depICAO: flight.depICAO,
+                        arrICAO: flight.arrICAO,
+                        flightId: flight.id as string,
+                      });
+                    })
+                    .catch(() => toast.error("Couldn't copy the replay link."));
                 }}
                 onGenerateFlightCard={(flight: FlightHistoryPanelFlight) => {
                   if (!isPro) {
@@ -752,25 +771,25 @@ export default function DashboardPage() {
             {!isPro && (
               <div className="mt-8 rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 p-8 text-center backdrop-blur-xl">
                 <TrendingUp className="mx-auto mb-4 h-10 w-10 text-cyan-400" />
-                <h3 className="mb-2 text-xl font-bold text-white">
-                  Unlock Full Analytics
-                </h3>
+                <h2 className="mb-2 text-xl font-bold text-white">
+                  Unlock full analytics
+                </h2>
                 <p className="mb-6 text-slate-400">
                   Get every recorded flight plus detailed insights for flight
                   time, top airports, and routes
                 </p>
-                <button
+                <NextLink
+                  href="/pricing"
                   onClick={() => {
                     Analytics.upgradeButtonClicked({
                       source: "dashboard_main_upgrade_cta",
                       feature: "advanced_analytics",
                     });
-                    router.push("/pricing");
                   }}
-                  className="cursor-pointer rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40"
+                  className="inline-block cursor-pointer rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40"
                 >
                   Start 7-day Pro trial
-                </button>
+                </NextLink>
               </div>
             )}
           </>
@@ -778,19 +797,19 @@ export default function DashboardPage() {
 
         {/* Account Section */}
         <div className="mt-12">
-          <h3 className="mb-4 font-mono text-sm font-bold tracking-wider text-slate-400">
+          <h2 className="mb-4 font-mono text-sm font-bold tracking-wider text-slate-400">
             ACCOUNT
-          </h3>
+          </h2>
 
           <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
             <div className="grid lg:grid-cols-[minmax(0,1fr)_360px]">
               <div className="p-6">
-                <h4 className="mb-5 text-sm font-semibold text-white">
+                <h3 className="mb-5 text-sm font-semibold text-white">
                   Account Info
-                </h4>
+                </h3>
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                   <div className="min-w-0">
-                    <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+                    <div className="mb-1 flex items-center gap-2 font-mono text-[11px] tracking-widest text-slate-400 uppercase">
                       <User className="h-3.5 w-3.5" />
                       Name
                     </div>
@@ -803,7 +822,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="min-w-0 xl:col-span-2">
-                    <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+                    <div className="mb-1 flex items-center gap-2 font-mono text-[11px] tracking-widest text-slate-400 uppercase">
                       <Mail className="h-3.5 w-3.5" />
                       Email
                     </div>
@@ -821,7 +840,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div>
-                    <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+                    <div className="mb-1 flex items-center gap-2 font-mono text-[11px] tracking-widest text-slate-400 uppercase">
                       <Calendar className="h-3.5 w-3.5" />
                       Joined
                     </div>
@@ -835,7 +854,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div>
-                    <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+                    <div className="mb-1 flex items-center gap-2 font-mono text-[11px] tracking-widest text-slate-400 uppercase">
                       <Shield className="h-3.5 w-3.5" />
                       Plan
                     </div>
@@ -843,7 +862,7 @@ export default function DashboardPage() {
                       {isPro ? (
                         <span className="text-emerald-400">Pro</span>
                       ) : (
-                        <span className="text-slate-500">Free Tier</span>
+                        <span className="text-slate-400">Free Tier</span>
                       )}
                     </div>
                   </div>
@@ -851,9 +870,9 @@ export default function DashboardPage() {
               </div>
 
               <div className="border-t border-white/10 bg-white/[0.02] p-4 lg:border-t-0 lg:border-l">
-                <h4 className="mb-3 px-2 font-mono text-xs font-bold tracking-widest text-slate-500 uppercase">
+                <h3 className="mb-3 px-2 font-mono text-xs font-bold tracking-widest text-slate-400 uppercase">
                   Settings
-                </h4>
+                </h3>
                 <div className="mb-3 rounded-xl border border-white/10 bg-black/20 p-3">
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
@@ -861,7 +880,7 @@ export default function DashboardPage() {
                         <EyeOff className="h-4 w-4 text-cyan-300" />
                         Hide personal information
                       </div>
-                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                      <p className="mt-1 text-xs leading-5 text-slate-400">
                         Mask your name, email, and avatar on this dashboard.
                       </p>
                     </div>
@@ -873,9 +892,9 @@ export default function DashboardPage() {
                     />
                   </div>
                 </div>
-                <h4 className="mb-3 px-2 font-mono text-xs font-bold tracking-widest text-slate-500 uppercase">
+                <h3 className="mb-3 px-2 font-mono text-xs font-bold tracking-widest text-slate-400 uppercase">
                   Account Actions
-                </h4>
+                </h3>
                 <div className="flex flex-col gap-2 md:h-14 md:flex-row">
                   <AccountActionButton
                     icon={
@@ -923,9 +942,9 @@ export default function DashboardPage() {
           <div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/5 p-6 backdrop-blur-xl">
             <div className="mb-2 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-red-400" />
-              <h4 className="text-sm font-semibold text-red-400">
+              <h3 className="text-sm font-semibold text-red-400">
                 Danger Zone
-              </h4>
+              </h3>
             </div>
             <p className="mb-4 text-xs text-slate-300">
               Permanently delete your account, flight history and stats. This
@@ -939,7 +958,7 @@ export default function DashboardPage() {
                 className="flex cursor-pointer items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-400 transition-all hover:bg-red-500/20"
               >
                 <Trash2 className="h-4 w-4" />
-                Delete Account
+                Delete account
               </button>
             ) : (
               <form
@@ -1012,11 +1031,11 @@ export default function DashboardPage() {
           }
         }}
       >
-        <AlertDialogContent className="overflow-hidden border-emerald-500/20 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.16),_transparent_34%),linear-gradient(180deg,rgba(9,9,11,0.98),rgba(2,6,23,0.96))] p-0">
+        <AlertDialogContent className="overflow-hidden border-cyan-500/20 bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.14),_transparent_34%),linear-gradient(180deg,rgba(9,9,11,0.98),rgba(2,6,23,0.96))] p-0">
           <div className="border-b border-white/10 bg-white/[0.03] px-6 py-5">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/25 bg-emerald-500/10 shadow-[0_0_30px_rgba(16,185,129,0.16)]">
-                <User className="h-5 w-5 text-emerald-300" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-500/25 bg-cyan-500/10 shadow-[0_0_30px_rgba(34,211,238,0.14)]">
+                <User className="h-5 w-5 text-cyan-300" />
               </div>
               <AlertDialogHeader className="justify-center gap-0 text-left">
                 <AlertDialogTitle className="text-xl text-white">
@@ -1035,7 +1054,7 @@ export default function DashboardPage() {
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-2 block font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                <span className="mb-2 block font-mono text-[11px] font-bold tracking-widest text-slate-400 uppercase">
                   First name
                 </span>
                 <input
@@ -1044,13 +1063,13 @@ export default function DashboardPage() {
                   maxLength={64}
                   autoComplete="given-name"
                   disabled={isSavingName}
-                  className="w-full rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white shadow-inner shadow-black/10 transition outline-none focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white shadow-inner shadow-black/10 transition outline-none focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-60"
                   placeholder="First name"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-2 block font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                <span className="mb-2 block font-mono text-[11px] font-bold tracking-widest text-slate-400 uppercase">
                   Last name
                 </span>
                 <input
@@ -1059,7 +1078,7 @@ export default function DashboardPage() {
                   maxLength={64}
                   autoComplete="family-name"
                   disabled={isSavingName}
-                  className="w-full rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white shadow-inner shadow-black/10 transition outline-none focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white shadow-inner shadow-black/10 transition outline-none focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-60"
                   placeholder="Last name"
                 />
               </label>
@@ -1076,7 +1095,7 @@ export default function DashboardPage() {
               <Button
                 type="submit"
                 disabled={isSavingName}
-                className="rounded-xl bg-emerald-500 text-black hover:bg-emerald-400"
+                className="rounded-xl bg-cyan-500 text-black hover:bg-cyan-400"
               >
                 {isSavingName ? (
                   <>
@@ -1123,12 +1142,12 @@ export default function DashboardPage() {
                 <span className="font-mono font-bold text-white">
                   {flightPendingDelete?.depICAO || "???"}
                 </span>
-                <Route className="h-3.5 w-3.5 text-slate-500" />
+                <Route className="h-3.5 w-3.5 text-slate-400" />
                 <span className="font-mono font-bold text-white">
                   {flightPendingDelete?.arrICAO || "???"}
                 </span>
                 {flightPendingDelete?.callsign && (
-                  <span className="rounded-full bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] text-cyan-300">
+                  <span className="rounded-full bg-cyan-500/10 px-2 py-0.5 font-mono text-[11px] text-cyan-300">
                     {flightPendingDelete.callsign}
                   </span>
                 )}
@@ -1211,13 +1230,13 @@ function StatCard({
       >
         {icon}
       </div>
-      <div className="mb-1 font-mono text-xs tracking-wider text-slate-500 uppercase">
+      <div className="mb-1 font-mono text-xs tracking-wider text-slate-400 uppercase">
         {label}
       </div>
       {locked ? (
         <div className="flex items-center gap-2">
           <Lock className="h-4 w-4 text-slate-400" />
-          <span className="font-mono text-sm text-slate-400">PRO</span>
+          <span className="font-mono text-sm text-slate-400">Pro</span>
         </div>
       ) : (
         <>
@@ -1278,7 +1297,7 @@ function ProLockedContent() {
   return (
     <div className="flex flex-col items-center justify-center py-6 text-center">
       <Lock className="mb-2 h-8 w-8 text-slate-400" />
-      <p className="mb-3 text-sm text-slate-500">Available with Pro</p>
+      <p className="mb-3 text-sm text-slate-400">Available with Pro</p>
       <button
         onClick={() => {
           Analytics.upgradeButtonClicked({
@@ -1322,9 +1341,9 @@ function EmptyState() {
   return (
     <div className="rounded-2xl border border-white/10 bg-black/40 p-8 backdrop-blur-xl sm:p-10">
       <Plane className="mb-4 h-10 w-10 text-cyan-300" aria-hidden="true" />
-      <h3 className="mb-2 text-xl font-semibold text-white">
+      <h2 className="mb-2 text-xl font-semibold text-white">
         No flights yet. Here&apos;s how to log your first one
-      </h3>
+      </h2>
       <ol className="mt-6 grid gap-4 sm:grid-cols-3">
         {steps.map((step, index) => (
           <li
@@ -1431,7 +1450,7 @@ function DiscordIcon({ className }: { className?: string }) {
 
 function DashboardSkeleton() {
   return (
-    <div className="dashboard-theme-surface min-h-screen bg-black text-white">
+    <div className="dashboard-theme-surface bg-site min-h-screen text-white">
       <SiteHeader tone="themed" />
 
       <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">

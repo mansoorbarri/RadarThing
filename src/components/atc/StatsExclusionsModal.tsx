@@ -65,10 +65,12 @@ export function StatsExclusionsModal({
       <div className="max-h-[92vh] w-full max-w-xl overflow-hidden rounded-xl border border-cyan-400/25 bg-[#050b10]/96 text-slate-100 shadow-[0_24px_90px_rgba(0,0,0,0.7)]">
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
           <div>
-            <div className="text-[10px] font-semibold tracking-[0.2em] text-cyan-300 uppercase">
+            <div className="text-[11px] font-semibold tracking-[0.2em] text-cyan-300 uppercase">
               Stats
             </div>
-            <h2 className="text-lg font-semibold">Why a flight may not count</h2>
+            <h2 className="text-lg font-semibold">
+              Why a flight may not count
+            </h2>
           </div>
           <button
             type="button"

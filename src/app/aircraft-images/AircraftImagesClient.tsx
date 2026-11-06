@@ -447,7 +447,7 @@ export default function AircraftImagesClient({
   };
 
   return (
-    <div className="aircraft-images-theme-surface min-h-screen bg-black text-white">
+    <div className="aircraft-images-theme-surface bg-site min-h-screen text-white">
       <SiteHeader tone="themed" />
 
       <main
@@ -477,7 +477,7 @@ export default function AircraftImagesClient({
               className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 sm:w-auto sm:px-6"
             >
               <Upload className="h-5 w-5" />
-              Upload Image
+              Upload image
             </button>
           ) : (
             <GoogleSignInButton>
@@ -584,7 +584,7 @@ export default function AircraftImagesClient({
                 : `Showing ${pageStart}-${pageEnd} of ${filteredImages.length} images`}
           </p>
           <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className="text-sm text-slate-500">Per page</span>
+            <span className="text-sm text-slate-400">Per page</span>
             <Select
               value={String(pageSize)}
               onValueChange={(value) =>
@@ -671,7 +671,7 @@ export default function AircraftImagesClient({
                         />
                       </div>
                       {image.discordUsername && (
-                        <p className="mt-2 text-xs text-slate-500">
+                        <p className="mt-2 text-xs text-slate-400">
                           Discord: {image.discordUsername}
                         </p>
                       )}
@@ -683,7 +683,7 @@ export default function AircraftImagesClient({
 
             {totalPages > 1 && (
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-400">
                   Page {currentPage} of {totalPages}
                 </p>
                 <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
@@ -808,7 +808,11 @@ export default function AircraftImagesClient({
             </div>
           </div>
 
-          <form onSubmit={handleUploadAndSubmit} className="space-y-4">
+          <form
+            onSubmit={handleUploadAndSubmit}
+            noValidate
+            className="space-y-4"
+          >
             {error && (
               <div
                 role="alert"
@@ -1049,7 +1053,7 @@ export default function AircraftImagesClient({
                 </div>
               </div>
             )}
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-400">
               {isMilitary
                 ? "Enter the air force name (e.g., USAF, PAF, RAF) and aircraft model."
                 : "Aircraft should be base model only, not the varient. Like: B777. Not: B77W."}
@@ -1170,7 +1174,7 @@ export default function AircraftImagesClient({
                     Cleared for Review!
                   </span>
                 </div>
-                <p className="mt-1.5 text-sm text-slate-500">
+                <p className="mt-1.5 text-sm text-slate-400">
                   Your image is now in the queue
                 </p>
               </div>

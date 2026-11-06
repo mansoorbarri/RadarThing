@@ -605,7 +605,7 @@ export function AirportChartsTab({
             : `Showing ${pageStart}-${pageEnd} of ${filteredCharts.length} chart${filteredCharts.length !== 1 ? "s" : ""}${hasActiveFilters && filteredCharts.length !== approvedCharts.length ? ` (${approvedCharts.length} total)` : ""}`}
         </p>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-500">Per page</span>
+          <span className="text-sm text-slate-400">Per page</span>
           <Select
             value={String(pageSize)}
             onValueChange={(value) =>
@@ -779,7 +779,7 @@ export function AirportChartsTab({
 
       {filteredCharts.length > 0 && totalPages > 1 && (
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-400">
             Page {currentPage} of {totalPages}
           </p>
           <div className="flex items-center gap-2">

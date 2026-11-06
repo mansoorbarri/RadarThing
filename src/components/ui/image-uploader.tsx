@@ -410,7 +410,7 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
               </p>
             </div>
 
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-400">
               JPG, PNG, GIF or WebP • Auto-compressed
             </p>
           </div>

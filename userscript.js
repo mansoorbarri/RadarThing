@@ -117,9 +117,16 @@
         case "setSquawk":
           // Update the squawk in flight info
           if (info) {
+            // Transponder codes are four octal digits; refuse anything else
+            // so a bad command can't put a nonsense squawk on the radar.
+            if (!/^[0-7]{4}$/.test(String(cmd.value ?? "").trim())) {
+              throw new Error(`Invalid squawk ${String(cmd.value ?? "")}`);
+            }
             info.sqk = sanitizeSquawk(cmd.value);
             window.dispatchEvent(
-              new CustomEvent("atc-data-sync", { detail: info }),
+              new CustomEvent("atc-data-sync", {
+                detail: { ...info, remote: true },
+              }),
             );
             // Also update the squawk input field in the UI
             window.dispatchEvent(
@@ -132,7 +139,8 @@
 
         case "setFlaps":
           // Set flaps by notch number (value is the notch, e.g., 2 out of 3 steps)
-          if (controls?.flaps) {
+          if (window.controls?.flaps) {
+            const controls = window.controls;
             const maxPos = controls.flaps.maxPosition || 6;
             const flapsSteps = geofs.animation?.values?.flapsSteps || maxPos;
             const notch = Math.round(Number(cmd.value));
@@ -230,11 +238,8 @@
           // runtime UI listens for the disconnect event and shows the toast.
           window.dispatchEvent(
             new CustomEvent("atc-data-sync", {
-              detail: { active: false },
+              detail: { active: false, remote: true },
             }),
-          );
-          window.dispatchEvent(
-            new CustomEvent("radarthing-flight-disconnected"),
           );
           break;
 
@@ -292,12 +297,28 @@
       text: "Update rejected · check your flight info",
       color: "#f87171",
     },
+    busy: {
+      state: "retrying",
+      text: "RadarThing is busy · retrying",
+      color: "#fbbf24",
+    },
+    tooLarge: {
+      state: "rejected",
+      text: "Flight plan too large · shorten your route",
+      color: "#f87171",
+    },
+    noNetwork: {
+      state: "offline",
+      text: "You're offline · waiting for a connection",
+      color: "#f87171",
+    },
     offline: {
       state: "offline",
       text: "Can't reach RadarThing · retrying",
       color: "#f87171",
     },
   };
+  let lastSendSuccessAt = 0;
   let consecutiveSendFailures = 0;
   let nextSendAllowedAt = 0;
   let currentStatus = STATUS.idle;
@@ -308,7 +329,11 @@
     else if (!info.active) currentStatus = STATUS.idle;
     window.dispatchEvent(
       new CustomEvent("atc-status-update", {
-        detail: { ...currentStatus, source: "radarthing" },
+        detail: {
+          ...currentStatus,
+          source: "radarthing",
+          lastSuccessAt: lastSendSuccessAt || null,
+        },
       }),
     );
   }
@@ -317,28 +342,58 @@
     lastSendSuccessAt = Date.now();
     consecutiveSendFailures = 0;
     nextSendAllowedAt = 0;
-    if (currentStatus !== STATUS.live) broadcastStatus(STATUS.live);
+    // Rebroadcast every success so the panel can show "updated Xs ago".
+    broadcastStatus(STATUS.live);
   }
-
-  let lastSendSuccessAt = 0;
 
   function recordSendFailure(status) {
     consecutiveSendFailures += 1;
     // Back off 2s, 4s, 8s … up to 30s so a dead server isn't hammered.
     const delay = Math.min(30000, 1000 * 2 ** consecutiveSendFailures);
     nextSendAllowedAt = Date.now() + delay;
-    // A 4xx means the server is up but refused the data, which is a different
-    // problem from being unreachable.
-    const isRejected =
-      typeof status === "number" && status >= 400 && status < 500;
-    const next = isRejected
-      ? STATUS.rejected
-      : consecutiveSendFailures >= 4
-        ? STATUS.offline
-        : STATUS.retrying;
-    if ((isRejected || consecutiveSendFailures >= 2) && currentStatus !== next)
+    if (navigator.onLine === false) {
+      if (currentStatus !== STATUS.noNetwork) broadcastStatus(STATUS.noNetwork);
+      return;
+    }
+    // Most 4xx responses mean the server is up but refused the data, which is
+    // a different problem from being unreachable. 408 and 429 are temporary,
+    // so they retry like a server error.
+    const isNumber = typeof status === "number";
+    const isTemporary =
+      isNumber && (status === 408 || status === 429 || status >= 500);
+    const next =
+      status === 413
+        ? STATUS.tooLarge
+        : isNumber && status >= 400 && !isTemporary
+          ? STATUS.rejected
+          : status === 429
+            ? STATUS.busy
+            : consecutiveSendFailures >= 4
+              ? STATUS.offline
+              : STATUS.retrying;
+    const isImmediate = next === STATUS.rejected || next === STATUS.tooLarge;
+    if ((isImmediate || consecutiveSendFailures >= 2) && currentStatus !== next)
       broadcastStatus(next);
   }
+
+  // Let the panel's "Retry now" button skip the remaining backoff.
+  window.addEventListener("radarthing-retry-now", () => {
+    if (!info.active) return;
+    nextSendAllowedAt = 0;
+    lastPositionSendAt = 0;
+    broadcastStatus(STATUS.connecting);
+  });
+
+  window.addEventListener("offline", () => {
+    if (info.active) broadcastStatus(STATUS.noNetwork);
+  });
+  window.addEventListener("online", () => {
+    if (!info.active) return;
+    consecutiveSendFailures = 0;
+    nextSendAllowedAt = 0;
+    lastPositionSendAt = 0;
+    broadcastStatus(STATUS.connecting);
+  });
 
   window.addEventListener("radarthing-request-status", () => broadcastStatus());
   window.addEventListener("radarthing-retry-end-flight", () => {
@@ -383,24 +438,27 @@
     // If flight was active and is now cleared, end the flight immediately
     if (wasActive && !info.active) {
       console.log("[RadarThing] Flight cleared, ending immediately...");
-      endFlight();
+      // The end result says whether the website ended it, so the panel can
+      // word its message without tracking that separately.
+      endFlight({ remote: e.detail?.remote === true });
     }
   });
 
   // End flight and save to database immediately
-  function reportEndResult(ok, message) {
+  function reportEndResult(ok, message, remote = false) {
     window.dispatchEvent(
       new CustomEvent("radarthing-flight-end-result", {
-        detail: { ok, message },
+        detail: { ok, message, remote },
       }),
     );
   }
 
-  async function endFlight() {
+  async function endFlight({ remote = false } = {}) {
+    const report = (ok, message) => reportEndResult(ok, message, remote);
     const geofs = window.geofs;
     if (!geofs?.userRecord) {
       console.warn("[RadarThing] Cannot end flight - no userRecord");
-      reportEndResult(
+      report(
         false,
         "Couldn't end the flight because GeoFS hasn't loaded your account. Sign in to GeoFS and try again.",
       );
@@ -410,7 +468,7 @@
     const id = getUserIdentifier(geofs);
     if (!id) {
       console.warn("[RadarThing] Cannot end flight - no id");
-      reportEndResult(
+      report(
         false,
         "Couldn't end the flight because GeoFS hasn't loaded your account. Sign in to GeoFS and try again.",
       );
@@ -433,23 +491,23 @@
         const data = await res.json();
         if (data.finalized) {
           console.log(`[RadarThing] Flight ended and saved: ${data.flightNo}`);
-          reportEndResult(true, "Flight ended and saved to your history");
+          report(true, "Flight ended and saved to your history");
         } else {
-          reportEndResult(true, "Flight ended");
+          report(true, "Flight ended");
           console.log(
             `[RadarThing] No active session to end: ${data.reason || "unknown"}`,
           );
         }
       } else {
         console.error(`[RadarThing] End flight request failed: ${res.status}`);
-        reportEndResult(
+        report(
           false,
           "Couldn't save this flight to RadarThing. It will be saved when the server times it out.",
         );
       }
     } catch (err) {
       console.error("[RadarThing] Error ending flight:", err);
-      reportEndResult(
+      report(
         false,
         "Couldn't reach RadarThing to end the flight. It will be saved when the server times it out.",
       );
@@ -562,10 +620,10 @@
         vspeed: Math.floor(geofs?.animation?.values?.verticalSpeed || 0),
         navMode: geofs?.autopilot?.mode === "NAV",
         speedMode: geofs?.autopilot?.speedMode === "mach" ? "mach" : "knots",
-        flapsPosition: controls?.flaps?.position || 0,
+        flapsPosition: window.controls?.flaps?.position || 0,
         flapsMaxPosition:
           geofs?.animation?.values?.flapsSteps ||
-          controls?.flaps?.maxPosition ||
+          window.controls?.flaps?.maxPosition ||
           0,
       };
 

@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
+import { CopyCodeSnippet } from "~/components/site/CopyCodeSnippet";
 import { SiteFooter } from "~/components/site/SiteFooter";
 import { SiteHeader } from "~/components/site/SiteHeader";
 import {
   ArrowRight,
+  ArrowUpRight,
   Radio,
   Route,
   Cloud,
@@ -18,8 +20,7 @@ import {
   Download,
 } from "lucide-react";
 import userscriptConfig from "../../../userscript-src/config.json";
-import { FREE_RECENT_FLIGHTS_LIMIT } from "~/lib/flightHistory";
-import { FREE_DAILY_ALLOWANCE } from "~/lib/freeAllowance";
+import { freePlanItems, proPlanItems } from "~/lib/plans";
 import { guides } from "~/lib/guides";
 
 const FEATURED_GUIDE_SLUGS = [
@@ -45,7 +46,7 @@ const CONSOLE_SNIPPET = `(() => {
 
 export default function HomePage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#010b10]">
+    <div className="bg-site relative min-h-screen overflow-hidden">
       {/* Background layers */}
       <div className="pointer-events-none absolute inset-0">
         {/* Noise texture */}
@@ -129,7 +130,7 @@ export default function HomePage() {
                 prefetch={false}
                 className="group inline-flex items-center justify-center gap-2 bg-white px-8 py-4 font-semibold text-black transition-all hover:bg-cyan-400"
               >
-                Open Radar
+                Open the radar
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
@@ -137,7 +138,7 @@ export default function HomePage() {
                 className="inline-flex items-center justify-center gap-2 border border-white/10 px-8 py-4 font-medium text-white transition-all hover:border-white/25 hover:bg-white/5"
               >
                 <Download className="h-4 w-4" />
-                Install Script
+                Install the script
               </Link>
             </div>
             <p className="mt-5 text-sm text-white/70">
@@ -175,7 +176,7 @@ export default function HomePage() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-400/10 text-cyan-400">
                 <Download className="h-4 w-4" />
               </div>
-              <h2 className="text-lg font-semibold text-white">Quick Setup</h2>
+              <h2 className="text-lg font-semibold text-white">Quick setup</h2>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
@@ -188,10 +189,11 @@ export default function HomePage() {
               />
               <SetupStep
                 step={2}
-                title="Add the Userscript"
+                title="Add the userscript"
                 description="Install the hosted loader script so Tampermonkey always pulls the latest runtime"
                 link={USERSCRIPT_INSTALL_URL}
-                linkText="Install Script"
+                linkText="Install script"
+                newTab={false}
               />
               <SetupStep
                 step={3}
@@ -202,9 +204,19 @@ export default function HomePage() {
               />
             </div>
 
-            <p className="mt-5 text-sm leading-6 text-amber-200/75">
+            <p className="mt-5 text-sm leading-6 text-amber-200/85">
               Sign in to your GeoFS account before flying. Flights from
               signed-out sessions are not shown on the radar.
+            </p>
+            <p className="mt-2 text-sm leading-6 text-white/70">
+              Flight not showing up?{" "}
+              <Link
+                href="/guides/aircraft-not-appearing"
+                className="font-medium text-cyan-300 underline underline-offset-4 hover:text-cyan-200"
+              >
+                Work through the troubleshooting guide
+              </Link>
+              .
             </p>
 
             <details className="group mt-8 rounded-2xl border border-white/10 bg-white/[0.02]">
@@ -268,7 +280,10 @@ export default function HomePage() {
                       Open GeoFS
                     </Link>
                   </div>
-                  <CodeSnippet code={CONSOLE_SNIPPET} />
+                  <CopyCodeSnippet
+                    code={CONSOLE_SNIPPET}
+                    label="Copy snippet"
+                  />
                   <p className="mt-4 text-sm leading-6 text-white/70">
                     The snippet above only loads the stable hosted loader. The
                     loader then resolves the current runtime bundle, so console
@@ -366,45 +381,17 @@ export default function HomePage() {
                   <span className="text-white/70"> / forever</span>
                 </div>
                 <ul className="mb-6 flex-1 space-y-3">
-                  <PricingFeature included>
-                    Live aircraft tracking
-                  </PricingFeature>
-                  <PricingFeature included>
-                    Flight search & filtering
-                  </PricingFeature>
-                  <PricingFeature included>
-                    Multi-aircraft selection
-                  </PricingFeature>
-                  <PricingFeature included>Follow mode</PricingFeature>
-                  <PricingFeature included>
-                    Flight recording & replay
-                  </PricingFeature>
-                  <PricingFeature included>
-                    Remote autopilot commands
-                  </PricingFeature>
-                  <PricingFeature included>
-                    Pilot stats + last {FREE_RECENT_FLIGHTS_LIMIT} flights
-                  </PricingFeature>
-                  <PricingFeature included>Live ATC audio</PricingFeature>
-                  <PricingFeature included>
-                    Precipitation overlay
-                  </PricingFeature>
-                  <PricingFeature included>
-                    Aircraft image uploads
-                  </PricingFeature>
-                  <PricingFeature>NOTAMs (decoded)</PricingFeature>
-                  <PricingFeature>AIRMETs & SIGMETs</PricingFeature>
-                  <PricingFeature included>
-                    Airport charts for {FREE_DAILY_ALLOWANCE.charts} US airports
-                    a day
-                  </PricingFeature>
-                  <PricingFeature>Advanced analytics</PricingFeature>
+                  {freePlanItems().map((item) => (
+                    <PricingFeature key={item.label} included={item.included}>
+                      {item.label}
+                    </PricingFeature>
+                  ))}
                 </ul>
                 <Link
                   href="/radar"
                   className="mt-auto block w-full rounded-lg border border-white/10 py-3 text-center font-medium text-white transition-colors hover:bg-white/5"
                 >
-                  Get Started
+                  Get started
                 </Link>
               </div>
 
@@ -417,37 +404,20 @@ export default function HomePage() {
                       Full access · 7-day free trial
                     </p>
                   </div>
-                  <span className="rounded-full bg-cyan-400/20 px-2 py-0.5 text-xs font-medium text-cyan-400">
-                    POPULAR
-                  </span>
                 </div>
                 <div className="mb-6">
                   <span className="text-3xl font-bold text-white">$3</span>
                   <span className="text-white/70"> / month</span>
                 </div>
                 <ul className="mb-6 flex-1 space-y-3">
-                  <PricingFeature included>Everything in Free</PricingFeature>
                   <PricingFeature included>
-                    NOTAMs with decoded text
+                    Everything in Free, plus:
                   </PricingFeature>
-                  <PricingFeature included>
-                    AIRMETs & SIGMETs overlay
-                  </PricingFeature>
-                  <PricingFeature included>
-                    Unlimited airport charts worldwide
-                  </PricingFeature>
-                  <PricingFeature included>
-                    Approach & departure charts
-                  </PricingFeature>
-                  <PricingFeature included>SID/STAR procedures</PricingFeature>
-                  <PricingFeature included>Full flight history</PricingFeature>
-                  <PricingFeature included>
-                    Top routes & airports stats
-                  </PricingFeature>
-                  <PricingFeature included>
-                    Total flight time tracking
-                  </PricingFeature>
-                  <PricingFeature included>Radar mode map layer</PricingFeature>
+                  {proPlanItems().map((item) => (
+                    <PricingFeature key={item.label} included>
+                      {item.label}
+                    </PricingFeature>
+                  ))}
                 </ul>
                 <Link
                   href="/pricing"
@@ -492,7 +462,7 @@ export default function HomePage() {
                 <Link
                   key={guide.slug}
                   href={`/guides/${guide.slug}`}
-                  className="group flex flex-col bg-[#010b10] p-6 transition-colors hover:bg-[#04161d]"
+                  className="group bg-site flex flex-col p-6 transition-colors hover:bg-[#04161d]"
                 >
                   <h3 className="font-semibold text-white group-hover:text-cyan-200">
                     {guide.title}
@@ -545,14 +515,6 @@ export default function HomePage() {
   );
 }
 
-function CodeSnippet({ code }: { code: string }) {
-  return (
-    <pre className="overflow-x-auto rounded-2xl border border-white/8 bg-[#02090d] p-4 text-xs leading-6 text-cyan-100">
-      <code>{code}</code>
-    </pre>
-  );
-}
-
 function Blip({ x, y, delay }: { x: number; y: number; delay: number }) {
   return (
     <div
@@ -573,12 +535,15 @@ function SetupStep({
   description,
   link,
   linkText,
+  newTab = true,
 }: {
   step: number;
   title: string;
   description: string;
   link: string;
   linkText: string;
+  /** The script install link stays in-tab so Tampermonkey can catch it. */
+  newTab?: boolean;
 }) {
   return (
     <div className="relative rounded-lg border border-white/5 bg-white/[0.02] p-5">
@@ -587,15 +552,21 @@ function SetupStep({
       </div>
       <h3 className="mb-1 font-semibold text-white">{title}</h3>
       <p className="mb-4 text-sm text-white/70">{description}</p>
-      <Link
+      <a
         href={link}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 text-sm font-medium text-cyan-400 hover:underline"
+        {...(newTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+        className="inline-flex min-h-10 items-center gap-1 text-sm font-medium text-cyan-400 hover:underline"
       >
         {linkText}
-        <ArrowRight className="h-3 w-3" />
-      </Link>
+        {newTab ? (
+          <>
+            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="sr-only"> (opens in a new tab)</span>
+          </>
+        ) : (
+          <ArrowRight className="h-3 w-3" aria-hidden="true" />
+        )}
+      </a>
     </div>
   );
 }
@@ -630,11 +601,15 @@ function PricingFeature({
   return (
     <li className="flex items-center gap-3 text-sm">
       {included ? (
-        <Check className="h-4 w-4 shrink-0 text-cyan-400" />
+        <Check className="h-4 w-4 shrink-0 text-cyan-400" aria-hidden="true" />
       ) : (
-        <X className="h-4 w-4 shrink-0 text-white/20" />
+        <X className="h-4 w-4 shrink-0 text-white/40" aria-hidden="true" />
       )}
-      <span className={included ? "text-white/70" : "text-white/60"}>
+      <span className={included ? "text-white/80" : "text-white/60"}>
+        {/* The icon alone doesn't tell a screen reader what's missing. */}
+        <span className="sr-only">
+          {included ? "Included: " : "Not included: "}
+        </span>
         {children}
       </span>
     </li>

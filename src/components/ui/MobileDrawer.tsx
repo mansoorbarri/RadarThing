@@ -40,10 +40,26 @@ export const MobileDrawer = ({ children, onClose }: MobileDrawerProps) => {
 
   const drawerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    const drawer = drawerRef.current;
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    drawerRef.current?.focus({ preventScroll: true });
+    drawer?.focus({ preventScroll: true });
+    // The drawer is non-modal: if the user has tabbed out to the map, closing
+    // it must not pull focus back. Only restore focus that was inside it.
+    let focusInside = true;
+    const onFocusIn = () => (focusInside = true);
+    const onFocusOut = (event: FocusEvent) => {
+      if (!drawer?.contains(event.relatedTarget as Node | null))
+        focusInside = false;
+    };
+    drawer?.addEventListener("focusin", onFocusIn);
+    drawer?.addEventListener("focusout", onFocusOut);
     return () => {
-      if (previouslyFocused?.isConnected) previouslyFocused.focus();
+      drawer?.removeEventListener("focusin", onFocusIn);
+      drawer?.removeEventListener("focusout", onFocusOut);
+      const lostFocus =
+        !document.activeElement || document.activeElement === document.body;
+      if ((focusInside || lostFocus) && previouslyFocused?.isConnected)
+        previouslyFocused.focus();
     };
   }, []);
 

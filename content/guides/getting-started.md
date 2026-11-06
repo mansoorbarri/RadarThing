@@ -16,7 +16,15 @@ A RadarThing account is optional for tracking, but signing in with the same Goog
 
 [Tampermonkey](https://www.tampermonkey.net/) is a browser extension that runs small scripts, called userscripts, on the websites you choose. RadarThing uses it to run inside GeoFS.
 
-Install it from your browser's extension store and make sure it is enabled. Some browsers, including recent versions of Chrome, also require you to allow userscripts in the extension's settings; Tampermonkey will show instructions if this is needed.
+Install it from your browser's extension store and make sure it is enabled.
+
+In Chrome, Edge and other Chromium browsers you also need to let extensions run userscripts:
+
+1. Open the extensions page (`chrome://extensions` or `edge://extensions`).
+2. Choose **Details** under Tampermonkey.
+3. Turn on **Allow User Scripts**. On older browser versions this switch doesn't exist; turn on **Developer mode** at the top right of the extensions page instead.
+
+Firefox doesn't need this step.
 
 ## Step 2: Install the RadarThing userscript
 
@@ -43,7 +51,9 @@ This is the step most new pilots miss. The tracker does not send your position u
 
 The status at the top of the panel changes to **Connecting…** and then **Live on radar** once RadarThing receives your position. If the callsign is already in use by another pilot, the panel will tell you; add or change a digit and try again. If the status shows **Connection issue · retrying**, RadarThing keeps trying in the background.
 
-To change your route or callsign mid-flight, edit the fields and press **Update flight**. When you finish the flight, press **End flight** and then **Tap again to end**. RadarThing records the flight in your history and adds it to your statistics.
+While you are tracking, the panel folds into a one-line summary so it covers less of the simulator. To change your route, callsign or squawk mid-flight, press **Edit flight**, change the fields and press **Update flight**.
+
+When you finish the flight, press **End flight**, then press it again to confirm (the button changes to **Click again to end**, or **Tap again to end** on a touch screen). RadarThing saves the flight. If you are signed in to RadarThing with the same Google account you use in GeoFS, it appears in your flight history on your dashboard. Most flights also count towards your statistics; [Pilot stats and leaderboards](/guides/pilot-stats-and-leaderboards) explains which ones are left out.
 
 Press **W** to show or hide the panel and **Q** to open airport charts. You can change both keys under **Settings & shortcuts**.
 

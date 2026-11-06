@@ -1093,7 +1093,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     mapRefs.mapReady,
   ]);
 
-  const metar = useMetarOverlay(
+  const { metar, status: metarStatus } = useMetarOverlay(
     mapRefs.mapInstance,
     icaoInput || selectedAirport?.icao,
   );
@@ -1440,6 +1440,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           onChange={setIcaoInput}
           selectedAirportIcao={selectedAirport?.icao}
           metarText={metar?.raw || null}
+          metarStatus={metarStatus}
           atisText={atis?.datis || null}
           atisCode={atis?.code || null}
           notams={notamData?.notams || null}
@@ -1466,7 +1467,7 @@ function SeverityStat({
     <div
       className={`rounded-lg border px-2 py-1.5 text-center font-mono ${tone}`}
     >
-      <p className="text-[10px] tracking-[0.18em] uppercase">{label}</p>
+      <p className="text-[11px] tracking-[0.18em] uppercase">{label}</p>
       <p className="text-sm font-bold">{count}</p>
     </div>
   );
@@ -1515,7 +1516,7 @@ function ConflictMonitorPanel({
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-80" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />
             </span>
-            <span className="font-mono text-[10px] font-bold text-cyan-300">
+            <span className="font-mono text-[11px] font-bold text-cyan-300">
               {alerts.length} ACTIVE
             </span>
           </div>
@@ -1560,16 +1561,16 @@ function ConflictMonitorPanel({
         <div className="mt-4 border-t border-white/10 pt-3">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div>
-              <p className="font-mono text-[10px] tracking-[0.18em] text-cyan-300/80 uppercase">
+              <p className="font-mono text-[11px] tracking-[0.18em] text-cyan-300/80 uppercase">
                 Recent Events
               </p>
-              <p className="text-[10px] text-white/45">
+              <p className="text-[11px] text-white/60">
                 Keeps the latest live alerts for quick review.
               </p>
             </div>
             <button
               onClick={onClearHistory}
-              className="cursor-pointer rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 font-mono text-[10px] text-white/60 transition-colors hover:border-white/20 hover:text-white"
+              className="cursor-pointer rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-white/60 transition-colors hover:border-white/20 hover:text-white"
             >
               Clear
             </button>
@@ -1577,7 +1578,7 @@ function ConflictMonitorPanel({
 
           <div className="space-y-1.5">
             {history.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-white/10 bg-black/30 px-3 py-2 text-[11px] text-white/45">
+              <div className="rounded-lg border border-dashed border-white/10 bg-black/30 px-3 py-2 text-[11px] text-white/60">
                 No conflict events logged yet.
               </div>
             ) : (
@@ -1610,7 +1611,7 @@ function ConflictAlertCard({
         <span className="text-white/65">×</span>
         <span className="truncate">{alert.callsignB}</span>
       </div>
-      <div className="mt-1 flex items-center justify-between gap-3 text-[10px] text-white/65">
+      <div className="mt-1 flex items-center justify-between gap-3 text-[11px] text-white/65">
         <span>
           {alert.horizontalSeparationNm.toFixed(1)}nm /{" "}
           {Math.round(alert.verticalSeparationFt)}ft
@@ -1619,13 +1620,13 @@ function ConflictAlertCard({
       </div>
       <div className="mt-2 flex items-center justify-between gap-2">
         <span
-          className={`rounded-full border px-2 py-0.5 text-[10px] tracking-[0.14em] uppercase ${getSeverityTone(alert.severity)}`}
+          className={`rounded-full border px-2 py-0.5 text-[11px] tracking-[0.14em] uppercase ${getSeverityTone(alert.severity)}`}
         >
           {alert.severity}
         </span>
         <button
           onClick={onReview}
-          className="cursor-pointer rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-1 text-[10px] text-cyan-200 transition-colors hover:bg-cyan-500/15"
+          className="cursor-pointer rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-200 transition-colors hover:bg-cyan-500/15"
         >
           Review
         </button>
@@ -1650,7 +1651,7 @@ function ConflictHistoryCard({
             <span className="text-white/65">×</span>
             <span className="truncate">{event.callsignB}</span>
           </div>
-          <div className="mt-1 flex items-center gap-2 text-[10px] text-white/45">
+          <div className="mt-1 flex items-center gap-2 text-[11px] text-white/60">
             <span>{formatConflictEventAge(event.lastSeenAt)}</span>
             <span>•</span>
             <span>{event.horizontalSeparationNm.toFixed(1)}nm</span>
@@ -1660,19 +1661,19 @@ function ConflictHistoryCard({
         </div>
         <div className="flex flex-col items-end gap-1">
           <span
-            className={`rounded-full border px-2 py-0.5 text-[10px] tracking-[0.14em] uppercase ${getSeverityTone(event.severity)}`}
+            className={`rounded-full border px-2 py-0.5 text-[11px] tracking-[0.14em] uppercase ${getSeverityTone(event.severity)}`}
           >
             {event.severity}
           </span>
         </div>
       </div>
       <div className="mt-2 flex items-center justify-between gap-2">
-        <span className="text-[10px] text-white/45">
+        <span className="text-[11px] text-white/60">
           Last seen T-{event.timeToCpaMinutes.toFixed(1)}m
         </span>
         <button
           onClick={onReview}
-          className="cursor-pointer rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-1 text-[10px] text-cyan-200 transition-colors hover:bg-cyan-500/15"
+          className="cursor-pointer rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-200 transition-colors hover:bg-cyan-500/15"
         >
           Review
         </button>

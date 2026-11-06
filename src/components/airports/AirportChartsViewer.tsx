@@ -96,7 +96,7 @@ function RunwayFilterBar({
           )}
         >
           <span>{group.label}</span>
-          <span className="text-[10px] opacity-70">{group.charts.length}</span>
+          <span className="text-[11px] opacity-70">{group.charts.length}</span>
         </button>
       ))}
     </div>
@@ -132,7 +132,7 @@ function ChartTypeTab({
       {count > 0 && (
         <span
           className={cn(
-            "flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold",
+            "flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[11px] font-semibold",
             isSelected
               ? "bg-blue-500 text-white"
               : "bg-slate-700 text-slate-300",
@@ -243,7 +243,7 @@ function ChartSidebar({
         {/* Search input */}
         <div className="border-b border-white/10 p-2">
           <div className="relative">
-            <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+            <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input
               ref={searchInputRef}
               type="text"
@@ -258,7 +258,7 @@ function ChartSidebar({
                   setSearchQuery("");
                   searchInputRef.current?.focus();
                 }}
-                className="absolute top-1/2 right-2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                className="absolute top-1/2 right-2 -translate-y-1/2 text-slate-400 hover:text-slate-300"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -269,13 +269,13 @@ function ChartSidebar({
         <div className="flex-1 overflow-y-auto p-2">
           {isSearching ? (
             <>
-              <div className="px-2 py-1.5 text-[10px] font-medium tracking-wider whitespace-nowrap text-slate-500 uppercase">
+              <div className="px-2 py-1.5 text-[11px] font-medium tracking-wider whitespace-nowrap text-slate-400 uppercase">
                 {searchResults.length} Result
                 {searchResults.length !== 1 ? "s" : ""}
               </div>
               <div className="space-y-0.5">
                 {searchResults.length === 0 ? (
-                  <div className="px-3 py-4 text-center text-xs text-slate-500">
+                  <div className="px-3 py-4 text-center text-xs text-slate-400">
                     No charts found
                   </div>
                 ) : (
@@ -295,7 +295,7 @@ function ChartSidebar({
                       )}
                     >
                       <div className="font-medium">{chart.chartName}</div>
-                      <div className="mt-0.5 text-[10px] text-slate-500">
+                      <div className="mt-0.5 text-[11px] text-slate-400">
                         {CHART_TYPES.find((t) => t.type === type)?.label ??
                           type}
                       </div>
@@ -306,7 +306,7 @@ function ChartSidebar({
             </>
           ) : (
             <>
-              <div className="px-2 py-1.5 text-[10px] font-medium tracking-wider whitespace-nowrap text-slate-500 uppercase">
+              <div className="px-2 py-1.5 text-[11px] font-medium tracking-wider whitespace-nowrap text-slate-400 uppercase">
                 {charts.length} Charts
               </div>
               <div className="space-y-0.5">
@@ -613,7 +613,7 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
               <h2 className="text-sm font-semibold text-white">
                 {icao.toUpperCase()} Charts
               </h2>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[11px] text-slate-400">
                 {totalCharts} chart{totalCharts !== 1 ? "s" : ""} available
               </p>
             </div>

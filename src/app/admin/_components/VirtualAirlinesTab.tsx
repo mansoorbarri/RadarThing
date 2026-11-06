@@ -513,7 +513,7 @@ export function VirtualAirlinesTab({
         </div>
 
         {airlines.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/10 px-4 py-12 text-center text-sm text-slate-500">
+          <div className="rounded-2xl border border-dashed border-white/10 px-4 py-12 text-center text-sm text-slate-400">
             No VAs registered yet.
           </div>
         ) : (
@@ -541,7 +541,7 @@ export function VirtualAirlinesTab({
                           {virtualAirline.name}
                         </h3>
                         <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
+                          className={`rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase ${
                             virtualAirline.approvalStatus === "pending"
                               ? "bg-amber-500/20 text-amber-300"
                               : virtualAirline.approvalStatus === "rejected"
@@ -626,7 +626,7 @@ export function VirtualAirlinesTab({
                     {tab.label}
                     {tab.count !== undefined && (
                       <span
-                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
+                        className={`rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${
                           modalTab === tab.key
                             ? "bg-cyan-500/20 text-cyan-300"
                             : "bg-white/10 text-slate-400"
@@ -688,7 +688,7 @@ export function VirtualAirlinesTab({
                         disabled={submitting}
                         className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 font-mono text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
                       />
-                      <p className="mt-1.5 text-xs text-slate-500">
+                      <p className="mt-1.5 text-xs text-slate-400">
                         Flights starting with this prefix get VA status.
                       </p>
                     </div>
@@ -711,7 +711,7 @@ export function VirtualAirlinesTab({
                       disabled={submitting}
                       className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
                     />
-                    <p className="mt-1.5 text-xs text-slate-500">
+                    <p className="mt-1.5 text-xs text-slate-400">
                       Used for the VA link in the radar sidebar.
                     </p>
                   </div>
@@ -721,7 +721,7 @@ export function VirtualAirlinesTab({
                       VA ADMIN
                     </label>
                     <div className="relative">
-                      <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                      <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
                         value={search}
@@ -742,7 +742,7 @@ export function VirtualAirlinesTab({
                             {getUserIdentifier(selectedAdmin)}
                           </div>
                         </div>
-                        <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-semibold text-cyan-300 uppercase">
+                        <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[11px] font-semibold text-cyan-300 uppercase">
                           Selected
                         </span>
                       </div>
@@ -771,7 +771,7 @@ export function VirtualAirlinesTab({
                               <div className="truncate text-sm text-white">
                                 {getDisplayHandle(user)}
                               </div>
-                              <div className="mt-0.5 truncate text-xs text-slate-500">
+                              <div className="mt-0.5 truncate text-xs text-slate-400">
                                 {getUserIdentifier(user)}
                               </div>
                             </div>
@@ -780,7 +780,7 @@ export function VirtualAirlinesTab({
                       })}
 
                       {filteredUsers.length === 0 && (
-                        <div className="px-3 py-2 text-sm text-slate-500">
+                        <div className="px-3 py-2 text-sm text-slate-400">
                           No users matched that search.
                         </div>
                       )}
@@ -903,7 +903,7 @@ export function VirtualAirlinesTab({
                               {member.discordUsername ??
                                 truncateConvexId(member.userId)}
                             </div>
-                            <div className="mt-0.5 truncate text-xs text-slate-500">
+                            <div className="mt-0.5 truncate text-xs text-slate-400">
                               {member.userId}
                             </div>
                           </div>
@@ -920,7 +920,7 @@ export function VirtualAirlinesTab({
                       ))}
 
                       {selectedMembers?.length === 0 && (
-                        <div className="rounded-lg border border-dashed border-white/10 px-4 py-8 text-center text-sm text-slate-500">
+                        <div className="rounded-lg border border-dashed border-white/10 px-4 py-8 text-center text-sm text-slate-400">
                           No pilots assigned yet.
                         </div>
                       )}
@@ -933,7 +933,7 @@ export function VirtualAirlinesTab({
                       Add Pilot
                     </h3>
                     <div className="relative">
-                      <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                      <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
                         value={memberSearch}
@@ -957,11 +957,11 @@ export function VirtualAirlinesTab({
                             <div className="truncate text-sm text-white">
                               {getDisplayHandle(user)}
                             </div>
-                            <div className="mt-0.5 truncate text-xs text-slate-500">
+                            <div className="mt-0.5 truncate text-xs text-slate-400">
                               {getUserIdentifier(user)}
                             </div>
                           </div>
-                          <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/15 px-2.5 py-1 text-[10px] font-semibold text-cyan-300 uppercase">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/15 px-2.5 py-1 text-[11px] font-semibold text-cyan-300 uppercase">
                             <UserPlus className="h-3 w-3" />
                             Add
                           </span>
@@ -969,7 +969,7 @@ export function VirtualAirlinesTab({
                       ))}
 
                       {assignableUsers.length === 0 && (
-                        <div className="rounded-lg border border-dashed border-white/10 px-4 py-6 text-center text-sm text-slate-500">
+                        <div className="rounded-lg border border-dashed border-white/10 px-4 py-6 text-center text-sm text-slate-400">
                           No eligible pilots matched. Pilots need a linked
                           Google ID before they can be assigned.
                         </div>
@@ -992,7 +992,7 @@ export function VirtualAirlinesTab({
                     </h3>
                     <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto]">
                       <div>
-                        <label className="mb-1.5 block font-mono text-[10px] text-slate-500">
+                        <label className="mb-1.5 block font-mono text-[11px] text-slate-400">
                           AIRCRAFT TYPE
                         </label>
                         <input
@@ -1011,7 +1011,7 @@ export function VirtualAirlinesTab({
                         />
                       </div>
                       <div>
-                        <label className="mb-1.5 block font-mono text-[10px] text-slate-500">
+                        <label className="mb-1.5 block font-mono text-[11px] text-slate-400">
                           IMAGE
                         </label>
                         <ImageUploader
@@ -1057,7 +1057,7 @@ export function VirtualAirlinesTab({
                         {fleetError}
                       </div>
                     )}
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs text-slate-400">
                       Uploading the same aircraft type replaces the existing
                       image.
                     </p>
@@ -1092,7 +1092,7 @@ export function VirtualAirlinesTab({
                                   <span className="rounded-md bg-cyan-500/15 px-2 py-0.5 font-mono text-xs text-cyan-300">
                                     {image.aircraftType}
                                   </span>
-                                  <span className="text-[11px] text-slate-500">
+                                  <span className="text-[11px] text-slate-400">
                                     {new Date(
                                       image.updatedAt,
                                     ).toLocaleDateString()}
@@ -1125,7 +1125,7 @@ export function VirtualAirlinesTab({
                       })}
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-dashed border-white/10 px-4 py-12 text-center text-sm text-slate-500">
+                    <div className="rounded-xl border border-dashed border-white/10 px-4 py-12 text-center text-sm text-slate-400">
                       No fleet images uploaded yet for this VA.
                     </div>
                   )}

@@ -40,3 +40,14 @@ Latest = radar round 8, website round 5, userscript round 5 (each reviewer
 stopped once every category reached 8).
 
 Screenshots: `before/` is `main`, `after/` is the final branch state.
+
+## Second loop: target 9.5
+
+Same three reviewers and 12 categories, re-scored from scratch with a stricter
+scale (8 = good with clear gaps, 9 = excellent with only minor polish, 10 =
+best-in-class). Each round's fixes are one commit; CodeRabbit reviews the PR
+after every round.
+
+| Round | Reviewed commit | Radar | Website | Userscript |
+|---|---|---|---|---|
+| 1 | `895561f` (after merging main) | 8.0 | 8.1 | 8.0 |

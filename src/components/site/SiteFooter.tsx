@@ -19,6 +19,11 @@ const FOOTER_GROUPS = [
     links: [
       { href: "/guides", label: "Guides" },
       { href: "/guides/getting-started", label: "Getting started" },
+      {
+        href: "/guides/aircraft-not-appearing",
+        label: "Flight not showing?",
+      },
+      { href: "/about", label: "About RadarThing" },
       { href: "/contact", label: "Contact" },
       {
         href: "https://discord.gg/pbQF4txdRC",
@@ -30,7 +35,6 @@ const FOOTER_GROUPS = [
   {
     heading: "Legal",
     links: [
-      { href: "/about", label: "About" },
       { href: "/privacy", label: "Privacy" },
       { href: "/cookies", label: "Cookies" },
       { href: "/terms", label: "Terms" },
@@ -60,7 +64,7 @@ export function SiteFooter({ className = "" }: { className?: string }) {
             <p className="text-xs font-semibold tracking-wider text-slate-300 uppercase">
               {group.heading}
             </p>
-            <ul className="mt-3 space-y-2 text-sm">
+            <ul className="mt-2 text-sm">
               {group.links.map((link) => (
                 <li key={link.href}>
                   {"external" in link && link.external ? (
@@ -68,7 +72,7 @@ export function SiteFooter({ className = "" }: { className?: string }) {
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-slate-400 transition-colors hover:text-white"
+                      className="inline-flex min-h-10 items-center text-slate-400 transition-colors hover:text-white"
                     >
                       {link.label}
                       <span className="sr-only"> (opens in a new tab)</span>
@@ -76,14 +80,14 @@ export function SiteFooter({ className = "" }: { className?: string }) {
                   ) : "native" in link && link.native ? (
                     <a
                       href={link.href}
-                      className="text-slate-400 transition-colors hover:text-white"
+                      className="inline-flex min-h-10 items-center text-slate-400 transition-colors hover:text-white"
                     >
                       {link.label}
                     </a>
                   ) : (
                     <Link
                       href={link.href}
-                      className="text-slate-400 transition-colors hover:text-white"
+                      className="inline-flex min-h-10 items-center text-slate-400 transition-colors hover:text-white"
                     >
                       {link.label}
                     </Link>
@@ -92,7 +96,7 @@ export function SiteFooter({ className = "" }: { className?: string }) {
               ))}
               {group.heading === "Legal" && (
                 <li>
-                  <PrivacySettingsButton className="cursor-pointer text-slate-400 transition-colors hover:text-white" />
+                  <PrivacySettingsButton className="inline-flex min-h-10 cursor-pointer items-center text-slate-400 transition-colors hover:text-white" />
                 </li>
               )}
             </ul>

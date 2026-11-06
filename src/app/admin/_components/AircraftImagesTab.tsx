@@ -1018,7 +1018,7 @@ export function AircraftImagesTab({
             : `Showing ${pageStart}-${pageEnd} of ${currentTabImages.length} ${imageSubTab} images`}
         </p>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-500">Per page</span>
+          <span className="text-sm text-slate-400">Per page</span>
           <Select
             value={String(pageSize)}
             onValueChange={(value) =>
@@ -1224,7 +1224,7 @@ export function AircraftImagesTab({
                         isMilitary={image.isMilitary}
                       />
                     </div>
-                    <p className="mb-1 text-xs text-slate-500">
+                    <p className="mb-1 text-xs text-slate-400">
                       Uploaded by{" "}
                       <UploaderLink
                         image={image}
@@ -1335,7 +1335,7 @@ export function AircraftImagesTab({
                       />
                       <CheckCircle className="ml-auto h-4 w-4 text-emerald-400" />
                     </div>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-slate-400">
                       Uploaded by{" "}
                       <UploaderLink
                         image={image}
@@ -1358,7 +1358,7 @@ export function AircraftImagesTab({
 
       {currentTabImages.length > 0 && totalPages > 1 && (
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-400">
             Page {currentPage} of {totalPages}
           </p>
           <div className="flex items-center gap-2">

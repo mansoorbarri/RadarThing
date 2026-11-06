@@ -337,13 +337,13 @@ export function AirportActivityPanel({
             <h2 className="mt-2 text-xl font-semibold text-white">
               Live airport pressure board
             </h2>
-            <p className="mt-1 text-sm leading-6 text-white/45">
+            <p className="mt-1 text-sm leading-6 text-white/60">
               Find the busy fields, ATC-staffed airports, and hot routes, then
               jump straight into the existing airport workflow.
             </p>
           </div>
           {isAirportDataLoading && (
-            <div className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-2.5 py-1 font-mono text-[10px] tracking-wider text-cyan-200 uppercase">
+            <div className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-2.5 py-1 font-mono text-[11px] tracking-wider text-cyan-200 uppercase">
               Loading names
             </div>
           )}
@@ -372,20 +372,26 @@ export function AirportActivityPanel({
 
         <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-3">
           <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cyan-400/60" />
+            <Search
+              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cyan-400/60"
+              aria-hidden="true"
+            />
             <input
               type="text"
+              aria-label="Search airports, controllers or routes"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search airport, controller, or route..."
+              placeholder="Search airport, controller, or route…"
               className="w-full rounded-xl border border-white/10 bg-black/35 py-2.5 pr-10 pl-9 text-sm text-white transition-colors outline-none placeholder:text-white/65 focus:border-cyan-400/40"
             />
             {searchTerm && (
               <button
+                type="button"
+                aria-label="Clear search"
                 onClick={() => setSearchTerm("")}
                 className="absolute top-1/2 right-2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/8 hover:text-white/75"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -402,7 +408,7 @@ export function AirportActivityPanel({
               <button
                 key={mode}
                 onClick={() => setSortMode(mode)}
-                className={`cursor-pointer rounded-full border px-3 py-1.5 font-mono text-[10px] tracking-[0.18em] uppercase transition-colors ${
+                className={`cursor-pointer rounded-full border px-3 py-1.5 font-mono text-[11px] tracking-[0.18em] uppercase transition-colors ${
                   sortMode === mode
                     ? "border-cyan-400/40 bg-cyan-500/14 text-cyan-100"
                     : "border-white/10 bg-white/[0.03] text-white/65 hover:border-white/20 hover:text-white/85"
@@ -414,7 +420,7 @@ export function AirportActivityPanel({
 
             <button
               onClick={() => setStaffedOnly((prev) => !prev)}
-              className={`cursor-pointer rounded-full border px-3 py-1.5 font-mono text-[10px] tracking-[0.18em] uppercase transition-colors ${
+              className={`cursor-pointer rounded-full border px-3 py-1.5 font-mono text-[11px] tracking-[0.18em] uppercase transition-colors ${
                 staffedOnly
                   ? "border-emerald-400/40 bg-emerald-500/14 text-emerald-100"
                   : "border-white/10 bg-white/[0.03] text-white/65 hover:border-white/20 hover:text-white/85"
@@ -577,7 +583,7 @@ function SelectedAirportSpotlight({
     <div className="rounded-[1.4rem] border border-cyan-400/20 bg-[linear-gradient(145deg,rgba(6,18,28,0.96),rgba(4,9,16,0.98))] p-4 shadow-[0_12px_40px_rgba(0,0,0,0.28)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="font-mono text-[10px] tracking-[0.24em] text-cyan-400 uppercase">
+          <div className="font-mono text-[11px] tracking-[0.24em] text-cyan-400 uppercase">
             Selected Airport
           </div>
           <div className="mt-2 flex items-center gap-2">
@@ -585,18 +591,18 @@ function SelectedAirportSpotlight({
               {airport.icao}
             </span>
             {airport.controllerCount > 0 && (
-              <span className="rounded-full border border-emerald-400/20 bg-emerald-500/12 px-2 py-0.5 font-mono text-[10px] tracking-wider text-emerald-200 uppercase">
+              <span className="rounded-full border border-emerald-400/20 bg-emerald-500/12 px-2 py-0.5 font-mono text-[11px] tracking-wider text-emerald-200 uppercase">
                 {airport.controllerCount} ATC
               </span>
             )}
           </div>
-          <div className="mt-1 text-sm text-white/45">
+          <div className="mt-1 text-sm text-white/60">
             {formatAirportName(airport.name, airport.icao)}
           </div>
         </div>
         <button
           onClick={onOpen}
-          className="cursor-pointer rounded-full border border-cyan-400/25 bg-cyan-500/12 px-3 py-1.5 font-mono text-[10px] tracking-[0.18em] text-cyan-100 uppercase transition-colors hover:bg-cyan-500/18"
+          className="cursor-pointer rounded-full border border-cyan-400/25 bg-cyan-500/12 px-3 py-1.5 font-mono text-[11px] tracking-[0.18em] text-cyan-100 uppercase transition-colors hover:bg-cyan-500/18"
         >
           Center Map
         </button>
@@ -617,7 +623,7 @@ function SelectedAirportSpotlight({
               <span
                 key={`${airport.icao}-spotlight-${position}-${index}`}
                 title={airport.controllerNames[index]}
-                className="rounded-full border border-white/10 bg-black/30 px-2 py-0.5 font-mono text-[10px] text-white/70"
+                className="rounded-full border border-white/10 bg-black/30 px-2 py-0.5 font-mono text-[11px] text-white/70"
               >
                 {position}
               </span>
@@ -647,7 +653,7 @@ function SectionHeader({
         <div className="mt-1 text-xs leading-5 text-white/60">{subtitle}</div>
       </div>
       {badge && (
-        <div className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[10px] tracking-[0.16em] text-white/45 uppercase">
+        <div className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[11px] tracking-[0.16em] text-white/60 uppercase">
           {badge}
         </div>
       )}
@@ -713,7 +719,7 @@ function AirportRow({
               {airport.icao}
             </span>
             {airport.controllerCount > 0 && (
-              <span className="rounded-full border border-emerald-400/20 bg-emerald-500/12 px-2 py-0.5 font-mono text-[10px] tracking-wider text-emerald-200 uppercase">
+              <span className="rounded-full border border-emerald-400/20 bg-emerald-500/12 px-2 py-0.5 font-mono text-[11px] tracking-wider text-emerald-200 uppercase">
                 Staffed
               </span>
             )}
@@ -727,7 +733,7 @@ function AirportRow({
           <div className="font-mono text-lg font-semibold text-cyan-200">
             {emphasisValue}
           </div>
-          <div className="text-[10px] tracking-[0.18em] text-white/65 uppercase">
+          <div className="text-[11px] tracking-[0.18em] text-white/65 uppercase">
             {emphasisLabel}
           </div>
         </div>
@@ -784,7 +790,7 @@ function StaffedAirportRow({
             {formatAirportName(airport.name, airport.icao)}
           </div>
         </div>
-        <div className="rounded-full border border-emerald-400/20 bg-emerald-500/12 px-2.5 py-1 font-mono text-[10px] tracking-wider text-emerald-200 uppercase">
+        <div className="rounded-full border border-emerald-400/20 bg-emerald-500/12 px-2.5 py-1 font-mono text-[11px] tracking-wider text-emerald-200 uppercase">
           {airport.controllerCount} online
         </div>
       </div>
@@ -800,7 +806,7 @@ function StaffedAirportRow({
           <span
             key={`${airport.icao}-${position}-${index}`}
             title={airport.controllerNames[index]}
-            className="rounded-full border border-white/10 bg-black/30 px-2 py-1 font-mono text-[10px] text-white/70"
+            className="rounded-full border border-white/10 bg-black/30 px-2 py-1 font-mono text-[11px] text-white/70"
           >
             {position}
           </span>
@@ -834,7 +840,7 @@ function RouteRow({
           </div>
         </div>
         <div className="text-right">
-          <div className="rounded-full border border-amber-400/20 bg-amber-500/12 px-2.5 py-1 font-mono text-[10px] tracking-wider text-amber-200 uppercase">
+          <div className="rounded-full border border-amber-400/20 bg-amber-500/12 px-2.5 py-1 font-mono text-[11px] tracking-wider text-amber-200 uppercase">
             #{index + 1}
           </div>
           <div className="mt-1 font-mono text-sm text-white">
@@ -846,13 +852,13 @@ function RouteRow({
       <div className="mt-3 flex gap-2">
         <button
           onClick={() => onSelectAirport(route.departure)}
-          className="cursor-pointer rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1.5 font-mono text-[10px] tracking-wider text-cyan-200 uppercase transition-colors hover:bg-cyan-500/16"
+          className="cursor-pointer rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1.5 font-mono text-[11px] tracking-wider text-cyan-200 uppercase transition-colors hover:bg-cyan-500/16"
         >
           Open {route.departure}
         </button>
         <button
           onClick={() => onSelectAirport(route.arrival)}
-          className="cursor-pointer rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 font-mono text-[10px] tracking-wider text-white/70 uppercase transition-colors hover:bg-white/[0.08]"
+          className="cursor-pointer rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 font-mono text-[11px] tracking-wider text-white/70 uppercase transition-colors hover:bg-white/[0.08]"
         >
           Open {route.arrival}
         </button>
@@ -874,7 +880,7 @@ function ProgressRow({
 }) {
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-[10px] tracking-[0.14em] text-white/28 uppercase">
+      <div className="mb-1 flex items-center justify-between text-[11px] tracking-[0.14em] text-white/28 uppercase">
         <span>{label}</span>
         <span>{value}</span>
       </div>
@@ -891,7 +897,7 @@ function ProgressRow({
 function MetricPill({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-xl border border-white/10 bg-black/20 px-2.5 py-2">
-      <div className="font-mono text-[10px] tracking-[0.16em] text-white/28 uppercase">
+      <div className="font-mono text-[11px] tracking-[0.16em] text-white/28 uppercase">
         {label}
       </div>
       <div className="mt-1 font-mono text-sm text-white">{value}</div>

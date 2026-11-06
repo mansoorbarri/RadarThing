@@ -99,7 +99,7 @@ export async function GET(request: NextRequest, context: any) {
       if (!allowance.allowed) {
         return NextResponse.json(
           {
-            error: `Free accounts can open charts for ${allowance.limit} airports per day. Upgrade to PRO for unlimited charts.`,
+            error: `Free accounts can open charts for ${allowance.limit} airports per day. Upgrade to Pro for unlimited charts.`,
             code: "FREE_LIMIT_REACHED",
           },
           { status: 403 },

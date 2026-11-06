@@ -612,10 +612,10 @@ export function RadarGuide({
                 <Icon size={19} strokeWidth={1.8} />
               </div>
               <div>
-                <p className="font-mono text-[10px] tracking-[0.22em] text-cyan-300 uppercase">
+                <p className="font-mono text-[11px] tracking-[0.22em] text-cyan-300 uppercase">
                   {step.eyebrow}
                 </p>
-                <p className="mt-1 font-mono text-[10px] text-slate-500">
+                <p className="mt-1 font-mono text-[11px] text-slate-400">
                   {String(stepIndex + 1).padStart(2, "0")} /{" "}
                   {String(STEPS.length).padStart(2, "0")}
                 </p>
@@ -624,7 +624,7 @@ export function RadarGuide({
             <button
               type="button"
               onClick={() => void onFinish()}
-              className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
               aria-label="Skip tour"
               title="Skip tour"
             >
@@ -660,7 +660,7 @@ export function RadarGuide({
 
           {step.task && (
             <div
-              className={`mt-3 flex items-center gap-2 rounded-lg border px-3 py-2 font-mono text-[10px] tracking-[0.08em] uppercase ${isStepComplete ? "border-emerald-400/25 bg-emerald-400/8 text-emerald-300" : "border-amber-300/25 bg-amber-300/8 text-amber-200"}`}
+              className={`mt-3 flex items-center gap-2 rounded-lg border px-3 py-2 font-mono text-[11px] tracking-[0.08em] uppercase ${isStepComplete ? "border-emerald-400/25 bg-emerald-400/8 text-emerald-300" : "border-amber-300/25 bg-amber-300/8 text-amber-200"}`}
               role="status"
             >
               <span

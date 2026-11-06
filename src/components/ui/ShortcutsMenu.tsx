@@ -12,6 +12,17 @@ interface ShortcutGroup {
 
 const shortcutGroups: ShortcutGroup[] = [
   {
+    title: "Keyboard",
+    shortcuts: [
+      { keys: "/", description: "Jump to search." },
+      { keys: "?", description: "Open this list of shortcuts." },
+      {
+        keys: "Esc",
+        description: "Close the open panel or clear the selection.",
+      },
+    ],
+  },
+  {
     title: "Mouse",
     shortcuts: [
       {

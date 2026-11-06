@@ -187,7 +187,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     } else if (event.key === "Enter") {
       // Enter picks the highlighted option, or the top match while typing.
       const option =
-        activeIndex >= 0 ? options[activeIndex] : trimmed ? options[0] : null;
+        // The list can shrink under the highlight as live traffic changes, so
+        // fall back to the top match rather than doing nothing.
+        (activeIndex >= 0 ? options[activeIndex] : undefined) ??
+        (trimmed ? options[0] : null);
       if (option) {
         event.preventDefault();
         option.select();
@@ -253,11 +256,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           aria-controls={listboxId}
           aria-autocomplete="list"
           aria-activedescendant={
-            activeIndex >= 0 ? optionId(activeIndex) : undefined
+            activeIndex >= 0 && activeIndex < options.length
+              ? optionId(activeIndex)
+              : undefined
           }
           autoComplete="off"
           enterKeyHint="search"
-          placeholder="Search flight, pilot, or airport..."
+          placeholder="Search flight, pilot, or airport…"
           value={searchTerm}
           onChange={(e) => {
             setSearchTerm(e.target.value);

@@ -102,7 +102,7 @@ export function getTempProExpirationFromValue(
 ) {
   const option = TEMP_PRO_DURATION_OPTIONS.find((item) => item.value === value);
   if (!option) {
-    throw new Error(`Unsupported temporary PRO duration: ${value}`);
+    throw new Error(`Unsupported temporary Pro duration: ${value}`);
   }
 
   return now + option.durationMs;

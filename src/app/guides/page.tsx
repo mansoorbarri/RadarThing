@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { GuideSearch } from "~/components/site/GuideSearch";
 import { getGuidesByCategory, guides } from "~/lib/guides";
 
 export const metadata: Metadata = {
@@ -20,21 +21,32 @@ export default function GuidesPage() {
       <h1 className="max-w-2xl text-4xl font-semibold tracking-tight md:text-6xl">
         A clearer view of your next flight.
       </h1>
-      <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-400">
+      <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
         {guides.length} guides for GeoFS pilots. Set up your tracker, learn the
         radar, and fly more realistic flights with practical explanations of
         weather, charts, navigation, and radio calls.
       </p>
 
+      <GuideSearch
+        guides={categories.flatMap((category) =>
+          category.guides.map((guide) => ({
+            slug: guide.slug,
+            title: guide.title,
+            description: guide.description,
+            category: category.title,
+          })),
+        )}
+      />
+
       <nav
         aria-label="Guide sections"
-        className="mt-10 flex flex-wrap gap-3 text-sm"
+        className="mt-8 flex flex-wrap gap-3 text-sm"
       >
         {categories.map((category) => (
           <a
             key={category.id}
             href={`#${category.id}`}
-            className="border border-white/15 px-4 py-2 text-slate-300 transition-colors hover:border-cyan-300/50 hover:text-cyan-200"
+            className="inline-flex min-h-10 items-center border border-white/15 px-4 py-2 text-slate-300 transition-colors hover:border-cyan-300/50 hover:text-cyan-200"
           >
             {category.title}
           </a>

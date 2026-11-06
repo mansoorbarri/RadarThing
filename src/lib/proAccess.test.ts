@@ -8,7 +8,7 @@ import {
 
 const now = 1_800_000_000_000;
 
-test("an active no-card trial grants PRO until it ends", () => {
+test("an active no-card trial grants Pro until it ends", () => {
   const user = {
     role: "FREE" as const,
     trialStartedAt: now,

@@ -8,15 +8,15 @@ import { createCheckoutSession } from "~/app/actions/create-checkout";
 import { createPortalSession } from "~/app/actions/create-portal";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useProStatus } from "~/hooks/useProStatus";
-import { Check, Zap, ArrowLeft } from "lucide-react";
+import { Check, Zap } from "lucide-react";
 import { toast } from "sonner";
-import Image from "next/image";
 import Link from "next/link";
 import { SiteFooter } from "~/components/site/SiteFooter";
 import { SiteHeader } from "~/components/site/SiteHeader";
 import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 import { Analytics } from "~/lib/analytics";
 import { FREE_RECENT_FLIGHTS_LIMIT } from "~/lib/flightHistory";
+import { planRows } from "~/lib/plans";
 import { FREE_DAILY_ALLOWANCE } from "~/lib/freeAllowance";
 import { MIN_STRIPE_TRIAL_MS } from "~/lib/proAccess";
 
@@ -144,12 +144,12 @@ export default function PricingPage() {
       Math.ceil((trialEndsAt - Date.now()) / (24 * 60 * 60 * 1000)),
     );
     return (
-      <div className="relative min-h-screen overflow-hidden bg-[#03070d] text-white">
+      <div className="bg-site relative min-h-screen overflow-hidden text-white">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute top-20 -left-24 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
           <div className="absolute -right-28 bottom-10 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
         </div>
-        <Header />
+        <SiteHeader />
         <main
           id="main-content"
           className="relative mx-auto max-w-2xl px-6 py-24"
@@ -174,9 +174,10 @@ export default function PricingPage() {
             <button
               onClick={() => handleUpgrade("pricing_page_trial_active")}
               disabled={loading}
+              aria-busy={loading}
               className="cursor-pointer rounded-xl bg-cyan-400 px-6 py-3 text-sm font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:bg-cyan-300 disabled:opacity-50"
             >
-              {loading ? "Loading..." : "Keep Pro for $3/month"}
+              {loading ? "Opening checkout…" : "Keep Pro for $3/month"}
             </button>
           </div>
         </main>
@@ -187,12 +188,12 @@ export default function PricingPage() {
 
   if (!isStatusPending && isProUser) {
     return (
-      <div className="relative min-h-screen overflow-hidden bg-[#03070d] text-white">
+      <div className="bg-site relative min-h-screen overflow-hidden text-white">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute top-20 -left-24 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
           <div className="absolute -right-28 bottom-10 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
         </div>
-        <Header />
+        <SiteHeader />
         <main
           id="main-content"
           className="relative mx-auto max-w-2xl px-6 py-24"
@@ -214,9 +215,10 @@ export default function PricingPage() {
             <button
               onClick={handleManageSubscription}
               disabled={loading}
+              aria-busy={loading}
               className="cursor-pointer rounded-xl border border-white/20 bg-white/8 px-6 py-3 text-sm font-semibold text-white transition-all hover:border-cyan-300/40 hover:bg-white/14 disabled:opacity-50"
             >
-              {loading ? "Loading..." : "Manage Subscription"}
+              {loading ? "Opening billing…" : "Manage subscription"}
             </button>
           </div>
         </main>
@@ -226,7 +228,7 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#03070d] text-white">
+    <div className="bg-site relative min-h-screen overflow-hidden text-white">
       <div className="pointer-events-none absolute inset-0">
         <div
           className="absolute inset-0 opacity-[0.06]"
@@ -243,7 +245,7 @@ export default function PricingPage() {
         <div className="absolute right-[-120px] bottom-[-60px] h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
       </div>
 
-      <Header />
+      <SiteHeader />
 
       <main
         id="main-content"
@@ -254,7 +256,7 @@ export default function PricingPage() {
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-cyan-400/35 bg-cyan-400/10 px-3 py-1.5">
               <Zap className="h-3.5 w-3.5 text-cyan-300" />
               <span className="font-mono text-[11px] tracking-wider text-cyan-200 uppercase">
-                PRO FLIGHT DECK
+                Pro flight deck
               </span>
             </div>
             <h1 className="max-w-xl text-4xl leading-tight font-bold text-white md:text-5xl">
@@ -364,13 +366,17 @@ export default function PricingPage() {
                   <button
                     onClick={() => handleStartTrial("pricing_page")}
                     disabled={loading}
+                    aria-busy={loading}
                     className="mt-6 w-full cursor-pointer rounded-xl bg-cyan-400 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {loading ? "Loading..." : "Start 7-day free trial"}
+                    {loading
+                      ? "Starting your trial…"
+                      : "Start 7-day free trial"}
                   </button>
                   <button
                     onClick={() => handleUpgrade("pricing_page_card_trial")}
                     disabled={loading}
+                    aria-busy={loading}
                     className="mt-3 w-full cursor-pointer text-center text-xs text-slate-300 underline-offset-2 hover:text-white hover:underline disabled:opacity-60"
                   >
                     Or add a card now (still 7 days free)
@@ -383,9 +389,10 @@ export default function PricingPage() {
                   <button
                     onClick={() => handleUpgrade("pricing_page")}
                     disabled={loading}
+                    aria-busy={loading}
                     className="mt-6 w-full cursor-pointer rounded-xl bg-cyan-400 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {loading ? "Loading..." : "Subscribe to Pro"}
+                    {loading ? "Opening checkout…" : "Subscribe to Pro"}
                   </button>
                   <p className="mt-4 text-center text-[11px] text-slate-300/85">
                     Secure checkout by Stripe
@@ -394,7 +401,7 @@ export default function PricingPage() {
               )}
 
               <div className="mt-6 space-y-2 rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="font-mono text-[10px] tracking-[0.14em] text-slate-400 uppercase">
+                <p className="font-mono text-[11px] tracking-[0.14em] text-slate-400 uppercase">
                   Included in Pro
                 </p>
                 <ul className="space-y-2 text-sm text-slate-200">
@@ -430,47 +437,6 @@ export default function PricingPage() {
   );
 }
 
-const planRows: { feature: string; free: string; pro: string }[] = [
-  {
-    feature: "Live radar and flight tracking",
-    free: "Included",
-    pro: "Included",
-  },
-  {
-    feature: "Flight history on pilot profiles",
-    free: `Last ${FREE_RECENT_FLIGHTS_LIMIT} flights`,
-    pro: "Full archive",
-  },
-  {
-    feature: "Flight replay and share links",
-    free: "Included",
-    pro: "Included",
-  },
-  {
-    feature: "Airport METARs and precipitation",
-    free: "Included",
-    pro: "Included",
-  },
-  {
-    feature: "Airport charts",
-    free: `${FREE_DAILY_ALLOWANCE.charts} US airports per day`,
-    pro: "Unlimited, worldwide",
-  },
-  {
-    feature: "AIRMETs, SIGMETs, NOTAMs, and D-ATIS",
-    free: "—",
-    pro: "Included",
-  },
-  {
-    feature: "Radar Mode, trails, and track lines",
-    free: "—",
-    pro: "Included",
-  },
-  { feature: "Conflict alerts", free: "—", pro: "Included" },
-  { feature: "Shareable flight card images", free: "—", pro: "Included" },
-  { feature: "Advertising", free: "Shown on some pages", pro: "None" },
-];
-
 function PlanComparison() {
   return (
     <section aria-labelledby="compare-plans" className="mt-20">
@@ -481,7 +447,7 @@ function PlanComparison() {
         Compare plans
       </h2>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
-        Tracking your flights and watching live traffic will always be free. PRO
+        Tracking your flights and watching live traffic will always be free. Pro
         adds deeper weather, charts, and controller tools for pilots who want
         more.
       </p>
@@ -496,7 +462,7 @@ function PlanComparison() {
                 Free
               </th>
               <th scope="col" className="px-5 py-3 font-medium text-cyan-200">
-                PRO
+                Pro
               </th>
             </tr>
           </thead>
@@ -525,7 +491,7 @@ function PlanComparison() {
 
 const faqs: { question: string; answer: string }[] = [
   {
-    question: "Do I need PRO to appear on the radar?",
+    question: "Do I need Pro to appear on the radar?",
     answer:
       "No. Anyone with the RadarThing userscript can transmit their GeoFS flight and appear on the live radar for free, and anyone can watch traffic without an account.",
   },
@@ -545,7 +511,7 @@ const faqs: { question: string; answer: string }[] = [
   },
   {
     question: "Which airports have charts?",
-    answer: `Free accounts can open charts for up to ${FREE_DAILY_ALLOWANCE.charts} US airports per UTC day, and reopening an airport you have already viewed that day does not count again. PRO removes the limit and includes airports worldwide. Not every airport has every procedure yet.`,
+    answer: `Free accounts can open charts for up to ${FREE_DAILY_ALLOWANCE.charts} US airports per UTC day, and reopening an airport you have already viewed that day does not count again. Pro removes the limit and includes airports worldwide. Not every airport has every procedure yet.`,
   },
   {
     question: "Where does my subscription go?",
@@ -605,7 +571,7 @@ function SignalCard({
 }) {
   return (
     <div className="rounded-2xl border border-white/12 bg-white/[0.04] p-4 backdrop-blur-xl">
-      <p className="font-mono text-[10px] tracking-wider text-slate-400 uppercase">
+      <p className="font-mono text-[11px] tracking-wider text-slate-400 uppercase">
         {title}
       </p>
       <p className="mt-2 text-2xl font-bold text-white">{value}</p>
@@ -640,8 +606,4 @@ function FeatureSection({
       </ul>
     </div>
   );
-}
-
-function Header() {
-  return <SiteHeader />;
 }

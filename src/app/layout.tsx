@@ -65,8 +65,10 @@ export default function RootLayout({
         baseTheme: dark,
         variables: {
           colorPrimary: "#22d3ee", // text-cyan-400
-          colorBackground: "#010b10", // Your app background
-          colorText: "#22d3ee",
+          colorBackground: "#02090d", // matches --color-site
+          // Body text stays white for readability; cyan is the accent.
+          colorText: "#f1f5f9",
+          colorTextSecondary: "#cbd5e1",
           colorInputBackground: "#000000",
           colorInputText: "#ffffff",
         },

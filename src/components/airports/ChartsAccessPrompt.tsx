@@ -47,7 +47,7 @@ export function ChartsAccessPrompt({
           }
           className={buttonClassName}
         >
-          {canStartTrial ? "Try PRO free for 7 days" : "Upgrade to PRO"}
+          {canStartTrial ? "Try Pro free for 7 days" : "Upgrade to Pro"}
         </Link>
       )}
     </div>

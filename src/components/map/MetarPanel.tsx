@@ -14,6 +14,7 @@ interface MetarPanelProps {
   onChange: (value: string) => void;
   selectedAirportIcao?: string | null;
   metarText?: string | null;
+  metarStatus?: "idle" | "loading" | "ready" | "not-found" | "error";
   atisText?: string | null;
   atisCode?: string | null;
   notams?: Notam[] | null;
@@ -26,6 +27,7 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
   onChange,
   selectedAirportIcao,
   metarText,
+  metarStatus = "idle",
   atisText,
   atisCode,
   notams,
@@ -71,7 +73,7 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
                     feature: "notams",
                   })
                 }
-                className="ml-auto rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase hover:from-amber-400 hover:to-orange-400"
+                className="ml-auto rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[11px] font-bold tracking-wide text-white uppercase hover:from-amber-400 hover:to-orange-400"
               >
                 TRIAL
               </Link>
@@ -133,7 +135,7 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
                     feature: "atis",
                   })
                 }
-                className="ml-auto rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase hover:from-amber-400 hover:to-orange-400"
+                className="ml-auto rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[11px] font-bold tracking-wide text-white uppercase hover:from-amber-400 hover:to-orange-400"
               >
                 TRIAL
               </Link>
@@ -153,6 +155,18 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
       )}
 
       {/* METAR Panel */}
+      {effectiveIcao.length >= 4 && !metarText && metarStatus !== "idle" && (
+        <p
+          role="status"
+          className={`max-w-[300px] rounded-lg border bg-black/85 px-3 py-2 text-[12px] ${metarStatus === "error" ? "border-red-400/40 text-red-300" : "border-cyan-300/30 text-cyan-200"}`}
+        >
+          {metarStatus === "loading"
+            ? `Loading METAR for ${effectiveIcao}…`
+            : metarStatus === "not-found"
+              ? `No METAR available for ${effectiveIcao}. Check the ICAO code.`
+              : `Couldn't load the METAR for ${effectiveIcao}. It will retry in a few minutes.`}
+        </p>
+      )}
       {metarText && (
         <div className="max-w-[300px] rounded-lg border border-cyan-300/30 bg-gradient-to-br from-black/85 to-cyan-950/90 p-3 text-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.2)]">
           <div
@@ -160,7 +174,7 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
             {...buttonLikeProps(() => setMetarExpanded(!metarExpanded))}
             aria-expanded={metarExpanded}
           >
-            <strong className="text-cyan-300">METAR</strong>
+            <strong className="text-cyan-300">METAR {effectiveIcao}</strong>
             {metarExpanded ? (
               <ChevronUp className="ml-auto h-4 w-4 text-cyan-400" />
             ) : (
@@ -178,14 +192,33 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
 
       {/* METAR airport input */}
       <div className="flex flex-row items-center gap-2 rounded-md border border-cyan-300/30 bg-black/80 p-2 shadow-[0_0_6px_rgba(0,255,255,0.15)]">
-        <span className="font-medium text-cyan-400">METAR</span>
+        <label htmlFor="metar-icao-input" className="font-medium text-cyan-400">
+          METAR
+        </label>
         <input
+          id="metar-icao-input"
           type="text"
           value={icaoInput}
-          onChange={(e) => onChange(e.target.value.toUpperCase())}
+          onChange={(e) =>
+            onChange(
+              e.target.value
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, "")
+                .slice(0, 4),
+            )
+          }
+          maxLength={4}
+          inputMode="text"
+          autoCapitalize="characters"
+          autoComplete="off"
+          spellCheck={false}
           placeholder="e.g. KJFK"
-          className="flex-1 rounded border border-cyan-300/40 bg-transparent px-2 py-[5px] text-[13px] text-cyan-400 transition-all outline-none focus:border-cyan-400 focus:bg-cyan-400/10"
+          aria-describedby="metar-icao-hint"
+          className="w-24 flex-1 rounded border border-cyan-300/40 bg-transparent px-2 py-[5px] text-[13px] text-cyan-300 transition-all outline-none placeholder:text-cyan-200/50 focus:border-cyan-300 focus:bg-cyan-400/10 focus-visible:ring-2 focus-visible:ring-cyan-300"
         />
+        <span id="metar-icao-hint" className="sr-only">
+          4-letter ICAO airport code
+        </span>
       </div>
     </div>
   );

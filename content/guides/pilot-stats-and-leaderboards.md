@@ -29,7 +29,7 @@ A flight is excluded from statistics when:
 - **It is a Concorde or a recognised military or high-performance aircraft and its maximum speed is above 1,333 knots.** These aircraft can legitimately fly faster than 750 knots, so they have a higher limit.
 - **It has been reviewed and judged invalid.** RadarThing may exclude a flight that is clearly unrealistic, such as one with impossible jumps in position.
 
-An excluded flight still appears in your flight history and can still be replayed. It is simply skipped when your totals are calculated. You can read the same rules at any time from **Stats Rules** in the radar's control dock.
+An excluded flight still appears in your flight history and can still be replayed. It is simply skipped when your totals are calculated. You can read the same rules at any time from **Stats rules** in the radar's control dock.
 
 Excluded flights affect:
 

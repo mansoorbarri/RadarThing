@@ -63,7 +63,7 @@ export function MostTrackedPanel({ flights, onTrack }: Props) {
             className="animate-fade-in-up flex w-full cursor-pointer items-center gap-3 px-4 py-2 transition-colors hover:bg-white/5 disabled:cursor-default disabled:opacity-40"
           >
             {/* Rank */}
-            <span className="w-5 text-right font-mono text-xs font-bold text-slate-500">
+            <span className="w-5 text-right font-mono text-xs font-bold text-slate-400">
               {index + 1}
             </span>
 
@@ -73,7 +73,7 @@ export function MostTrackedPanel({ flights, onTrack }: Props) {
                 {flight.aircraft?.flightNo || flight.callsign}
               </div>
               {flight.aircraft && (
-                <div className="truncate text-[10px] text-slate-500">
+                <div className="truncate text-[11px] text-slate-400">
                   {flight.aircraft.departure || "UNK"} →{" "}
                   {flight.aircraft.arrival || "UNK"}
                 </div>

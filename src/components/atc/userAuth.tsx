@@ -64,7 +64,6 @@ export const UserAuth = ({
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          aria-haspopup="menu"
           aria-expanded={open}
           aria-label="Account menu"
           className="flex h-full cursor-pointer items-center justify-center rounded-full leading-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"

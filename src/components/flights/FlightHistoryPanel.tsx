@@ -99,7 +99,7 @@ function FlightMetadataRow({ flight }: { flight: FlightHistoryPanelFlight }) {
   const maxAltitude = formatMaxAltitude(flight.maxAltitude);
 
   return (
-    <div className="flex flex-col gap-1 text-xs text-slate-500 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+    <div className="flex flex-col gap-1 text-xs text-slate-400 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
       <span className="flex items-center gap-1">
         <Calendar className="h-3 w-3" />
         {formatDate(flight.startTime)}
@@ -176,7 +176,9 @@ export function FlightHistoryPanel({
       }
       onGenerateFlightCard(fullFlight);
     } catch {
-      toast.error("Failed to load flight route. Please try again.");
+      toast.error(
+        "We couldn't load this flight's route. Try again in a moment.",
+      );
     } finally {
       setLoadingRouteId(null);
     }
@@ -310,7 +312,7 @@ export function FlightHistoryPanel({
               {FLIGHT_HISTORY_PAGE_SIZE} per page
             </span>
             <ChevronDown
-              className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+              className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
             />
           </div>
         </button>
@@ -346,7 +348,7 @@ export function FlightHistoryPanel({
           >
             <div className="pt-1">
               <div className="relative">
-                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   value={searchQuery}
@@ -357,7 +359,7 @@ export function FlightHistoryPanel({
                 {hasSearchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
-                    className="absolute top-1/2 right-3 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-white"
+                    className="absolute top-1/2 right-3 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white"
                     aria-label="Clear search"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -377,7 +379,7 @@ export function FlightHistoryPanel({
                         ? "No matching flights"
                         : `Showing ${pageStart}-${pageEnd} of ${totalMatchingFlights} matching flights`}
                     </p>
-                    <p className="mt-1 font-mono text-[11px] tracking-wide text-slate-500 uppercase">
+                    <p className="mt-1 font-mono text-[11px] tracking-wide text-slate-400 uppercase">
                       {canAccessFullHistory
                         ? `${totalRecordedFlights} total recorded flights`
                         : `Free includes the latest ${FREE_RECENT_FLIGHTS_LIMIT} flights`}
@@ -446,7 +448,7 @@ export function FlightHistoryPanel({
                         {selectedChallengeFlights.map((flight) => (
                           <span
                             key={flight.id}
-                            className="rounded-full border border-white/10 bg-black/20 px-3 py-1 font-mono text-[10px] tracking-wider text-cyan-100"
+                            className="rounded-full border border-white/10 bg-black/20 px-3 py-1 font-mono text-[11px] tracking-wider text-cyan-100"
                           >
                             {(flight.depICAO ?? "???") +
                               "-" +
@@ -458,7 +460,7 @@ export function FlightHistoryPanel({
 
                       <div className="space-y-3">
                         <label className="block">
-                          <span className="mb-2 block font-mono text-[10px] tracking-wider text-cyan-200 uppercase">
+                          <span className="mb-2 block font-mono text-[11px] tracking-wider text-cyan-200 uppercase">
                             Challenge
                           </span>
                           <select
@@ -477,7 +479,7 @@ export function FlightHistoryPanel({
                         </label>
 
                         <label className="block">
-                          <span className="mb-2 block font-mono text-[10px] tracking-wider text-cyan-200 uppercase">
+                          <span className="mb-2 block font-mono text-[11px] tracking-wider text-cyan-200 uppercase">
                             Note for admins
                           </span>
                           <textarea
@@ -536,19 +538,19 @@ export function FlightHistoryPanel({
                                 <span className="font-mono text-sm font-bold text-white">
                                   {flight.depICAO || "???"}
                                 </span>
-                                <Route className="h-3 w-3 text-slate-500" />
+                                <Route className="h-3 w-3 text-slate-400" />
                                 <span className="font-mono text-sm font-bold text-white">
                                   {flight.arrICAO || "???"}
                                 </span>
                               </div>
                               <div className="mb-2 flex flex-wrap items-center gap-2">
-                                <span className="rounded bg-white/10 px-2 py-0.5 font-mono text-[10px] text-slate-400">
+                                <span className="rounded bg-white/10 px-2 py-0.5 font-mono text-[11px] text-slate-400">
                                   {flight.aircraftType
                                     .replace(/\s*\([^)]*\)/g, "")
                                     .trim()}
                                 </span>
                                 {flight.callsign && (
-                                  <span className="rounded bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] text-cyan-300/80">
+                                  <span className="rounded bg-cyan-500/10 px-2 py-0.5 font-mono text-[11px] text-cyan-300/80">
                                     {flight.callsign}
                                   </span>
                                 )}
@@ -580,7 +582,7 @@ export function FlightHistoryPanel({
                                   }
                                 >
                                   <Flag className="h-3.5 w-3.5" />
-                                  <span className="font-mono text-[10px] tracking-wider uppercase">
+                                  <span className="font-mono text-[11px] tracking-wider uppercase">
                                     {selectedChallengeFlightIds.includes(
                                       flight.id,
                                     )
@@ -607,7 +609,7 @@ export function FlightHistoryPanel({
                                   title={
                                     canGenerateFlightCard
                                       ? "Generate flight card"
-                                      : "Unlock PRO to generate a flight card"
+                                      : "Unlock Pro to generate a flight card"
                                   }
                                 >
                                   <Camera className="h-3.5 w-3.5" />
@@ -650,7 +652,7 @@ export function FlightHistoryPanel({
                                 onClick={() =>
                                   toggleFlightChallengeSelection(flight)
                                 }
-                                className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 font-mono text-[10px] tracking-wider uppercase transition-colors ${
+                                className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 font-mono text-[11px] tracking-wider uppercase transition-colors ${
                                   selectedChallengeFlightIds.includes(flight.id)
                                     ? "border-cyan-400/40 bg-cyan-500/20 text-cyan-100"
                                     : "border-cyan-500/30 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20"
@@ -671,7 +673,7 @@ export function FlightHistoryPanel({
                             <>
                               <button
                                 onClick={() => onReplayFlight(flight)}
-                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 font-mono text-[10px] tracking-wider text-amber-300 uppercase transition-colors hover:bg-amber-500/20"
+                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 font-mono text-[11px] tracking-wider text-amber-300 uppercase transition-colors hover:bg-amber-500/20"
                                 title="Replay this flight"
                               >
                                 <Play className="h-3.5 w-3.5" />
@@ -679,7 +681,7 @@ export function FlightHistoryPanel({
                               </button>
                               <button
                                 onClick={() => onShareFlight(flight)}
-                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-[10px] tracking-wider text-white/70 uppercase transition-colors hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-300"
+                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-[11px] tracking-wider text-white/70 uppercase transition-colors hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-300"
                                 title="Copy share link"
                               >
                                 <Share2 className="h-3.5 w-3.5" />
@@ -688,11 +690,11 @@ export function FlightHistoryPanel({
                               <button
                                 disabled={loadingRouteId !== null}
                                 onClick={() => void generateFlightCard(flight)}
-                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-[10px] tracking-wider text-white/70 uppercase transition-colors hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-300"
+                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-[11px] tracking-wider text-white/70 uppercase transition-colors hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-300"
                                 title={
                                   canGenerateFlightCard
                                     ? "Generate flight card"
-                                    : "Unlock PRO to generate a flight card"
+                                    : "Unlock Pro to generate a flight card"
                                 }
                               >
                                 <Camera className="h-3.5 w-3.5" />
@@ -704,7 +706,7 @@ export function FlightHistoryPanel({
                             <button
                               onClick={() => onDeleteFlight(flight)}
                               disabled={deletingFlightId === flight.id}
-                              className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 font-mono text-[10px] tracking-wider text-red-300 uppercase transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:hover:bg-red-500/10"
+                              className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 font-mono text-[11px] tracking-wider text-red-300 uppercase transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:hover:bg-red-500/10"
                               title={
                                 deletingFlightId === flight.id
                                   ? "Deleting flight..."

@@ -138,14 +138,11 @@ test("server route history replaces the live path once and is kept as the stream
       activeAircraft.set(aircraft.id, { ...aircraft, lat });
     }
     activeAircraft.mergeFlightPath(aircraft.id, history);
-    assert.deepEqual(
-      activeAircraft.get(aircraft.id)!.flightPath!.slice(-3),
-      [
-        [0.99, 20],
-        [1, 20],
-        [1.01, 20],
-      ],
-    );
+    assert.deepEqual(activeAircraft.get(aircraft.id)!.flightPath!.slice(-3), [
+      [0.99, 20],
+      [1, 20],
+      [1.01, 20],
+    ]);
     activeAircraft.delete(aircraft.id);
     activeAircraft.set(aircraft.id, aircraft);
     activeAircraft.mergeFlightPath(aircraft.id, history);
@@ -162,6 +159,33 @@ test("server route history replaces the live path once and is kept as the stream
     activeAircraft.clear();
     activeAircraft.set(aircraft.id, aircraft);
     assert.equal(activeAircraft.hasFlightPathHistory(aircraft.id), false);
+  } finally {
+    activeAircraft.clear();
+    activeAircraft.destroy();
+    globalThis.requestAnimationFrame = originalRequest;
+    globalThis.cancelAnimationFrame = originalCancel;
+  }
+});
+
+test("a route whose last point was rounded still keeps the newer live points", () => {
+  const originalRequest = globalThis.requestAnimationFrame;
+  const originalCancel = globalThis.cancelAnimationFrame;
+  globalThis.requestAnimationFrame = () => 1;
+  globalThis.cancelAnimationFrame = () => undefined;
+  try {
+    activeAircraft.clear();
+    for (const lat of [5.1234, 5.1334, 5.1434, 5.1534]) {
+      activeAircraft.set(aircraft.id, { ...aircraft, lat });
+    }
+    // The server rounded 5.1334 to 5.133.
+    activeAircraft.mergeFlightPath(aircraft.id, [
+      [5.1, 20],
+      [5.133, 20],
+    ]);
+    assert.deepEqual(
+      activeAircraft.get(aircraft.id)!.flightPath!.map(([lat]) => lat),
+      [5.1, 5.133, 5.1434, 5.1534],
+    );
   } finally {
     activeAircraft.clear();
     activeAircraft.destroy();

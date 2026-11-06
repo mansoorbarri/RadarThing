@@ -333,7 +333,7 @@ export const FlightCard = forwardRef<HTMLDivElement, { data: FlightCardData }>(
                 letterSpacing: "0.05em",
               }}
             >
-              PRO
+              Pro
             </div>
             <span
               style={{

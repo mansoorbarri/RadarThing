@@ -88,6 +88,10 @@ function distanceNm(
   return 3440.065 * c;
 }
 
+// About 1 km: close enough to treat a route point and a live point as the
+// same place when joining the two paths.
+const ROUTE_JOIN_TOLERANCE_DEG = 0.01;
+
 class AircraftStore {
   private store = new Map<string, PositionUpdate>();
   private flightPaths = new Map<string, [number, number][]>();
@@ -256,14 +260,23 @@ class AircraftStore {
 
     // Keep live positions that arrived after the route's last point, such as
     // ones streamed while the route was being fetched.
+    // The server may round or thin its points, so join at the nearest live
+    // point within ~1 km rather than requiring an exact match. The latest
+    // match wins if the aircraft passed the same spot twice.
     const lastRoutePoint = flightPath[flightPath.length - 1]!;
-    let lastRouteIndex = currentPath.length - 1;
-    while (
-      lastRouteIndex >= 0 &&
-      (currentPath[lastRouteIndex]![0] !== lastRoutePoint[0] ||
-        currentPath[lastRouteIndex]![1] !== lastRoutePoint[1])
-    ) {
-      lastRouteIndex--;
+    let lastRouteIndex = -1;
+    let bestDistance = Infinity;
+    for (let index = currentPath.length - 1; index >= 0; index--) {
+      const [lat, lon] = currentPath[index]!;
+      const distance = Math.max(
+        Math.abs(lat - lastRoutePoint[0]),
+        Math.abs(lon - lastRoutePoint[1]),
+      );
+      if (distance <= ROUTE_JOIN_TOLERANCE_DEG && distance < bestDistance) {
+        bestDistance = distance;
+        lastRouteIndex = index;
+        if (distance === 0) break;
+      }
     }
     const liveSuffix =
       lastRouteIndex >= 0 ? currentPath.slice(lastRouteIndex + 1) : [];

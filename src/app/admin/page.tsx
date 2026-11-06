@@ -241,7 +241,7 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="admin-theme-surface min-h-screen bg-black text-white">
+    <div className="admin-theme-surface bg-site min-h-screen text-white">
       <AdminHeader />
 
       <main
@@ -429,11 +429,16 @@ export default function AdminPage() {
           className="fixed right-4 bottom-4 z-40 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-cyan-400 px-4 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/30 transition-all hover:scale-105 hover:bg-cyan-300 hover:shadow-cyan-500/50 sm:right-8 sm:bottom-8 sm:h-14 sm:w-14 sm:px-0"
           title={
             mainTab === "images"
-              ? "Upload Aircraft Image"
-              : "Upload Airport Chart"
+              ? "Upload aircraft image"
+              : "Upload airport chart"
+          }
+          aria-label={
+            mainTab === "images"
+              ? "Upload aircraft image"
+              : "Upload airport chart"
           }
         >
-          <Upload className="h-6 w-6 text-white" />
+          <Upload className="h-6 w-6" aria-hidden="true" />
           <span className="sm:hidden">
             {mainTab === "images" ? "Upload image" : "Upload chart"}
           </span>

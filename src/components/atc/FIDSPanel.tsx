@@ -35,20 +35,20 @@ export function FIDSPanel({ aircrafts, onTrack }: Props) {
         <h2 className="font-mono text-[11px] font-semibold tracking-[0.2em] text-cyan-400 uppercase">
           Live Flights
         </h2>
-        <span className="rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 font-mono text-[10px] text-cyan-300">
+        <span className="rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 font-mono text-[11px] text-cyan-300">
           {aircrafts.length}
         </span>
       </div>
 
       {/* Column headers */}
       <div className="grid shrink-0 grid-cols-[minmax(0,3fr)_minmax(0,3fr)_4rem_5.25rem] items-center gap-2 border-b border-white/10 px-4 py-1.5">
-        <span className="font-mono text-[10px] tracking-wider text-white/65 uppercase">
+        <span className="font-mono text-[11px] tracking-wider text-white/65 uppercase">
           Flight
         </span>
-        <span className="font-mono text-[10px] tracking-wider text-white/65 uppercase">
+        <span className="font-mono text-[11px] tracking-wider text-white/65 uppercase">
           Route
         </span>
-        <span className="font-mono text-[10px] tracking-wider text-white/65 uppercase">
+        <span className="font-mono text-[11px] tracking-wider text-white/65 uppercase">
           Aircraft
         </span>
         <span />
@@ -99,7 +99,7 @@ function FIDSRow({
         {aircraft.flightNo &&
           aircraft.callsign &&
           aircraft.flightNo !== aircraft.callsign && (
-            <div className="truncate font-mono text-[10px] text-white/65">
+            <div className="truncate font-mono text-[11px] text-white/65">
               {aircraft.callsign}
             </div>
           )}
@@ -115,7 +115,7 @@ function FIDSRow({
 
       <button
         onClick={() => onTrack(aircraft)}
-        className="w-full shrink-0 cursor-pointer rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-[10px] tracking-wide text-cyan-300 uppercase transition-colors hover:bg-cyan-500/20"
+        className="w-full shrink-0 cursor-pointer rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-[11px] tracking-wide text-cyan-300 uppercase transition-colors hover:bg-cyan-500/20"
       >
         Track
       </button>

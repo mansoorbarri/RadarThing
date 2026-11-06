@@ -14,7 +14,7 @@ Sign into your GeoFS account in the simulator tab. A RadarThing sign-in alone is
 
 Let the simulator finish loading and start your flight. Keep this tab open during the checks. Closing the radar tab and closing the simulator tab have different effects: the tracker runs inside GeoFS, so closing GeoFS stops that session from sending updates.
 
-## Check that your flight is transmitting
+## Check that your flight is live
 
 The tracker only sends your position after you enter your flight details and press **Start tracking**. This is the most common reason a new pilot's aircraft is missing.
 
@@ -54,7 +54,7 @@ If a browser extension reports that it blocked a RadarThing request, inspect tha
 
 ## Ask for help with useful details
 
-If the flight is still missing, [contact support](/contact) with your browser, installation method, callsign, whether the panel showed it was transmitting, approximate time of the problem, whether GeoFS was signed in, and whether other flights were visible. Include the exact error text if the browser Console shows a failed RadarThing request.
+If the flight is still missing, [contact support](/contact) with your browser, installation method, callsign, what the status at the top of the panel said (for example **Live on radar** or **Connection issue · retrying**), approximate time of the problem, whether GeoFS was signed in, and whether other flights were visible. Include the exact error text if the browser Console shows a failed RadarThing request.
 
 Do not share cookies, account tokens, or an unreviewed full console dump. A short description of the failed step is more useful than repeatedly reinstalling the tracker.
 

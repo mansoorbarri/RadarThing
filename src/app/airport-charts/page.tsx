@@ -292,7 +292,7 @@ export default function AirportChartsPage() {
 
   if (!isAdminUser) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-black text-white">
+      <div className="bg-site flex min-h-screen flex-col items-center justify-center text-white">
         <div className="flex max-w-md flex-col items-center rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
           <ShieldAlert className="mb-4 h-12 w-12 text-red-400" />
           <h2 className="mb-2 text-xl font-bold">Admin Access Required</h2>
@@ -330,11 +330,11 @@ export default function AirportChartsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="bg-site min-h-screen text-white">
       <SiteHeader />
 
       <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
               <Map className="h-4 w-4 text-cyan-400" />
@@ -342,7 +342,7 @@ export default function AirportChartsPage() {
                 AIRPORT CHARTS
               </span>
             </div>
-            <h1 className="text-3xl font-bold text-white">Airport Charts</h1>
+            <h1 className="text-3xl font-bold text-white">Airport charts</h1>
             <p className="mt-2 text-slate-400">
               Community-contributed airport charts. SIDs, STARs, approaches, and
               more.
@@ -369,22 +369,27 @@ export default function AirportChartsPage() {
         {/* Search and Filters */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="relative flex-1">
-            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search
+              className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
+              aria-hidden="true"
+            />
             <input
-              type="text"
-              placeholder="Search by ICAO, chart name..."
+              type="search"
+              aria-label="Search charts"
+              placeholder="Search by ICAO or chart name…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
+              className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-400 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             />
           </div>
           <div className="flex gap-3">
             <select
+              aria-label="Filter by airport"
               value={icaoFilter}
               onChange={(e) => setIcaoFilter(e.target.value)}
               className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             >
-              <option value="">All Airports</option>
+              <option value="">All airports</option>
               {uniqueIcaos.map((icao) => (
                 <option key={icao} value={icao}>
                   {icao}
@@ -392,11 +397,12 @@ export default function AirportChartsPage() {
               ))}
             </select>
             <select
+              aria-label="Filter by chart type"
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as ChartType | "")}
               className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             >
-              <option value="">All Types</option>
+              <option value="">All types</option>
               {CHART_TYPES.map((type) => (
                 <option key={type.value} value={type.value}>
                   {type.label}
@@ -519,6 +525,9 @@ export default function AirportChartsPage() {
           <form
             ref={formRef}
             onSubmit={handleUploadAndSubmit}
+            // Validation is done in handleUploadAndSubmit so every error is
+            // shown inline next to its field.
+            noValidate
             className="space-y-4"
           >
             {error && (
@@ -560,7 +569,7 @@ export default function AirportChartsPage() {
                   maxLength={4}
                   required
                   disabled={isProcessing}
-                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50 aria-[invalid=true]:border-red-400/70"
+                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-400 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50 aria-[invalid=true]:border-red-400/70"
                 />
                 {icaoError && (
                   <p
@@ -621,7 +630,7 @@ export default function AirportChartsPage() {
                 }
                 placeholder="e.g., xyzmani"
                 disabled={isProcessing}
-                className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
+                className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-400 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
               />
             </div>
 
@@ -737,7 +746,7 @@ export default function AirportChartsPage() {
                     Submitted for Review!
                   </span>
                 </div>
-                <p className="mt-1.5 text-sm text-slate-500">
+                <p className="mt-1.5 text-sm text-slate-400">
                   Your charts are now in the queue
                 </p>
               </div>
@@ -825,11 +834,11 @@ function ChartCardSkeleton() {
 
 function GallerySkeleton() {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="bg-site min-h-screen text-white">
       <SiteHeader />
 
       <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
               <Map className="h-4 w-4 text-cyan-400" />

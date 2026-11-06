@@ -60,8 +60,9 @@ export function MobileSearchSheet({
           autoFocus
           dataTour="radar-mobile-search"
           inputDebugId="radar-mobile-search-input"
-          onAfterSelect={onClose}
-          onEscape={onClose}
+          // Clear the query when the sheet closes, so it opens fresh next time.
+          onAfterSelect={dismiss}
+          onEscape={dismiss}
         />
       </FocusTrap>
     </>

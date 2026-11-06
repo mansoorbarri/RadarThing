@@ -82,11 +82,11 @@ function RunwayFilterBar({
           className={`cursor-pointer rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors ${
             selectedRunwayKey === group.key
               ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
-              : "border-white/10 text-white/65 hover:bg-white/10 hover:text-white/80"
+              : "border-white/10 text-white/75 hover:bg-white/10 hover:text-white"
           }`}
         >
           {group.label}
-          <span className="ml-1 text-[10px] opacity-60">
+          <span className="ml-1 text-[11px] opacity-90">
             {group.charts.length}
           </span>
         </button>
@@ -499,7 +499,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
                   }`}
                 >
                   {tab.label}
-                  <span className="ml-1 text-[10px] opacity-60">
+                  <span className="ml-1 text-[11px] opacity-90">
                     {chartsByType?.[tab.key].length}
                   </span>
                 </button>
@@ -572,7 +572,7 @@ export function ChartSidePanel({ icao, onClose }: ChartSidePanelProps) {
                           <div className="truncate text-[11px] font-medium">
                             {chart.chartName}
                           </div>
-                          <div className="mt-0.5 text-[10px] text-white/65">
+                          <div className="mt-0.5 text-[11px] text-white/65">
                             {typeLabel}
                           </div>
                         </button>

@@ -44,7 +44,7 @@ export default function CheckoutSuccessPage() {
   }, [sync]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#02090d]">
+    <div className="bg-site flex min-h-screen flex-col">
       <SiteHeader />
       <main
         id="main-content"

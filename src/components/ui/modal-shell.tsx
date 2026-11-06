@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+import { useFocusTrap } from "~/hooks/useFocusTrap";
 
 interface ModalShellProps {
   /** id of the element that names the dialog (usually its heading). */
@@ -35,44 +33,17 @@ export function ModalShell({
   onCloseRef.current = onClose;
   closeDisabledRef.current = closeDisabled;
 
-  useEffect(() => {
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    const panel = panelRef.current;
-    const first = panel?.querySelector<HTMLElement>(FOCUSABLE);
-    (first ?? panel)?.focus();
+  // Shared trap: moves focus in, keeps Tab inside, Escape closes (unless
+  // closing is disabled) and focus returns to the opener afterwards.
+  useFocusTrap(panelRef, () => {
+    if (!closeDisabledRef.current) onCloseRef.current();
+  });
 
+  useEffect(() => {
     const { overflow } = document.body.style;
     document.body.style.overflow = "hidden";
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        if (!closeDisabledRef.current) {
-          event.stopPropagation();
-          onCloseRef.current();
-        }
-        return;
-      }
-      if (event.key !== "Tab" || !panel) return;
-      const focusables = Array.from(
-        panel.querySelectorAll<HTMLElement>(FOCUSABLE),
-      ).filter((el) => el.offsetParent !== null);
-      if (focusables.length === 0) return;
-      const firstEl = focusables[0]!;
-      const lastEl = focusables[focusables.length - 1]!;
-      if (event.shiftKey && document.activeElement === firstEl) {
-        event.preventDefault();
-        lastEl.focus();
-      } else if (!event.shiftKey && document.activeElement === lastEl) {
-        event.preventDefault();
-        firstEl.focus();
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = overflow;
-      previouslyFocused?.focus?.();
     };
   }, []);
 

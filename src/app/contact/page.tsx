@@ -13,37 +13,61 @@ export default function ContactPage() {
       eyebrow="Contact frequencies"
       title="Contact RadarThing"
       summary="Use the route that matches your request so it reaches the right queue."
+      lastUpdated="2 November 2026"
     >
       <LegalSection title="General support">
         <p>
           Email{" "}
-          <a className="text-cyan-200" href="mailto:support@radarthing.com">
+          <a
+            className="text-cyan-200 underline underline-offset-4 hover:text-white"
+            href="mailto:support@radarthing.com"
+          >
             support@radarthing.com
           </a>{" "}
           or visit the{" "}
           <a
-            className="text-cyan-200"
+            className="text-cyan-200 underline underline-offset-4 hover:text-white"
             href="https://discord.gg/pbQF4txdRC"
             target="_blank"
             rel="noopener noreferrer"
           >
             RadarThing Discord community
+            <span className="sr-only"> (opens in a new tab)</span>
           </a>
           . Do not send passwords, payment-card numbers, or other secrets.
         </p>
       </LegalSection>
       <LegalSection title="Privacy requests">
         <p>
-          Email privacy@radarthing.com for access, correction, deletion,
-          objection, consent, or data-protection questions. Include the email
-          address associated with your account; we may need to verify identity.
+          Email{" "}
+          <a
+            className="text-cyan-200 underline underline-offset-4 hover:text-white"
+            href="mailto:privacy@radarthing.com"
+          >
+            privacy@radarthing.com
+          </a>{" "}
+          for access, correction, deletion, objection, consent, or
+          data-protection questions. Include the email address associated with
+          your account; we may need to verify identity.
         </p>
       </LegalSection>
       <LegalSection title="Copyright and safety">
         <p>
-          Email copyright@radarthing.com for rights reports. For urgent abuse or
-          safety concerns, email support@radarthing.com with the relevant URL,
-          callsign, username, and supporting details.
+          Email{" "}
+          <a
+            className="text-cyan-200 underline underline-offset-4 hover:text-white"
+            href="mailto:copyright@radarthing.com"
+          >
+            copyright@radarthing.com
+          </a>{" "}
+          for rights reports. For urgent abuse or safety concerns, email{" "}
+          <a
+            className="text-cyan-200 underline underline-offset-4 hover:text-white"
+            href="mailto:support@radarthing.com"
+          >
+            support@radarthing.com
+          </a>{" "}
+          with the relevant URL, callsign, username, and supporting details.
         </p>
       </LegalSection>
     </LegalPage>

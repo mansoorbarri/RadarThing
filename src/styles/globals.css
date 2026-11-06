@@ -166,6 +166,8 @@
 }
 
 @theme {
+  /* One page background for every website page (the radar map has its own). */
+  --color-site: #02090d;
   --font-sans:
     var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";

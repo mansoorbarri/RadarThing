@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Markdown from "react-markdown";
+import Markdown, { type Components } from "react-markdown";
 import { getGuide, getGuidesByCategory, guides } from "~/lib/guides";
 
 interface Props {
@@ -56,12 +56,48 @@ const articleStyles = [
   "[&_pre_code]:bg-transparent [&_pre_code]:p-0",
 ].join(" ");
 
+/** Same slug for the heading id and the "On this page" link. */
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[`*_]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function textOf(node: React.ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(textOf).join("");
+  if (node && typeof node === "object" && "props" in node)
+    return textOf((node.props as { children?: React.ReactNode }).children);
+  return "";
+}
+
+// Section headings get ids so "On this page" and shared links can jump to them.
+const markdownComponents: Components = {
+  h2: ({ children }) => <h2 id={slugify(textOf(children))}>{children}</h2>,
+};
+
 export default async function GuidePage({ params }: Props) {
   const { slug } = await params;
   const guide = await getGuide(slug);
   if (!guide) notFound();
   const categories = getGuidesByCategory();
   const category = categories.find((entry) => entry.id === guide.category);
+
+  // Split after the intro so the contents list sits under the title and
+  // summary rather than above them.
+  const firstSectionIndex = guide.markdown.search(/^## /m);
+  const intro =
+    firstSectionIndex >= 0
+      ? guide.markdown.slice(0, firstSectionIndex)
+      : guide.markdown;
+  const body =
+    firstSectionIndex >= 0 ? guide.markdown.slice(firstSectionIndex) : "";
+  const sections = Array.from(body.matchAll(/^## (.+)$/gm), (match) => {
+    const title = match[1]!.replace(/[`*_]/g, "").trim();
+    return { title, id: slugify(title) };
+  });
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -133,8 +169,57 @@ export default async function GuidePage({ params }: Props) {
           </span>
         </p>
         <article className={articleStyles}>
-          <Markdown>{guide.markdown}</Markdown>
+          <Markdown components={markdownComponents}>{intro}</Markdown>
+          {sections.length >= 3 && (
+            <nav
+              aria-label="On this page"
+              className="my-8 border-l-2 border-cyan-300/40 bg-cyan-300/[0.03] px-5 py-4"
+            >
+              <p className="mb-2 font-mono text-xs tracking-widest text-slate-400 uppercase">
+                On this page
+              </p>
+              <ol className="!my-0 !list-none columns-1 gap-8 !pl-0 sm:columns-2">
+                {sections.map((section) => (
+                  <li key={section.id} className="!mb-1 !pl-0 !leading-7">
+                    <a
+                      href={`#${section.id}`}
+                      className="!text-slate-300 !no-underline hover:!text-cyan-200"
+                    >
+                      {section.title}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          )}
+          <Markdown components={markdownComponents}>{body}</Markdown>
         </article>
+        {category && (
+          <details className="group mt-12 max-w-3xl border border-white/10 lg:hidden">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-5 text-sm font-medium text-slate-200 hover:bg-white/[0.03] focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none">
+              More in {category.title}
+              <span
+                aria-hidden="true"
+                className="text-cyan-300 transition-transform group-open:rotate-90"
+              >
+                →
+              </span>
+            </summary>
+            <ul className="border-t border-white/10 px-5 py-3">
+              {category.guides.map((entry) => (
+                <li key={entry.slug}>
+                  <Link
+                    href={`/guides/${entry.slug}`}
+                    aria-current={entry.slug === slug ? "page" : undefined}
+                    className={`flex min-h-10 items-center text-sm ${entry.slug === slug ? "text-cyan-200" : "text-slate-300 hover:text-white"}`}
+                  >
+                    {entry.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
         <nav
           aria-label="More guides"
           className="mt-16 grid max-w-3xl gap-4 border-t border-white/10 pt-8 sm:grid-cols-2"

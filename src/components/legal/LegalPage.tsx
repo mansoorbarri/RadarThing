@@ -18,7 +18,7 @@ export function LegalPage({
   children: ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#02090d] text-slate-100">
+    <div className="bg-site min-h-screen text-slate-100">
       <div
         className="pointer-events-none fixed inset-0 opacity-40"
         aria-hidden="true"
@@ -37,7 +37,7 @@ export function LegalPage({
         className="relative mx-auto grid max-w-6xl gap-12 px-5 py-14 sm:px-8 md:grid-cols-[220px_minmax(0,1fr)] md:py-20"
       >
         <aside>
-          <p className="font-mono text-[10px] tracking-[0.24em] text-cyan-300/70 uppercase">
+          <p className="font-mono text-[11px] tracking-[0.24em] text-cyan-300/70 uppercase">
             {eyebrow}
           </p>
           <p className="mt-4 text-xs leading-5 text-white/60">

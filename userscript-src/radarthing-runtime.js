@@ -125,7 +125,53 @@
     }
   }
 
+  // While a flight is tracked the form folds into a one-line summary so the
+  // panel covers less of the simulator; "Edit flight" opens it again.
+  let editingFlight = false;
+  let lastTrackedFlight = null;
+  function applyCompactMode() {
+    const summary = document.getElementById("atc-flight-summary");
+    const fields = document.getElementById("atc-flight-fields");
+    const editBtn = document.getElementById("atc-edit-flight-btn");
+    const startBtn = document.getElementById(SAVE_BTN_ID);
+    if (!summary || !fields || !startBtn) return;
+    const compact = isTracking && !editingFlight;
+    summary.hidden = !isTracking;
+    // While tracking the pill shows "· 4s ago" instead of the key hint.
+    const hint = document.getElementById(HOTKEY_HINT_ID);
+    if (hint) hint.hidden = isTracking;
+    fields.hidden = compact;
+    startBtn.hidden = compact;
+    startBtn.parentElement.style.gridTemplateColumns = compact
+      ? "1fr"
+      : "1.4fr 1fr";
+    if (editBtn) {
+      editBtn.textContent = editingFlight ? "Cancel" : "Edit flight";
+      editBtn.setAttribute("aria-expanded", String(!compact));
+    }
+    const text = summary.querySelector("[data-summary-text]");
+    if (text) {
+      const value = (id) =>
+        String(document.getElementById(id)?.value || "").trim();
+      const sqk = value(SQK_INPUT_ID);
+      text.textContent = `${value(DEP_INPUT_ID)} → ${value(ARR_INPUT_ID)}${sqk ? ` · Squawk ${sqk}` : ""}`;
+      const callsign = summary.querySelector("[data-summary-callsign]");
+      if (callsign) callsign.textContent = value(FLT_INPUT_ID);
+    }
+  }
+
+  function setFlightEditing(next) {
+    const panel = document.getElementById(UI_CONTAINER_ID);
+    const hadFocus = Boolean(panel && panel.contains(document.activeElement));
+    editingFlight = next;
+    applyCompactMode();
+    if (!hadFocus) return;
+    if (next) document.getElementById(DEP_INPUT_ID)?.focus();
+    else document.getElementById("atc-edit-flight-btn")?.focus();
+  }
+
   function setTrackingUi(active) {
+    if (active !== isTracking) editingFlight = false;
     isTracking = active;
     const startBtn = document.getElementById(SAVE_BTN_ID);
     const endBtn = document.getElementById(CLEAR_BTN_ID);
@@ -136,6 +182,7 @@
       endBtn.style.opacity = active ? "1" : "0.5";
       endBtn.style.cursor = active ? "pointer" : "not-allowed";
     }
+    applyCompactMode();
   }
   let flightActiveForTrackingBadge = false;
   let trackingStatusRequestId = 0;
@@ -287,7 +334,7 @@
         row.style.cssText =
           "border-top:1px solid rgba(255,255,255,.08);padding:8px 0;font-size:11px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere";
         const time = document.createElement("div");
-        time.style.cssText = "font-size:9px;color:#67e8f9;margin-bottom:3px";
+        time.style.cssText = "font-size:11px;color:#67e8f9;margin-bottom:3px";
         time.textContent = new Date(message.createdAt).toLocaleString();
         const content = document.createElement("div");
         content.textContent = message.body;
@@ -296,9 +343,33 @@
           const remove = document.createElement("button");
           remove.type = "button";
           remove.textContent = "Remove";
+          remove.setAttribute("aria-label", "Remove this ACARS entry");
           remove.style.cssText =
-            "margin-top:4px;padding:0;border:0;background:none;color:#fca5a5;font-size:9px;cursor:pointer";
-          remove.addEventListener("click", () => void removeAcars(message._id));
+            "margin-top:4px;padding:2px 0;border:0;background:none;color:#fca5a5;font-size:11px;cursor:pointer";
+          // Two-step, like End flight: viewers can't get a removed entry back.
+          let confirmTimer = 0;
+          const resetRemove = () => {
+            clearTimeout(confirmTimer);
+            remove.dataset.confirming = "";
+            remove.textContent = "Remove";
+            remove.style.fontWeight = "400";
+          };
+          remove.addEventListener("click", () => {
+            if (remove.dataset.confirming !== "1") {
+              remove.dataset.confirming = "1";
+              remove.textContent = isMobileBrowser()
+                ? "Tap again to remove"
+                : "Click again to remove";
+              remove.style.fontWeight = "700";
+              confirmTimer = setTimeout(resetRemove, 4000);
+              return;
+            }
+            resetRemove();
+            void removeAcars(message._id);
+          });
+          remove.addEventListener("blur", () => {
+            if (remove.dataset.confirming === "1") resetRemove();
+          });
           row.appendChild(remove);
         }
         list.appendChild(row);
@@ -538,6 +609,9 @@
         top: parseFloat(flightUI.style.top),
       }),
     );
+    // Reset only means something once the panel has been moved.
+    const resetButton = document.getElementById(FLIGHT_UI_RESET_BTN_ID);
+    if (resetButton) resetButton.hidden = false;
   }
 
   function makeFlightUiMovable() {
@@ -560,7 +634,7 @@
         : "Enable panel moving";
       moveButton.style.background = moveMode
         ? "rgba(34,211,238,0.22)"
-        : "rgba(255,255,255,0.06)";
+        : "transparent";
       moveButton.style.borderColor = moveMode
         ? "rgba(34,211,238,0.55)"
         : "rgba(255,255,255,0.12)";
@@ -583,6 +657,8 @@
       flightUI.style.right = "16px";
       localStorage.removeItem(FLIGHT_UI_POS_KEY);
       updateMoveMode();
+      resetButton.hidden = true;
+      moveButton.focus();
     });
 
     header.addEventListener("pointerdown", (event) => {
@@ -867,7 +943,10 @@
 
   function showToast(msg, isError = false, action = null) {
     const toast = document.createElement("div");
-    toast.textContent = msg;
+    const label = document.createElement("span");
+    label.textContent = msg;
+    label.style.flex = "1";
+    toast.appendChild(label);
     if (action && action.label && typeof action.onClick === "function") {
       toast.dataset.hasAction = "1";
       const btn = document.createElement("button");
@@ -895,24 +974,80 @@
       transition:opacity 0.3s ease;
       box-shadow:0 10px 30px rgba(0,0,0,0.4);
     `;
-    if (toast.dataset.hasAction) {
-      // Actionable toasts must be clickable inside the click-through region.
-      toast.style.pointerEvents = "auto";
-      toast.style.display = "flex";
-      toast.style.alignItems = "center";
-    }
-    getToastRegion(isError).appendChild(toast);
-    // Focus is deliberately not moved to the action: pilots may be flying with
+    // Every toast can be dismissed, so it must be clickable inside the
+    // click-through region.
+    const close = document.createElement("button");
+    close.type = "button";
+    close.setAttribute("aria-label", "Dismiss notification");
+    close.textContent = "×";
+    close.style.cssText =
+      "margin-left:8px;width:24px;height:24px;flex:none;padding:0;border:0;border-radius:6px;background:transparent;color:rgba(255,255,255,0.8);font:400 18px/1 system-ui,sans-serif;cursor:pointer;";
+    toast.appendChild(close);
+    toast.style.pointerEvents = "auto";
+    toast.style.display = "flex";
+    toast.style.alignItems = "center";
+    toast.style.gap = "4px";
+
+    const region = getToastRegion(isError);
+    // Keep the stack short so it never covers the instruments.
+    while (region.children.length >= 3) region.firstElementChild.remove();
+    region.appendChild(toast);
+    // Focus is deliberately not moved to the toast: pilots may be flying with
     // keyboard controls, and Space/Enter would trigger it by accident.
     requestAnimationFrame(() => (toast.style.opacity = "1"));
-    setTimeout(
-      () => {
-        toast.style.opacity = "0";
-        setTimeout(() => toast.remove(), 300);
-      },
-      action ? 10000 : isError ? 5000 : 3000,
-    );
+
+    const dismiss = () => {
+      clearTimeout(timer);
+      toast.style.opacity = "0";
+      setTimeout(() => toast.remove(), 300);
+    };
+    // Errors and actions stay long enough to read and act on.
+    const duration = action ? 15000 : isError ? 10000 : 4000;
+    let timer = setTimeout(dismiss, duration);
+    close.onclick = dismiss;
+    // Hovering or focusing a toast pauses it.
+    const pause = () => clearTimeout(timer);
+    const resume = () => {
+      clearTimeout(timer);
+      timer = setTimeout(dismiss, 3000);
+    };
+    toast.addEventListener("pointerenter", pause);
+    toast.addEventListener("pointerleave", resume);
+    toast.addEventListener("focusin", pause);
+    toast.addEventListener("focusout", resume);
   }
+
+  // Changes made from the RadarThing website show up in the sim, so say so.
+  const COMMAND_LABELS = {
+    setAltitude: (v) =>
+      `Autopilot altitude set to ${Number(v).toLocaleString()} ft`,
+    setSpeed: (v) => `Autopilot speed set to ${v} kt`,
+    setHeading: (v) =>
+      `Autopilot heading set to ${String(v).padStart(3, "0")}°`,
+    setVS: (v) => `Vertical speed set to ${Number(v).toLocaleString()} ft/min`,
+    setSquawk: (v) => `Squawk set to ${v}`,
+    setSpeedMode: (v) =>
+      `Autopilot speed mode set to ${String(v).toLowerCase() === "mach" ? "Mach" : "knots"}`,
+    setFlaps: (v) => `Flaps set to notch ${v}`,
+    enableNav: () => "Autopilot NAV mode on",
+    disableNav: () => "Autopilot switched to heading mode",
+    setWaypoint: (v) => `Flying direct to ${String(v).toUpperCase()}`,
+    toggleAutopilot: (v) => (v ? "Autopilot on" : "Autopilot off"),
+  };
+  window.addEventListener("radarthing-command-executed", (e) => {
+    const detail = e.detail || {};
+    // disconnectFlight already gets its own end-of-flight toast.
+    if (detail.type === "disconnectFlight") return;
+    const describe = COMMAND_LABELS[detail.type];
+    if (detail.success === false) {
+      showToast(
+        `A change from RadarThing couldn't be applied${describe ? ` (${describe(detail.value).toLowerCase()})` : ""}.`,
+        true,
+      );
+      return;
+    }
+    if (describe) showToast(`${describe(detail.value)} · from RadarThing`);
+  });
 
   function updateSignInNotice() {
     const notice = document.getElementById(SIGN_IN_NOTICE_ID);
@@ -1008,7 +1143,7 @@
                 background:rgba(8,47,73,0.42);
                 padding:5px 9px;
                 color:#67e8f9;
-                font-size:9px;
+                font-size:11px;
                 font-weight:700;
                 letter-spacing:0.18em;
                 text-transform:uppercase;
@@ -1058,7 +1193,7 @@
               padding:12px 14px;
             ">
               <div>
-                <div style="margin-bottom:4px; color:#64748b; font-size:10px; letter-spacing:0.16em; text-transform:uppercase;">Callsign</div>
+                <div style="margin-bottom:4px; color:#64748b; font-size:11px; letter-spacing:0.16em; text-transform:uppercase;">Callsign</div>
                 <div id="radarthing-resume-callsign" style="color:#f8fafc; font-size:15px; font-weight:700;">Unknown</div>
               </div>
               <div style="
@@ -1085,7 +1220,7 @@
                 background:rgba(15,23,42,0.68);
                 padding:10px 12px;
               ">
-                <div style="margin-bottom:4px; color:#64748b; font-size:10px; letter-spacing:0.16em; text-transform:uppercase;">Aircraft</div>
+                <div style="margin-bottom:4px; color:#64748b; font-size:11px; letter-spacing:0.16em; text-transform:uppercase;">Aircraft</div>
                 <div id="radarthing-resume-aircraft" style="color:#f8fafc; font-size:13px; font-weight:700;">Unknown</div>
               </div>
               <div style="
@@ -1094,7 +1229,7 @@
                 background:linear-gradient(180deg, rgba(120,53,15,0.18), rgba(15,23,42,0.72));
                 padding:10px 12px;
               ">
-                <div style="margin-bottom:4px; color:#fbbf24; font-size:10px; letter-spacing:0.16em; text-transform:uppercase;">Next Waypoint</div>
+                <div style="margin-bottom:4px; color:#fbbf24; font-size:11px; letter-spacing:0.16em; text-transform:uppercase;">Next Waypoint</div>
                 <div id="radarthing-resume-waypoint" style="color:#fef3c7; font-size:13px; font-weight:700;">Unknown</div>
               </div>
             </div>
@@ -1108,7 +1243,7 @@
               border:1px solid rgba(248,113,113,0.24);
               background:rgba(127,29,29,0.22);
               color:#fecaca;
-              font-size:10px;
+              font-size:11px;
               font-weight:700;
               letter-spacing:0.14em;
               text-transform:uppercase;
@@ -1121,7 +1256,7 @@
               border:1px solid rgba(34,211,238,0.26);
               background:linear-gradient(135deg, rgba(8,145,178,0.82), rgba(14,116,144,0.92));
               color:#ecfeff;
-              font-size:10px;
+              font-size:11px;
               font-weight:700;
               letter-spacing:0.14em;
               text-transform:uppercase;
@@ -1349,7 +1484,7 @@
       <label style="display:block; min-width:0;">
         <div style="
           margin-bottom:5px;
-          font-size:10px;
+          font-size:11px;
           font-weight:600;
           letter-spacing:0.14em;
           text-transform:uppercase;
@@ -1868,10 +2003,15 @@
       clampChartsPanelToViewport(panel);
     };
 
+    // Track the pointer that started the drag so a second finger or a
+    // cancelled gesture (e.g. the browser taking over) can't leave it stuck.
+    let dragPointerId = null;
     handle.style.touchAction = "none";
     handle.addEventListener("pointerdown", (e) => {
       if (e.target.closest("button") || e.target.closest("input")) return;
+      if (dragging) return;
       dragging = true;
+      dragPointerId = e.pointerId;
       sx = e.clientX;
       sy = e.clientY;
       sl = parseInt(panel.style.left) || 0;
@@ -1883,15 +2023,16 @@
     });
 
     document.addEventListener("pointermove", (e) => {
-      if (!dragging) return;
+      if (!dragging || e.pointerId !== dragPointerId) return;
       nextLeft = sl + e.clientX - sx;
       nextTop = st + e.clientY - sy;
       if (!frame) frame = requestAnimationFrame(flushPosition);
     });
 
-    document.addEventListener("pointerup", () => {
-      if (!dragging) return;
+    const endDrag = (e) => {
+      if (!dragging || e.pointerId !== dragPointerId) return;
       dragging = false;
+      dragPointerId = null;
       if (frame) {
         cancelAnimationFrame(frame);
         flushPosition();
@@ -1899,7 +2040,9 @@
       handle.style.cursor = "grab";
       clampChartsPanelToViewport(panel);
       saveChartsPos(panel);
-    });
+    };
+    document.addEventListener("pointerup", endDrag);
+    document.addEventListener("pointercancel", endDrag);
   }
 
   function makeChartsResizable(panel) {
@@ -1912,7 +2055,8 @@
       resizeType,
       nextWidth,
       nextMaxHeight,
-      frame = 0;
+      frame = 0,
+      resizePointerId = null;
 
     const flushResize = () => {
       frame = 0;
@@ -1929,7 +2073,9 @@
     handles.forEach((handle) => {
       handle.style.touchAction = "none";
       handle.addEventListener("pointerdown", (e) => {
+        if (resizing) return;
         resizing = true;
+        resizePointerId = e.pointerId;
         startX = e.clientX;
         startY = e.clientY;
         startW = panel.offsetWidth;
@@ -1946,7 +2092,7 @@
     });
 
     document.addEventListener("pointermove", (e) => {
-      if (!resizing) return;
+      if (!resizing || e.pointerId !== resizePointerId) return;
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
       if (resizeType === "right" || resizeType === "corner") {
@@ -1958,9 +2104,10 @@
       if (!frame) frame = requestAnimationFrame(flushResize);
     });
 
-    document.addEventListener("pointerup", () => {
-      if (!resizing) return;
+    const endResize = (e) => {
+      if (!resizing || e.pointerId !== resizePointerId) return;
       resizing = false;
+      resizePointerId = null;
       if (frame) {
         cancelAnimationFrame(frame);
         flushResize();
@@ -1969,7 +2116,9 @@
       requestChartsViewerHeightSync();
       saveChartsSize(panel);
       saveChartsPos(panel);
-    });
+    };
+    document.addEventListener("pointerup", endResize);
+    document.addEventListener("pointercancel", endResize);
   }
 
   function ensureChartsPreview(sel) {
@@ -2063,7 +2212,7 @@
     const total = getChartCount(chartsState.chartsByType);
     title.textContent = chartsState.currentIcao
       ? `${chartsState.currentIcao} Charts (${total})`
-      : "Airport Charts";
+      : "Airport charts";
 
     typeTabs.innerHTML = "";
     for (const type of CHART_TYPES) {
@@ -2122,6 +2271,7 @@
     const sel = getSelectedChart();
     syncSelectedChartRotation();
     invertToggle.classList.toggle("active", chartsState.invertColors);
+    invertToggle.setAttribute("aria-pressed", String(chartsState.invertColors));
     rotateToggle.disabled = !sel;
     rotateToggle.classList.toggle("disabled", !sel);
     rotateToggle.title = sel
@@ -2141,7 +2291,7 @@
       return;
     }
 
-    status.textContent = "Loading...";
+    status.textContent = `Loading charts for ${icao}…`;
     try {
       const { byType, fromCache } = await fetchChartsForAirport(icao, opts);
       chartsState.currentIcao = icao;
@@ -2151,12 +2301,12 @@
       const total = getChartCount(byType);
       if (total > 0) {
         status.textContent = fromCache
-          ? `${total} chart(s) loaded from cache.`
-          : `${total} chart(s) loaded from API.`;
+          ? `${total} ${total === 1 ? "chart" : "charts"} for ${icao} (saved on this device).`
+          : `${total} ${total === 1 ? "chart" : "charts"} for ${icao}.`;
       } else {
         status.textContent = fromCache
-          ? "No charts found in cache."
-          : "No charts found.";
+          ? `No saved charts for ${icao}. Press Refresh to check again.`
+          : `No charts found for ${icao}. Not every airport has charts yet.`;
       }
       renderChartsContent();
     } catch (err) {
@@ -2180,19 +2330,20 @@
     chartsSearch({ force: true });
   }
 
-  function toggleChartsPanel() {
+  function toggleChartsPanel(options = {}) {
     const panel = document.getElementById(CHARTS_PANEL_ID);
     if (!panel) return;
-    const isOpen = panel.style.display !== "none";
+    // The stylesheet hides the panel at first, so the inline style starts empty.
+    const isOpen = panel.style.display === "flex";
     if (isOpen) {
-      panel.style.display = "none";
+      hideChartsPanel();
     } else {
       panel.style.display = "flex";
       const input = document.getElementById("gc-icao-input");
       const lastIcao = chartsState.currentIcao || loadChartsIcao();
       if (input) {
         input.value = lastIcao;
-        input.focus();
+        if (options.focusInput) input.focus();
       }
       if (lastIcao && !chartsState.currentIcao) {
         chartsState.currentIcao = lastIcao;
@@ -2205,7 +2356,17 @@
 
   function hideChartsPanel() {
     const panel = document.getElementById(CHARTS_PANEL_ID);
-    if (panel) panel.style.display = "none";
+    if (!panel) return;
+    // Don't leave keyboard focus inside a hidden panel: it would keep
+    // swallowing the flight keys.
+    const hadFocus = panel.contains(document.activeElement);
+    panel.style.display = "none";
+    if (hadFocus) {
+      document.activeElement?.blur?.();
+      const opener = document.getElementById(CHARTS_BTN_ID);
+      if (opener && flightUI && flightUI.style.display !== "none")
+        opener.focus();
+    }
   }
 
   // ==========================================
@@ -2322,12 +2483,14 @@
       position:fixed;
       top:72px;
       right:16px;
-      width:260px;
+      width:min(260px, calc(100vw - 24px));
+      box-sizing:border-box;
       max-height:calc(100dvh - 88px);
       overflow-y:auto;
       padding:16px;
-      background:rgba(23,28,42,0.9);
-      backdrop-filter:blur(18px);
+      /* Solid, not blurred: a backdrop blur over the WebGL canvas costs GPU
+         time on every simulator frame. */
+      background:rgba(23,28,42,0.97);
       border:1px solid rgba(255,255,255,0.1);
       border-radius:16px;
       color:#e5e7eb;
@@ -2346,16 +2509,14 @@
     }
 
     const headerButtonStyle = `
-      padding:4px 6px;
-      border:1px solid rgba(255,255,255,0.14);
+      padding:5px 7px;
+      border:1px solid rgba(255,255,255,0.1);
       border-radius:6px;
-      background:rgba(255,255,255,0.06);
+      background:transparent;
       color:#cbd5e1;
-      font-size:10px;
-      font-weight:700;
-      letter-spacing:0.08em;
+      font-size:11px;
+      font-weight:600;
       line-height:1;
-      text-transform:uppercase;
       cursor:pointer;
     `;
     const actionButtonStyle = `
@@ -2422,16 +2583,20 @@
           #${UI_CONTAINER_ID} *, #${UI_CONTAINER_ID} *::before { transition:none !important; animation:none !important; }
         }
         @keyframes atc-status-pulse { 0%,100% { opacity:1 } 50% { opacity:.35 } }
-        ${
-          isMobile
-            ? `#${UI_CONTAINER_ID} { font-size:13px; }
+        ${(() => {
+          // Touch sizing. Phones always get it; elsewhere a media query
+          // applies it when the window is resized small or the pointer is
+          // coarse (e.g. a touchscreen laptop in tablet mode).
+          const touchCss = `#${UI_CONTAINER_ID} { font-size:13px; }
         #${UI_CONTAINER_ID} input { height:40px !important; font-size:16px !important; }
         #${UI_CONTAINER_ID} button { min-height:40px; }
         #${UI_CONTAINER_ID} [role="switch"] { min-height:0; position:relative; overflow:visible; }
         #${UI_CONTAINER_ID} [role="switch"]::after { content:""; position:absolute; inset:-11px -8px; }
-        #${UI_CONTAINER_ID} label > div, #${UI_CONTAINER_ID} p, #${UI_CONTAINER_ID} [role="status"] { font-size:12px !important; }`
-            : ""
-        }
+        #${UI_CONTAINER_ID} label > div, #${UI_CONTAINER_ID} p, #${UI_CONTAINER_ID} [role="status"] { font-size:12px !important; }`;
+          return isMobile
+            ? touchCss
+            : `@media (pointer: coarse), (max-width: 640px) { ${touchCss} }`;
+        })()}
       </style>
 
       <div id="${FLIGHT_UI_HEADER_ID}" style="
@@ -2461,16 +2626,16 @@
           flex-shrink:0;
         ">
           <button id="${FLIGHT_UI_MOVE_BTN_ID}" type="button" aria-pressed="false" title="Drag the panel to move it" style="${headerButtonStyle}">Move</button>
-          <button id="${FLIGHT_UI_RESET_BTN_ID}" type="button" title="Reset panel position" style="${headerButtonStyle}">Reset</button>
+          <button id="${FLIGHT_UI_RESET_BTN_ID}" type="button" title="Put the panel back in the top-right corner" ${savedFlightUiPosition ? "" : "hidden"} style="${headerButtonStyle}">Reset</button>
           ${
             isMobile
               ? ""
-              : `<button id="${FLIGHT_UI_HIDE_BTN_ID}" type="button" title="Hide panel (${toggleKey.toUpperCase()})" aria-label="Hide RadarThing panel (${toggleKey.toUpperCase()})" style="${headerButtonStyle}">Hide</button>`
+              : `<button id="${FLIGHT_UI_HIDE_BTN_ID}" type="button" title="Hide panel (${escapeHtml(toggleKey.toUpperCase())})" aria-label="Hide RadarThing panel (${escapeHtml(toggleKey.toUpperCase())})" style="${headerButtonStyle}">Hide</button>`
           }
         </div>
         ${
           isMobile
-            ? `<button id="${MOBILE_UI_CLOSE_ID}" type="button" aria-label="Close ATC flight info" title="Close" style="
+            ? `<button id="${MOBILE_UI_CLOSE_ID}" type="button" aria-label="Hide RadarThing panel" title="Hide panel" style="
                 width:28px;
                 height:28px;
                 display:grid;
@@ -2505,12 +2670,26 @@
       ">
         <span data-status-dot aria-hidden="true" style="flex:none;width:8px;height:8px;border-radius:50%;background:#94a3b8;"></span>
         <span data-status-text>Not tracking</span>
+        <span data-status-age aria-hidden="true" style="font-weight:500;letter-spacing:0.02em;color:#94a3b8;"></span>
         ${
           isMobile
             ? ""
-            : `<span id="${HOTKEY_HINT_ID}" style="margin-left:auto;font-size:10px;font-weight:500;letter-spacing:0.02em;color:#94a3b8;text-align:right;">${hotkeyHintText()}</span>`
+            : `<span id="${HOTKEY_HINT_ID}" style="margin-left:auto;font-size:11px;font-weight:500;letter-spacing:0.02em;color:#94a3b8;text-align:right;">${escapeHtml(hotkeyHintText())}</span>`
         }
       </div>
+
+      <button id="atc-retry-now-btn" type="button" hidden style="
+        width:100%;
+        margin:-4px 0 12px;
+        padding:7px 10px;
+        border:1px solid rgba(251,191,36,0.45);
+        border-radius:10px;
+        background:rgba(251,191,36,0.1);
+        color:#fde68a;
+        font-size:12px;
+        font-weight:700;
+        cursor:pointer;
+      ">Retry now</button>
 
       <div id="${MOST_TRACKED_BADGE_ID}" role="status" aria-live="polite" style="
         display:none;
@@ -2528,10 +2707,37 @@
           <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" stroke-width="1.8"/>
           <circle cx="12" cy="12" r="2.6" fill="currentColor"/>
         </svg>
-        <span style="font-size:9px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;">#1 Most tracked</span>
-        <span data-tracker-count style="margin-left:auto;font-size:9px;color:#fbbf24;white-space:nowrap;"></span>
+        <span style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;">#1 Most tracked</span>
+        <span data-tracker-count style="margin-left:auto;font-size:11px;color:#fbbf24;white-space:nowrap;"></span>
       </div>
 
+      <div id="atc-flight-summary" hidden style="
+        display:flex;
+        align-items:center;
+        gap:8px;
+        padding:8px 10px;
+        border:1px solid rgba(255,255,255,0.1);
+        border-radius:10px;
+        background:rgba(255,255,255,0.04);
+      ">
+        <span style="flex:1;min-width:0;display:grid;gap:2px;">
+          <span data-summary-callsign style="font-size:13px;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+          <span data-summary-text style="font-size:11px;color:#cbd5e1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+        </span>
+        <button id="atc-edit-flight-btn" type="button" aria-expanded="false" aria-controls="atc-flight-fields" style="
+          padding:5px 8px;
+          border:1px solid rgba(125,211,252,0.35);
+          border-radius:6px;
+          background:transparent;
+          color:#7dd3fc;
+          font-size:11px;
+          font-weight:700;
+          cursor:pointer;
+          white-space:nowrap;
+        ">Edit flight</button>
+      </div>
+
+      <div id="atc-flight-fields">
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px 8px;">
         ${buildInputRow("Departure", DEP_INPUT_ID, "e.g. EGLL", 'aria-describedby="atc-form-error"')}
         ${buildInputRow("Arrival", ARR_INPUT_ID, "e.g. KJFK", 'aria-describedby="atc-form-error"')}
@@ -2560,6 +2766,7 @@
       </label>
       <div id="${AF_FIELD_WRAP_ID}" style="display:none; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
         ${buildInputRow("Air force", AF_INPUT_ID, "USAF")}
+      </div>
       </div>
 
       <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:8px; margin-top:14px;">
@@ -2599,7 +2806,7 @@
       <section id="${ACARS_PANEL_ID}" style="display:none; margin-top:10px; border-top:1px solid rgba(255,255,255,0.08); padding-top:10px;">
         <button id="${ACARS_TOGGLE_ID}" type="button" aria-expanded="false" aria-controls="${ACARS_BODY_ID}" style="${sectionHeaderStyle}">
           <span>ACARS Updates</span>
-          <span aria-hidden="true" data-acars-chevron style="display:inline-block;font-size:8px;transition:transform .2s">&#9654;</span>
+          <span aria-hidden="true" data-acars-chevron style="display:inline-block;font-size:11px;transition:transform .2s">&#9654;</span>
         </button>
         <div id="${ACARS_BODY_ID}" hidden style="margin-top:10px">
         <textarea id="${ACARS_DRAFT_ID}" maxlength="500" rows="3" placeholder="Write a flight update for viewers…" aria-label="New ACARS entry" style="box-sizing:border-box;width:100%;resize:vertical;padding:8px 10px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.04);color:#e5e7eb;font:12px system-ui;outline:none"></textarea>
@@ -2613,7 +2820,7 @@
         <button id="${RADAR_SETTINGS_HEADER_ID}" type="button" aria-expanded="false" aria-controls="${RADAR_SETTINGS_BODY_ID}" style="${sectionHeaderStyle}">
           <span>Settings &amp; shortcuts</span>
           <span id="${RADAR_SETTINGS_ARROW_ID}" aria-hidden="true" style="
-            font-size:9px;
+            font-size:11px;
             transition:transform 0.2s;
           ">&#9654;</span>
         </button>
@@ -2623,15 +2830,15 @@
           padding:0 2px;
         ">
           ${buildToggleRow("Also share with Seabus Radar", SEABUS_TOGGLE_ID, radarPrefs.seabus, SEABUS_HINT_ID)}
-          <p id="${SEABUS_HINT_ID}" style="margin:-4px 0 2px;font-size:10px;line-height:1.4;color:#94a3b8;">Sends your position to the separate community Seabus radar too. RadarThing works without it.</p>
-          <p id="atc-seabus-status" role="status" aria-live="polite" style="display:none;margin:-2px 0 2px;font-size:10px;line-height:1.4;"></p>
+          <p id="${SEABUS_HINT_ID}" style="margin:-4px 0 2px;font-size:11px;line-height:1.4;color:#94a3b8;">Sends your position to the separate community Seabus radar too. RadarThing works without it.</p>
+          <p id="atc-seabus-status" role="status" aria-live="polite" style="display:none;margin:-2px 0 2px;font-size:11px;line-height:1.4;"></p>
           <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:#cbd5e1; letter-spacing:0.04em;">
             <span id="${KEYBIND_BTN_ID}-label">Show/hide panel key</span>
-            <button id="${KEYBIND_BTN_ID}" type="button" aria-labelledby="${KEYBIND_BTN_ID}-label ${KEYBIND_BTN_ID}" title="Click, then press a new key (Esc cancels)" style="${keybindButtonStyle}">${toggleKey.toUpperCase()}</button>
+            <button id="${KEYBIND_BTN_ID}" type="button" aria-labelledby="${KEYBIND_BTN_ID}-label ${KEYBIND_BTN_ID}" title="Click, then press a new key (Esc cancels)" style="${keybindButtonStyle}">${escapeHtml(toggleKey.toUpperCase())}</button>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:#cbd5e1; letter-spacing:0.04em;">
             <span id="${CHARTS_KEYBIND_BTN_ID}-label">Airport charts key</span>
-            <button id="${CHARTS_KEYBIND_BTN_ID}" type="button" aria-labelledby="${CHARTS_KEYBIND_BTN_ID}-label ${CHARTS_KEYBIND_BTN_ID}" title="Click, then press a new key (Esc cancels)" style="${keybindButtonStyle}">${chartsToggleKey.toUpperCase()}</button>
+            <button id="${CHARTS_KEYBIND_BTN_ID}" type="button" aria-labelledby="${CHARTS_KEYBIND_BTN_ID}-label ${CHARTS_KEYBIND_BTN_ID}" title="Click, then press a new key (Esc cancels)" style="${keybindButtonStyle}">${escapeHtml(chartsToggleKey.toUpperCase())}</button>
           </div>
         </div>
       </div>
@@ -2707,8 +2914,7 @@
         padding:0;
         border:1px solid rgba(255,255,255,0.12);
         border-radius:12px;
-        background:rgba(2,6,23,0.82);
-        backdrop-filter:blur(18px);
+        background:rgba(23,28,42,0.97);
         color:#67e8f9;
         font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
         font-size:28px;
@@ -2807,6 +3013,19 @@
           document.getElementById(AF_INPUT_ID).focus();
       });
 
+    document.getElementById("atc-edit-flight-btn").onclick = () => {
+      if (editingFlight && lastTrackedFlight) {
+        // Cancel puts back the values that are being tracked.
+        fillFlightForm(lastTrackedFlight);
+        setFormError("");
+      }
+      setFlightEditing(!editingFlight);
+    };
+
+    document.getElementById("atc-retry-now-btn").onclick = () => {
+      window.dispatchEvent(new CustomEvent("radarthing-retry-now"));
+    };
+
     document.getElementById(SAVE_BTN_ID).onclick = async () => {
       const dep = document.getElementById(DEP_INPUT_ID).value.trim();
       const arr = document.getElementById(ARR_INPUT_ID).value.trim();
@@ -2880,6 +3099,8 @@
         saveBtn.textContent = isTracking ? "Update flight" : "Start tracking";
       }
       if (!isTracking) return;
+      if (editingFlight) setFlightEditing(false);
+      else applyCompactMode();
       showToast(
         wasTracking
           ? `Flight updated · ${flt} ${dep} → ${arr}`
@@ -2929,16 +3150,11 @@
       if (endBtn.dataset.confirming === "1") resetEndButton();
     });
 
-    let endedRemotely = false;
-    window.addEventListener("radarthing-flight-disconnected", () => {
-      // The end-result toast follows; prefix it instead of showing two.
-      endedRemotely = true;
-    });
-
     window.addEventListener("radarthing-flight-end-result", (event) => {
       const detail = event.detail || {};
-      const prefix = endedRemotely ? "Ended from the RadarThing website. " : "";
-      endedRemotely = false;
+      // The result says whether the website ended this flight, so the
+      // prefix always belongs to the right end request.
+      const prefix = detail.remote ? "Ended from the RadarThing website. " : "";
       if (!detail.message) return;
       showToast(
         prefix + detail.message,
@@ -2955,7 +3171,8 @@
       );
     });
 
-    document.getElementById(CHARTS_BTN_ID).onclick = toggleChartsPanel;
+    document.getElementById(CHARTS_BTN_ID).onclick = () =>
+      toggleChartsPanel({ focusInput: true });
   }
 
   // ==========================================
@@ -2983,14 +3200,13 @@
         max-height: calc(100vh - 16px);
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         color: #ffffff;
-        background: rgba(1, 11, 16, 0.94);
-        border: 1px solid rgba(34, 211, 238, 0.15);
-        border-radius: 12px;
+        background: rgba(23, 28, 42, 0.97);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
         box-shadow:
           0 20px 40px rgba(0, 0, 0, 0.45),
           0 0 1px rgba(0, 0, 0, 0.4),
           0 0 20px rgba(0, 255, 255, 0.04);
-        backdrop-filter: blur(16px);
         animation: gc-slide-in 0.2s ease-out;
         overflow: hidden;
       }
@@ -3008,7 +3224,7 @@
       .gc-header h3 {
         margin: 0;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        font-size: 0.95rem;
+        font-size: 15px;
         font-weight: 700;
         color: #22d3ee;
         letter-spacing: -0.01em;
@@ -3031,7 +3247,7 @@
         background: transparent;
         color: rgba(255, 255, 255, 0.4);
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        font-size: 0.7rem;
+        font-size: 11px;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.15s ease;
@@ -3064,7 +3280,7 @@
         border: 1px solid rgba(255, 255, 255, 0.08);
         background: transparent;
         color: rgba(255, 255, 255, 0.35);
-        font-size: 1.15rem;
+        font-size: 18px;
         line-height: 1;
         cursor: pointer;
         transition: all 0.15s ease;
@@ -3091,7 +3307,7 @@
         background: rgba(0, 0, 0, 0.4);
         color: #ffffff;
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: 0.85rem;
+        font-size: 14px;
         font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.1em;
@@ -3121,7 +3337,7 @@
         background: #22d3ee;
         color: #010b10;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        font-size: 0.78rem;
+        font-size: 13px;
         font-weight: 700;
         letter-spacing: 0.02em;
         cursor: pointer;
@@ -3145,7 +3361,7 @@
         background: rgba(255, 255, 255, 0.06);
         color: rgba(255, 255, 255, 0.85);
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        font-size: 0.74rem;
+        font-size: 12px;
         font-weight: 600;
         letter-spacing: 0.02em;
         cursor: pointer;
@@ -3165,7 +3381,7 @@
         padding: 0 14px;
         margin-top: 6px;
         min-height: 16px;
-        font-size: 0.72rem;
+        font-size: 12px;
         color: rgba(255, 255, 255, 0.3);
         flex-shrink: 0;
       }
@@ -3185,7 +3401,7 @@
         border: 1px solid rgba(255, 255, 255, 0.06);
         background: rgba(255, 255, 255, 0.03);
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        font-size: 0.65rem;
+        font-size: 11px;
         font-weight: 600;
         letter-spacing: 0.03em;
         color: rgba(255, 255, 255, 0.4);
@@ -3202,7 +3418,7 @@
       .gc-type-tab span {
         margin-left: 3px;
         opacity: 0.5;
-        font-size: 0.6rem;
+        font-size: 11px;
       }
 
       .gc-type-tab.active {
@@ -3227,7 +3443,7 @@
         background: rgba(0, 0, 0, 0.4);
         color: #ffffff;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        font-size: 0.76rem;
+        font-size: 12px;
         font-weight: 500;
         padding: 0 28px 0 10px;
         outline: none;
@@ -3265,7 +3481,7 @@
 
       .gc-empty {
         color: rgba(255, 255, 255, 0.2);
-        font-size: 0.76rem;
+        font-size: 12px;
         padding: 12px 10px;
       }
 
@@ -3374,15 +3590,18 @@
 
     const panel = document.createElement("div");
     panel.id = CHARTS_PANEL_ID;
+    // Non-modal: the pilot keeps flying while charts are open.
+    panel.setAttribute("role", "dialog");
+    panel.setAttribute("aria-labelledby", "gc-title");
     panel.innerHTML = `
       <div class="gc-header">
-        <h3 class="gc-title">Airport Charts</h3>
+        <h3 class="gc-title" id="gc-title">Airport charts</h3>
         <div class="gc-header-actions">
-          <button type="button" class="gc-invert-toggle" title="Toggle color inversion">
+          <button type="button" class="gc-invert-toggle" aria-pressed="false" title="Invert chart colours">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20z"/></svg>
             Invert
           </button>
-          <button type="button" class="gc-rotate-toggle" title="Rotate chart">
+          <button type="button" class="gc-rotate-toggle" title="Rotate chart 90°">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15A9 9 0 1 1 23 10"/></svg>
             Rotate
           </button>
@@ -3390,9 +3609,9 @@
         </div>
       </div>
       <div class="gc-search">
-        <input id="gc-icao-input" type="text" placeholder="ICAO code..." maxlength="4" spellcheck="false" aria-label="Airport ICAO code" autocomplete="off" />
-        <button id="gc-search-btn" class="gc-search-btn">Load</button>
-        <button id="gc-reset-btn" class="gc-reset-btn">Reset</button>
+        <input id="gc-icao-input" type="text" placeholder="e.g. KSFO" maxlength="4" spellcheck="false" aria-label="Airport ICAO code" autocomplete="off" />
+        <button id="gc-search-btn" type="button" class="gc-search-btn">Load</button>
+        <button id="gc-reset-btn" type="button" class="gc-reset-btn" title="Clear saved charts and download them again">Refresh</button>
       </div>
       <div id="gc-search-status" class="gc-status" role="status" aria-live="polite"></div>
       <div class="gc-type-tabs"></div>
@@ -3412,6 +3631,13 @@
 
     // Stop clicks from reaching GeoFS
     panel.addEventListener("click", (e) => e.stopPropagation());
+    // Escape on any control in the panel closes it.
+    panel.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      e.preventDefault();
+      hideChartsPanel();
+    });
 
     // Restore saved size
     const size = loadChartsSize();
@@ -3549,23 +3775,43 @@
   window.addEventListener("keydown", (e) => {
     if (keybindMode) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-
+    // Holding the key down must not flicker the panel open and shut.
+    if (e.repeat) return;
+    const target = e.target;
     if (
-      e.key.toLowerCase() === toggleKey &&
-      e.target.tagName !== "INPUT" &&
-      e.target.tagName !== "TEXTAREA"
-    ) {
+      target &&
+      (target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
+        target.isContentEditable)
+    )
+      return;
+    const key = typeof e.key === "string" ? e.key.toLowerCase() : "";
+
+    if (key === toggleKey) {
       setFlightUIVisible(flightUI.style.display === "none");
       return;
     }
 
-    if (
-      e.key.toLowerCase() === chartsToggleKey &&
-      e.target.tagName !== "INPUT" &&
-      e.target.tagName !== "TEXTAREA"
-    ) {
-      toggleChartsPanel();
+    if (key === chartsToggleKey) {
+      // Opened from the keyboard the pilot is flying, so the search box is
+      // not focused: that would capture the flight keys.
+      toggleChartsPanel({ focusInput: false });
     }
+  });
+
+  // Commands from the Tampermonkey menu (see the installer).
+  document.addEventListener("radarthing-menu-toggle-panel", () =>
+    setFlightUIVisible(flightUI.style.display === "none"),
+  );
+  document.addEventListener("radarthing-menu-open-charts", () => {
+    const panel = document.getElementById(CHARTS_PANEL_ID);
+    if (panel && panel.style.display !== "flex")
+      toggleChartsPanel({ focusInput: true });
+  });
+  document.addEventListener("radarthing-menu-reset-position", () => {
+    setFlightUIVisible(true);
+    document.getElementById(FLIGHT_UI_RESET_BTN_ID)?.click();
   });
 
   // Typing in any RadarThing field must never fly the aircraft, so stop every
@@ -3587,6 +3833,13 @@
       (e) => {
         if (!isRadarThingTextField(e.target)) return;
         e.stopPropagation();
+        // Escape hands the keyboard back to GeoFS (and closes charts).
+        if (type === "keydown" && e.key === "Escape") {
+          e.preventDefault();
+          if (e.target.closest(`#${CHARTS_PANEL_ID}`)) hideChartsPanel();
+          else e.target.blur();
+          return;
+        }
         // Enter in a flight-form field submits it like a normal web form.
         // (Handled here because propagation stops before the field itself.)
         if (
@@ -3619,7 +3872,8 @@
     const color = e.detail.color || "#94a3b8";
     const text = statusEl.querySelector("[data-status-text]");
     const dot = statusEl.querySelector("[data-status-dot]");
-    if (text) text.textContent = e.detail.text || "";
+    if (text && text.textContent !== (e.detail.text || ""))
+      text.textContent = e.detail.text || "";
     if (dot) {
       dot.style.background = color;
       dot.style.animation =
@@ -3633,7 +3887,36 @@
     statusEl.style.color = color;
     statusEl.style.borderColor = `${color}55`;
     statusEl.style.background = `${color}14`;
+    lastStatusSuccessAt =
+      e.detail.state === "live" ? e.detail.lastSuccessAt || 0 : 0;
+    updateStatusAge();
+    const retryBtn = document.getElementById("atc-retry-now-btn");
+    if (retryBtn)
+      retryBtn.hidden = !(
+        e.detail.state === "retrying" || e.detail.state === "offline"
+      );
   });
+
+  // "Live · 4s ago" tells the pilot updates are really flowing. The age sits
+  // outside the announced text so screen readers aren't told every tick.
+  let lastStatusSuccessAt = 0;
+  function updateStatusAge() {
+    const age = document.querySelector(
+      `#${STATUS_INDICATOR_ID} [data-status-age]`,
+    );
+    if (!age) return;
+    if (!lastStatusSuccessAt) {
+      if (age.textContent) age.textContent = "";
+      return;
+    }
+    const seconds = Math.max(
+      0,
+      Math.round((Date.now() - lastStatusSuccessAt) / 1000),
+    );
+    const next = seconds < 2 ? "· just now" : `· ${seconds}s ago`;
+    if (age.textContent !== next) age.textContent = next;
+  }
+  setInterval(updateStatusAge, 1000);
 
   window.addEventListener("seabus-status-update", (e) => {
     const el = document.getElementById("atc-seabus-status");
@@ -3681,8 +3964,14 @@
       updateAcarsAvailability();
       return;
     }
-    fillFlightForm(detail);
+    // The pilot's own save already matches the form; only refill it when the
+    // values came from elsewhere, so unsaved edits are never overwritten.
+    if (detail.resumed || detail.remote) {
+      fillFlightForm(detail);
+      applyCompactMode();
+    }
     if (detail.active === true) {
+      lastTrackedFlight = detail;
       const signature = `${String(detail.dep || detail.departure || "")
         .trim()
         .toUpperCase()}|${String(detail.flt || detail.flightNo || "")

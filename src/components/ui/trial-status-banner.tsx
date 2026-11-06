@@ -33,7 +33,7 @@ export function TrialStatusBanner({ hidden = false }: { hidden?: boolean }) {
 
   const daysLeft = Math.max(1, Math.ceil((trialEndsAt - now) / DAY_MS));
   const message = ended
-    ? "Your PRO trial has ended."
+    ? "Your Pro trial has ended."
     : `Your PRO trial ends in ${daysLeft} ${daysLeft === 1 ? "day" : "days"}.`;
 
   return (
@@ -49,7 +49,7 @@ export function TrialStatusBanner({ hidden = false }: { hidden?: boolean }) {
         }
         className="rounded-md bg-cyan-400 px-2.5 py-1 font-semibold text-slate-950 hover:bg-cyan-300"
       >
-        Keep PRO for $3/mo
+        Keep Pro for $3/mo
       </Link>
       <button
         aria-label="Dismiss"

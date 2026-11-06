@@ -17,6 +17,7 @@ import { api } from "../../../convex/_generated/api";
 import { type Id } from "../../../convex/_generated/dataModel";
 
 import { type PositionUpdate } from "~/lib/aircraft-store";
+import { FirstVisitTourHint } from "~/components/onboarding/FirstVisitTourHint";
 import { activeAircraft } from "~/lib/aircraft-store";
 import { type FlightRoutePoint } from "~/lib/flightTelemetry";
 import {
@@ -178,6 +179,7 @@ function ATCPageContent() {
     onlineAirports,
     error: streamError,
     lastMessageAgeSeconds,
+    reconnectNow,
   } = useAircraftStream();
   const aircrafts = useAirlineTelephony(streamedAircrafts);
   const {
@@ -419,7 +421,10 @@ function ATCPageContent() {
   );
 
   // Report a search once the user stops typing, rather than on every keystroke.
-  const searchResultCount =
+  // The result count changes with live traffic, so it is read from a ref:
+  // only a change to the query itself should report a new search.
+  const searchResultCountRef = useRef(0);
+  searchResultCountRef.current =
     searchResults.aircrafts.length +
     searchResults.airports.length +
     searchResults.pilots.length;
@@ -429,11 +434,11 @@ function ATCPageContent() {
     const timer = setTimeout(() => {
       Analytics.aircraftSearched({
         query: query.slice(0, 32).toUpperCase(),
-        resultCount: searchResultCount,
+        resultCount: searchResultCountRef.current,
       });
     }, 1500);
     return () => clearTimeout(timer);
-  }, [searchTerm, searchResultCount]);
+  }, [searchTerm]);
 
   const selectedAircraftKey = selectedAircrafts
     .map((ac) => ac.id || ac.callsign)
@@ -956,6 +961,27 @@ function ATCPageContent() {
         return;
       }
 
+      // "/" jumps to search and "?" lists the shortcuts, as on most web apps.
+      const hasModifier = e.ctrlKey || e.metaKey || e.altKey;
+      if (!isEditableContext && !hasModifier && e.key === "/") {
+        e.preventDefault();
+        if (isPhone) {
+          setShowMobileSearch(true);
+        } else {
+          setIsUiHidden(false);
+          document
+            .querySelector<HTMLInputElement>('input[role="combobox"]')
+            ?.focus();
+        }
+        return;
+      }
+      if (!isEditableContext && !hasModifier && e.key === "?") {
+        e.preventDefault();
+        setIsUiHidden(false);
+        setShowShortcutsMenu(true);
+        return;
+      }
+
       if (
         e.key === "Escape" &&
         (fullFlightFilter || selectedCallsigns.size > 0)
@@ -1177,14 +1203,14 @@ function ATCPageContent() {
       items: [
         {
           id: "import-plan",
-          label: importedFlightPlan ? "Replace Plan" : "Import Plan",
+          label: importedFlightPlan ? "Replace plan" : "Import plan",
           icon: UploadIcon,
           active: Boolean(importedFlightPlan),
           onClick: handleFlightPlanImportClick,
         },
         {
           id: "file-flight",
-          label: "File Flight",
+          label: "File flight",
           icon: <FileText size={18} strokeWidth={1.8} />,
           active: showFileFlightModal,
           onClick: () => setShowFileFlightModal(true),
@@ -1193,7 +1219,7 @@ function ATCPageContent() {
           ? [
               {
                 id: "plan-details",
-                label: "Plan Details",
+                label: "Plan details",
                 icon: <Route size={18} strokeWidth={1.8} />,
                 active: showImportedFlightPlanPanel,
                 onClick: () =>
@@ -1201,7 +1227,7 @@ function ATCPageContent() {
               },
               {
                 id: "clear-plan",
-                label: "Clear Plan",
+                label: "Clear plan",
                 icon: <X size={18} strokeWidth={1.8} />,
                 onClick: clearImportedFlightPlan,
               },
@@ -1273,7 +1299,7 @@ function ATCPageContent() {
         },
         {
           id: "upload",
-          label: "Upload",
+          label: "Upload photo",
           icon: UploadIcon,
           active: false,
           onClick: () => {
@@ -1329,14 +1355,14 @@ function ATCPageContent() {
           : []),
         {
           id: "radar-guide",
-          label: "Radar Tour",
+          label: "Radar tour",
           icon: <Radar size={18} strokeWidth={1.8} />,
           active: isRadarGuideOpen,
           onClick: () => setIsRadarGuideOpen(true),
         },
         {
           id: "about-radar",
-          label: "About Radar",
+          label: "About the radar",
           icon: <CircleHelp size={18} strokeWidth={1.8} />,
           active: false,
           onClick: () => {
@@ -1348,14 +1374,14 @@ function ATCPageContent() {
         },
         {
           id: "stats-rules",
-          label: "Stats Rules",
+          label: "Stats rules",
           icon: <CircleHelp size={18} strokeWidth={1.8} />,
           active: showStatsExclusionsModal,
           onClick: () => setShowStatsExclusionsModal(true),
         },
         {
           id: "install",
-          label: "Install",
+          label: "Install script",
           icon: InstallIcon,
           active: false,
           onClick: () => {
@@ -1373,14 +1399,14 @@ function ATCPageContent() {
         },
         {
           id: "privacy-settings",
-          label: "Privacy Settings",
+          label: "Privacy settings",
           icon: <ShieldCheck size={18} strokeWidth={1.8} />,
           active: false,
           onClick: openPrivacySettings,
         },
         {
           id: "legal",
-          label: "Privacy & Terms",
+          label: "Privacy & terms",
           icon: <FileText size={18} strokeWidth={1.8} />,
           active: false,
           onClick: () => router.push("/privacy"),
@@ -1421,7 +1447,7 @@ function ATCPageContent() {
         </div>
 
         <header
-          className={`absolute top-0 right-0 left-0 z-[10010] flex items-center justify-between ${isPhone ? "h-14 px-3 pt-1" : isTablet ? "h-16 px-4 pt-3" : "h-20 px-6 pt-5"}`}
+          className={`absolute top-0 right-0 left-0 z-[10010] flex items-center justify-between ${isPhone ? "h-[calc(3.5rem+env(safe-area-inset-top))] pt-[max(0.25rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))]" : isTablet ? "h-16 px-4 pt-3" : "h-20 px-6 pt-5"}`}
         >
           <div className="flex items-center gap-2">
             {!isPhone && !isUiHidden && (
@@ -1526,18 +1552,19 @@ function ATCPageContent() {
                 isStale={isTrafficStale}
                 lastMessageAgeSeconds={lastMessageAgeSeconds}
                 error={streamError}
+                onReconnect={reconnectNow}
               />
-              {!isPhone && (
-                <button
-                  type="button"
-                  onClick={() => setIsRadarGuideOpen(true)}
-                  aria-label="Take the radar tour"
-                  title="Take the radar tour"
-                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-cyan-400/30 bg-black/70 text-cyan-300 transition-colors hover:border-cyan-300/60 hover:bg-cyan-500/10 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
-                >
-                  <CircleHelp size={18} strokeWidth={1.8} aria-hidden="true" />
-                </button>
-              )}
+              {/* On narrow phones the header has no room; the tour is offered
+                  on first visit and stays in the dock's Help section. */}
+              <button
+                type="button"
+                onClick={() => setIsRadarGuideOpen(true)}
+                aria-label="Take the radar tour"
+                title="Take the radar tour"
+                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-cyan-400/30 bg-black/70 text-cyan-300 transition-colors hover:border-cyan-300/60 hover:bg-cyan-500/10 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none max-[429px]:hidden"
+              >
+                <CircleHelp size={18} strokeWidth={1.8} aria-hidden="true" />
+              </button>
               <WhatsNew isMobile={isMobile} />
               <UserAuth />
             </div>
@@ -2101,6 +2128,29 @@ function ATCPageContent() {
           }}
         />
         <TrialStatusBanner hidden={isUiHidden || isRadarGuideOpen} />
+        {isAppReady &&
+          !isUiHidden &&
+          !isLoading &&
+          connectionStatus === "connected" &&
+          aircrafts.length === 0 && (
+            <p
+              role="status"
+              className={`pointer-events-auto fixed left-1/2 z-[10011] w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-xl border border-white/10 bg-black/80 px-4 py-2.5 text-center text-sm text-slate-200 shadow-lg shadow-black/40 ${isPhone ? "bottom-20" : "bottom-24"}`}
+            >
+              No pilots are broadcasting right now.{" "}
+              <Link
+                href="/guides/getting-started"
+                className="font-semibold text-cyan-300 underline underline-offset-4 hover:text-cyan-200"
+              >
+                Put your own flight on the radar
+              </Link>
+            </p>
+          )}
+        <FirstVisitTourHint
+          ready={isAppReady}
+          hidden={isUiHidden || isRadarGuideOpen}
+          onStartTour={() => setIsRadarGuideOpen(true)}
+        />
         <RadarGuide
           open={isRadarGuideOpen}
           onFinish={finishRadarGuide}

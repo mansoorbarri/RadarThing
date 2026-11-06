@@ -130,7 +130,7 @@ export function ImportedFlightPlanPanel({
             <div className="font-mono text-xl font-semibold text-white">
               {summary.totalDistanceNm.toFixed(0)} nm
             </div>
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-slate-400">
               {summary.totalDistanceKm.toFixed(0)} km total
             </div>
           </div>
@@ -143,7 +143,7 @@ export function ImportedFlightPlanPanel({
             <div className="font-mono text-xl font-semibold text-white">
               {formatDuration(summary.totalDurationMinutes)}
             </div>
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-slate-400">
               Uses plan speeds when present
             </div>
           </div>
@@ -188,7 +188,7 @@ export function ImportedFlightPlanPanel({
                         <div className="truncate font-mono text-sm font-semibold text-white">
                           {waypoint.ident}
                         </div>
-                        <div className="text-[11px] tracking-[0.2em] text-slate-500 uppercase">
+                        <div className="text-[11px] tracking-[0.2em] text-slate-400 uppercase">
                           {waypoint.type}
                         </div>
                       </div>
@@ -199,7 +199,7 @@ export function ImportedFlightPlanPanel({
                       </div>
                     </div>
 
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-slate-500">
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-slate-400">
                       <div>LAT {waypoint.lat.toFixed(4)}</div>
                       <div className="text-right">
                         LON {waypoint.lon.toFixed(4)}

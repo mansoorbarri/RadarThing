@@ -98,7 +98,9 @@ export function ControlDock({
 
   const btnSize = isMobile ? "h-11 w-11" : "h-13 w-13";
   const panelWidth = isMobile ? "w-[220px]" : "w-[236px]";
-  const bottomPos = isMobile ? "bottom-3" : "bottom-6";
+  const bottomPos = isMobile
+    ? "bottom-[max(0.75rem,env(safe-area-inset-bottom))]"
+    : "bottom-6";
   const sidePos = isMobile
     ? isRight
       ? "right-3"
@@ -153,7 +155,7 @@ export function ControlDock({
                       aria-expanded={!collapsed}
                       aria-controls={`${panelId}-${section.id}`}
                       onClick={() => toggleSection(section.id, index)}
-                      className="flex min-h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-1 text-left text-[10px] font-medium tracking-[0.18em] text-cyan-300/80 uppercase transition-colors hover:bg-cyan-500/10 hover:text-cyan-200 focus-visible:outline-2 focus-visible:outline-cyan-300"
+                      className="flex min-h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-1 text-left text-[11px] font-medium tracking-[0.16em] text-cyan-300/90 uppercase transition-colors hover:bg-cyan-500/10 hover:text-cyan-200 focus-visible:outline-2 focus-visible:outline-cyan-300"
                     >
                       {section.label}
                       <ChevronDown
@@ -213,13 +215,22 @@ export function ControlDock({
           aria-expanded={open}
           aria-controls={panelId}
           onClick={() => setOpen(!open)}
-          className={`flex ${btnSize} cursor-pointer items-center justify-center rounded-md border font-mono font-bold transition-all duration-200 ${
+          className={`flex ${btnSize} cursor-pointer flex-col items-center justify-center gap-0.5 rounded-md border font-mono font-bold transition-all duration-200 ${
             open
               ? "border-cyan-400/50 bg-cyan-400/15 text-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.5)]"
               : "border-cyan-400/30 bg-black/80 text-cyan-400 shadow-[0_0_6px_rgba(0,255,255,0.25)] hover:border-cyan-400/50 hover:bg-cyan-400/15 hover:shadow-[0_0_10px_rgba(0,255,255,0.5)]"
           }`}
         >
           {DockIcon}
+          {/* A visible word makes the grid icon discoverable on desktop. */}
+          {!isMobile && (
+            <span
+              aria-hidden="true"
+              className="text-[11px] leading-none font-semibold tracking-normal"
+            >
+              Menu
+            </span>
+          )}
         </button>
       </div>
 

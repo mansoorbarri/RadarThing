@@ -193,7 +193,7 @@ export function ProManagementTab({
               {user.email}
             </span>
             <span
-              className={`shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-wider ${
+              className={`shrink-0 rounded px-1.5 py-0.5 font-mono text-[11px] font-bold tracking-wider ${
                 user.role === "ADMIN"
                   ? "bg-purple-500/20 text-purple-400"
                   : effectiveRole === "PRO"
@@ -210,7 +210,7 @@ export function ProManagementTab({
                   : effectiveRole}
             </span>
           </div>
-          <p className="mt-0.5 truncate font-mono text-xs text-slate-500">
+          <p className="mt-0.5 truncate font-mono text-xs text-slate-400">
             {user.clerkId.slice(0, 16)}...
           </p>
           {user.discordUsername && (
@@ -231,7 +231,7 @@ export function ProManagementTab({
           <div className="ml-4 flex items-center gap-3">
             <div className="text-right">
               <p className="text-xs font-medium text-white">PRO access</p>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-400">
                 {isPermanentPro
                   ? "Purchased"
                   : hasTempGrant
@@ -268,7 +268,7 @@ export function ProManagementTab({
         </div>
 
         <div className="relative">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Search by email, Discord username, clerkId, or ID..."
@@ -278,7 +278,7 @@ export function ProManagementTab({
           />
         </div>
 
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-400">
           {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}
           {search && ` matching "${search}"`}
         </p>
@@ -328,7 +328,7 @@ export function ProManagementTab({
         </UserSection>
 
         {filteredUsers.length === 0 && (
-          <div className="py-12 text-center text-sm text-slate-500">
+          <div className="py-12 text-center text-sm text-slate-400">
             No users found.
           </div>
         )}
@@ -364,7 +364,7 @@ function UserSection({ title, count, children }: UserSectionProps) {
     <section className="space-y-2">
       <div className="flex items-end justify-between gap-3">
         <h3 className="text-sm font-semibold text-white">{title}</h3>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-slate-400">
           {count} user{count !== 1 ? "s" : ""}
         </span>
       </div>
@@ -396,7 +396,7 @@ function GrantProModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-2xl">
+      <div className="border-border bg-card text-card-foreground w-full max-w-lg rounded-2xl border p-6 shadow-2xl">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <h3 className="text-lg font-semibold text-white">Grant PRO</h3>
@@ -406,7 +406,7 @@ function GrantProModal({
             type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="cursor-pointer rounded-md p-1 text-slate-500 transition-colors hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="cursor-pointer rounded-md p-1 text-slate-400 transition-colors hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close modal"
           >
             <XIcon className="h-4 w-4" />

@@ -1,6 +1,9 @@
 "use client";
 
-import Link from "next/link";
+// The root layout has crashed, so client-side state may be broken. These
+// links are plain anchors on purpose: a full page load is the recovery.
+/* eslint-disable @next/next/no-html-link-for-pages */
+
 import { useEffect } from "react";
 import "~/styles/globals.css";
 import { Analytics } from "~/lib/analytics";
@@ -45,18 +48,18 @@ export default function GlobalError({
             >
               Try again
             </button>
-            <Link
+            <a
               href="/"
               className="rounded-lg border border-white/15 px-5 py-3 font-medium text-white hover:bg-white/5"
             >
               Home page
-            </Link>
-            <Link
+            </a>
+            <a
               href="/contact"
               className="rounded-lg px-5 py-3 font-medium text-cyan-200 hover:underline"
             >
               Contact us
-            </Link>
+            </a>
           </div>
         </main>
       </body>

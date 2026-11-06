@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function PilotNotFound() {
   return (
-    <div className="pilot-theme-surface flex min-h-screen flex-col bg-black text-white">
+    <div className="pilot-theme-surface bg-site flex min-h-screen flex-col text-white">
       <SiteHeader tone="themed" />
       <main
         id="main-content"

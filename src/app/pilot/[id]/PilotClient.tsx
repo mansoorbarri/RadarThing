@@ -131,7 +131,7 @@ export default function PilotClient({
 
   if (profileUser === null || stats === null) {
     return (
-      <div className="pilot-theme-surface min-h-screen bg-black text-white">
+      <div className="pilot-theme-surface bg-site min-h-screen text-white">
         <Header />
         <main
           id="main-content"
@@ -173,7 +173,7 @@ export default function PilotClient({
   const liveFlightCallsign = liveFlight?.flightNo || liveFlight?.callsign;
 
   return (
-    <div className="pilot-theme-surface min-h-screen bg-black text-white">
+    <div className="pilot-theme-surface bg-site min-h-screen text-white">
       <Header />
 
       <main
@@ -221,15 +221,15 @@ export default function PilotClient({
               </div>
               {stats.discordUsername &&
                 (callsignFromUrl || stats.pilotCallsign) && (
-                  <p className="mt-1 font-mono text-[11px] break-all text-slate-500 sm:text-xs">
+                  <p className="mt-1 font-mono text-[11px] break-all text-slate-400 sm:text-xs">
                     {callsignFromUrl ?? stats.pilotCallsign}
                   </p>
                 )}
               <p className="mt-1 font-mono text-sm text-slate-400">
                 {stats.userRole === "PRO" || stats.userRole === "ADMIN" ? (
-                  <span className="text-emerald-400">PRO Member</span>
+                  <span className="text-emerald-400">Pro member</span>
                 ) : (
-                  <span className="text-slate-500">Free Tier</span>
+                  <span className="text-slate-400">Free Tier</span>
                 )}
               </p>
             </div>
@@ -298,7 +298,7 @@ export default function PilotClient({
                 {isPro ? (
                   <div className="space-y-3">
                     {stats.topAircraft.length === 0 ? (
-                      <p className="text-sm text-slate-500">No data yet</p>
+                      <p className="text-sm text-slate-400">No data yet</p>
                     ) : (
                       stats.topAircraft.map((aircraft, i) => (
                         <div
@@ -338,7 +338,7 @@ export default function PilotClient({
                 {isPro ? (
                   <div className="space-y-3">
                     {stats.topRoutes.length === 0 ? (
-                      <p className="text-sm text-slate-500">No data yet</p>
+                      <p className="text-sm text-slate-400">No data yet</p>
                     ) : (
                       stats.topRoutes.map((route, i) => (
                         <div
@@ -376,7 +376,7 @@ export default function PilotClient({
                 {isPro ? (
                   <div className="space-y-3">
                     {stats.topAirports.length === 0 ? (
-                      <p className="text-sm text-slate-500">No data yet</p>
+                      <p className="text-sm text-slate-400">No data yet</p>
                     ) : (
                       stats.topAirports.map((airport, i) => (
                         <div
@@ -528,13 +528,13 @@ function StatCard({
       >
         {icon}
       </div>
-      <div className="mb-1 font-mono text-xs tracking-wider text-slate-500 uppercase">
+      <div className="mb-1 font-mono text-xs tracking-wider text-slate-400 uppercase">
         {label}
       </div>
       {locked ? (
         <div className="flex items-center gap-2">
           <Lock className="h-4 w-4 text-slate-400" />
-          <span className="font-mono text-sm text-slate-400">PRO</span>
+          <span className="font-mono text-sm text-slate-400">Pro</span>
         </div>
       ) : (
         <>
@@ -555,8 +555,8 @@ function ProLockedContent() {
   return (
     <div className="flex flex-col items-center justify-center py-6 text-center">
       <Lock className="mb-2 h-8 w-8 text-slate-400" />
-      <p className="mb-3 text-sm text-slate-500">
-        Unlock full pilot stats with PRO
+      <p className="mb-3 text-sm text-slate-400">
+        Unlock full pilot stats with Pro
       </p>
       <button
         onClick={() => {
@@ -595,7 +595,7 @@ function EmptyState() {
 
 function PilotPageSkeleton({ callsign }: { callsign: string | null }) {
   return (
-    <div className="pilot-theme-surface min-h-screen bg-black text-white">
+    <div className="pilot-theme-surface bg-site min-h-screen text-white">
       <SiteHeader tone="themed" />
 
       <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">

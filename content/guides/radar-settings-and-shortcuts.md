@@ -101,10 +101,10 @@ The control dock gives you quick access to the rest of the radar:
 
 - **Flights**: a departures and arrivals board for live traffic.
 - **Airports**: the airport activity board, with live traffic rankings, staffed airports, and the busiest routes.
-- **Import Plan**: preview a route from a JSON file. See [Flight plans and navigation](/guides/flight-plans-and-navigation).
+- **Import plan**: preview a route from a JSON file. See [Flight plans and navigation](/guides/flight-plans-and-navigation).
 - **Leaderboard**: pilot rankings. See [Pilot stats and leaderboards](/guides/pilot-stats-and-leaderboards).
-- **Radar Tour**: replay the guided tour of the radar.
-- **Stats Rules**: the rules that decide whether a flight counts towards your statistics.
+- **Radar tour**: replay the guided tour of the radar.
+- **Stats rules**: the rules that decide whether a flight counts towards your statistics.
 
 ## Resetting your setup
 

@@ -359,7 +359,7 @@ export default function VirtualAirlineAdminPage() {
         (selectedVaId && vaMembers === undefined)))
   ) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black text-white">
+      <div className="bg-site flex min-h-screen items-center justify-center text-white">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
       </div>
     );
@@ -367,7 +367,7 @@ export default function VirtualAirlineAdminPage() {
 
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="bg-site min-h-screen text-white">
         <VaAdminHeader />
         <div className="flex items-center justify-center px-6 py-20">
           <div className="max-w-md rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
@@ -379,7 +379,7 @@ export default function VirtualAirlineAdminPage() {
             <div className="mt-6">
               <GoogleSignInButton>
                 <button className="cursor-pointer rounded-xl bg-cyan-500 px-5 py-3 font-medium text-black">
-                  Sign In
+                  Sign in
                 </button>
               </GoogleSignInButton>
             </div>
@@ -391,7 +391,7 @@ export default function VirtualAirlineAdminPage() {
 
   if (virtualAirlines.length === 0) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="bg-site min-h-screen text-white">
         <VaAdminHeader />
         <div className="flex items-center justify-center px-6 py-20">
           <div className="max-w-lg rounded-2xl border border-white/10 bg-white/5 p-8">
@@ -430,7 +430,7 @@ export default function VirtualAirlineAdminPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="bg-site min-h-screen text-white">
       <VaAdminHeader />
       <AlertDialog
         open={pendingConfirm !== null}
@@ -478,7 +478,7 @@ export default function VirtualAirlineAdminPage() {
                 {selectedVirtualAirline?.callsignPrefix}
               </span>
               {!selectedVirtualAirline?.isActive && (
-                <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-slate-400 uppercase">
+                <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-slate-400 uppercase">
                   Disabled
                 </span>
               )}
@@ -508,7 +508,7 @@ export default function VirtualAirlineAdminPage() {
                 </span>
                 {va.name}
                 {!va.isActive && (
-                  <span className="ml-1.5 text-[10px] text-slate-500">
+                  <span className="ml-1.5 text-[11px] text-slate-400">
                     (disabled)
                   </span>
                 )}
@@ -520,7 +520,7 @@ export default function VirtualAirlineAdminPage() {
         {/* Stats row */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-            <div className="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+            <div className="font-mono text-[11px] tracking-widest text-slate-400 uppercase">
               Pilots
             </div>
             <div className="mt-1 text-xl font-semibold text-white">
@@ -528,7 +528,7 @@ export default function VirtualAirlineAdminPage() {
             </div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-            <div className="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+            <div className="font-mono text-[11px] tracking-widest text-slate-400 uppercase">
               Fleet Images
             </div>
             <div className="mt-1 text-xl font-semibold text-white">
@@ -536,7 +536,7 @@ export default function VirtualAirlineAdminPage() {
             </div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-            <div className="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+            <div className="font-mono text-[11px] tracking-widest text-slate-400 uppercase">
               Prefix
             </div>
             <div className="mt-1 font-mono text-xl font-semibold text-cyan-300">
@@ -544,7 +544,7 @@ export default function VirtualAirlineAdminPage() {
             </div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-            <div className="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+            <div className="font-mono text-[11px] tracking-widest text-slate-400 uppercase">
               Status
             </div>
             <div className="mt-1">
@@ -578,7 +578,7 @@ export default function VirtualAirlineAdminPage() {
               {tab.label}
               {tab.count !== undefined && (
                 <span
-                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
+                  className={`rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${
                     activeTab === tab.key
                       ? "bg-cyan-500/20 text-cyan-300"
                       : "bg-white/10 text-slate-400"
@@ -646,7 +646,7 @@ export default function VirtualAirlineAdminPage() {
                     disabled={isSavingSettings}
                     className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 font-mono text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
                   />
-                  <p className="mt-1.5 text-xs text-slate-500">
+                  <p className="mt-1.5 text-xs text-slate-400">
                     Flights starting with this prefix get VA status.
                   </p>
                 </div>
@@ -668,7 +668,7 @@ export default function VirtualAirlineAdminPage() {
                     disabled={isSavingSettings}
                     className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
                   />
-                  <p className="mt-1.5 text-xs text-slate-500">
+                  <p className="mt-1.5 text-xs text-slate-400">
                     Used for the VA link in the radar sidebar.
                   </p>
                 </div>
@@ -849,7 +849,7 @@ export default function VirtualAirlineAdminPage() {
                         {member.discordUsername ??
                           truncateConvexId(member.userId)}
                       </div>
-                      <div className="mt-0.5 truncate text-xs text-slate-500">
+                      <div className="mt-0.5 truncate text-xs text-slate-400">
                         {member.userId}
                       </div>
                     </div>
@@ -878,7 +878,7 @@ export default function VirtualAirlineAdminPage() {
                 ))}
 
                 {members.length === 0 && (
-                  <div className="rounded-xl border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
+                  <div className="rounded-xl border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-400">
                     No pilots assigned yet.
                   </div>
                 )}
@@ -891,7 +891,7 @@ export default function VirtualAirlineAdminPage() {
                 Add Pilot
               </h3>
               <div className="relative">
-                <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   value={memberSearch}
@@ -913,11 +913,11 @@ export default function VirtualAirlineAdminPage() {
                       <div className="truncate text-sm text-white">
                         {getDisplayHandle(candidate)}
                       </div>
-                      <div className="mt-0.5 truncate text-xs text-slate-500">
+                      <div className="mt-0.5 truncate text-xs text-slate-400">
                         {getUserIdentifier(candidate)}
                       </div>
                     </div>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/15 px-2.5 py-1 text-[10px] font-semibold text-cyan-300 uppercase">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/15 px-2.5 py-1 text-[11px] font-semibold text-cyan-300 uppercase">
                       <UserPlus className="h-3 w-3" />
                       Add
                     </span>
@@ -925,7 +925,7 @@ export default function VirtualAirlineAdminPage() {
                 ))}
 
                 {assignableUsers.length === 0 && (
-                  <div className="rounded-lg border border-dashed border-white/10 px-4 py-6 text-center text-sm text-slate-500">
+                  <div className="rounded-lg border border-dashed border-white/10 px-4 py-6 text-center text-sm text-slate-400">
                     No eligible pilots matched. Pilots need a linked Google ID
                     before you can add them to the VA.
                   </div>
@@ -959,17 +959,17 @@ export default function VirtualAirlineAdminPage() {
                         <span className="rounded-md bg-cyan-500/15 px-2 py-0.5 font-mono text-xs text-cyan-300">
                           {image.aircraftType}
                         </span>
-                        <div className="mt-1.5 text-[11px] text-slate-500">
+                        <div className="mt-1.5 text-[11px] text-slate-400">
                           {new Date(image.updatedAt).toLocaleDateString()}
                         </div>
                       </div>
                       <button
                         type="button"
                         disabled={deletingId === image.id}
-                        aria-label="Delete this aircraft image"
+                        aria-label={`Delete the ${image.aircraftType} image`}
                         onClick={() =>
                           setPendingConfirm({
-                            title: "Delete this image?",
+                            title: `Delete the ${image.aircraftType} image?`,
                             description:
                               "The image is removed from your VA gallery and the radar. This can't be undone.",
                             confirmLabel: "Delete image",
@@ -989,7 +989,7 @@ export default function VirtualAirlineAdminPage() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-white/10 px-4 py-12 text-center text-sm text-slate-500">
+              <div className="rounded-xl border border-dashed border-white/10 px-4 py-12 text-center text-sm text-slate-400">
                 No fleet images uploaded yet. Use the Upload tab to add
                 liveries.
               </div>

@@ -138,7 +138,7 @@ export const useAircraftStream = () => {
       30000,
     );
     reconnectAttempts.current++;
-    setError(`Connection lost. Reconnecting in ${backoff / 1000}s...`);
+    setError(`Connection lost. Reconnecting in ${backoff / 1000}s…`);
     reconnectTimeoutRef.current = setTimeout(() => connectToStream(), backoff);
   }, [connectToStream]);
 
@@ -149,7 +149,7 @@ export const useAircraftStream = () => {
       if (elapsedMs > 30000) {
         setConnectionStatus("disconnected");
         setError(
-          `No stream data received for ${Math.floor(elapsedMs / 1000)}s. Reconnecting...`,
+          `No live data for ${Math.floor(elapsedMs / 1000)}s. Reconnecting…`,
         );
         if (eventSourceRef.current) eventSourceRef.current.close();
         scheduleReconnect();
@@ -172,6 +172,24 @@ export const useAircraftStream = () => {
     return () => clearInterval(interval);
   }, [lastMessageAt]);
 
+  // Skip the remaining backoff when the user asks, or when the browser comes
+  // back online.
+  const reconnectNow = useCallback(() => {
+    if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+    reconnectAttempts.current = 0;
+    lastMessageTime.current = Date.now();
+    connectToStream();
+  }, [connectToStream]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      if (eventSourceRef.current?.readyState !== EventSource.OPEN)
+        reconnectNow();
+    };
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [reconnectNow]);
+
   useEffect(() => {
     connectToStream();
     return () => {
@@ -191,5 +209,6 @@ export const useAircraftStream = () => {
     onlineAirports,
     lastMessageAt,
     lastMessageAgeSeconds,
+    reconnectNow,
   };
 };

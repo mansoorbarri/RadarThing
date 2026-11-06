@@ -117,7 +117,7 @@ After landing and parking, end the flight from the RadarThing panel. Then open y
 5. SID, STAR, and approach selected
 6. Cruise altitude chosen
 7. Flight plan entered in GeoFS
-8. RadarThing panel filled in and transmitting
+8. RadarThing panel filled in and showing **Live on radar**
 9. Top of descent calculated
 10. Flight reviewed in replay
 

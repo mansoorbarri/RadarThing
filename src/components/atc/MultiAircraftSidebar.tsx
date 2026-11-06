@@ -47,6 +47,8 @@ const CloseIcon = ({
   className?: string;
 }) => (
   <svg
+    aria-hidden="true"
+    focusable="false"
     width={size}
     height={size}
     viewBox="0 0 24 24"
@@ -195,8 +197,10 @@ const AircraftCard = ({
 
         {/* Remove button */}
         <button
+          type="button"
           onClick={onRemove}
-          className="absolute top-2 right-2 cursor-pointer rounded-full p-1 transition-colors hover:bg-white/10"
+          aria-label={`Remove ${aircraft.flightNo || aircraft.callsign || "this flight"} from the selection`}
+          className="absolute top-1 right-1 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-white/10"
         >
           <CloseIcon size={14} className="text-white/60 hover:text-white/80" />
         </button>
@@ -269,8 +273,10 @@ export const MultiAircraftSidebar = ({
           </span>
         </div>
         <button
+          type="button"
           onClick={onClose}
-          className="cursor-pointer rounded-lg p-1.5 transition-colors hover:bg-white/10"
+          aria-label="Clear the selection"
+          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-white/10"
         >
           <CloseIcon size={16} className="text-white/60" />
         </button>
