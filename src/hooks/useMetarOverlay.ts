@@ -25,6 +25,9 @@ export const useMetarOverlay = (
 ) => {
   const [metar, setMetar] = useState<MetarData | null>(null);
   const [status, setStatus] = useState<MetarStatus>("idle");
+  // The airport the current status belongs to. For one render after the
+  // airport changes, status still describes the previous one.
+  const [statusIcao, setStatusIcao] = useState<string | null>(null);
   // Bumped by retry() to run the lookup again straight away.
   const [attempt, setAttempt] = useState(0);
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
@@ -64,6 +67,7 @@ export const useMetarOverlay = (
         }
         setMetar(data);
         setStatus("ready");
+        setStatusIcao(icao);
       } catch (err) {
         if (current.signal.aborted) return;
         console.error("METAR fetch error:", err);
@@ -83,5 +87,5 @@ export const useMetarOverlay = (
     };
   }, [icao, attempt]);
 
-  return { metar, status, retry };
+  return { metar, status, statusIcao, retry };
 };

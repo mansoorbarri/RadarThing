@@ -324,7 +324,7 @@ export default function DashboardPage() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to export account data",
+          : "Couldn't export account data. Try again.",
       );
     } finally {
       setIsExportingData(false);
@@ -360,7 +360,9 @@ export default function DashboardPage() {
       setShowNameEditor(false);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to update your name";
+        error instanceof Error
+          ? error.message
+          : "Couldn't update your name. Try again.";
       toast.error(message);
     } finally {
       setIsSavingName(false);
@@ -386,7 +388,9 @@ export default function DashboardPage() {
       setFlightPendingDelete(null);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete flight",
+        error instanceof Error
+          ? error.message
+          : "Couldn't delete flight. Try again.",
       );
     } finally {
       setDeletingFlightId(null);

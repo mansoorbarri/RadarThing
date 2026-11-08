@@ -134,7 +134,9 @@ export function ProManagementTab({
       toast.success("Pro access revoked");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update Pro access",
+        error instanceof Error
+          ? error.message
+          : "Couldn't update Pro access. Try again.",
       );
     } finally {
       setPendingUserId(null);
@@ -171,7 +173,9 @@ export function ProManagementTab({
       setGrantOption("1w");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to grant Pro access",
+        error instanceof Error
+          ? error.message
+          : "Couldn't grant Pro access. Try again.",
       );
     } finally {
       setPendingUserId(null);

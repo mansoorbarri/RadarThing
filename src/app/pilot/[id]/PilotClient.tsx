@@ -111,7 +111,9 @@ export default function PilotClient({
       setFlightPendingDelete(null);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete flight",
+        error instanceof Error
+          ? error.message
+          : "Couldn't delete flight. Try again.",
       );
     } finally {
       setDeletingFlightId(null);

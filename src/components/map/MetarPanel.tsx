@@ -2,6 +2,7 @@ import { buttonLikeProps } from "~/lib/a11y";
 import React, { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Analytics } from "~/lib/analytics";
 
 // Recently looked-up airports for the phone sheet, stored on the device.
@@ -26,6 +27,8 @@ interface MetarPanelProps {
   isPro?: boolean;
   /** "sheet" drops the map-corner positioning for the phone bottom sheet. */
   variant?: "overlay" | "sheet";
+  /** The airport metarStatus describes (it can lag one render behind). */
+  metarIcao?: string | null;
 }
 
 export const MetarPanel: React.FC<MetarPanelProps> = ({
@@ -34,6 +37,7 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
   selectedAirportIcao,
   metarText,
   metarStatus = "idle",
+  metarIcao = null,
   onRetryMetar,
   atisText,
   atisCode,
@@ -65,6 +69,8 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
   // Only airports the pilot typed count as recent, not the selected one.
   useEffect(() => {
     if (metarStatus !== "ready" || icaoInput.length !== 4) return;
+    // Only save an airport once its own report has loaded.
+    if (metarIcao !== icaoInput) return;
     // A chip that's already in the list stays where it is, so the row
     // doesn't reshuffle under the pilot's finger.
     setRecentIcaos((current) =>
@@ -72,7 +78,7 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
         ? current
         : [icaoInput, ...current].slice(0, 5),
     );
-  }, [metarStatus, icaoInput]);
+  }, [metarStatus, metarIcao, icaoInput]);
   useEffect(() => {
     try {
       localStorage.setItem(RECENT_KEY, JSON.stringify(recentIcaos));
@@ -250,7 +256,14 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
       ))}
       <button
         type="button"
-        onClick={() => setRecentIcaos([])}
+        onClick={() => {
+          const cleared = recentIcaos;
+          setRecentIcaos([]);
+          toast("Recent airports cleared", {
+            action: { label: "Undo", onClick: () => setRecentIcaos(cleared) },
+          });
+        }}
+        aria-label="Clear recent airports"
         className="ml-auto min-h-9 cursor-pointer rounded-lg px-2 text-xs text-slate-400 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
       >
         Clear

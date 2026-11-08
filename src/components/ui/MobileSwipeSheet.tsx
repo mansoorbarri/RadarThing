@@ -246,7 +246,7 @@ export const MobileSwipeSheet = ({
             <button
               type="button"
               onClick={requestClose}
-              aria-label={`Close ${label.toLowerCase()}`}
+              aria-label={`Close ${closeLabelText(label)}`}
               className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
             >
               <svg
@@ -273,3 +273,10 @@ export const MobileSwipeSheet = ({
     </div>
   );
 };
+
+/** "Live flights" → "live flights", but "EGLL departures" keeps the code. */
+function closeLabelText(label: string) {
+  const [first = ""] = label.split(" ");
+  const isCode = first.length > 1 && first === first.toUpperCase();
+  return isCode ? label : label.charAt(0).toLowerCase() + label.slice(1);
+}

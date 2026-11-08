@@ -1909,6 +1909,7 @@ function ATCPageContent() {
               )}
 
               <button
+                aria-pressed={showAirportFID}
                 onClick={() => setShowAirportFID(!showAirportFID)}
                 className={`cursor-pointer rounded-lg border transition-colors ${
                   showAirportFID
@@ -1916,7 +1917,13 @@ function ATCPageContent() {
                     : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
                 } ${isPhone ? "min-h-9 px-3 py-1.5 text-xs" : "px-3 py-1.5 text-[11px]"}`}
               >
-                {isPhone ? "Departures" : "Departures & arrivals"}
+                {isPhone ? (
+                  <>
+                    Departures<span className="sr-only"> & arrivals</span>
+                  </>
+                ) : (
+                  "Departures & arrivals"
+                )}
               </button>
 
               {!isPhone && (
@@ -1965,7 +1972,7 @@ function ATCPageContent() {
           selectedAirport &&
           (isPhone ? (
             <MobileSwipeSheet
-              label={`${selectedAirport.icao} departures and arrivals`}
+              label={`${selectedAirport.icao} departures & arrivals`}
               swipeHint
               onClose={() => setShowAirportFID(false)}
             >

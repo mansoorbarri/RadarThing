@@ -37,7 +37,11 @@ async function compressImage(file: File): Promise<File> {
       canvas.height = height;
       const ctx = canvas.getContext("2d");
       if (!ctx) {
-        reject(new Error("Failed to get canvas context"));
+        reject(
+          new Error(
+            "Your browser couldn't process the image. Try another browser.",
+          ),
+        );
         return;
       }
       ctx.drawImage(img, 0, 0, width, height);
@@ -46,7 +50,7 @@ async function compressImage(file: File): Promise<File> {
       canvas.toBlob(
         (blob) => {
           if (!blob) {
-            reject(new Error("Failed to compress image"));
+            reject(new Error("Couldn't compress image. Try again."));
             return;
           }
           // Create new file with same name but .jpg extension
@@ -60,7 +64,7 @@ async function compressImage(file: File): Promise<File> {
         JPEG_QUALITY,
       );
     };
-    img.onerror = () => reject(new Error("Failed to load image"));
+    img.onerror = () => reject(new Error("Couldn't load image. Try again."));
     img.src = URL.createObjectURL(file);
   });
 }
@@ -141,7 +145,7 @@ async function getImageDimensions(file: File): Promise<PreviewDimensions> {
 
     img.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      reject(new Error("Failed to load preview dimensions"));
+      reject(new Error("Couldn't read that image. Try another file."));
     };
 
     img.src = objectUrl;
@@ -233,7 +237,7 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
           };
           reader.readAsDataURL(compressedFile);
         } catch (err) {
-          const errorMsg = "Failed to process image. Please try another file.";
+          const errorMsg = "Couldn't process that image. Try another file.";
           setLocalError(errorMsg);
           onError(errorMsg);
         } finally {

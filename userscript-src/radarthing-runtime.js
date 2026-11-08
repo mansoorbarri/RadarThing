@@ -1037,6 +1037,32 @@
     return region;
   }
 
+  // A focus target that is really on screen (not hidden by compact mode or
+  // a closed panel). Fixed elements have no offsetParent, so check rects.
+  function isFocusable(el) {
+    return Boolean(
+      el &&
+        el.isConnected &&
+        !el.hidden &&
+        !el.disabled &&
+        el.getClientRects().length > 0,
+    );
+  }
+
+  // Where keyboard focus goes when a focused toast disappears: the first
+  // visible panel control, else the reopen tab, else back to the page.
+  function focusPanelFallback() {
+    const candidates = [
+      document.getElementById(SAVE_BTN_ID),
+      document.getElementById("atc-edit-flight-btn"),
+      document.getElementById(CLEAR_BTN_ID),
+      mobileFlightUIOpenButton,
+    ];
+    const target = candidates.find(isFocusable);
+    if (target) target.focus();
+    else document.activeElement?.blur?.();
+  }
+
   // tone: false/"success" (green), true/"error" (red) or "info" (neutral).
   // The old boolean form still works for existing callers.
   function showToast(msg, tone = "success", action = null) {
@@ -1063,9 +1089,9 @@
       btn.textContent = action.label;
       btn.style.cssText =
         "margin-left:12px;min-height:32px;padding:6px 12px;border:1px solid rgba(255,255,255,0.5);border-radius:8px;background:transparent;color:#fff;font:700 12px system-ui,sans-serif;cursor:pointer;";
-      btn.onclick = () => {
+      btn.onclick = (event) => {
         action.onClick();
-        dismissToast();
+        dismissToast(event.detail === 0);
       };
       toast.appendChild(btn);
     }
@@ -1123,6 +1149,7 @@
       const victim =
         plain.find((child) => !child.dataset.error) || plain[0] || null;
       if (!victim) break;
+      if (victim.contains(document.activeElement)) focusPanelFallback();
       victim.remove();
     }
     if (isError) toast.dataset.error = "1";
@@ -1138,20 +1165,19 @@
       if (!focusBefore && !toast.contains(event.relatedTarget))
         focusBefore = event.relatedTarget;
     });
-    const dismiss = () => {
+    // fromKeyboard: Escape, or a button pressed with Enter/Space. A mouse
+    // or touch dismissal hands the keyboard back to GeoFS instead of
+    // parking focus on a panel button that Space/Enter could then press.
+    const dismiss = (fromKeyboard = false) => {
       clearTimeout(timer);
       toast.dataset.leaving = "1";
       const hadFocus = toast.contains(document.activeElement);
       toast.style.opacity = "0";
       setTimeout(() => toast.remove(), 300);
-      if (hadFocus) {
-        const target =
-          (focusBefore && focusBefore.isConnected && focusBefore) ||
-          (flightUI && flightUI.style.display !== "none"
-            ? document.getElementById(SAVE_BTN_ID)
-            : mobileFlightUIOpenButton);
-        target?.focus?.();
-      }
+      if (!hadFocus) return;
+      if (isFocusable(focusBefore)) focusBefore.focus();
+      else if (fromKeyboard) focusPanelFallback();
+      else document.activeElement?.blur?.();
     };
     // Errors and actions stay long enough to read and act on.
     // Long messages stay up long enough to read.
@@ -1161,13 +1187,13 @@
       : isError
         ? Math.max(10000, readTime)
         : readTime;
-    let timer = setTimeout(dismiss, duration);
-    close.onclick = dismiss;
+    let timer = setTimeout(() => dismiss(false), duration);
+    close.onclick = (event) => dismiss(event.detail === 0);
     dismissToast = dismiss;
     toast.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
       event.stopPropagation();
-      dismiss();
+      dismiss(true);
     });
     // Hovering or focusing a toast pauses it.
     const pause = () => clearTimeout(timer);
@@ -3155,7 +3181,20 @@
       `;
       mobileFlightUIOpenButton.onclick = () => {
         setFlightUIVisible(true);
-        document.getElementById(DEP_INPUT_ID)?.focus();
+        // On touch screens, focusing an input would pop up the keyboard;
+        // while tracking, the inputs are folded away behind "Edit flight".
+        const coarse = window.matchMedia?.("(pointer: coarse)").matches;
+        const candidates = coarse
+          ? [
+              document.getElementById(MOBILE_UI_CLOSE_ID),
+              document.getElementById(FLIGHT_UI_HIDE_BTN_ID),
+            ]
+          : [
+              document.getElementById(DEP_INPUT_ID),
+              document.getElementById("atc-edit-flight-btn"),
+              document.getElementById(SAVE_BTN_ID),
+            ];
+        candidates.find(isFocusable)?.focus();
       };
       document.body.appendChild(mobileFlightUIOpenButton);
 

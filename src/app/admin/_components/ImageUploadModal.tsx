@@ -99,7 +99,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
     const uploadSuccess = await uploaderRef.current?.triggerUpload();
 
     if (!uploadSuccess || !uploadedDataRef.current) {
-      setError("Failed to upload image");
+      setError("Couldn't upload image. Try again.");
       setSubmitStage("idle");
       return;
     }
@@ -124,8 +124,8 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
         onClose();
       }, 1000);
     } else {
-      toast.error(result.error || "Failed to submit image");
-      setError(result.error || "Failed to submit image");
+      toast.error(result.error || "Couldn't submit image. Try again.");
+      setError(result.error || "Couldn't submit image. Try again.");
       setSubmitStage("idle");
     }
   }

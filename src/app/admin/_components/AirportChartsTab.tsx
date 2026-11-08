@@ -155,7 +155,7 @@ function EditableChartDetails({
             onChange={(e) => setIcao(e.target.value.toUpperCase())}
             onKeyDown={handleKeyDown}
             placeholder="ICAO"
-            aria-label="ICAO"
+            aria-label="Airport ICAO code"
             maxLength={4}
             className="w-16 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             disabled={isSaving}
@@ -197,18 +197,22 @@ function EditableChartDetails({
         />
         <div className="flex gap-2">
           <button
+            type="button"
+            aria-label="Save changes"
             onClick={handleSave}
             disabled={isSaving}
             className="cursor-pointer rounded-md bg-emerald-500/20 p-1 text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
           >
-            <Check className="h-4 w-4" />
+            <Check className="h-4 w-4" aria-hidden="true" />
           </button>
           <button
+            type="button"
+            aria-label="Cancel editing"
             onClick={handleCancel}
             disabled={isSaving}
             className="cursor-pointer rounded-md bg-red-500/20 p-1 text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -406,7 +410,7 @@ export function AirportChartsTab({
     if (result.success) {
       toast.success("Chart deleted");
     } else {
-      toast.error(result.error || "Failed to delete chart");
+      toast.error(result.error || "Couldn't delete chart. Try again.");
     }
     setDeleteLoading(false);
     setDeleteModalOpen(false);
@@ -747,11 +751,18 @@ export function AirportChartsTab({
                   className="object-cover"
                 />
                 <button
+                  type="button"
+                  aria-pressed={selectedCharts.has(chart.id)}
+                  aria-label={
+                    selectedCharts.has(chart.id)
+                      ? "Deselect chart"
+                      : "Select chart"
+                  }
                   onClick={() => toggleSelect(chart.id)}
                   className={`absolute top-2 left-2 cursor-pointer rounded-lg p-1.5 transition-all ${
                     selectedCharts.has(chart.id)
                       ? "bg-cyan-500 text-white"
-                      : "bg-black/60 text-white opacity-0 group-hover:opacity-100"
+                      : "bg-black/60 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none [@media(hover:none)]:opacity-100"
                   }`}
                 >
                   {selectedCharts.has(chart.id) ? (

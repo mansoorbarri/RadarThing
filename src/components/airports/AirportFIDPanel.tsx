@@ -236,14 +236,14 @@ export function AirportFIDPanel({
           <div className="flex items-center gap-2">
             <Plane className="h-4 w-4 text-cyan-400" aria-hidden="true" />
             <span className="font-mono text-sm text-cyan-400">
-              {icao} flights
+              {icao} departures & arrivals
             </span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label={`Close ${icao} flights`}
-            className="cursor-pointer rounded-lg p-1 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+            aria-label={`Close ${icao} departures & arrivals`}
+            className="cursor-pointer rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>

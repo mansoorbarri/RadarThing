@@ -625,9 +625,9 @@ export function AirportChartsViewer({ icao, onClose, onOpenSideView }: Props) {
                     onOpenSideView();
                     onClose();
                   }}
-                  className="cursor-pointer rounded-md border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs text-cyan-300 hover:bg-cyan-500/20"
+                  className="min-h-9 cursor-pointer rounded-md border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-xs text-cyan-300 hover:bg-cyan-500/20 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
                 >
-                  Side View
+                  Side view
                 </button>
               )}
               <button

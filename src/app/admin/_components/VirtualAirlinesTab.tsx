@@ -259,7 +259,7 @@ export function VirtualAirlinesTab({
     setSubmitting(false);
 
     if (!result.success) {
-      toast.error(result.error || "Failed to save VA");
+      toast.error(result.error || "Couldn't save VA. Try again.");
       return;
     }
 
@@ -291,7 +291,7 @@ export function VirtualAirlinesTab({
     setMemberActionId(null);
 
     if (!result.success) {
-      toast.error(result.error || "Failed to add pilot");
+      toast.error(result.error || "Couldn't add pilot. Try again.");
       return;
     }
 
@@ -314,7 +314,9 @@ export function VirtualAirlinesTab({
     setApprovalAction(null);
 
     if (!result.success) {
-      toast.error(result.error || "Failed to review VA registration");
+      toast.error(
+        result.error || "Couldn't review VA registration. Try again.",
+      );
       return;
     }
 
@@ -343,7 +345,7 @@ export function VirtualAirlinesTab({
     setMemberActionId(null);
 
     if (!result.success) {
-      toast.error(result.error || "Failed to remove pilot");
+      toast.error(result.error || "Couldn't remove pilot. Try again.");
       return;
     }
 
@@ -382,7 +384,7 @@ export function VirtualAirlinesTab({
 
     const uploadSuccess = await fleetUploaderRef.current?.triggerUpload();
     if (!uploadSuccess || !fleetUploadedDataRef.current) {
-      setFleetError("Failed to upload image");
+      setFleetError("Couldn't upload image. Try again.");
       setFleetSubmitStage("idle");
       return;
     }
@@ -393,7 +395,7 @@ export function VirtualAirlinesTab({
       key: string;
     } | null;
     if (!uploadedData) {
-      setFleetError("Failed to upload image");
+      setFleetError("Couldn't upload image. Try again.");
       setFleetSubmitStage("idle");
       return;
     }
@@ -406,8 +408,8 @@ export function VirtualAirlinesTab({
     });
 
     if (!result.success) {
-      setFleetError(result.error || "Failed to save fleet image");
-      toast.error(result.error || "Failed to save fleet image");
+      setFleetError(result.error || "Couldn't save fleet image. Try again.");
+      toast.error(result.error || "Couldn't save fleet image. Try again.");
       setFleetSubmitStage("idle");
       return;
     }
@@ -428,7 +430,7 @@ export function VirtualAirlinesTab({
     setDeletingImageId(null);
 
     if (!result.success) {
-      toast.error(result.error || "Failed to delete image");
+      toast.error(result.error || "Couldn't delete image. Try again.");
       return;
     }
     toast.success("Fleet image deleted");
@@ -442,7 +444,7 @@ export function VirtualAirlinesTab({
     setIsDeletingVirtualAirline(false);
 
     if (!result.success) {
-      toast.error(result.error || "Failed to delete VA");
+      toast.error(result.error || "Couldn't delete VA. Try again.");
       return;
     }
 

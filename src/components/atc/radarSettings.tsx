@@ -355,6 +355,7 @@ export const RadarSettings = ({
                     }
                   }}
                   maxLength={32}
+                  aria-label="Preset name"
                   placeholder="Preset name"
                   className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none placeholder:text-white/65 focus:border-cyan-500/50"
                 />
@@ -362,7 +363,7 @@ export const RadarSettings = ({
                   onClick={handleSavePreset}
                   className="cursor-pointer rounded-md bg-cyan-400 px-3 py-2 text-[11px] font-bold text-slate-950 transition-colors hover:bg-cyan-300 sm:self-auto"
                 >
-                  Save Current
+                  Save current
                 </button>
               </div>
 
@@ -380,7 +381,7 @@ export const RadarSettings = ({
                       }}
                       className="cursor-pointer rounded-md border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-[11px] text-cyan-200 transition-colors hover:bg-cyan-500/15"
                     >
-                      Update Preset
+                      Update preset
                     </button>
                     <button
                       onClick={() => {
@@ -888,7 +889,7 @@ function SettingsToggle({
         checked={checked}
         disabled={disabled}
         onCheckedChange={onChange}
-        className="data-[state=checked]:bg-cyan-500 data-[state=unchecked]:bg-gray-600"
+        className="data-[state=checked]:bg-cyan-400 data-[state=unchecked]:bg-gray-600"
       />
     </div>
   );
@@ -905,15 +906,22 @@ function UnitSelector<T extends string>({
   onChange: (v: T) => void;
   options: { value: T; label: string }[];
 }) {
+  const groupId = useId();
   return (
     <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
-      <span>{label}</span>
-      <div className="flex flex-wrap gap-1 rounded-lg border border-white/10 bg-white/5 p-0.5 sm:justify-end">
+      <span id={groupId}>{label}</span>
+      <div
+        role="group"
+        aria-labelledby={groupId}
+        className="flex flex-wrap gap-1 rounded-lg border border-white/10 bg-white/5 p-0.5 sm:justify-end"
+      >
         {options.map((opt) => (
           <button
             key={opt.value}
+            type="button"
+            aria-pressed={value === opt.value}
             onClick={() => onChange(opt.value)}
-            className={`cursor-pointer rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors ${
+            className={`min-h-9 cursor-pointer rounded-md px-3 py-1.5 text-xs font-bold transition-colors focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none sm:min-h-0 sm:px-2.5 sm:py-1 sm:text-[11px] ${
               value === opt.value
                 ? "bg-cyan-400 text-slate-950"
                 : "text-white/60 hover:bg-white/10 hover:text-white"
@@ -937,12 +945,17 @@ function TrailModeSelector({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex flex-wrap gap-1 rounded-lg border border-white/10 bg-white/5 p-0.5">
+    <div
+      role="group"
+      aria-label="Trail length unit"
+      className="flex flex-wrap gap-1 rounded-lg border border-white/10 bg-white/5 p-0.5"
+    >
       <button
         type="button"
+        aria-pressed={value === "minutes"}
         disabled={disabled}
         onClick={() => onChange("minutes")}
-        className={`cursor-pointer rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+        className={`min-h-9 cursor-pointer rounded-md px-3 py-1.5 text-xs font-bold transition-colors focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0 sm:px-2.5 sm:py-1 sm:text-[11px] ${
           value === "minutes"
             ? "bg-cyan-400 text-slate-950"
             : "text-white/60 hover:bg-white/10 hover:text-white"
@@ -952,15 +965,16 @@ function TrailModeSelector({
       </button>
       <button
         type="button"
+        aria-pressed={value === "nm"}
         disabled={disabled}
         onClick={() => onChange("nm")}
-        className={`cursor-pointer rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+        className={`min-h-9 cursor-pointer rounded-md px-3 py-1.5 text-xs font-bold transition-colors focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0 sm:px-2.5 sm:py-1 sm:text-[11px] ${
           value === "nm"
             ? "bg-cyan-400 text-slate-950"
             : "text-white/60 hover:bg-white/10 hover:text-white"
         }`}
       >
-        Nautical Miles
+        Nautical miles
       </button>
     </div>
   );

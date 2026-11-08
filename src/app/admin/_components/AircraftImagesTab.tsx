@@ -192,7 +192,7 @@ function EditableCodes({
       return;
     }
     if (!draftIsMilitary && !/^[A-Z]{3,4}$/.test(icao)) {
-      toast.error("ICAO codes are 3 letters, e.g. BAW.");
+      toast.error("ICAO codes are 3 or 4 letters, e.g. BAW.");
       return;
     }
     if (!aircraftType.trim()) {
@@ -282,23 +282,27 @@ function EditableCodes({
           onChange={(e) => setAircraftType(e.target.value.toUpperCase())}
           onKeyDown={handleKeyDown}
           placeholder="Aircraft"
-          aria-label="Aircraft"
+          aria-label="Aircraft type"
           className="w-24 rounded-md border border-white/20 bg-black/60 px-2 py-1 font-mono text-sm text-white outline-none focus:border-white/40 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           disabled={isSaving}
         />
         <button
+          type="button"
+          aria-label="Save changes"
           onClick={handleSave}
           disabled={isSaving}
           className="cursor-pointer rounded-md bg-emerald-500/20 p-1 text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
         >
-          <Check className="h-4 w-4" />
+          <Check className="h-4 w-4" aria-hidden="true" />
         </button>
         <button
+          type="button"
+          aria-label="Cancel editing"
           onClick={handleCancel}
           disabled={isSaving}
           className="cursor-pointer rounded-md bg-red-500/20 p-1 text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
     );
@@ -612,10 +616,12 @@ export function AircraftImagesTab({
         setConflictExistingImage(conflictCheck.existingImage);
         setConflictModalOpen(true);
       } else {
-        toast.error(conflictCheck.error || "Failed to load conflict details");
+        toast.error(
+          conflictCheck.error || "Couldn't load conflict details. Try again.",
+        );
       }
     } else {
-      toast.error(result.error || "Failed to approve image");
+      toast.error(result.error || "Couldn't approve image. Try again.");
     }
     setActionLoading(null);
   }
@@ -635,7 +641,7 @@ export function AircraftImagesTab({
         return next;
       });
     } else {
-      toast.error(result.error || "Failed to resolve conflict");
+      toast.error(result.error || "Couldn't resolve conflict. Try again.");
     }
     setConflictLoading(false);
     setConflictModalOpen(false);
@@ -658,7 +664,7 @@ export function AircraftImagesTab({
         return next;
       });
     } else {
-      toast.error(result.error || "Failed to resolve conflict");
+      toast.error(result.error || "Couldn't resolve conflict. Try again.");
     }
     setConflictLoading(false);
     setConflictModalOpen(false);
@@ -730,7 +736,7 @@ export function AircraftImagesTab({
         });
         toast.success("Image rejected");
       } else {
-        toast.error(result.error || "Failed to reject image");
+        toast.error(result.error || "Couldn't reject image. Try again.");
       }
       setActionLoading(null);
     } else if (rejectTargetIds.length > 1) {
@@ -774,7 +780,7 @@ export function AircraftImagesTab({
     if (result.success) {
       toast.success("Image deleted");
     } else {
-      toast.error(result.error || "Failed to delete image");
+      toast.error(result.error || "Couldn't delete image. Try again.");
     }
     setDeleteLoading(false);
     setDeleteModalOpen(false);
@@ -1226,8 +1232,15 @@ export function AircraftImagesTab({
                       )}
                     </div>
                     <button
+                      type="button"
+                      aria-pressed={selectedImages.has(image.id)}
+                      aria-label={
+                        selectedImages.has(image.id)
+                          ? "Deselect image"
+                          : "Select image"
+                      }
                       onClick={() => toggleSelect(image.id)}
-                      className={`absolute top-2 right-2 cursor-pointer rounded-lg p-1.5 transition-all ${selectedImages.has(image.id) ? "bg-cyan-500 text-white" : "bg-black/60 text-white opacity-0 group-hover:opacity-100"}`}
+                      className={`absolute top-2 right-2 cursor-pointer rounded-lg p-1.5 transition-all ${selectedImages.has(image.id) ? "bg-cyan-500 text-white" : "bg-black/60 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none [@media(hover:none)]:opacity-100"}`}
                     >
                       {selectedImages.has(image.id) ? (
                         <CheckSquare className="h-5 w-5" />
@@ -1319,11 +1332,18 @@ export function AircraftImagesTab({
                       unoptimized
                     />
                     <button
+                      type="button"
+                      aria-pressed={selectedImages.has(image.id)}
+                      aria-label={
+                        selectedImages.has(image.id)
+                          ? "Deselect image"
+                          : "Select image"
+                      }
                       onClick={() => toggleSelect(image.id)}
                       className={`absolute top-2 left-2 cursor-pointer rounded-lg p-1.5 transition-all ${
                         selectedImages.has(image.id)
                           ? "bg-cyan-500 text-white"
-                          : "bg-black/60 text-white opacity-0 group-hover:opacity-100"
+                          : "bg-black/60 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none [@media(hover:none)]:opacity-100"
                       }`}
                     >
                       {selectedImages.has(image.id) ? (

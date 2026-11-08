@@ -226,7 +226,7 @@ export default function VirtualAirlineAdminPage() {
     const uploadSuccess = await uploaderRef.current?.triggerUpload();
 
     if (!uploadSuccess || !uploadedDataRef.current) {
-      setError("Failed to upload image");
+      setError("Couldn't upload image. Try again.");
       setSubmitStage("idle");
       return;
     }
@@ -238,7 +238,7 @@ export default function VirtualAirlineAdminPage() {
       key: string;
     } | null;
     if (!uploadedData) {
-      setError("Failed to upload image");
+      setError("Couldn't upload image. Try again.");
       setSubmitStage("idle");
       return;
     }
@@ -251,8 +251,7 @@ export default function VirtualAirlineAdminPage() {
     });
 
     if (!result.success) {
-      setError(result.error || "Failed to save VA aircraft image");
-      toast.error(result.error || "Failed to save VA aircraft image");
+      setError(result.error || "Couldn't save VA aircraft image. Try again.");
       setSubmitStage("idle");
       return;
     }
@@ -281,7 +280,7 @@ export default function VirtualAirlineAdminPage() {
     setDeletingId(null);
 
     if (!result.success) {
-      toast.error(result.error || "Failed to delete image");
+      toast.error(result.error || "Couldn't delete image. Try again.");
       return;
     }
 
@@ -299,7 +298,7 @@ export default function VirtualAirlineAdminPage() {
     setMemberActionId(null);
 
     if (!result.success) {
-      toast.error(result.error || "Failed to add pilot");
+      toast.error(result.error || "Couldn't add pilot. Try again.");
       return;
     }
 
@@ -316,7 +315,7 @@ export default function VirtualAirlineAdminPage() {
     setMemberActionId(null);
 
     if (!result.success) {
-      toast.error(result.error || "Failed to remove pilot");
+      toast.error(result.error || "Couldn't remove pilot. Try again.");
       return;
     }
 
@@ -337,7 +336,7 @@ export default function VirtualAirlineAdminPage() {
     setIsSavingSettings(false);
 
     if (!result.success) {
-      toast.error(result.error || "Failed to update VA settings");
+      toast.error(result.error || "Couldn't update VA settings. Try again.");
       return;
     }
 

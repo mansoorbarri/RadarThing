@@ -1102,6 +1102,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const {
     metar,
     status: metarStatus,
+    statusIcao: metarStatusIcao,
     retry: retryMetar,
   } = useMetarOverlay(mapRefs.mapInstance, icaoInput || selectedAirport?.icao);
 
@@ -1455,6 +1456,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               selectedAirportIcao={selectedAirport?.icao}
               metarText={metar?.raw || null}
               metarStatus={metarStatus}
+              metarIcao={metarStatusIcao}
               onRetryMetar={retryMetar}
               atisText={atis?.datis || null}
               atisCode={atis?.code || null}
@@ -1472,6 +1474,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           selectedAirportIcao={selectedAirport?.icao}
           metarText={metar?.raw || null}
           metarStatus={metarStatus}
+          metarIcao={metarStatusIcao}
           onRetryMetar={retryMetar}
           atisText={atis?.datis || null}
           atisCode={atis?.code || null}

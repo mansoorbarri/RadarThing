@@ -338,7 +338,7 @@ export default function AircraftImagesClient({
 
     // uploadedDataRef.current is set by the onUploadComplete callback during triggerUpload
     if (!uploadSuccess || !uploadedDataRef.current) {
-      setError("Failed to upload image");
+      setError("Couldn't upload image. Try again.");
       setSubmitStage("idle");
       return;
     }
@@ -388,8 +388,8 @@ export default function AircraftImagesClient({
         });
       }, 1500);
     } else {
-      toast.error(result.error || "Failed to submit image");
-      setError(result.error || "Failed to submit image");
+      toast.error(result.error || "Couldn't submit image. Try again.");
+      setError(result.error || "Couldn't submit image. Try again.");
       setSubmitStage("idle");
     }
   }

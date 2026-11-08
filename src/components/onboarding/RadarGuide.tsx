@@ -371,7 +371,7 @@ export function RadarGuide({
     };
   }, [open]);
 
-  // A tour closed part-way (Back, Escape, "Later") resumes at the same step
+  // A tour closed part-way (Back, Escape, the X) resumes at the same step
   // when reopened in this browser session; finishing it starts afresh.
   useEffect(() => {
     if (!open) {
@@ -673,15 +673,26 @@ export function RadarGuide({
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => void finish()}
-              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
-              aria-label="Skip tour"
-              title="Skip tour"
-            >
-              <X size={17} />
-            </button>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => void finish()}
+                className="min-h-9 cursor-pointer rounded-lg px-2.5 text-xs text-slate-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+              >
+                Skip tour
+              </button>
+              <button
+                type="button"
+                onClick={() => (onDismiss ? onDismiss() : void finish())}
+                className="cursor-pointer rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+                aria-label={
+                  onDismiss ? "Close tour (resume later)" : "Close tour"
+                }
+                title={onDismiss ? "Close (resume later)" : "Close tour"}
+              >
+                <X size={17} aria-hidden="true" />
+              </button>
+            </div>
           </div>
 
           <h2
@@ -738,7 +749,7 @@ export function RadarGuide({
                 <button
                   type="button"
                   onClick={() => setStepIndex((current) => current - 1)}
-                  className="flex h-9 items-center gap-1 rounded-lg border border-white/10 px-3 text-xs text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
+                  className="flex h-9 cursor-pointer items-center gap-1 rounded-lg border border-white/10 px-3 text-xs text-slate-300 transition-colors hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
                 >
                   <ChevronLeft size={14} /> Back
                 </button>
