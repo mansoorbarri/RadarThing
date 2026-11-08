@@ -22,7 +22,7 @@ export default function BannedPage() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             href="/radar"
-            className="rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-black hover:bg-cyan-300"
+            className="rounded-xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
           >
             Back to the radar
           </Link>

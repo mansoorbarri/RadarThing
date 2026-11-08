@@ -242,6 +242,7 @@ function EditableCodes({
             onChange={(e) => setIata(e.target.value.toUpperCase())}
             onKeyDown={handleKeyDown}
             placeholder="IATA"
+            aria-label="IATA"
             maxLength={2}
             className="w-14 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             disabled={isSaving}
@@ -265,6 +266,7 @@ function EditableCodes({
           onChange={(e) => setAircraftType(e.target.value.toUpperCase())}
           onKeyDown={handleKeyDown}
           placeholder="Aircraft"
+          aria-label="Aircraft"
           className="w-24 rounded-md border border-white/20 bg-black/60 px-2 py-1 font-mono text-sm text-white outline-none focus:border-white/40 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           disabled={isSaving}
         />
@@ -907,12 +909,16 @@ export function AircraftImagesTab({
       {/* Search and Filters */}
       <div className="mb-6 flex flex-col gap-4">
         <div className="relative flex-1">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search
+            className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
+            aria-hidden="true"
+          />
           <input
             type="text"
             value={imageSearchQuery}
             onChange={(e) => setImageSearchQuery(e.target.value)}
             placeholder="Search by airline, aircraft, Discord username, Convex ID…"
+            aria-label="Search by airline, aircraft, Discord username, Convex ID"
             className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </div>

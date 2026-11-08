@@ -48,7 +48,7 @@ function setCookie(name: string, value: string, days = 365) {
 }
 
 const CHART_TYPES: { value: ChartType; label: string }[] = [
-  { value: "TAXI", label: "Ground / Airport Diagram" },
+  { value: "TAXI", label: "Ground / airport diagram" },
   { value: "SID", label: "SID (Departure)" },
   { value: "STAR", label: "STAR (Arrival)" },
   { value: "APPROACH", label: "Approach" },
@@ -101,6 +101,8 @@ export default function AirportChartsPage() {
   const [submitProgress, setSubmitProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasSelectedFiles, setHasSelectedFiles] = useState(false);
+  // Kept in state so the "N files selected" badge re-renders.
+  const [selectedFileCount, setSelectedFileCount] = useState(0);
   const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const uploaderRef = useRef<ChartUploaderRef>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -361,14 +363,14 @@ export default function AirportChartsPage() {
           {canUpload ? (
             <button
               onClick={() => setShowUploadModal(true)}
-              className="flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40"
+              className="flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
             >
               <Upload className="h-5 w-5" />
               Upload Chart
             </button>
           ) : (
             <GoogleSignInButton>
-              <button className="flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40">
+              <button className="flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none">
                 <Upload className="h-5 w-5" />
                 Sign in to Upload
               </button>
@@ -670,10 +672,10 @@ export default function AirportChartsPage() {
             <div>
               <p className="mb-2 block font-mono text-xs text-slate-400">
                 Select chart files
-                {hasSelectedFiles && uploaderRef.current && (
+                {hasSelectedFiles && selectedFileCount > 0 && (
                   <span className="ml-2 rounded-full bg-cyan-500/20 px-2 py-0.5 text-cyan-400">
-                    {uploaderRef.current.fileCount()} file
-                    {uploaderRef.current.fileCount() !== 1 ? "s" : ""} selected
+                    {selectedFileCount} file
+                    {selectedFileCount !== 1 ? "s" : ""} selected
                   </span>
                 )}
               </p>
@@ -683,7 +685,13 @@ export default function AirportChartsPage() {
                 onUploadComplete={() => {
                   // handled via triggerUpload return value
                 }}
-                onFileSelected={setHasSelectedFiles}
+                onFileSelected={(has) => {
+                  setHasSelectedFiles(has);
+                  // Read after the uploader has updated its own list.
+                  requestAnimationFrame(() =>
+                    setSelectedFileCount(uploaderRef.current?.fileCount() ?? 0),
+                  );
+                }}
                 onError={(err) => {
                   toast.error(err);
                   setSubmitStage("idle");

@@ -47,7 +47,7 @@ export function TrialStatusBanner({ hidden = false }: { hidden?: boolean }) {
             feature: "pro_plan",
           })
         }
-        className="rounded-md bg-cyan-400 px-2.5 py-1 font-semibold text-slate-950 hover:bg-cyan-300"
+        className="rounded-xl bg-cyan-400 px-2.5 py-1 font-semibold text-slate-950 hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
       >
         Keep Pro for $3/mo
       </Link>

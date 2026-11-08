@@ -28,7 +28,7 @@ type SubmitStage =
 
 export function ChartUploadModal({ onClose }: { onClose: () => void }) {
   const chartTypes: { value: ChartType; label: string }[] = [
-    { value: "TAXI", label: "Ground / Airport Diagram" },
+    { value: "TAXI", label: "Ground / airport diagram" },
     { value: "SID", label: "SID (Departure)" },
     { value: "STAR", label: "STAR (Arrival)" },
     { value: "APPROACH", label: "Approach" },
@@ -47,7 +47,8 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      // Escape is handled by the dialog's focus trap, which ignores it
+      // while an upload is running.
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
         formRef.current?.requestSubmit();
@@ -55,9 +56,17 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
+  }, []);
 
   const isProcessing = submitStage !== "idle" && submitStage !== "success";
+
+  // Leaving the page mid-upload would lose it, so ask first.
+  useEffect(() => {
+    if (!isProcessing) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [isProcessing]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

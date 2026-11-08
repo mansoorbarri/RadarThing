@@ -229,12 +229,16 @@ export function AdminTelemetryTab({
 
       <div className="flex flex-col gap-4">
         <div className="relative flex-1">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search
+            className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
+            aria-hidden="true"
+          />
           <input
             type="text"
             value={userFilter}
             onChange={(event) => setUserFilter(event.target.value)}
             placeholder="Filter by user, email, Discord, or Clerk ID…"
+            aria-label="Filter by user, email, Discord, or Clerk ID"
             className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus:bg-white/[0.07] focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </div>

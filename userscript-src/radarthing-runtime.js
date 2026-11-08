@@ -1060,7 +1060,7 @@
       btn.type = "button";
       btn.textContent = action.label;
       btn.style.cssText =
-        "margin-left:12px;padding:4px 10px;border:1px solid rgba(255,255,255,0.5);border-radius:8px;background:transparent;color:#fff;font:700 12px system-ui,sans-serif;cursor:pointer;";
+        "margin-left:12px;min-height:32px;padding:6px 12px;border:1px solid rgba(255,255,255,0.5);border-radius:8px;background:transparent;color:#fff;font:700 12px system-ui,sans-serif;cursor:pointer;";
       btn.onclick = () => {
         toast.remove();
         action.onClick();
@@ -1089,7 +1089,7 @@
     close.setAttribute("aria-label", "Dismiss notification");
     close.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="display:block"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`;
     close.style.cssText =
-      "margin-left:8px;width:44px;height:44px;display:grid;place-items:center;flex:none;padding:0;border:0;border-radius:6px;background:transparent;color:rgba(255,255,255,0.8);font:400 18px/1 system-ui,sans-serif;cursor:pointer;";
+      "margin-left:4px;width:32px;height:32px;display:grid;place-items:center;flex:none;padding:0;border:0;border-radius:6px;background:transparent;color:rgba(255,255,255,0.8);font:400 18px/1 system-ui,sans-serif;cursor:pointer;";
     toast.appendChild(close);
     toast.style.pointerEvents = "auto";
     toast.style.display = "flex";
@@ -1107,10 +1107,14 @@
     toast.dataset.message = msg;
     // Keep the stack short so it never covers the instruments, but never
     // drop one the pilot still has to act on (e.g. "Retry ending").
-    while (region.children.length >= 3) {
+    // Cap the whole stack (both regions), lower on small screens.
+    const stack = getToastStack();
+    const cap = window.innerWidth < 640 ? 2 : 3;
+    const allToasts = () =>
+      Array.from(stack.querySelectorAll("[data-message]"));
+    while (allToasts().length >= cap) {
       const oldest =
-        Array.from(region.children).find((child) => !child.dataset.hasAction) ||
-        region.firstElementChild;
+        allToasts().find((child) => !child.dataset.hasAction) || allToasts()[0];
       oldest.remove();
     }
     region.appendChild(toast);
@@ -1133,6 +1137,11 @@
         : readTime;
     let timer = setTimeout(dismiss, duration);
     close.onclick = dismiss;
+    toast.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      dismiss();
+    });
     // Hovering or focusing a toast pauses it.
     const pause = () => clearTimeout(timer);
     const resume = () => {
@@ -2458,7 +2467,7 @@
           : `${total} ${total === 1 ? "chart" : "charts"} for ${icao}.`;
       } else {
         status.textContent = fromCache
-          ? `No saved charts for ${icao}. Press Refresh to check again.`
+          ? `No saved charts for ${icao}. Press Re-download to check again.`
           : `No charts found for ${icao}. Not every airport has charts yet.`;
       }
       renderChartsContent();
@@ -2759,7 +2768,9 @@
         #${STATUS_INDICATOR_ID} [data-status-text] { white-space:normal !important; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
         #${CHARTS_PANEL_ID} .gc-close, #${CHARTS_PANEL_ID} .gc-invert-toggle, #${CHARTS_PANEL_ID} .gc-rotate-toggle, #${CHARTS_PANEL_ID} .gc-type-tab, #${CHARTS_PANEL_ID} .gc-search-btn, #${CHARTS_PANEL_ID} .gc-reset-btn { min-height:44px; }
         #${CHARTS_PANEL_ID} .gc-close { min-width:44px; }
-        #radarthing-toast-stack button[aria-label="Dismiss notification"] { min-width:44px; min-height:44px; }`;
+        #radarthing-toast-stack button { min-height:44px; }
+        #radarthing-toast-stack button[aria-label="Dismiss notification"] { min-width:44px; }
+        #${MOBILE_UI_CLOSE_ID} { min-width:44px; }`;
           return isMobile
             ? touchCss
             : `@media (pointer: coarse), (max-width: 640px) { ${touchCss} }`;
@@ -3310,9 +3321,11 @@
       saveBtn.setAttribute("aria-busy", "true");
       saveBtn.textContent = "Checking…";
       // A slow callsign check should say it's still working.
+      let slowNoticeShown = false;
       const slowCheckTimer = setTimeout(() => {
         if (saveBtn.disabled && saveBtn.textContent === "Checking…") {
           saveBtn.textContent = "Still checking…";
+          slowNoticeShown = true;
           setFormNotice(
             "Still checking your callsign. This can take a moment.",
           );
@@ -3342,9 +3355,7 @@
         );
       } finally {
         clearTimeout(slowCheckTimer);
-        const notice = document.getElementById("atc-form-notice");
-        if (notice?.textContent?.startsWith("Still checking"))
-          setFormNotice("");
+        if (slowNoticeShown) setFormNotice("");
         saveBtn.disabled = false;
         saveBtn.removeAttribute("aria-busy");
         saveBtn.textContent = isTracking ? "Update flight" : "Start tracking";
@@ -3360,7 +3371,9 @@
             setTimeout(
               () =>
                 showToast(
-                  `You're live. Press ${toggleKey.toUpperCase()} to hide the panel while you fly.`,
+                  isMobileBrowser()
+                    ? "You're live. Tap × to hide the panel while you fly; the arrow tab on the right brings it back."
+                    : `You're live. Press ${toggleKey.toUpperCase()} to hide the panel while you fly.`,
                   "info",
                 ),
               1500,
@@ -3894,7 +3907,7 @@
       <div class="gc-search">
         <input id="gc-icao-input" type="text" placeholder="e.g. KSFO" maxlength="4" spellcheck="false" aria-label="Airport ICAO code" autocomplete="off" />
         <button id="gc-search-btn" type="button" class="gc-search-btn">Load</button>
-        <button id="gc-reset-btn" type="button" class="gc-reset-btn" title="Clear saved charts and download them again">Refresh</button>
+        <button id="gc-reset-btn" type="button" class="gc-reset-btn" title="Clear saved charts and download them again">Re-download</button>
       </div>
       <div id="gc-search-status" class="gc-status" role="status" aria-live="polite"></div>
       <span id="gc-rotate-reason" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Select a chart first to rotate it.</span>
@@ -4387,6 +4400,7 @@
     isMobileBrowser()
       ? `RadarThing${versionLabel} ready`
       : `RadarThing${versionLabel} ready · ${toggleKey.toUpperCase()} to show/hide`,
+    "info",
   );
   setTrackingUi(false);
   setInterval(refreshMostTrackedBadge, TRACKING_STATUS_POLL_INTERVAL_MS);

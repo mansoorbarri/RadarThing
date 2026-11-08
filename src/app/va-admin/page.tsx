@@ -698,7 +698,7 @@ export default function VirtualAirlineAdminPage() {
                 <button
                   type="submit"
                   disabled={isSavingSettings}
-                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 transition-opacity hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 transition-opacity hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSavingSettings ? (
                     <>
@@ -820,7 +820,7 @@ export default function VirtualAirlineAdminPage() {
                     !hasSelectedFile ||
                     !selectedVirtualAirline?.isActive
                   }
-                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 transition-opacity hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 transition-opacity hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitStage === "uploading" ? (
                     <>

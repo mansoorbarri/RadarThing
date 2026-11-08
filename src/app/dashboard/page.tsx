@@ -124,15 +124,16 @@ export default function DashboardPage() {
   // Real-time queries
   const { isProUser: isPro, isLoading: proLoading } = useProStatus();
   // Remembered for the session, so coming back to the dashboard keeps it.
-  const [showBreakdowns, setShowBreakdowns] = useState(false);
-  useEffect(() => {
+  // Read straight away (the stats only render client-side, after the user
+  // loads), so a remembered "open" doesn't flash closed first.
+  const [showBreakdowns, setShowBreakdowns] = useState(() => {
+    if (typeof window === "undefined") return false;
     try {
-      if (sessionStorage.getItem("radarthing-dashboard-breakdowns") === "1")
-        setShowBreakdowns(true);
+      return sessionStorage.getItem("radarthing-dashboard-breakdowns") === "1";
     } catch {
-      // Ignore storage errors.
+      return false;
     }
-  }, []);
+  });
   useEffect(() => {
     try {
       sessionStorage.setItem(
@@ -417,7 +418,7 @@ export default function DashboardPage() {
             Sign in to view your account, flight statistics, and history
           </p>
           <GoogleSignInButton>
-            <button className="cursor-pointer rounded-xl bg-cyan-400 px-8 py-4 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40">
+            <button className="cursor-pointer rounded-xl bg-cyan-400 px-8 py-4 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none">
               Sign in or sign up
             </button>
           </GoogleSignInButton>
@@ -883,7 +884,7 @@ export default function DashboardPage() {
                       feature: "advanced_analytics",
                     });
                   }}
-                  className="inline-block cursor-pointer rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40"
+                  className="inline-block cursor-pointer rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
                 >
                   Start 7-day Pro trial
                 </NextLink>

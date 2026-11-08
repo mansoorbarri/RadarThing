@@ -8,7 +8,9 @@ RadarThing is a live flight radar for the GeoFS flight simulator. Anyone can [op
 
 1. **A GeoFS account.** You must be signed in to GeoFS. Signed-out GeoFS sessions are not shown on RadarThing.
 2. **The RadarThing userscript**, running in the browser tab where you fly GeoFS.
-3. **A desktop browser that supports the Tampermonkey extension**, such as Chrome, Edge, Firefox, or Opera.
+3. **A browser that supports a userscript manager** such as Tampermonkey: Chrome, Edge, Firefox or Opera on a computer work best.
+
+On a phone or tablet, use a browser that supports userscripts (for example Firefox for Android with Tampermonkey, or Safari with the Userscripts app on iOS). The RadarThing panel works the same way there: tap **×** to hide it and the arrow tab on the right to bring it back.
 
 A RadarThing account is optional for tracking, but signing in with the same Google account you use in GeoFS unlocks extra features: your flight history on your dashboard, ACARS updates, and controlling your own aircraft from the radar.
 

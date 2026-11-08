@@ -34,15 +34,15 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
   const uploaderRef = useRef<ImageUploaderRef>(null);
   const uploadedDataRef = useRef<{ url: string; key: string } | null>(null);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
-
   const isProcessing = submitStage !== "idle" && submitStage !== "success";
+
+  // Leaving the page mid-upload would lose it, so ask first.
+  useEffect(() => {
+    if (!isProcessing) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [isProcessing]);
 
   function handleUploadComplete(url: string, key: string) {
     uploadedDataRef.current = { url, key };

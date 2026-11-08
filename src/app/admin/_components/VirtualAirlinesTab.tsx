@@ -507,7 +507,7 @@ export function VirtualAirlinesTab({
           <button
             type="button"
             onClick={openCreateModal}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 text-sm font-medium text-slate-950 transition-opacity hover:bg-cyan-300 hover:opacity-90"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 text-sm font-medium text-slate-950 transition-opacity hover:bg-cyan-300 hover:opacity-90 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
           >
             <Plus className="h-4 w-4" />
             New VA
@@ -747,7 +747,10 @@ export function VirtualAirlinesTab({
                       VA admin
                     </label>
                     <div className="relative">
-                      <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Search
+                        className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
+                        aria-hidden="true"
+                      />
                       <input
                         id="va-tab-field-4"
                         type="text"
@@ -875,7 +878,7 @@ export function VirtualAirlinesTab({
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 font-medium text-slate-950 transition-opacity hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 font-medium text-slate-950 transition-opacity hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {form.id ? (
                       <Save className="h-4 w-4" />
@@ -960,7 +963,10 @@ export function VirtualAirlinesTab({
                       Add pilot
                     </h3>
                     <div className="relative">
-                      <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Search
+                        className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
+                        aria-hidden="true"
+                      />
                       <input
                         type="text"
                         value={memberSearch}
@@ -968,6 +974,7 @@ export function VirtualAirlinesTab({
                           setMemberSearch(event.target.value)
                         }
                         placeholder="Search by Discord or Convex ID"
+                        aria-label="Search by Discord or Convex ID"
                         className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
                       />
                     </div>
@@ -1069,7 +1076,7 @@ export function VirtualAirlinesTab({
                             fleetSubmitStage === "submitting" ||
                             !hasFleetFile
                           }
-                          className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-cyan-400 px-4 py-2.5 text-sm font-medium text-slate-950 transition-opacity hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2.5 text-sm font-medium text-slate-950 transition-opacity hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {fleetSubmitStage === "uploading" ||
                           fleetSubmitStage === "submitting" ? (

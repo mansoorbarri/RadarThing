@@ -422,7 +422,7 @@ export default function HomePage() {
                 </ul>
                 <Link
                   href="/pricing"
-                  className="mt-auto block w-full rounded-lg bg-cyan-400 py-3 text-center font-semibold text-black transition-colors hover:bg-cyan-300"
+                  className="mt-auto block w-full rounded-xl bg-cyan-400 py-3 text-center font-semibold text-slate-950 transition-colors hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
                 >
                   Start 7-day free trial
                 </Link>
@@ -492,7 +492,7 @@ export default function HomePage() {
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
                 href="/radar"
-                className="group inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-10 py-4 font-semibold text-black transition-all hover:bg-cyan-300 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)]"
+                className="group inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-10 py-4 font-semibold text-slate-950 transition-all hover:bg-cyan-300 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
               >
                 Open the radar
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />

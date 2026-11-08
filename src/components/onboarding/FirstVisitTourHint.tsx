@@ -80,7 +80,7 @@ export function FirstVisitTourHint({
           dismiss();
           onStartTour();
         }}
-        className="shrink-0 cursor-pointer rounded-lg bg-cyan-400 px-3 py-2 text-xs font-semibold text-black hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
+        className="shrink-0 cursor-pointer rounded-xl bg-cyan-400 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
       >
         Take the tour
       </button>

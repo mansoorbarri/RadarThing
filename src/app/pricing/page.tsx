@@ -179,7 +179,7 @@ export default function PricingPage() {
               onClick={() => handleUpgrade("pricing_page_trial_active")}
               disabled={loading}
               aria-busy={loading}
-              className="cursor-pointer rounded-xl bg-cyan-400 px-6 py-3 text-sm font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:bg-cyan-300 disabled:opacity-50"
+              className="cursor-pointer rounded-xl bg-cyan-400 px-6 py-3 text-sm font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none disabled:opacity-50"
             >
               {pendingAction === "checkout"
                 ? "Opening checkout…"
@@ -222,7 +222,7 @@ export default function PricingPage() {
               onClick={handleManageSubscription}
               disabled={loading}
               aria-busy={loading}
-              className="cursor-pointer rounded-xl border border-white/20 bg-white/8 px-6 py-3 text-sm font-semibold text-white transition-all hover:border-cyan-300/40 hover:bg-white/14 disabled:opacity-50"
+              className="cursor-pointer rounded-xl border border-white/20 bg-white/8 px-6 py-3 text-sm font-semibold text-white transition-all hover:border-cyan-300/40 hover:bg-white/14 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none disabled:opacity-50"
             >
               {pendingAction === "billing"
                 ? "Opening billing…"
@@ -312,7 +312,7 @@ export default function PricingPage() {
                         feature: "pro_plan",
                       })
                     }
-                    className="mt-6 w-full cursor-pointer rounded-xl bg-cyan-400 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:bg-cyan-300"
+                    className="mt-6 w-full cursor-pointer rounded-xl bg-cyan-400 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
                   >
                     Start free trial with Google
                   </button>
@@ -325,7 +325,7 @@ export default function PricingPage() {
                     onClick={() => handleStartTrial("pricing_page")}
                     disabled={loading}
                     aria-busy={loading}
-                    className="mt-6 w-full cursor-pointer rounded-xl bg-cyan-400 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-6 w-full cursor-pointer rounded-xl bg-cyan-400 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {pendingAction === "trial"
                       ? "Starting your trial…"
@@ -350,7 +350,7 @@ export default function PricingPage() {
                     onClick={() => handleUpgrade("pricing_page")}
                     disabled={loading}
                     aria-busy={loading}
-                    className="mt-6 w-full cursor-pointer rounded-xl bg-cyan-400 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-6 w-full cursor-pointer rounded-xl bg-cyan-400 py-3.5 font-semibold text-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.35)] transition-all hover:-translate-y-0.5 hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {pendingAction === "checkout"
                       ? "Opening checkout…"

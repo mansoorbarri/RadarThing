@@ -483,14 +483,14 @@ export default function AircraftImagesClient({
           {isSignedIn ? (
             <button
               onClick={() => setShowUploadModal(true)}
-              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 sm:w-auto sm:px-6"
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none sm:w-auto sm:px-6"
             >
               <Upload className="h-5 w-5" />
               Upload image
             </button>
           ) : (
             <GoogleSignInButton>
-              <button className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 sm:w-auto sm:px-6">
+              <button className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none sm:w-auto sm:px-6">
                 <Upload className="h-5 w-5" />
                 Sign in to upload
               </button>
@@ -645,7 +645,7 @@ export default function AircraftImagesClient({
               <button
                 type="button"
                 onClick={() => setShowUploadModal(true)}
-                className="mt-5 cursor-pointer rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-black hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
+                className="mt-5 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
               >
                 Upload an image
               </button>
@@ -653,7 +653,7 @@ export default function AircraftImagesClient({
               <GoogleSignInButton>
                 <button
                   type="button"
-                  className="mt-5 cursor-pointer rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-black hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
+                  className="mt-5 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
                 >
                   Sign in to upload an image
                 </button>

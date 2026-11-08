@@ -31,7 +31,7 @@ export default function NotFound() {
         <div className="mt-10 flex flex-wrap gap-3">
           <Link
             href="/radar"
-            className="rounded-lg bg-cyan-400 px-5 py-3 font-semibold text-black transition-colors hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
+            className="rounded-xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 transition-colors hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
           >
             Open the radar
           </Link>
