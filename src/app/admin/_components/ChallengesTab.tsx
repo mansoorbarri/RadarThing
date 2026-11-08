@@ -1,5 +1,6 @@
 "use client";
 
+import { toUserMessage } from "~/lib/user-message";
 import type { ReactNode } from "react";
 import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
@@ -858,8 +859,10 @@ export function ChallengesTab({
 
       resetForm(form.cadence);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not save challenge";
+      const message = toUserMessage(
+        error,
+        "Couldn't save the challenge. Try again.",
+      );
       toast.error(message);
     } finally {
       setIsSaving(false);
@@ -880,8 +883,10 @@ export function ChallengesTab({
         isPublished ? "Challenge unpublished" : "Challenge published",
       );
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not update challenge";
+      const message = toUserMessage(
+        error,
+        "Couldn't update the challenge. Try again.",
+      );
       toast.error(message);
     } finally {
       setBusyChallengeId(null);
@@ -897,8 +902,10 @@ export function ChallengesTab({
       }
       toast.success("Challenge deleted");
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not delete challenge";
+      const message = toUserMessage(
+        error,
+        "Couldn't delete the challenge. Try again.",
+      );
       toast.error(message);
     } finally {
       setBusyChallengeId(null);
@@ -923,8 +930,10 @@ export function ChallengesTab({
             : "Submission reopened for review",
       );
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not review submission";
+      const message = toUserMessage(
+        error,
+        "Couldn't review the submission. Try again.",
+      );
       toast.error(message);
     } finally {
       setBusyReviewId(null);

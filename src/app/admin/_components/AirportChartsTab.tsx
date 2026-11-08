@@ -459,12 +459,12 @@ export function AirportChartsTab({
     if (deleted > 0) {
       setSelectedCharts(new Set());
       if (failed > 0) {
-        toast.warning(`Deleted ${deleted} charts, ${failed} failed`);
+        toast.warning(`Deleted ${plural(deleted, "chart")}; ${failed} failed`);
       } else {
-        toast.success(`Deleted ${deleted} charts`);
+        toast.success(`Deleted ${plural(deleted, "chart")}`);
       }
     } else if (failed > 0) {
-      toast.error(`Failed to delete ${failed} charts`);
+      toast.error(`Couldn't delete ${plural(failed, "chart")}. Try again.`);
     }
     setBulkDeleteLoading(false);
     setBulkDeleteModalOpen(false);
@@ -766,9 +766,9 @@ export function AirportChartsTab({
                   }`}
                 >
                   {selectedCharts.has(chart.id) ? (
-                    <CheckSquare className="h-5 w-5" />
+                    <CheckSquare className="h-5 w-5" aria-hidden="true" />
                   ) : (
-                    <Square className="h-5 w-5" />
+                    <Square className="h-5 w-5" aria-hidden="true" />
                   )}
                 </button>
                 <button
@@ -836,4 +836,9 @@ export function AirportChartsTab({
       )}
     </>
   );
+}
+
+/** "1 chart", "3 charts". */
+function plural(count: number, word: string) {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
 }

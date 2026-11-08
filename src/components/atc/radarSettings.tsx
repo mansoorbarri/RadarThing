@@ -295,7 +295,7 @@ export const RadarSettings = ({
       <div className="space-y-3 p-3.5 pr-2.5 sm:p-4 sm:pr-3">
         {activeTab === "map" ? (
           <SettingsSection
-            title="Layer Presets"
+            title="Layer presets"
             headerSlot={
               <span
                 className={`rounded-full border px-2.5 py-1 text-[11px] tracking-wider uppercase ${
@@ -360,8 +360,9 @@ export const RadarSettings = ({
                   className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none placeholder:text-white/65 focus:border-cyan-500/50"
                 />
                 <button
+                  type="button"
                   onClick={handleSavePreset}
-                  className="cursor-pointer rounded-md bg-cyan-400 px-3 py-2 text-[11px] font-bold text-slate-950 transition-colors hover:bg-cyan-300 sm:self-auto"
+                  className="min-h-9 cursor-pointer rounded-md bg-cyan-400 px-3 py-2 text-[11px] font-bold text-slate-950 transition-colors hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none sm:min-h-0 sm:self-auto"
                 >
                   Save current
                 </button>
@@ -375,15 +376,17 @@ export const RadarSettings = ({
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <button
+                      type="button"
                       onClick={() => {
                         onUpdatePreset(targetPreset.id);
                         setDeleteArmed(false);
                       }}
-                      className="cursor-pointer rounded-md border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-[11px] text-cyan-200 transition-colors hover:bg-cyan-500/15"
+                      className="min-h-9 cursor-pointer rounded-md border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-[11px] text-cyan-200 transition-colors hover:bg-cyan-500/15 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none sm:min-h-0"
                     >
                       Update preset
                     </button>
                     <button
+                      type="button"
                       onClick={() => {
                         if (deleteArmed) {
                           onDeletePreset(targetPreset.id);
@@ -392,13 +395,17 @@ export const RadarSettings = ({
                         }
                         setDeleteArmed(true);
                       }}
-                      className={`cursor-pointer rounded-md border px-3 py-2 text-[11px] transition-colors ${
+                      className={`min-h-9 cursor-pointer rounded-md border px-3 py-2 text-[11px] transition-colors focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none sm:min-h-0 ${
                         deleteArmed
                           ? "border-red-400/40 bg-red-500/15 text-red-200 hover:bg-red-500/20"
                           : "border-white/10 bg-white/[0.03] text-white/65 hover:border-white/20 hover:text-white"
                       }`}
                     >
-                      {deleteArmed ? "Click Again to Delete" : "Delete Preset"}
+                      <span aria-live="polite">
+                        {deleteArmed
+                          ? "Press again to delete"
+                          : "Delete preset"}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -408,11 +415,11 @@ export const RadarSettings = ({
         ) : null}
 
         {activeTab === "map" ? (
-          <SettingsSection title="Map Layers">
+          <SettingsSection title="Map layers">
             {runwayCenterlinePreferences &&
             onRunwayCenterlinePreferencesChange ? (
               <SettingsToggle
-                label="Runway Centerlines"
+                label="Runway centerlines"
                 checked={runwayCenterlinePreferences.enabled}
                 onChange={(enabled) =>
                   updateRunwayCenterlinePreferences({ enabled })
@@ -479,7 +486,7 @@ export const RadarSettings = ({
         {activeTab === "visibility" ? (
           <SettingsSection title="Traffic">
             <SettingsToggle
-              label="Conflict Alerts"
+              label="Conflict alerts"
               checked={showConflicts}
               onChange={(v) => {
                 if (!isPRO) {
@@ -503,9 +510,9 @@ export const RadarSettings = ({
         onRadarTrailPreferencesChange &&
         onRadarModeLinePreferencesChange &&
         onRunwayCenterlinePreferencesChange ? (
-          <SettingsSection title="Radar Overlays">
+          <SettingsSection title="Radar overlays">
             <SettingsToggle
-              label="History Trails"
+              label="History trails"
               description="Show radar history dots behind aircraft in radar mode."
               checked={radarTrailPreferences.enabled}
               onChange={(enabled) => updateRadarTrailPreferences({ enabled })}
@@ -515,12 +522,13 @@ export const RadarSettings = ({
               className={`space-y-3 ${!radarTrailPreferences.enabled ? "opacity-50" : ""}`}
             >
               <p className="text-[11px] leading-5 text-white/60">
-                Choose whether each radar trail dot represents elapsed seconds
+                Choose whether each radar trail dot represents elapsed minutes
                 or distance flown. Dots step out at that interval: 1x, 2x, 3x,
                 and 4x.
               </p>
 
               <TrailModeSelector
+                ariaLabel="Trail interval unit"
                 value={radarTrailPreferences.mode}
                 onChange={(mode) => updateRadarTrailPreferences({ mode })}
                 disabled={!radarTrailPreferences.enabled}
@@ -591,7 +599,7 @@ export const RadarSettings = ({
 
             <div className="space-y-3 rounded-lg border border-white/10 bg-black/20 p-3">
               <SettingsToggle
-                label="Track Line"
+                label="Track line"
                 description="Show a projected heading line for aircraft in radar mode."
                 checked={radarModeLinePreferences.enabled}
                 onChange={(enabled) =>
@@ -608,6 +616,7 @@ export const RadarSettings = ({
                 </p>
 
                 <TrailModeSelector
+                  ariaLabel="Track line length unit"
                   value={radarModeLinePreferences.mode}
                   onChange={(mode) => updateRadarModeLinePreferences({ mode })}
                   disabled={!radarModeLinePreferences.enabled}
@@ -936,10 +945,12 @@ function UnitSelector<T extends string>({
 }
 
 function TrailModeSelector({
+  ariaLabel,
   value,
   onChange,
   disabled = false,
 }: {
+  ariaLabel: string;
   value: RadarTrailMode;
   onChange: (value: RadarTrailMode) => void;
   disabled?: boolean;
@@ -947,7 +958,7 @@ function TrailModeSelector({
   return (
     <div
       role="group"
-      aria-label="Trail length unit"
+      aria-label={ariaLabel}
       className="flex flex-wrap gap-1 rounded-lg border border-white/10 bg-white/5 p-0.5"
     >
       <button

@@ -1187,6 +1187,10 @@
       : isError
         ? Math.max(10000, readTime)
         : readTime;
+    // Time left before the toast closes, kept across pauses so hovering a
+    // 15-second "Undo" toast doesn't cut it short.
+    let remaining = duration;
+    let startedAt = Date.now();
     let timer = setTimeout(() => dismiss(false), duration);
     close.onclick = (event) => dismiss(event.detail === 0);
     dismissToast = dismiss;
@@ -1196,15 +1200,29 @@
       dismiss(true);
     });
     // Hovering or focusing a toast pauses it.
-    const pause = () => clearTimeout(timer);
-    const resume = () => {
+    let paused = false;
+    const pause = () => {
+      if (paused) return;
+      paused = true;
       clearTimeout(timer);
-      timer = setTimeout(dismiss, 3000);
+      remaining = Math.max(0, remaining - (Date.now() - startedAt));
+    };
+    const resume = () => {
+      // Stay paused while the pointer is over it or focus is still inside.
+      if (toast.matches(":hover") || toast.contains(document.activeElement))
+        return;
+      if (!paused || toast.dataset.leaving) return;
+      paused = false;
+      startedAt = Date.now();
+      remaining = Math.max(remaining, 3000);
+      clearTimeout(timer);
+      timer = setTimeout(() => dismiss(false), remaining);
     };
     toast.addEventListener("pointerenter", pause);
     toast.addEventListener("pointerleave", resume);
     toast.addEventListener("focusin", pause);
-    toast.addEventListener("focusout", resume);
+    // focusout fires before focus lands elsewhere, so check on the next tick.
+    toast.addEventListener("focusout", () => setTimeout(resume, 0));
   }
 
   // Changes made from the RadarThing website show up in the sim, so say so.
@@ -3202,9 +3220,12 @@
         document.getElementById(MOBILE_UI_CLOSE_ID) ||
         document.getElementById(FLIGHT_UI_HIDE_BTN_ID);
       if (closeBtn)
-        closeBtn.onclick = () => {
+        closeBtn.onclick = (event) => {
           setFlightUIVisible(false);
-          mobileFlightUIOpenButton.focus();
+          // Keyboard users land on the reopen tab; a mouse or touch close
+          // hands the keyboard back to GeoFS.
+          if (event.detail === 0) mobileFlightUIOpenButton.focus();
+          else document.activeElement?.blur?.();
         };
     }
 

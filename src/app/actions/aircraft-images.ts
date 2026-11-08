@@ -354,7 +354,10 @@ export async function validateUploadEligibility(data: {
     return { canUpload: true };
   } catch (error) {
     console.error("Error validating upload eligibility:", error);
-    return { canUpload: false, error: "Failed to validate upload eligibility" };
+    return {
+      canUpload: false,
+      error: "Couldn't check whether you can upload. Try again.",
+    };
   }
 }
 
@@ -487,7 +490,7 @@ export async function createAircraftImage(data: {
     };
   } catch (error) {
     console.error("Error creating aircraft image:", error);
-    return { success: false, error: "Failed to upload image" };
+    return { success: false, error: "Couldn't upload image. Try again." };
   }
 }
 
@@ -538,7 +541,10 @@ export async function checkApprovalConflict(id: string): Promise<{
     return { hasConflict: false, pendingImage: toAircraftImage(pendingImage) };
   } catch (error) {
     console.error("Error checking approval conflict:", error);
-    return { hasConflict: false, error: "Failed to check for conflicts" };
+    return {
+      hasConflict: false,
+      error: "Couldn't check for conflicts. Try again.",
+    };
   }
 }
 
@@ -623,7 +629,7 @@ export async function resolveImageConflict(
     return { success: true };
   } catch (error) {
     console.error("Error resolving image conflict:", error);
-    return { success: false, error: "Failed to resolve conflict" };
+    return { success: false, error: "Couldn't resolve conflict. Try again." };
   }
 }
 
@@ -686,7 +692,7 @@ export async function approveAircraftImage(
     return { success: true };
   } catch (error) {
     console.error("Error approving aircraft image:", error);
-    return { success: false, error: "Failed to approve image" };
+    return { success: false, error: "Couldn't approve image. Try again." };
   }
 }
 
@@ -752,7 +758,7 @@ export async function rejectAircraftImage(
     return { success: true };
   } catch (error) {
     console.error("Error rejecting aircraft image:", error);
-    return { success: false, error: "Failed to reject image" };
+    return { success: false, error: "Couldn't reject image. Try again." };
   }
 }
 
@@ -800,7 +806,7 @@ export async function deleteAircraftImage(
     return { success: true };
   } catch (error) {
     console.error("Error deleting aircraft image:", error);
-    return { success: false, error: "Failed to delete image" };
+    return { success: false, error: "Couldn't delete image. Try again." };
   }
 }
 
@@ -999,7 +1005,10 @@ export async function updateAircraftImageCodes(
     return { success: true };
   } catch (error) {
     console.error("Error updating aircraft image codes:", error);
-    return { success: false, error: "Failed to update image details" };
+    return {
+      success: false,
+      error: "Couldn't update image details. Try again.",
+    };
   }
 }
 

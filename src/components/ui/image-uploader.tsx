@@ -50,7 +50,9 @@ async function compressImage(file: File): Promise<File> {
       canvas.toBlob(
         (blob) => {
           if (!blob) {
-            reject(new Error("Couldn't compress image. Try again."));
+            reject(
+              new Error("Couldn't process this image. Try a smaller file."),
+            );
             return;
           }
           // Create new file with same name but .jpg extension
@@ -64,7 +66,8 @@ async function compressImage(file: File): Promise<File> {
         JPEG_QUALITY,
       );
     };
-    img.onerror = () => reject(new Error("Couldn't load image. Try again."));
+    img.onerror = () =>
+      reject(new Error("Couldn't read this image. Try a JPG, PNG or WebP."));
     img.src = URL.createObjectURL(file);
   });
 }
@@ -334,9 +337,10 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
               <button
                 type="button"
                 onClick={handleRemove}
-                className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 p-1.5 text-white transition-colors hover:bg-red-500"
+                aria-label="Remove image"
+                className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 p-1.5 text-white transition-colors hover:bg-red-500 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             )}
 

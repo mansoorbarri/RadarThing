@@ -758,7 +758,7 @@ export function RadarGuide({
                 type="button"
                 onClick={handlePrimaryAction}
                 disabled={!isStepComplete && taskNeedsExternalAction}
-                className="flex min-h-9 items-center gap-1.5 rounded-lg border border-cyan-200/30 bg-cyan-300 px-4 py-2 text-xs font-semibold text-[#041016] shadow-[0_0_18px_rgba(34,211,238,0.18)] transition-colors hover:bg-cyan-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/8 disabled:text-white/55 disabled:shadow-none"
+                className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-cyan-200/30 bg-cyan-300 px-4 py-2 text-xs font-semibold text-[#041016] shadow-[0_0_18px_rgba(34,211,238,0.18)] transition-colors hover:bg-cyan-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/8 disabled:text-white/55 disabled:shadow-none"
               >
                 {primaryLabel}
                 {isStepComplete && !isLastStep && <ChevronRight size={14} />}

@@ -1,5 +1,6 @@
 "use client";
 
+import { toUserMessage } from "~/lib/user-message";
 import { copyText } from "~/lib/clipboard";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
@@ -110,11 +111,7 @@ export default function PilotClient({
       });
       setFlightPendingDelete(null);
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Couldn't delete flight. Try again.",
-      );
+      toast.error(toUserMessage(error, "Couldn't delete flight. Try again."));
     } finally {
       setDeletingFlightId(null);
     }
@@ -192,15 +189,30 @@ export default function PilotClient({
         <div className="mb-8 sm:mb-10">
           <div className="mb-2 flex items-start gap-3 sm:items-center sm:gap-4">
             <button
+              type="button"
               onClick={copyProfileLink}
-              className="group/icon flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-cyan-500/50 bg-cyan-500/10 transition-all hover:border-cyan-400 hover:bg-cyan-500/20 sm:h-14 sm:w-14"
+              aria-label={
+                linkCopied ? "Profile link copied" : "Copy profile link"
+              }
+              className="group/icon flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-cyan-500/50 bg-cyan-500/10 transition-all hover:border-cyan-400 hover:bg-cyan-500/20 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:outline-none sm:h-14 sm:w-14"
               title="Copy profile link"
             >
-              <Plane className="h-5 w-5 text-cyan-400 transition-all group-hover/icon:hidden sm:h-6 sm:w-6" />
               {linkCopied ? (
-                <Check className="hidden h-5 w-5 text-emerald-400 group-hover/icon:block sm:h-6 sm:w-6" />
+                <Check
+                  className="h-5 w-5 text-emerald-400 sm:h-6 sm:w-6"
+                  aria-hidden="true"
+                />
               ) : (
-                <Link className="hidden h-5 w-5 text-cyan-300 group-hover/icon:block sm:h-6 sm:w-6" />
+                <>
+                  <Plane
+                    className="h-5 w-5 text-cyan-400 transition-all group-hover/icon:hidden group-focus-visible/icon:hidden sm:h-6 sm:w-6"
+                    aria-hidden="true"
+                  />
+                  <Link
+                    className="hidden h-5 w-5 text-cyan-300 group-hover/icon:block group-focus-visible/icon:block sm:h-6 sm:w-6"
+                    aria-hidden="true"
+                  />
+                </>
               )}
             </button>
             <div className="min-w-0">

@@ -1,5 +1,6 @@
 "use client";
 
+import { toUserMessage } from "~/lib/user-message";
 import { copyText } from "~/lib/clipboard";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
@@ -322,9 +323,7 @@ export default function DashboardPage() {
       toast.success("Account data downloaded");
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Couldn't export account data. Try again.",
+        toUserMessage(error, "Couldn't export account data. Try again."),
       );
     } finally {
       setIsExportingData(false);
@@ -359,10 +358,10 @@ export default function DashboardPage() {
       toast.success("Name updated");
       setShowNameEditor(false);
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Couldn't update your name. Try again.";
+      const message = toUserMessage(
+        error,
+        "Couldn't update your name. Try again.",
+      );
       toast.error(message);
     } finally {
       setIsSavingName(false);
@@ -387,11 +386,7 @@ export default function DashboardPage() {
       });
       setFlightPendingDelete(null);
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Couldn't delete flight. Try again.",
-      );
+      toast.error(toUserMessage(error, "Couldn't delete flight. Try again."));
     } finally {
       setDeletingFlightId(null);
     }

@@ -259,8 +259,27 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
         onClick={() => {
           const cleared = recentIcaos;
           setRecentIcaos([]);
+          // The chip row disappears, so keep keyboard focus nearby. Touch
+          // screens skip this so the on-screen keyboard doesn't pop up.
+          if (window.matchMedia?.("(pointer: fine)").matches) {
+            document
+              .getElementById("metar-icao-input")
+              ?.focus({ preventScroll: true });
+          }
           toast("Recent airports cleared", {
-            action: { label: "Undo", onClick: () => setRecentIcaos(cleared) },
+            action: {
+              label: "Undo",
+              onClick: () => {
+                // Save straight away: the sheet may have closed (and this
+                // panel unmounted) before Undo is pressed.
+                try {
+                  localStorage.setItem(RECENT_KEY, JSON.stringify(cleared));
+                } catch {
+                  // Ignore storage errors.
+                }
+                setRecentIcaos(cleared);
+              },
+            },
           });
         }}
         aria-label="Clear recent airports"
@@ -359,6 +378,11 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
       {variant === "sheet" ? (
         <>
           {inputBlock}
+          {!icaoInput && recentIcaos.length === 0 && (
+            <p className="font-sans text-xs text-slate-400">
+              Enter a 4-letter ICAO airport code, e.g. EGLL.
+            </p>
+          )}
           {chipsBlock}
           {partialHint}
           {statusBlock}

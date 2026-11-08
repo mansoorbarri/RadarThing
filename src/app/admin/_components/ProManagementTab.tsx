@@ -1,5 +1,6 @@
 "use client";
 
+import { toUserMessage } from "~/lib/user-message";
 import { FocusTrap } from "~/components/ui/focus-trap";
 
 import type { ReactNode } from "react";
@@ -134,9 +135,7 @@ export function ProManagementTab({
       toast.success("Pro access revoked");
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Couldn't update Pro access. Try again.",
+        toUserMessage(error, "Couldn't update Pro access. Try again."),
       );
     } finally {
       setPendingUserId(null);
@@ -173,9 +172,7 @@ export function ProManagementTab({
       setGrantOption("1w");
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Couldn't grant Pro access. Try again.",
+        toUserMessage(error, "Couldn't grant Pro access. Try again."),
       );
     } finally {
       setPendingUserId(null);
@@ -469,7 +466,13 @@ function GrantProModal({
             className="flex flex-1 cursor-pointer items-center justify-center rounded-lg bg-yellow-500/20 py-2.5 text-sm font-medium text-yellow-300 transition-colors hover:bg-yellow-500/30 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoading ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              <>
+                <div
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                  aria-hidden="true"
+                />
+                <span className="sr-only">Granting Pro…</span>
+              </>
             ) : (
               "Grant Pro"
             )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { toUserMessage } from "~/lib/user-message";
 import { useState } from "react";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { Dialog } from "radix-ui";
@@ -204,7 +205,10 @@ export function ModerationTab() {
                   toast.success("Moderation action overridden");
                 } catch (error) {
                   toast.error(
-                    error instanceof Error ? error.message : "Override failed",
+                    toUserMessage(
+                      error,
+                      "Couldn't apply the override. Try again.",
+                    ),
                   );
                 } finally {
                   setBusy(false);

@@ -749,13 +749,15 @@ export function AircraftImagesTab({
         setSelectedImages(new Set());
         if (result.failed > 0) {
           toast.warning(
-            `Rejected ${result.rejected} images, ${result.failed} failed`,
+            `Rejected ${plural(result.rejected, "image")}; ${result.failed} failed`,
           );
         } else {
-          toast.success(`Rejected ${result.rejected} images`);
+          toast.success(`Rejected ${plural(result.rejected, "image")}`);
         }
       } else if (result.failed > 0) {
-        toast.error(`Failed to reject ${result.failed} images`);
+        toast.error(
+          `Couldn't reject ${plural(result.failed, "image")}. Try again.`,
+        );
       }
       setBulkLoading(false);
     }
@@ -824,13 +826,15 @@ export function AircraftImagesTab({
       setSelectedImages(new Set());
       if (result.failed > 0) {
         toast.warning(
-          `Approved ${result.approved} images, ${result.failed} failed`,
+          `Approved ${plural(result.approved, "image")}; ${result.failed} failed`,
         );
       } else {
-        toast.success(`Approved ${result.approved} images`);
+        toast.success(`Approved ${plural(result.approved, "image")}`);
       }
     } else if (result.failed > 0) {
-      toast.error(`Failed to approve ${result.failed} images`);
+      toast.error(
+        `Couldn't approve ${plural(result.failed, "image")}. Try again.`,
+      );
     }
     setBulkLoading(false);
   }
@@ -864,12 +868,12 @@ export function AircraftImagesTab({
     if (deleted > 0) {
       setSelectedImages(new Set());
       if (failed > 0) {
-        toast.warning(`Deleted ${deleted} images, ${failed} failed`);
+        toast.warning(`Deleted ${plural(deleted, "image")}; ${failed} failed`);
       } else {
-        toast.success(`Deleted ${deleted} images`);
+        toast.success(`Deleted ${plural(deleted, "image")}`);
       }
     } else if (failed > 0) {
-      toast.error(`Failed to delete ${failed} images`);
+      toast.error(`Couldn't delete ${plural(failed, "image")}. Try again.`);
     }
     setBulkDeleteLoading(false);
     setBulkDeleteModalOpen(false);
@@ -1243,9 +1247,9 @@ export function AircraftImagesTab({
                       className={`absolute top-2 right-2 cursor-pointer rounded-lg p-1.5 transition-all ${selectedImages.has(image.id) ? "bg-cyan-500 text-white" : "bg-black/60 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none [@media(hover:none)]:opacity-100"}`}
                     >
                       {selectedImages.has(image.id) ? (
-                        <CheckSquare className="h-5 w-5" />
+                        <CheckSquare className="h-5 w-5" aria-hidden="true" />
                       ) : (
-                        <Square className="h-5 w-5" />
+                        <Square className="h-5 w-5" aria-hidden="true" />
                       )}
                     </button>
                   </div>
@@ -1347,9 +1351,9 @@ export function AircraftImagesTab({
                       }`}
                     >
                       {selectedImages.has(image.id) ? (
-                        <CheckSquare className="h-5 w-5" />
+                        <CheckSquare className="h-5 w-5" aria-hidden="true" />
                       ) : (
-                        <Square className="h-5 w-5" />
+                        <Square className="h-5 w-5" aria-hidden="true" />
                       )}
                     </button>
                     <button
@@ -1427,4 +1431,9 @@ export function AircraftImagesTab({
       )}
     </>
   );
+}
+
+/** "1 image", "3 images". */
+function plural(count: number, word: string) {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
