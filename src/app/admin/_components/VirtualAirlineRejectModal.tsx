@@ -55,7 +55,6 @@ export function VirtualAirlineRejectModal({
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             placeholder="Explain what needs to be corrected before resubmitting"
-            aria-label="Explain what needs to be corrected before resubmitting"
             rows={4}
             className="border-input bg-background text-foreground placeholder:text-muted-foreground mt-2 w-full rounded-xl border p-3 text-sm transition outline-none focus:border-red-500/50 focus:ring-2 focus:ring-red-500/15"
           />

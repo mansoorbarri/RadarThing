@@ -272,6 +272,7 @@ export function AirportFIDPanel({
           type="button"
           role="tab"
           data-tab="departures"
+          aria-controls={`fid-panel-${icao}`}
           aria-selected={activeTab === "departures"}
           tabIndex={activeTab === "departures" ? 0 : -1}
           onClick={() => setActiveTab("departures")}
@@ -287,6 +288,7 @@ export function AirportFIDPanel({
           type="button"
           role="tab"
           data-tab="arrivals"
+          aria-controls={`fid-panel-${icao}`}
           aria-selected={activeTab === "arrivals"}
           tabIndex={activeTab === "arrivals" ? 0 : -1}
           onClick={() => setActiveTab("arrivals")}
@@ -301,7 +303,17 @@ export function AirportFIDPanel({
       </div>
 
       {/* Flight list */}
-      <div className="max-h-[40vh] overflow-y-auto">
+      <div
+        role="tabpanel"
+        id={`fid-panel-${icao}`}
+        aria-label={activeTab === "arrivals" ? "Arrivals" : "Departures"}
+        // In the phone sheet the list fills the sheet; on desktop it's capped.
+        className={
+          isMobile
+            ? "min-h-0 flex-1 overflow-y-auto"
+            : "max-h-[40vh] overflow-y-auto"
+        }
+      >
         {currentList.length === 0 ? (
           <div className="flex h-24 items-center justify-center text-xs text-white/65">
             {activeTab === "arrivals"

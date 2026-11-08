@@ -497,7 +497,7 @@ export function FlightHistoryPanel({
                           <button
                             onClick={() => void handleSubmitChallengeReview()}
                             disabled={isSubmittingChallengeFlights}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-2.5 text-sm font-medium text-slate-950 transition-colors hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             {isSubmittingChallengeFlights ? (
                               <Loader2 className="h-4 w-4 animate-spin" />

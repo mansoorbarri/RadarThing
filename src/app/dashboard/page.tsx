@@ -1201,7 +1201,7 @@ export default function DashboardPage() {
               <Button
                 type="submit"
                 disabled={isSavingName}
-                className="rounded-xl bg-cyan-500 text-black hover:bg-cyan-400"
+                className="rounded-xl bg-cyan-400 text-slate-950 hover:bg-cyan-300"
               >
                 {isSavingName ? (
                   <>

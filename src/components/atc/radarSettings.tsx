@@ -360,7 +360,7 @@ export const RadarSettings = ({
                 />
                 <button
                   onClick={handleSavePreset}
-                  className="cursor-pointer rounded-md bg-cyan-500 px-3 py-2 text-[11px] font-bold text-black transition-colors hover:bg-cyan-400 sm:self-auto"
+                  className="cursor-pointer rounded-md bg-cyan-400 px-3 py-2 text-[11px] font-bold text-slate-950 transition-colors hover:bg-cyan-300 sm:self-auto"
                 >
                   Save Current
                 </button>
@@ -915,7 +915,7 @@ function UnitSelector<T extends string>({
             onClick={() => onChange(opt.value)}
             className={`cursor-pointer rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors ${
               value === opt.value
-                ? "bg-cyan-500 text-black"
+                ? "bg-cyan-400 text-slate-950"
                 : "text-white/60 hover:bg-white/10 hover:text-white"
             }`}
           >
@@ -944,7 +944,7 @@ function TrailModeSelector({
         onClick={() => onChange("minutes")}
         className={`cursor-pointer rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
           value === "minutes"
-            ? "bg-cyan-500 text-black"
+            ? "bg-cyan-400 text-slate-950"
             : "text-white/60 hover:bg-white/10 hover:text-white"
         }`}
       >
@@ -956,7 +956,7 @@ function TrailModeSelector({
         onClick={() => onChange("nm")}
         className={`cursor-pointer rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
           value === "nm"
-            ? "bg-cyan-500 text-black"
+            ? "bg-cyan-400 text-slate-950"
             : "text-white/60 hover:bg-white/10 hover:text-white"
         }`}
       >

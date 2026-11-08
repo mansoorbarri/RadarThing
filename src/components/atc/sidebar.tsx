@@ -352,7 +352,7 @@ export const Sidebar = ({
         <div className="flex items-center gap-2 px-1">
           <div className="h-[1px] flex-1 bg-white/20" />
           <span className="font-mono text-xs font-semibold tracking-[0.18em] text-white/80 uppercase">
-            Enroute Path
+            En-route path
           </span>
           <div className="h-[1px] flex-1 bg-white/20" />
         </div>
@@ -745,7 +745,7 @@ export const Sidebar = ({
                   </p>
                 )}
                 <p className="truncate font-mono text-[11px] font-black tracking-[0.18em] text-slate-300 uppercase">
-                  {compactAircraftType || aircraft.type || "Unknown Class"}
+                  {compactAircraftType || aircraft.type || "Unknown type"}
                 </p>
                 {virtualAirline &&
                   (virtualAirline.website ? (

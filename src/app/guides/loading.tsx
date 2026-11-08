@@ -3,7 +3,7 @@ export default function Loading() {
   return (
     <div aria-busy="true">
       <p role="status" className="sr-only">
-        Loading the guide…
+        Loading guides…
       </p>
       <div className="animate-pulse space-y-5 motion-reduce:animate-none">
         <div className="h-4 w-40 rounded bg-white/[0.06]" />

@@ -1043,6 +1043,8 @@
     const isError = tone === true || tone === "error";
     const isInfo = tone === "info";
     const toast = document.createElement("div");
+    // Set once dismiss exists; the action button uses it.
+    let dismissToast = () => toast.remove();
     // An icon as well as the colour, so the tone doesn't rely on colour.
     const icon = document.createElement("span");
     icon.setAttribute("aria-hidden", "true");
@@ -1062,8 +1064,8 @@
       btn.style.cssText =
         "margin-left:12px;min-height:32px;padding:6px 12px;border:1px solid rgba(255,255,255,0.5);border-radius:8px;background:transparent;color:#fff;font:700 12px system-ui,sans-serif;cursor:pointer;";
       btn.onclick = () => {
-        toast.remove();
         action.onClick();
+        dismissToast();
       };
       toast.appendChild(btn);
     }
@@ -1110,22 +1112,46 @@
     // Cap the whole stack (both regions), lower on small screens.
     const stack = getToastStack();
     const cap = window.innerWidth < 640 ? 2 : 3;
+    // Toasts already fading out don't count.
     const allToasts = () =>
-      Array.from(stack.querySelectorAll("[data-message]"));
+      Array.from(stack.querySelectorAll("[data-message]:not([data-leaving])"));
+    // Make room by dropping the least important first: plain success/info,
+    // then a plain error. Toasts with a button are never dropped; if only
+    // those are left, the new toast just shows alongside them.
     while (allToasts().length >= cap) {
-      const oldest =
-        allToasts().find((child) => !child.dataset.hasAction) || allToasts()[0];
-      oldest.remove();
+      const plain = allToasts().filter((child) => !child.dataset.hasAction);
+      const victim =
+        plain.find((child) => !child.dataset.error) || plain[0] || null;
+      if (!victim) break;
+      victim.remove();
     }
+    if (isError) toast.dataset.error = "1";
     region.appendChild(toast);
     // Focus is deliberately not moved to the toast: pilots may be flying with
     // keyboard controls, and Space/Enter would trigger it by accident.
     requestAnimationFrame(() => (toast.style.opacity = "1"));
 
+    // Where focus was before it moved into this toast, so dismissing it
+    // doesn't drop keyboard users onto the page body.
+    let focusBefore = null;
+    toast.addEventListener("focusin", (event) => {
+      if (!focusBefore && !toast.contains(event.relatedTarget))
+        focusBefore = event.relatedTarget;
+    });
     const dismiss = () => {
       clearTimeout(timer);
+      toast.dataset.leaving = "1";
+      const hadFocus = toast.contains(document.activeElement);
       toast.style.opacity = "0";
       setTimeout(() => toast.remove(), 300);
+      if (hadFocus) {
+        const target =
+          (focusBefore && focusBefore.isConnected && focusBefore) ||
+          (flightUI && flightUI.style.display !== "none"
+            ? document.getElementById(SAVE_BTN_ID)
+            : mobileFlightUIOpenButton);
+        target?.focus?.();
+      }
     };
     // Errors and actions stay long enough to read and act on.
     // Long messages stay up long enough to read.
@@ -1137,6 +1163,7 @@
         : readTime;
     let timer = setTimeout(dismiss, duration);
     close.onclick = dismiss;
+    dismissToast = dismiss;
     toast.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
       event.stopPropagation();
@@ -2918,12 +2945,13 @@
           <span data-summary-text style="font-size:11px;color:#cbd5e1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
         </span>
         <button id="atc-edit-flight-btn" type="button" aria-expanded="false" aria-controls="atc-flight-fields" style="
+          min-height:28px;
           padding:5px 8px;
           border:1px solid rgba(125,211,252,0.35);
           border-radius:6px;
           background:transparent;
           color:#7dd3fc;
-          font-size:11px;
+          font-size:12px;
           font-weight:700;
           cursor:pointer;
           white-space:nowrap;
@@ -3106,10 +3134,10 @@
       mobileFlightUIOpenButton.textContent = "‹";
       mobileFlightUIOpenButton.style.cssText = `
         position:fixed;
-        top:72px;
-        right:12px;
-        width:36px;
-        height:42px;
+        top:max(72px, calc(env(safe-area-inset-top) + 16px));
+        right:max(12px, env(safe-area-inset-right));
+        width:44px;
+        height:44px;
         display:none;
         align-items:center;
         justify-content:center;

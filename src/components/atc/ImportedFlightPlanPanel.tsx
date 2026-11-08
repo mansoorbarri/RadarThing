@@ -101,7 +101,7 @@ export function ImportedFlightPlanPanel({
           <div className="min-w-0">
             <div className="mb-1 flex items-center gap-2 text-[11px] font-medium tracking-[0.18em] text-cyan-300 uppercase">
               <Route size={14} strokeWidth={1.8} />
-              Imported Plan
+              Imported plan
             </div>
             <h2 className="truncate font-mono text-lg font-semibold text-white">
               {flightPlan.displayName}

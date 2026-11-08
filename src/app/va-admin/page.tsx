@@ -378,7 +378,7 @@ export default function VirtualAirlineAdminPage() {
             </p>
             <div className="mt-6">
               <GoogleSignInButton>
-                <button className="cursor-pointer rounded-xl bg-cyan-500 px-5 py-3 font-medium text-black">
+                <button className="cursor-pointer rounded-xl bg-cyan-400 px-5 py-3 font-medium text-slate-950">
                   Sign in
                 </button>
               </GoogleSignInButton>

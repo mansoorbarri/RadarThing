@@ -58,3 +58,4 @@ after every round.
 | 6 | `eadd2d9` (round 5 fixes) | 8.8 | 8.9 | 8.9 |
 | 7 | `4065cb7` (round 6 fixes) | 8.8 | 8.9 | 9.0 |
 | 8 | `6f84ab2` (round 7 fixes) | — (reviewer interrupted) | 9.0 | 9.2 |
+| 9 | `5b054f7` (round 8 fixes) | 9.1 | 9.1 | 9.4 |

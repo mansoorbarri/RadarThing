@@ -980,7 +980,6 @@ export function ChallengesTab({
               })
             }
             placeholder="LOWI"
-            aria-label="LOWI"
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </label>
@@ -1001,7 +1000,6 @@ export function ChallengesTab({
               updateRule(index, { requiredAirportCount: event.target.value })
             }
             placeholder="5"
-            aria-label="5"
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </label>
@@ -1069,7 +1067,6 @@ export function ChallengesTab({
                 })
               }
               placeholder="KJFK"
-              aria-label="KJFK"
               className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             />
           </label>
@@ -1083,7 +1080,6 @@ export function ChallengesTab({
                 })
               }
               placeholder="KLAX"
-              aria-label="KLAX"
               className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             />
           </label>
@@ -1103,7 +1099,6 @@ export function ChallengesTab({
               })
             }
             placeholder="A320"
-            aria-label="A320"
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </label>
@@ -1165,7 +1160,6 @@ export function ChallengesTab({
               updateRule(index, { requiredFlightCount: event.target.value })
             }
             placeholder="3"
-            aria-label="3"
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </label>
@@ -1184,7 +1178,6 @@ export function ChallengesTab({
               updateRule(index, { minDurationMinutes: event.target.value })
             }
             placeholder="90"
-            aria-label="90"
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </label>
@@ -1203,7 +1196,6 @@ export function ChallengesTab({
               updateRule(index, { minDistanceNm: event.target.value })
             }
             placeholder="500"
-            aria-label="500"
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </label>
@@ -1222,7 +1214,6 @@ export function ChallengesTab({
               updateRule(index, { maxDurationMinutes: event.target.value })
             }
             placeholder="90"
-            aria-label="90"
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
           <span className="block text-xs text-slate-400">
@@ -1244,7 +1235,6 @@ export function ChallengesTab({
               updateRule(index, { maxDistanceNm: event.target.value })
             }
             placeholder="500"
-            aria-label="500"
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
           <span className="block text-xs text-slate-400">
@@ -1328,7 +1318,6 @@ export function ChallengesTab({
                   }))
                 }
                 placeholder="Visit Innsbruck in the next 24 hours"
-                aria-label="Visit Innsbruck in the next 24 hours"
                 className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
               />
             </label>
@@ -1386,7 +1375,6 @@ export function ChallengesTab({
                 }
                 rows={3}
                 placeholder="Admins can describe the target and what counts as completion."
-                aria-label="Admins can describe the target and what counts as completion."
                 className="w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
               />
             </label>
@@ -1685,7 +1673,7 @@ export function ChallengesTab({
             <button
               onClick={handleSubmit}
               disabled={isSaving}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2.5 text-sm font-medium text-slate-950 transition-colors hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

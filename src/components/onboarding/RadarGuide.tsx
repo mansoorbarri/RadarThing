@@ -50,6 +50,8 @@ export interface RadarGuideSignals {
   isChartOpen: boolean;
 }
 
+const TOUR_STEP_KEY = "radarthing-tour-step";
+
 const STEPS: GuideStep[] = [
   {
     id: "welcome",
@@ -274,7 +276,15 @@ export function RadarGuide({
 }) {
   // Android Back closes the tour for now (it isn't marked as done) instead
   // of leaving the page.
-  useBackToClose(open, () => (onDismiss ? onDismiss() : void onFinish()));
+  const finish = useCallback(() => {
+    try {
+      sessionStorage.removeItem(TOUR_STEP_KEY);
+    } catch {
+      // Storage blocked: nothing to clear.
+    }
+    return onFinish();
+  }, [onFinish]);
+  useBackToClose(open, () => (onDismiss ? onDismiss() : void finish()));
   const [stepIndex, setStepIndex] = useState(0);
   const [completedStepIds, setCompletedStepIds] = useState<Set<string>>(
     () => new Set(),
@@ -361,12 +371,34 @@ export function RadarGuide({
     };
   }, [open]);
 
+  // A tour closed part-way (Back, Escape, "Later") resumes at the same step
+  // when reopened in this browser session; finishing it starts afresh.
   useEffect(() => {
     if (!open) {
       setStepIndex(0);
       setCompletedStepIds(new Set());
+      return;
+    }
+    let saved = 0;
+    try {
+      saved = Number(sessionStorage.getItem(TOUR_STEP_KEY) ?? 0);
+    } catch {
+      // Storage blocked: start from the first step.
+    }
+    if (Number.isInteger(saved) && saved > 0 && saved < STEPS.length) {
+      setStepIndex(saved);
+      setCompletedStepIds(new Set(STEPS.slice(0, saved).map((s) => s.id)));
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    try {
+      sessionStorage.setItem(TOUR_STEP_KEY, String(stepIndex));
+    } catch {
+      // Storage blocked: the tour just restarts next time.
+    }
+  }, [open, stepIndex]);
 
   useEffect(() => {
     if (!open || step.task?.type !== "event") return;
@@ -439,8 +471,10 @@ export function RadarGuide({
 
   const handleGuideNavigationKey = useCallback(
     (key: string) => {
+      // Escape works like Back: close for now, don't mark the tour done.
       if (key === "Escape") {
-        void onFinish();
+        if (onDismiss) onDismiss();
+        else void finish();
         return true;
       }
       if (key === "ArrowRight" && !isLastStep) {
@@ -454,7 +488,7 @@ export function RadarGuide({
       }
       return false;
     },
-    [isLastStep, isStepComplete, onFinish, stepIndex],
+    [isLastStep, isStepComplete, finish, stepIndex, onDismiss],
   );
 
   useEffect(() => {
@@ -571,7 +605,7 @@ export function RadarGuide({
       return;
     }
 
-    if (isLastStep) void onFinish();
+    if (isLastStep) void finish();
     else setStepIndex((current) => current + 1);
   };
 
@@ -641,7 +675,7 @@ export function RadarGuide({
             </div>
             <button
               type="button"
-              onClick={() => void onFinish()}
+              onClick={() => void finish()}
               className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
               aria-label="Skip tour"
               title="Skip tour"

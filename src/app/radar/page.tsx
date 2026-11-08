@@ -1317,7 +1317,7 @@ function ATCPageContent() {
           : []),
         {
           id: "fids",
-          label: "Flights",
+          label: "Live flights",
           icon: FlightsIcon,
           active: activeRightPanel === "fids",
           onClick: () => {
@@ -1762,7 +1762,8 @@ function ATCPageContent() {
           activeRightPanel === "fids" &&
           (isPhone ? (
             <MobileSwipeSheet
-              label="Flight board"
+              label="Live flights"
+              swipeHint
               hideTitle
               onClose={() => setActiveRightPanel(null)}
             >
@@ -1795,6 +1796,7 @@ function ATCPageContent() {
           (isPhone ? (
             <MobileSwipeSheet
               label="Callsign filter"
+              swipeHint
               onClose={() => setActiveRightPanel(null)}
             >
               <CallsignFilter
@@ -1822,6 +1824,7 @@ function ATCPageContent() {
           (isPhone ? (
             <MobileSwipeSheet
               label="Airport activity"
+              swipeHint
               hideTitle
               onClose={() => setActiveRightPanel(null)}
             >
@@ -1888,13 +1891,13 @@ function ATCPageContent() {
                       hasAccess: true,
                     });
                   }}
-                  className={`cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 ${isPhone ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[11px]"}`}
+                  className={`cursor-pointer rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 ${isPhone ? "min-h-9 px-3 py-1.5 text-xs" : "px-3 py-1.5 text-[11px]"}`}
                 >
                   Charts
                 </button>
               ) : (
                 <div
-                  className={`flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 ${isPhone ? "px-2 py-1" : "px-3 py-1.5"}`}
+                  className={`flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 ${isPhone ? "min-h-9 px-3 py-1.5" : "px-3 py-1.5"}`}
                 >
                   <span
                     className={`text-white/60 ${isPhone ? "text-[11px]" : "text-[11px]"}`}
@@ -1911,9 +1914,9 @@ function ATCPageContent() {
                   showAirportFID
                     ? "border-cyan-500/50 bg-cyan-500/20 text-cyan-300"
                     : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
-                } ${isPhone ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[11px]"}`}
+                } ${isPhone ? "min-h-9 px-3 py-1.5 text-xs" : "px-3 py-1.5 text-[11px]"}`}
               >
-                {isPhone ? "FIDs" : "Flights"}
+                {isPhone ? "Departures" : "Departures & arrivals"}
               </button>
 
               {!isPhone && (
@@ -1929,7 +1932,7 @@ function ATCPageContent() {
                         : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
                   }`}
                 >
-                  {onlineAtcForSelected ? "Live ATC" : "ATC Audio"}
+                  {onlineAtcForSelected ? "Live ATC" : "ATC audio"}
                 </button>
               )}
 
@@ -1962,7 +1965,8 @@ function ATCPageContent() {
           selectedAirport &&
           (isPhone ? (
             <MobileSwipeSheet
-              label="Airport departures and arrivals"
+              label={`${selectedAirport.icao} departures and arrivals`}
+              swipeHint
               onClose={() => setShowAirportFID(false)}
             >
               <AirportFIDPanel

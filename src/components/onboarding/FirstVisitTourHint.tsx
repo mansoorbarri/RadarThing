@@ -54,7 +54,7 @@ export function FirstVisitTourHint({
 
   return (
     <section
-      role="status"
+      role="region"
       aria-label="Radar tour"
       // Escape dismisses it only while focus is inside the offer, so Escape
       // used elsewhere on the radar (search, deselecting) never hides it.
@@ -70,9 +70,10 @@ export function FirstVisitTourHint({
         className="hidden h-5 w-5 shrink-0 text-cyan-300 sm:block"
         aria-hidden="true"
       />
-      <p className="min-w-0 flex-1 leading-snug">
-        New here? A short tour shows you search, flight details, map layers and
-        charts.
+      <p className="min-w-0 flex-1 leading-snug" aria-live="polite">
+        {force
+          ? "Pick up the tour where you left off?"
+          : "New here? A short tour shows you search, flight details, map layers and charts."}
       </p>
       <button
         type="button"
@@ -82,7 +83,7 @@ export function FirstVisitTourHint({
         }}
         className="shrink-0 cursor-pointer rounded-xl bg-cyan-400 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
       >
-        Take the tour
+        {force ? "Resume tour" : "Take the tour"}
       </button>
       <button
         type="button"

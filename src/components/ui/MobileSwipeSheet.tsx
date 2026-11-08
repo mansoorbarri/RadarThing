@@ -15,6 +15,8 @@ interface MobileSwipeSheetProps {
   hideTitle?: boolean;
   /** Start only as tall as the content (up to half the screen). */
   fitContent?: boolean;
+  /** Tall lists: show the one-time "swipe up for more" hint. */
+  swipeHint?: boolean;
   initialState?: SheetState;
 }
 
@@ -24,6 +26,7 @@ export const MobileSwipeSheet = ({
   label,
   hideTitle = false,
   fitContent = false,
+  swipeHint = false,
   initialState = "half",
 }: MobileSwipeSheetProps) => {
   const [state, setState] = useState<SheetState>(initialState);
@@ -61,9 +64,10 @@ export const MobileSwipeSheet = ({
     }, 200);
   }, [onClose]);
 
-  // The first sheet someone opens explains how to expand it, once.
+  // The first tall sheet someone opens explains how to expand it, once.
   const [showSwipeHint, setShowSwipeHint] = useState(false);
   useEffect(() => {
+    if (!swipeHint) return;
     try {
       if (localStorage.getItem("radarthing-swipe-hint-shown")) return;
       localStorage.setItem("radarthing-swipe-hint-shown", "1");
@@ -71,7 +75,7 @@ export const MobileSwipeSheet = ({
     } catch {
       // Storage unavailable: skip the hint.
     }
-  }, []);
+  }, [swipeHint]);
   const panelRef = useRef<HTMLDivElement>(null);
   // The sheet's real height (in dvh) when a drag starts, so a sheet that
   // fits its content doesn't jump to half-screen the moment it's touched.
@@ -212,7 +216,7 @@ export const MobileSwipeSheet = ({
             )}
             {showSwipeHint && (
               <p className="mt-0.5 text-[11px] text-slate-400">
-                Swipe up or tap ⌃ for more
+                Swipe up or tap the arrow for more
               </p>
             )}
           </div>

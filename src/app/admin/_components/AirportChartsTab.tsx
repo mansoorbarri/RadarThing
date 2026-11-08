@@ -103,6 +103,14 @@ function EditableChartDetails({
       setIsEditing(false);
       return;
     }
+    if (!/^[A-Z0-9]{3,4}$/.test(icao)) {
+      toast.error("Use the airport's 3–4 character ICAO code, e.g. KJFK.");
+      return;
+    }
+    if (!chartName.trim()) {
+      toast.error("Enter a chart name.");
+      return;
+    }
     setIsSaving(true);
     const result = await updateAirportChart(
       chartId,
@@ -116,7 +124,7 @@ function EditableChartDetails({
       setIsEditing(false);
       onSaveSuccess?.();
     } else {
-      toast.error(result.error || "Failed to update chart");
+      toast.error(result.error || "Couldn't save the chart. Try again.");
     }
   };
 
@@ -128,8 +136,10 @@ function EditableChartDetails({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSave();
+    // A second Enter while saving would send the update twice.
+    if (e.key === "Enter" && !isSaving) {
+      e.preventDefault();
+      void handleSave();
     } else if (e.key === "Escape") {
       handleCancel();
     }
@@ -156,7 +166,10 @@ function EditableChartDetails({
             onValueChange={(value) => setChartType(value as ChartType)}
             disabled={isSaving}
           >
-            <SelectTrigger className="h-8 min-w-[132px] rounded-md border-blue-500/50 bg-black/60 px-2 text-sm text-blue-300 shadow-none hover:bg-black/70 focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+            <SelectTrigger
+              aria-label="Chart type"
+              className="h-8 min-w-[132px] rounded-md border-blue-500/50 bg-black/60 px-2 text-sm text-blue-300 shadow-none hover:bg-black/70 focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">

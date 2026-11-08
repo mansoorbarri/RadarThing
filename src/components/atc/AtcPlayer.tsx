@@ -147,7 +147,7 @@ export function AtcPlayer({ icao, onClose, onlineAtc }: AtcPlayerProps) {
       {/* Content */}
       <div className="mb-4 flex flex-col items-center rounded-xl bg-gradient-to-b from-cyan-500/10 to-transparent py-6">
         <Headphones className="mb-3 h-10 w-10 text-cyan-400" />
-        <p className="mb-1 text-sm font-medium text-white">Live ATC Audio</p>
+        <p className="mb-1 text-sm font-medium text-white">Live ATC audio</p>
         <p className="text-xs text-slate-400">Listen to air traffic control</p>
       </div>
 

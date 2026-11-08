@@ -129,14 +129,14 @@ export default function HomePage() {
               <Link
                 href="/radar"
                 prefetch={false}
-                className="group inline-flex items-center justify-center gap-2 rounded-lg bg-white px-8 py-4 font-semibold text-black transition-all hover:bg-cyan-400"
+                className="group inline-flex items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 font-semibold text-slate-950 transition-all hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
               >
                 Open the radar
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
                 href="#install"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 px-8 py-4 font-medium text-white transition-all hover:border-white/25 hover:bg-white/5"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-8 py-4 font-medium text-white transition-all hover:border-white/25 hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
               >
                 <Download className="h-4 w-4" />
                 Install the script
@@ -191,7 +191,7 @@ export default function HomePage() {
               <SetupStep
                 step={2}
                 title="Add the userscript"
-                description="Install the hosted loader script so Tampermonkey always pulls the latest runtime"
+                description="Install the hosted loader script so Tampermonkey always pulls the latest version."
                 link={USERSCRIPT_INSTALL_URL}
                 linkText="Install script"
                 newTab={false}
@@ -199,7 +199,7 @@ export default function HomePage() {
               <SetupStep
                 step={3}
                 title="Start tracking in GeoFS"
-                description="Open GeoFS, enter your departure, arrival and callsign in the RadarThing panel, then press Start tracking"
+                description="Open GeoFS, enter your departure, arrival and callsign in the RadarThing panel, then press Start tracking."
                 link="https://geo-fs.com/geofs.php"
                 linkText="Open GeoFS"
               />
@@ -208,6 +208,16 @@ export default function HomePage() {
             <p className="mt-5 text-sm leading-6 text-amber-200/85">
               Sign in to your GeoFS account before flying. Flights from
               signed-out sessions are not shown on the radar.
+            </p>
+            <p className="mt-2 text-sm leading-6 text-white/70">
+              On a phone or tablet?{" "}
+              <Link
+                href="/guides/getting-started#what-you-need"
+                className="font-medium text-cyan-300 underline underline-offset-4 hover:text-cyan-200"
+              >
+                See what you need
+              </Link>
+              .
             </p>
             <p className="mt-2 text-sm leading-6 text-white/70">
               Flight not showing up?{" "}

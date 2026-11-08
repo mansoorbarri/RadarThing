@@ -47,19 +47,20 @@ export function TrialStatusBanner({ hidden = false }: { hidden?: boolean }) {
             feature: "pro_plan",
           })
         }
-        className="rounded-xl bg-cyan-400 px-2.5 py-1 font-semibold text-slate-950 hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
+        className="rounded-lg bg-cyan-400 px-2.5 py-1 font-semibold text-slate-950 hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
       >
         Keep Pro for $3/mo
       </Link>
       <button
-        aria-label="Dismiss"
+        type="button"
+        aria-label="Dismiss trial reminder"
         onClick={() => {
           localStorage.setItem(DISMISS_KEY, phaseKey);
           setDismissedFor(phaseKey);
         }}
-        className="cursor-pointer text-slate-400 hover:text-white"
+        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-slate-400 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
       >
-        <X className="h-3.5 w-3.5" />
+        <X className="h-3.5 w-3.5" aria-hidden="true" />
       </button>
     </div>
   );

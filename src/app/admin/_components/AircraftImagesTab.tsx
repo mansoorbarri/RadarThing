@@ -186,6 +186,19 @@ function EditableCodes({
       setIsEditing(false);
       return;
     }
+    // Check the codes before saving, as the public upload form does.
+    if (!draftIsMilitary && !/^[A-Z0-9]{2}$/.test(iata)) {
+      toast.error("IATA codes are 2 characters, e.g. BA.");
+      return;
+    }
+    if (!draftIsMilitary && !/^[A-Z]{3,4}$/.test(icao)) {
+      toast.error("ICAO codes are 3 letters, e.g. BAW.");
+      return;
+    }
+    if (!aircraftType.trim()) {
+      toast.error("Enter the aircraft type, e.g. A320.");
+      return;
+    }
     setIsSaving(true);
     const result = await updateAircraftImageCodes(
       imageId,
@@ -200,7 +213,7 @@ function EditableCodes({
       setIsEditing(false);
       onSaveSuccess?.();
     } else {
-      toast.error(result.error || "Failed to update details");
+      toast.error(result.error || "Couldn't save the changes. Try again.");
     }
   };
 
@@ -213,8 +226,10 @@ function EditableCodes({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSave();
+    // A second Enter while saving would send the update twice.
+    if (e.key === "Enter" && !isSaving) {
+      e.preventDefault();
+      void handleSave();
     } else if (e.key === "Escape") {
       handleCancel();
     }
@@ -254,7 +269,8 @@ function EditableCodes({
           value={icao}
           onChange={(e) => setIcao(e.target.value.toUpperCase())}
           onKeyDown={handleKeyDown}
-          placeholder={draftIsMilitary ? "AF Name" : "ICAO"}
+          placeholder={draftIsMilitary ? "AF name" : "ICAO"}
+          aria-label={draftIsMilitary ? "Air force name" : "ICAO code"}
           maxLength={draftIsMilitary ? 10 : 4}
           className={`rounded-md border bg-black/60 px-2 py-1 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 ${draftIsMilitary ? "w-20 border-amber-500/50 text-amber-400 focus:border-amber-400" : "w-16 border-blue-500/50 text-blue-400 focus:border-blue-400"}`}
           disabled={isSaving}
