@@ -877,7 +877,7 @@ export function AircraftImagesTab({
 
       <ConfirmModal
         isOpen={deleteModalOpen}
-        title="Delete Approved Image"
+        title="Delete approved image"
         message={
           deleteTargetInfo
             ? `Are you sure you want to delete the approved image for ${deleteTargetInfo.iata}/${deleteTargetInfo.icao} ${deleteTargetInfo.aircraft}? This action cannot be undone.`
@@ -892,9 +892,9 @@ export function AircraftImagesTab({
 
       <ConfirmModal
         isOpen={bulkDeleteModalOpen}
-        title="Delete Approved Images"
-        message={`Are you sure you want to delete ${bulkDeleteTargetIds.length} approved image(s)? This action cannot be undone.`}
-        confirmLabel="Delete All"
+        title="Delete approved images"
+        message={`Delete ${bulkDeleteTargetIds.length} approved ${bulkDeleteTargetIds.length === 1 ? "image" : "images"}? This can't be undone.`}
+        confirmLabel={`Delete ${bulkDeleteTargetIds.length} ${bulkDeleteTargetIds.length === 1 ? "image" : "images"}`}
         variant="danger"
         isLoading={bulkDeleteLoading}
         onConfirm={handleBulkDeleteConfirm}
@@ -1169,8 +1169,8 @@ export function AircraftImagesTab({
               <Clock className="mx-auto mb-4 h-12 w-12 text-slate-400" />
               <h3 className="mb-2 text-xl font-semibold text-white">
                 {hasActiveImageFilters
-                  ? "No Matching Images"
-                  : "No Pending Images"}
+                  ? "No matching images"
+                  : "No pending images"}
               </h3>
               <p className="text-slate-400">
                 {hasActiveImageFilters
@@ -1268,8 +1268,8 @@ export function AircraftImagesTab({
               <Plane className="mx-auto mb-4 h-12 w-12 text-slate-400" />
               <h3 className="mb-2 text-xl font-semibold text-white">
                 {hasActiveImageFilters
-                  ? "No Matching Images"
-                  : "No Approved Images"}
+                  ? "No matching images"
+                  : "No approved images"}
               </h3>
               <p className="text-slate-400">
                 {hasActiveImageFilters

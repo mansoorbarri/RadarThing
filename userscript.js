@@ -443,6 +443,8 @@
   let reconnectRequestedAt = 0;
   window.addEventListener("radarthing-retry-now", () => {
     if (!info.active) return;
+    // Repeated presses while a retry is under way can't skip the backoff.
+    if (Date.now() - reconnectRequestedAt < 2000) return;
     reconnectRequestedAt = Date.now();
     nextSendAllowedAt = 0;
     lastPositionSendAt = 0;

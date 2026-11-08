@@ -1,5 +1,7 @@
 "use client";
 
+import { FocusTrap } from "~/components/ui/focus-trap";
+
 import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useQuery } from "convex/react";
@@ -583,19 +585,20 @@ export function VirtualAirlinesTab({
       {/* ── Modal ── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-          <div
+          <FocusTrap
             role="dialog"
             aria-modal="true"
             aria-label={
               form.id ? "Edit virtual airline" : "Add virtual airline"
             }
+            onEscape={closeModal}
             className="border-border bg-card text-card-foreground relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border shadow-2xl"
           >
             {/* Header */}
             <div className="flex items-start justify-between gap-4 border-b border-white/10 px-6 py-5">
               <div>
                 <h2 className="text-xl font-semibold text-white">
-                  {form.id ? form.name || "Edit VA" : "Create Virtual Airline"}
+                  {form.id ? form.name || "Edit VA" : "Create virtual airline"}
                 </h2>
                 {form.id && (
                   <p className="mt-1 text-sm text-slate-400">
@@ -863,7 +866,7 @@ export function VirtualAirlinesTab({
                     ) : (
                       <Plus className="h-4 w-4" />
                     )}
-                    {form.id ? "Save Changes" : "Create VA"}
+                    {form.id ? "Save changes" : "Create VA"}
                   </button>
 
                   {form.id && (
@@ -1140,7 +1143,7 @@ export function VirtualAirlinesTab({
                 </div>
               )}
             </div>
-          </div>
+          </FocusTrap>
         </div>
       )}
 

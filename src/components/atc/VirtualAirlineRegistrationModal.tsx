@@ -194,7 +194,7 @@ export function VirtualAirlineRegistrationModal({
                 <ShieldCheck className="h-6 w-6" />
               </div>
               <div>
-                <p className="font-mono text-[11px] tracking-[0.2em] text-cyan-300 uppercase">
+                <p className="font-mono text-[11px] tracking-[0.18em] text-cyan-300 uppercase">
                   VA registration
                 </p>
                 <h2
@@ -288,7 +288,7 @@ export function VirtualAirlineRegistrationModal({
                 <Plane className="h-6 w-6" />
               </div>
               <div>
-                <p className="font-mono text-[11px] tracking-[0.2em] text-cyan-300 uppercase">
+                <p className="font-mono text-[11px] tracking-[0.18em] text-cyan-300 uppercase">
                   New virtual airline
                 </p>
                 <h2

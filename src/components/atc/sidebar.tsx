@@ -740,7 +740,7 @@ export const Sidebar = ({
                   )}
                 </div>
                 {radioCallsign && (
-                  <p className="mt-1 truncate font-mono text-[11px] font-black tracking-[0.14em] text-cyan-300/85 uppercase drop-shadow-md">
+                  <p className="mt-1 truncate font-mono text-[11px] font-black tracking-[0.18em] text-cyan-300/85 uppercase drop-shadow-md">
                     {radioCallsign}
                   </p>
                 )}
@@ -753,12 +753,12 @@ export const Sidebar = ({
                       href={virtualAirline.website}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-1 block max-w-full truncate font-mono text-[11px] font-bold tracking-[0.14em] text-cyan-300/80 uppercase transition-colors hover:text-cyan-200"
+                      className="mt-1 block max-w-full truncate font-mono text-[11px] font-bold tracking-[0.18em] text-cyan-300/80 uppercase transition-colors hover:text-cyan-200"
                     >
                       {virtualAirline.name} - {virtualAirline.callsignPrefix}
                     </a>
                   ) : (
-                    <p className="mt-1 truncate font-mono text-[11px] font-bold tracking-[0.14em] text-cyan-300/80 uppercase">
+                    <p className="mt-1 truncate font-mono text-[11px] font-bold tracking-[0.18em] text-cyan-300/80 uppercase">
                       {virtualAirline.name} - {virtualAirline.callsignPrefix}
                     </p>
                   ))}
@@ -1221,7 +1221,7 @@ const DiversionStatusCard = ({
   plannedArrival: string;
 }) => (
   <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 shadow-lg">
-    <div className="font-mono text-[11px] font-black tracking-[0.2em] text-amber-300 uppercase">
+    <div className="font-mono text-[11px] font-black tracking-[0.18em] text-amber-300 uppercase">
       Diversion Status
     </div>
     <div className="mt-1 font-mono text-sm font-black text-amber-200">

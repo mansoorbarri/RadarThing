@@ -18,6 +18,9 @@ const openSheets: Closer[] = [];
 let entryPushed = false;
 let listening = false;
 let pendingRemoval: ReturnType<typeof setTimeout> | null = null;
+// Set while our own history.back() is on its way, so that pop can't close a
+// sheet that opened in the meantime.
+let removalInFlight = false;
 
 function isOurEntry(state: unknown) {
   return Boolean(
@@ -35,6 +38,12 @@ function pushEntry() {
 }
 
 function onPopState(event: PopStateEvent) {
+  if (removalInFlight) {
+    removalInFlight = false;
+    // A sheet opened while we were removing the entry: give it one again.
+    if (openSheets.length > 0 && !entryPushed) pushEntry();
+    return;
+  }
   if (!entryPushed || isOurEntry(event.state)) return;
   entryPushed = false;
   const top = openSheets.pop();
@@ -59,7 +68,8 @@ export function useBackToClose(open: boolean, onClose: () => void) {
       clearTimeout(pendingRemoval);
       pendingRemoval = null;
     }
-    if (!entryPushed) pushEntry();
+    // During our own removal, the popstate handler pushes for this sheet.
+    if (!entryPushed && !removalInFlight) pushEntry();
 
     return () => {
       const index = openSheets.indexOf(entry);
@@ -71,7 +81,10 @@ export function useBackToClose(open: boolean, onClose: () => void) {
         pendingRemoval = null;
         if (openSheets.length > 0 || !entryPushed) return;
         entryPushed = false;
-        if (isOurEntry(window.history.state)) window.history.back();
+        if (isOurEntry(window.history.state)) {
+          removalInFlight = true;
+          window.history.back();
+        }
       }, 0);
     };
   }, [open]);

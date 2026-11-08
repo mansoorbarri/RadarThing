@@ -86,13 +86,19 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
                 }
                 className="ml-auto rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[11px] font-bold tracking-wide text-white uppercase hover:from-amber-400 hover:to-orange-400"
               >
-                Trial
+                Try Pro
               </Link>
             ) : notams && notams.length > 0 ? (
               notamsExpanded ? (
-                <ChevronUp className="ml-auto h-4 w-4 text-orange-400" />
+                <ChevronUp
+                  className="ml-auto h-4 w-4 text-orange-400"
+                  aria-hidden="true"
+                />
               ) : (
-                <ChevronDown className="ml-auto h-4 w-4 text-orange-400" />
+                <ChevronDown
+                  className="ml-auto h-4 w-4 text-orange-400"
+                  aria-hidden="true"
+                />
               )
             ) : (
               <span className="ml-auto text-xs text-orange-400/50">None</span>
@@ -148,12 +154,18 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
                 }
                 className="ml-auto rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[11px] font-bold tracking-wide text-white uppercase hover:from-amber-400 hover:to-orange-400"
               >
-                Trial
+                Try Pro
               </Link>
             ) : atisExpanded ? (
-              <ChevronUp className="ml-auto h-4 w-4 text-cyan-400" />
+              <ChevronUp
+                className="ml-auto h-4 w-4 text-cyan-400"
+                aria-hidden="true"
+              />
             ) : (
-              <ChevronDown className="ml-auto h-4 w-4 text-cyan-400" />
+              <ChevronDown
+                className="ml-auto h-4 w-4 text-cyan-400"
+                aria-hidden="true"
+              />
             )}
           </div>
 
@@ -233,8 +245,11 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
         </div>
       )}
 
-      {/* METAR airport input */}
-      <div className="flex flex-row items-center gap-2 rounded-md border border-cyan-300/30 bg-black/80 p-2 shadow-[0_0_6px_rgba(0,255,255,0.15)]">
+      {/* METAR airport input (first in the phone sheet, so it doesn't move
+          down when results load) */}
+      <div
+        className={`${variant === "sheet" ? "order-first" : ""} flex flex-row items-center gap-2 rounded-md border border-cyan-300/30 bg-black/80 p-2 shadow-[0_0_6px_rgba(0,255,255,0.15)]`}
+      >
         <label htmlFor="metar-icao-input" className="font-medium text-cyan-400">
           METAR
         </label>

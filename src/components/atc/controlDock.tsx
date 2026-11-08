@@ -185,7 +185,7 @@ export function ControlDock({
                       aria-expanded={!collapsed}
                       aria-controls={`${panelId}-${section.id}`}
                       onClick={() => toggleSection(section.id, index)}
-                      className="flex min-h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-1 text-left text-[11px] font-medium tracking-[0.16em] text-cyan-300/90 uppercase transition-colors hover:bg-cyan-500/10 hover:text-cyan-200 focus-visible:outline-2 focus-visible:outline-cyan-300"
+                      className="flex min-h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-1 text-left text-[11px] font-medium tracking-[0.18em] text-cyan-300/90 uppercase transition-colors hover:bg-cyan-500/10 hover:text-cyan-200 focus-visible:outline-2 focus-visible:outline-cyan-300"
                     >
                       {section.label}
                       <ChevronDown

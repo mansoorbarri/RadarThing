@@ -1,5 +1,7 @@
 "use client";
 
+import { useBackToClose } from "~/hooks/useBackToClose";
+
 import {
   useCallback,
   useEffect,
@@ -267,6 +269,8 @@ export function RadarGuide({
   onOpenAircraftImages: () => void;
   onPrepareDock: () => void;
 }) {
+  // Android Back leaves the tour (same as finishing it) instead of the page.
+  useBackToClose(open, () => void onFinish());
   const [stepIndex, setStepIndex] = useState(0);
   const [completedStepIds, setCompletedStepIds] = useState<Set<string>>(
     () => new Set(),
@@ -622,7 +626,7 @@ export function RadarGuide({
                 <Icon size={19} strokeWidth={1.8} />
               </div>
               <div>
-                <p className="font-mono text-[11px] tracking-[0.22em] text-cyan-300 uppercase">
+                <p className="font-mono text-[11px] tracking-[0.18em] text-cyan-300 uppercase">
                   {step.eyebrow}
                 </p>
                 <p className="mt-1 font-mono text-[11px] text-slate-400">

@@ -219,15 +219,15 @@ export default function AdminPage() {
   }[] = [
     {
       value: "images",
-      label: "Aircraft Images",
+      label: "Aircraft images",
       badge: pendingCount || undefined,
     },
-    { value: "charts", label: "Airport Charts" },
+    { value: "charts", label: "Airport charts" },
     { value: "moderation", label: "Moderation" },
     { value: "acars-moderation", label: "ACARS auto-mod" },
     {
       value: "virtual-airlines",
-      label: "Virtual Airlines",
+      label: "Virtual airlines",
       badge: pendingVirtualAirlinesCount || undefined,
     },
     { value: "challenges", label: "Challenges" },

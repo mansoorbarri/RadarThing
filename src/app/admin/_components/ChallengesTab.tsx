@@ -1278,7 +1278,7 @@ export function ChallengesTab({
 
       <AdminChallengeSection
         icon={<Send className="h-4 w-4 text-cyan-400" />}
-        title={isEditing ? "Edit Challenge" : "Create Challenge"}
+        title={isEditing ? "Edit challenge" : "Create challenge"}
         countLabel={isEditing ? "editing" : undefined}
         open={openSections.form}
         onOpenChange={(open) =>
@@ -1289,7 +1289,7 @@ export function ChallengesTab({
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-lg font-semibold text-white">
-                {isEditing ? "Edit Challenge" : "Create Challenge"}
+                {isEditing ? "Edit challenge" : "Create challenge"}
               </h3>
               <p className="mt-1 text-sm text-slate-400">
                 Weekly and monthly challenges can be auto-tracked from flights
@@ -1688,7 +1688,7 @@ export function ChallengesTab({
 
       <AdminChallengeSection
         icon={<ClipboardCheck className="h-4 w-4 text-yellow-400" />}
-        title="Pending Manual Reviews"
+        title="Pending manual reviews"
         countLabel={
           pendingManualReviews.length > 0
             ? String(pendingManualReviews.length)
@@ -1836,7 +1836,7 @@ export function ChallengesTab({
 
       <AdminChallengeSection
         icon={<ClipboardCheck className="h-4 w-4 text-cyan-400" />}
-        title="Reviewed Manual Submissions"
+        title="Reviewed manual submissions"
         countLabel={
           reviewedManualReviews.length > 0
             ? String(reviewedManualReviews.length)
@@ -1965,7 +1965,7 @@ export function ChallengesTab({
 
       <AdminChallengeSection
         icon={<Flag className="h-4 w-4 text-cyan-400" />}
-        title="All Challenges"
+        title="All challenges"
         countLabel={
           sortedChallenges.length > 0
             ? String(sortedChallenges.length)

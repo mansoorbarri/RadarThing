@@ -504,7 +504,10 @@ export default function DashboardPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setConfirmDiscordDisconnect(true)}
+                      onClick={() => {
+                        setDiscordError(null);
+                        setConfirmDiscordDisconnect(true);
+                      }}
                       disabled={discordLoading}
                       className="inline-flex min-h-10 cursor-pointer items-center font-mono text-xs text-slate-400 transition-colors hover:text-red-400 disabled:opacity-50"
                     >

@@ -1,5 +1,5 @@
-import { PageSkeleton } from "~/components/site/PageSkeleton";
+import { GridPageSkeleton } from "~/components/site/PageSkeleton";
 
 export default function Loading() {
-  return <PageSkeleton label="Loading the gallery…" />;
+  return <GridPageSkeleton label="Loading the gallery…" />;
 }

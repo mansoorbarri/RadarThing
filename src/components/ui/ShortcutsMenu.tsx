@@ -1,6 +1,7 @@
 "use client";
 
 import { FocusTrap } from "~/components/ui/focus-trap";
+import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
 
 interface ShortcutGroup {
   title: string;
@@ -64,68 +65,34 @@ export function ShortcutsMenu({
 
   if (isMobile) {
     return (
-      <div
-        className="fixed inset-0 z-[10024] flex items-end bg-black/70 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm"
-        onMouseDown={(event) => {
-          if (event.target === event.currentTarget) onClose();
-        }}
-      >
-        <FocusTrap
-          onEscape={onClose}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="radar-controls-title"
-          className="w-full overflow-hidden rounded-2xl border border-cyan-400/20 bg-[#071019]/95 shadow-[0_24px_80px_rgba(0,0,0,0.65)]"
-        >
-          <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4">
-            <div>
-              <p className="font-mono text-[11px] tracking-[0.24em] text-cyan-400/75 uppercase">
-                Radar controls
-              </p>
-              <h2
-                id="radar-controls-title"
-                className="mt-1 text-lg font-semibold text-white"
-              >
-                Quick toggles
-              </h2>
-            </div>
-            <button
-              onClick={onClose}
-              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
-              aria-label="Close radar controls"
-            >
-              <CloseIcon />
-            </button>
-          </div>
-
-          <div className="divide-y divide-white/6 px-5">
-            <ToggleRow
-              label="Show aircraft labels"
-              description="Show labels alongside aircraft on the map."
-              checked={showAircraftLabels}
-              onChange={onAircraftLabelsChange}
-            />
-            <ToggleRow
-              label="Show route waypoints"
-              description="Show waypoints along selected flight routes."
-              checked={showRouteWaypoints}
-              onChange={onRouteWaypointsChange}
-            />
-            <ToggleRow
-              label="Heading mode"
-              description="Set aircraft heading directly from the map."
-              checked={isHeadingMode}
-              onChange={onHeadingModeChange}
-            />
-            <ToggleRow
-              label="Show radar UI"
-              description="Hide panels and controls for an unobstructed map."
-              checked={!isUiHidden}
-              onChange={(enabled) => onUiHiddenChange(!enabled)}
-            />
-          </div>
-        </FocusTrap>
-      </div>
+      <MobileSwipeSheet label="Quick toggles" onClose={onClose} fitContent>
+        <div className="divide-y divide-white/6 px-5">
+          <ToggleRow
+            label="Show aircraft labels"
+            description="Show labels alongside aircraft on the map."
+            checked={showAircraftLabels}
+            onChange={onAircraftLabelsChange}
+          />
+          <ToggleRow
+            label="Show route waypoints"
+            description="Show waypoints along selected flight routes."
+            checked={showRouteWaypoints}
+            onChange={onRouteWaypointsChange}
+          />
+          <ToggleRow
+            label="Heading mode"
+            description="Set aircraft heading directly from the map."
+            checked={isHeadingMode}
+            onChange={onHeadingModeChange}
+          />
+          <ToggleRow
+            label="Show radar UI"
+            description="Hide panels and controls for an unobstructed map."
+            checked={!isUiHidden}
+            onChange={(enabled) => onUiHiddenChange(!enabled)}
+          />
+        </div>
+      </MobileSwipeSheet>
     );
   }
 
@@ -146,7 +113,7 @@ export function ShortcutsMenu({
         <div className="border-b border-white/10 px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="font-mono text-[11px] tracking-[0.24em] text-cyan-400/75 uppercase">
+              <p className="font-mono text-[11px] tracking-[0.18em] text-cyan-400/75 uppercase">
                 Radar shortcuts
               </p>
               <h2
@@ -177,7 +144,7 @@ export function ShortcutsMenu({
               className="rounded-xl border border-white/10 bg-black/20"
             >
               <div className="border-b border-white/8 px-4 py-3">
-                <h3 className="font-mono text-[11px] tracking-[0.22em] text-cyan-400 uppercase">
+                <h3 className="font-mono text-[11px] tracking-[0.18em] text-cyan-400 uppercase">
                   {group.title}
                 </h3>
               </div>

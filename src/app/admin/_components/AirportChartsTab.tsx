@@ -176,7 +176,7 @@ function EditableChartDetails({
           value={chartName}
           onChange={(e) => setChartName(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Chart Name"
+          placeholder="Chart name"
           className="w-full rounded-md border border-white/20 bg-black/60 px-2 py-1 text-sm text-white outline-none focus:border-white/40 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           disabled={isSaving}
         />
@@ -460,7 +460,7 @@ export function AirportChartsTab({
     <>
       <ConfirmModal
         isOpen={deleteModalOpen}
-        title="Delete Chart"
+        title="Delete chart"
         message={
           deleteTargetInfo
             ? `Are you sure you want to delete "${deleteTargetInfo.chartName}" for ${deleteTargetInfo.icao}? This action cannot be undone.`
@@ -479,9 +479,9 @@ export function AirportChartsTab({
 
       <ConfirmModal
         isOpen={bulkDeleteModalOpen}
-        title="Delete Charts"
-        message={`Are you sure you want to delete ${bulkDeleteTargetIds.length} chart(s)? This action cannot be undone.`}
-        confirmLabel="Delete All"
+        title="Delete charts"
+        message={`Delete ${bulkDeleteTargetIds.length} ${bulkDeleteTargetIds.length === 1 ? "chart" : "charts"}? This can't be undone.`}
+        confirmLabel={`Delete ${bulkDeleteTargetIds.length} ${bulkDeleteTargetIds.length === 1 ? "chart" : "charts"}`}
         variant="danger"
         isLoading={bulkDeleteLoading}
         onConfirm={handleBulkDeleteConfirm}
@@ -700,7 +700,7 @@ export function AirportChartsTab({
         <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
           <Map className="mx-auto mb-4 h-12 w-12 text-slate-400" />
           <h3 className="mb-2 text-xl font-semibold text-white">
-            {hasActiveFilters ? "No Matching Charts" : "No Charts Yet"}
+            {hasActiveFilters ? "No matching charts" : "No charts yet"}
           </h3>
           <p className="text-slate-400">
             {hasActiveFilters

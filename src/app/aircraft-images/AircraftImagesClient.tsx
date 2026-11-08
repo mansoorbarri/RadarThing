@@ -641,6 +641,13 @@ export default function AircraftImagesClient({
               Be the first to add one: upload a photo of an aircraft in its
               airline&apos;s livery.
             </p>
+            <button
+              type="button"
+              onClick={() => setShowUploadModal(true)}
+              className="mt-5 cursor-pointer rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-black hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
+            >
+              Upload an image
+            </button>
           </div>
         ) : (
           <>

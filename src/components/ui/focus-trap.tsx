@@ -19,7 +19,12 @@ export function FocusTrap({
   return (
     // tabIndex -1 lets the trap focus the container itself when it has no
     // focusable children yet.
-    <div ref={ref} tabIndex={-1} {...props}>
+    <div
+      ref={ref}
+      tabIndex={-1}
+      {...props}
+      className={`focus:outline-none ${props.className ?? ""}`}
+    >
       {children}
     </div>
   );

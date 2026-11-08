@@ -13,6 +13,8 @@ interface MobileSwipeSheetProps {
   label: string;
   /** Hide the visible title when the content already has its own heading. */
   hideTitle?: boolean;
+  /** Start only as tall as the content (up to half the screen). */
+  fitContent?: boolean;
   initialState?: SheetState;
 }
 
@@ -21,6 +23,7 @@ export const MobileSwipeSheet = ({
   onClose,
   label,
   hideTitle = false,
+  fitContent = false,
   initialState = "half",
 }: MobileSwipeSheetProps) => {
   const [state, setState] = useState<SheetState>(initialState);
@@ -128,7 +131,9 @@ export const MobileSwipeSheet = ({
   );
 
   return (
-    <div className="fixed inset-0 z-[10014]">
+    // Above the flight drawer (z-10015), so a sheet opened while a flight is
+    // selected is never covered by it.
+    <div className="fixed inset-0 z-[10016]">
       <button
         type="button"
         // Tap-outside target only; the header has the real close button.
@@ -146,7 +151,11 @@ export const MobileSwipeSheet = ({
         className={`absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-white/10 bg-black/90 backdrop-blur-xl ${
           isDragging ? "" : "transition-[height] duration-200 ease-out"
         }`}
-        style={{ height: getHeight() }}
+        style={
+          fitContent && state === "half" && !isDragging
+            ? { maxHeight: "60dvh" }
+            : { height: getHeight() }
+        }
       >
         {/* Drag handle: swipe up to expand, down to collapse or close. The
             same actions are buttons for keyboard and screen-reader users. */}
@@ -156,28 +165,8 @@ export const MobileSwipeSheet = ({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          <button
-            type="button"
-            onClick={() => setState(state === "full" ? "half" : "full")}
-            aria-expanded={state === "full"}
-            aria-label={state === "full" ? "Collapse panel" : "Expand panel"}
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className={state === "full" ? "rotate-180" : ""}
-            >
-              <path d="m6 15 6-6 6 6" />
-            </svg>
-          </button>
+          {/* Spacer so the title stays centred between the two sides. */}
+          <span aria-hidden="true" className="w-20 shrink-0" />
           <div className="flex min-w-0 flex-1 flex-col items-center">
             <div
               aria-hidden="true"
@@ -189,29 +178,55 @@ export const MobileSwipeSheet = ({
               </h2>
             )}
           </div>
-          <button
-            type="button"
-            onClick={requestClose}
-            aria-label={`Close ${label.toLowerCase()}`}
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              aria-hidden="true"
+          <div className="flex w-20 shrink-0 justify-end">
+            <button
+              type="button"
+              onClick={() => setState(state === "full" ? "half" : "full")}
+              aria-expanded={state === "full"}
+              aria-label={state === "full" ? "Collapse panel" : "Expand panel"}
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
             >
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className={state === "full" ? "rotate-180" : ""}
+              >
+                <path d="m6 15 6-6 6 6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={requestClose}
+              aria-label={`Close ${label.toLowerCase()}`}
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Content */}
-        <div className="h-[calc(100%-56px)] overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]">
+        <div
+          className={`${fitContent && state === "half" && !isDragging ? "max-h-[calc(60dvh-56px)]" : "h-[calc(100%-56px)]"} overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]`}
+        >
           {children}
         </div>
       </FocusTrap>

@@ -123,7 +123,7 @@ export function ImportedFlightPlanPanel({
 
         <div className="mt-4 grid grid-cols-2 gap-2">
           <div className="rounded-2xl border border-white/8 bg-white/5 px-3 py-3">
-            <div className="mb-2 flex items-center gap-2 text-[11px] tracking-[0.22em] text-slate-400 uppercase">
+            <div className="mb-2 flex items-center gap-2 text-[11px] tracking-[0.18em] text-slate-400 uppercase">
               <MapPinned size={13} strokeWidth={1.8} />
               Distance
             </div>
@@ -136,7 +136,7 @@ export function ImportedFlightPlanPanel({
           </div>
 
           <div className="rounded-2xl border border-white/8 bg-white/5 px-3 py-3">
-            <div className="mb-2 flex items-center gap-2 text-[11px] tracking-[0.22em] text-slate-400 uppercase">
+            <div className="mb-2 flex items-center gap-2 text-[11px] tracking-[0.18em] text-slate-400 uppercase">
               <Clock3 size={13} strokeWidth={1.8} />
               Approx Time
             </div>
@@ -188,7 +188,7 @@ export function ImportedFlightPlanPanel({
                         <div className="truncate font-mono text-sm font-semibold text-white">
                           {waypoint.ident}
                         </div>
-                        <div className="text-[11px] tracking-[0.2em] text-slate-400 uppercase">
+                        <div className="text-[11px] tracking-[0.18em] text-slate-400 uppercase">
                           {waypoint.type}
                         </div>
                       </div>

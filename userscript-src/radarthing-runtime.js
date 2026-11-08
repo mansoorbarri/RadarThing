@@ -557,7 +557,7 @@
     if (hint) hint.textContent = hotkeyHintText();
     const summary = document.querySelector("[data-shortcut-summary]");
     if (summary)
-      summary.textContent = `· ${toggleKey.toUpperCase()} panel, ${chartsToggleKey.toUpperCase()} charts`;
+      summary.textContent = `${toggleKey.toUpperCase()} panel · ${chartsToggleKey.toUpperCase()} charts`;
     const hideBtn = document.getElementById(FLIGHT_UI_HIDE_BTN_ID);
     if (hideBtn) {
       hideBtn.title = `Hide panel (${toggleKey.toUpperCase()})`;
@@ -649,6 +649,20 @@
       header.title = moveMode ? "Drag this header to move the panel" : "";
     };
 
+    // The first time the panel is moved, say how to put it back.
+    const showMoveTipOnce = () => {
+      try {
+        if (localStorage.getItem("radarthing-move-tip-shown")) return;
+        localStorage.setItem("radarthing-move-tip-shown", "1");
+      } catch (_) {
+        return;
+      }
+      showToast(
+        "Tip: Reset puts the panel back in the corner. It's also in the Tampermonkey menu.",
+        "info",
+      );
+    };
+
     // Screen-reader announcements for keyboard moving.
     const moveAnnouncer = document.createElement("span");
     moveAnnouncer.setAttribute("aria-live", "polite");
@@ -692,6 +706,7 @@
         event.stopPropagation();
         moveMode = false;
         updateMoveMode();
+        announceMove("Panel position saved.");
         return;
       }
       if (!delta) return;
@@ -704,6 +719,7 @@
       clampFlightUiToViewport();
       saveFlightUiPosition();
       announceMove("Panel moved.");
+      showMoveTipOnce();
     });
 
     resetButton.addEventListener("click", (event) => {
@@ -750,6 +766,7 @@
       }
       saveFlightUiPosition();
       updateMoveMode();
+      showMoveTipOnce();
     };
 
     header.addEventListener("pointerup", stopDragging);
@@ -1020,7 +1037,10 @@
     return region;
   }
 
+  // isError: false (success, green), true (error, red) or "info" (neutral).
   function showToast(msg, isError = false, action = null) {
+    const isInfo = isError === "info";
+    if (isInfo) isError = false;
     const toast = document.createElement("div");
     const label = document.createElement("span");
     label.textContent = msg;
@@ -1040,7 +1060,8 @@
       toast.appendChild(btn);
     }
     toast.style.cssText = `
-      background:${isError ? "rgba(185,28,28,0.95)" : "rgba(4,120,87,0.95)"};
+      background:${isError ? "rgba(185,28,28,0.95)" : isInfo ? "rgba(30,41,59,0.97)" : "rgba(4,120,87,0.95)"};
+      ${isInfo ? "border:1px solid rgba(125,211,252,0.35);" : ""}
       color:#fff;
       padding:12px 16px;
       border-radius:12px;
@@ -1127,7 +1148,8 @@
   };
   window.addEventListener("radarthing-command-pending", () => {
     showToast(
-      "A change from the website is waiting for GeoFS to finish loading. It will apply shortly.",
+      "Website change queued. It applies once GeoFS has loaded.",
+      "info",
     );
   });
 
@@ -2655,6 +2677,7 @@
     const sectionHeaderStyle = `
       display:flex;
       width:100%;
+      text-align:left;
       justify-content:space-between;
       align-items:center;
       padding:0;
@@ -2882,8 +2905,8 @@
 
       <div id="atc-flight-fields">
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px 8px;">
-        ${buildInputRow("Departure", DEP_INPUT_ID, "e.g. EGLL", 'aria-describedby="atc-form-error"')}
-        ${buildInputRow("Arrival", ARR_INPUT_ID, "e.g. KJFK", 'aria-describedby="atc-form-error"')}
+        ${buildInputRow("Departure", DEP_INPUT_ID, "e.g. EGLL", 'aria-describedby="atc-form-error atc-form-notice"')}
+        ${buildInputRow("Arrival", ARR_INPUT_ID, "e.g. KJFK", 'aria-describedby="atc-form-error atc-form-notice"')}
         ${buildInputRow("Callsign", FLT_INPUT_ID, "e.g. BAW117", 'aria-describedby="atc-form-error"')}
         ${buildInputRow("Squawk", SQK_INPUT_ID, "Optional", 'inputmode="numeric" aria-describedby="atc-form-error"')}
       </div>
@@ -2928,16 +2951,17 @@
         ">End flight</button>
       </div>
 
+      <style>
+        #atc-form-error:not(:empty), #atc-form-notice:not(:empty) { margin-top:8px; }
+      </style>
       <p id="atc-form-error" role="alert" style="
-        display:none;
-        margin:8px 0 0;
+        margin:0;
         font-size:12px;
         line-height:1.4;
         color:#fca5a5;
       "></p>
       <p id="atc-form-notice" role="status" style="
-        display:none;
-        margin:8px 0 0;
+        margin:0;
         font-size:12px;
         line-height:1.4;
         color:#fcd34d;
@@ -2968,7 +2992,10 @@
 
       <div style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.08); padding-top:10px;">
         <button id="${RADAR_SETTINGS_HEADER_ID}" type="button" aria-expanded="false" aria-controls="${RADAR_SETTINGS_BODY_ID}" style="${sectionHeaderStyle}">
-          <span>Settings &amp; shortcuts <span data-shortcut-summary style="font-weight:500;color:#94a3b8;">· ${escapeHtml(toggleKey.toUpperCase())} panel, ${escapeHtml(chartsToggleKey.toUpperCase())} charts</span></span>
+          <span style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;">
+            <span>Settings &amp; shortcuts</span>
+            <span data-shortcut-summary style="font-size:11px;font-weight:500;color:#94a3b8;white-space:nowrap;">${escapeHtml(toggleKey.toUpperCase())} panel · ${escapeHtml(chartsToggleKey.toUpperCase())} charts</span>
+          </span>
           <span id="${RADAR_SETTINGS_ARROW_ID}" aria-hidden="true" style="
             display:inline-block;
             transition:transform 0.2s;
@@ -3109,24 +3136,27 @@
     });
 
     // A heads-up, not an error: amber, polite, and the field stays valid.
+    // Live regions stay in the page and only their text changes (cleared,
+    // then set on the next frame), so screen readers reliably announce it.
+    function announceIn(el, message) {
+      if (!el) return;
+      el.textContent = "";
+      if (message) requestAnimationFrame(() => (el.textContent = message));
+    }
+
     function setFormNotice(message) {
-      const errorEl = document.getElementById("atc-form-error");
-      const noticeEl = document.getElementById("atc-form-notice");
-      if (errorEl) errorEl.style.display = "none";
-      if (noticeEl) {
-        noticeEl.textContent = message;
-        noticeEl.style.display = message ? "block" : "none";
-      }
+      announceIn(document.getElementById("atc-form-error"), "");
+      announceIn(document.getElementById("atc-form-notice"), message);
     }
 
     function setFormError(message, fieldId) {
-      const errorEl = document.getElementById("atc-form-error");
-      const noticeEl = document.getElementById("atc-form-notice");
-      if (noticeEl) noticeEl.style.display = "none";
-      if (errorEl) {
-        errorEl.textContent = message;
-        errorEl.style.display = message ? "block" : "none";
-      }
+      announceIn(document.getElementById("atc-form-notice"), "");
+      announceIn(document.getElementById("atc-form-error"), message);
+      // Only the field the message is about is marked invalid.
+      [DEP_INPUT_ID, ARR_INPUT_ID, FLT_INPUT_ID, SQK_INPUT_ID].forEach((id) => {
+        if (id !== fieldId)
+          document.getElementById(id)?.removeAttribute("aria-invalid");
+      });
       if (fieldId) {
         const field = document.getElementById(fieldId);
         if (field) {
@@ -3244,6 +3274,11 @@
       saveBtn.disabled = true;
       saveBtn.setAttribute("aria-busy", "true");
       saveBtn.textContent = "Checking…";
+      // A slow callsign check should say it's still working.
+      const slowCheckTimer = setTimeout(() => {
+        if (saveBtn.disabled && saveBtn.textContent === "Checking…")
+          saveBtn.textContent = "Still checking…";
+      }, 4000);
       const wasTracking = isTracking;
       let closedDeferredLeg = false;
       try {
@@ -3267,6 +3302,7 @@
           }),
         );
       } finally {
+        clearTimeout(slowCheckTimer);
         saveBtn.disabled = false;
         saveBtn.removeAttribute("aria-busy");
         saveBtn.textContent = isTracking ? "Update flight" : "Start tracking";
@@ -3386,6 +3422,8 @@
 
       .gc-header {
         display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
         justify-content: space-between;
         align-items: center;
         padding: 12px 14px 10px;

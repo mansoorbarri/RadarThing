@@ -583,7 +583,7 @@ function SelectedAirportSpotlight({
     <div className="rounded-[1.4rem] border border-cyan-400/20 bg-[linear-gradient(145deg,rgba(6,18,28,0.96),rgba(4,9,16,0.98))] p-4 shadow-[0_12px_40px_rgba(0,0,0,0.28)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="font-mono text-[11px] tracking-[0.24em] text-cyan-400 uppercase">
+          <div className="font-mono text-[11px] tracking-[0.18em] text-cyan-400 uppercase">
             Selected Airport
           </div>
           <div className="mt-2 flex items-center gap-2">
@@ -653,7 +653,7 @@ function SectionHeader({
         <div className="mt-1 text-xs leading-5 text-white/60">{subtitle}</div>
       </div>
       {badge && (
-        <div className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[11px] tracking-[0.16em] text-white/60 uppercase">
+        <div className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[11px] tracking-[0.18em] text-white/60 uppercase">
           {badge}
         </div>
       )}
@@ -880,7 +880,7 @@ function ProgressRow({
 }) {
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-[11px] tracking-[0.14em] text-white/28 uppercase">
+      <div className="mb-1 flex items-center justify-between text-[11px] tracking-[0.18em] text-white/28 uppercase">
         <span>{label}</span>
         <span>{value}</span>
       </div>
@@ -897,7 +897,7 @@ function ProgressRow({
 function MetricPill({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-xl border border-white/10 bg-black/20 px-2.5 py-2">
-      <div className="font-mono text-[11px] tracking-[0.16em] text-white/28 uppercase">
+      <div className="font-mono text-[11px] tracking-[0.18em] text-white/28 uppercase">
         {label}
       </div>
       <div className="mt-1 font-mono text-sm text-white">{value}</div>

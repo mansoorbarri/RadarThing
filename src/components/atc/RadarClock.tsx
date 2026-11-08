@@ -1,5 +1,7 @@
 "use client";
 
+import { useBackToClose } from "~/hooks/useBackToClose";
+
 import { createContext, useContext, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { RotateCcw, X } from "lucide-react";
@@ -129,6 +131,7 @@ export function DesktopRadarClock({
 export function PhoneRadarClock({ open, onOpenChange }: ClockProps) {
   const { time, zoneLabel } = useDisplayedTime();
   const timer = useRadarTimer();
+  useBackToClose(open, () => onOpenChange(false));
 
   return (
     <>

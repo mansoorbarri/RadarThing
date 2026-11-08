@@ -1444,6 +1444,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       {isMobile && !hideUi && showMobileWeather && (
         <MobileSwipeSheet
           label="Airport weather"
+          fitContent
           onClose={() => onCloseMobileWeather?.()}
         >
           <div className="px-4 pb-6">
@@ -1651,7 +1652,7 @@ function ConflictAlertCard({
       </div>
       <div className="mt-2 flex items-center justify-between gap-2">
         <span
-          className={`rounded-full border px-2 py-0.5 text-[11px] tracking-[0.14em] uppercase ${getSeverityTone(alert.severity)}`}
+          className={`rounded-full border px-2 py-0.5 text-[11px] tracking-[0.18em] uppercase ${getSeverityTone(alert.severity)}`}
         >
           {alert.severity}
         </span>
@@ -1692,7 +1693,7 @@ function ConflictHistoryCard({
         </div>
         <div className="flex flex-col items-end gap-1">
           <span
-            className={`rounded-full border px-2 py-0.5 text-[11px] tracking-[0.14em] uppercase ${getSeverityTone(event.severity)}`}
+            className={`rounded-full border px-2 py-0.5 text-[11px] tracking-[0.18em] uppercase ${getSeverityTone(event.severity)}`}
           >
             {event.severity}
           </span>

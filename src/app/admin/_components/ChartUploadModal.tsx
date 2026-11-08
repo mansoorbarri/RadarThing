@@ -149,10 +149,14 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-2 block font-mono text-xs text-slate-400">
+              <label
+                className="mb-2 block font-mono text-xs text-slate-400"
+                htmlFor="admin-chart-field-1"
+              >
                 ICAO code *
               </label>
               <input
+                id="admin-chart-field-1"
                 type="text"
                 value={formData.icao}
                 onChange={(e) =>
@@ -169,7 +173,10 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
               />
             </div>
             <div>
-              <label className="mb-2 block font-mono text-xs text-slate-400">
+              <label
+                className="mb-2 block font-mono text-xs text-slate-400"
+                htmlFor="admin-chart-field-2"
+              >
                 Chart type *
               </label>
               <Select
@@ -182,7 +189,10 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
                 }
                 disabled={isProcessing}
               >
-                <SelectTrigger className="h-12 w-full rounded-lg border-white/10 bg-black/40 px-4 text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+                <SelectTrigger
+                  id="admin-chart-field-2"
+                  className="h-12 w-full rounded-lg border-white/10 bg-black/40 px-4 text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="border-white/10 bg-[#0b1118] text-white">

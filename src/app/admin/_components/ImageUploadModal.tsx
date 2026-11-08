@@ -163,9 +163,14 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          <label className="flex cursor-pointer items-center gap-3">
-            <div
-              className={`relative h-5 w-9 rounded-full transition-colors ${isMilitary ? "bg-cyan-500/40" : "bg-muted"}`}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isMilitary}
+              aria-labelledby="admin-military-label"
+              disabled={isProcessing}
+              className={`relative h-5 w-9 cursor-pointer rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:outline-none ${isMilitary ? "bg-cyan-500/40" : "bg-muted"}`}
               onClick={() => {
                 setIsMilitary(!isMilitary);
                 setFormData((prev) => ({
@@ -175,22 +180,30 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                 }));
               }}
             >
-              <div
+              <span
+                aria-hidden="true"
                 className={`absolute top-0.5 h-4 w-4 rounded-full bg-slate-200 transition-[left] ${isMilitary ? "left-[18px]" : "left-0.5"}`}
               />
-            </div>
-            <span className="text-muted-foreground font-mono text-xs">
+            </button>
+            <span
+              id="admin-military-label"
+              className="text-muted-foreground font-mono text-xs"
+            >
               Military aircraft
             </span>
-          </label>
+          </div>
 
           {isMilitary ? (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-muted-foreground mb-2 block font-mono text-xs">
+                <label
+                  className="text-muted-foreground mb-2 block font-mono text-xs"
+                  htmlFor="admin-img-field-1"
+                >
                   Air force *
                 </label>
                 <input
+                  id="admin-img-field-1"
                   type="text"
                   value={formData.airlineIcao}
                   onChange={(e) =>
@@ -207,10 +220,14 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                 />
               </div>
               <div>
-                <label className="text-muted-foreground mb-2 block font-mono text-xs">
+                <label
+                  className="text-muted-foreground mb-2 block font-mono text-xs"
+                  htmlFor="admin-img-field-2"
+                >
                   Aircraft *
                 </label>
                 <input
+                  id="admin-img-field-2"
                   type="text"
                   value={formData.aircraftType}
                   onChange={(e) =>
@@ -229,12 +246,16 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
-                <label className="text-muted-foreground mb-2 block font-mono text-xs">
+                <label
+                  className="text-muted-foreground mb-2 block font-mono text-xs"
+                  htmlFor="admin-img-field-3"
+                >
                   IATA code *
                 </label>
                 <input
+                  id="admin-img-field-3"
                   type="text"
                   value={formData.airlineIata}
                   onChange={(e) =>
@@ -251,10 +272,14 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                 />
               </div>
               <div>
-                <label className="text-muted-foreground mb-2 block font-mono text-xs">
+                <label
+                  className="text-muted-foreground mb-2 block font-mono text-xs"
+                  htmlFor="admin-img-field-4"
+                >
                   ICAO code *
                 </label>
                 <input
+                  id="admin-img-field-4"
                   type="text"
                   value={formData.airlineIcao}
                   onChange={(e) =>
@@ -271,10 +296,14 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                 />
               </div>
               <div>
-                <label className="text-muted-foreground mb-2 block font-mono text-xs">
+                <label
+                  className="text-muted-foreground mb-2 block font-mono text-xs"
+                  htmlFor="admin-img-field-5"
+                >
                   Aircraft *
                 </label>
                 <input
+                  id="admin-img-field-5"
                   type="text"
                   value={formData.aircraftType}
                   onChange={(e) =>

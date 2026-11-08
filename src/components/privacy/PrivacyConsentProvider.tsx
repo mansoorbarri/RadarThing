@@ -1,5 +1,6 @@
 "use client";
 
+import { FocusTrap } from "~/components/ui/focus-trap";
 import Link from "next/link";
 import {
   createContext,
@@ -123,10 +124,13 @@ export function PrivacyConsentProvider({
       {children}
       {isResolved && isOpen && (
         <div className="fixed inset-0 z-[20000] flex items-end bg-black/55 p-3 backdrop-blur-sm sm:items-center sm:justify-center sm:p-6">
-          <section
+          <FocusTrap
             role="dialog"
             aria-modal="true"
             aria-labelledby="privacy-title"
+            // First visit: a choice is required, so Escape does nothing.
+            // Reopened from settings: Escape closes it like Cancel.
+            onEscape={preferences ? () => setIsOpen(false) : undefined}
             className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-cyan-300/20 bg-[#041017] text-white shadow-[0_28px_90px_rgba(0,0,0,0.7)]"
           >
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent" />
@@ -202,7 +206,7 @@ export function PrivacyConsentProvider({
                 </div>
               </div>
             </div>
-          </section>
+          </FocusTrap>
         </div>
       )}
     </PrivacyConsentContext.Provider>

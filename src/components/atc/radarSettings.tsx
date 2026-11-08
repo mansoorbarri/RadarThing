@@ -527,7 +527,7 @@ export const RadarSettings = ({
 
               <div className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-3">
                 <div>
-                  <div className="text-[11px] font-semibold tracking-[0.14em] text-white uppercase">
+                  <div className="text-[11px] font-semibold tracking-[0.18em] text-white uppercase">
                     Interval
                   </div>
                   <p className="mt-1 text-[11px] text-white/60">
@@ -614,7 +614,7 @@ export const RadarSettings = ({
 
                 <div className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-3">
                   <div>
-                    <div className="text-[11px] font-semibold tracking-[0.14em] text-white uppercase">
+                    <div className="text-[11px] font-semibold tracking-[0.18em] text-white uppercase">
                       Length
                     </div>
                     <p className="mt-1 text-[11px] text-white/60">
@@ -683,7 +683,7 @@ export const RadarSettings = ({
               >
                 <div className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-3">
                   <div>
-                    <div className="text-[11px] font-semibold tracking-[0.14em] text-white uppercase">
+                    <div className="text-[11px] font-semibold tracking-[0.18em] text-white uppercase">
                       Extension
                     </div>
                     <p className="mt-1 text-[11px] text-white/60">

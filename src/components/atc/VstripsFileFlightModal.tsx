@@ -1,5 +1,7 @@
 "use client";
 
+import { useBackToClose } from "~/hooks/useBackToClose";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FocusTrap } from "~/components/ui/focus-trap";
 import type { FormEvent, MouseEvent } from "react";
@@ -79,6 +81,8 @@ export function VstripsFileFlightModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
+  // Android Back closes the dialog instead of leaving the radar.
+  useBackToClose(open, onClose);
 
   // Move focus to a new error so keyboard and screen-reader users land on it.
   useEffect(() => {
@@ -250,7 +254,7 @@ export function VstripsFileFlightModal({
       >
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
           <div>
-            <div className="text-[11px] font-semibold tracking-[0.2em] text-cyan-300 uppercase">
+            <div className="text-[11px] font-semibold tracking-[0.18em] text-cyan-300 uppercase">
               vstrips
             </div>
             <h2 id="file-flight-title" className="text-lg font-semibold">

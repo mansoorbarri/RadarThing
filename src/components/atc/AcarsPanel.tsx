@@ -71,7 +71,7 @@ export function AcarsPanel({ googleId }: { googleId?: string }) {
         onClick={() => setExpanded((value) => !value)}
         className="flex w-full cursor-pointer items-center justify-between gap-2 text-left"
       >
-        <h2 className="font-mono text-[11px] font-black tracking-[0.2em] text-cyan-300 uppercase">
+        <h2 className="font-mono text-[11px] font-black tracking-[0.18em] text-cyan-300 uppercase">
           Pilot ACARS
           <span className="ml-2 tracking-normal text-white/65">
             ({entries.length})

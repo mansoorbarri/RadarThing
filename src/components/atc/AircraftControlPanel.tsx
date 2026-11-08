@@ -345,7 +345,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
 
       <div className="space-y-3">
         <div className="space-y-1">
-          <p className="px-1 font-mono text-[11px] font-black tracking-[0.2em] text-white/60 uppercase">
+          <p className="px-1 font-mono text-[11px] font-black tracking-[0.18em] text-white/60 uppercase">
             Autopilot Mode
           </p>
           <StyledSelect
@@ -362,7 +362,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
 
         {modeInput === "nav" && (
           <div className="space-y-1">
-            <p className="px-1 font-mono text-[11px] font-black tracking-[0.2em] text-white/60 uppercase">
+            <p className="px-1 font-mono text-[11px] font-black tracking-[0.18em] text-white/60 uppercase">
               Waypoint
             </p>
             <StyledSelect
@@ -522,7 +522,7 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       ) : (
         <div className="space-y-3 rounded-xl border border-red-400/30 bg-red-500/10 p-3">
           <div>
-            <p className="font-mono text-[11px] font-black tracking-[0.16em] text-red-200 uppercase">
+            <p className="font-mono text-[11px] font-black tracking-[0.18em] text-red-200 uppercase">
               Disconnect flight?
             </p>
             <p className="mt-1 text-xs leading-relaxed text-white/65">
