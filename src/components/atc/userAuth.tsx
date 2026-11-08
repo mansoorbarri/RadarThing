@@ -15,7 +15,7 @@ const MENU_LINK_CLASS =
   "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-cyan-400/10 hover:text-cyan-400";
 
 /**
- * Role-dependent menu links. These need Convex, so they live in their own
+ * Role-dependent menu links (Admin, VA Admin). These need Convex, so they live in their own
  * component behind an error boundary: if a query fails, the menu (and any
  * page or error page showing the header) still renders without them.
  */
@@ -31,20 +31,10 @@ const RoleMenuLinks = ({ onNavigate }: { onNavigate: () => void }) => {
   return (
     <>
       {isAdminUser && (
-        <>
-          <Link href="/admin" onClick={onNavigate} className={MENU_LINK_CLASS}>
-            <User className="h-4 w-4" />
-            Admin
-          </Link>
-          <Link
-            href="/airport-charts"
-            onClick={onNavigate}
-            className={MENU_LINK_CLASS}
-          >
-            <User className="h-4 w-4" />
-            Airport charts
-          </Link>
-        </>
+        <Link href="/admin" onClick={onNavigate} className={MENU_LINK_CLASS}>
+          <User className="h-4 w-4" />
+          Admin
+        </Link>
       )}
       {(managedVirtualAirlines?.length ?? 0) > 0 && (
         <Link href="/va-admin" onClick={onNavigate} className={MENU_LINK_CLASS}>
