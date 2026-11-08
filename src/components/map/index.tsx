@@ -53,8 +53,7 @@ import { useNotamOverlay } from "~/hooks/useNotamOverlay";
 import { useWeatherOverlayLayer } from "~/hooks/useWeatherOverlayLayer";
 import { useWaypointOverlayLayer } from "~/hooks/useWaypointOverlayLayer";
 import { MetarPanel } from "./MetarPanel";
-import { FocusTrap } from "~/components/ui/focus-trap";
-import { useBackToClose } from "~/hooks/useBackToClose";
+import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
 import { RadarSettings } from "~/components/atc/radarSettings";
 import { MapSettingsSidebar } from "~/components/map/MapSettingsSidebar";
 import { Analytics } from "~/lib/analytics";
@@ -1100,9 +1099,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     mapRefs.mapReady,
   ]);
 
-  // Android Back closes the phone weather sheet.
-  useBackToClose(isMobile && showMobileWeather, () => onCloseMobileWeather?.());
-
   const {
     metar,
     status: metarStatus,
@@ -1446,34 +1442,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       {/* Phones: METAR, ATIS and NOTAMs in a bottom sheet from the dock. */}
       {isMobile && !hideUi && showMobileWeather && (
-        <>
-          <div
-            aria-hidden="true"
-            className="fixed inset-0 z-[10018] bg-black/40"
-            onClick={onCloseMobileWeather}
-          />
-          <FocusTrap
-            role="dialog"
-            aria-modal="true"
-            aria-label="Airport weather"
-            onEscape={onCloseMobileWeather}
-            className="fixed inset-x-0 bottom-0 z-[10019] max-h-[70dvh] overflow-y-auto rounded-t-2xl border-t border-white/10 bg-[#0a1219] px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
-          >
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-white">
-                Airport weather
-              </h2>
-              <button
-                type="button"
-                onClick={onCloseMobileWeather}
-                aria-label="Close airport weather"
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-slate-300 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
-              >
-                <span aria-hidden="true" className="text-xl leading-none">
-                  ×
-                </span>
-              </button>
-            </div>
+        <MobileSwipeSheet
+          label="Airport weather"
+          onClose={() => onCloseMobileWeather?.()}
+        >
+          <div className="px-4 pb-6">
             <MetarPanel
               variant="sheet"
               icaoInput={icaoInput}
@@ -1488,8 +1461,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
               notamCount={notamData?.count || 0}
               isPro={isProUser}
             />
-          </FocusTrap>
-        </>
+          </div>
+        </MobileSwipeSheet>
       )}
       {!isMobile && !hideUi && (
         <MetarPanel

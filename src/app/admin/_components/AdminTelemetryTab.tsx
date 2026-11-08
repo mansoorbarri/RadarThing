@@ -248,14 +248,14 @@ export function AdminTelemetryTab({
             }
           >
             <SelectTrigger className="h-11 w-full rounded-lg border-white/10 bg-white/5 font-mono text-sm text-white shadow-none hover:bg-white/[0.07] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-              <SelectValue placeholder="All Processes" />
+              <SelectValue placeholder="All processes" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
               <SelectItem
                 value={ALL_ACTIONS_VALUE}
                 className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
               >
-                All Processes
+                All processes
               </SelectItem>
               {Object.entries(ACTION_LABELS).map(([value, label]) => (
                 <SelectItem

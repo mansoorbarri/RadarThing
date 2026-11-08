@@ -32,14 +32,14 @@ export function ConflictModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="conflictModal-title"
-        onEscape={onCancel}
+        onEscape={isLoading ? undefined : onCancel}
         className="border-border bg-card text-card-foreground w-full max-w-4xl rounded-2xl border p-6 shadow-2xl"
       >
         <h3
           id="conflictModal-title"
           className="text-foreground mb-2 text-lg font-semibold"
         >
-          Image Conflict Detected
+          Image conflict detected
         </h3>
         <p className="text-muted-foreground mb-6 text-sm">
           An approved image already exists for{" "}
@@ -65,7 +65,7 @@ export function ConflictModal({
                 unoptimized
               />
               <div className="absolute top-2 left-2 rounded-md bg-yellow-500/80 px-2 py-1 text-xs font-bold text-black">
-                NEW (PENDING)
+                New (pending)
               </div>
             </div>
             <div className="p-4">
@@ -111,7 +111,7 @@ export function ConflictModal({
                 unoptimized
               />
               <div className="absolute top-2 left-2 rounded-md bg-emerald-500/80 px-2 py-1 text-xs font-bold text-black">
-                CURRENT (APPROVED)
+                Current (approved)
               </div>
             </div>
             <div className="p-4">
@@ -152,6 +152,7 @@ export function ConflictModal({
 
         <div className="flex justify-center">
           <button
+            autoFocus
             type="button"
             onClick={onCancel}
             disabled={isLoading}

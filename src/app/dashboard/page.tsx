@@ -239,17 +239,22 @@ export default function DashboardPage() {
     }
   };
 
+  const [discordError, setDiscordError] = useState<string | null>(null);
+  // Returns whether it worked, so the confirm dialog can stay open on error.
   const disconnectDiscord = async () => {
-    if (!discordAccount || !clerkId) return;
+    if (!discordAccount || !clerkId) return false;
     setDiscordLoading(true);
+    setDiscordError(null);
     try {
       await discordAccount.destroy();
       await updateDiscordUsername({ clerkId, discordUsername: undefined });
       toast.success("Discord disconnected");
+      return true;
     } catch {
-      toast.error(
+      setDiscordError(
         "Couldn't disconnect Discord. Check your connection and try again.",
       );
+      return false;
     } finally {
       setDiscordLoading(false);
     }
@@ -1259,17 +1264,25 @@ export default function DashboardPage() {
               connect again at any time.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {discordError && (
+            <p role="alert" className="text-sm text-red-300">
+              {discordError}
+            </p>
+          )}
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-white/12 bg-white/[0.04] text-slate-200 hover:bg-white/[0.08] hover:text-white">
+            <AlertDialogCancel
+              disabled={discordLoading}
+              className="border-white/12 bg-white/[0.04] text-slate-200 hover:bg-white/[0.08] hover:text-white"
+            >
               Keep connected
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={(event) => {
                 // Stay open until the request finishes, so the result is clear.
                 event.preventDefault();
-                void disconnectDiscord().finally(() =>
-                  setConfirmDiscordDisconnect(false),
-                );
+                void disconnectDiscord().then((ok) => {
+                  if (ok) setConfirmDiscordDisconnect(false);
+                });
               }}
               disabled={discordLoading}
               aria-busy={discordLoading}

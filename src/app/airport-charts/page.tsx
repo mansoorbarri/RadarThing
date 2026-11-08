@@ -555,7 +555,7 @@ export default function AirportChartsPage() {
                   htmlFor="chart-upload-icao"
                   className="mb-2 block font-mono text-xs text-slate-300"
                 >
-                  ICAO CODE *
+                  ICAO code *
                 </label>
                 <input
                   id="chart-upload-icao"
@@ -596,7 +596,7 @@ export default function AirportChartsPage() {
                   htmlFor="chart-upload-type"
                   className="mb-2 block font-mono text-xs text-slate-300"
                 >
-                  CHART TYPE *
+                  Chart type *
                 </label>
                 <select
                   id="chart-upload-type"

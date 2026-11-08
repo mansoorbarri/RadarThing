@@ -2128,7 +2128,7 @@ export function ChallengesTab({
                       <div className="rounded-xl border border-white/10 bg-white/5 p-3">
                         <div className="mb-2 flex items-center gap-2 font-mono text-[11px] tracking-wider text-slate-400 uppercase">
                           <Users className="h-3.5 w-3.5" />
-                          Completed Pilots
+                          Completed pilots
                         </div>
                         {challenge.completedUsers.length > 0 ? (
                           <div className="flex flex-wrap gap-2">

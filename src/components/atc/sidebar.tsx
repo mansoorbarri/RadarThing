@@ -507,7 +507,7 @@ export const Sidebar = ({
         <div className="flex flex-col items-center justify-center py-20 opacity-60">
           <div className="mb-4 h-6 w-6 animate-spin rounded-full border-2 border-cyan-400" />
           <span className="font-mono text-[11px] font-black tracking-widest">
-            LOADING
+            Loading
           </span>
         </div>
       ) : canAccessHistory === false ? (
@@ -531,7 +531,7 @@ export const Sidebar = ({
             }
             className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 font-mono text-[11px] font-black tracking-wide text-black transition-all hover:shadow-lg hover:shadow-amber-500/20"
           >
-            START 7-DAY TRIAL
+            Start 7-day trial
           </Link>
         </div>
       ) : history.length === 0 ? (
@@ -1225,7 +1225,7 @@ const DiversionStatusCard = ({
       Diversion Status
     </div>
     <div className="mt-1 font-mono text-sm font-black text-amber-200">
-      DIVERTING
+      Diverting
     </div>
     <p className="mt-1 font-mono text-[11px] text-white/60">
       Filed ARR {filedArrival} • Plan DST {plannedArrival}

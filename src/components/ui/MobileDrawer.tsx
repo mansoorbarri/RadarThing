@@ -1,5 +1,7 @@
 "use client";
 
+import { useBackToClose } from "~/hooks/useBackToClose";
+
 import React, { useEffect, useRef, useState, useCallback } from "react";
 
 interface MobileDrawerProps {
@@ -39,6 +41,8 @@ export const MobileDrawer = ({ children, onClose }: MobileDrawerProps) => {
   }, []);
 
   const drawerRef = useRef<HTMLDivElement>(null);
+  // Android Back closes the flight details instead of leaving the radar.
+  useBackToClose(true, onClose);
   useEffect(() => {
     const drawer = drawerRef.current;
     const previouslyFocused = document.activeElement as HTMLElement | null;

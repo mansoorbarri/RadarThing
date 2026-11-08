@@ -511,14 +511,14 @@ export function AirportChartsTab({
             }
           >
             <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-              <SelectValue placeholder="All Airports" />
+              <SelectValue placeholder="All airports" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
               <SelectItem
                 value="__all_airports__"
                 className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
               >
-                All Airports
+                All airports
               </SelectItem>
               {uniqueIcaos.map((icao) => (
                 <SelectItem
@@ -540,14 +540,14 @@ export function AirportChartsTab({
             }
           >
             <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-              <SelectValue placeholder="All Types" />
+              <SelectValue placeholder="All types" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
               <SelectItem
                 value="__all_types__"
                 className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
               >
-                All Types
+                All types
               </SelectItem>
               {CHART_TYPES.map((type) => (
                 <SelectItem
@@ -567,14 +567,14 @@ export function AirportChartsTab({
             }
           >
             <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-              <SelectValue placeholder="All Uploaders" />
+              <SelectValue placeholder="All uploaders" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
               <SelectItem
                 value="__all_uploaders__"
                 className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
               >
-                All Uploaders
+                All uploaders
               </SelectItem>
               {uniqueUploaders.map((uploader) => (
                 <SelectItem
@@ -649,7 +649,7 @@ export function AirportChartsTab({
               className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
             >
               <Trash2 className="h-4 w-4" />
-              Delete All
+              Delete all
             </button>
           </div>
         </div>
@@ -683,12 +683,12 @@ export function AirportChartsTab({
             paginatedCharts.length > 0 ? (
               <>
                 <CheckSquare className="h-4 w-4" />
-                Deselect Page
+                Deselect page
               </>
             ) : (
               <>
                 <Square className="h-4 w-4" />
-                Select Page
+                Select page
               </>
             )}
           </button>
@@ -769,7 +769,7 @@ export function AirportChartsTab({
                   className="mt-2 flex items-center gap-1 text-xs text-cyan-400 hover:underline"
                 >
                   <ExternalLink className="h-3 w-3" />
-                  View Chart
+                  View chart
                 </a>
               </div>
             </div>

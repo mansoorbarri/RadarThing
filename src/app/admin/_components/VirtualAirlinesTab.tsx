@@ -490,7 +490,7 @@ export function VirtualAirlinesTab({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-white">
-              Virtual Airlines
+              Virtual airlines
             </h2>
             <p className="mt-1 text-sm text-slate-400">
               Manage VA ownership, pilots, and fleet uploads.
@@ -583,7 +583,14 @@ export function VirtualAirlinesTab({
       {/* ── Modal ── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-          <div className="border-border bg-card text-card-foreground relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border shadow-2xl">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={
+              form.id ? "Edit virtual airline" : "Add virtual airline"
+            }
+            className="border-border bg-card text-card-foreground relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border shadow-2xl"
+          >
             {/* Header */}
             <div className="flex items-start justify-between gap-4 border-b border-white/10 px-6 py-5">
               <div>
@@ -602,9 +609,10 @@ export function VirtualAirlinesTab({
               <button
                 type="button"
                 onClick={closeModal}
+                aria-label="Close"
                 className="cursor-pointer rounded-full border border-white/10 bg-black/40 p-2 text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
 
@@ -863,7 +871,7 @@ export function VirtualAirlinesTab({
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <h3 className="text-sm font-medium text-red-300">
-                            Delete Virtual Airline
+                            Delete virtual airline
                           </h3>
                           <p className="mt-1 text-xs text-slate-400">
                             This removes the VA, all assigned pilots, and every
@@ -890,7 +898,7 @@ export function VirtualAirlinesTab({
                   {/* Current roster */}
                   <div>
                     <h3 className="mb-3 text-sm font-medium text-slate-300">
-                      Current Roster
+                      Current roster
                     </h3>
                     <div className="space-y-2">
                       {(selectedMembers ?? []).map((member) => (
@@ -930,7 +938,7 @@ export function VirtualAirlinesTab({
                   {/* Add pilot */}
                   <div>
                     <h3 className="mb-3 text-sm font-medium text-slate-300">
-                      Add Pilot
+                      Add pilot
                     </h3>
                     <div className="relative">
                       <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -988,7 +996,7 @@ export function VirtualAirlinesTab({
                     className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
                   >
                     <h3 className="mb-3 text-sm font-medium text-slate-300">
-                      Upload Fleet Image
+                      Upload fleet image
                     </h3>
                     <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto]">
                       <div>

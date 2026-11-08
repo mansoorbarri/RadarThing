@@ -26,7 +26,7 @@ export function AdminAccessDenied() {
             onClick={() => router.push("/radar")}
             className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
           >
-            Back to Map
+            Back to map
           </button>
         </div>
       </header>
@@ -39,7 +39,7 @@ export function AdminAccessDenied() {
           <span className="font-mono text-sm text-red-400">ACCESS DENIED</span>
         </div>
         <h1 className="mb-4 text-4xl font-bold text-white">
-          Admin Access Required
+          Admin access required
         </h1>
         <p className="mb-8 text-xl text-slate-400">
           Only Admin users can access this panel
@@ -48,7 +48,7 @@ export function AdminAccessDenied() {
           onClick={() => router.push("/radar")}
           className="cursor-pointer rounded-xl bg-cyan-400 px-8 py-4 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40"
         >
-          Back to Map
+          Back to map
         </button>
       </main>
     </div>

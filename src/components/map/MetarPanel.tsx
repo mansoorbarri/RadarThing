@@ -257,7 +257,7 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
           spellCheck={false}
           placeholder="e.g. KJFK"
           aria-describedby="metar-icao-hint metar-icao-partial"
-          className="w-24 flex-1 rounded border border-cyan-300/40 bg-transparent px-2 py-[5px] text-[13px] text-cyan-300 transition-all outline-none placeholder:text-cyan-200/50 focus:border-cyan-300 focus:bg-cyan-400/10 focus-visible:ring-2 focus-visible:ring-cyan-300"
+          className="w-24 flex-1 rounded border border-cyan-300/40 bg-transparent px-2 py-[5px] text-base text-cyan-300 transition-all outline-none placeholder:text-cyan-200/50 focus:border-cyan-300 focus:bg-cyan-400/10 focus-visible:ring-2 focus-visible:ring-cyan-300 sm:text-[13px]"
         />
         <span id="metar-icao-hint" className="sr-only">
           4-letter ICAO airport code

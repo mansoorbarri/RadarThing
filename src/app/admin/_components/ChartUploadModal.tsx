@@ -1,5 +1,7 @@
 "use client";
 
+import { FocusTrap } from "~/components/ui/focus-trap";
+
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, Loader2, Upload, X } from "lucide-react";
@@ -114,17 +116,25 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-      <div className="border-border bg-card text-card-foreground relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border p-4 shadow-2xl sm:p-6">
+      <FocusTrap
+        role="dialog"
+        aria-modal="true"
+        aria-label="Upload airport chart"
+        onEscape={isProcessing ? undefined : onClose}
+        className="border-border bg-card text-card-foreground relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border p-4 shadow-2xl sm:p-6"
+      >
         <button
+          type="button"
+          aria-label="Close"
           onClick={() => !isProcessing && onClose()}
           disabled={isProcessing}
           className="absolute top-4 right-4 cursor-pointer text-slate-400 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <X className="h-5 w-5" />
+          <X className="h-5 w-5" aria-hidden="true" />
         </button>
 
         <h2 className="mb-2 text-xl font-bold text-white">
-          Upload Airport Charts
+          Upload airport charts
         </h2>
         <p className="mb-6 text-sm text-slate-400">
           Charts will be published immediately.
@@ -140,7 +150,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-2 block font-mono text-xs text-slate-400">
-                ICAO CODE *
+                ICAO code *
               </label>
               <input
                 type="text"
@@ -160,7 +170,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <label className="mb-2 block font-mono text-xs text-slate-400">
-                CHART TYPE *
+                Chart type *
               </label>
               <Select
                 value={formData.chartType}
@@ -252,7 +262,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
             )}
           </button>
         </form>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

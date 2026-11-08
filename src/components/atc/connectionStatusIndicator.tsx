@@ -59,7 +59,7 @@ export const ConnectionStatusIndicator: React.FC<
   const textMap: Record<typeof status, string> = {
     connected: isStale ? "◔ Stale" : "● Live",
     connecting: "◐ Connecting…",
-    disconnected: "○ Offline",
+    disconnected: "● Offline",
   };
   const title = [ageLabel ? `Last packet ${ageLabel} ago` : null, error ?? null]
     .filter(Boolean)

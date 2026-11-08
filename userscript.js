@@ -71,6 +71,8 @@
       // GeoFS is still loading: hold the command and replay it shortly,
       // and only report a failure if the aircraft never appears.
       if ((cmd.__attempts ?? 0) < 30) {
+        if (!cmd.__attempts)
+          window.dispatchEvent(new CustomEvent("radarthing-command-pending"));
         setTimeout(
           () =>
             executeCommand({ ...cmd, __attempts: (cmd.__attempts ?? 0) + 1 }),

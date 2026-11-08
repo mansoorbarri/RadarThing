@@ -17,7 +17,9 @@ export function FocusTrap({
   const ref = useRef<HTMLDivElement>(null);
   useFocusTrap(ref, onEscape, { returnFocusTo });
   return (
-    <div ref={ref} {...props}>
+    // tabIndex -1 lets the trap focus the container itself when it has no
+    // focusable children yet.
+    <div ref={ref} tabIndex={-1} {...props}>
       {children}
     </div>
   );

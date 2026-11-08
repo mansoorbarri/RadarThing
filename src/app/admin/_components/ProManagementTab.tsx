@@ -1,5 +1,7 @@
 "use client";
 
+import { FocusTrap } from "~/components/ui/focus-trap";
+
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
@@ -396,10 +398,21 @@ function GrantProModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm">
-      <div className="border-border bg-card text-card-foreground w-full max-w-lg rounded-2xl border p-6 shadow-2xl">
+      <FocusTrap
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="grant-pro-title"
+        onEscape={isLoading ? undefined : onCancel}
+        className="border-border bg-card text-card-foreground w-full max-w-lg rounded-2xl border p-6 shadow-2xl"
+      >
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">Grant Pro</h3>
+            <h3
+              id="grant-pro-title"
+              className="text-lg font-semibold text-white"
+            >
+              Grant Pro
+            </h3>
             <p className="mt-1 text-sm text-slate-400">{email}</p>
           </div>
           <button
@@ -409,7 +422,7 @@ function GrantProModal({
             className="cursor-pointer rounded-md p-1 text-slate-400 transition-colors hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close modal"
           >
-            <XIcon className="h-4 w-4" />
+            <XIcon className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -454,7 +467,7 @@ function GrantProModal({
             )}
           </button>
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

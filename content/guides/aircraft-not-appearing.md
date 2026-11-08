@@ -31,7 +31,7 @@ What the other statuses mean:
 | **Waiting for your aircraft…** | GeoFS hasn't placed your aircraft yet. | Wait for the simulator to finish loading. |
 | **Connection issue · retrying** | Updates aren't reaching RadarThing. | It keeps retrying by itself. Press **Retry now** to try straight away. |
 | **Can't reach RadarThing · retrying** | Several attempts in a row have failed. | Check your connection, then press **Retry now**. |
-| **Offline · waiting for network** | Your browser has no network. | Tracking resumes as soon as you're back online. |
+| **Offline · waiting for network** | Your browser has no network. | Tracking resumes as soon as you're back online. **Retry now** is hidden until then, because it can't help without a connection. |
 | **RadarThing is busy · retrying** | The server asked for fewer updates for a moment. | Nothing; it slows down and carries on. |
 | **Update rejected · check your flight info** | The server refused the flight details. | Check the airports and callsign, then press **Edit flight** and **Update flight**. |
 | **Route too long · remove waypoints** | Your GeoFS flight plan has too many waypoints. | Remove some waypoints in GeoFS. |
@@ -45,7 +45,7 @@ If GeoFS disconnected unexpectedly, the panel may offer to resume your previous 
 For a Tampermonkey installation:
 
 1. Open the extension menu while you are on the GeoFS tab.
-2. Confirm that both Tampermonkey and the RadarThing script are enabled for that page. The Tampermonkey menu also has RadarThing shortcuts: **Show or hide the RadarThing panel**, **Open airport charts** and **Reset panel position**. If you can see these, the script is running.
+2. Confirm that both Tampermonkey and the RadarThing script are enabled for that page. The Tampermonkey menu also has RadarThing shortcuts: **Show or hide the RadarThing panel**, **Open airport charts**, **Reset panel position** and **Open the RadarThing radar**. If you can see these, the script is running.
 3. If you just installed or enabled the script, reload GeoFS and let it load again.
 4. In Chrome, Edge and other Chromium browsers, open the extensions page, choose **Details** under Tampermonkey and make sure **Allow User Scripts** is on. Without it, Tampermonkey shows the script as enabled but never runs it.
 5. If the script is missing, install it from the [official installation link](/userscript), then repeat the check.

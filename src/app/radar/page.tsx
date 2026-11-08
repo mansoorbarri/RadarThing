@@ -709,6 +709,17 @@ function ATCPageContent() {
   const visibleLiveAircrafts = isReplayActive ? [] : aircrafts;
   const isTrafficStale = connectionStatus === "connected" && isStreamStale;
 
+  // After a dropped connection, confirm briefly when live traffic is back.
+  const wasDisconnectedRef = useRef(false);
+  useEffect(() => {
+    if (connectionStatus === "disconnected") {
+      wasDisconnectedRef.current = true;
+    } else if (connectionStatus === "connected" && wasDisconnectedRef.current) {
+      wasDisconnectedRef.current = false;
+      toast.success("Live traffic is back", { duration: 2500 });
+    }
+  }, [connectionStatus]);
+
   // Memoize selected aircraft IDs to avoid recalculating on every render
   const selectedAircraftIds = useMemo(
     () => selectedAircrafts.map((ac) => ac.callsign || ac.id),
@@ -1071,10 +1082,18 @@ function ATCPageContent() {
   ]);
 
   // Phone sheets don't stack: anything else opening closes the weather sheet.
+  const selectionKey = selectedAircrafts
+    .map((ac) => ac.id || ac.callsign)
+    .join("|");
+  const previousSelectionKey = useRef(selectionKey);
   useEffect(() => {
-    if (selectedAircrafts.length > 0 || showMobileSearch || showShortcutsMenu)
+    // Selecting a different flight (not just having one) closes weather.
+    const selectionChanged =
+      selectionKey !== previousSelectionKey.current && selectionKey !== "";
+    previousSelectionKey.current = selectionKey;
+    if (selectionChanged || showMobileSearch || showShortcutsMenu)
       setShowMobileWeather(false);
-  }, [selectedAircrafts.length, showMobileSearch, showShortcutsMenu]);
+  }, [selectionKey, showMobileSearch, showShortcutsMenu]);
 
   // Keep the sideview open on the last airport unless the user closes it.
   useEffect(() => {
@@ -1257,16 +1276,16 @@ function ATCPageContent() {
                 label: "Weather",
                 icon: <CloudSun size={18} strokeWidth={1.8} />,
                 active: showMobileWeather,
-                onClick: () =>
-                  setShowMobileWeather((current) => {
-                    // Opening weather closes the other phone sheets.
-                    if (!current) {
-                      setSelectedAircrafts([]);
-                      setShowMobileSearch(false);
-                      setActiveRightPanel(null);
-                    }
-                    return !current;
-                  }),
+                onClick: () => {
+                  const opening = !showMobileWeather;
+                  // Opening weather closes the other sheets, but keeps the
+                  // selected flight so closing weather returns to it.
+                  if (opening) {
+                    setShowMobileSearch(false);
+                    setActiveRightPanel(null);
+                  }
+                  setShowMobileWeather(opening);
+                },
               },
             ]
           : []),

@@ -924,14 +924,14 @@ export function AircraftImagesTab({
             }
           >
             <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-              <SelectValue placeholder="All Airlines" />
+              <SelectValue placeholder="All airlines" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
               <SelectItem
                 value="__all_airlines__"
                 className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
               >
-                All Airlines
+                All airlines
               </SelectItem>
               {uniqueImageAirlines.map((airline) => (
                 <SelectItem
@@ -953,14 +953,14 @@ export function AircraftImagesTab({
             }
           >
             <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-              <SelectValue placeholder="All Aircraft" />
+              <SelectValue placeholder="All aircraft" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
               <SelectItem
                 value="__all_aircraft__"
                 className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
               >
-                All Aircraft
+                All aircraft
               </SelectItem>
               {uniqueImageAircraftTypes.map((type) => (
                 <SelectItem
@@ -980,14 +980,14 @@ export function AircraftImagesTab({
             }
           >
             <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-              <SelectValue placeholder="All Uploaders" />
+              <SelectValue placeholder="All uploaders" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
               <SelectItem
                 value="__all_uploaders__"
                 className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
               >
-                All Uploaders
+                All uploaders
               </SelectItem>
               {uniqueImageUploaders.map((uploader) => (
                 <SelectItem
@@ -1064,7 +1064,7 @@ export function AircraftImagesTab({
                   className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
                 >
                   <Check className="h-4 w-4" />
-                  Approve All
+                  Approve all
                 </button>
                 <button
                   onClick={handleBulkReject}
@@ -1072,7 +1072,7 @@ export function AircraftImagesTab({
                   className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
                 >
                   <X className="h-4 w-4" />
-                  Reject All
+                  Reject all
                 </button>
               </>
             ) : (
@@ -1082,7 +1082,7 @@ export function AircraftImagesTab({
                 className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
               >
                 <Trash2 className="h-4 w-4" />
-                Delete All
+                Delete all
               </button>
             )}
           </div>
@@ -1149,12 +1149,12 @@ export function AircraftImagesTab({
             paginatedCurrentTabImages.length > 0 ? (
               <>
                 <CheckSquare className="h-4 w-4" />
-                Deselect Page
+                Deselect page
               </>
             ) : (
               <>
                 <Square className="h-4 w-4" />
-                Select Page
+                Select page
               </>
             )}
           </button>
@@ -1195,7 +1195,7 @@ export function AircraftImagesTab({
                     />
                     <div className="absolute top-2 left-2 flex gap-1">
                       <span className="rounded-md bg-yellow-500/80 px-2 py-1 text-xs font-bold text-black">
-                        PENDING
+                        Pending
                       </span>
                       {image.isMilitary && (
                         <span className="rounded-md bg-amber-600/80 px-2 py-1 text-xs font-bold text-white">

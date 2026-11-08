@@ -529,7 +529,7 @@ export default function VirtualAirlineAdminPage() {
           </div>
           <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
             <div className="font-mono text-[11px] tracking-widest text-slate-400 uppercase">
-              Fleet Images
+              Fleet images
             </div>
             <div className="mt-1 text-xl font-semibold text-white">
               {images.length}
@@ -696,7 +696,7 @@ export default function VirtualAirlineAdminPage() {
                   ) : (
                     <>
                       <CheckCircle2 className="h-5 w-5" />
-                      Save Settings
+                      Save settings
                     </>
                   )}
                 </button>
@@ -713,7 +713,7 @@ export default function VirtualAirlineAdminPage() {
               className="rounded-2xl border border-white/10 bg-white/5 p-6"
             >
               <h2 className="text-lg font-semibold text-white">
-                Upload Fleet Image
+                Upload fleet image
               </h2>
               <p className="mt-1 text-sm text-slate-400">
                 Upload a livery image for an aircraft type. Uploading the same
@@ -836,7 +836,7 @@ export default function VirtualAirlineAdminPage() {
             {/* Roster */}
             <div>
               <h3 className="mb-3 text-sm font-medium text-slate-300">
-                Current Roster
+                Current roster
               </h3>
               <div className="space-y-2">
                 {members.map((member) => (
@@ -888,7 +888,7 @@ export default function VirtualAirlineAdminPage() {
             {/* Add pilot */}
             <div>
               <h3 className="mb-3 text-sm font-medium text-slate-300">
-                Add Pilot
+                Add pilot
               </h3>
               <div className="relative">
                 <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />

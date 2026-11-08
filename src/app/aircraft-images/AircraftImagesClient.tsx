@@ -76,6 +76,11 @@ export default function AircraftImagesClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [airlineFilter, setAirlineFilter] = useState("");
   const [aircraftFilter, setAircraftFilter] = useState("");
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setAirlineFilter("");
+    setAircraftFilter("");
+  };
   const [pageSize, setPageSize] =
     useState<(typeof PAGE_SIZE_OPTIONS)[number]>(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -467,7 +472,7 @@ export default function AircraftImagesClient({
               </span>
             </div>
             <h1 className="text-3xl leading-tight font-bold text-white sm:text-4xl">
-              Aircraft Images
+              Aircraft images
             </h1>
             <p className="mt-2 max-w-xl text-slate-400">
               Browse aircraft images contributed by GeoFS pilots. Search by
@@ -514,14 +519,14 @@ export default function AircraftImagesClient({
               }
             >
               <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-                <SelectValue placeholder="All Airlines" />
+                <SelectValue placeholder="All airlines" />
               </SelectTrigger>
               <SelectContent className="border-white/10 bg-[#0d1218] text-white shadow-2xl">
                 <SelectItem
                   value={ALL_AIRLINES_VALUE}
                   className="font-mono text-sm text-slate-200 focus:bg-cyan-500/10 focus:text-cyan-200"
                 >
-                  All Airlines
+                  All airlines
                 </SelectItem>
                 {uniqueAirlines.map((airline) => (
                   <SelectItem
@@ -543,14 +548,14 @@ export default function AircraftImagesClient({
               }
             >
               <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-                <SelectValue placeholder="All Aircraft" />
+                <SelectValue placeholder="All aircraft" />
               </SelectTrigger>
               <SelectContent className="border-white/10 bg-[#0d1218] text-white shadow-2xl">
                 <SelectItem
                   value={ALL_AIRCRAFT_VALUE}
                   className="font-mono text-sm text-slate-200 focus:bg-cyan-500/10 focus:text-cyan-200"
                 >
-                  All Aircraft
+                  All aircraft
                 </SelectItem>
                 {uniqueAircraftTypes.map((type) => (
                   <SelectItem
@@ -565,11 +570,7 @@ export default function AircraftImagesClient({
             </Select>
             {(searchQuery || airlineFilter || aircraftFilter) && (
               <button
-                onClick={() => {
-                  setSearchQuery("");
-                  setAirlineFilter("");
-                  setAircraftFilter("");
-                }}
+                onClick={clearAllFilters}
                 className="cursor-pointer rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-slate-400 transition-all hover:border-red-500/30 hover:text-red-400"
               >
                 Clear
@@ -617,20 +618,28 @@ export default function AircraftImagesClient({
           <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
             <Search className="mx-auto mb-4 h-12 w-12 text-slate-400" />
             <h3 className="mb-2 text-xl font-semibold text-white">
-              No Results Found
+              No images match your filters
             </h3>
-            <p className="text-slate-400">
-              Try adjusting your search or filters
+            <p className="text-slate-300">
+              Try a different search, or clear the filters to see every image.
             </p>
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="mt-5 cursor-pointer rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-white hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+            >
+              Clear filters
+            </button>
           </div>
         ) : images.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
             <Plane className="mx-auto mb-4 h-12 w-12 text-slate-400" />
             <h3 className="mb-2 text-xl font-semibold text-white">
-              No Images Yet
+              No images yet
             </h3>
             <p className="text-slate-400">
-              Be the first to contribute an aircraft image!
+              Be the first to add one: upload a photo of an aircraft in its
+              airline&apos;s livery.
             </p>
           </div>
         ) : (
@@ -777,7 +786,7 @@ export default function AircraftImagesClient({
             id="aircraft-upload-title"
             className="mb-2 text-xl font-bold text-white"
           >
-            Upload Aircraft Image
+            Upload aircraft image
           </h2>
           <p id="aircraft-upload-desc" className="mb-6 text-sm text-slate-300">
             Your image will be reviewed by our team before appearing in the
@@ -862,7 +871,7 @@ export default function AircraftImagesClient({
                     htmlFor="upload-field-1"
                     className="mb-2 block font-mono text-xs text-slate-300"
                   >
-                    AIR FORCE *
+                    Air force *
                   </label>
                   <input
                     id="upload-field-1"
@@ -901,7 +910,7 @@ export default function AircraftImagesClient({
                     htmlFor="upload-field-2"
                     className="mb-2 block font-mono text-xs text-slate-300"
                   >
-                    AIRCRAFT *
+                    Aircraft *
                   </label>
                   <input
                     id="upload-field-2"
@@ -943,7 +952,7 @@ export default function AircraftImagesClient({
                     htmlFor="upload-field-3"
                     className="mb-2 block font-mono text-xs text-slate-300"
                   >
-                    IATA CODE *
+                    IATA code *
                   </label>
                   <input
                     id="upload-field-3"
@@ -982,7 +991,7 @@ export default function AircraftImagesClient({
                     htmlFor="upload-field-4"
                     className="mb-2 block font-mono text-xs text-slate-300"
                   >
-                    ICAO CODE *
+                    ICAO code *
                   </label>
                   <input
                     id="upload-field-4"
@@ -1021,7 +1030,7 @@ export default function AircraftImagesClient({
                     htmlFor="upload-field-5"
                     className="mb-2 block font-mono text-xs text-slate-300"
                   >
-                    AIRCRAFT *
+                    Aircraft *
                   </label>
                   <input
                     id="upload-field-5"
@@ -1175,7 +1184,7 @@ export default function AircraftImagesClient({
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                   <span className="text-lg font-semibold text-emerald-400">
-                    Cleared for Review!
+                    Cleared for review!
                   </span>
                 </div>
                 <p className="mt-1.5 text-sm text-slate-400">

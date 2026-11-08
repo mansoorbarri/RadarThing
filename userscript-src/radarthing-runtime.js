@@ -557,7 +557,7 @@
     if (hint) hint.textContent = hotkeyHintText();
     const summary = document.querySelector("[data-shortcut-summary]");
     if (summary)
-      summary.textContent = `(${toggleKey.toUpperCase()} / ${chartsToggleKey.toUpperCase()})`;
+      summary.textContent = `· ${toggleKey.toUpperCase()} panel, ${chartsToggleKey.toUpperCase()} charts`;
     const hideBtn = document.getElementById(FLIGHT_UI_HIDE_BTN_ID);
     if (hideBtn) {
       hideBtn.title = `Hide panel (${toggleKey.toUpperCase()})`;
@@ -649,10 +649,31 @@
       header.title = moveMode ? "Drag this header to move the panel" : "";
     };
 
+    // Screen-reader announcements for keyboard moving.
+    const moveAnnouncer = document.createElement("span");
+    moveAnnouncer.setAttribute("aria-live", "polite");
+    moveAnnouncer.style.cssText =
+      "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;";
+    flightUI.appendChild(moveAnnouncer);
+    let moveAnnounceTimer = 0;
+    const announceMove = (text) => {
+      clearTimeout(moveAnnounceTimer);
+      // Debounced so holding an arrow key doesn't read out every step.
+      moveAnnounceTimer = setTimeout(
+        () => (moveAnnouncer.textContent = text),
+        400,
+      );
+    };
+
     moveButton.addEventListener("click", (event) => {
       event.stopPropagation();
       moveMode = !moveMode;
       updateMoveMode();
+      announceMove(
+        moveMode
+          ? "Move mode on. Use the arrow keys to move the panel, Shift for bigger steps. Press Done or Escape to finish."
+          : "Panel position saved.",
+      );
     });
 
     // Keyboard moving: while Move is on, arrow keys nudge the panel (hold
@@ -682,6 +703,7 @@
       flightUI.style.right = "auto";
       clampFlightUiToViewport();
       saveFlightUiPosition();
+      announceMove("Panel moved.");
     });
 
     resetButton.addEventListener("click", (event) => {
@@ -1103,6 +1125,12 @@
     setWaypoint: (v) => `Direct to ${String(v).toUpperCase()}`,
     toggleAutopilot: (v) => (v ? "Autopilot on" : "Autopilot off"),
   };
+  window.addEventListener("radarthing-command-pending", () => {
+    showToast(
+      "A change from the website is waiting for GeoFS to finish loading. It will apply shortly.",
+    );
+  });
+
   window.addEventListener("radarthing-command-executed", (e) => {
     const detail = e.detail || {};
     // disconnectFlight already gets its own end-of-flight toast.
@@ -1298,7 +1326,7 @@
                 background:linear-gradient(180deg, rgba(120,53,15,0.18), rgba(15,23,42,0.72));
                 padding:10px 12px;
               ">
-                <div style="margin-bottom:4px; color:#fbbf24; font-size:11px; letter-spacing:0.16em; text-transform:uppercase;">Next waypoint</div>
+                <div style="margin-bottom:4px; color:#fbbf24; font-size:11px; letter-spacing:0.08em; text-transform:uppercase;">Next waypoint</div>
                 <div id="radarthing-resume-waypoint" style="color:#fef3c7; font-size:13px; font-weight:700;">Unknown</div>
               </div>
             </div>
@@ -2344,6 +2372,8 @@
     invertToggle.setAttribute("aria-pressed", String(chartsState.invertColors));
     // aria-disabled keeps it focusable, so its tooltip can say why.
     rotateToggle.setAttribute("aria-disabled", String(!sel));
+    if (sel) rotateToggle.removeAttribute("aria-describedby");
+    else rotateToggle.setAttribute("aria-describedby", "gc-rotate-reason");
     rotateToggle.classList.toggle("disabled", !sel);
     rotateToggle.title = sel
       ? `Rotate chart (${chartsState.rotation}\u00b0)`
@@ -2691,7 +2721,7 @@
         #${STATUS_INDICATOR_ID} [data-status-text] { white-space:normal !important; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
         #${CHARTS_PANEL_ID} .gc-close, #${CHARTS_PANEL_ID} .gc-invert-toggle, #${CHARTS_PANEL_ID} .gc-rotate-toggle, #${CHARTS_PANEL_ID} .gc-type-tab, #${CHARTS_PANEL_ID} .gc-search-btn, #${CHARTS_PANEL_ID} .gc-reset-btn { min-height:44px; }
         #${CHARTS_PANEL_ID} .gc-close { min-width:44px; }
-        #radarthing-toast-stack button { min-width:44px; min-height:44px; }`;
+        #radarthing-toast-stack button[aria-label="Dismiss notification"] { min-width:44px; min-height:44px; }`;
           return isMobile
             ? touchCss
             : `@media (pointer: coarse), (max-width: 640px) { ${touchCss} }`;
@@ -2863,7 +2893,7 @@
         align-items:center;
         gap:8px;
         margin-top:12px;
-        font-size:11px;
+        font-size:12px;
         color:#cbd5e1;
         cursor:pointer;
         user-select:none;
@@ -2901,9 +2931,16 @@
       <p id="atc-form-error" role="alert" style="
         display:none;
         margin:8px 0 0;
-        font-size:11px;
+        font-size:12px;
         line-height:1.4;
         color:#fca5a5;
+      "></p>
+      <p id="atc-form-notice" role="status" style="
+        display:none;
+        margin:8px 0 0;
+        font-size:12px;
+        line-height:1.4;
+        color:#fcd34d;
       "></p>
 
       <p id="${SIGN_IN_NOTICE_ID}" style="
@@ -2925,13 +2962,13 @@
         <textarea id="${ACARS_DRAFT_ID}" maxlength="500" rows="3" placeholder="Write a flight update for viewers…" aria-label="New ACARS entry" style="box-sizing:border-box;width:100%;resize:vertical;padding:8px 10px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.04);color:#e5e7eb;font:12px system-ui;outline:none"></textarea>
         <div style="margin-top:4px;color:#94a3b8;font-size:11px">Shown on your radar flight card until you remove it.</div>
         <button id="${ACARS_PUBLISH_ID}" type="button" style="width:100%;margin-top:8px;height:34px;border:1px solid rgba(125,211,252,.35);border-radius:10px;background:rgba(56,189,248,.14);color:#7dd3fc;font-size:12px;font-weight:700;cursor:pointer">Publish ACARS update</button>
-        <div id="${ACARS_LIST_ID}" aria-live="polite" style="margin-top:8px;max-height:160px;overflow-y:auto;color:#cbd5e1;font-size:11px">No ACARS entries yet.</div>
+        <div id="${ACARS_LIST_ID}" aria-live="polite" style="margin-top:8px;max-height:160px;overflow-y:auto;color:#cbd5e1;font-size:12px">No ACARS entries yet.</div>
         </div>
       </section>
 
       <div style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.08); padding-top:10px;">
         <button id="${RADAR_SETTINGS_HEADER_ID}" type="button" aria-expanded="false" aria-controls="${RADAR_SETTINGS_BODY_ID}" style="${sectionHeaderStyle}">
-          <span>Settings &amp; shortcuts <span data-shortcut-summary style="font-weight:500;color:#94a3b8;">(${escapeHtml(toggleKey.toUpperCase())} / ${escapeHtml(chartsToggleKey.toUpperCase())})</span></span>
+          <span>Settings &amp; shortcuts <span data-shortcut-summary style="font-weight:500;color:#94a3b8;">· ${escapeHtml(toggleKey.toUpperCase())} panel, ${escapeHtml(chartsToggleKey.toUpperCase())} charts</span></span>
           <span id="${RADAR_SETTINGS_ARROW_ID}" aria-hidden="true" style="
             display:inline-block;
             transition:transform 0.2s;
@@ -3071,8 +3108,21 @@
       });
     });
 
+    // A heads-up, not an error: amber, polite, and the field stays valid.
+    function setFormNotice(message) {
+      const errorEl = document.getElementById("atc-form-error");
+      const noticeEl = document.getElementById("atc-form-notice");
+      if (errorEl) errorEl.style.display = "none";
+      if (noticeEl) {
+        noticeEl.textContent = message;
+        noticeEl.style.display = message ? "block" : "none";
+      }
+    }
+
     function setFormError(message, fieldId) {
       const errorEl = document.getElementById("atc-form-error");
+      const noticeEl = document.getElementById("atc-form-notice");
+      if (noticeEl) noticeEl.style.display = "none";
       if (errorEl) {
         errorEl.textContent = message;
         errorEl.style.display = message ? "block" : "none";
@@ -3133,10 +3183,9 @@
       setFlightEditing(!editingFlight);
     };
 
-    document.getElementById("atc-retry-now-btn").onclick = (event) => {
-      // Show that something is happening until the next status arrives.
-      event.currentTarget.textContent = "Retrying…";
-      event.currentTarget.disabled = true;
+    // The status pill switches to "Connecting…" straight away, which is the
+    // feedback for this button.
+    document.getElementById("atc-retry-now-btn").onclick = () => {
       window.dispatchEvent(new CustomEvent("radarthing-retry-now"));
     };
 
@@ -3181,9 +3230,8 @@
       const routeKey = `${dep}>${arr}`;
       if (arr === dep && sameAirportConfirmedFor !== routeKey) {
         sameAirportConfirmedFor = routeKey;
-        return setFormError(
-          "Arrival is the same as departure. Flying a circuit? Press the button again to confirm.",
-          ARR_INPUT_ID,
+        return setFormNotice(
+          `Departure and arrival are both ${dep}. Flying a circuit? Press ${isTracking ? "Update flight" : "Start tracking"} again to confirm.`,
         );
       }
       if (!flt) return setFormError("Enter a callsign.", FLT_INPUT_ID);
@@ -3419,6 +3467,8 @@
         border-color: rgba(255, 255, 255, 0.15);
       }
 
+      .gc-search-btn:disabled { opacity: 0.7; cursor: progress; }
+
       .gc-search {
         display: flex;
         gap: 6px;
@@ -3428,6 +3478,7 @@
 
       .gc-search input {
         flex: 1;
+        min-width: 0;
         height: 36px;
         border-radius: 7px;
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -3457,7 +3508,9 @@
       }
 
       .gc-search-btn {
-        min-width: 64px;
+        flex: none;
+        /* Wide enough for "Loading…" so the row doesn't shift. */
+        min-width: 84px;
         padding: 0 12px;
         height: 36px;
         border-radius: 7px;
@@ -3482,6 +3535,7 @@
       }
 
       .gc-reset-btn {
+        flex: none;
         min-width: 64px;
         padding: 0 12px;
         height: 36px;
@@ -3732,7 +3786,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20z"/></svg>
             Invert
           </button>
-          <button type="button" class="gc-rotate-toggle" title="Rotate chart 90°">
+          <button type="button" class="gc-rotate-toggle" title="Rotate chart 90°" aria-describedby="gc-rotate-reason">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15A9 9 0 1 1 23 10"/></svg>
             Rotate
           </button>
@@ -3745,6 +3799,7 @@
         <button id="gc-reset-btn" type="button" class="gc-reset-btn" title="Clear saved charts and download them again">Refresh</button>
       </div>
       <div id="gc-search-status" class="gc-status" role="status" aria-live="polite"></div>
+      <span id="gc-rotate-reason" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Select a chart first to rotate it.</span>
       <div class="gc-type-tabs"></div>
       <div class="gc-list"></div>
       <div class="gc-preview"></div>
@@ -4034,8 +4089,6 @@
       const showRetry =
         e.detail.state === "retrying" ||
         (e.detail.state === "offline" && navigator.onLine !== false);
-      retryBtn.textContent = "Retry now";
-      retryBtn.disabled = false;
       if (!showRetry && document.activeElement === retryBtn)
         (
           document.getElementById("atc-edit-flight-btn") ||

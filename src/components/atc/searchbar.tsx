@@ -274,7 +274,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           data-debug-id={inputDebugId}
           className={
             isSheet
-              ? "w-full rounded-xl border border-cyan-400/30 bg-black/60 py-3 pr-4 pl-9 text-[15px] text-cyan-300 placeholder-cyan-200/60 focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-300/60 focus-visible:outline-none"
+              ? "w-full rounded-xl border border-cyan-400/30 bg-black/60 py-3 pr-4 pl-9 text-base text-cyan-300 placeholder-cyan-200/60 focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-300/60 focus-visible:outline-none"
               : `mt-1 w-full rounded-lg border border-cyan-400/30 bg-black/80 py-2.5 pr-4 pl-9 text-[14px] text-cyan-300 placeholder-cyan-200/60 transition-all duration-200 hover:border-cyan-400/60 focus:border-cyan-400 focus:shadow-[0_0_12px_rgba(0,255,255,0.3)] focus-visible:ring-2 focus-visible:ring-cyan-300/60 focus-visible:outline-none`
           }
         />

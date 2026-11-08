@@ -39,7 +39,7 @@ export function ConfirmModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirmModal-title"
-        onEscape={onCancel}
+        onEscape={isLoading ? undefined : onCancel}
         className="border-border bg-card text-card-foreground w-full max-w-md rounded-2xl border p-6 shadow-2xl"
       >
         {/* Icon */}

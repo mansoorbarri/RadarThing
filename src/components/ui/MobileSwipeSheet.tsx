@@ -9,15 +9,18 @@ type SheetState = "half" | "full" | "closed";
 interface MobileSwipeSheetProps {
   children: React.ReactNode;
   onClose: () => void;
-  /** Accessible name for the sheet, e.g. "Flight board". */
-  label?: string;
+  /** Title shown at the top of the sheet and used as its accessible name. */
+  label: string;
+  /** Hide the visible title when the content already has its own heading. */
+  hideTitle?: boolean;
   initialState?: SheetState;
 }
 
 export const MobileSwipeSheet = ({
   children,
   onClose,
-  label = "Panel",
+  label,
+  hideTitle = false,
   initialState = "half",
 }: MobileSwipeSheetProps) => {
   const [state, setState] = useState<SheetState>(initialState);
@@ -128,8 +131,9 @@ export const MobileSwipeSheet = ({
     <div className="fixed inset-0 z-[10014]">
       <button
         type="button"
+        // Tap-outside target only; the header has the real close button.
         tabIndex={-1}
-        aria-label={`Close ${label.toLowerCase()}`}
+        aria-hidden="true"
         className="absolute inset-0 bg-black/45"
         onClick={requestClose}
       />
@@ -144,18 +148,70 @@ export const MobileSwipeSheet = ({
         }`}
         style={{ height: getHeight() }}
       >
-        {/* Drag handle */}
+        {/* Drag handle: swipe up to expand, down to collapse or close. The
+            same actions are buttons for keyboard and screen-reader users. */}
         <div
-          className="flex touch-none items-center justify-center pt-3 pb-2"
+          className="flex touch-none items-center justify-between gap-2 px-3 pt-2 pb-1"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          <div className="h-1.5 w-12 rounded-full bg-white/30" />
+          <button
+            type="button"
+            onClick={() => setState(state === "full" ? "half" : "full")}
+            aria-expanded={state === "full"}
+            aria-label={state === "full" ? "Collapse panel" : "Expand panel"}
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className={state === "full" ? "rotate-180" : ""}
+            >
+              <path d="m6 15 6-6 6 6" />
+            </svg>
+          </button>
+          <div className="flex min-w-0 flex-1 flex-col items-center">
+            <div
+              aria-hidden="true"
+              className="h-1.5 w-12 rounded-full bg-white/30"
+            />
+            {!hideTitle && (
+              <h2 className="mt-1.5 truncate text-sm font-semibold text-white">
+                {label}
+              </h2>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={requestClose}
+            aria-label={`Close ${label.toLowerCase()}`}
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         {/* Content */}
-        <div className="h-[calc(100%-28px)] overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]">
+        <div className="h-[calc(100%-56px)] overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]">
           {children}
         </div>
       </FocusTrap>

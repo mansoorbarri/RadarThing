@@ -566,7 +566,7 @@ export default function LeaderboardClient({
                                     </span>
                                     {isHighlighted && (
                                       <span className="shrink-0 rounded bg-cyan-500/20 px-1 py-0.5 font-mono text-[11px] font-bold text-cyan-400 sm:px-1.5 sm:text-[11px]">
-                                        YOU
+                                        You
                                       </span>
                                     )}
                                   </div>
@@ -688,7 +688,7 @@ export default function LeaderboardClient({
                             </span>
                             {isCurrentUser && (
                               <span className="shrink-0 rounded bg-cyan-500/20 px-1 py-0.5 font-mono text-[11px] font-bold text-cyan-400 sm:px-1.5 sm:text-[11px]">
-                                YOU
+                                You
                               </span>
                             )}
                             {(entry.role === "PRO" ||

@@ -1,5 +1,7 @@
 "use client";
 
+import { FocusTrap } from "~/components/ui/focus-trap";
+
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, Loader2, Upload, X } from "lucide-react";
@@ -130,17 +132,25 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="border-border bg-card text-card-foreground relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border p-6 shadow-2xl">
+      <FocusTrap
+        role="dialog"
+        aria-modal="true"
+        aria-label="Upload aircraft image"
+        onEscape={isProcessing ? undefined : onClose}
+        className="border-border bg-card text-card-foreground relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border p-6 shadow-2xl"
+      >
         <button
+          type="button"
+          aria-label="Close"
           onClick={() => !isProcessing && onClose()}
           disabled={isProcessing}
           className="text-muted-foreground hover:text-foreground absolute top-4 right-4 cursor-pointer transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <X className="h-5 w-5" />
+          <X className="h-5 w-5" aria-hidden="true" />
         </button>
 
         <h2 className="text-foreground mb-2 text-xl font-bold">
-          Upload Aircraft Image
+          Upload aircraft image
         </h2>
         <p className="text-muted-foreground mb-6 text-sm">
           Image will be published immediately.
@@ -178,7 +188,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-muted-foreground mb-2 block font-mono text-xs">
-                  AIR FORCE *
+                  Air force *
                 </label>
                 <input
                   type="text"
@@ -198,7 +208,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
               </div>
               <div>
                 <label className="text-muted-foreground mb-2 block font-mono text-xs">
-                  AIRCRAFT *
+                  Aircraft *
                 </label>
                 <input
                   type="text"
@@ -222,7 +232,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="text-muted-foreground mb-2 block font-mono text-xs">
-                  IATA CODE *
+                  IATA code *
                 </label>
                 <input
                   type="text"
@@ -242,7 +252,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
               </div>
               <div>
                 <label className="text-muted-foreground mb-2 block font-mono text-xs">
-                  ICAO CODE *
+                  ICAO code *
                 </label>
                 <input
                   type="text"
@@ -262,7 +272,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
               </div>
               <div>
                 <label className="text-muted-foreground mb-2 block font-mono text-xs">
-                  AIRCRAFT *
+                  Aircraft *
                 </label>
                 <input
                   type="text"
@@ -347,7 +357,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
             )}
           </button>
         </form>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

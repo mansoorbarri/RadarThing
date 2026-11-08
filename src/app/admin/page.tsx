@@ -254,7 +254,7 @@ export default function AdminPage() {
             <span className="font-mono text-sm text-cyan-400">ADMIN PANEL</span>
           </div>
           <h1 className="text-2xl font-bold text-white sm:text-3xl">
-            Admin Dashboard
+            Admin dashboard
           </h1>
         </div>
 
@@ -293,7 +293,7 @@ export default function AdminPage() {
             }`}
           >
             <ImageIcon className="h-4 w-4" />
-            Aircraft Images
+            Aircraft images
             {pendingCount > 0 && (
               <span className="ml-1 rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-400">
                 {pendingCount}
@@ -309,7 +309,7 @@ export default function AdminPage() {
             }`}
           >
             <Map className="h-4 w-4" />
-            Airport Charts
+            Airport charts
           </button>
           <button
             onClick={() => router.push(getAdminTabHref("virtual-airlines"))}
@@ -320,7 +320,7 @@ export default function AdminPage() {
             }`}
           >
             <Users className="h-4 w-4" />
-            Virtual Airlines
+            Virtual airlines
             {pendingVirtualAirlinesCount > 0 && (
               <span className="ml-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-600 dark:text-amber-300">
                 {pendingVirtualAirlinesCount}
