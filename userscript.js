@@ -444,7 +444,11 @@
   window.addEventListener("radarthing-retry-now", () => {
     if (!info.active) return;
     // Repeated presses while a retry is under way can't skip the backoff.
-    if (Date.now() - reconnectRequestedAt < 2000) return;
+    if (Date.now() - reconnectRequestedAt < 2000) {
+      // Tell the panel the press was seen, so it doesn't look ignored.
+      broadcastStatus(STATUS.connecting);
+      return;
+    }
     reconnectRequestedAt = Date.now();
     nextSendAllowedAt = 0;
     lastPositionSendAt = 0;

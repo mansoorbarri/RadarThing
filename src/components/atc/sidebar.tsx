@@ -351,7 +351,7 @@ export const Sidebar = ({
       <div className="mt-6 space-y-2.5">
         <div className="flex items-center gap-2 px-1">
           <div className="h-[1px] flex-1 bg-white/20" />
-          <span className="font-mono text-xs font-semibold tracking-[0.15em] text-white/80 uppercase">
+          <span className="font-mono text-xs font-semibold tracking-[0.18em] text-white/80 uppercase">
             Enroute Path
           </span>
           <div className="h-[1px] flex-1 bg-white/20" />
@@ -744,7 +744,7 @@ export const Sidebar = ({
                     {radioCallsign}
                   </p>
                 )}
-                <p className="truncate font-mono text-[11px] font-black tracking-[0.15em] text-slate-300 uppercase">
+                <p className="truncate font-mono text-[11px] font-black tracking-[0.18em] text-slate-300 uppercase">
                   {compactAircraftType || aircraft.type || "Unknown Class"}
                 </p>
                 {virtualAirline &&

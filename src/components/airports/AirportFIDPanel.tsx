@@ -230,25 +230,50 @@ export function AirportFIDPanel({
 
   const content = (
     <>
-      {/* Header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Plane className="h-4 w-4 text-cyan-400" />
-          <span className="font-mono text-sm text-cyan-400">
-            {icao} Flights
-          </span>
+      {/* Header (on phones the sheet supplies the title and close button) */}
+      {!isMobile && (
+        <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Plane className="h-4 w-4 text-cyan-400" aria-hidden="true" />
+            <span className="font-mono text-sm text-cyan-400">
+              {icao} flights
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={`Close ${icao} flights`}
+            className="cursor-pointer rounded-lg p-1 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="cursor-pointer rounded-lg p-1 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
+      )}
 
       {/* Tabs */}
-      <div className="flex shrink-0 border-b border-white/10">
+      <div
+        role="tablist"
+        aria-label={`${icao} departures and arrivals`}
+        className="flex shrink-0 border-b border-white/10"
+        onKeyDown={(event) => {
+          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+          event.preventDefault();
+          const next = activeTab === "departures" ? "arrivals" : "departures";
+          setActiveTab(next);
+          const tablist = event.currentTarget;
+          requestAnimationFrame(() =>
+            tablist
+              .querySelector<HTMLButtonElement>(`[data-tab="${next}"]`)
+              ?.focus(),
+          );
+        }}
+      >
         <button
+          type="button"
+          role="tab"
+          data-tab="departures"
+          aria-selected={activeTab === "departures"}
+          tabIndex={activeTab === "departures" ? 0 : -1}
           onClick={() => setActiveTab("departures")}
           className={`flex-1 cursor-pointer px-4 py-2 text-center text-xs font-medium transition-colors ${
             activeTab === "departures"
@@ -259,6 +284,11 @@ export function AirportFIDPanel({
           Departures ({departures.length})
         </button>
         <button
+          type="button"
+          role="tab"
+          data-tab="arrivals"
+          aria-selected={activeTab === "arrivals"}
+          tabIndex={activeTab === "arrivals" ? 0 : -1}
           onClick={() => setActiveTab("arrivals")}
           className={`flex-1 cursor-pointer px-4 py-2 text-center text-xs font-medium transition-colors ${
             activeTab === "arrivals"

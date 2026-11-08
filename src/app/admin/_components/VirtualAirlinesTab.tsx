@@ -584,7 +584,7 @@ export function VirtualAirlinesTab({
 
       {/* ── Modal ── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
           <FocusTrap
             role="dialog"
             aria-modal="true"
@@ -1177,7 +1177,7 @@ export function VirtualAirlinesTab({
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}
-        title="Delete Virtual Airline?"
+        title="Delete virtual airline?"
         message={
           form.id
             ? `${form.name || "This VA"} will be deleted along with all assigned pilots and fleet images. This cannot be undone.`

@@ -331,15 +331,15 @@ export function AirportActivityPanel({
       <div className="border-b border-cyan-400/10 px-4 py-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="font-mono text-[11px] tracking-[0.28em] text-cyan-400 uppercase">
-              Airport Activity
+            <div className="font-mono text-[11px] tracking-[0.18em] text-cyan-400 uppercase">
+              Airport activity
             </div>
             <h2 className="mt-2 text-xl font-semibold text-white">
-              Live airport pressure board
+              Busiest airports now
             </h2>
             <p className="mt-1 text-sm leading-6 text-white/60">
-              Find the busy fields, ATC-staffed airports, and hot routes, then
-              jump straight into the existing airport workflow.
+              Traffic, ATC coverage and popular routes. Pick an airport to see
+              it on the map.
             </p>
           </div>
           {isAirportDataLoading && (

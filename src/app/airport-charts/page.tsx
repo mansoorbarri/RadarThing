@@ -668,7 +668,7 @@ export default function AirportChartsPage() {
             </label>
 
             <div>
-              <label className="mb-2 block font-mono text-xs text-slate-400">
+              <p className="mb-2 block font-mono text-xs text-slate-400">
                 Select chart files
                 {hasSelectedFiles && uploaderRef.current && (
                   <span className="ml-2 rounded-full bg-cyan-500/20 px-2 py-0.5 text-cyan-400">
@@ -676,7 +676,7 @@ export default function AirportChartsPage() {
                     {uploaderRef.current.fileCount() !== 1 ? "s" : ""} selected
                   </span>
                 )}
-              </label>
+              </p>
               <ChartUploader
                 ref={uploaderRef}
                 icao={formData.icao}

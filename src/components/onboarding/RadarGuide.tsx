@@ -262,15 +262,19 @@ export function RadarGuide({
   signals,
   onOpenAircraftImages,
   onPrepareDock,
+  onDismiss,
 }: {
   open: boolean;
   onFinish: () => void | Promise<void>;
+  /** Close without marking the tour as done (e.g. the Back button). */
+  onDismiss?: () => void;
   signals: RadarGuideSignals;
   onOpenAircraftImages: () => void;
   onPrepareDock: () => void;
 }) {
-  // Android Back leaves the tour (same as finishing it) instead of the page.
-  useBackToClose(open, () => void onFinish());
+  // Android Back closes the tour for now (it isn't marked as done) instead
+  // of leaving the page.
+  useBackToClose(open, () => (onDismiss ? onDismiss() : void onFinish()));
   const [stepIndex, setStepIndex] = useState(0);
   const [completedStepIds, setCompletedStepIds] = useState<Set<string>>(
     () => new Set(),

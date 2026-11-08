@@ -220,6 +220,7 @@ function ATCPageContent() {
   const [emptySkyDismissed, setEmptySkyDismissed] = useState(false);
   // Only load the first-visit tour offer for people who haven't dismissed it.
   const [tourHintEligible, setTourHintEligible] = useState(false);
+  const [offerTourAgain, setOfferTourAgain] = useState(false);
   useEffect(() => {
     try {
       setTourHintEligible(
@@ -1762,6 +1763,7 @@ function ATCPageContent() {
           (isPhone ? (
             <MobileSwipeSheet
               label="Flight board"
+              hideTitle
               onClose={() => setActiveRightPanel(null)}
             >
               <FIDSPanel
@@ -1820,6 +1822,7 @@ function ATCPageContent() {
           (isPhone ? (
             <MobileSwipeSheet
               label="Airport activity"
+              hideTitle
               onClose={() => setActiveRightPanel(null)}
             >
               <AirportActivityPanel
@@ -2272,7 +2275,11 @@ function ATCPageContent() {
               showMobileSearch ||
               selectedAircrafts.length > 0
             }
-            onStartTour={() => setIsRadarGuideOpen(true)}
+            onStartTour={() => {
+              setOfferTourAgain(false);
+              setIsRadarGuideOpen(true);
+            }}
+            force={offerTourAgain}
           />
         )}
         {isRadarGuideOpen && (
@@ -2290,6 +2297,12 @@ function ATCPageContent() {
               window.open("/aircraft-images", "_blank", "noopener,noreferrer");
             }}
             onPrepareDock={prepareRadarGuideDock}
+            onDismiss={() => {
+              setIsRadarGuideOpen(false);
+              // Offer it again so they can pick the tour back up later.
+              setOfferTourAgain(true);
+              setTourHintEligible(true);
+            }}
           />
         )}
       </div>
@@ -2360,7 +2373,7 @@ function MapSkeleton() {
         <div className="rounded-full border border-cyan-400/20 bg-black/45 px-4 py-2 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.8)]" />
-            <p className="text-[11px] tracking-[0.28em] text-cyan-100/80 uppercase">
+            <p className="text-[11px] tracking-[0.18em] text-cyan-100/80 uppercase">
               Syncing Live Traffic
             </p>
           </div>

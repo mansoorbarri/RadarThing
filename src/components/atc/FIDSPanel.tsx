@@ -33,7 +33,7 @@ export function FIDSPanel({ aircrafts, onTrack }: Props) {
     <div className="flex h-full flex-col">
       <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
         <h2 className="font-mono text-[11px] font-semibold tracking-[0.18em] text-cyan-400 uppercase">
-          Live Flights
+          Live flights
         </h2>
         <span className="rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 font-mono text-[11px] text-cyan-300">
           {aircrafts.length}

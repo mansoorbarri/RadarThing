@@ -56,3 +56,4 @@ after every round.
 | 4 | `056e125` (round 3 fixes) | 8.7 | 8.8 | 8.8 |
 | 5 | `8c57273` (round 4 fixes) | 8.9 | 8.8 | 8.9 |
 | 6 | `eadd2d9` (round 5 fixes) | 8.8 | 8.9 | 8.9 |
+| 7 | `4065cb7` (round 6 fixes) | 8.8 | 8.9 | 9.0 |

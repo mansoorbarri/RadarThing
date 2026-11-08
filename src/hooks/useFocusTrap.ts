@@ -1,5 +1,9 @@
 import { useEffect, useRef, type RefObject } from "react";
 
+// Open traps, newest last. Only the top one handles keys, so a dialog opened
+// on top of another (a confirm over an editor) owns Escape and Tab.
+const trapStack: object[] = [];
+
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -32,7 +36,11 @@ export function useFocusTrap(
       (container.querySelector<HTMLElement>(FOCUSABLE) ?? container).focus();
     }
 
+    const token = {};
+    trapStack.push(token);
+
     const onKeyDown = (event: KeyboardEvent) => {
+      if (trapStack[trapStack.length - 1] !== token) return;
       if (event.key === "Escape" && onEscapeRef.current) {
         event.stopPropagation();
         onEscapeRef.current();
@@ -63,6 +71,8 @@ export function useFocusTrap(
     };
     document.addEventListener("keydown", onKeyDown, true);
     return () => {
+      const index = trapStack.indexOf(token);
+      if (index !== -1) trapStack.splice(index, 1);
       document.removeEventListener("keydown", onKeyDown, true);
       // The opener may have been unmounted while the dialog was open; fall
       // back to a stable selector so focus doesn't drop to <body>.

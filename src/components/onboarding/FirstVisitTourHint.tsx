@@ -15,7 +15,10 @@ export function FirstVisitTourHint({
   ready,
   hidden,
   onStartTour,
+  force = false,
 }: {
+  /** Show even to signed-in users (e.g. after they backed out of the tour). */
+  force?: boolean;
   /** True once the radar has painted, so the hint doesn't flash in early. */
   ready: boolean;
   hidden: boolean;
@@ -25,6 +28,10 @@ export function FirstVisitTourHint({
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (force && ready) {
+      setVisible(true);
+      return;
+    }
     if (!ready || !isLoaded || isSignedIn) return;
     try {
       if (localStorage.getItem(DISMISSED_KEY)) return;
@@ -32,7 +39,7 @@ export function FirstVisitTourHint({
       return;
     }
     setVisible(true);
-  }, [ready, isLoaded, isSignedIn]);
+  }, [ready, isLoaded, isSignedIn, force]);
 
   const dismiss = useCallback(() => {
     setVisible(false);

@@ -99,7 +99,7 @@ export function ImportedFlightPlanPanel({
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="mb-1 flex items-center gap-2 text-[11px] font-medium tracking-[0.28em] text-cyan-300 uppercase">
+            <div className="mb-1 flex items-center gap-2 text-[11px] font-medium tracking-[0.18em] text-cyan-300 uppercase">
               <Route size={14} strokeWidth={1.8} />
               Imported Plan
             </div>

@@ -123,7 +123,26 @@ export default function DashboardPage() {
 
   // Real-time queries
   const { isProUser: isPro, isLoading: proLoading } = useProStatus();
+  // Remembered for the session, so coming back to the dashboard keeps it.
   const [showBreakdowns, setShowBreakdowns] = useState(false);
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("radarthing-dashboard-breakdowns") === "1")
+        setShowBreakdowns(true);
+    } catch {
+      // Ignore storage errors.
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        "radarthing-dashboard-breakdowns",
+        showBreakdowns ? "1" : "0",
+      );
+    } catch {
+      // Ignore storage errors.
+    }
+  }, [showBreakdowns]);
   const [confirmDiscordDisconnect, setConfirmDiscordDisconnect] =
     useState(false);
   // While the plan is still loading, show placeholders rather than flashing
@@ -392,7 +411,7 @@ export default function DashboardPage() {
             </span>
           </div>
           <h1 className="mb-4 text-4xl font-bold text-white sm:text-5xl">
-            Your Account
+            Your account
           </h1>
           <p className="mb-12 text-xl text-slate-400">
             Sign in to view your account, flight statistics, and history
@@ -463,8 +482,8 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold text-white">
                   {displayName && !hidePersonalInfo
-                    ? `${displayName}'s Account`
-                    : "Your Account"}
+                    ? `${displayName}'s account`
+                    : "Your account"}
                 </h1>
                 <button
                   onClick={openNameEditor}

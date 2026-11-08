@@ -1,10 +1,11 @@
 import { buttonLikeProps } from "~/lib/a11y";
 import React, { useEffect, useState } from "react";
-
-const RECENT_KEY = "radarthing-recent-metar";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { Analytics } from "~/lib/analytics";
+
+// Recently looked-up airports for the phone sheet, stored on the device.
+const RECENT_KEY = "radarthing-recent-metar";
 
 interface Notam {
   text: string;
@@ -62,21 +63,20 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
       // No recents if storage is unavailable.
     }
   }, []);
+  // Only airports the pilot typed count as recent, not the selected one.
   useEffect(() => {
-    if (metarStatus !== "ready" || effectiveIcao.length !== 4) return;
-    setRecentIcaos((current) => {
-      const next = [
-        effectiveIcao,
-        ...current.filter((icao) => icao !== effectiveIcao),
-      ].slice(0, 5);
-      try {
-        localStorage.setItem(RECENT_KEY, JSON.stringify(next));
-      } catch {
-        // Ignore storage errors.
-      }
-      return next;
-    });
-  }, [metarStatus, effectiveIcao]);
+    if (metarStatus !== "ready" || icaoInput.length !== 4) return;
+    setRecentIcaos((current) =>
+      [icaoInput, ...current.filter((icao) => icao !== icaoInput)].slice(0, 5),
+    );
+  }, [metarStatus, icaoInput]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(RECENT_KEY, JSON.stringify(recentIcaos));
+    } catch {
+      // Ignore storage errors.
+    }
+  }, [recentIcaos]);
 
   // Only Pro users with NOTAMs can expand the list; for everyone else the
   // header is plain text (with the upgrade link beside it).
@@ -234,19 +234,33 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
           )}
         </div>
       )}
-      {variant === "sheet" && !icaoInput && recentIcaos.length > 0 && (
-        <div className="order-first -mb-1 flex flex-wrap items-center gap-2 font-sans">
+      {/* Stays in place while typing so the input above never moves. */}
+      {variant === "sheet" && recentIcaos.length > 0 && (
+        <div
+          role="group"
+          aria-label="Recent airports"
+          className="-order-1 flex flex-wrap items-center gap-2 font-sans"
+        >
           <span className="text-xs text-slate-400">Recent:</span>
           {recentIcaos.map((icao) => (
             <button
               key={icao}
               type="button"
               onClick={() => onChange(icao)}
-              className="min-h-9 cursor-pointer rounded-lg border border-cyan-300/30 px-3 font-mono text-sm text-cyan-200 hover:bg-cyan-400/10 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+              aria-label={`Weather for ${icao}`}
+              aria-pressed={icaoInput === icao}
+              className={`min-h-9 cursor-pointer rounded-lg border px-3 font-mono text-sm focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none ${icaoInput === icao ? "border-cyan-300/70 bg-cyan-400/15 text-cyan-100" : "border-cyan-300/30 text-cyan-200 hover:bg-cyan-400/10"}`}
             >
               {icao}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setRecentIcaos([])}
+            className="ml-auto min-h-9 cursor-pointer rounded-lg px-2 text-xs text-slate-400 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+          >
+            Clear
+          </button>
         </div>
       )}
       {/* Always rendered so the message is announced when it appears. */}

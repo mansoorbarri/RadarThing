@@ -658,7 +658,7 @@
         return;
       }
       showToast(
-        "Tip: Reset puts the panel back in the corner. It's also in the Tampermonkey menu.",
+        "Tip: Reset puts the panel back in the corner. It's also in your userscript manager's menu.",
         "info",
       );
     };
@@ -1037,11 +1037,19 @@
     return region;
   }
 
-  // isError: false (success, green), true (error, red) or "info" (neutral).
-  function showToast(msg, isError = false, action = null) {
-    const isInfo = isError === "info";
-    if (isInfo) isError = false;
+  // tone: false/"success" (green), true/"error" (red) or "info" (neutral).
+  // The old boolean form still works for existing callers.
+  function showToast(msg, tone = "success", action = null) {
+    const isError = tone === true || tone === "error";
+    const isInfo = tone === "info";
     const toast = document.createElement("div");
+    // An icon as well as the colour, so the tone doesn't rely on colour.
+    const icon = document.createElement("span");
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = isError ? "!" : isInfo ? "i" : "✓";
+    icon.style.cssText =
+      "flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:800 12px system-ui,sans-serif;background:rgba(255,255,255,0.18);";
+    toast.appendChild(icon);
     const label = document.createElement("span");
     label.textContent = msg;
     label.style.flex = "1";
@@ -1081,7 +1089,7 @@
     close.setAttribute("aria-label", "Dismiss notification");
     close.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="display:block"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`;
     close.style.cssText =
-      "margin-left:8px;width:32px;height:32px;display:grid;place-items:center;flex:none;padding:0;border:0;border-radius:6px;background:transparent;color:rgba(255,255,255,0.8);font:400 18px/1 system-ui,sans-serif;cursor:pointer;";
+      "margin-left:8px;width:44px;height:44px;display:grid;place-items:center;flex:none;padding:0;border:0;border-radius:6px;background:transparent;color:rgba(255,255,255,0.8);font:400 18px/1 system-ui,sans-serif;cursor:pointer;";
     toast.appendChild(close);
     toast.style.pointerEvents = "auto";
     toast.style.display = "flex";
@@ -1116,7 +1124,13 @@
       setTimeout(() => toast.remove(), 300);
     };
     // Errors and actions stay long enough to read and act on.
-    const duration = action ? 15000 : isError ? 10000 : 4000;
+    // Long messages stay up long enough to read.
+    const readTime = Math.max(4000, msg.length * 60);
+    const duration = action
+      ? 15000
+      : isError
+        ? Math.max(10000, readTime)
+        : readTime;
     let timer = setTimeout(dismiss, duration);
     close.onclick = dismiss;
     // Hovering or focusing a toast pauses it.
@@ -1165,7 +1179,8 @@
       );
       return;
     }
-    if (describe) showToast(`${describe(detail.value)} (from the website)`);
+    if (describe)
+      showToast(`${describe(detail.value)} (from the website)`, "info");
   });
 
   function updateSignInNotice() {
@@ -2782,7 +2797,7 @@
           ${
             isMobile
               ? ""
-              : `<button id="${FLIGHT_UI_HIDE_BTN_ID}" type="button" title="Hide panel (${escapeHtml(toggleKey.toUpperCase())})" aria-label="Hide RadarThing panel (${escapeHtml(toggleKey.toUpperCase())})" style="${headerButtonStyle}">Hide</button>`
+              : `<button id="${FLIGHT_UI_HIDE_BTN_ID}" type="button" title="Hide panel (${escapeHtml(toggleKey.toUpperCase())})" aria-label="Hide RadarThing panel (${escapeHtml(toggleKey.toUpperCase())})" aria-keyshortcuts="${escapeHtml(toggleKey.toUpperCase())}" style="${headerButtonStyle}">Hide</button>`
           }
         </div>
         ${
@@ -2838,9 +2853,10 @@
         margin:-6px 0 12px;
       ">
         <a id="atc-status-help" hidden href="${escapeHtml(window.__radarThingSiteUrl || "https://radarthing.com")}/guides/aircraft-not-appearing#check-that-your-flight-is-live" target="_blank" rel="noopener noreferrer" style="
-          color:#7dd3fc;
+          color:#94a3b8;
           font-size:12px;
           text-decoration:underline;
+          text-decoration-color:rgba(148,163,184,0.5);
           text-underline-offset:3px;
         ">What does this mean?</a>
         <button id="atc-retry-now-btn" type="button" hidden style="
@@ -2994,7 +3010,7 @@
         <button id="${RADAR_SETTINGS_HEADER_ID}" type="button" aria-expanded="false" aria-controls="${RADAR_SETTINGS_BODY_ID}" style="${sectionHeaderStyle}">
           <span style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;">
             <span>Settings &amp; shortcuts</span>
-            <span data-shortcut-summary style="font-size:11px;font-weight:500;color:#94a3b8;white-space:nowrap;">${escapeHtml(toggleKey.toUpperCase())} panel · ${escapeHtml(chartsToggleKey.toUpperCase())} charts</span>
+            <span data-shortcut-summary style="max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:11px;font-weight:500;color:#94a3b8;white-space:nowrap;">${escapeHtml(toggleKey.toUpperCase())} panel · ${escapeHtml(chartsToggleKey.toUpperCase())} charts</span>
           </span>
           <span id="${RADAR_SETTINGS_ARROW_ID}" aria-hidden="true" style="
             display:inline-block;
@@ -3025,7 +3041,7 @@
         border-top:1px solid rgba(255,255,255,0.08);
         padding-top:10px;
       ">
-        <button id="${CHARTS_BTN_ID}" type="button" style="
+        <button id="${CHARTS_BTN_ID}" type="button" aria-keyshortcuts="${escapeHtml(chartsToggleKey.toUpperCase())}" style="
           display:flex;
           align-items:center;
           gap:8px;
@@ -3130,26 +3146,45 @@
         el.value = el.value.toUpperCase();
       });
       el.addEventListener("input", () => {
-        el.removeAttribute("aria-invalid");
-        setFormError("");
+        // Only clear the message if it was about the field being edited.
+        if (el.getAttribute("aria-invalid") === "true" || !errorFieldId) {
+          el.removeAttribute("aria-invalid");
+          setFormError("");
+        }
       });
     });
 
     // A heads-up, not an error: amber, polite, and the field stays valid.
     // Live regions stay in the page and only their text changes (cleared,
     // then set on the next frame), so screen readers reliably announce it.
+    // Which field the current error is about (null for form-wide errors).
+    let errorFieldId = null;
+
     function announceIn(el, message) {
       if (!el) return;
+      // Cancel a message still waiting for its frame, so a quick clear or
+      // swap can't bring an old message back.
+      if (el._announceFrame) cancelAnimationFrame(el._announceFrame);
+      el._announceFrame = 0;
       el.textContent = "";
-      if (message) requestAnimationFrame(() => (el.textContent = message));
+      if (message)
+        el._announceFrame = requestAnimationFrame(() => {
+          el._announceFrame = 0;
+          el.textContent = message;
+        });
     }
 
     function setFormNotice(message) {
+      errorFieldId = null;
+      [DEP_INPUT_ID, ARR_INPUT_ID, FLT_INPUT_ID, SQK_INPUT_ID].forEach((id) =>
+        document.getElementById(id)?.removeAttribute("aria-invalid"),
+      );
       announceIn(document.getElementById("atc-form-error"), "");
       announceIn(document.getElementById("atc-form-notice"), message);
     }
 
     function setFormError(message, fieldId) {
+      errorFieldId = message ? fieldId || null : null;
       announceIn(document.getElementById("atc-form-notice"), "");
       announceIn(document.getElementById("atc-form-error"), message);
       // Only the field the message is about is marked invalid.
@@ -3276,8 +3311,12 @@
       saveBtn.textContent = "Checking…";
       // A slow callsign check should say it's still working.
       const slowCheckTimer = setTimeout(() => {
-        if (saveBtn.disabled && saveBtn.textContent === "Checking…")
+        if (saveBtn.disabled && saveBtn.textContent === "Checking…") {
           saveBtn.textContent = "Still checking…";
+          setFormNotice(
+            "Still checking your callsign. This can take a moment.",
+          );
+        }
       }, 4000);
       const wasTracking = isTracking;
       let closedDeferredLeg = false;
@@ -3303,6 +3342,9 @@
         );
       } finally {
         clearTimeout(slowCheckTimer);
+        const notice = document.getElementById("atc-form-notice");
+        if (notice?.textContent?.startsWith("Still checking"))
+          setFormNotice("");
         saveBtn.disabled = false;
         saveBtn.removeAttribute("aria-busy");
         saveBtn.textContent = isTracking ? "Update flight" : "Start tracking";
@@ -3310,6 +3352,24 @@
       if (!isTracking) return;
       if (editingFlight) setFlightEditing(false);
       else applyCompactMode();
+      // First flight ever: one tip about hiding the panel.
+      if (!wasTracking) {
+        try {
+          if (!localStorage.getItem("radarthing-live-tip-shown")) {
+            localStorage.setItem("radarthing-live-tip-shown", "1");
+            setTimeout(
+              () =>
+                showToast(
+                  `You're live. Press ${toggleKey.toUpperCase()} to hide the panel while you fly.`,
+                  "info",
+                ),
+              1500,
+            );
+          }
+        } catch (_) {
+          // Storage unavailable: skip the tip.
+        }
+      }
       showToast(
         wasTracking
           ? `Flight updated · ${flt} ${dep} → ${arr}`
@@ -3479,7 +3539,7 @@
       /* Disabled, but still readable (about 4.5:1). */
       .gc-rotate-toggle.disabled {
         color: rgba(255, 255, 255, 0.55);
-        border-style: dashed;
+        opacity: 0.75;
         cursor: not-allowed;
       }
 

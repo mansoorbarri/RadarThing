@@ -41,6 +41,13 @@ export const MobileSwipeSheet = ({
   };
 
   const requestClose = useCallback(() => {
+    // A content-sized sheet has no fixed height to animate from, so pin it
+    // to its current height first, then let it slide to 0.
+    const panel = panelRef.current;
+    if (panel && !panel.style.height) {
+      panel.style.height = `${panel.getBoundingClientRect().height}px`;
+      void panel.offsetHeight;
+    }
     setIsDragging(false);
     setDragOffset(0);
     setState("closed");
@@ -54,9 +61,31 @@ export const MobileSwipeSheet = ({
     }, 200);
   }, [onClose]);
 
+  // The first sheet someone opens explains how to expand it, once.
+  const [showSwipeHint, setShowSwipeHint] = useState(false);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("radarthing-swipe-hint-shown")) return;
+      localStorage.setItem("radarthing-swipe-hint-shown", "1");
+      setShowSwipeHint(true);
+    } catch {
+      // Storage unavailable: skip the hint.
+    }
+  }, []);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // The sheet's real height (in dvh) when a drag starts, so a sheet that
+  // fits its content doesn't jump to half-screen the moment it's touched.
+  const dragBaseRef = useRef<number | null>(null);
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    // Taps on the header buttons are taps, not drags.
+    if ((e.target as Element).closest("button")) return;
     const touch = e.touches[0];
     if (!touch) return;
+    const panelHeight = panelRef.current?.getBoundingClientRect().height;
+    dragBaseRef.current = panelHeight
+      ? (panelHeight / window.innerHeight) * 100
+      : null;
     startYRef.current = touch.clientY;
     currentYRef.current = touch.clientY;
     setIsDragging(true);
@@ -105,7 +134,10 @@ export const MobileSwipeSheet = ({
 
   // Calculate current height based on state and drag
   const getHeight = () => {
-    const baseHeight = heights[state];
+    const baseHeight =
+      isDragging && dragBaseRef.current !== null
+        ? dragBaseRef.current
+        : heights[state];
     if (!isDragging || state === "closed") return `${baseHeight}dvh`;
 
     // Convert drag offset (pixels) to vh adjustment
@@ -148,9 +180,10 @@ export const MobileSwipeSheet = ({
         aria-modal="true"
         aria-label={label}
         onEscape={requestClose}
-        className={`absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-white/10 bg-black/90 backdrop-blur-xl ${
+        className={`absolute inset-x-0 bottom-0 flex flex-col rounded-t-3xl border-t border-white/10 bg-black/90 backdrop-blur-xl ${
           isDragging ? "" : "transition-[height] duration-200 ease-out"
         }`}
+        containerRef={panelRef}
         style={
           fitContent && state === "half" && !isDragging
             ? { maxHeight: "60dvh" }
@@ -160,7 +193,7 @@ export const MobileSwipeSheet = ({
         {/* Drag handle: swipe up to expand, down to collapse or close. The
             same actions are buttons for keyboard and screen-reader users. */}
         <div
-          className="flex touch-none items-center justify-between gap-2 px-3 pt-2 pb-1"
+          className="flex shrink-0 touch-none items-center justify-between gap-2 px-3 pt-2 pb-1"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -176,6 +209,11 @@ export const MobileSwipeSheet = ({
               <h2 className="mt-1.5 truncate text-sm font-semibold text-white">
                 {label}
               </h2>
+            )}
+            {showSwipeHint && (
+              <p className="mt-0.5 text-[11px] text-slate-400">
+                Swipe up or tap ⌃ for more
+              </p>
             )}
           </div>
           <div className="flex w-20 shrink-0 justify-end">
@@ -224,9 +262,7 @@ export const MobileSwipeSheet = ({
         </div>
 
         {/* Content */}
-        <div
-          className={`${fitContent && state === "half" && !isDragging ? "max-h-[calc(60dvh-56px)]" : "h-[calc(100%-56px)]"} overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]`}
-        >
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]">
           {children}
         </div>
       </FocusTrap>

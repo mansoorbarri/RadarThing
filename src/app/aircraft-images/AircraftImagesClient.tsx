@@ -492,7 +492,7 @@ export default function AircraftImagesClient({
             <GoogleSignInButton>
               <button className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 sm:w-auto sm:px-6">
                 <Upload className="h-5 w-5" />
-                Sign in to Upload
+                Sign in to upload
               </button>
             </GoogleSignInButton>
           )}
@@ -641,13 +641,24 @@ export default function AircraftImagesClient({
               Be the first to add one: upload a photo of an aircraft in its
               airline&apos;s livery.
             </p>
-            <button
-              type="button"
-              onClick={() => setShowUploadModal(true)}
-              className="mt-5 cursor-pointer rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-black hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
-            >
-              Upload an image
-            </button>
+            {isSignedIn ? (
+              <button
+                type="button"
+                onClick={() => setShowUploadModal(true)}
+                className="mt-5 cursor-pointer rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-black hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
+              >
+                Upload an image
+              </button>
+            ) : (
+              <GoogleSignInButton>
+                <button
+                  type="button"
+                  className="mt-5 cursor-pointer rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-black hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
+                >
+                  Sign in to upload an image
+                </button>
+              </GoogleSignInButton>
+            )}
           </div>
         ) : (
           <>
@@ -1080,9 +1091,9 @@ export default function AircraftImagesClient({
             </p>
 
             <div>
-              <label className="mb-2 block font-mono text-xs text-slate-400">
+              <p className="mb-2 block font-mono text-xs text-slate-400">
                 Select image
-              </label>
+              </p>
               <ImageUploader
                 ref={uploaderRef}
                 airlineIata={isMilitary ? "MIL" : formData.airlineIata}

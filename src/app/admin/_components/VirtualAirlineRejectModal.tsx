@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { FocusTrap } from "~/components/ui/focus-trap";
+
+import { useEffect, useState } from "react";
 
 export function VirtualAirlineRejectModal({
   isOpen,
@@ -16,51 +18,17 @@ export function VirtualAirlineRejectModal({
   onConfirm: (reason: string) => void;
 }) {
   const [reason, setReason] = useState("");
-  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) setReason("");
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isSubmitting) {
-        event.preventDefault();
-        onClose();
-        return;
-      }
-
-      if (event.key !== "Tab") return;
-
-      const focusableElements =
-        dialogRef.current?.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), textarea:not([disabled]), [href], input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        );
-      if (!focusableElements?.length) return;
-
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-      if (event.shiftKey && document.activeElement === firstElement) {
-        event.preventDefault();
-        lastElement?.focus();
-      } else if (!event.shiftKey && document.activeElement === lastElement) {
-        event.preventDefault();
-        firstElement?.focus();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isSubmitting, onClose]);
-
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm dark:bg-black/70">
-      <div
-        ref={dialogRef}
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+      <FocusTrap
+        onEscape={isSubmitting ? undefined : onClose}
         role="dialog"
         aria-modal="true"
         aria-labelledby="va-reject-title"
@@ -109,7 +77,7 @@ export function VirtualAirlineRejectModal({
             {isSubmitting ? "Rejecting…" : "Reject & email owner"}
           </button>
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 }
