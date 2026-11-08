@@ -15,6 +15,7 @@ import { Analytics } from "~/lib/analytics";
 import { createPortalSession } from "~/app/actions/create-portal";
 import { getCurrentUserDataExport } from "~/app/actions/export-user-data";
 import {
+  ChevronDown,
   Plane,
   Clock,
   MapPin,
@@ -122,6 +123,7 @@ export default function DashboardPage() {
 
   // Real-time queries
   const { isProUser: isPro, isLoading: proLoading } = useProStatus();
+  const [showBreakdowns, setShowBreakdowns] = useState(false);
   const [confirmDiscordDisconnect, setConfirmDiscordDisconnect] =
     useState(false);
   // While the plan is still loading, show placeholders rather than flashing
@@ -612,7 +614,27 @@ export default function DashboardPage() {
               </div>
             ) : null}
 
-            <div className="mb-8 grid gap-6 lg:grid-cols-3">
+            {/* Phones: the three breakdown cards fold away so recent flights
+                are reachable without a long scroll. */}
+            <button
+              type="button"
+              onClick={() => setShowBreakdowns((current) => !current)}
+              aria-expanded={showBreakdowns}
+              aria-controls="dashboard-breakdowns"
+              className="mb-4 flex min-h-11 w-full cursor-pointer items-center justify-between rounded-xl border border-white/10 bg-black/40 px-4 text-sm font-medium text-slate-200 sm:hidden"
+            >
+              {showBreakdowns
+                ? "Hide top aircraft, routes and airports"
+                : "Show top aircraft, routes and airports"}
+              <ChevronDown
+                aria-hidden="true"
+                className={`h-4 w-4 transition-transform ${showBreakdowns ? "rotate-180" : ""}`}
+              />
+            </button>
+            <div
+              id="dashboard-breakdowns"
+              className={`mb-8 grid gap-6 lg:grid-cols-3 ${showBreakdowns ? "" : "max-sm:hidden"}`}
+            >
               {/* Top Aircraft - Pro */}
               <div className="rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl">
                 <div className="mb-4 flex items-center justify-between">

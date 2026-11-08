@@ -661,10 +661,14 @@ export function VirtualAirlinesTab({
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div>
-                      <label className="mb-2 block font-mono text-xs text-slate-400">
+                      <label
+                        className="mb-2 block font-mono text-xs text-slate-400"
+                        htmlFor="va-tab-field-1"
+                      >
                         VA name
                       </label>
                       <input
+                        id="va-tab-field-1"
                         type="text"
                         value={form.name}
                         onChange={(event) =>
@@ -680,10 +684,14 @@ export function VirtualAirlinesTab({
                     </div>
 
                     <div>
-                      <label className="mb-2 block font-mono text-xs text-slate-400">
+                      <label
+                        className="mb-2 block font-mono text-xs text-slate-400"
+                        htmlFor="va-tab-field-2"
+                      >
                         Callsign prefix
                       </label>
                       <input
+                        id="va-tab-field-2"
                         type="text"
                         value={form.callsignPrefix}
                         onChange={(event) =>
@@ -706,10 +714,14 @@ export function VirtualAirlinesTab({
                   </div>
 
                   <div>
-                    <label className="mb-2 block font-mono text-xs text-slate-400">
+                    <label
+                      className="mb-2 block font-mono text-xs text-slate-400"
+                      htmlFor="va-tab-field-3"
+                    >
                       Website or Discord
                     </label>
                     <input
+                      id="va-tab-field-3"
                       type="url"
                       value={form.website}
                       onChange={(event) =>
@@ -728,12 +740,16 @@ export function VirtualAirlinesTab({
                   </div>
 
                   <div>
-                    <label className="mb-2 block font-mono text-xs text-slate-400">
+                    <label
+                      className="mb-2 block font-mono text-xs text-slate-400"
+                      htmlFor="va-tab-field-4"
+                    >
                       VA admin
                     </label>
                     <div className="relative">
                       <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       <input
+                        id="va-tab-field-4"
                         type="text"
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
@@ -1003,10 +1019,14 @@ export function VirtualAirlinesTab({
                     </h3>
                     <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto]">
                       <div>
-                        <label className="mb-1.5 block font-mono text-[11px] text-slate-400">
+                        <label
+                          className="mb-1.5 block font-mono text-[11px] text-slate-400"
+                          htmlFor="va-tab-field-5"
+                        >
                           Aircraft type
                         </label>
                         <input
+                          id="va-tab-field-5"
                           type="text"
                           value={fleetAircraftType}
                           onChange={(e) =>

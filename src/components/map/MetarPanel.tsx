@@ -1,5 +1,7 @@
 import { buttonLikeProps } from "~/lib/a11y";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+
+const RECENT_KEY = "radarthing-recent-metar";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { Analytics } from "~/lib/analytics";
@@ -44,6 +46,37 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
   const [metarExpanded, setMetarExpanded] = useState(true);
   const [atisExpanded, setAtisExpanded] = useState(false);
   const [notamsExpanded, setNotamsExpanded] = useState(false);
+
+  // Recently looked-up airports, offered as one-tap chips in the phone sheet.
+  const [recentIcaos, setRecentIcaos] = useState<string[]>([]);
+  useEffect(() => {
+    try {
+      const stored: unknown = JSON.parse(
+        localStorage.getItem(RECENT_KEY) ?? "[]",
+      );
+      if (Array.isArray(stored))
+        setRecentIcaos(
+          stored.filter((v): v is string => typeof v === "string").slice(0, 5),
+        );
+    } catch {
+      // No recents if storage is unavailable.
+    }
+  }, []);
+  useEffect(() => {
+    if (metarStatus !== "ready" || effectiveIcao.length !== 4) return;
+    setRecentIcaos((current) => {
+      const next = [
+        effectiveIcao,
+        ...current.filter((icao) => icao !== effectiveIcao),
+      ].slice(0, 5);
+      try {
+        localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+      } catch {
+        // Ignore storage errors.
+      }
+      return next;
+    });
+  }, [metarStatus, effectiveIcao]);
 
   // Only Pro users with NOTAMs can expand the list; for everyone else the
   // header is plain text (with the upgrade link beside it).
@@ -199,6 +232,21 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
               Retry
             </button>
           )}
+        </div>
+      )}
+      {variant === "sheet" && !icaoInput && recentIcaos.length > 0 && (
+        <div className="order-first -mb-1 flex flex-wrap items-center gap-2 font-sans">
+          <span className="text-xs text-slate-400">Recent:</span>
+          {recentIcaos.map((icao) => (
+            <button
+              key={icao}
+              type="button"
+              onClick={() => onChange(icao)}
+              className="min-h-9 cursor-pointer rounded-lg border border-cyan-300/30 px-3 font-mono text-sm text-cyan-200 hover:bg-cyan-400/10 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+            >
+              {icao}
+            </button>
+          ))}
         </div>
       )}
       {/* Always rendered so the message is announced when it appears. */}

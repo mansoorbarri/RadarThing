@@ -608,10 +608,14 @@ export default function VirtualAirlineAdminPage() {
 
               <div className="mt-5 space-y-4">
                 <div>
-                  <label className="mb-2 block font-mono text-xs text-slate-400">
+                  <label
+                    className="mb-2 block font-mono text-xs text-slate-400"
+                    htmlFor="va-admin-field-1"
+                  >
                     VA name
                   </label>
                   <input
+                    id="va-admin-field-1"
                     type="text"
                     value={settingsForm.name}
                     onChange={(event) =>
@@ -627,10 +631,14 @@ export default function VirtualAirlineAdminPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block font-mono text-xs text-slate-400">
+                  <label
+                    className="mb-2 block font-mono text-xs text-slate-400"
+                    htmlFor="va-admin-field-2"
+                  >
                     Callsign prefix
                   </label>
                   <input
+                    id="va-admin-field-2"
                     type="text"
                     value={settingsForm.callsignPrefix}
                     onChange={(event) =>
@@ -652,10 +660,14 @@ export default function VirtualAirlineAdminPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block font-mono text-xs text-slate-400">
+                  <label
+                    className="mb-2 block font-mono text-xs text-slate-400"
+                    htmlFor="va-admin-field-3"
+                  >
                     Website or Discord
                   </label>
                   <input
+                    id="va-admin-field-3"
                     type="url"
                     value={settingsForm.website}
                     onChange={(event) =>
@@ -751,10 +763,14 @@ export default function VirtualAirlineAdminPage() {
 
               <div className="mt-5 space-y-4">
                 <div>
-                  <label className="mb-2 block font-mono text-xs text-slate-400">
+                  <label
+                    className="mb-2 block font-mono text-xs text-slate-400"
+                    htmlFor="va-admin-field-4"
+                  >
                     Aircraft type
                   </label>
                   <input
+                    id="va-admin-field-4"
                     type="text"
                     value={aircraftType}
                     onChange={(event) =>
@@ -768,7 +784,10 @@ export default function VirtualAirlineAdminPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block font-mono text-xs text-slate-400">
+                  <label
+                    className="mb-2 block font-mono text-xs text-slate-400"
+                    htmlFor="va-admin-field-5"
+                  >
                     Select image
                   </label>
                   <ImageUploader
@@ -893,6 +912,7 @@ export default function VirtualAirlineAdminPage() {
               <div className="relative">
                 <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
+                  id="va-admin-field-5"
                   type="text"
                   value={memberSearch}
                   onChange={(event) => setMemberSearch(event.target.value)}
