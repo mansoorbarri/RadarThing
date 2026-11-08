@@ -1,18 +1,32 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import { FocusTrap } from "~/components/ui/focus-trap";
+import { useBackToClose } from "~/hooks/useBackToClose";
 
 type SheetState = "half" | "full" | "closed";
 
 interface MobileSwipeSheetProps {
   children: React.ReactNode;
   onClose: () => void;
+  /** Title shown at the top of the sheet and used as its accessible name. */
+  label: string;
+  /** Hide the visible title when the content already has its own heading. */
+  hideTitle?: boolean;
+  /** Start only as tall as the content (up to half the screen). */
+  fitContent?: boolean;
+  /** Tall lists: show the one-time "swipe up for more" hint. */
+  swipeHint?: boolean;
   initialState?: SheetState;
 }
 
 export const MobileSwipeSheet = ({
   children,
   onClose,
+  label,
+  hideTitle = false,
+  fitContent = false,
+  swipeHint = false,
   initialState = "half",
 }: MobileSwipeSheetProps) => {
   const [state, setState] = useState<SheetState>(initialState);
@@ -30,6 +44,13 @@ export const MobileSwipeSheet = ({
   };
 
   const requestClose = useCallback(() => {
+    // A content-sized sheet has no fixed height to animate from, so pin it
+    // to its current height first, then let it slide to 0.
+    const panel = panelRef.current;
+    if (panel && !panel.style.height) {
+      panel.style.height = `${panel.getBoundingClientRect().height}px`;
+      void panel.offsetHeight;
+    }
     setIsDragging(false);
     setDragOffset(0);
     setState("closed");
@@ -43,9 +64,32 @@ export const MobileSwipeSheet = ({
     }, 200);
   }, [onClose]);
 
+  // The first tall sheet someone opens explains how to expand it, once.
+  const [showSwipeHint, setShowSwipeHint] = useState(false);
+  useEffect(() => {
+    if (!swipeHint) return;
+    try {
+      if (localStorage.getItem("radarthing-swipe-hint-shown")) return;
+      localStorage.setItem("radarthing-swipe-hint-shown", "1");
+      setShowSwipeHint(true);
+    } catch {
+      // Storage unavailable: skip the hint.
+    }
+  }, [swipeHint]);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // The sheet's real height (in dvh) when a drag starts, so a sheet that
+  // fits its content doesn't jump to half-screen the moment it's touched.
+  const dragBaseRef = useRef<number | null>(null);
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    // Taps on the header buttons are taps, not drags.
+    if ((e.target as Element).closest("button")) return;
     const touch = e.touches[0];
     if (!touch) return;
+    const panelHeight = panelRef.current?.getBoundingClientRect().height;
+    dragBaseRef.current = panelHeight
+      ? (panelHeight / window.innerHeight) * 100
+      : null;
     startYRef.current = touch.clientY;
     currentYRef.current = touch.clientY;
     setIsDragging(true);
@@ -94,7 +138,10 @@ export const MobileSwipeSheet = ({
 
   // Calculate current height based on state and drag
   const getHeight = () => {
-    const baseHeight = heights[state];
+    const baseHeight =
+      isDragging && dragBaseRef.current !== null
+        ? dragBaseRef.current
+        : heights[state];
     if (!isDragging || state === "closed") return `${baseHeight}dvh`;
 
     // Convert drag offset (pixels) to vh adjustment
@@ -107,16 +154,8 @@ export const MobileSwipeSheet = ({
     return `${newHeight}dvh`;
   };
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        requestClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [requestClose]);
+  // Android Back closes the sheet instead of leaving the radar.
+  useBackToClose(true, requestClose);
 
   useEffect(
     () => () => {
@@ -128,35 +167,116 @@ export const MobileSwipeSheet = ({
   );
 
   return (
-    <div className="fixed inset-0 z-[10014]">
+    // Above the flight drawer (z-10015), so a sheet opened while a flight is
+    // selected is never covered by it.
+    <div className="fixed inset-0 z-[10016]">
       <button
         type="button"
-        aria-label="Close panel"
+        // Tap-outside target only; the header has the real close button.
+        tabIndex={-1}
+        aria-hidden="true"
         className="absolute inset-0 bg-black/45"
         onClick={requestClose}
       />
 
-      <div
-        className={`absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-white/10 bg-black/90 backdrop-blur-xl ${
+      <FocusTrap
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        onEscape={requestClose}
+        className={`absolute inset-x-0 bottom-0 flex flex-col rounded-t-3xl border-t border-white/10 bg-black/90 backdrop-blur-xl ${
           isDragging ? "" : "transition-[height] duration-200 ease-out"
         }`}
-        style={{ height: getHeight() }}
+        containerRef={panelRef}
+        style={
+          fitContent && state === "half" && !isDragging
+            ? { maxHeight: "60dvh" }
+            : { height: getHeight() }
+        }
       >
-        {/* Drag handle */}
+        {/* Drag handle: swipe up to expand, down to collapse or close. The
+            same actions are buttons for keyboard and screen-reader users. */}
         <div
-          className="flex touch-none items-center justify-center pt-3 pb-2"
+          className="flex shrink-0 touch-none items-center justify-between gap-2 px-3 pt-2 pb-1"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          <div className="h-1.5 w-12 rounded-full bg-white/30" />
+          {/* Spacer so the title stays centred between the two sides. */}
+          <span aria-hidden="true" className="w-20 shrink-0" />
+          <div className="flex min-w-0 flex-1 flex-col items-center">
+            <div
+              aria-hidden="true"
+              className="h-1.5 w-12 rounded-full bg-white/30"
+            />
+            {!hideTitle && (
+              <h2 className="mt-1.5 truncate text-sm font-semibold text-white">
+                {label}
+              </h2>
+            )}
+            {showSwipeHint && (
+              <p className="mt-0.5 text-[11px] text-slate-400">
+                Swipe up or tap the arrow for more
+              </p>
+            )}
+          </div>
+          <div className="flex w-20 shrink-0 justify-end">
+            <button
+              type="button"
+              onClick={() => setState(state === "full" ? "half" : "full")}
+              aria-expanded={state === "full"}
+              aria-label={state === "full" ? "Collapse panel" : "Expand panel"}
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className={state === "full" ? "rotate-180" : ""}
+              >
+                <path d="m6 15 6-6 6 6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={requestClose}
+              aria-label={`Close ${closeLabelText(label)}`}
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Content */}
-        <div className="h-[calc(100%-28px)] overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)]">
           {children}
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 };
+
+/** "Live flights" → "live flights", but "EGLL departures" keeps the code. */
+function closeLabelText(label: string) {
+  const [first = ""] = label.split(" ");
+  const isCode = first.length > 1 && first === first.toUpperCase();
+  return isCode ? label : label.charAt(0).toLowerCase() + label.slice(1);
+}

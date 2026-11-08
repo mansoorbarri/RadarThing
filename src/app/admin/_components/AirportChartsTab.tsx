@@ -103,6 +103,14 @@ function EditableChartDetails({
       setIsEditing(false);
       return;
     }
+    if (!/^[A-Z0-9]{3,4}$/.test(icao)) {
+      toast.error("Use the airport's 3–4 character ICAO code, e.g. KJFK.");
+      return;
+    }
+    if (!chartName.trim()) {
+      toast.error("Enter a chart name.");
+      return;
+    }
     setIsSaving(true);
     const result = await updateAirportChart(
       chartId,
@@ -116,7 +124,7 @@ function EditableChartDetails({
       setIsEditing(false);
       onSaveSuccess?.();
     } else {
-      toast.error(result.error || "Failed to update chart");
+      toast.error(result.error || "Couldn't save the chart. Try again.");
     }
   };
 
@@ -128,8 +136,10 @@ function EditableChartDetails({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSave();
+    // A second Enter while saving would send the update twice.
+    if (e.key === "Enter" && !isSaving) {
+      e.preventDefault();
+      void handleSave();
     } else if (e.key === "Escape") {
       handleCancel();
     }
@@ -145,8 +155,9 @@ function EditableChartDetails({
             onChange={(e) => setIcao(e.target.value.toUpperCase())}
             onKeyDown={handleKeyDown}
             placeholder="ICAO"
+            aria-label="Airport ICAO code"
             maxLength={4}
-            className="w-16 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400"
+            className="w-16 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             disabled={isSaving}
             autoFocus
           />
@@ -155,7 +166,10 @@ function EditableChartDetails({
             onValueChange={(value) => setChartType(value as ChartType)}
             disabled={isSaving}
           >
-            <SelectTrigger className="h-8 min-w-[132px] rounded-md border-blue-500/50 bg-black/60 px-2 text-sm text-blue-300 shadow-none hover:bg-black/70 focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+            <SelectTrigger
+              aria-label="Chart type"
+              className="h-8 min-w-[132px] rounded-md border-blue-500/50 bg-black/60 px-2 text-sm text-blue-300 shadow-none hover:bg-black/70 focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
@@ -176,24 +190,29 @@ function EditableChartDetails({
           value={chartName}
           onChange={(e) => setChartName(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Chart Name"
-          className="w-full rounded-md border border-white/20 bg-black/60 px-2 py-1 text-sm text-white outline-none focus:border-white/40"
+          placeholder="Chart name"
+          aria-label="Chart name"
+          className="w-full rounded-md border border-white/20 bg-black/60 px-2 py-1 text-sm text-white outline-none focus:border-white/40 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           disabled={isSaving}
         />
         <div className="flex gap-2">
           <button
+            type="button"
+            aria-label="Save changes"
             onClick={handleSave}
             disabled={isSaving}
             className="cursor-pointer rounded-md bg-emerald-500/20 p-1 text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
           >
-            <Check className="h-4 w-4" />
+            <Check className="h-4 w-4" aria-hidden="true" />
           </button>
           <button
+            type="button"
+            aria-label="Cancel editing"
             onClick={handleCancel}
             disabled={isSaving}
             className="cursor-pointer rounded-md bg-red-500/20 p-1 text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -211,7 +230,7 @@ function EditableChartDetails({
         </span>
         <button
           onClick={() => setIsEditing(true)}
-          className="cursor-pointer rounded-md p-1 text-slate-600 opacity-0 transition-all group-hover/details:opacity-100 hover:bg-white/10 hover:text-cyan-400"
+          className="cursor-pointer rounded-md p-1 text-slate-400 opacity-0 transition-all group-hover/details:opacity-100 hover:bg-white/10 hover:text-cyan-400"
           title="Edit chart details"
         >
           <Pencil className="h-3.5 w-3.5" />
@@ -391,7 +410,7 @@ export function AirportChartsTab({
     if (result.success) {
       toast.success("Chart deleted");
     } else {
-      toast.error(result.error || "Failed to delete chart");
+      toast.error(result.error || "Couldn't delete chart. Try again.");
     }
     setDeleteLoading(false);
     setDeleteModalOpen(false);
@@ -440,12 +459,12 @@ export function AirportChartsTab({
     if (deleted > 0) {
       setSelectedCharts(new Set());
       if (failed > 0) {
-        toast.warning(`Deleted ${deleted} charts, ${failed} failed`);
+        toast.warning(`Deleted ${plural(deleted, "chart")}; ${failed} failed`);
       } else {
-        toast.success(`Deleted ${deleted} charts`);
+        toast.success(`Deleted ${plural(deleted, "chart")}`);
       }
     } else if (failed > 0) {
-      toast.error(`Failed to delete ${failed} charts`);
+      toast.error(`Couldn't delete ${plural(failed, "chart")}. Try again.`);
     }
     setBulkDeleteLoading(false);
     setBulkDeleteModalOpen(false);
@@ -460,7 +479,7 @@ export function AirportChartsTab({
     <>
       <ConfirmModal
         isOpen={deleteModalOpen}
-        title="Delete Chart"
+        title="Delete chart"
         message={
           deleteTargetInfo
             ? `Are you sure you want to delete "${deleteTargetInfo.chartName}" for ${deleteTargetInfo.icao}? This action cannot be undone.`
@@ -479,9 +498,9 @@ export function AirportChartsTab({
 
       <ConfirmModal
         isOpen={bulkDeleteModalOpen}
-        title="Delete Charts"
-        message={`Are you sure you want to delete ${bulkDeleteTargetIds.length} chart(s)? This action cannot be undone.`}
-        confirmLabel="Delete All"
+        title="Delete charts"
+        message={`Delete ${bulkDeleteTargetIds.length} ${bulkDeleteTargetIds.length === 1 ? "chart" : "charts"}? This can't be undone.`}
+        confirmLabel={`Delete ${bulkDeleteTargetIds.length} ${bulkDeleteTargetIds.length === 1 ? "chart" : "charts"}`}
         variant="danger"
         isLoading={bulkDeleteLoading}
         onConfirm={handleBulkDeleteConfirm}
@@ -494,13 +513,17 @@ export function AirportChartsTab({
       {/* Search and Filters */}
       <div className="mb-6 flex flex-col gap-4">
         <div className="relative flex-1">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search
+            className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
+            aria-hidden="true"
+          />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by ICAO, chart name, type, email, user ID..."
-            className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
+            placeholder="Search by ICAO, chart name, type, email, user ID…"
+            aria-label="Search by ICAO, chart name, type, email, user ID"
+            className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -511,14 +534,14 @@ export function AirportChartsTab({
             }
           >
             <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-              <SelectValue placeholder="All Airports" />
+              <SelectValue placeholder="All airports" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
               <SelectItem
                 value="__all_airports__"
                 className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
               >
-                All Airports
+                All airports
               </SelectItem>
               {uniqueIcaos.map((icao) => (
                 <SelectItem
@@ -540,14 +563,14 @@ export function AirportChartsTab({
             }
           >
             <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-              <SelectValue placeholder="All Types" />
+              <SelectValue placeholder="All types" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
               <SelectItem
                 value="__all_types__"
                 className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
               >
-                All Types
+                All types
               </SelectItem>
               {CHART_TYPES.map((type) => (
                 <SelectItem
@@ -567,14 +590,14 @@ export function AirportChartsTab({
             }
           >
             <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-              <SelectValue placeholder="All Uploaders" />
+              <SelectValue placeholder="All uploaders" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
               <SelectItem
                 value="__all_uploaders__"
                 className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
               >
-                All Uploaders
+                All uploaders
               </SelectItem>
               {uniqueUploaders.map((uploader) => (
                 <SelectItem
@@ -605,7 +628,7 @@ export function AirportChartsTab({
             : `Showing ${pageStart}-${pageEnd} of ${filteredCharts.length} chart${filteredCharts.length !== 1 ? "s" : ""}${hasActiveFilters && filteredCharts.length !== approvedCharts.length ? ` (${approvedCharts.length} total)` : ""}`}
         </p>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-500">Per page</span>
+          <span className="text-sm text-slate-400">Per page</span>
           <Select
             value={String(pageSize)}
             onValueChange={(value) =>
@@ -649,7 +672,7 @@ export function AirportChartsTab({
               className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
             >
               <Trash2 className="h-4 w-4" />
-              Delete All
+              Delete all
             </button>
           </div>
         </div>
@@ -683,12 +706,12 @@ export function AirportChartsTab({
             paginatedCharts.length > 0 ? (
               <>
                 <CheckSquare className="h-4 w-4" />
-                Deselect Page
+                Deselect page
               </>
             ) : (
               <>
                 <Square className="h-4 w-4" />
-                Select Page
+                Select page
               </>
             )}
           </button>
@@ -698,9 +721,9 @@ export function AirportChartsTab({
       {/* Charts Grid */}
       {filteredCharts.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-          <Map className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+          <Map className="mx-auto mb-4 h-12 w-12 text-slate-400" />
           <h3 className="mb-2 text-xl font-semibold text-white">
-            {hasActiveFilters ? "No Matching Charts" : "No Charts Yet"}
+            {hasActiveFilters ? "No matching charts" : "No charts yet"}
           </h3>
           <p className="text-slate-400">
             {hasActiveFilters
@@ -728,17 +751,24 @@ export function AirportChartsTab({
                   className="object-cover"
                 />
                 <button
+                  type="button"
+                  aria-pressed={selectedCharts.has(chart.id)}
+                  aria-label={
+                    selectedCharts.has(chart.id)
+                      ? "Deselect chart"
+                      : "Select chart"
+                  }
                   onClick={() => toggleSelect(chart.id)}
                   className={`absolute top-2 left-2 cursor-pointer rounded-lg p-1.5 transition-all ${
                     selectedCharts.has(chart.id)
                       ? "bg-cyan-500 text-white"
-                      : "bg-black/60 text-white opacity-0 group-hover:opacity-100"
+                      : "bg-black/60 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none [@media(hover:none)]:opacity-100"
                   }`}
                 >
                   {selectedCharts.has(chart.id) ? (
-                    <CheckSquare className="h-5 w-5" />
+                    <CheckSquare className="h-5 w-5" aria-hidden="true" />
                   ) : (
-                    <Square className="h-5 w-5" />
+                    <Square className="h-5 w-5" aria-hidden="true" />
                   )}
                 </button>
                 <button
@@ -769,7 +799,7 @@ export function AirportChartsTab({
                   className="mt-2 flex items-center gap-1 text-xs text-cyan-400 hover:underline"
                 >
                   <ExternalLink className="h-3 w-3" />
-                  View Chart
+                  View chart
                 </a>
               </div>
             </div>
@@ -779,7 +809,7 @@ export function AirportChartsTab({
 
       {filteredCharts.length > 0 && totalPages > 1 && (
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-400">
             Page {currentPage} of {totalPages}
           </p>
           <div className="flex items-center gap-2">
@@ -806,4 +836,9 @@ export function AirportChartsTab({
       )}
     </>
   );
+}
+
+/** "1 chart", "3 charts". */
+function plural(count: number, word: string) {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
 }

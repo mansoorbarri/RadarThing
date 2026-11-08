@@ -1,5 +1,7 @@
 "use client";
 
+import { FocusTrap } from "~/components/ui/focus-trap";
+
 import Image from "next/image";
 import type { AircraftImage } from "~/app/actions/aircraft-images";
 
@@ -26,17 +28,26 @@ export function ConflictModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-4xl rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-2xl">
-        <h3 className="mb-2 text-lg font-semibold text-foreground">
-          Image Conflict Detected
+      <FocusTrap
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="conflictModal-title"
+        onEscape={isLoading ? undefined : onCancel}
+        className="border-border bg-card text-card-foreground w-full max-w-4xl rounded-2xl border p-6 shadow-2xl"
+      >
+        <h3
+          id="conflictModal-title"
+          className="text-foreground mb-2 text-lg font-semibold"
+        >
+          Image conflict detected
         </h3>
-        <p className="mb-6 text-sm text-muted-foreground">
+        <p className="text-muted-foreground mb-6 text-sm">
           An approved image already exists for{" "}
           <span className="font-mono text-cyan-600 dark:text-cyan-400">
             {pendingImage.airlineIata}/{pendingImage.airlineIcao}
           </span>{" "}
           +{" "}
-          <span className="font-mono text-foreground">
+          <span className="text-foreground font-mono">
             {pendingImage.aircraftType}
           </span>
           . Choose which image to keep. The other will be permanently deleted.
@@ -44,7 +55,7 @@ export function ConflictModal({
 
         <div className="mb-6 grid gap-4 sm:grid-cols-2">
           {/* Pending Image */}
-          <div className="overflow-hidden rounded-xl border border-yellow-500/30 bg-background">
+          <div className="bg-background overflow-hidden rounded-xl border border-yellow-500/30">
             <div className="relative aspect-video">
               <Image
                 src={pendingImage.imageUrl}
@@ -54,7 +65,7 @@ export function ConflictModal({
                 unoptimized
               />
               <div className="absolute top-2 left-2 rounded-md bg-yellow-500/80 px-2 py-1 text-xs font-bold text-black">
-                NEW (PENDING)
+                New (pending)
               </div>
             </div>
             <div className="p-4">
@@ -65,31 +76,32 @@ export function ConflictModal({
                 <span className="rounded-md bg-blue-500/15 px-2 py-1 font-mono text-sm font-bold text-blue-700 dark:text-blue-400">
                   {pendingImage.airlineIcao}
                 </span>
-                <span className="rounded-md bg-muted px-2 py-1 font-mono text-sm text-foreground">
+                <span className="bg-muted text-foreground rounded-md px-2 py-1 font-mono text-sm">
                   {pendingImage.aircraftType}
                 </span>
               </div>
-              <p className="mb-1 text-xs text-muted-foreground">
+              <p className="text-muted-foreground mb-1 text-xs">
                 Uploaded by{" "}
                 <span className="text-cyan-700 dark:text-cyan-400">
                   {pendingImage.discordUsername ?? pendingImage.uploadedBy}
                 </span>
               </p>
-              <p className="text-xs text-muted-foreground/80">
+              <p className="text-muted-foreground/80 text-xs">
                 {new Date(pendingImage.createdAt).toLocaleDateString()}
               </p>
               <button
+                type="button"
                 onClick={onKeepPending}
                 disabled={isLoading}
                 className="mt-4 w-full cursor-pointer rounded-lg bg-emerald-500/15 py-2.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-500/25 disabled:cursor-not-allowed disabled:opacity-50 dark:text-emerald-400"
               >
-                {isLoading ? "Processing..." : "Keep This (Approve New)"}
+                {isLoading ? "Processing…" : "Keep this (approve new)"}
               </button>
             </div>
           </div>
 
           {/* Existing Approved Image */}
-          <div className="overflow-hidden rounded-xl border border-emerald-500/30 bg-background">
+          <div className="bg-background overflow-hidden rounded-xl border border-emerald-500/30">
             <div className="relative aspect-video">
               <Image
                 src={existingImage.imageUrl}
@@ -99,7 +111,7 @@ export function ConflictModal({
                 unoptimized
               />
               <div className="absolute top-2 left-2 rounded-md bg-emerald-500/80 px-2 py-1 text-xs font-bold text-black">
-                CURRENT (APPROVED)
+                Current (approved)
               </div>
             </div>
             <div className="p-4">
@@ -110,28 +122,29 @@ export function ConflictModal({
                 <span className="rounded-md bg-blue-500/15 px-2 py-1 font-mono text-sm font-bold text-blue-700 dark:text-blue-400">
                   {existingImage.airlineIcao}
                 </span>
-                <span className="rounded-md bg-muted px-2 py-1 font-mono text-sm text-foreground">
+                <span className="bg-muted text-foreground rounded-md px-2 py-1 font-mono text-sm">
                   {existingImage.aircraftType}
                 </span>
               </div>
-              <p className="mb-1 text-xs text-muted-foreground">
+              <p className="text-muted-foreground mb-1 text-xs">
                 Uploaded by{" "}
                 <span className="text-cyan-700 dark:text-cyan-400">
                   {existingImage.discordUsername ?? existingImage.uploadedBy}
                 </span>
               </p>
-              <p className="text-xs text-muted-foreground/80">
+              <p className="text-muted-foreground/80 text-xs">
                 Approved{" "}
                 {existingImage.approvedAt
                   ? new Date(existingImage.approvedAt).toLocaleDateString()
                   : "N/A"}
               </p>
               <button
+                type="button"
                 onClick={onKeepExisting}
                 disabled={isLoading}
                 className="mt-4 w-full cursor-pointer rounded-lg bg-blue-500/15 py-2.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-500/25 disabled:cursor-not-allowed disabled:opacity-50 dark:text-blue-400"
               >
-                {isLoading ? "Processing..." : "Keep This (Reject New)"}
+                {isLoading ? "Processing…" : "Keep this (reject new)"}
               </button>
             </div>
           </div>
@@ -139,14 +152,16 @@ export function ConflictModal({
 
         <div className="flex justify-center">
           <button
+            autoFocus
+            type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="cursor-pointer rounded-lg border border-border px-6 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            className="border-border text-muted-foreground hover:bg-muted cursor-pointer rounded-lg border px-6 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel
           </button>
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

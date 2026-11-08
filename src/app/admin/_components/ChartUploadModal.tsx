@@ -1,5 +1,7 @@
 "use client";
 
+import { FocusTrap } from "~/components/ui/focus-trap";
+
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, Loader2, Upload, X } from "lucide-react";
@@ -26,7 +28,7 @@ type SubmitStage =
 
 export function ChartUploadModal({ onClose }: { onClose: () => void }) {
   const chartTypes: { value: ChartType; label: string }[] = [
-    { value: "TAXI", label: "Ground / Airport Diagram" },
+    { value: "TAXI", label: "Ground / airport diagram" },
     { value: "SID", label: "SID (Departure)" },
     { value: "STAR", label: "STAR (Arrival)" },
     { value: "APPROACH", label: "Approach" },
@@ -45,7 +47,8 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      // Escape is handled by the dialog's focus trap, which ignores it
+      // while an upload is running.
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
         formRef.current?.requestSubmit();
@@ -53,21 +56,29 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
+  }, []);
 
   const isProcessing = submitStage !== "idle" && submitStage !== "success";
+
+  // Leaving the page mid-upload would lose it, so ask first.
+  useEffect(() => {
+    if (!isProcessing) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [isProcessing]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (!hasSelectedFiles) {
-      toast.error("Please select at least one chart file");
-      setError("Please select at least one chart file");
+      toast.error("Choose at least one chart file.");
+      setError("Choose at least one chart file.");
       return;
     }
     if (!formData.icao || formData.icao.length < 3) {
-      toast.error("Valid ICAO code required (3-4 characters)");
-      setError("Valid ICAO code required (3-4 characters)");
+      toast.error("Enter a 3- or 4-character ICAO code.");
+      setError("Enter a 3- or 4-character ICAO code.");
       return;
     }
 
@@ -81,7 +92,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
     }
 
     setSubmitStage("submitting");
-    setSubmitProgress(`Creating ${results.length} entries...`);
+    setSubmitProgress(`Creating ${results.length} entries…`);
 
     const dbResults = await Promise.all(
       results.map((upload) =>
@@ -103,28 +114,37 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
     setSubmitProgress(null);
 
     setTimeout(() => {
-      toast.success(
-        failCount > 0
-          ? `${successCount} chart${successCount !== 1 ? "s" : ""} uploaded! (${failCount} failed)`
-          : `${successCount} chart${successCount !== 1 ? "s" : ""} uploaded!`,
-      );
+      const charts = `${successCount} chart${successCount !== 1 ? "s" : ""}`;
+      if (failCount > 0)
+        toast.warning(
+          `Uploaded ${charts}; ${failCount} failed. Try those again.`,
+        );
+      else toast.success(`Uploaded ${charts}`);
       onClose();
     }, 1000);
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-      <div className="border-border bg-card text-card-foreground relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border p-4 shadow-2xl sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+      <FocusTrap
+        role="dialog"
+        aria-modal="true"
+        aria-label="Upload airport chart"
+        onEscape={isProcessing ? undefined : onClose}
+        className="border-border bg-card text-card-foreground relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border p-4 shadow-2xl sm:p-6"
+      >
         <button
+          type="button"
+          aria-label="Close"
           onClick={() => !isProcessing && onClose()}
           disabled={isProcessing}
           className="absolute top-4 right-4 cursor-pointer text-slate-400 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <X className="h-5 w-5" />
+          <X className="h-5 w-5" aria-hidden="true" />
         </button>
 
         <h2 className="mb-2 text-xl font-bold text-white">
-          Upload Airport Charts
+          Upload airport charts
         </h2>
         <p className="mb-6 text-sm text-slate-400">
           Charts will be published immediately.
@@ -139,10 +159,14 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-2 block font-mono text-xs text-slate-400">
-                ICAO CODE *
+              <label
+                className="mb-2 block font-mono text-xs text-slate-400"
+                htmlFor="admin-chart-field-1"
+              >
+                ICAO code *
               </label>
               <input
+                id="admin-chart-field-1"
                 type="text"
                 value={formData.icao}
                 onChange={(e) =>
@@ -155,12 +179,15 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
                 maxLength={4}
                 required
                 disabled={isProcessing}
-                className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="mb-2 block font-mono text-xs text-slate-400">
-                CHART TYPE *
+              <label
+                className="mb-2 block font-mono text-xs text-slate-400"
+                htmlFor="admin-chart-field-2"
+              >
+                Chart type *
               </label>
               <Select
                 value={formData.chartType}
@@ -172,7 +199,10 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
                 }
                 disabled={isProcessing}
               >
-                <SelectTrigger className="h-12 w-full rounded-lg border-white/10 bg-black/40 px-4 text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
+                <SelectTrigger
+                  id="admin-chart-field-2"
+                  className="h-12 w-full rounded-lg border-white/10 bg-black/40 px-4 text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="border-white/10 bg-[#0b1118] text-white">
@@ -192,7 +222,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
 
           <div>
             <label className="mb-2 block font-mono text-xs text-slate-400">
-              SELECT CHART FILES
+              Select chart files
               {hasSelectedFiles && uploaderRef.current && (
                 <span className="ml-2 rounded-full bg-cyan-500/20 px-2 py-0.5 text-cyan-400">
                   {uploaderRef.current.fileCount()} file
@@ -220,21 +250,21 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
             disabled={
               isProcessing || !hasSelectedFiles || submitStage === "success"
             }
-            className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-slate-950 shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
               submitStage === "success"
                 ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/20"
-                : "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-cyan-500/20 hover:shadow-cyan-500/40"
+                : "bg-cyan-400 shadow-cyan-500/20 hover:bg-cyan-300 hover:shadow-cyan-500/40"
             }`}
           >
             {submitStage === "uploading" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Uploading...
+                Uploading…
               </>
             ) : submitStage === "submitting" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                {submitProgress ?? "Submitting..."}
+                {submitProgress ?? "Submitting…"}
               </>
             ) : submitStage === "success" ? (
               <>
@@ -252,7 +282,7 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
             )}
           </button>
         </form>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

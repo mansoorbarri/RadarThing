@@ -37,7 +37,11 @@ async function compressImage(file: File): Promise<File> {
       canvas.height = height;
       const ctx = canvas.getContext("2d");
       if (!ctx) {
-        reject(new Error("Failed to get canvas context"));
+        reject(
+          new Error(
+            "Your browser couldn't process the image. Try another browser.",
+          ),
+        );
         return;
       }
       ctx.drawImage(img, 0, 0, width, height);
@@ -46,7 +50,9 @@ async function compressImage(file: File): Promise<File> {
       canvas.toBlob(
         (blob) => {
           if (!blob) {
-            reject(new Error("Failed to compress image"));
+            reject(
+              new Error("Couldn't process this image. Try a smaller file."),
+            );
             return;
           }
           // Create new file with same name but .jpg extension
@@ -60,7 +66,10 @@ async function compressImage(file: File): Promise<File> {
         JPEG_QUALITY,
       );
     };
-    img.onerror = () => reject(new Error("Failed to load image"));
+    img.onerror = () =>
+      reject(
+        new Error("Couldn't read this image. Try a JPG, PNG, GIF or WebP."),
+      );
     img.src = URL.createObjectURL(file);
   });
 }
@@ -93,7 +102,7 @@ function getHumanReadableError(error: Error | string): string {
     lowerMessage.includes("too large") ||
     lowerMessage.includes("size limit")
   ) {
-    return "File is too large. Maximum size is 512KB. Please choose a smaller image.";
+    return "That file is too large. The limit is 512 KB, so choose a smaller image.";
   }
 
   if (
@@ -101,29 +110,26 @@ function getHumanReadableError(error: Error | string): string {
     lowerMessage.includes("filetype") ||
     lowerMessage.includes("invalid type")
   ) {
-    return "Invalid file type. Please upload a JPG, PNG, GIF, or WebP image.";
+    return "That file type isn't supported. Upload a JPG, PNG, GIF or WebP image.";
   }
 
   if (
     lowerMessage.includes("unauthorized") ||
     lowerMessage.includes("not authenticated")
   ) {
-    return "You must be signed in to upload images.";
+    return "Sign in to upload images.";
   }
 
   if (lowerMessage.includes("network") || lowerMessage.includes("fetch")) {
-    return "Network error. Please check your connection and try again.";
+    return "Couldn't reach the server. Check your connection and try again.";
   }
 
   if (lowerMessage.includes("timeout")) {
-    return "Upload timed out. Please try again with a smaller file.";
+    return "The upload timed out. Try again with a smaller file.";
   }
 
   // Return original message if no match, but clean it up
-  return (
-    message.replace(/([A-Z])/g, " $1").trim() ||
-    "Upload failed. Please try again."
-  );
+  return "Couldn't upload that file. Try again.";
 }
 
 async function getImageDimensions(file: File): Promise<PreviewDimensions> {
@@ -141,7 +147,7 @@ async function getImageDimensions(file: File): Promise<PreviewDimensions> {
 
     img.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      reject(new Error("Failed to load preview dimensions"));
+      reject(new Error("Couldn't read that image. Try another file."));
     };
 
     img.src = objectUrl;
@@ -215,7 +221,7 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
           // Check if compressed file is still too large
           if (compressedFile.size > MAX_FILE_SIZE) {
             const errorMsg =
-              "Image is still too large after compression. Please choose a smaller image.";
+              "This image is still too large after compressing it. Choose a smaller image.";
             setLocalError(errorMsg);
             onError(errorMsg);
             setIsCompressing(false);
@@ -233,7 +239,10 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
           };
           reader.readAsDataURL(compressedFile);
         } catch (err) {
-          const errorMsg = "Failed to process image. Please try another file.";
+          const errorMsg =
+            err instanceof Error && err.message.startsWith("Couldn't")
+              ? err.message
+              : "Couldn't process that image. Try another file.";
           setLocalError(errorMsg);
           onError(errorMsg);
         } finally {
@@ -261,7 +270,7 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
         (!airlineIata || !airlineIcao || !aircraftType)
       ) {
         const errorMsg =
-          "Please fill in both Airline codes (IATA and ICAO) and Aircraft Type before uploading.";
+          "Enter the airline codes (IATA and ICAO) and aircraft type before uploading.";
         setLocalError(errorMsg);
         onError(errorMsg);
         return false;
@@ -330,9 +339,10 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
               <button
                 type="button"
                 onClick={handleRemove}
-                className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 p-1.5 text-white transition-colors hover:bg-red-500"
+                aria-label="Remove image"
+                className="absolute top-2 right-2 cursor-pointer rounded-lg bg-red-500/80 p-1.5 text-white transition-colors hover:bg-red-500 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             )}
 
@@ -362,7 +372,7 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-cyan-500/50 bg-cyan-500/10 p-8">
           <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
           <span className="mt-3 font-medium text-white">
-            Compressing image...
+            Compressing image…
           </span>
           <span className="mt-1 text-sm text-slate-400">
             This will only take a moment
@@ -410,7 +420,7 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
               </p>
             </div>
 
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-400">
               JPG, PNG, GIF or WebP • Auto-compressed
             </p>
           </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { toUserMessage } from "~/lib/user-message";
 import { useState } from "react";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { Dialog } from "radix-ui";
@@ -50,7 +51,7 @@ export function ModerationTab() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search Discord username or RT ID"
-          className="mt-2 w-full rounded-md border border-white/20 bg-black/20 p-3 text-sm outline-none focus:border-cyan-400"
+          className="mt-2 w-full rounded-md border border-white/20 bg-black/20 p-3 text-sm outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
         />
         {matches?.map((user) => (
           <div
@@ -204,7 +205,10 @@ export function ModerationTab() {
                   toast.success("Moderation action overridden");
                 } catch (error) {
                   toast.error(
-                    error instanceof Error ? error.message : "Override failed",
+                    toUserMessage(
+                      error,
+                      "Couldn't apply the override. Try again.",
+                    ),
                   );
                 } finally {
                   setBusy(false);

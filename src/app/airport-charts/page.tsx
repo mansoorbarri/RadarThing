@@ -1,5 +1,8 @@
 "use client";
 
+import { ModalShell } from "~/components/ui/modal-shell";
+import { SiteFooter } from "~/components/site/SiteFooter";
+import { SiteHeader } from "~/components/site/SiteHeader";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useState, useEffect, useMemo, useRef } from "react";
@@ -45,7 +48,7 @@ function setCookie(name: string, value: string, days = 365) {
 }
 
 const CHART_TYPES: { value: ChartType; label: string }[] = [
-  { value: "TAXI", label: "Ground / Airport Diagram" },
+  { value: "TAXI", label: "Ground / airport diagram" },
   { value: "SID", label: "SID (Departure)" },
   { value: "STAR", label: "STAR (Arrival)" },
   { value: "APPROACH", label: "Approach" },
@@ -98,6 +101,8 @@ export default function AirportChartsPage() {
   const [submitProgress, setSubmitProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasSelectedFiles, setHasSelectedFiles] = useState(false);
+  // Kept in state so the "N files selected" badge re-renders.
+  const [selectedFileCount, setSelectedFileCount] = useState(0);
   const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const uploaderRef = useRef<ChartUploaderRef>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -157,25 +162,34 @@ export default function AirportChartsPage() {
       });
   }, [charts, searchQuery, icaoFilter, typeFilter]);
 
+  const [icaoError, setIcaoError] = useState<string | null>(null);
+
   async function handleUploadAndSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    // Field problems are shown next to the field and focus moves there.
+    if (!/^[A-Z0-9]{3,4}$/.test(formData.icao)) {
+      setIcaoError(
+        formData.icao
+          ? "Use the airport's 3–4 character ICAO code, e.g. KJFK."
+          : "Enter the airport's ICAO code, e.g. KJFK.",
+      );
+      setError("Fix the highlighted field.");
+      requestAnimationFrame(() =>
+        document.getElementById("chart-upload-icao")?.focus(),
+      );
+      return;
+    }
     if (!hasSelectedFiles) {
-      toast.error("Please select at least one chart file");
-      setError("Please select at least one chart file");
+      setError("Choose at least one chart file to upload.");
       return;
     }
     if (!rightsConfirmed) {
-      toast.error("Confirm that you have permission to share these charts");
-      setError("You must confirm your rights before uploading");
-      return;
-    }
-    if (!formData.icao || formData.icao.length < 3) {
-      toast.error("Valid ICAO code required (3-4 characters)");
-      setError("Valid ICAO code required (3-4 characters)");
+      setError("Confirm that you have permission to share these charts.");
       return;
     }
 
+    setIcaoError(null);
     setError(null);
     setSubmitStage("uploading");
     setSubmitProgress(null);
@@ -188,7 +202,7 @@ export default function AirportChartsPage() {
     }
 
     setSubmitStage("submitting");
-    setSubmitProgress(`Creating ${results.length} entries...`);
+    setSubmitProgress(`Creating ${results.length} entries…`);
 
     const dbResults = await Promise.all(
       results.map((upload) =>
@@ -216,12 +230,12 @@ export default function AirportChartsPage() {
 
     setTimeout(() => {
       if (failCount > 0) {
-        toast.success(
-          `${successCount} chart${successCount !== 1 ? "s" : ""} submitted for review! (${failCount} failed)`,
+        toast.warning(
+          `Submitted ${successCount} chart${successCount !== 1 ? "s" : ""} for review; ${failCount} failed. Try those again.`,
         );
       } else {
         toast.success(
-          `${successCount} chart${successCount !== 1 ? "s" : ""} submitted for review!`,
+          `${successCount} chart${successCount !== 1 ? "s" : ""} submitted for review`,
         );
       }
       setShowUploadModal(false);
@@ -245,14 +259,14 @@ export default function AirportChartsPage() {
         return (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            Uploading...
+            Uploading…
           </>
         );
       case "submitting":
         return (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            {submitProgress ?? "Submitting..."}
+            {submitProgress ?? "Submitting…"}
           </>
         );
       case "success":
@@ -280,83 +294,67 @@ export default function AirportChartsPage() {
 
   if (!isAdminUser) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-black text-white">
-        <div className="flex max-w-md flex-col items-center rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-          <ShieldAlert className="mb-4 h-12 w-12 text-red-400" />
-          <h2 className="mb-2 text-xl font-bold">Admin Access Required</h2>
-          <p className="mb-6 text-slate-400">
-            This page is restricted to administrators only.
-          </p>
-          <button
-            onClick={() => router.push("/radar")}
-            className="cursor-pointer rounded-lg bg-cyan-500/20 px-6 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-cyan-500/30"
-          >
-            Back to Radar
-          </button>
-        </div>
+      <div className="bg-site flex min-h-screen flex-col text-white">
+        <SiteHeader />
+        <main
+          id="main-content"
+          className="flex flex-1 items-center justify-center px-6 py-16"
+        >
+          <div className="flex max-w-md flex-col items-center rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
+            <ShieldAlert
+              className="mb-4 h-12 w-12 text-red-400"
+              aria-hidden="true"
+            />
+            <h1 className="mb-2 text-xl font-bold">Admin access required</h1>
+            <p className="mb-6 text-slate-300">
+              This page is for RadarThing administrators. Charts for pilots are
+              on the radar: select an airport and open its charts.
+            </p>
+            <Link
+              href="/radar"
+              className="rounded-lg bg-cyan-500/20 px-6 py-2.5 text-sm font-medium text-cyan-300 transition-colors hover:bg-cyan-500/30"
+            >
+              Back to the radar
+            </Link>
+          </div>
+        </main>
       </div>
     );
   }
 
   const canUpload = isSignedIn;
 
-  return (
-    <div className="min-h-screen bg-black text-white">
-      <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <button
-            onClick={() => router.push("/radar")}
-            className="cursor-pointer font-mono text-xl text-cyan-400"
-          >
-            <Image
-              src="/logo-white.svg"
-              alt="RadarThing"
-              width={100}
-              height={30}
-            />
-          </button>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push("/aircraft-images")}
-              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
-            >
-              Aircraft Images
-            </button>
-            <button
-              onClick={() => router.push("/admin")}
-              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
-            >
-              Admin
-            </button>
-            <button
-              onClick={() => router.push("/radar")}
-              className="cursor-pointer text-sm text-slate-400 transition-colors hover:text-white"
-            >
-              Back to Map
-            </button>
-            {isSignedIn ? (
-              <UserAuth />
-            ) : (
-              <GoogleSignInButton>
-                <button className="cursor-pointer rounded-lg bg-cyan-500/20 px-4 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-cyan-500/30">
-                  Sign In
-                </button>
-              </GoogleSignInButton>
-            )}
-          </div>
-        </div>
-      </header>
+  const closeUploadModal = () => {
+    if (isProcessing) return;
+    setIcaoError(null);
+    setShowUploadModal(false);
+    setError(null);
+    setSubmitStage("idle");
+    setSubmitProgress(null);
+    setHasSelectedFiles(false);
+    setRightsConfirmed(false);
+    uploaderRef.current?.reset();
+    setFormData((prev) => ({
+      icao: "",
+      chartType: "TAXI" as ChartType,
+      discordUsername: prev.discordUsername,
+    }));
+  };
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
-        <div className="mb-8 flex items-center justify-between">
+  return (
+    <div className="bg-site min-h-screen text-white">
+      <SiteHeader />
+
+      <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
               <Map className="h-4 w-4 text-cyan-400" />
               <span className="font-mono text-sm text-cyan-400">
-                AIRPORT CHARTS
+                Airport charts
               </span>
             </div>
-            <h1 className="text-3xl font-bold text-white">Airport Charts</h1>
+            <h1 className="text-3xl font-bold text-white">Airport charts</h1>
             <p className="mt-2 text-slate-400">
               Community-contributed airport charts. SIDs, STARs, approaches, and
               more.
@@ -365,14 +363,14 @@ export default function AirportChartsPage() {
           {canUpload ? (
             <button
               onClick={() => setShowUploadModal(true)}
-              className="flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
+              className="flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
             >
               <Upload className="h-5 w-5" />
               Upload Chart
             </button>
           ) : (
             <GoogleSignInButton>
-              <button className="flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40">
+              <button className="flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none">
                 <Upload className="h-5 w-5" />
                 Sign in to Upload
               </button>
@@ -383,22 +381,27 @@ export default function AirportChartsPage() {
         {/* Search and Filters */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="relative flex-1">
-            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search
+              className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
+              aria-hidden="true"
+            />
             <input
-              type="text"
-              placeholder="Search by ICAO, chart name..."
+              type="search"
+              aria-label="Search charts"
+              placeholder="Search by ICAO or chart name…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
+              className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-400 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             />
           </div>
           <div className="flex gap-3">
             <select
+              aria-label="Filter by airport"
               value={icaoFilter}
               onChange={(e) => setIcaoFilter(e.target.value)}
-              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             >
-              <option value="">All Airports</option>
+              <option value="">All airports</option>
               {uniqueIcaos.map((icao) => (
                 <option key={icao} value={icao}>
                   {icao}
@@ -406,11 +409,12 @@ export default function AirportChartsPage() {
               ))}
             </select>
             <select
+              aria-label="Filter by chart type"
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as ChartType | "")}
-              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-500/50"
+              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             >
-              <option value="">All Types</option>
+              <option value="">All types</option>
               {CHART_TYPES.map((type) => (
                 <option key={type.value} value={type.value}>
                   {type.label}
@@ -441,7 +445,7 @@ export default function AirportChartsPage() {
 
         {filteredCharts.length === 0 && charts.length > 0 ? (
           <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-            <Search className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+            <Search className="mx-auto mb-4 h-12 w-12 text-slate-400" />
             <h3 className="mb-2 text-xl font-semibold text-white">
               No Results Found
             </h3>
@@ -451,7 +455,7 @@ export default function AirportChartsPage() {
           </div>
         ) : charts.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-            <Map className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+            <Map className="mx-auto mb-4 h-12 w-12 text-slate-400" />
             <h3 className="mb-2 text-xl font-semibold text-white">
               No Charts Yet
             </h3>
@@ -499,293 +503,328 @@ export default function AirportChartsPage() {
           </div>
         )}
       </main>
+      <SiteFooter />
 
       {/* Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-          <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/10 bg-[#0a0f14] p-6 shadow-2xl">
-            <button
-              onClick={() => {
-                if (isProcessing) return;
-                setShowUploadModal(false);
-                setError(null);
-                setSubmitStage("idle");
-                setSubmitProgress(null);
-                setHasSelectedFiles(false);
-                setRightsConfirmed(false);
-                uploaderRef.current?.reset();
-                setFormData((prev) => ({
-                  icao: "",
-                  chartType: "TAXI" as ChartType,
-                  discordUsername: prev.discordUsername,
-                }));
-              }}
-              disabled={isProcessing}
-              className="absolute top-4 right-4 cursor-pointer text-slate-400 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              ✕
-            </button>
+        <ModalShell
+          labelledBy="chart-upload-title"
+          describedBy="chart-upload-desc"
+          onClose={closeUploadModal}
+          closeDisabled={isProcessing}
+        >
+          <button
+            type="button"
+            aria-label="Close upload dialog"
+            onClick={closeUploadModal}
+            disabled={isProcessing}
+            className="absolute top-4 right-4 cursor-pointer text-slate-400 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span aria-hidden="true">✕</span>
+          </button>
 
-            <h2 className="mb-2 text-xl font-bold text-white">
-              Upload Airport Chart
-            </h2>
-            <p className="mb-6 text-sm text-slate-400">
-              Your chart will be reviewed by our team before appearing in the
-              library.
-            </p>
+          <h2
+            id="chart-upload-title"
+            className="mb-2 text-xl font-bold text-white"
+          >
+            Upload Airport Chart
+          </h2>
+          <p id="chart-upload-desc" className="mb-6 text-sm text-slate-300">
+            Your chart will be reviewed by our team before appearing in the
+            library.
+          </p>
 
-            <form
-              ref={formRef}
-              onSubmit={handleUploadAndSubmit}
-              className="space-y-4"
-            >
-              {error && (
-                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                  {error}
-                </div>
-              )}
+          <form
+            ref={formRef}
+            onSubmit={handleUploadAndSubmit}
+            // Validation is done in handleUploadAndSubmit so every error is
+            // shown inline next to its field.
+            noValidate
+            className="space-y-4"
+          >
+            {error && (
+              <div
+                role="alert"
+                className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+              >
+                {error}
+              </div>
+            )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-2 block font-mono text-xs text-slate-400">
-                    ICAO CODE *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.icao}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        icao: e.target.value.toUpperCase(),
-                      })
-                    }
-                    placeholder="e.g., KJFK"
-                    maxLength={4}
-                    required
-                    disabled={isProcessing}
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block font-mono text-xs text-slate-400">
-                    CHART TYPE *
-                  </label>
-                  <select
-                    value={formData.chartType}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        chartType: e.target.value as ChartType,
-                      })
-                    }
-                    required
-                    disabled={isProcessing}
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="chart-upload-icao"
+                  className="mb-2 block font-mono text-xs text-slate-300"
+                >
+                  ICAO code *
+                </label>
+                <input
+                  id="chart-upload-icao"
+                  type="text"
+                  aria-invalid={Boolean(icaoError)}
+                  aria-describedby={
+                    icaoError ? "chart-upload-icao-error" : undefined
+                  }
+                  value={formData.icao}
+                  onChange={(e) => {
+                    setIcaoError(null);
+                    setError((current) =>
+                      current === "Fix the highlighted field." ? null : current,
+                    );
+                    setFormData({
+                      ...formData,
+                      icao: e.target.value.toUpperCase(),
+                    });
+                  }}
+                  placeholder="e.g., KJFK"
+                  maxLength={4}
+                  required
+                  disabled={isProcessing}
+                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-400 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50 aria-[invalid=true]:border-red-400/70"
+                />
+                {icaoError && (
+                  <p
+                    id="chart-upload-icao-error"
+                    className="mt-1 text-xs text-red-300"
                   >
-                    {CHART_TYPES.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    {icaoError}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="mb-2 block font-mono text-xs text-slate-400">
-                  YOUR DISCORD USERNAME (OPTIONAL)
+                <label
+                  htmlFor="chart-upload-type"
+                  className="mb-2 block font-mono text-xs text-slate-300"
+                >
+                  Chart type *
                 </label>
-                <input
-                  type="text"
-                  value={formData.discordUsername}
+                <select
+                  id="chart-upload-type"
+                  value={formData.chartType}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      discordUsername: e.target.value,
+                      chartType: e.target.value as ChartType,
                     })
                   }
-                  placeholder="e.g., xyzmani"
-                  disabled={isProcessing}
-                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
-                />
-              </div>
-
-              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-5 text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={rightsConfirmed}
-                  onChange={(event) => setRightsConfirmed(event.target.checked)}
                   required
                   disabled={isProcessing}
-                  className="mt-0.5 h-4 w-4 accent-cyan-400"
-                />
-                <span>
-                  I created these charts, they are public domain, or I have
-                  permission to upload and share them under the{" "}
-                  <Link
-                    href="/terms"
-                    target="_blank"
-                    className="text-cyan-300 hover:underline"
-                  >
-                    submission terms
-                  </Link>
-                  .
-                </span>
-              </label>
-
-              <div>
-                <label className="mb-2 block font-mono text-xs text-slate-400">
-                  SELECT CHART FILES
-                  {hasSelectedFiles && uploaderRef.current && (
-                    <span className="ml-2 rounded-full bg-cyan-500/20 px-2 py-0.5 text-cyan-400">
-                      {uploaderRef.current.fileCount()} file
-                      {uploaderRef.current.fileCount() !== 1 ? "s" : ""}{" "}
-                      selected
-                    </span>
-                  )}
-                </label>
-                <ChartUploader
-                  ref={uploaderRef}
-                  icao={formData.icao}
-                  onUploadComplete={() => {
-                    // handled via triggerUpload return value
-                  }}
-                  onFileSelected={setHasSelectedFiles}
-                  onError={(err) => {
-                    toast.error(err);
-                    setSubmitStage("idle");
-                  }}
-                />
-              </div>
-
-              {/* Success overlay is rendered outside the form */}
-
-              <button
-                type="submit"
-                disabled={
-                  isProcessing ||
-                  !hasSelectedFiles ||
-                  !rightsConfirmed ||
-                  submitStage === "success"
-                }
-                className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
-                  submitStage === "success"
-                    ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/20"
-                    : "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-cyan-500/20 hover:shadow-cyan-500/40"
-                }`}
-              >
-                {getButtonContent()}
-              </button>
-            </form>
-
-            {/* Success Overlay — covers entire modal */}
-            {submitStage === "success" && (
-              <div className="absolute inset-0 z-50 flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-[#0a0f14]">
-                {/* Subtle grid pattern background */}
-                <div
-                  className="pointer-events-none absolute inset-0 opacity-[0.04]"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(rgba(34,211,238,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.5) 1px, transparent 1px)",
-                    backgroundSize: "32px 32px",
-                  }}
-                />
-
-                {/* Expanding location pulse */}
-                <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                  <div className="absolute -inset-10 animate-[mapPulse_1.5s_ease-out_forwards] rounded-full border border-cyan-400/30 opacity-0" />
-                  <div className="absolute -inset-16 animate-[mapPulse_1.5s_ease-out_0.2s_forwards] rounded-full border border-cyan-400/15 opacity-0" />
-                  <div className="absolute -inset-24 animate-[mapPulse_1.5s_ease-out_0.4s_forwards] rounded-full border border-cyan-400/[0.07] opacity-0" />
-                </div>
-
-                {/* Center content */}
-                <div
-                  className="relative z-10 flex animate-[fadeInUp_0.5s_ease-out_forwards] flex-col items-center"
-                  style={{ opacity: 0 }}
+                  className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 >
-                  {/* Map pin drop effect */}
-                  <div className="relative mb-5">
-                    <div
-                      className="absolute -bottom-1 left-1/2 h-2 w-10 -translate-x-1/2 animate-[pinShadow_0.4s_ease-out_forwards] rounded-full bg-cyan-400/20 blur-sm"
-                      style={{ opacity: 0 }}
-                    />
-                    <div
-                      className="relative flex h-20 w-20 animate-[pinDrop_0.4s_cubic-bezier(0.34,1.56,0.64,1)_forwards] items-center justify-center rounded-full border border-cyan-500/30 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 shadow-[0_0_40px_rgba(34,211,238,0.15)]"
-                      style={{ transform: "translateY(-20px)", opacity: 0 }}
-                    >
-                      <Map className="h-9 w-9 text-cyan-400" />
-                    </div>
-                  </div>
+                  {CHART_TYPES.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                    <span className="text-lg font-semibold text-emerald-400">
-                      Submitted for Review!
-                    </span>
+            <div>
+              <label
+                htmlFor="chart-upload-discord"
+                className="mb-2 block font-mono text-xs text-slate-300"
+              >
+                Your Discord username (optional)
+              </label>
+              <input
+                id="chart-upload-discord"
+                autoComplete="username"
+                type="text"
+                value={formData.discordUsername}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    discordUsername: e.target.value,
+                  })
+                }
+                placeholder="e.g., xyzmani"
+                disabled={isProcessing}
+                className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-400 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
+              />
+            </div>
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-5 text-slate-300">
+              <input
+                type="checkbox"
+                checked={rightsConfirmed}
+                onChange={(event) => setRightsConfirmed(event.target.checked)}
+                required
+                disabled={isProcessing}
+                className="mt-0.5 h-4 w-4 accent-cyan-400"
+              />
+              <span>
+                I created these charts, they are public domain, or I have
+                permission to upload and share them under the{" "}
+                <Link
+                  href="/terms"
+                  target="_blank"
+                  className="text-cyan-300 hover:underline"
+                >
+                  submission terms
+                </Link>
+                .
+              </span>
+            </label>
+
+            <div>
+              <p className="mb-2 block font-mono text-xs text-slate-400">
+                Select chart files
+                {hasSelectedFiles && selectedFileCount > 0 && (
+                  <span className="ml-2 rounded-full bg-cyan-500/20 px-2 py-0.5 text-cyan-400">
+                    {selectedFileCount} file
+                    {selectedFileCount !== 1 ? "s" : ""} selected
+                  </span>
+                )}
+              </p>
+              <ChartUploader
+                ref={uploaderRef}
+                icao={formData.icao}
+                onUploadComplete={() => {
+                  // handled via triggerUpload return value
+                }}
+                onFileSelected={(has) => {
+                  setHasSelectedFiles(has);
+                  // Read after the uploader has updated its own list.
+                  requestAnimationFrame(() =>
+                    setSelectedFileCount(uploaderRef.current?.fileCount() ?? 0),
+                  );
+                }}
+                onError={(err) => {
+                  toast.error(err);
+                  setSubmitStage("idle");
+                }}
+              />
+            </div>
+
+            {/* Success overlay is rendered outside the form */}
+
+            <button
+              type="submit"
+              disabled={
+                isProcessing ||
+                !hasSelectedFiles ||
+                !rightsConfirmed ||
+                submitStage === "success"
+              }
+              className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-slate-950 shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+                submitStage === "success"
+                  ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/20"
+                  : "bg-cyan-400 text-slate-950 shadow-cyan-500/20 hover:bg-cyan-300 hover:shadow-cyan-500/40"
+              }`}
+            >
+              {getButtonContent()}
+            </button>
+          </form>
+
+          {/* Success Overlay — covers entire modal */}
+          {submitStage === "success" && (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-[#0a0f14]">
+              {/* Subtle grid pattern background */}
+              <div
+                className="pointer-events-none absolute inset-0 opacity-[0.04]"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(rgba(34,211,238,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.5) 1px, transparent 1px)",
+                  backgroundSize: "32px 32px",
+                }}
+              />
+
+              {/* Expanding location pulse */}
+              <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                <div className="absolute -inset-10 animate-[mapPulse_1.5s_ease-out_forwards] rounded-full border border-cyan-400/30 opacity-0" />
+                <div className="absolute -inset-16 animate-[mapPulse_1.5s_ease-out_0.2s_forwards] rounded-full border border-cyan-400/15 opacity-0" />
+                <div className="absolute -inset-24 animate-[mapPulse_1.5s_ease-out_0.4s_forwards] rounded-full border border-cyan-400/[0.07] opacity-0" />
+              </div>
+
+              {/* Center content */}
+              <div
+                className="relative z-10 flex animate-[fadeInUp_0.5s_ease-out_forwards] flex-col items-center"
+                style={{ opacity: 0 }}
+              >
+                {/* Map pin drop effect */}
+                <div className="relative mb-5">
+                  <div
+                    className="absolute -bottom-1 left-1/2 h-2 w-10 -translate-x-1/2 animate-[pinShadow_0.4s_ease-out_forwards] rounded-full bg-cyan-400/20 blur-sm"
+                    style={{ opacity: 0 }}
+                  />
+                  <div
+                    className="relative flex h-20 w-20 animate-[pinDrop_0.4s_cubic-bezier(0.34,1.56,0.64,1)_forwards] items-center justify-center rounded-full border border-cyan-500/30 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 shadow-[0_0_40px_rgba(34,211,238,0.15)]"
+                    style={{ transform: "translateY(-20px)", opacity: 0 }}
+                  >
+                    <Map className="h-9 w-9 text-cyan-400" />
                   </div>
-                  <p className="mt-1.5 text-sm text-slate-500">
-                    Your charts are now in the queue
-                  </p>
                 </div>
 
-                <style jsx>{`
-                  @keyframes mapPulse {
-                    0% {
-                      transform: scale(0.5);
-                      opacity: 0;
-                    }
-                    30% {
-                      opacity: 1;
-                    }
-                    100% {
-                      transform: scale(1);
-                      opacity: 0;
-                    }
-                  }
-                  @keyframes pinDrop {
-                    0% {
-                      transform: translateY(-20px);
-                      opacity: 0;
-                    }
-                    60% {
-                      transform: translateY(2px);
-                      opacity: 1;
-                    }
-                    100% {
-                      transform: translateY(0);
-                      opacity: 1;
-                    }
-                  }
-                  @keyframes pinShadow {
-                    0% {
-                      transform: translateX(-50%) scale(0.3);
-                      opacity: 0;
-                    }
-                    60% {
-                      transform: translateX(-50%) scale(1.1);
-                      opacity: 0.3;
-                    }
-                    100% {
-                      transform: translateX(-50%) scale(1);
-                      opacity: 0.2;
-                    }
-                  }
-                  @keyframes fadeInUp {
-                    0% {
-                      transform: translateY(12px);
-                      opacity: 0;
-                    }
-                    100% {
-                      transform: translateY(0);
-                      opacity: 1;
-                    }
-                  }
-                `}</style>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <span className="text-lg font-semibold text-emerald-400">
+                    Submitted for Review!
+                  </span>
+                </div>
+                <p className="mt-1.5 text-sm text-slate-400">
+                  Your charts are now in the queue
+                </p>
               </div>
-            )}
-          </div>
-        </div>
+
+              <style jsx>{`
+                @keyframes mapPulse {
+                  0% {
+                    transform: scale(0.5);
+                    opacity: 0;
+                  }
+                  30% {
+                    opacity: 1;
+                  }
+                  100% {
+                    transform: scale(1);
+                    opacity: 0;
+                  }
+                }
+                @keyframes pinDrop {
+                  0% {
+                    transform: translateY(-20px);
+                    opacity: 0;
+                  }
+                  60% {
+                    transform: translateY(2px);
+                    opacity: 1;
+                  }
+                  100% {
+                    transform: translateY(0);
+                    opacity: 1;
+                  }
+                }
+                @keyframes pinShadow {
+                  0% {
+                    transform: translateX(-50%) scale(0.3);
+                    opacity: 0;
+                  }
+                  60% {
+                    transform: translateX(-50%) scale(1.1);
+                    opacity: 0.3;
+                  }
+                  100% {
+                    transform: translateX(-50%) scale(1);
+                    opacity: 0.2;
+                  }
+                }
+                @keyframes fadeInUp {
+                  0% {
+                    transform: translateY(12px);
+                    opacity: 0;
+                  }
+                  100% {
+                    transform: translateY(0);
+                    opacity: 1;
+                  }
+                }
+              `}</style>
+            </div>
+          )}
+        </ModalShell>
       )}
     </div>
   );
@@ -813,24 +852,16 @@ function ChartCardSkeleton() {
 
 function GallerySkeleton() {
   return (
-    <div className="min-h-screen bg-black text-white">
-      <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <Skeleton className="h-8 w-24" />
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-8 w-20 rounded-lg" />
-          </div>
-        </div>
-      </header>
+    <div className="bg-site min-h-screen text-white">
+      <SiteHeader />
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
-        <div className="mb-8 flex items-center justify-between">
+      <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2">
               <Map className="h-4 w-4 text-cyan-400" />
               <span className="font-mono text-sm text-cyan-400">
-                AIRPORT CHARTS
+                Airport charts
               </span>
             </div>
             <Skeleton className="mt-2 h-9 w-48" />
@@ -856,6 +887,7 @@ function GallerySkeleton() {
           <ChartCardSkeleton />
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

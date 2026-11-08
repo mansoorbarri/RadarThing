@@ -30,8 +30,23 @@ const ICONS = {
     <path d="M12 8v8"/>
     <path d="M8 12h8"/>
   </svg>`,
-  radar: `<img src="/icons/radar.svg" width="18" height="18" alt="Radar" style="filter: brightness(0) saturate(100%) invert(79%) sepia(44%) saturate(1177%) hue-rotate(152deg) brightness(98%) contrast(90%);" />`,
-  osm: `<img src="/icons/OSM.svg" width="18" height="18" alt="OSM" />`,
+  // Line icons in the same style as the other controls (Lucide "radar" and
+  // "map"), so every map button reads as one family.
+  radar: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/>
+    <path d="M4 6h.01"/>
+    <path d="M2.29 9.62A10 10 0 1 0 21.31 8.35"/>
+    <path d="M16.24 7.76A6 6 0 1 0 8.23 16.67"/>
+    <path d="M12 18h.01"/>
+    <path d="M17.99 11.66A6 6 0 0 1 15.77 16.67"/>
+    <circle cx="12" cy="12" r="2"/>
+    <path d="m13.41 10.59 5.66-5.66"/>
+  </svg>`,
+  osm: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/>
+    <path d="M15 5.764v15"/>
+    <path d="M9 3.236v15"/>
+  </svg>`,
   globe: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <circle cx="12" cy="12" r="10"/>
     <path d="M2 12h20"/>
@@ -46,8 +61,33 @@ function applyMetarStyleButton(
 ) {
   container.className =
     "map-control-btn flex h-10 w-10 items-center justify-center rounded-md border border-cyan-400/30 bg-black/70 text-cyan-400 shadow-[0_0_8px_rgba(0,255,255,0.28)] transition-all duration-200 hover:border-cyan-300/60 hover:bg-cyan-500/10";
-  container.innerHTML = `${iconHtml}<span class="map-tooltip">${title}</span>`;
+  container.innerHTML = `${iconHtml}<span class="map-tooltip" aria-hidden="true">${title}</span>`;
+  makeKeyboardAccessible(container, title);
   attachTooltipBehavior(container);
+}
+
+const keyboardHandlerMap = new WeakMap<
+  HTMLDivElement,
+  (event: KeyboardEvent) => void
+>();
+
+/**
+ * Leaflet controls are plain divs. Give them button semantics, a label and
+ * Enter/Space activation so they work with a keyboard and screen readers.
+ */
+function makeKeyboardAccessible(container: HTMLDivElement, label: string) {
+  container.setAttribute("role", "button");
+  container.setAttribute("aria-label", label);
+  container.tabIndex = 0;
+  if (keyboardHandlerMap.has(container)) return;
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    event.stopPropagation();
+    container.click();
+  };
+  keyboardHandlerMap.set(container, onKeyDown);
+  container.addEventListener("keydown", onKeyDown);
 }
 
 function clearTooltipHideTimer(container: HTMLDivElement) {
@@ -104,7 +144,13 @@ function detachTooltipBehavior(container: HTMLDivElement) {
   tooltipCleanupMap.delete(container);
 }
 
-function setActiveStyle(container: HTMLDivElement, active: boolean) {
+function setActiveStyle(
+  container: HTMLDivElement,
+  active: boolean,
+  stateAttribute: "aria-pressed" | "aria-expanded" = "aria-pressed",
+) {
+  // Tell assistive tech whether the toggle is on, not just sighted users.
+  container.setAttribute(stateAttribute, String(active));
   if (active) {
     container.classList.add(
       "bg-cyan-500/30",
@@ -170,26 +216,10 @@ export class AltitudeModeControl extends IconButtonControl {
     this.toggle();
   }
 
-  private onKeyDown = (event: KeyboardEvent) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      event.stopPropagation();
-      this.toggle();
-    }
-  };
-
   onAdd() {
     const container = super.onAdd();
-    container.setAttribute("role", "button");
-    container.setAttribute("aria-label", "Toggle 3D altitude");
-    container.tabIndex = 0;
-    container.addEventListener("keydown", this.onKeyDown);
+    container.setAttribute("aria-label", "3D altitude");
     return container;
-  }
-
-  onRemove() {
-    this._container?.removeEventListener("keydown", this.onKeyDown);
-    super.onRemove();
   }
 
   updateState(enabled: boolean, estimated: boolean) {
@@ -282,7 +312,8 @@ export class RadarSettingsControl extends L.Control {
 
   onAdd(): HTMLDivElement {
     const container = L.DomUtil.create("div");
-    applyMetarStyleButton(container, "Configuration", ICONS.settings);
+    applyMetarStyleButton(container, "Map settings", ICONS.settings);
+    setActiveStyle(container, this._currentState ?? false, "aria-expanded");
     container.dataset.control = "radar-settings";
     L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
     L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
@@ -300,7 +331,8 @@ export class RadarSettingsControl extends L.Control {
 
   updateState(enabled: boolean) {
     this._currentState = enabled;
-    if (this._container) setActiveStyle(this._container, enabled);
+    if (this._container)
+      setActiveStyle(this._container, enabled, "aria-expanded");
   }
 }
 
@@ -323,7 +355,8 @@ export class HeadingModeControl extends L.Control {
 
   onAdd(): HTMLDivElement {
     const container = L.DomUtil.create("div");
-    applyMetarStyleButton(container, "Heading Mode", ICONS.heading);
+    applyMetarStyleButton(container, "Heading mode", ICONS.heading);
+    setActiveStyle(container, false);
     container.dataset.control = "heading";
     L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
     L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
@@ -361,7 +394,8 @@ export class RadarModeControl extends L.Control {
 
   onAdd(): HTMLDivElement {
     const container = L.DomUtil.create("div");
-    applyMetarStyleButton(container, "Radar Mode", ICONS.radar);
+    applyMetarStyleButton(container, "Radar mode", ICONS.radar);
+    setActiveStyle(container, this._currentState);
     container.dataset.control = "radar-mode";
     L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
     L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
@@ -402,12 +436,13 @@ export class LockedRadarModeControl extends L.Control {
   onAdd(): HTMLDivElement {
     const container = L.DomUtil.create("div");
     container.className =
-      "map-control-btn relative flex h-10 w-10 items-center justify-center rounded-md border border-yellow-500/30 bg-black/70 text-white/40 shadow-[0_0_6px_rgba(234,179,8,0.25)] transition-all duration-200 hover:border-yellow-500/60 hover:bg-yellow-500/10 hover:shadow-[0_0_10px_rgba(234,179,8,0.4)]";
+      "map-control-btn relative flex h-10 w-10 items-center justify-center rounded-md border border-yellow-500/30 bg-black/70 text-white/60 shadow-[0_0_6px_rgba(234,179,8,0.25)] transition-all duration-200 hover:border-yellow-500/60 hover:bg-yellow-500/10 hover:shadow-[0_0_10px_rgba(234,179,8,0.4)]";
     container.innerHTML = `
       <span style="opacity: 0.4">${ICONS.radar}</span>
-      <span aria-hidden="true" style="position: absolute; z-index: 1; top: -6px; right: -6px; pointer-events: none; background: rgba(234, 179, 8, 0.2); color: #facc15; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: bold;">PRO</span>
-      <span class="map-tooltip">Radar Mode (PRO)</span>
+      <span aria-hidden="true" style="position: absolute; z-index: 1; top: 4px; right: 4px; width: 7px; height: 7px; border-radius: 9999px; background: #facc15; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.8); pointer-events: none;"></span>
+      <span class="map-tooltip" aria-hidden="true">Radar mode (Pro)</span>
     `;
+    makeKeyboardAccessible(container, "Radar mode (Pro feature)");
     container.dataset.control = "radar-mode-pro";
     attachTooltipBehavior(container);
     L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
@@ -442,7 +477,8 @@ export class OSMControl extends L.Control {
 
   onAdd(): HTMLDivElement {
     const container = L.DomUtil.create("div");
-    applyMetarStyleButton(container, "OpenStreetMap", ICONS.osm);
+    applyMetarStyleButton(container, "Street map", ICONS.osm);
+    setActiveStyle(container, this._currentState);
     container.dataset.control = "osm-layer";
     L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
     L.DomEvent.on(container, "click", L.DomEvent.preventDefault);
@@ -481,7 +517,8 @@ export class OpenAIPControl extends L.Control {
 
   onAdd(): HTMLDivElement {
     const container = L.DomUtil.create("div");
-    applyMetarStyleButton(container, "OpenAIP Layer", ICONS.globe);
+    applyMetarStyleButton(container, "Airspace layer (OpenAIP)", ICONS.globe);
+    setActiveStyle(container, this._currentState);
     container.dataset.control = "openaip-layer";
     L.DomEvent.on(container, "click", L.DomEvent.stopPropagation);
     L.DomEvent.on(container, "click", L.DomEvent.preventDefault);

@@ -1,5 +1,6 @@
 "use client";
 
+import { toUserMessage } from "~/lib/user-message";
 import type { ReactNode } from "react";
 import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
@@ -858,8 +859,10 @@ export function ChallengesTab({
 
       resetForm(form.cadence);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not save challenge";
+      const message = toUserMessage(
+        error,
+        "Couldn't save the challenge. Try again.",
+      );
       toast.error(message);
     } finally {
       setIsSaving(false);
@@ -880,8 +883,10 @@ export function ChallengesTab({
         isPublished ? "Challenge unpublished" : "Challenge published",
       );
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not update challenge";
+      const message = toUserMessage(
+        error,
+        "Couldn't update the challenge. Try again.",
+      );
       toast.error(message);
     } finally {
       setBusyChallengeId(null);
@@ -897,8 +902,10 @@ export function ChallengesTab({
       }
       toast.success("Challenge deleted");
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not delete challenge";
+      const message = toUserMessage(
+        error,
+        "Couldn't delete the challenge. Try again.",
+      );
       toast.error(message);
     } finally {
       setBusyChallengeId(null);
@@ -923,8 +930,10 @@ export function ChallengesTab({
             : "Submission reopened for review",
       );
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not review submission";
+      const message = toUserMessage(
+        error,
+        "Couldn't review the submission. Try again.",
+      );
       toast.error(message);
     } finally {
       setBusyReviewId(null);
@@ -980,7 +989,7 @@ export function ChallengesTab({
               })
             }
             placeholder="LOWI"
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </label>
       );
@@ -1000,7 +1009,7 @@ export function ChallengesTab({
               updateRule(index, { requiredAirportCount: event.target.value })
             }
             placeholder="5"
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </label>
       );
@@ -1022,10 +1031,10 @@ export function ChallengesTab({
               }
               placeholder={"SABE\nYSSY\nLOWW"}
               rows={6}
-              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             />
             {targetAirportCount ? (
-              <span className="block text-xs text-slate-500">
+              <span className="block text-xs text-slate-400">
                 {targetAirportCount} target airport
                 {targetAirportCount === 1 ? "" : "s"}
               </span>
@@ -1047,7 +1056,7 @@ export function ChallengesTab({
               placeholder={
                 targetAirportCount ? String(targetAirportCount) : "3"
               }
-              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             />
           </label>
         </>
@@ -1067,7 +1076,7 @@ export function ChallengesTab({
                 })
               }
               placeholder="KJFK"
-              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             />
           </label>
           <label className="space-y-2">
@@ -1080,7 +1089,7 @@ export function ChallengesTab({
                 })
               }
               placeholder="KLAX"
-              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             />
           </label>
         </>
@@ -1099,7 +1108,7 @@ export function ChallengesTab({
               })
             }
             placeholder="A320"
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </label>
       );
@@ -1141,7 +1150,7 @@ export function ChallengesTab({
               );
             })}
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-400">
             A flight can match any selected category. Categories may overlap.
           </p>
         </fieldset>
@@ -1160,7 +1169,7 @@ export function ChallengesTab({
               updateRule(index, { requiredFlightCount: event.target.value })
             }
             placeholder="3"
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </label>
       );
@@ -1178,7 +1187,7 @@ export function ChallengesTab({
               updateRule(index, { minDurationMinutes: event.target.value })
             }
             placeholder="90"
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </label>
       );
@@ -1196,7 +1205,7 @@ export function ChallengesTab({
               updateRule(index, { minDistanceNm: event.target.value })
             }
             placeholder="500"
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </label>
       );
@@ -1214,9 +1223,9 @@ export function ChallengesTab({
               updateRule(index, { maxDurationMinutes: event.target.value })
             }
             placeholder="90"
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
-          <span className="block text-xs text-slate-500">
+          <span className="block text-xs text-slate-400">
             Flights without recorded duration data will not count.
           </span>
         </label>
@@ -1235,9 +1244,9 @@ export function ChallengesTab({
               updateRule(index, { maxDistanceNm: event.target.value })
             }
             placeholder="500"
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
-          <span className="block text-xs text-slate-500">
+          <span className="block text-xs text-slate-400">
             Flights without a recorded route will not count.
           </span>
         </label>
@@ -1278,7 +1287,7 @@ export function ChallengesTab({
 
       <AdminChallengeSection
         icon={<Send className="h-4 w-4 text-cyan-400" />}
-        title={isEditing ? "Edit Challenge" : "Create Challenge"}
+        title={isEditing ? "Edit challenge" : "Create challenge"}
         countLabel={isEditing ? "editing" : undefined}
         open={openSections.form}
         onOpenChange={(open) =>
@@ -1289,7 +1298,7 @@ export function ChallengesTab({
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-lg font-semibold text-white">
-                {isEditing ? "Edit Challenge" : "Create Challenge"}
+                {isEditing ? "Edit challenge" : "Create challenge"}
               </h3>
               <p className="mt-1 text-sm text-slate-400">
                 Weekly and monthly challenges can be auto-tracked from flights
@@ -1318,7 +1327,7 @@ export function ChallengesTab({
                   }))
                 }
                 placeholder="Visit Innsbruck in the next 24 hours"
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
               />
             </label>
 
@@ -1375,7 +1384,7 @@ export function ChallengesTab({
                 }
                 rows={3}
                 placeholder="Admins can describe the target and what counts as completion."
-                className="w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white outline-none focus:border-cyan-500/50"
+                className="w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
               />
             </label>
 
@@ -1422,7 +1431,7 @@ export function ChallengesTab({
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h4 className="text-sm font-semibold text-white">Rules</h4>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-slate-400">
                       All rules below must pass before the challenge is
                       complete.
                     </p>
@@ -1619,7 +1628,7 @@ export function ChallengesTab({
                     startAt: event.target.value,
                   }))
                 }
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50"
+                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
               />
             </label>
 
@@ -1642,9 +1651,9 @@ export function ChallengesTab({
                     durationDays: event.target.value,
                   }))
                 }
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 disabled:opacity-60"
+                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-60"
               />
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-400">
                 {form.cadence === "weekly" &&
                   "Weekly challenges always run for 7 days."}
                 {form.cadence === "monthly" &&
@@ -1673,7 +1682,7 @@ export function ChallengesTab({
             <button
               onClick={handleSubmit}
               disabled={isSaving}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2.5 text-sm font-medium text-slate-950 transition-colors hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1688,7 +1697,7 @@ export function ChallengesTab({
 
       <AdminChallengeSection
         icon={<ClipboardCheck className="h-4 w-4 text-yellow-400" />}
-        title="Pending Manual Reviews"
+        title="Pending manual reviews"
         countLabel={
           pendingManualReviews.length > 0
             ? String(pendingManualReviews.length)
@@ -1701,7 +1710,7 @@ export function ChallengesTab({
       >
         <div className="p-6">
           {pendingManualReviews.length === 0 ? (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-400">
               No manual challenge submissions need review.
             </p>
           ) : (
@@ -1715,10 +1724,10 @@ export function ChallengesTab({
                     <h4 className="text-sm font-semibold text-white">
                       {group.userDisplay}
                     </h4>
-                    <p className="font-mono text-xs break-all text-slate-500">
+                    <p className="font-mono text-xs break-all text-slate-400">
                       User ID: {group.userId}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-400">
                       {group.userEmail} • {group.reviews.length} pending
                       submission
                       {group.reviews.length === 1 ? "" : "s"}
@@ -1813,7 +1822,7 @@ export function ChallengesTab({
                                       href={`/radar?replay=${flight.id}`}
                                       target="_blank"
                                       rel="noreferrer"
-                                      className="inline-flex items-center gap-1.5 self-start rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1.5 font-mono text-[10px] tracking-wider text-cyan-200 uppercase transition-colors hover:bg-cyan-500/20 sm:self-auto"
+                                      className="inline-flex items-center gap-1.5 self-start rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1.5 font-mono text-[11px] tracking-wider text-cyan-200 uppercase transition-colors hover:bg-cyan-500/20 sm:self-auto"
                                     >
                                       <ExternalLink className="h-3 w-3" />
                                       Replay
@@ -1836,7 +1845,7 @@ export function ChallengesTab({
 
       <AdminChallengeSection
         icon={<ClipboardCheck className="h-4 w-4 text-cyan-400" />}
-        title="Reviewed Manual Submissions"
+        title="Reviewed manual submissions"
         countLabel={
           reviewedManualReviews.length > 0
             ? String(reviewedManualReviews.length)
@@ -1852,7 +1861,7 @@ export function ChallengesTab({
       >
         <div className="p-6">
           {reviewedManualReviews.length === 0 ? (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-400">
               No reviewed manual submissions yet.
             </p>
           ) : (
@@ -1889,7 +1898,7 @@ export function ChallengesTab({
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <span
-                          className={`rounded-full px-2.5 py-1 font-mono text-[10px] tracking-wider uppercase ${
+                          className={`rounded-full px-2.5 py-1 font-mono text-[11px] tracking-wider uppercase ${
                             isApproved
                               ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
                               : "border border-red-500/30 bg-red-500/10 text-red-300"
@@ -1965,7 +1974,7 @@ export function ChallengesTab({
 
       <AdminChallengeSection
         icon={<Flag className="h-4 w-4 text-cyan-400" />}
-        title="All Challenges"
+        title="All challenges"
         countLabel={
           sortedChallenges.length > 0
             ? String(sortedChallenges.length)
@@ -1978,7 +1987,7 @@ export function ChallengesTab({
       >
         <div className="p-6">
           {sortedChallenges.length === 0 ? (
-            <p className="text-sm text-slate-500">No challenges yet.</p>
+            <p className="text-sm text-slate-400">No challenges yet.</p>
           ) : (
             <div className="space-y-3">
               {sortedChallenges.map((challenge) => {
@@ -1992,11 +2001,11 @@ export function ChallengesTab({
                     <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <div className="mb-2 flex flex-wrap gap-2">
-                          <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-slate-400 uppercase">
+                          <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[11px] tracking-wider text-slate-400 uppercase">
                             {challenge.cadence}
                           </span>
                           <span
-                            className={`rounded px-2 py-0.5 font-mono text-[10px] tracking-wider uppercase ${
+                            className={`rounded px-2 py-0.5 font-mono text-[11px] tracking-wider uppercase ${
                               challenge.isPublished
                                 ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
                                 : "border border-slate-500/30 bg-slate-500/10 text-slate-300"
@@ -2004,7 +2013,7 @@ export function ChallengesTab({
                           >
                             {challenge.isPublished ? "published" : "draft"}
                           </span>
-                          <span className="rounded border border-cyan-500/20 bg-cyan-500/5 px-2 py-0.5 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
+                          <span className="rounded border border-cyan-500/20 bg-cyan-500/5 px-2 py-0.5 font-mono text-[11px] tracking-wider text-cyan-300 uppercase">
                             {challenge.mode}
                           </span>
                         </div>
@@ -2047,7 +2056,7 @@ export function ChallengesTab({
 
                     <div className="grid gap-3 text-sm text-slate-400 md:grid-cols-3">
                       <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                        <div className="mb-1 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        <div className="mb-1 flex items-center gap-2 font-mono text-[11px] tracking-wider text-slate-400 uppercase">
                           <CalendarRange className="h-3.5 w-3.5" />
                           Window
                         </div>
@@ -2057,19 +2066,19 @@ export function ChallengesTab({
                             challenge.endAt,
                           )}
                         </p>
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="mt-1 text-xs text-slate-400">
                           {challenge.durationDays} day
                           {challenge.durationDays === 1 ? "" : "s"}
                         </p>
                       </div>
                       <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                        <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        <div className="mb-1 font-mono text-[11px] tracking-wider text-slate-400 uppercase">
                           Rule
                         </div>
                         <p>{describeRule(challenge)}</p>
                       </div>
                       <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                        <div className="mb-1 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        <div className="mb-1 font-mono text-[11px] tracking-wider text-slate-400 uppercase">
                           Progress
                         </div>
                         <p>
@@ -2082,7 +2091,7 @@ export function ChallengesTab({
 
                     <div className="mt-3 grid gap-3 xl:grid-cols-2">
                       <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                        <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        <div className="mb-2 flex items-center gap-2 font-mono text-[11px] tracking-wider text-slate-400 uppercase">
                           <Flag className="h-3.5 w-3.5" />
                           Top 3 Progress
                         </div>
@@ -2095,7 +2104,7 @@ export function ChallengesTab({
                               >
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2">
-                                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/25 bg-cyan-500/10 font-mono text-[10px] text-cyan-200">
+                                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/25 bg-cyan-500/10 font-mono text-[11px] text-cyan-200">
                                       {index + 1}
                                     </span>
                                     <span
@@ -2107,7 +2116,7 @@ export function ChallengesTab({
                                   </div>
                                 </div>
                                 <div
-                                  className={`shrink-0 rounded-lg px-2.5 py-1 font-mono text-[10px] uppercase ${
+                                  className={`shrink-0 rounded-lg px-2.5 py-1 font-mono text-[11px] uppercase ${
                                     pilot.isComplete
                                       ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
                                       : "border border-amber-500/25 bg-amber-500/10 text-amber-200"
@@ -2119,16 +2128,16 @@ export function ChallengesTab({
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-slate-500">
+                          <p className="text-sm text-slate-400">
                             No pilots are on the board yet.
                           </p>
                         )}
                       </div>
 
                       <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                        <div className="mb-2 flex items-center gap-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        <div className="mb-2 flex items-center gap-2 font-mono text-[11px] tracking-wider text-slate-400 uppercase">
                           <Users className="h-3.5 w-3.5" />
-                          Completed Pilots
+                          Completed pilots
                         </div>
                         {challenge.completedUsers.length > 0 ? (
                           <div className="flex flex-wrap gap-2">
@@ -2143,7 +2152,7 @@ export function ChallengesTab({
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-slate-500">
+                          <p className="text-sm text-slate-400">
                             No pilots have completed this challenge yet.
                           </p>
                         )}
@@ -2190,7 +2199,7 @@ function AdminChallengeSection({
                 {title}
               </span>
               {countLabel ? (
-                <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] tracking-wider text-cyan-300 uppercase">
+                <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 font-mono text-[11px] tracking-wider text-cyan-300 uppercase">
                   {countLabel}
                 </span>
               ) : null}

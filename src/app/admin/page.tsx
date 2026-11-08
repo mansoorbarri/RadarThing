@@ -219,15 +219,15 @@ export default function AdminPage() {
   }[] = [
     {
       value: "images",
-      label: "Aircraft Images",
+      label: "Aircraft images",
       badge: pendingCount || undefined,
     },
-    { value: "charts", label: "Airport Charts" },
+    { value: "charts", label: "Airport charts" },
     { value: "moderation", label: "Moderation" },
     { value: "acars-moderation", label: "ACARS auto-mod" },
     {
       value: "virtual-airlines",
-      label: "Virtual Airlines",
+      label: "Virtual airlines",
       badge: pendingVirtualAirlinesCount || undefined,
     },
     { value: "challenges", label: "Challenges" },
@@ -241,17 +241,20 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="admin-theme-surface min-h-screen bg-black text-white">
+    <div className="admin-theme-surface bg-site min-h-screen text-white">
       <AdminHeader />
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      <main
+        id="main-content"
+        className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12"
+      >
         <div className="mb-8">
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 sm:px-4">
             <Plane className="h-4 w-4 text-cyan-400" />
             <span className="font-mono text-sm text-cyan-400">ADMIN PANEL</span>
           </div>
           <h1 className="text-2xl font-bold text-white sm:text-3xl">
-            Admin Dashboard
+            Admin dashboard
           </h1>
         </div>
 
@@ -290,7 +293,7 @@ export default function AdminPage() {
             }`}
           >
             <ImageIcon className="h-4 w-4" />
-            Aircraft Images
+            Aircraft images
             {pendingCount > 0 && (
               <span className="ml-1 rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-400">
                 {pendingCount}
@@ -306,7 +309,7 @@ export default function AdminPage() {
             }`}
           >
             <Map className="h-4 w-4" />
-            Airport Charts
+            Airport charts
           </button>
           <button
             onClick={() => router.push(getAdminTabHref("virtual-airlines"))}
@@ -317,7 +320,7 @@ export default function AdminPage() {
             }`}
           >
             <Users className="h-4 w-4" />
-            Virtual Airlines
+            Virtual airlines
             {pendingVirtualAirlinesCount > 0 && (
               <span className="ml-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-600 dark:text-amber-300">
                 {pendingVirtualAirlinesCount}
@@ -423,14 +426,19 @@ export default function AdminPage() {
       {(mainTab === "images" || mainTab === "charts") && (
         <button
           onClick={() => setShowUploadModal(true)}
-          className="fixed right-4 bottom-4 z-40 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-4 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition-all hover:scale-105 hover:shadow-cyan-500/50 sm:right-8 sm:bottom-8 sm:h-14 sm:w-14 sm:px-0"
+          className="fixed right-4 bottom-4 z-40 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-cyan-400 px-4 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/30 transition-all hover:scale-105 hover:bg-cyan-300 hover:shadow-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none sm:right-8 sm:bottom-8 sm:h-14 sm:w-14 sm:px-0"
           title={
             mainTab === "images"
-              ? "Upload Aircraft Image"
-              : "Upload Airport Chart"
+              ? "Upload aircraft image"
+              : "Upload airport chart"
+          }
+          aria-label={
+            mainTab === "images"
+              ? "Upload aircraft image"
+              : "Upload airport chart"
           }
         >
-          <Upload className="h-6 w-6 text-white" />
+          <Upload className="h-6 w-6" aria-hidden="true" />
           <span className="sm:hidden">
             {mainTab === "images" ? "Upload image" : "Upload chart"}
           </span>

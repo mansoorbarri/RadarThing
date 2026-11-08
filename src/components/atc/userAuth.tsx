@@ -8,6 +8,43 @@ import Link from "next/link";
 import { LogOut, User } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
+import { QuietErrorBoundary } from "~/components/QuietErrorBoundary";
+import { useProStatus } from "~/hooks/useProStatus";
+
+const MENU_LINK_CLASS =
+  "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-cyan-400/10 hover:text-cyan-400";
+
+/**
+ * Role-dependent menu links (Admin, VA Admin). These need Convex, so they live in their own
+ * component behind an error boundary: if a query fails, the menu (and any
+ * page or error page showing the header) still renders without them.
+ */
+const RoleMenuLinks = ({ onNavigate }: { onNavigate: () => void }) => {
+  const { user } = useUser();
+  const { isAuthenticated } = useConvexAuth();
+  const { isAdminUser } = useProStatus();
+  const managedVirtualAirlines = useQuery(
+    api.virtualAirlines.getManagedByAdmin,
+    user?.id && isAuthenticated ? { adminClerkId: user.id } : "skip",
+  );
+
+  return (
+    <>
+      {isAdminUser && (
+        <Link href="/admin" onClick={onNavigate} className={MENU_LINK_CLASS}>
+          <User className="h-4 w-4" />
+          Admin
+        </Link>
+      )}
+      {(managedVirtualAirlines?.length ?? 0) > 0 && (
+        <Link href="/va-admin" onClick={onNavigate} className={MENU_LINK_CLASS}>
+          <User className="h-4 w-4" />
+          VA Admin
+        </Link>
+      )}
+    </>
+  );
+};
 
 export const UserAuth = ({
   hidePersonalInfo = false,
@@ -15,14 +52,9 @@ export const UserAuth = ({
   hidePersonalInfo?: boolean;
 }) => {
   const { isSignedIn, isLoaded, user } = useUser();
-  const { isAuthenticated } = useConvexAuth();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const managedVirtualAirlines = useQuery(
-    api.virtualAirlines.getManagedByAdmin,
-    user?.id && isAuthenticated ? { adminClerkId: user.id } : "skip",
-  );
 
   useEffect(() => {
     setMounted(true);
@@ -35,14 +67,23 @@ export const UserAuth = ({
         setOpen(false);
       }
     };
-    if (open) document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    if (open) {
+      document.addEventListener("mousedown", handler);
+      document.addEventListener("keydown", onKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, [open]);
 
   if (!mounted || !isLoaded) return null;
 
   const baseStyle =
-    "flex items-center justify-center rounded-md border font-mono text-[12px] font-semibold px-3 py-1.5 transition-all duration-200 bg-black/70 cursor-pointer";
+    "flex min-h-9 items-center justify-center whitespace-nowrap rounded-md border text-[12px] font-semibold px-2.5 py-1.5 sm:px-3 sm:text-[13px] transition-all duration-200 bg-black/70 cursor-pointer";
 
   const cyanStyle =
     "border-cyan-400/30 text-cyan-400 shadow-[0_0_8px_rgba(0,255,255,0.4)] hover:border-cyan-400 hover:shadow-[0_0_12px_rgba(0,255,255,0.6)]";
@@ -51,8 +92,11 @@ export const UserAuth = ({
     return (
       <div className="relative" ref={menuRef}>
         <button
+          type="button"
           onClick={() => setOpen(!open)}
-          className="flex h-full cursor-pointer items-center justify-center leading-none"
+          aria-expanded={open}
+          aria-label="Account menu"
+          className="flex h-full cursor-pointer items-center justify-center rounded-full leading-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
         >
           {user?.imageUrl ? (
             <Image
@@ -75,25 +119,18 @@ export const UserAuth = ({
             <Link
               href="/dashboard"
               onClick={() => setOpen(false)}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-cyan-400/10 hover:text-cyan-400"
+              className={MENU_LINK_CLASS}
             >
               <User className="h-4 w-4" />
               Dashboard
             </Link>
-            {(managedVirtualAirlines?.length ?? 0) > 0 && (
-              <Link
-                href="/va-admin"
-                onClick={() => setOpen(false)}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-cyan-400/10 hover:text-cyan-400"
-              >
-                <User className="h-4 w-4" />
-                VA Admin
-              </Link>
-            )}
+            <QuietErrorBoundary source="account_menu_role_links">
+              <RoleMenuLinks onNavigate={() => setOpen(false)} />
+            </QuietErrorBoundary>
             <SignOutButton redirectUrl="/radar">
               <button className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-cyan-400/10 hover:text-cyan-400">
                 <LogOut className="h-4 w-4" />
-                Sign Out
+                Sign out
               </button>
             </SignOutButton>
           </div>
@@ -104,7 +141,9 @@ export const UserAuth = ({
 
   return (
     <GoogleSignInButton>
-      <button className={`${baseStyle} ${cyanStyle}`}>SIGN IN</button>
+      <button type="button" className={`${baseStyle} ${cyanStyle}`}>
+        Sign in
+      </button>
     </GoogleSignInButton>
   );
 };

@@ -31,10 +31,7 @@ import {
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  AIRCRAFT_IMAGE_REJECTION_REASONS,
-  RejectModal,
-} from "./RejectModal";
+import { AIRCRAFT_IMAGE_REJECTION_REASONS, RejectModal } from "./RejectModal";
 import { ConflictModal } from "./ConflictModal";
 import { ConfirmModal } from "./ConfirmModal";
 import {
@@ -189,6 +186,19 @@ function EditableCodes({
       setIsEditing(false);
       return;
     }
+    // Check the codes before saving, as the public upload form does.
+    if (!draftIsMilitary && !/^[A-Z0-9]{2}$/.test(iata)) {
+      toast.error("IATA codes are 2 characters, e.g. BA.");
+      return;
+    }
+    if (!draftIsMilitary && !/^[A-Z]{3,4}$/.test(icao)) {
+      toast.error("ICAO codes are 3 or 4 letters, e.g. BAW.");
+      return;
+    }
+    if (!aircraftType.trim()) {
+      toast.error("Enter the aircraft type, e.g. A320.");
+      return;
+    }
     setIsSaving(true);
     const result = await updateAircraftImageCodes(
       imageId,
@@ -203,7 +213,7 @@ function EditableCodes({
       setIsEditing(false);
       onSaveSuccess?.();
     } else {
-      toast.error(result.error || "Failed to update details");
+      toast.error(result.error || "Couldn't save the changes. Try again.");
     }
   };
 
@@ -216,8 +226,10 @@ function EditableCodes({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSave();
+    // A second Enter while saving would send the update twice.
+    if (e.key === "Enter" && !isSaving) {
+      e.preventDefault();
+      void handleSave();
     } else if (e.key === "Escape") {
       handleCancel();
     }
@@ -245,8 +257,9 @@ function EditableCodes({
             onChange={(e) => setIata(e.target.value.toUpperCase())}
             onKeyDown={handleKeyDown}
             placeholder="IATA"
+            aria-label="IATA"
             maxLength={2}
-            className="w-14 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400"
+            className="w-14 rounded-md border border-cyan-500/50 bg-black/60 px-2 py-1 font-mono text-sm text-cyan-400 outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             disabled={isSaving}
             autoFocus
           />
@@ -256,9 +269,10 @@ function EditableCodes({
           value={icao}
           onChange={(e) => setIcao(e.target.value.toUpperCase())}
           onKeyDown={handleKeyDown}
-          placeholder={draftIsMilitary ? "AF Name" : "ICAO"}
+          placeholder={draftIsMilitary ? "AF name" : "ICAO"}
+          aria-label={draftIsMilitary ? "Air force name" : "ICAO code"}
           maxLength={draftIsMilitary ? 10 : 4}
-          className={`rounded-md border bg-black/60 px-2 py-1 font-mono text-sm outline-none ${draftIsMilitary ? "w-20 border-amber-500/50 text-amber-400 focus:border-amber-400" : "w-16 border-blue-500/50 text-blue-400 focus:border-blue-400"}`}
+          className={`rounded-md border bg-black/60 px-2 py-1 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 ${draftIsMilitary ? "w-20 border-amber-500/50 text-amber-400 focus:border-amber-400" : "w-16 border-blue-500/50 text-blue-400 focus:border-blue-400"}`}
           disabled={isSaving}
           autoFocus={draftIsMilitary}
         />
@@ -268,22 +282,27 @@ function EditableCodes({
           onChange={(e) => setAircraftType(e.target.value.toUpperCase())}
           onKeyDown={handleKeyDown}
           placeholder="Aircraft"
-          className="w-24 rounded-md border border-white/20 bg-black/60 px-2 py-1 font-mono text-sm text-white outline-none focus:border-white/40"
+          aria-label="Aircraft type"
+          className="w-24 rounded-md border border-white/20 bg-black/60 px-2 py-1 font-mono text-sm text-white outline-none focus:border-white/40 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           disabled={isSaving}
         />
         <button
+          type="button"
+          aria-label="Save changes"
           onClick={handleSave}
           disabled={isSaving}
           className="cursor-pointer rounded-md bg-emerald-500/20 p-1 text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
         >
-          <Check className="h-4 w-4" />
+          <Check className="h-4 w-4" aria-hidden="true" />
         </button>
         <button
+          type="button"
+          aria-label="Cancel editing"
           onClick={handleCancel}
           disabled={isSaving}
           className="cursor-pointer rounded-md bg-red-500/20 p-1 text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
     );
@@ -321,7 +340,7 @@ function EditableCodes({
       )}
       <button
         onClick={() => setIsEditing(true)}
-        className="cursor-pointer rounded-md p-1 text-slate-600 opacity-0 transition-all group-hover/codes:opacity-100 hover:bg-white/10 hover:text-cyan-400"
+        className="cursor-pointer rounded-md p-1 text-slate-400 opacity-0 transition-all group-hover/codes:opacity-100 hover:bg-white/10 hover:text-cyan-400"
         title="Edit details"
       >
         <Pencil className="h-3.5 w-3.5" />
@@ -597,10 +616,12 @@ export function AircraftImagesTab({
         setConflictExistingImage(conflictCheck.existingImage);
         setConflictModalOpen(true);
       } else {
-        toast.error(conflictCheck.error || "Failed to load conflict details");
+        toast.error(
+          conflictCheck.error || "Couldn't load conflict details. Try again.",
+        );
       }
     } else {
-      toast.error(result.error || "Failed to approve image");
+      toast.error(result.error || "Couldn't approve image. Try again.");
     }
     setActionLoading(null);
   }
@@ -620,7 +641,7 @@ export function AircraftImagesTab({
         return next;
       });
     } else {
-      toast.error(result.error || "Failed to resolve conflict");
+      toast.error(result.error || "Couldn't resolve conflict. Try again.");
     }
     setConflictLoading(false);
     setConflictModalOpen(false);
@@ -643,7 +664,7 @@ export function AircraftImagesTab({
         return next;
       });
     } else {
-      toast.error(result.error || "Failed to resolve conflict");
+      toast.error(result.error || "Couldn't resolve conflict. Try again.");
     }
     setConflictLoading(false);
     setConflictModalOpen(false);
@@ -715,7 +736,7 @@ export function AircraftImagesTab({
         });
         toast.success("Image rejected");
       } else {
-        toast.error(result.error || "Failed to reject image");
+        toast.error(result.error || "Couldn't reject image. Try again.");
       }
       setActionLoading(null);
     } else if (rejectTargetIds.length > 1) {
@@ -728,13 +749,15 @@ export function AircraftImagesTab({
         setSelectedImages(new Set());
         if (result.failed > 0) {
           toast.warning(
-            `Rejected ${result.rejected} images, ${result.failed} failed`,
+            `Rejected ${plural(result.rejected, "image")}; ${result.failed} failed`,
           );
         } else {
-          toast.success(`Rejected ${result.rejected} images`);
+          toast.success(`Rejected ${plural(result.rejected, "image")}`);
         }
       } else if (result.failed > 0) {
-        toast.error(`Failed to reject ${result.failed} images`);
+        toast.error(
+          `Couldn't reject ${plural(result.failed, "image")}. Try again.`,
+        );
       }
       setBulkLoading(false);
     }
@@ -759,7 +782,7 @@ export function AircraftImagesTab({
     if (result.success) {
       toast.success("Image deleted");
     } else {
-      toast.error(result.error || "Failed to delete image");
+      toast.error(result.error || "Couldn't delete image. Try again.");
     }
     setDeleteLoading(false);
     setDeleteModalOpen(false);
@@ -803,13 +826,15 @@ export function AircraftImagesTab({
       setSelectedImages(new Set());
       if (result.failed > 0) {
         toast.warning(
-          `Approved ${result.approved} images, ${result.failed} failed`,
+          `Approved ${plural(result.approved, "image")}; ${result.failed} failed`,
         );
       } else {
-        toast.success(`Approved ${result.approved} images`);
+        toast.success(`Approved ${plural(result.approved, "image")}`);
       }
     } else if (result.failed > 0) {
-      toast.error(`Failed to approve ${result.failed} images`);
+      toast.error(
+        `Couldn't approve ${plural(result.failed, "image")}. Try again.`,
+      );
     }
     setBulkLoading(false);
   }
@@ -843,12 +868,12 @@ export function AircraftImagesTab({
     if (deleted > 0) {
       setSelectedImages(new Set());
       if (failed > 0) {
-        toast.warning(`Deleted ${deleted} images, ${failed} failed`);
+        toast.warning(`Deleted ${plural(deleted, "image")}; ${failed} failed`);
       } else {
-        toast.success(`Deleted ${deleted} images`);
+        toast.success(`Deleted ${plural(deleted, "image")}`);
       }
     } else if (failed > 0) {
-      toast.error(`Failed to delete ${failed} images`);
+      toast.error(`Couldn't delete ${plural(failed, "image")}. Try again.`);
     }
     setBulkDeleteLoading(false);
     setBulkDeleteModalOpen(false);
@@ -880,7 +905,7 @@ export function AircraftImagesTab({
 
       <ConfirmModal
         isOpen={deleteModalOpen}
-        title="Delete Approved Image"
+        title="Delete approved image"
         message={
           deleteTargetInfo
             ? `Are you sure you want to delete the approved image for ${deleteTargetInfo.iata}/${deleteTargetInfo.icao} ${deleteTargetInfo.aircraft}? This action cannot be undone.`
@@ -895,9 +920,9 @@ export function AircraftImagesTab({
 
       <ConfirmModal
         isOpen={bulkDeleteModalOpen}
-        title="Delete Approved Images"
-        message={`Are you sure you want to delete ${bulkDeleteTargetIds.length} approved image(s)? This action cannot be undone.`}
-        confirmLabel="Delete All"
+        title="Delete approved images"
+        message={`Delete ${bulkDeleteTargetIds.length} approved ${bulkDeleteTargetIds.length === 1 ? "image" : "images"}? This can't be undone.`}
+        confirmLabel={`Delete ${bulkDeleteTargetIds.length} ${bulkDeleteTargetIds.length === 1 ? "image" : "images"}`}
         variant="danger"
         isLoading={bulkDeleteLoading}
         onConfirm={handleBulkDeleteConfirm}
@@ -910,13 +935,17 @@ export function AircraftImagesTab({
       {/* Search and Filters */}
       <div className="mb-6 flex flex-col gap-4">
         <div className="relative flex-1">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search
+            className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
+            aria-hidden="true"
+          />
           <input
             type="text"
             value={imageSearchQuery}
             onChange={(e) => setImageSearchQuery(e.target.value)}
-            placeholder="Search by airline, aircraft, Discord username, Convex ID..."
-            className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
+            placeholder="Search by airline, aircraft, Discord username, Convex ID…"
+            aria-label="Search by airline, aircraft, Discord username, Convex ID"
+            className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -927,14 +956,14 @@ export function AircraftImagesTab({
             }
           >
             <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-              <SelectValue placeholder="All Airlines" />
+              <SelectValue placeholder="All airlines" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
               <SelectItem
                 value="__all_airlines__"
                 className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
               >
-                All Airlines
+                All airlines
               </SelectItem>
               {uniqueImageAirlines.map((airline) => (
                 <SelectItem
@@ -956,14 +985,14 @@ export function AircraftImagesTab({
             }
           >
             <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-              <SelectValue placeholder="All Aircraft" />
+              <SelectValue placeholder="All aircraft" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
               <SelectItem
                 value="__all_aircraft__"
                 className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
               >
-                All Aircraft
+                All aircraft
               </SelectItem>
               {uniqueImageAircraftTypes.map((type) => (
                 <SelectItem
@@ -983,14 +1012,14 @@ export function AircraftImagesTab({
             }
           >
             <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-              <SelectValue placeholder="All Uploaders" />
+              <SelectValue placeholder="All uploaders" />
             </SelectTrigger>
             <SelectContent className="border-white/10 bg-[#0b1118] text-white">
               <SelectItem
                 value="__all_uploaders__"
                 className="font-mono text-sm text-white focus:bg-cyan-500/10 focus:text-cyan-200"
               >
-                All Uploaders
+                All uploaders
               </SelectItem>
               {uniqueImageUploaders.map((uploader) => (
                 <SelectItem
@@ -1021,7 +1050,7 @@ export function AircraftImagesTab({
             : `Showing ${pageStart}-${pageEnd} of ${currentTabImages.length} ${imageSubTab} images`}
         </p>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-500">Per page</span>
+          <span className="text-sm text-slate-400">Per page</span>
           <Select
             value={String(pageSize)}
             onValueChange={(value) =>
@@ -1067,7 +1096,7 @@ export function AircraftImagesTab({
                   className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
                 >
                   <Check className="h-4 w-4" />
-                  Approve All
+                  Approve all
                 </button>
                 <button
                   onClick={handleBulkReject}
@@ -1075,7 +1104,7 @@ export function AircraftImagesTab({
                   className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
                 >
                   <X className="h-4 w-4" />
-                  Reject All
+                  Reject all
                 </button>
               </>
             ) : (
@@ -1085,7 +1114,7 @@ export function AircraftImagesTab({
                 className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
               >
                 <Trash2 className="h-4 w-4" />
-                Delete All
+                Delete all
               </button>
             )}
           </div>
@@ -1152,12 +1181,12 @@ export function AircraftImagesTab({
             paginatedCurrentTabImages.length > 0 ? (
               <>
                 <CheckSquare className="h-4 w-4" />
-                Deselect Page
+                Deselect page
               </>
             ) : (
               <>
                 <Square className="h-4 w-4" />
-                Select Page
+                Select page
               </>
             )}
           </button>
@@ -1169,11 +1198,11 @@ export function AircraftImagesTab({
         <>
           {filteredPendingImages.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-              <Clock className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+              <Clock className="mx-auto mb-4 h-12 w-12 text-slate-400" />
               <h3 className="mb-2 text-xl font-semibold text-white">
                 {hasActiveImageFilters
-                  ? "No Matching Images"
-                  : "No Pending Images"}
+                  ? "No matching images"
+                  : "No pending images"}
               </h3>
               <p className="text-slate-400">
                 {hasActiveImageFilters
@@ -1198,7 +1227,7 @@ export function AircraftImagesTab({
                     />
                     <div className="absolute top-2 left-2 flex gap-1">
                       <span className="rounded-md bg-yellow-500/80 px-2 py-1 text-xs font-bold text-black">
-                        PENDING
+                        Pending
                       </span>
                       {image.isMilitary && (
                         <span className="rounded-md bg-amber-600/80 px-2 py-1 text-xs font-bold text-white">
@@ -1207,13 +1236,20 @@ export function AircraftImagesTab({
                       )}
                     </div>
                     <button
+                      type="button"
+                      aria-pressed={selectedImages.has(image.id)}
+                      aria-label={
+                        selectedImages.has(image.id)
+                          ? "Deselect image"
+                          : "Select image"
+                      }
                       onClick={() => toggleSelect(image.id)}
-                      className={`absolute top-2 right-2 cursor-pointer rounded-lg p-1.5 transition-all ${selectedImages.has(image.id) ? "bg-cyan-500 text-white" : "bg-black/60 text-white opacity-0 group-hover:opacity-100"}`}
+                      className={`absolute top-2 right-2 cursor-pointer rounded-lg p-1.5 transition-all ${selectedImages.has(image.id) ? "bg-cyan-500 text-white" : "bg-black/60 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none [@media(hover:none)]:opacity-100"}`}
                     >
                       {selectedImages.has(image.id) ? (
-                        <CheckSquare className="h-5 w-5" />
+                        <CheckSquare className="h-5 w-5" aria-hidden="true" />
                       ) : (
-                        <Square className="h-5 w-5" />
+                        <Square className="h-5 w-5" aria-hidden="true" />
                       )}
                     </button>
                   </div>
@@ -1227,14 +1263,14 @@ export function AircraftImagesTab({
                         isMilitary={image.isMilitary}
                       />
                     </div>
-                    <p className="mb-1 text-xs text-slate-500">
+                    <p className="mb-1 text-xs text-slate-400">
                       Uploaded by{" "}
                       <UploaderLink
                         image={image}
                         usersByClerkId={usersByClerkId}
                       />
                     </p>
-                    <p className="mb-3 text-xs text-slate-600">
+                    <p className="mb-3 text-xs text-slate-400">
                       {new Date(image.createdAt).toLocaleDateString()}
                     </p>
                     <div className="flex gap-2">
@@ -1268,11 +1304,11 @@ export function AircraftImagesTab({
         <>
           {filteredApprovedImages.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-              <Plane className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+              <Plane className="mx-auto mb-4 h-12 w-12 text-slate-400" />
               <h3 className="mb-2 text-xl font-semibold text-white">
                 {hasActiveImageFilters
-                  ? "No Matching Images"
-                  : "No Approved Images"}
+                  ? "No matching images"
+                  : "No approved images"}
               </h3>
               <p className="text-slate-400">
                 {hasActiveImageFilters
@@ -1300,17 +1336,24 @@ export function AircraftImagesTab({
                       unoptimized
                     />
                     <button
+                      type="button"
+                      aria-pressed={selectedImages.has(image.id)}
+                      aria-label={
+                        selectedImages.has(image.id)
+                          ? "Deselect image"
+                          : "Select image"
+                      }
                       onClick={() => toggleSelect(image.id)}
                       className={`absolute top-2 left-2 cursor-pointer rounded-lg p-1.5 transition-all ${
                         selectedImages.has(image.id)
                           ? "bg-cyan-500 text-white"
-                          : "bg-black/60 text-white opacity-0 group-hover:opacity-100"
+                          : "bg-black/60 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none [@media(hover:none)]:opacity-100"
                       }`}
                     >
                       {selectedImages.has(image.id) ? (
-                        <CheckSquare className="h-5 w-5" />
+                        <CheckSquare className="h-5 w-5" aria-hidden="true" />
                       ) : (
-                        <Square className="h-5 w-5" />
+                        <Square className="h-5 w-5" aria-hidden="true" />
                       )}
                     </button>
                     <button
@@ -1338,7 +1381,7 @@ export function AircraftImagesTab({
                       />
                       <CheckCircle className="ml-auto h-4 w-4 text-emerald-400" />
                     </div>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-slate-400">
                       Uploaded by{" "}
                       <UploaderLink
                         image={image}
@@ -1346,7 +1389,7 @@ export function AircraftImagesTab({
                       />
                     </p>
                     {image.approvedAt && (
-                      <p className="mt-1 text-xs text-slate-600">
+                      <p className="mt-1 text-xs text-slate-400">
                         Approved{" "}
                         {new Date(image.approvedAt).toLocaleDateString()}
                       </p>
@@ -1361,7 +1404,7 @@ export function AircraftImagesTab({
 
       {currentTabImages.length > 0 && totalPages > 1 && (
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-400">
             Page {currentPage} of {totalPages}
           </p>
           <div className="flex items-center gap-2">
@@ -1388,4 +1431,9 @@ export function AircraftImagesTab({
       )}
     </>
   );
+}
+
+/** "1 image", "3 images". */
+function plural(count: number, word: string) {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
 }

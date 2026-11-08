@@ -12,7 +12,10 @@ function isRadarThingTraffic(aircraft: PositionUpdate) {
   const source = aircraft.source ?? aircraft.trafficSource;
   if (typeof source === "string") {
     return (
-      source.trim().toLowerCase().replace(/[\s_-]+/g, "") === "radarthing"
+      source
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_-]+/g, "") === "radarthing"
     );
   }
 
@@ -29,23 +32,23 @@ export function FIDSPanel({ aircrafts, onTrack }: Props) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
-        <h2 className="font-mono text-[11px] font-semibold tracking-[0.2em] text-cyan-400 uppercase">
-          Live Flights
+        <h2 className="font-mono text-[11px] font-semibold tracking-[0.18em] text-cyan-400 uppercase">
+          Live flights
         </h2>
-        <span className="rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 font-mono text-[10px] text-cyan-300">
+        <span className="rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 font-mono text-[11px] text-cyan-300">
           {aircrafts.length}
         </span>
       </div>
 
       {/* Column headers */}
       <div className="grid shrink-0 grid-cols-[minmax(0,3fr)_minmax(0,3fr)_4rem_5.25rem] items-center gap-2 border-b border-white/10 px-4 py-1.5">
-        <span className="font-mono text-[9px] tracking-wider text-white/30 uppercase">
+        <span className="font-mono text-[11px] tracking-wider text-white/65 uppercase">
           Flight
         </span>
-        <span className="font-mono text-[9px] tracking-wider text-white/30 uppercase">
+        <span className="font-mono text-[11px] tracking-wider text-white/65 uppercase">
           Route
         </span>
-        <span className="font-mono text-[9px] tracking-wider text-white/30 uppercase">
+        <span className="font-mono text-[11px] tracking-wider text-white/65 uppercase">
           Aircraft
         </span>
         <span />
@@ -96,23 +99,23 @@ function FIDSRow({
         {aircraft.flightNo &&
           aircraft.callsign &&
           aircraft.flightNo !== aircraft.callsign && (
-            <div className="truncate font-mono text-[10px] text-white/30">
+            <div className="truncate font-mono text-[11px] text-white/65">
               {aircraft.callsign}
             </div>
           )}
       </div>
 
       <div className="min-w-0 truncate font-mono text-slate-400">
-        {aircraft.departure || "UNK"} → {aircraft.arrival || "UNK"}
+        {aircraft.departure || "—"} → {aircraft.arrival || "—"}
       </div>
 
-      <div className="min-w-0 truncate font-mono text-white/40">
+      <div className="min-w-0 truncate font-mono text-white/60">
         {normalizeAircraftType(aircraft.type) || "—"}
       </div>
 
       <button
         onClick={() => onTrack(aircraft)}
-        className="w-full shrink-0 cursor-pointer rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-[10px] tracking-wide text-cyan-300 uppercase transition-colors hover:bg-cyan-500/20"
+        className="w-full shrink-0 cursor-pointer rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-[11px] tracking-wide text-cyan-300 uppercase transition-colors hover:bg-cyan-500/20"
       >
         Track
       </button>

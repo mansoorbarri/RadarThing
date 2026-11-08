@@ -1,5 +1,8 @@
 "use client";
 
+import { toUserMessage } from "~/lib/user-message";
+import { FocusTrap } from "~/components/ui/focus-trap";
+
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
@@ -88,7 +91,7 @@ export function ProManagementTab({
   if (!canRunSuperAdminQueries || allUsers === null) {
     return (
       <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-        Super-admin access is required to manage PRO access.
+        Super-admin access is required to manage Pro access.
       </div>
     );
   }
@@ -129,10 +132,10 @@ export function ProManagementTab({
         });
       }
 
-      toast.success("PRO access revoked");
+      toast.success("Pro access revoked");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update PRO access",
+        toUserMessage(error, "Couldn't update Pro access. Try again."),
       );
     } finally {
       setPendingUserId(null);
@@ -150,7 +153,7 @@ export function ProManagementTab({
           id: grantModal.userId,
           enabled: true,
         });
-        toast.success("Permanent PRO granted");
+        toast.success("Permanent Pro granted");
       } else {
         const option = TEMP_PRO_DURATION_OPTIONS.find(
           (item) => item.value === grantOption,
@@ -161,7 +164,7 @@ export function ProManagementTab({
           expiresAt: getTempProExpirationFromValue(grantOption),
         });
         toast.success(
-          `Temporary PRO granted for ${option?.label ?? "selected duration"}`,
+          `Temporary Pro granted for ${option?.label ?? "selected duration"}`,
         );
       }
 
@@ -169,7 +172,7 @@ export function ProManagementTab({
       setGrantOption("1w");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to grant PRO access",
+        toUserMessage(error, "Couldn't grant Pro access. Try again."),
       );
     } finally {
       setPendingUserId(null);
@@ -193,7 +196,7 @@ export function ProManagementTab({
               {user.email}
             </span>
             <span
-              className={`shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-wider ${
+              className={`shrink-0 rounded px-1.5 py-0.5 font-mono text-[11px] font-bold tracking-wider ${
                 user.role === "ADMIN"
                   ? "bg-purple-500/20 text-purple-400"
                   : effectiveRole === "PRO"
@@ -206,11 +209,11 @@ export function ProManagementTab({
               {user.role === "ADMIN"
                 ? "ADMIN"
                 : hasTempGrant && !isPermanentPro
-                  ? "PRO TEMP"
+                  ? "Pro (temp)"
                   : effectiveRole}
             </span>
           </div>
-          <p className="mt-0.5 truncate font-mono text-xs text-slate-500">
+          <p className="mt-0.5 truncate font-mono text-xs text-slate-400">
             {user.clerkId.slice(0, 16)}...
           </p>
           {user.discordUsername && (
@@ -220,9 +223,9 @@ export function ProManagementTab({
           )}
           <p className="mt-1 text-xs text-slate-400">
             {isPermanentPro
-              ? "Purchased PRO"
+              ? "Purchased Pro"
               : hasTempGrant
-                ? `Temporary PRO until ${new Date(user.adminProExpiresAt!).toLocaleString()}`
+                ? `Temporary Pro until ${new Date(user.adminProExpiresAt!).toLocaleString()}`
                 : "Free tier"}
           </p>
         </div>
@@ -230,8 +233,8 @@ export function ProManagementTab({
         {user.role !== "ADMIN" && (
           <div className="ml-4 flex items-center gap-3">
             <div className="text-right">
-              <p className="text-xs font-medium text-white">PRO access</p>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-xs font-medium text-white">Pro access</p>
+              <p className="text-[11px] text-slate-400">
                 {isPermanentPro
                   ? "Purchased"
                   : hasTempGrant
@@ -264,21 +267,25 @@ export function ProManagementTab({
       <div className="space-y-4">
         <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
           Turn the switch on to open the grant modal. Turn it off to revoke the
-          current PRO access.
+          current Pro access.
         </div>
 
         <div className="relative">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <Search
+            className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
+            aria-hidden="true"
+          />
           <input
             type="text"
-            placeholder="Search by email, Discord username, clerkId, or ID..."
+            placeholder="Search by email, Discord username, clerkId, or ID…"
+            aria-label="Search by email, Discord username, clerkId, or ID"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus:bg-white/[0.07]"
+            className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus:bg-white/[0.07] focus-visible:ring-2 focus-visible:ring-cyan-400/40"
           />
         </div>
 
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-400">
           {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}
           {search && ` matching "${search}"`}
         </p>
@@ -293,7 +300,7 @@ export function ProManagementTab({
                 >
                   <div>
                     <h3 className="text-sm font-semibold text-amber-100">
-                      Temporary PRO
+                      Temporary Pro
                     </h3>
                     <p className="mt-0.5 text-xs text-amber-100/60">
                       {groupedUsers.temporaryPros.length} active temporary grant
@@ -317,7 +324,7 @@ export function ProManagementTab({
         )}
 
         <UserSection
-          title="Purchased PRO"
+          title="Purchased Pro"
           count={groupedUsers.purchasedPros.length}
         >
           {groupedUsers.purchasedPros.map(renderUserRow)}
@@ -328,7 +335,7 @@ export function ProManagementTab({
         </UserSection>
 
         {filteredUsers.length === 0 && (
-          <div className="py-12 text-center text-sm text-slate-500">
+          <div className="py-12 text-center text-sm text-slate-400">
             No users found.
           </div>
         )}
@@ -364,7 +371,7 @@ function UserSection({ title, count, children }: UserSectionProps) {
     <section className="space-y-2">
       <div className="flex items-end justify-between gap-3">
         <h3 className="text-sm font-semibold text-white">{title}</h3>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-slate-400">
           {count} user{count !== 1 ? "s" : ""}
         </span>
       </div>
@@ -396,27 +403,38 @@ function GrantProModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-2xl">
+      <FocusTrap
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="grant-pro-title"
+        onEscape={isLoading ? undefined : onCancel}
+        className="border-border bg-card text-card-foreground w-full max-w-lg rounded-2xl border p-6 shadow-2xl"
+      >
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">Grant PRO</h3>
+            <h3
+              id="grant-pro-title"
+              className="text-lg font-semibold text-white"
+            >
+              Grant Pro
+            </h3>
             <p className="mt-1 text-sm text-slate-400">{email}</p>
           </div>
           <button
             type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="cursor-pointer rounded-md p-1 text-slate-500 transition-colors hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="cursor-pointer rounded-md p-1 text-slate-400 transition-colors hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close modal"
           >
-            <XIcon className="h-4 w-4" />
+            <XIcon className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
         <div className="space-y-3">
           <GrantOptionButton
-            title="Permanent PRO"
-            description="Keeps PRO enabled until you revoke it."
+            title="Permanent Pro"
+            description="Keeps Pro enabled until you revoke it."
             selected={grantOption === "permanent"}
             onSelect={() => onGrantOptionChange("permanent")}
           />
@@ -448,13 +466,19 @@ function GrantProModal({
             className="flex flex-1 cursor-pointer items-center justify-center rounded-lg bg-yellow-500/20 py-2.5 text-sm font-medium text-yellow-300 transition-colors hover:bg-yellow-500/30 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoading ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              <>
+                <div
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                  aria-hidden="true"
+                />
+                <span className="sr-only">Granting Pro…</span>
+              </>
             ) : (
-              "Grant PRO"
+              "Grant Pro"
             )}
           </button>
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

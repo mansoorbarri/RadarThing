@@ -166,6 +166,8 @@
 }
 
 @theme {
+  /* One page background for every website page (the radar map has its own). */
+  --color-site: #02090d;
   --font-sans:
     var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -1346,10 +1348,33 @@ body {
 .animate-scale-in {
   animation: scaleIn 0.2s ease-out both;
 }
-.leaflet-aircraft-icon:focus,
-.leaflet-aircraft-icon:focus-visible {
+/* Mouse clicks on aircraft shouldn't leave a ring, but keyboard focus must
+   stay visible. */
+.leaflet-aircraft-icon:focus:not(:focus-visible) {
   outline: none !important;
   box-shadow: none !important;
+}
+
+.leaflet-aircraft-icon:focus-visible,
+.map-control-btn:focus-visible {
+  outline: 2px solid rgb(103 232 249) !important;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Respect the OS "reduce motion" setting site-wide. Everything stops except
+   spinners, which only signal "still working" and are slowed down instead. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-spin {
+    animation: spin 2s linear infinite !important;
+  }
 }
 
 .legal-copy a {

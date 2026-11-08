@@ -151,7 +151,7 @@ export function WhatsNew({ isMobile }: { isMobile: boolean }) {
             <h3 className="text-[13px] font-semibold tracking-wide text-slate-300 uppercase">
               What&apos;s New
             </h3>
-            <span className="rounded-full bg-slate-800/80 px-2 py-0.5 text-[10px] font-medium text-slate-500 tabular-nums">
+            <span className="rounded-full bg-slate-800/80 px-2 py-0.5 text-[11px] font-medium text-slate-400 tabular-nums">
               {currentMonthChangelog.length}{" "}
               {currentMonthChangelog.length === 1 ? "update" : "updates"}
             </span>
@@ -163,7 +163,7 @@ export function WhatsNew({ isMobile }: { isMobile: boolean }) {
                 <p className="text-[13px] font-medium text-slate-300">
                   No updates yet for {CURRENT_CHANGELOG_MONTH_LABEL}.
                 </p>
-                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                <p className="mt-1 text-xs leading-relaxed text-slate-400">
                   New changelog items will show up here as they ship.
                 </p>
               </div>
@@ -179,18 +179,18 @@ export function WhatsNew({ isMobile }: { isMobile: boolean }) {
                   <div className="pl-3">
                     <div className="mb-1.5 flex items-center gap-2">
                       <span
-                        className={`shrink-0 rounded-md px-1.5 py-px text-[10px] font-semibold tracking-wider uppercase ${typeBadge[entry.type].cls}`}
+                        className={`shrink-0 rounded-md px-1.5 py-px text-[11px] font-semibold tracking-wider uppercase ${typeBadge[entry.type].cls}`}
                       >
                         {typeBadge[entry.type].label}
                       </span>
-                      <span className="text-[11px] text-slate-600 tabular-nums">
+                      <span className="text-[11px] text-slate-400 tabular-nums">
                         {entry.date}
                       </span>
                     </div>
                     <p className="text-[13px] leading-snug font-medium text-slate-200">
                       {entry.title}
                     </p>
-                    <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                    <p className="mt-1 text-xs leading-relaxed text-slate-400">
                       {entry.description}
                     </p>
                   </div>

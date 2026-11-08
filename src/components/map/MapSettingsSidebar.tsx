@@ -26,7 +26,11 @@ export const MapSettingsSidebar = ({
 
   if (isMobile) {
     return (
-      <MobileSwipeSheet onClose={onClose} initialState="half">
+      <MobileSwipeSheet
+        label="Map settings"
+        onClose={onClose}
+        initialState="half"
+      >
         <div
           data-tour="map-settings-panel"
           className="min-h-full bg-[#050f14]/95 p-3 pb-4"

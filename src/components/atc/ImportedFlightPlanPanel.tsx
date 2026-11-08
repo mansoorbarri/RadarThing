@@ -1,13 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import {
-  Clock3,
-  FileJson,
-  MapPinned,
-  Route,
-  X,
-} from "lucide-react";
+import { Clock3, FileJson, MapPinned, Route, X } from "lucide-react";
 import {
   getImportedFlightPlanSummary,
   type ImportedFlightPlan,
@@ -30,7 +24,7 @@ function formatDuration(totalMinutes: number) {
 }
 
 function formatAltitude(value: number | null) {
-  if (value === null) return "N/A";
+  if (value === null) return "—";
   if (value >= 18000) return `FL${Math.round(value / 100)}`;
   return `${Math.round(value).toLocaleString()} ft`;
 }
@@ -85,12 +79,14 @@ export function ImportedFlightPlanPanel({
     <aside
       className={`pointer-events-auto fixed z-[10014] flex flex-col overflow-hidden border border-cyan-400/20 bg-black/86 text-slate-100 shadow-[0_20px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl ${
         isMobile
-          ? "top-16 right-3 left-3 bottom-20 rounded-2xl"
+          ? "top-16 right-3 bottom-20 left-3 rounded-2xl"
           : "top-20 right-6 max-h-[calc(100vh-6.5rem)] w-[380px] rounded-3xl"
       }`}
       style={{
         transform:
-          isMobile && dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
+          isMobile && dragOffset > 0
+            ? `translateY(${dragOffset}px)`
+            : undefined,
         transition: isDraggingHeader ? "none" : "transform 180ms ease-out",
       }}
     >
@@ -103,9 +99,9 @@ export function ImportedFlightPlanPanel({
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="mb-1 flex items-center gap-2 text-[11px] font-medium tracking-[0.28em] text-cyan-300 uppercase">
+            <div className="mb-1 flex items-center gap-2 text-[11px] font-medium tracking-[0.18em] text-cyan-300 uppercase">
               <Route size={14} strokeWidth={1.8} />
-              Imported Plan
+              Imported plan
             </div>
             <h2 className="truncate font-mono text-lg font-semibold text-white">
               {flightPlan.displayName}
@@ -127,27 +123,27 @@ export function ImportedFlightPlanPanel({
 
         <div className="mt-4 grid grid-cols-2 gap-2">
           <div className="rounded-2xl border border-white/8 bg-white/5 px-3 py-3">
-            <div className="mb-2 flex items-center gap-2 text-[11px] tracking-[0.22em] text-slate-400 uppercase">
+            <div className="mb-2 flex items-center gap-2 text-[11px] tracking-[0.18em] text-slate-400 uppercase">
               <MapPinned size={13} strokeWidth={1.8} />
               Distance
             </div>
             <div className="font-mono text-xl font-semibold text-white">
               {summary.totalDistanceNm.toFixed(0)} nm
             </div>
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-slate-400">
               {summary.totalDistanceKm.toFixed(0)} km total
             </div>
           </div>
 
           <div className="rounded-2xl border border-white/8 bg-white/5 px-3 py-3">
-            <div className="mb-2 flex items-center gap-2 text-[11px] tracking-[0.22em] text-slate-400 uppercase">
+            <div className="mb-2 flex items-center gap-2 text-[11px] tracking-[0.18em] text-slate-400 uppercase">
               <Clock3 size={13} strokeWidth={1.8} />
               Approx Time
             </div>
             <div className="font-mono text-xl font-semibold text-white">
               {formatDuration(summary.totalDurationMinutes)}
             </div>
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-slate-400">
               Uses plan speeds when present
             </div>
           </div>
@@ -155,10 +151,11 @@ export function ImportedFlightPlanPanel({
       </div>
 
       <div className="border-b border-white/6 px-4 py-3 text-xs text-slate-400">
-        Missing speed entries fall back to an altitude-based estimate, so time is approximate.
+        Missing speed entries fall back to an altitude-based estimate, so time
+        is approximate.
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 touch-pan-y">
+      <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-4 py-4">
         <div className="space-y-3 pb-4">
           {flightPlan.waypoints.map((waypoint, index) => {
             const leg = index > 0 ? summary.legs[index - 1] : null;
@@ -191,7 +188,7 @@ export function ImportedFlightPlanPanel({
                         <div className="truncate font-mono text-sm font-semibold text-white">
                           {waypoint.ident}
                         </div>
-                        <div className="text-[11px] tracking-[0.2em] text-slate-500 uppercase">
+                        <div className="text-[11px] tracking-[0.18em] text-slate-400 uppercase">
                           {waypoint.type}
                         </div>
                       </div>
@@ -202,10 +199,8 @@ export function ImportedFlightPlanPanel({
                       </div>
                     </div>
 
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-slate-500">
-                      <div>
-                        LAT {waypoint.lat.toFixed(4)}
-                      </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-slate-400">
+                      <div>LAT {waypoint.lat.toFixed(4)}</div>
                       <div className="text-right">
                         LON {waypoint.lon.toFixed(4)}
                       </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { toUserMessage } from "~/lib/user-message";
+import Link from "next/link";
 import { useState, useEffect, type ReactNode } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
@@ -53,7 +55,9 @@ function AccountNotices({ children }: { children: ReactNode }) {
   const { signOut, openUserProfile } = useClerk();
   const pathname = usePathname();
   const router = useRouter();
-  const isLegalPage = pathname === "/terms" || pathname === "/privacy";
+  // Banned users can still read the legal pages and reach support to appeal.
+  const isLegalPage =
+    pathname === "/terms" || pathname === "/privacy" || pathname === "/contact";
   useEffect(() => {
     if (status && visitStartedAt === null) setVisitStartedAt(status.checkedAt);
   }, [status, visitStartedAt]);
@@ -84,13 +88,21 @@ function AccountNotices({ children }: { children: ReactNode }) {
         <div className="w-full max-w-xl rounded-xl border border-red-400/25 bg-[#08151c] p-8 shadow-2xl">
           <Ban className="mb-6 text-red-300" size={32} />
           <p className="font-mono text-xs tracking-widest text-red-300">
-            ACCOUNT RESTRICTED
+            Account restricted
           </p>
           <h1 className="mt-3 text-3xl font-semibold">
-            Your RT account is banned
+            Your RadarThing account is banned
           </h1>
           <p className="mt-4 text-sm text-slate-300">
-            This ban remains in place until the super-admin lifts it.
+            This ban stays in place until a RadarThing admin lifts it. If you
+            think it&apos;s a mistake, you can{" "}
+            <Link
+              href="/contact"
+              className="text-cyan-200 underline underline-offset-4"
+            >
+              contact us to appeal
+            </Link>
+            .
           </p>
           <div className="my-6 border-l-2 border-red-400/50 pl-4">
             <p className="break-words whitespace-pre-wrap">
@@ -120,9 +132,7 @@ function AccountNotices({ children }: { children: ReactNode }) {
                   window.location.assign(await createPortalSession());
                 } catch (error) {
                   toast.error(
-                    error instanceof Error
-                      ? error.message
-                      : "Could not open billing",
+                    toUserMessage(error, "Couldn't open billing. Try again."),
                   );
                 } finally {
                   setBusy(false);
@@ -139,7 +149,7 @@ function AccountNotices({ children }: { children: ReactNode }) {
                 try {
                   downloadAccountDataExport(await getCurrentUserDataExport());
                 } catch {
-                  toast.error("Could not export account data");
+                  toast.error("Couldn't export your account data. Try again.");
                 } finally {
                   setBusy(false);
                 }
@@ -191,9 +201,7 @@ function AccountNotices({ children }: { children: ReactNode }) {
                 try {
                   await acknowledge({ id: warning.id });
                 } catch {
-                  toast.error(
-                    "Could not acknowledge warning. Please try again.",
-                  );
+                  toast.error("Couldn't acknowledge the warning. Try again.");
                 } finally {
                   setBusy(false);
                 }

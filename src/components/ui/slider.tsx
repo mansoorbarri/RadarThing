@@ -29,11 +29,10 @@ function Slider({
       </SliderPrimitive.Track>
       <SliderPrimitive.Thumb
         data-slot="slider-thumb"
-        className="block size-4 rounded-full border border-cyan-300/70 bg-black shadow-[0_0_0_3px_rgba(34,211,238,0.18)] transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+        className="block size-4 rounded-full border border-cyan-300/70 bg-black shadow-[0_0_0_3px_rgba(34,211,238,0.18)] transition-colors focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
       />
     </SliderPrimitive.Root>
   );
 }
 
 export { Slider };
-

@@ -162,21 +162,25 @@ export const MapGlobalStyles = ({ hideUi = false }: { hideUi?: boolean }) => (
     }
 
     /* Position all left-side controls below the header/search bar */
+    /* Clear the header, plus the notch where the radar runs edge to edge
+       (viewport-fit=cover on /radar). */
     .leaflet-top.leaflet-left {
-      top: 90px !important;
+      top: calc(90px + env(safe-area-inset-top, 0px)) !important;
+      left: env(safe-area-inset-left, 0px) !important;
     }
 
     @media (max-width: 767px) {
       .leaflet-top.leaflet-left {
-        top: 60px !important;
+        top: calc(60px + env(safe-area-inset-top, 0px)) !important;
       }
     }
 
     /* Keep the phone map reset action paired with the lower-right dock. */
     .map-control-btn.map-control-mobile-dock[data-control="reset-map-view"] {
       position: fixed !important;
-      right: 12px !important;
-      bottom: 64px !important;
+      right: max(12px, env(safe-area-inset-right, 0px)) !important;
+      /* Sits just above the dock, which also clears the home indicator. */
+      bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
       margin: 0 !important;
       width: 44px !important;
       height: 44px !important;

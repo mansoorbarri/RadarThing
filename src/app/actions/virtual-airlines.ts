@@ -1,5 +1,6 @@
 "use server";
 
+import { toUserMessage } from "~/lib/user-message";
 import { revalidatePath } from "next/cache";
 import { clerkClient } from "@clerk/nextjs/server";
 import { UTApi } from "uploadthing/server";
@@ -438,10 +439,12 @@ export async function registerVirtualAirline(data: {
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Failed to submit VA registration",
+      // ConvexError carries readable reasons (e.g. a taken prefix); anything
+      // else is an internal error the user can't act on.
+      error: toUserMessage(
+        error,
+        "Couldn't submit VA registration. Try again.",
+      ),
     };
   }
 }
@@ -744,7 +747,7 @@ export async function addVirtualAirlineMember(data: {
       success: false,
       error: message.includes("already assigned")
         ? "That pilot is already assigned to another VA"
-        : "Failed to add pilot to VA",
+        : "Couldn't add pilot to VA. Try again.",
     };
   }
 
@@ -753,7 +756,7 @@ export async function addVirtualAirlineMember(data: {
   revalidatePath("/radar");
 
   if (!member) {
-    return { success: false, error: "Failed to add pilot to VA" };
+    return { success: false, error: "Couldn't add pilot to VA. Try again." };
   }
 
   const refreshedMembers = await authedConvex.query(
@@ -896,7 +899,7 @@ export async function createVirtualAirlineAircraftImage(data: {
 
     return {
       success: false,
-      error: "Failed to upload VA aircraft image",
+      error: "Couldn't upload VA aircraft image. Try again.",
     };
   }
 }

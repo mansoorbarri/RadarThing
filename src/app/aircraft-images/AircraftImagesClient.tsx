@@ -1,8 +1,11 @@
 "use client";
 
+import { ModalShell } from "~/components/ui/modal-shell";
+import { SiteFooter } from "~/components/site/SiteFooter";
+import { SiteHeader } from "~/components/site/SiteHeader";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { Fragment, useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { FunctionReturnType } from "convex/server";
@@ -73,10 +76,18 @@ export default function AircraftImagesClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [airlineFilter, setAirlineFilter] = useState("");
   const [aircraftFilter, setAircraftFilter] = useState("");
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setAirlineFilter("");
+    setAircraftFilter("");
+  };
   const [pageSize, setPageSize] =
     useState<(typeof PAGE_SIZE_OPTIONS)[number]>(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [isMilitary, setIsMilitary] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<"airlineIata" | "airlineIcao" | "aircraftType", string>>
+  >({});
   const [formData, setFormData] = useState({
     airlineIata: "",
     airlineIcao: "",
@@ -85,6 +96,21 @@ export default function AircraftImagesClient({
     imageKey: "",
   });
 
+  // Clear a field's error as soon as the user fills it in.
+  useEffect(() => {
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const key of Object.keys(prev) as (keyof typeof prev)[]) {
+        if (formData[key]) {
+          delete next[key];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [formData]);
+
   // Track page view
   useEffect(() => {
     document.cookie = "radarthing_discord=; Max-Age=0; path=/; SameSite=Lax";
@@ -92,6 +118,14 @@ export default function AircraftImagesClient({
   }, []);
   const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
   const [error, setError] = useState<string | null>(null);
+
+  // Once every highlighted field is fixed, drop the summary banner too.
+  useEffect(() => {
+    if (Object.keys(fieldErrors).length === 0)
+      setError((current) =>
+        current === "Fix the highlighted fields." ? null : current,
+      );
+  }, [fieldErrors]);
   const [hasSelectedFile, setHasSelectedFile] = useState(false);
   const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const uploaderRef = useRef<ImageUploaderRef>(null);
@@ -221,36 +255,52 @@ export default function AircraftImagesClient({
     setFormData((prev) => ({ ...prev, imageUrl: url, imageKey: key }));
   };
 
+  type UploadField = "airlineIata" | "airlineIcao" | "aircraftType";
+
   async function handleUploadAndSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // Basic validation
+    // Validate every field up front and show each problem next to its field.
+    const errors: Partial<Record<UploadField, string>> = {};
+    if (isMilitary) {
+      if (!formData.airlineIcao)
+        errors.airlineIcao = "Enter the air force, e.g. USAF or PAF.";
+    } else {
+      if (!formData.airlineIata)
+        errors.airlineIata = "Enter the airline's 2-letter IATA code.";
+      else if (!/^[A-Z0-9]{2}$/.test(formData.airlineIata))
+        errors.airlineIata = "IATA codes are 2 characters, e.g. BA.";
+      if (!formData.airlineIcao)
+        errors.airlineIcao = "Enter the airline's 3-letter ICAO code.";
+      else if (!/^[A-Z]{3}$/.test(formData.airlineIcao))
+        errors.airlineIcao = "ICAO codes are 3 letters, e.g. BAW.";
+    }
+    if (!formData.aircraftType)
+      errors.aircraftType = "Enter the aircraft type, e.g. A320.";
+    setFieldErrors(errors);
+    const firstInvalid = (
+      ["airlineIata", "airlineIcao", "aircraftType"] as const
+    ).find((field) => errors[field]);
+    if (firstInvalid) {
+      setError("Fix the highlighted fields.");
+      const fieldIds: Partial<Record<UploadField, string>> = isMilitary
+        ? { airlineIcao: "upload-field-1", aircraftType: "upload-field-2" }
+        : {
+            airlineIata: "upload-field-3",
+            airlineIcao: "upload-field-4",
+            aircraftType: "upload-field-5",
+          };
+      const firstId = fieldIds[firstInvalid];
+      if (firstId)
+        requestAnimationFrame(() => document.getElementById(firstId)?.focus());
+      return;
+    }
     if (!hasSelectedFile) {
-      toast.error("Please select an image first");
-      setError("Please select an image first");
+      setError("Choose an image to upload.");
       return;
     }
     if (!rightsConfirmed) {
-      toast.error("Confirm that you have permission to share this image");
-      setError("You must confirm your rights before uploading");
-      return;
-    }
-    if (isMilitary) {
-      if (!formData.airlineIcao) {
-        toast.error("Air force name is required (e.g., USAF, PAF)");
-        setError("Air force name is required (e.g., USAF, PAF)");
-        return;
-      }
-    } else {
-      if (!formData.airlineIata || !formData.airlineIcao) {
-        toast.error("Both IATA and ICAO airline codes are required");
-        setError("Both IATA and ICAO airline codes are required");
-        return;
-      }
-    }
-    if (!formData.aircraftType) {
-      toast.error("Aircraft type is required");
-      setError("Aircraft type is required");
+      setError("Confirm that you have permission to share this image.");
       return;
     }
 
@@ -276,8 +326,8 @@ export default function AircraftImagesClient({
     });
 
     if (!validation.canUpload) {
-      setError(validation.error || "Validation failed");
-      toast.error(validation.error || "Validation failed");
+      setError(validation.error || "Couldn't check this upload. Try again.");
+      toast.error(validation.error || "Couldn't check this upload. Try again.");
       setSubmitStage("idle");
       return;
     }
@@ -288,7 +338,7 @@ export default function AircraftImagesClient({
 
     // uploadedDataRef.current is set by the onUploadComplete callback during triggerUpload
     if (!uploadSuccess || !uploadedDataRef.current) {
-      setError("Failed to upload image");
+      setError("Couldn't upload image. Try again.");
       setSubmitStage("idle");
       return;
     }
@@ -321,7 +371,7 @@ export default function AircraftImagesClient({
 
       // Close modal after animation
       setTimeout(() => {
-        toast.success("Image submitted for review!");
+        toast.success("Image submitted for review");
         setShowUploadModal(false);
         setSubmitStage("idle");
         setHasSelectedFile(false);
@@ -338,8 +388,8 @@ export default function AircraftImagesClient({
         });
       }, 1500);
     } else {
-      toast.error(result.error || "Failed to submit image");
-      setError(result.error || "Failed to submit image");
+      toast.error(result.error || "Couldn't submit image. Try again.");
+      setError(result.error || "Couldn't submit image. Try again.");
       setSubmitStage("idle");
     }
   }
@@ -350,21 +400,21 @@ export default function AircraftImagesClient({
         return (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            Validating...
+            Validating…
           </>
         );
       case "uploading":
         return (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            Uploading Image...
+            Uploading image…
           </>
         );
       case "submitting":
         return (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            Submitting...
+            Submitting…
           </>
         );
       case "success":
@@ -386,59 +436,43 @@ export default function AircraftImagesClient({
 
   const isProcessing = submitStage !== "idle" && submitStage !== "success";
 
-  return (
-    <div className="aircraft-images-theme-surface min-h-screen bg-black text-white">
-      <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
-          <button
-            onClick={() => router.push("/radar")}
-            className="cursor-pointer font-mono text-xl text-cyan-400"
-          >
-            <SystemThemeLogo alt="RadarThing" width={100} height={30} />
-          </button>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <button
-              onClick={() => router.push("/airport-charts")}
-              className="hidden cursor-pointer text-sm text-slate-400 transition-colors hover:text-white sm:block"
-            >
-              Airport Charts
-            </button>
-            <button
-              onClick={() => router.push("/admin")}
-              className="hidden cursor-pointer text-sm text-slate-400 transition-colors hover:text-white sm:block"
-            >
-              Admin
-            </button>
-            <button
-              onClick={() => router.push("/radar")}
-              className="hidden cursor-pointer text-sm text-slate-400 transition-colors hover:text-white sm:block"
-            >
-              Back to Map
-            </button>
-            {isSignedIn ? (
-              <UserAuth />
-            ) : (
-              <GoogleSignInButton>
-                <button className="cursor-pointer rounded-lg bg-cyan-500/20 px-3 py-2 text-sm font-medium text-cyan-400 transition-colors hover:bg-cyan-500/30 sm:px-4">
-                  Sign In
-                </button>
-              </GoogleSignInButton>
-            )}
-          </div>
-        </div>
-      </header>
+  const closeUploadModal = () => {
+    if (isProcessing) return; // Don't allow closing during processing
+    setFieldErrors({});
+    setShowUploadModal(false);
+    setError(null);
+    setSubmitStage("idle");
+    setHasSelectedFile(false);
+    setRightsConfirmed(false);
+    uploadedDataRef.current = null;
+    uploaderRef.current?.reset();
+    setFormData({
+      airlineIata: "",
+      airlineIcao: "",
+      aircraftType: "",
+      imageUrl: "",
+      imageKey: "",
+    });
+  };
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+  return (
+    <div className="aircraft-images-theme-surface bg-site min-h-screen text-white">
+      <SiteHeader tone="themed" />
+
+      <main
+        id="main-content"
+        className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12"
+      >
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 sm:px-4">
               <Plane className="h-4 w-4 text-cyan-400" />
               <span className="font-mono text-xs text-cyan-400 sm:text-sm">
-                AIRCRAFT GALLERY
+                Aircraft gallery
               </span>
             </div>
             <h1 className="text-3xl leading-tight font-bold text-white sm:text-4xl">
-              Aircraft Images
+              Aircraft images
             </h1>
             <p className="mt-2 max-w-xl text-slate-400">
               Browse aircraft images contributed by GeoFS pilots. Search by
@@ -449,16 +483,16 @@ export default function AircraftImagesClient({
           {isSignedIn ? (
             <button
               onClick={() => setShowUploadModal(true)}
-              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40 sm:w-auto sm:px-6"
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none sm:w-auto sm:px-6"
             >
               <Upload className="h-5 w-5" />
-              Upload Image
+              Upload image
             </button>
           ) : (
             <GoogleSignInButton>
-              <button className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40 sm:w-auto sm:px-6">
+              <button className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none sm:w-auto sm:px-6">
                 <Upload className="h-5 w-5" />
-                Sign in to Upload
+                Sign in to upload
               </button>
             </GoogleSignInButton>
           )}
@@ -469,11 +503,12 @@ export default function AircraftImagesClient({
           <div className="relative flex-1">
             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              type="text"
-              placeholder="Search by airline, aircraft type, discord username..."
+              type="search"
+              aria-label="Search aircraft images by airline, aircraft type or Discord username"
+              placeholder="Search by airline, aircraft type or Discord username…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50"
+              className="w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
             />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
@@ -484,14 +519,14 @@ export default function AircraftImagesClient({
               }
             >
               <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-                <SelectValue placeholder="All Airlines" />
+                <SelectValue placeholder="All airlines" />
               </SelectTrigger>
               <SelectContent className="border-white/10 bg-[#0d1218] text-white shadow-2xl">
                 <SelectItem
                   value={ALL_AIRLINES_VALUE}
                   className="font-mono text-sm text-slate-200 focus:bg-cyan-500/10 focus:text-cyan-200"
                 >
-                  All Airlines
+                  All airlines
                 </SelectItem>
                 {uniqueAirlines.map((airline) => (
                   <SelectItem
@@ -513,14 +548,14 @@ export default function AircraftImagesClient({
               }
             >
               <SelectTrigger className="h-11 w-full min-w-0 rounded-lg border-white/10 bg-black/40 font-mono text-sm text-white shadow-none hover:bg-white/[0.06] focus-visible:border-cyan-500/50 focus-visible:ring-cyan-500/20">
-                <SelectValue placeholder="All Aircraft" />
+                <SelectValue placeholder="All aircraft" />
               </SelectTrigger>
               <SelectContent className="border-white/10 bg-[#0d1218] text-white shadow-2xl">
                 <SelectItem
                   value={ALL_AIRCRAFT_VALUE}
                   className="font-mono text-sm text-slate-200 focus:bg-cyan-500/10 focus:text-cyan-200"
                 >
-                  All Aircraft
+                  All aircraft
                 </SelectItem>
                 {uniqueAircraftTypes.map((type) => (
                   <SelectItem
@@ -535,11 +570,7 @@ export default function AircraftImagesClient({
             </Select>
             {(searchQuery || airlineFilter || aircraftFilter) && (
               <button
-                onClick={() => {
-                  setSearchQuery("");
-                  setAirlineFilter("");
-                  setAircraftFilter("");
-                }}
+                onClick={clearAllFilters}
                 className="cursor-pointer rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-slate-400 transition-all hover:border-red-500/30 hover:text-red-400"
               >
                 Clear
@@ -558,7 +589,7 @@ export default function AircraftImagesClient({
                 : `Showing ${pageStart}-${pageEnd} of ${filteredImages.length} images`}
           </p>
           <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className="text-sm text-slate-500">Per page</span>
+            <span className="text-sm text-slate-400">Per page</span>
             <Select
               value={String(pageSize)}
               onValueChange={(value) =>
@@ -585,72 +616,105 @@ export default function AircraftImagesClient({
 
         {filteredImages.length === 0 && images.length > 0 ? (
           <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-            <Search className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+            <Search className="mx-auto mb-4 h-12 w-12 text-slate-400" />
             <h3 className="mb-2 text-xl font-semibold text-white">
-              No Results Found
+              No images match your filters
             </h3>
-            <p className="text-slate-400">
-              Try adjusting your search or filters
+            <p className="text-slate-300">
+              Try a different search, or clear the filters to see every image.
             </p>
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="mt-5 cursor-pointer rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-white hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+            >
+              Clear filters
+            </button>
           </div>
         ) : images.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-            <Plane className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+            <Plane className="mx-auto mb-4 h-12 w-12 text-slate-400" />
             <h3 className="mb-2 text-xl font-semibold text-white">
-              No Images Yet
+              No images yet
             </h3>
             <p className="text-slate-400">
-              Be the first to contribute an aircraft image!
+              Be the first to add one: upload a photo of an aircraft in its
+              airline&apos;s livery.
             </p>
+            {isSignedIn ? (
+              <button
+                type="button"
+                onClick={() => setShowUploadModal(true)}
+                className="mt-5 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
+              >
+                Upload an image
+              </button>
+            ) : (
+              <GoogleSignInButton>
+                <button
+                  type="button"
+                  className="mt-5 cursor-pointer rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
+                >
+                  Sign in to upload an image
+                </button>
+              </GoogleSignInButton>
+            )}
           </div>
         ) : (
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <AdSenseInContent placement="gallery-card" />
-              {paginatedImages.map((image) => (
-                <div
-                  key={image.id}
-                  className="group overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl transition-all hover:border-cyan-500/30"
-                >
-                  <div className="relative aspect-video">
-                    <Image
-                      src={image.imageUrl}
-                      alt={`${image.airlineIata || image.airlineIcao} ${image.aircraftType}`}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                  </div>
-                  <div className="p-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {image.airlineIata && (
-                        <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">
-                          {image.airlineIata}
-                        </span>
-                      )}
-                      {image.airlineIcao && (
-                        <span className="rounded-md bg-blue-500/20 px-2 py-1 font-mono text-sm font-bold text-blue-400">
-                          {image.airlineIcao}
-                        </span>
-                      )}
-                      <span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">
-                        {image.aircraftType}
-                      </span>
-                      <Check className="ml-auto h-4 w-4 text-emerald-400" />
+              {paginatedImages.map((image, index) => (
+                <Fragment key={image.id}>
+                  {/* Ad sits after the first row of real content, not first. */}
+                  {index === 3 && <AdSenseInContent placement="gallery-card" />}
+                  <div className="group overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl transition-all hover:border-cyan-500/30">
+                    <div className="relative aspect-video">
+                      <Image
+                        src={image.imageUrl}
+                        alt={`${[image.airlineIata, image.airlineIcao].find((code) => code && code !== "-") ?? "Aircraft"} ${image.aircraftType}`}
+                        fill
+                        sizes="(min-width: 1024px) 352px, (min-width: 640px) 50vw, 100vw"
+                        className="object-cover"
+                        // Community uploads can come from hosts outside
+                        // next.config's image allow-list, so skip the optimizer.
+                        unoptimized
+                      />
                     </div>
-                    {image.discordUsername && (
-                      <p className="mt-2 text-xs text-slate-500">
-                        Discord: {image.discordUsername}
-                      </p>
-                    )}
+                    <div className="p-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {image.airlineIata && image.airlineIata !== "-" && (
+                          <span className="rounded-md bg-cyan-500/20 px-2 py-1 font-mono text-sm font-bold text-cyan-400">
+                            {image.airlineIata}
+                          </span>
+                        )}
+                        {image.airlineIcao && image.airlineIcao !== "-" && (
+                          <span className="rounded-md bg-blue-500/20 px-2 py-1 font-mono text-sm font-bold text-blue-400">
+                            {image.airlineIcao}
+                          </span>
+                        )}
+                        <span className="rounded-md bg-white/10 px-2 py-1 font-mono text-sm text-white">
+                          {image.aircraftType}
+                        </span>
+                        <Check
+                          className="ml-auto h-4 w-4 text-emerald-400"
+                          aria-label="Approved"
+                          role="img"
+                        />
+                      </div>
+                      {image.discordUsername && (
+                        <p className="mt-2 text-xs text-slate-400">
+                          Discord: {image.discordUsername}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
+                </Fragment>
               ))}
             </div>
 
             {totalPages > 1 && (
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-400">
                   Page {currentPage} of {totalPages}
                 </p>
                 <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
@@ -716,400 +780,498 @@ export default function AircraftImagesClient({
           </div>
         </section>
       </main>
+      <SiteFooter />
 
       {/* Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-          <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/10 bg-[#0a0f14] p-6 shadow-2xl">
-            <button
-              onClick={() => {
-                if (isProcessing) return; // Don't allow closing during processing
-                setShowUploadModal(false);
-                setError(null);
-                setSubmitStage("idle");
-                setHasSelectedFile(false);
-                setRightsConfirmed(false);
-                uploadedDataRef.current = null;
-                uploaderRef.current?.reset();
-                setFormData({
-                  airlineIata: "",
-                  airlineIcao: "",
-                  aircraftType: "",
-                  imageUrl: "",
-                  imageKey: "",
-                });
-              }}
-              disabled={isProcessing}
-              className="absolute top-4 right-4 cursor-pointer text-slate-400 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              ✕
-            </button>
+        <ModalShell
+          labelledBy="aircraft-upload-title"
+          describedBy="aircraft-upload-desc"
+          onClose={closeUploadModal}
+          closeDisabled={isProcessing}
+        >
+          <button
+            type="button"
+            aria-label="Close upload dialog"
+            onClick={closeUploadModal}
+            disabled={isProcessing}
+            className="absolute top-4 right-4 cursor-pointer text-slate-400 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span aria-hidden="true">✕</span>
+          </button>
 
-            <h2 className="mb-2 text-xl font-bold text-white">
-              Upload Aircraft Image
-            </h2>
-            <p className="mb-6 text-sm text-slate-400">
-              Your image will be reviewed by our team before appearing in the
-              gallery.
-            </p>
+          <h2
+            id="aircraft-upload-title"
+            className="mb-2 text-xl font-bold text-white"
+          >
+            Upload aircraft image
+          </h2>
+          <p id="aircraft-upload-desc" className="mb-6 text-sm text-slate-300">
+            Your image will be reviewed by our team before appearing in the
+            gallery.
+          </p>
 
-            <div className="mb-6 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4">
-              <div className="flex gap-3">
-                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
-                <div>
-                  <h3 className="text-sm font-semibold text-amber-100">
-                    Image upload rules
-                  </h3>
-                  <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm leading-5 text-amber-50/90 marker:font-mono marker:text-amber-300">
-                    <li>Enter the base aircraft model, not a variant.</li>
-                    <li>Use a high-quality image.</li>
-                    <li>
-                      Show the complete aircraft without cropping it, with the
-                      livery clearly visible.
-                    </li>
-                    <li>
-                      Make sure the ICAO, IATA, and aircraft name are correct
-                      and match the aircraft in the image.
-                    </li>
-                    <li>Check that the image is not already uploaded.</li>
-                    <li>
-                      Use a real airline; military uploads must use the correct
-                      air force.
-                    </li>
-                  </ol>
-                </div>
+          <div className="mb-6 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4">
+            <div className="flex gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
+              <div>
+                <h3 className="text-sm font-semibold text-amber-100">
+                  Image upload rules
+                </h3>
+                <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm leading-5 text-amber-50/90 marker:font-mono marker:text-amber-300">
+                  <li>Enter the base aircraft model, not a variant.</li>
+                  <li>Use a high-quality image.</li>
+                  <li>
+                    Show the complete aircraft without cropping it, with the
+                    livery clearly visible.
+                  </li>
+                  <li>
+                    Make sure the ICAO, IATA, and aircraft name are correct and
+                    match the aircraft in the image.
+                  </li>
+                  <li>Check that the image is not already uploaded.</li>
+                  <li>
+                    Use a real airline; military uploads must use the correct
+                    air force.
+                  </li>
+                </ol>
               </div>
             </div>
+          </div>
 
-            <form onSubmit={handleUploadAndSubmit} className="space-y-4">
-              {error && (
-                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                  {error}
-                </div>
-              )}
-
-              <label className="flex cursor-pointer items-center gap-3">
-                <div
-                  className={`relative h-5 w-9 rounded-full transition-colors ${isMilitary ? "bg-cyan-500/40" : "bg-white/12"}`}
-                  onClick={() => {
-                    setIsMilitary(!isMilitary);
-                    setFormData((prev) => ({
-                      ...prev,
-                      airlineIata: "",
-                      airlineIcao: "",
-                    }));
-                  }}
-                >
-                  <div
-                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-slate-200 transition-[left] ${isMilitary ? "left-[18px]" : "left-0.5"}`}
-                  />
-                </div>
-                <span className="font-mono text-xs text-slate-400">
-                  MILITARY AIRCRAFT
-                </span>
-              </label>
-
-              {isMilitary ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-2 block font-mono text-xs text-slate-400">
-                      AIR FORCE *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.airlineIcao}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          airlineIcao: e.target.value.toUpperCase(),
-                        })
-                      }
-                      placeholder="e.g., USAF"
-                      maxLength={10}
-                      required
-                      disabled={isProcessing}
-                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block font-mono text-xs text-slate-400">
-                      AIRCRAFT *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.aircraftType}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          aircraftType: e.target.value.toUpperCase(),
-                        })
-                      }
-                      placeholder="F16"
-                      maxLength={10}
-                      required
-                      disabled={isProcessing}
-                      title="Use base model only (e.g., F16, C130)"
-                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="mb-2 block font-mono text-xs text-slate-400">
-                      IATA CODE *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.airlineIata}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          airlineIata: e.target.value.toUpperCase(),
-                        })
-                      }
-                      placeholder="e.g., EK"
-                      maxLength={2}
-                      required
-                      disabled={isProcessing}
-                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block font-mono text-xs text-slate-400">
-                      ICAO CODE *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.airlineIcao}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          airlineIcao: e.target.value.toUpperCase(),
-                        })
-                      }
-                      placeholder="e.g., UAE"
-                      maxLength={4}
-                      required
-                      disabled={isProcessing}
-                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block font-mono text-xs text-slate-400">
-                      AIRCRAFT *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.aircraftType}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          aircraftType: e.target.value.toUpperCase(),
-                        })
-                      }
-                      placeholder="B777"
-                      maxLength={10}
-                      required
-                      disabled={isProcessing}
-                      title="Use base model only (e.g., B777, A350) — not variants"
-                      className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
-                    />
-                  </div>
-                </div>
-              )}
-              <p className="text-xs text-slate-500">
-                {isMilitary
-                  ? "Enter the air force name (e.g., USAF, PAF, RAF) and aircraft model."
-                  : "Aircraft should be base model only, not the varient. Like: B777. Not: B77W."}
-              </p>
-
-              <div>
-                <label className="mb-2 block font-mono text-xs text-slate-400">
-                  SELECT IMAGE
-                </label>
-                <ImageUploader
-                  ref={uploaderRef}
-                  airlineIata={isMilitary ? "MIL" : formData.airlineIata}
-                  airlineIcao={formData.airlineIcao}
-                  aircraftType={formData.aircraftType}
-                  externalUploadTrigger={true}
-                  onUploadComplete={handleUploadComplete}
-                  onFileSelected={setHasSelectedFile}
-                  onError={(err) => {
-                    setError(err);
-                    setSubmitStage("idle");
-                  }}
-                />
-              </div>
-
-              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-5 text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={rightsConfirmed}
-                  onChange={(event) => setRightsConfirmed(event.target.checked)}
-                  required
-                  disabled={isProcessing}
-                  className="mt-0.5 h-4 w-4 accent-cyan-400"
-                />
-                <span>
-                  I created this image or have permission to upload and share
-                  it, and it follows the{" "}
-                  <Link
-                    href="/terms"
-                    target="_blank"
-                    className="text-cyan-300 hover:underline"
-                  >
-                    submission terms
-                  </Link>
-                  .
-                </span>
-              </label>
-
-              {/* Success overlay is rendered outside the form */}
-
-              <button
-                type="submit"
-                disabled={
-                  isProcessing ||
-                  !hasSelectedFile ||
-                  !rightsConfirmed ||
-                  submitStage === "success"
-                }
-                className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
-                  submitStage === "success"
-                    ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/20"
-                    : "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-cyan-500/20 hover:shadow-cyan-500/40"
-                }`}
+          <form
+            onSubmit={handleUploadAndSubmit}
+            noValidate
+            className="space-y-4"
+          >
+            {error && (
+              <div
+                role="alert"
+                className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
               >
-                {getButtonContent()}
-              </button>
-            </form>
-
-            {/* Success Overlay — covers entire modal */}
-            {submitStage === "success" && (
-              <div className="absolute inset-0 z-50 flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-[#0a0f14]">
-                {/* Radar sweep glow */}
-                <div className="pointer-events-none absolute inset-0">
-                  <div
-                    className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 animate-[radarSweep_2s_linear_infinite] rounded-full opacity-30"
-                    style={{
-                      background:
-                        "conic-gradient(from 0deg, transparent 0deg, rgba(34,211,238,0.4) 40deg, transparent 80deg)",
-                    }}
-                  />
-                </div>
-
-                {/* Concentric radar rings */}
-                <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                  <div className="absolute -inset-12 rounded-full border border-cyan-500/10" />
-                  <div className="absolute -inset-20 rounded-full border border-cyan-500/[0.06]" />
-                  <div className="absolute -inset-28 rounded-full border border-cyan-500/[0.03]" />
-                </div>
-
-                {/* Animated plane flyover */}
-                <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                  <div
-                    className="absolute top-[38%] animate-[planePass_1.8s_cubic-bezier(0.4,0,0.2,1)_0.2s_forwards]"
-                    style={{ left: "-40px", opacity: 0 }}
-                  >
-                    <Plane className="h-5 w-5 -rotate-12 text-cyan-400/70" />
-                  </div>
-                  {/* Contrail */}
-                  <div className="absolute top-[38%] mt-2.5 h-px w-0 animate-[contrail_1.8s_cubic-bezier(0.4,0,0.2,1)_0.2s_forwards] bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent" />
-                </div>
-
-                {/* Center content */}
-                <div
-                  className="relative z-10 flex animate-[fadeInUp_0.5s_ease-out_forwards] flex-col items-center"
-                  style={{ opacity: 0 }}
-                >
-                  {/* Ping rings */}
-                  <div className="relative mb-5">
-                    <div className="absolute inset-0 animate-[ping_1.2s_ease-out_forwards] rounded-full border-2 border-cyan-400/40" />
-                    <div className="absolute inset-0 animate-[ping_1.2s_ease-out_0.25s_forwards] rounded-full border border-cyan-400/20" />
-                    <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-cyan-500/30 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 shadow-[0_0_40px_rgba(34,211,238,0.15)]">
-                      <Plane className="h-9 w-9 text-cyan-400" />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                    <span className="text-lg font-semibold text-emerald-400">
-                      Cleared for Review!
-                    </span>
-                  </div>
-                  <p className="mt-1.5 text-sm text-slate-500">
-                    Your image is now in the queue
-                  </p>
-                </div>
-
-                <style jsx>{`
-                  @keyframes radarSweep {
-                    from {
-                      transform: translate(-50%, -50%) rotate(0deg);
-                    }
-                    to {
-                      transform: translate(-50%, -50%) rotate(360deg);
-                    }
-                  }
-                  @keyframes planePass {
-                    0% {
-                      transform: translateX(0);
-                      opacity: 0;
-                    }
-                    10% {
-                      opacity: 0.7;
-                    }
-                    90% {
-                      opacity: 0.7;
-                    }
-                    100% {
-                      transform: translateX(calc(100vw + 80px));
-                      opacity: 0;
-                    }
-                  }
-                  @keyframes contrail {
-                    0% {
-                      width: 0;
-                      opacity: 0;
-                    }
-                    10% {
-                      opacity: 0.5;
-                    }
-                    100% {
-                      width: 100%;
-                      opacity: 0;
-                    }
-                  }
-                  @keyframes ping {
-                    0% {
-                      transform: scale(1);
-                      opacity: 1;
-                    }
-                    100% {
-                      transform: scale(2.8);
-                      opacity: 0;
-                    }
-                  }
-                  @keyframes fadeInUp {
-                    0% {
-                      transform: translateY(12px);
-                      opacity: 0;
-                    }
-                    100% {
-                      transform: translateY(0);
-                      opacity: 1;
-                    }
-                  }
-                `}</style>
+                {error}
               </div>
             )}
-          </div>
-        </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isMilitary}
+                aria-labelledby="military-aircraft-label"
+                className={`relative h-5 w-9 cursor-pointer rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none ${isMilitary ? "bg-cyan-500/40" : "bg-white/12"}`}
+                onClick={() => {
+                  setIsMilitary(!isMilitary);
+                  setFormData((prev) => ({
+                    ...prev,
+                    airlineIata: "",
+                    airlineIcao: "",
+                  }));
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-slate-200 transition-[left] ${isMilitary ? "left-[18px]" : "left-0.5"}`}
+                />
+              </button>
+              <span
+                id="military-aircraft-label"
+                className="font-mono text-xs text-slate-300"
+              >
+                Military aircraft
+              </span>
+            </div>
+
+            {isMilitary ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="upload-field-1"
+                    className="mb-2 block font-mono text-xs text-slate-300"
+                  >
+                    Air force *
+                  </label>
+                  <input
+                    id="upload-field-1"
+                    aria-invalid={Boolean(fieldErrors.airlineIcao)}
+                    aria-describedby={
+                      fieldErrors.airlineIcao
+                        ? "upload-field-1-error"
+                        : undefined
+                    }
+                    type="text"
+                    value={formData.airlineIcao}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        airlineIcao: e.target.value.toUpperCase(),
+                      })
+                    }
+                    placeholder="e.g., USAF"
+                    maxLength={10}
+                    required
+                    disabled={isProcessing}
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50 aria-[invalid=true]:border-red-400/70"
+                  />
+                  {fieldErrors.airlineIcao && (
+                    <p
+                      id="upload-field-1-error"
+                      className="mt-1 text-xs text-red-300"
+                    >
+                      {fieldErrors.airlineIcao}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="upload-field-2"
+                    className="mb-2 block font-mono text-xs text-slate-300"
+                  >
+                    Aircraft *
+                  </label>
+                  <input
+                    id="upload-field-2"
+                    aria-invalid={Boolean(fieldErrors.aircraftType)}
+                    aria-describedby={
+                      fieldErrors.aircraftType
+                        ? "upload-field-2-error"
+                        : undefined
+                    }
+                    type="text"
+                    value={formData.aircraftType}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        aircraftType: e.target.value.toUpperCase(),
+                      })
+                    }
+                    placeholder="F16"
+                    maxLength={10}
+                    required
+                    disabled={isProcessing}
+                    title="Use base model only (e.g., F16, C130)"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50 aria-[invalid=true]:border-red-400/70"
+                  />
+                  {fieldErrors.aircraftType && (
+                    <p
+                      id="upload-field-2-error"
+                      className="mt-1 text-xs text-red-300"
+                    >
+                      {fieldErrors.aircraftType}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div>
+                  <label
+                    htmlFor="upload-field-3"
+                    className="mb-2 block font-mono text-xs text-slate-300"
+                  >
+                    IATA code *
+                  </label>
+                  <input
+                    id="upload-field-3"
+                    aria-invalid={Boolean(fieldErrors.airlineIata)}
+                    aria-describedby={
+                      fieldErrors.airlineIata
+                        ? "upload-field-3-error"
+                        : undefined
+                    }
+                    type="text"
+                    value={formData.airlineIata}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        airlineIata: e.target.value.toUpperCase(),
+                      })
+                    }
+                    placeholder="e.g., EK"
+                    maxLength={2}
+                    required
+                    disabled={isProcessing}
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50 aria-[invalid=true]:border-red-400/70"
+                  />
+                  {fieldErrors.airlineIata && (
+                    <p
+                      id="upload-field-3-error"
+                      className="mt-1 text-xs text-red-300"
+                    >
+                      {fieldErrors.airlineIata}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="upload-field-4"
+                    className="mb-2 block font-mono text-xs text-slate-300"
+                  >
+                    ICAO code *
+                  </label>
+                  <input
+                    id="upload-field-4"
+                    aria-invalid={Boolean(fieldErrors.airlineIcao)}
+                    aria-describedby={
+                      fieldErrors.airlineIcao
+                        ? "upload-field-4-error"
+                        : undefined
+                    }
+                    type="text"
+                    value={formData.airlineIcao}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        airlineIcao: e.target.value.toUpperCase(),
+                      })
+                    }
+                    placeholder="e.g., UAE"
+                    maxLength={3}
+                    required
+                    disabled={isProcessing}
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50 aria-[invalid=true]:border-red-400/70"
+                  />
+                  {fieldErrors.airlineIcao && (
+                    <p
+                      id="upload-field-4-error"
+                      className="mt-1 text-xs text-red-300"
+                    >
+                      {fieldErrors.airlineIcao}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="upload-field-5"
+                    className="mb-2 block font-mono text-xs text-slate-300"
+                  >
+                    Aircraft *
+                  </label>
+                  <input
+                    id="upload-field-5"
+                    aria-invalid={Boolean(fieldErrors.aircraftType)}
+                    aria-describedby={
+                      fieldErrors.aircraftType
+                        ? "upload-field-5-error"
+                        : undefined
+                    }
+                    type="text"
+                    value={formData.aircraftType}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        aircraftType: e.target.value.toUpperCase(),
+                      })
+                    }
+                    placeholder="B777"
+                    maxLength={10}
+                    required
+                    disabled={isProcessing}
+                    title="Use base model only (e.g., B777, A350) — not variants"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-all outline-none focus:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50 aria-[invalid=true]:border-red-400/70"
+                  />
+                  {fieldErrors.aircraftType && (
+                    <p
+                      id="upload-field-5-error"
+                      className="mt-1 text-xs text-red-300"
+                    >
+                      {fieldErrors.aircraftType}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+            <p className="text-xs text-slate-400">
+              {isMilitary
+                ? "Enter the air force name (e.g., USAF, PAF, RAF) and aircraft model."
+                : "Aircraft should be base model only, not the varient. Like: B777. Not: B77W."}
+            </p>
+
+            <div>
+              <p className="mb-2 block font-mono text-xs text-slate-400">
+                Select image
+              </p>
+              <ImageUploader
+                ref={uploaderRef}
+                airlineIata={isMilitary ? "MIL" : formData.airlineIata}
+                airlineIcao={formData.airlineIcao}
+                aircraftType={formData.aircraftType}
+                externalUploadTrigger={true}
+                onUploadComplete={handleUploadComplete}
+                onFileSelected={setHasSelectedFile}
+                onError={(err) => {
+                  setError(err);
+                  setSubmitStage("idle");
+                }}
+              />
+            </div>
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-5 text-slate-300">
+              <input
+                type="checkbox"
+                checked={rightsConfirmed}
+                onChange={(event) => setRightsConfirmed(event.target.checked)}
+                required
+                disabled={isProcessing}
+                className="mt-0.5 h-4 w-4 accent-cyan-400"
+              />
+              <span>
+                I created this image or have permission to upload and share it,
+                and it follows the{" "}
+                <Link
+                  href="/terms"
+                  target="_blank"
+                  className="text-cyan-300 hover:underline"
+                >
+                  submission terms
+                </Link>
+                .
+              </span>
+            </label>
+
+            {/* Success overlay is rendered outside the form */}
+
+            <button
+              type="submit"
+              disabled={
+                isProcessing ||
+                !hasSelectedFile ||
+                !rightsConfirmed ||
+                submitStage === "success"
+              }
+              className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-slate-950 shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+                submitStage === "success"
+                  ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/20"
+                  : "bg-cyan-400 text-slate-950 shadow-cyan-500/20 hover:bg-cyan-300 hover:shadow-cyan-500/40"
+              }`}
+            >
+              {getButtonContent()}
+            </button>
+          </form>
+
+          {/* Success Overlay — covers entire modal */}
+          {submitStage === "success" && (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-[#0a0f14]">
+              {/* Radar sweep glow */}
+              <div className="pointer-events-none absolute inset-0">
+                <div
+                  className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 animate-[radarSweep_2s_linear_infinite] rounded-full opacity-30"
+                  style={{
+                    background:
+                      "conic-gradient(from 0deg, transparent 0deg, rgba(34,211,238,0.4) 40deg, transparent 80deg)",
+                  }}
+                />
+              </div>
+
+              {/* Concentric radar rings */}
+              <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                <div className="absolute -inset-12 rounded-full border border-cyan-500/10" />
+                <div className="absolute -inset-20 rounded-full border border-cyan-500/[0.06]" />
+                <div className="absolute -inset-28 rounded-full border border-cyan-500/[0.03]" />
+              </div>
+
+              {/* Animated plane flyover */}
+              <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div
+                  className="absolute top-[38%] animate-[planePass_1.8s_cubic-bezier(0.4,0,0.2,1)_0.2s_forwards]"
+                  style={{ left: "-40px", opacity: 0 }}
+                >
+                  <Plane className="h-5 w-5 -rotate-12 text-cyan-400/70" />
+                </div>
+                {/* Contrail */}
+                <div className="absolute top-[38%] mt-2.5 h-px w-0 animate-[contrail_1.8s_cubic-bezier(0.4,0,0.2,1)_0.2s_forwards] bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent" />
+              </div>
+
+              {/* Center content */}
+              <div
+                className="relative z-10 flex animate-[fadeInUp_0.5s_ease-out_forwards] flex-col items-center"
+                style={{ opacity: 0 }}
+              >
+                {/* Ping rings */}
+                <div className="relative mb-5">
+                  <div className="absolute inset-0 animate-[ping_1.2s_ease-out_forwards] rounded-full border-2 border-cyan-400/40" />
+                  <div className="absolute inset-0 animate-[ping_1.2s_ease-out_0.25s_forwards] rounded-full border border-cyan-400/20" />
+                  <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-cyan-500/30 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 shadow-[0_0_40px_rgba(34,211,238,0.15)]">
+                    <Plane className="h-9 w-9 text-cyan-400" />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <span className="text-lg font-semibold text-emerald-400">
+                    Cleared for review!
+                  </span>
+                </div>
+                <p className="mt-1.5 text-sm text-slate-400">
+                  Your image is now in the queue
+                </p>
+              </div>
+
+              <style jsx>{`
+                @keyframes radarSweep {
+                  from {
+                    transform: translate(-50%, -50%) rotate(0deg);
+                  }
+                  to {
+                    transform: translate(-50%, -50%) rotate(360deg);
+                  }
+                }
+                @keyframes planePass {
+                  0% {
+                    transform: translateX(0);
+                    opacity: 0;
+                  }
+                  10% {
+                    opacity: 0.7;
+                  }
+                  90% {
+                    opacity: 0.7;
+                  }
+                  100% {
+                    transform: translateX(calc(100vw + 80px));
+                    opacity: 0;
+                  }
+                }
+                @keyframes contrail {
+                  0% {
+                    width: 0;
+                    opacity: 0;
+                  }
+                  10% {
+                    opacity: 0.5;
+                  }
+                  100% {
+                    width: 100%;
+                    opacity: 0;
+                  }
+                }
+                @keyframes ping {
+                  0% {
+                    transform: scale(1);
+                    opacity: 1;
+                  }
+                  100% {
+                    transform: scale(2.8);
+                    opacity: 0;
+                  }
+                }
+                @keyframes fadeInUp {
+                  0% {
+                    transform: translateY(12px);
+                    opacity: 0;
+                  }
+                  100% {
+                    transform: translateY(0);
+                    opacity: 1;
+                  }
+                }
+              `}</style>
+            </div>
+          )}
+        </ModalShell>
       )}
     </div>
   );

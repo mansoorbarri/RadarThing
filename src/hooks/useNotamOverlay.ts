@@ -32,7 +32,7 @@ export const useNotamOverlay = (icao: string | undefined, isPro = false) => {
         const res = await fetch(
           `/api/weather/notams?icao=${encodeURIComponent(icao)}`,
         );
-        if (!res.ok) throw new Error("Failed to fetch NOTAMs");
+        if (!res.ok) throw new Error("Couldn't load NOTAMs. Try again.");
 
         const data = await res.json();
         const notams: Notam[] = (data.features || []).map((f: any) => ({

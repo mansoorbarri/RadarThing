@@ -50,9 +50,7 @@ export function AtcPlayer({ icao, onClose, onlineAtc }: AtcPlayerProps) {
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Radio className="h-4 w-4 text-green-400" />
-            <span className="font-mono text-sm text-green-400">
-              {icao} ATC
-            </span>
+            <span className="font-mono text-sm text-green-400">{icao} ATC</span>
           </div>
           <button
             onClick={onClose}
@@ -83,9 +81,7 @@ export function AtcPlayer({ icao, onClose, onlineAtc }: AtcPlayerProps) {
               const label =
                 covered.length === POSITIONS_ORDER.length
                   ? "All Positions"
-                  : covered
-                      .map((p) => POSITION_LABELS[p] ?? p)
-                      .join(" + ");
+                  : covered.map((p) => POSITION_LABELS[p] ?? p).join(" + ");
 
               return (
                 <div
@@ -95,7 +91,7 @@ export function AtcPlayer({ icao, onClose, onlineAtc }: AtcPlayerProps) {
                   <span className="text-xs text-green-300/80">
                     {controller.user}
                   </span>
-                  <span className="text-[10px] font-medium text-green-400/60">
+                  <span className="text-[11px] font-medium text-green-400/60">
                     {label}
                   </span>
                 </div>
@@ -115,7 +111,7 @@ export function AtcPlayer({ icao, onClose, onlineAtc }: AtcPlayerProps) {
           Join Discord ATC
         </a>
 
-        <p className="mt-3 text-center text-[10px] text-slate-500">
+        <p className="mt-3 text-center text-[11px] text-slate-400">
           Opens Discord voice channel in a new tab
         </p>
       </div>
@@ -151,7 +147,7 @@ export function AtcPlayer({ icao, onClose, onlineAtc }: AtcPlayerProps) {
       {/* Content */}
       <div className="mb-4 flex flex-col items-center rounded-xl bg-gradient-to-b from-cyan-500/10 to-transparent py-6">
         <Headphones className="mb-3 h-10 w-10 text-cyan-400" />
-        <p className="mb-1 text-sm font-medium text-white">Live ATC Audio</p>
+        <p className="mb-1 text-sm font-medium text-white">Live ATC audio</p>
         <p className="text-xs text-slate-400">Listen to air traffic control</p>
       </div>
 
@@ -164,7 +160,7 @@ export function AtcPlayer({ icao, onClose, onlineAtc }: AtcPlayerProps) {
         Open LiveATC for {icao}
       </button>
 
-      <p className="mt-3 text-center text-[10px] text-slate-500">
+      <p className="mt-3 text-center text-[11px] text-slate-400">
         Opens in a popup window with all available feeds
       </p>
     </div>

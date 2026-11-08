@@ -53,6 +53,7 @@ import { useNotamOverlay } from "~/hooks/useNotamOverlay";
 import { useWeatherOverlayLayer } from "~/hooks/useWeatherOverlayLayer";
 import { useWaypointOverlayLayer } from "~/hooks/useWaypointOverlayLayer";
 import { MetarPanel } from "./MetarPanel";
+import { MobileSwipeSheet } from "~/components/ui/MobileSwipeSheet";
 import { RadarSettings } from "~/components/atc/radarSettings";
 import { MapSettingsSidebar } from "~/components/map/MapSettingsSidebar";
 import { Analytics } from "~/lib/analytics";
@@ -189,6 +190,9 @@ interface MapComponentProps {
   onConflictReview?: (aircrafts: PositionUpdate[]) => void;
   onResetMapView?: () => void;
   hideUi?: boolean;
+  /** Phones: show the weather panel in a bottom sheet. */
+  showMobileWeather?: boolean;
+  onCloseMobileWeather?: () => void;
   importedFlightPlan?: ImportedFlightPlan | null;
   flightDisplayModeRequest?: FlightDisplayMode;
   onFlightDisplayModeChange?: (mode: FlightDisplayMode) => void;
@@ -236,6 +240,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onConflictReview,
   onResetMapView,
   hideUi = false,
+  showMobileWeather = false,
+  onCloseMobileWeather,
   importedFlightPlan = null,
   flightDisplayModeRequest,
   onFlightDisplayModeChange,
@@ -1093,10 +1099,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
     mapRefs.mapReady,
   ]);
 
-  const metar = useMetarOverlay(
-    mapRefs.mapInstance,
-    icaoInput || selectedAirport?.icao,
-  );
+  const {
+    metar,
+    status: metarStatus,
+    statusIcao: metarStatusIcao,
+    retry: retryMetar,
+  } = useMetarOverlay(mapRefs.mapInstance, icaoInput || selectedAirport?.icao);
 
   const { atis } = useAtisOverlay(icaoInput || selectedAirport?.icao);
 
@@ -1433,13 +1441,41 @@ const MapComponent: React.FC<MapComponentProps> = ({
         </div>
       ) : null}
 
-      {/* Hide METAR panel on mobile */}
+      {/* Phones: METAR, ATIS and NOTAMs in a bottom sheet from the dock. */}
+      {isMobile && !hideUi && showMobileWeather && (
+        <MobileSwipeSheet
+          label="Airport weather"
+          fitContent
+          onClose={() => onCloseMobileWeather?.()}
+        >
+          <div className="px-4 pb-6">
+            <MetarPanel
+              variant="sheet"
+              icaoInput={icaoInput}
+              onChange={setIcaoInput}
+              selectedAirportIcao={selectedAirport?.icao}
+              metarText={metar?.raw || null}
+              metarStatus={metarStatus}
+              metarIcao={metarStatusIcao}
+              onRetryMetar={retryMetar}
+              atisText={atis?.datis || null}
+              atisCode={atis?.code || null}
+              notams={notamData?.notams || null}
+              notamCount={notamData?.count || 0}
+              isPro={isProUser}
+            />
+          </div>
+        </MobileSwipeSheet>
+      )}
       {!isMobile && !hideUi && (
         <MetarPanel
           icaoInput={icaoInput}
           onChange={setIcaoInput}
           selectedAirportIcao={selectedAirport?.icao}
           metarText={metar?.raw || null}
+          metarStatus={metarStatus}
+          metarIcao={metarStatusIcao}
+          onRetryMetar={retryMetar}
           atisText={atis?.datis || null}
           atisCode={atis?.code || null}
           notams={notamData?.notams || null}
@@ -1466,7 +1502,7 @@ function SeverityStat({
     <div
       className={`rounded-lg border px-2 py-1.5 text-center font-mono ${tone}`}
     >
-      <p className="text-[9px] tracking-[0.18em] uppercase">{label}</p>
+      <p className="text-[11px] tracking-[0.18em] uppercase">{label}</p>
       <p className="text-sm font-bold">{count}</p>
     </div>
   );
@@ -1503,11 +1539,11 @@ function ConflictMonitorPanel({
       <div className="relative">
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <p className="font-mono text-[10px] tracking-[0.2em] text-cyan-400/80 uppercase">
-              Conflict Monitor
-            </p>
-            <p className="font-mono text-xs text-white/60">
-              Live CPA prediction + review log
+            <h3 className="text-xs font-semibold tracking-[0.08em] text-white/85">
+              Conflict monitor
+            </h3>
+            <p className="font-mono text-xs text-white/65">
+              Live closest-approach prediction and review log
             </p>
           </div>
           <div className="flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-1">
@@ -1515,8 +1551,8 @@ function ConflictMonitorPanel({
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-80" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />
             </span>
-            <span className="font-mono text-[10px] font-bold text-cyan-300">
-              {alerts.length} ACTIVE
+            <span className="font-mono text-[11px] font-bold text-cyan-300">
+              {alerts.length} active
             </span>
           </div>
         </div>
@@ -1541,7 +1577,7 @@ function ConflictMonitorPanel({
 
         <div className="space-y-1.5">
           {alerts.length === 0 ? (
-            <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 font-mono text-[11px] text-white/50">
+            <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 font-mono text-[11px] text-white/65">
               No predicted conflicts in current traffic.
             </div>
           ) : (
@@ -1560,16 +1596,16 @@ function ConflictMonitorPanel({
         <div className="mt-4 border-t border-white/10 pt-3">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div>
-              <p className="font-mono text-[10px] tracking-[0.18em] text-cyan-300/80 uppercase">
-                Recent Events
+              <p className="font-mono text-[11px] tracking-[0.18em] text-cyan-300/80 uppercase">
+                Recent events
               </p>
-              <p className="text-[10px] text-white/45">
+              <p className="text-[11px] text-white/60">
                 Keeps the latest live alerts for quick review.
               </p>
             </div>
             <button
               onClick={onClearHistory}
-              className="cursor-pointer rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 font-mono text-[10px] text-white/60 transition-colors hover:border-white/20 hover:text-white"
+              className="cursor-pointer rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-white/60 transition-colors hover:border-white/20 hover:text-white"
             >
               Clear
             </button>
@@ -1577,7 +1613,7 @@ function ConflictMonitorPanel({
 
           <div className="space-y-1.5">
             {history.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-white/10 bg-black/30 px-3 py-2 text-[11px] text-white/45">
+              <div className="rounded-lg border border-dashed border-white/10 bg-black/30 px-3 py-2 text-[11px] text-white/60">
                 No conflict events logged yet.
               </div>
             ) : (
@@ -1607,10 +1643,10 @@ function ConflictAlertCard({
     <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 font-mono text-[11px]">
       <div className="flex items-center justify-between gap-3 text-white/85">
         <span className="truncate">{alert.callsignA}</span>
-        <span className="text-white/35">×</span>
+        <span className="text-white/65">×</span>
         <span className="truncate">{alert.callsignB}</span>
       </div>
-      <div className="mt-1 flex items-center justify-between gap-3 text-[10px] text-white/50">
+      <div className="mt-1 flex items-center justify-between gap-3 text-[11px] text-white/65">
         <span>
           {alert.horizontalSeparationNm.toFixed(1)}nm /{" "}
           {Math.round(alert.verticalSeparationFt)}ft
@@ -1619,13 +1655,13 @@ function ConflictAlertCard({
       </div>
       <div className="mt-2 flex items-center justify-between gap-2">
         <span
-          className={`rounded-full border px-2 py-0.5 text-[9px] tracking-[0.14em] uppercase ${getSeverityTone(alert.severity)}`}
+          className={`rounded-full border px-2 py-0.5 text-[11px] tracking-[0.18em] uppercase ${getSeverityTone(alert.severity)}`}
         >
           {alert.severity}
         </span>
         <button
           onClick={onReview}
-          className="cursor-pointer rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-1 text-[10px] text-cyan-200 transition-colors hover:bg-cyan-500/15"
+          className="cursor-pointer rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-200 transition-colors hover:bg-cyan-500/15"
         >
           Review
         </button>
@@ -1647,10 +1683,10 @@ function ConflictHistoryCard({
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-white/85">
             <span className="truncate">{event.callsignA}</span>
-            <span className="text-white/35">×</span>
+            <span className="text-white/65">×</span>
             <span className="truncate">{event.callsignB}</span>
           </div>
-          <div className="mt-1 flex items-center gap-2 text-[10px] text-white/45">
+          <div className="mt-1 flex items-center gap-2 text-[11px] text-white/60">
             <span>{formatConflictEventAge(event.lastSeenAt)}</span>
             <span>•</span>
             <span>{event.horizontalSeparationNm.toFixed(1)}nm</span>
@@ -1660,19 +1696,19 @@ function ConflictHistoryCard({
         </div>
         <div className="flex flex-col items-end gap-1">
           <span
-            className={`rounded-full border px-2 py-0.5 text-[9px] tracking-[0.14em] uppercase ${getSeverityTone(event.severity)}`}
+            className={`rounded-full border px-2 py-0.5 text-[11px] tracking-[0.18em] uppercase ${getSeverityTone(event.severity)}`}
           >
             {event.severity}
           </span>
         </div>
       </div>
       <div className="mt-2 flex items-center justify-between gap-2">
-        <span className="text-[10px] text-white/45">
+        <span className="text-[11px] text-white/60">
           Last seen T-{event.timeToCpaMinutes.toFixed(1)}m
         </span>
         <button
           onClick={onReview}
-          className="cursor-pointer rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-1 text-[10px] text-cyan-200 transition-colors hover:bg-cyan-500/15"
+          className="cursor-pointer rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-200 transition-colors hover:bg-cyan-500/15"
         >
           Review
         </button>

@@ -1,5 +1,7 @@
 "use client";
 
+import { FocusTrap } from "~/components/ui/focus-trap";
+
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, Loader2, Upload, X } from "lucide-react";
@@ -32,15 +34,15 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
   const uploaderRef = useRef<ImageUploaderRef>(null);
   const uploadedDataRef = useRef<{ url: string; key: string } | null>(null);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
-
   const isProcessing = submitStage !== "idle" && submitStage !== "success";
+
+  // Leaving the page mid-upload would lose it, so ask first.
+  useEffect(() => {
+    if (!isProcessing) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [isProcessing]);
 
   function handleUploadComplete(url: string, key: string) {
     uploadedDataRef.current = { url, key };
@@ -50,8 +52,8 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
     e.preventDefault();
 
     if (!hasSelectedFile) {
-      toast.error("Please select an image first");
-      setError("Please select an image first");
+      toast.error("Choose an image first.");
+      setError("Choose an image first.");
       return;
     }
     if (isMilitary) {
@@ -87,8 +89,8 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
     });
 
     if (!validation.canUpload) {
-      setError(validation.error || "Validation failed");
-      toast.error(validation.error || "Validation failed");
+      setError(validation.error || "Couldn't check this upload. Try again.");
+      toast.error(validation.error || "Couldn't check this upload. Try again.");
       setSubmitStage("idle");
       return;
     }
@@ -97,7 +99,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
     const uploadSuccess = await uploaderRef.current?.triggerUpload();
 
     if (!uploadSuccess || !uploadedDataRef.current) {
-      setError("Failed to upload image");
+      setError("Couldn't upload image. Try again.");
       setSubmitStage("idle");
       return;
     }
@@ -118,29 +120,37 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
     if (result.success) {
       setSubmitStage("success");
       setTimeout(() => {
-        toast.success("Image uploaded!");
+        toast.success("Image uploaded");
         onClose();
       }, 1000);
     } else {
-      toast.error(result.error || "Failed to submit image");
-      setError(result.error || "Failed to submit image");
+      toast.error(result.error || "Couldn't submit image. Try again.");
+      setError(result.error || "Couldn't submit image. Try again.");
       setSubmitStage("idle");
     }
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="border-border bg-card text-card-foreground relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border p-6 shadow-2xl">
+      <FocusTrap
+        role="dialog"
+        aria-modal="true"
+        aria-label="Upload aircraft image"
+        onEscape={isProcessing ? undefined : onClose}
+        className="border-border bg-card text-card-foreground relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border p-6 shadow-2xl"
+      >
         <button
+          type="button"
+          aria-label="Close"
           onClick={() => !isProcessing && onClose()}
           disabled={isProcessing}
           className="text-muted-foreground hover:text-foreground absolute top-4 right-4 cursor-pointer transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <X className="h-5 w-5" />
+          <X className="h-5 w-5" aria-hidden="true" />
         </button>
 
         <h2 className="text-foreground mb-2 text-xl font-bold">
-          Upload Aircraft Image
+          Upload aircraft image
         </h2>
         <p className="text-muted-foreground mb-6 text-sm">
           Image will be published immediately.
@@ -153,9 +163,14 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          <label className="flex cursor-pointer items-center gap-3">
-            <div
-              className={`relative h-5 w-9 rounded-full transition-colors ${isMilitary ? "bg-cyan-500/40" : "bg-muted"}`}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isMilitary}
+              aria-labelledby="admin-military-label"
+              disabled={isProcessing}
+              className={`relative h-5 w-9 cursor-pointer rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:outline-none ${isMilitary ? "bg-cyan-500/40" : "bg-muted"}`}
               onClick={() => {
                 setIsMilitary(!isMilitary);
                 setFormData((prev) => ({
@@ -165,22 +180,30 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                 }));
               }}
             >
-              <div
+              <span
+                aria-hidden="true"
                 className={`absolute top-0.5 h-4 w-4 rounded-full bg-slate-200 transition-[left] ${isMilitary ? "left-[18px]" : "left-0.5"}`}
               />
-            </div>
-            <span className="text-muted-foreground font-mono text-xs">
-              MILITARY AIRCRAFT
+            </button>
+            <span
+              id="admin-military-label"
+              className="text-muted-foreground font-mono text-xs"
+            >
+              Military aircraft
             </span>
-          </label>
+          </div>
 
           {isMilitary ? (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-muted-foreground mb-2 block font-mono text-xs">
-                  AIR FORCE *
+                <label
+                  className="text-muted-foreground mb-2 block font-mono text-xs"
+                  htmlFor="admin-img-field-1"
+                >
+                  Air force *
                 </label>
                 <input
+                  id="admin-img-field-1"
                   type="text"
                   value={formData.airlineIcao}
                   onChange={(e) =>
@@ -193,14 +216,18 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   maxLength={10}
                   required
                   disabled={isProcessing}
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
               <div>
-                <label className="text-muted-foreground mb-2 block font-mono text-xs">
-                  AIRCRAFT *
+                <label
+                  className="text-muted-foreground mb-2 block font-mono text-xs"
+                  htmlFor="admin-img-field-2"
+                >
+                  Aircraft *
                 </label>
                 <input
+                  id="admin-img-field-2"
                   type="text"
                   value={formData.aircraftType}
                   onChange={(e) =>
@@ -214,17 +241,21 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   required
                   disabled={isProcessing}
                   title="Use base model only (e.g., F16, C130)"
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
-                <label className="text-muted-foreground mb-2 block font-mono text-xs">
-                  IATA CODE *
+                <label
+                  className="text-muted-foreground mb-2 block font-mono text-xs"
+                  htmlFor="admin-img-field-3"
+                >
+                  IATA code *
                 </label>
                 <input
+                  id="admin-img-field-3"
                   type="text"
                   value={formData.airlineIata}
                   onChange={(e) =>
@@ -237,14 +268,18 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   maxLength={2}
                   required
                   disabled={isProcessing}
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
               <div>
-                <label className="text-muted-foreground mb-2 block font-mono text-xs">
-                  ICAO CODE *
+                <label
+                  className="text-muted-foreground mb-2 block font-mono text-xs"
+                  htmlFor="admin-img-field-4"
+                >
+                  ICAO code *
                 </label>
                 <input
+                  id="admin-img-field-4"
                   type="text"
                   value={formData.airlineIcao}
                   onChange={(e) =>
@@ -254,17 +289,21 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                     })
                   }
                   placeholder="e.g., UAE"
-                  maxLength={4}
+                  maxLength={3}
                   required
                   disabled={isProcessing}
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
               <div>
-                <label className="text-muted-foreground mb-2 block font-mono text-xs">
-                  AIRCRAFT *
+                <label
+                  className="text-muted-foreground mb-2 block font-mono text-xs"
+                  htmlFor="admin-img-field-5"
+                >
+                  Aircraft *
                 </label>
                 <input
+                  id="admin-img-field-5"
                   type="text"
                   value={formData.aircraftType}
                   onChange={(e) =>
@@ -278,7 +317,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
                   required
                   disabled={isProcessing}
                   title="Use base model only (e.g., B777, A350) — not variants"
-                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 disabled:opacity-50"
+                  className="border-input bg-background text-foreground placeholder:text-muted-foreground w-full rounded-lg border px-4 py-3 transition-all outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -291,7 +330,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
 
           <div>
             <label className="text-muted-foreground mb-2 block font-mono text-xs">
-              SELECT IMAGE
+              Select image
             </label>
             <ImageUploader
               ref={uploaderRef}
@@ -313,26 +352,26 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
             disabled={
               isProcessing || !hasSelectedFile || submitStage === "success"
             }
-            className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-slate-950 shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
               submitStage === "success"
                 ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-500/20"
-                : "bg-gradient-to-r from-cyan-500 to-blue-500 shadow-cyan-500/20 hover:shadow-cyan-500/40"
+                : "bg-cyan-400 shadow-cyan-500/20 hover:bg-cyan-300 hover:shadow-cyan-500/40"
             }`}
           >
             {submitStage === "validating" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Validating...
+                Validating…
               </>
             ) : submitStage === "uploading" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Uploading...
+                Uploading…
               </>
             ) : submitStage === "submitting" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Submitting...
+                Submitting…
               </>
             ) : submitStage === "success" ? (
               <>
@@ -347,7 +386,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
             )}
           </button>
         </form>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { useBackToClose } from "~/hooks/useBackToClose";
+
 import {
   useCallback,
   useEffect,
@@ -47,6 +49,8 @@ export interface RadarGuideSignals {
   hasSelectedFreeChartAirport: boolean;
   isChartOpen: boolean;
 }
+
+const TOUR_STEP_KEY = "radarthing-tour-step";
 
 const STEPS: GuideStep[] = [
   {
@@ -188,13 +192,13 @@ const STEPS: GuideStep[] = [
   },
   {
     id: "toolkit",
-    eyebrow: "Control dock",
-    title: "Open the control dock",
+    eyebrow: "Menu",
+    title: "Open the menu",
     description:
-      "The dock icon in the bottom-right opens live flight and airport lists, filters, shortcuts, community pages, uploads, and Help.",
-    hint: "Click the highlighted dock icon to continue.",
+      "The Menu button in the bottom-right opens live flight and airport lists, filters, shortcuts, community pages, uploads, and Help.",
+    hint: "Click the highlighted Menu button to continue.",
     targets: ['[data-tour="radar-tools"]'],
-    task: { type: "event", eventName: "click", prompt: "Open the dock" },
+    task: { type: "event", eventName: "click", prompt: "Open the menu" },
     icon: Wrench,
   },
   {
@@ -244,19 +248,43 @@ function getFocusableElements(container: HTMLElement) {
   );
 }
 
+// On touch screens the steps should say "Tap", not "Click".
+function forPointer(text: string) {
+  if (
+    typeof window === "undefined" ||
+    !window.matchMedia?.("(pointer: coarse)").matches
+  )
+    return text;
+  return text.replace(/\bClick\b/g, "Tap").replace(/\bclick\b/g, "tap");
+}
+
 export function RadarGuide({
   open,
   onFinish,
   signals,
   onOpenAircraftImages,
   onPrepareDock,
+  onDismiss,
 }: {
   open: boolean;
   onFinish: () => void | Promise<void>;
+  /** Close without marking the tour as done (e.g. the Back button). */
+  onDismiss?: () => void;
   signals: RadarGuideSignals;
   onOpenAircraftImages: () => void;
   onPrepareDock: () => void;
 }) {
+  // Android Back closes the tour for now (it isn't marked as done) instead
+  // of leaving the page.
+  const finish = useCallback(() => {
+    try {
+      sessionStorage.removeItem(TOUR_STEP_KEY);
+    } catch {
+      // Storage blocked: nothing to clear.
+    }
+    return onFinish();
+  }, [onFinish]);
+  useBackToClose(open, () => (onDismiss ? onDismiss() : void finish()));
   const [stepIndex, setStepIndex] = useState(0);
   const [completedStepIds, setCompletedStepIds] = useState<Set<string>>(
     () => new Set(),
@@ -343,12 +371,34 @@ export function RadarGuide({
     };
   }, [open]);
 
+  // A tour closed part-way (Back, Escape, the X) resumes at the same step
+  // when reopened in this browser session; finishing it starts afresh.
   useEffect(() => {
     if (!open) {
       setStepIndex(0);
       setCompletedStepIds(new Set());
+      return;
+    }
+    let saved = 0;
+    try {
+      saved = Number(sessionStorage.getItem(TOUR_STEP_KEY) ?? 0);
+    } catch {
+      // Storage blocked: start from the first step.
+    }
+    if (Number.isInteger(saved) && saved > 0 && saved < STEPS.length) {
+      setStepIndex(saved);
+      setCompletedStepIds(new Set(STEPS.slice(0, saved).map((s) => s.id)));
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    try {
+      sessionStorage.setItem(TOUR_STEP_KEY, String(stepIndex));
+    } catch {
+      // Storage blocked: the tour just restarts next time.
+    }
+  }, [open, stepIndex]);
 
   useEffect(() => {
     if (!open || step.task?.type !== "event") return;
@@ -421,8 +471,10 @@ export function RadarGuide({
 
   const handleGuideNavigationKey = useCallback(
     (key: string) => {
+      // Escape works like Back: close for now, don't mark the tour done.
       if (key === "Escape") {
-        void onFinish();
+        if (onDismiss) onDismiss();
+        else void finish();
         return true;
       }
       if (key === "ArrowRight" && !isLastStep) {
@@ -436,7 +488,7 @@ export function RadarGuide({
       }
       return false;
     },
-    [isLastStep, isStepComplete, onFinish, stepIndex],
+    [isLastStep, isStepComplete, finish, stepIndex, onDismiss],
   );
 
   useEffect(() => {
@@ -530,10 +582,7 @@ export function RadarGuide({
         );
         return {
           bottom,
-          maxHeight: Math.max(
-            160,
-            viewportHeight - bottom - viewportMargin,
-          ),
+          maxHeight: Math.max(160, viewportHeight - bottom - viewportMargin),
         };
       })()
     : undefined;
@@ -556,7 +605,7 @@ export function RadarGuide({
       return;
     }
 
-    if (isLastStep) void onFinish();
+    if (isLastStep) void finish();
     else setStepIndex((current) => current + 1);
   };
 
@@ -615,24 +664,35 @@ export function RadarGuide({
                 <Icon size={19} strokeWidth={1.8} />
               </div>
               <div>
-                <p className="font-mono text-[10px] tracking-[0.22em] text-cyan-300 uppercase">
+                <p className="font-mono text-[11px] tracking-[0.18em] text-cyan-300 uppercase">
                   {step.eyebrow}
                 </p>
-                <p className="mt-1 font-mono text-[10px] text-slate-500">
+                <p className="mt-1 font-mono text-[11px] text-slate-400">
                   {String(stepIndex + 1).padStart(2, "0")} /{" "}
                   {String(STEPS.length).padStart(2, "0")}
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => void onFinish()}
-              className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
-              aria-label="Skip tour"
-              title="Skip tour"
-            >
-              <X size={17} />
-            </button>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => void finish()}
+                className="min-h-9 cursor-pointer rounded-lg px-2.5 text-xs text-slate-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+              >
+                Skip tour
+              </button>
+              <button
+                type="button"
+                onClick={() => (onDismiss ? onDismiss() : void finish())}
+                className="cursor-pointer rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+                aria-label={
+                  onDismiss ? "Close tour (resume later)" : "Close tour"
+                }
+                title={onDismiss ? "Close (resume later)" : "Close tour"}
+              >
+                <X size={17} aria-hidden="true" />
+              </button>
+            </div>
           </div>
 
           <h2
@@ -642,7 +702,7 @@ export function RadarGuide({
             {step.title}
           </h2>
           <p className="mt-3 text-sm leading-6 text-slate-300">
-            {step.description}
+            {forPointer(step.description)}
           </p>
           {step.details && (
             <ul className="mt-4 space-y-2 rounded-xl border border-white/8 bg-black/25 px-4 py-3 text-xs leading-5 text-slate-300">
@@ -657,13 +717,13 @@ export function RadarGuide({
           {step.hint && (
             <div className="mt-4 flex gap-2 rounded-xl border border-cyan-300/10 bg-cyan-300/[0.055] px-3 py-2.5 text-xs leading-5 text-cyan-100/75">
               <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-cyan-300" />
-              <span>{step.hint}</span>
+              <span>{forPointer(step.hint)}</span>
             </div>
           )}
 
           {step.task && (
             <div
-              className={`mt-3 flex items-center gap-2 rounded-lg border px-3 py-2 font-mono text-[10px] tracking-[0.08em] uppercase ${isStepComplete ? "border-emerald-400/25 bg-emerald-400/8 text-emerald-300" : "border-amber-300/25 bg-amber-300/8 text-amber-200"}`}
+              className={`mt-3 flex items-center gap-2 rounded-lg border px-3 py-2 font-mono text-[11px] tracking-[0.08em] uppercase ${isStepComplete ? "border-emerald-400/25 bg-emerald-400/8 text-emerald-300" : "border-amber-300/25 bg-amber-300/8 text-amber-200"}`}
               role="status"
             >
               <span
@@ -689,7 +749,7 @@ export function RadarGuide({
                 <button
                   type="button"
                   onClick={() => setStepIndex((current) => current - 1)}
-                  className="flex h-9 items-center gap-1 rounded-lg border border-white/10 px-3 text-xs text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
+                  className="flex h-9 cursor-pointer items-center gap-1 rounded-lg border border-white/10 px-3 text-xs text-slate-300 transition-colors hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
                 >
                   <ChevronLeft size={14} /> Back
                 </button>
@@ -698,7 +758,7 @@ export function RadarGuide({
                 type="button"
                 onClick={handlePrimaryAction}
                 disabled={!isStepComplete && taskNeedsExternalAction}
-                className="flex min-h-9 items-center gap-1.5 rounded-lg border border-cyan-200/30 bg-cyan-300 px-4 py-2 text-xs font-semibold text-[#041016] shadow-[0_0_18px_rgba(34,211,238,0.18)] transition-colors hover:bg-cyan-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/8 disabled:text-white/35 disabled:shadow-none"
+                className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-cyan-200/30 bg-cyan-300 px-4 py-2 text-xs font-semibold text-[#041016] shadow-[0_0_18px_rgba(34,211,238,0.18)] transition-colors hover:bg-cyan-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/8 disabled:text-white/55 disabled:shadow-none"
               >
                 {primaryLabel}
                 {isStepComplete && !isLastStep && <ChevronRight size={14} />}

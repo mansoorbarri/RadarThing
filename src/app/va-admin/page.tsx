@@ -1,5 +1,17 @@
 "use client";
 
+import { SiteFooter } from "~/components/site/SiteFooter";
+import { SiteHeader } from "~/components/site/SiteHeader";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "~/components/ui/alert-dialog";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useConvexAuth, useQuery } from "convex/react";
@@ -59,20 +71,7 @@ function truncateConvexId(id: string) {
 }
 
 function VaAdminHeader() {
-  return (
-    <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center px-6 py-5">
-        <Link href="/radar" className="inline-flex">
-          <Image
-            src="/logo-white.svg"
-            alt="RadarThing"
-            width={100}
-            height={30}
-          />
-        </Link>
-      </div>
-    </header>
-  );
+  return <SiteHeader />;
 }
 
 export default function VirtualAirlineAdminPage() {
@@ -227,7 +226,7 @@ export default function VirtualAirlineAdminPage() {
     const uploadSuccess = await uploaderRef.current?.triggerUpload();
 
     if (!uploadSuccess || !uploadedDataRef.current) {
-      setError("Failed to upload image");
+      setError("Couldn't upload image. Try again.");
       setSubmitStage("idle");
       return;
     }
@@ -239,7 +238,7 @@ export default function VirtualAirlineAdminPage() {
       key: string;
     } | null;
     if (!uploadedData) {
-      setError("Failed to upload image");
+      setError("Couldn't upload image. Try again.");
       setSubmitStage("idle");
       return;
     }
@@ -252,8 +251,7 @@ export default function VirtualAirlineAdminPage() {
     });
 
     if (!result.success) {
-      setError(result.error || "Failed to save VA aircraft image");
-      toast.error(result.error || "Failed to save VA aircraft image");
+      setError(result.error || "Couldn't save VA aircraft image. Try again.");
       setSubmitStage("idle");
       return;
     }
@@ -266,6 +264,13 @@ export default function VirtualAirlineAdminPage() {
     }, 900);
   };
 
+  const [pendingConfirm, setPendingConfirm] = useState<{
+    title: string;
+    description: string;
+    confirmLabel: string;
+    run: () => Promise<void>;
+  } | null>(null);
+
   const handleDelete = async (image: (typeof images)[number]) => {
     setDeletingId(image.id);
     const result = await deleteVirtualAirlineAircraftImage({
@@ -275,7 +280,7 @@ export default function VirtualAirlineAdminPage() {
     setDeletingId(null);
 
     if (!result.success) {
-      toast.error(result.error || "Failed to delete image");
+      toast.error(result.error || "Couldn't delete image. Try again.");
       return;
     }
 
@@ -293,7 +298,7 @@ export default function VirtualAirlineAdminPage() {
     setMemberActionId(null);
 
     if (!result.success) {
-      toast.error(result.error || "Failed to add pilot");
+      toast.error(result.error || "Couldn't add pilot. Try again.");
       return;
     }
 
@@ -310,7 +315,7 @@ export default function VirtualAirlineAdminPage() {
     setMemberActionId(null);
 
     if (!result.success) {
-      toast.error(result.error || "Failed to remove pilot");
+      toast.error(result.error || "Couldn't remove pilot. Try again.");
       return;
     }
 
@@ -331,7 +336,7 @@ export default function VirtualAirlineAdminPage() {
     setIsSavingSettings(false);
 
     if (!result.success) {
-      toast.error(result.error || "Failed to update VA settings");
+      toast.error(result.error || "Couldn't update VA settings. Try again.");
       return;
     }
 
@@ -353,7 +358,7 @@ export default function VirtualAirlineAdminPage() {
         (selectedVaId && vaMembers === undefined)))
   ) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black text-white">
+      <div className="bg-site flex min-h-screen items-center justify-center text-white">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
       </div>
     );
@@ -361,7 +366,7 @@ export default function VirtualAirlineAdminPage() {
 
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="bg-site min-h-screen text-white">
         <VaAdminHeader />
         <div className="flex items-center justify-center px-6 py-20">
           <div className="max-w-md rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
@@ -372,8 +377,8 @@ export default function VirtualAirlineAdminPage() {
             </p>
             <div className="mt-6">
               <GoogleSignInButton>
-                <button className="cursor-pointer rounded-xl bg-cyan-500 px-5 py-3 font-medium text-black">
-                  Sign In
+                <button className="cursor-pointer rounded-xl bg-cyan-400 px-5 py-3 font-medium text-slate-950">
+                  Sign in
                 </button>
               </GoogleSignInButton>
             </div>
@@ -385,7 +390,7 @@ export default function VirtualAirlineAdminPage() {
 
   if (virtualAirlines.length === 0) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="bg-site min-h-screen text-white">
         <VaAdminHeader />
         <div className="flex items-center justify-center px-6 py-20">
           <div className="max-w-lg rounded-2xl border border-white/10 bg-white/5 p-8">
@@ -424,10 +429,38 @@ export default function VirtualAirlineAdminPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="bg-site min-h-screen text-white">
       <VaAdminHeader />
+      <AlertDialog
+        open={pendingConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingConfirm(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pendingConfirm?.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingConfirm?.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={() => {
+                const action = pendingConfirm;
+                setPendingConfirm(null);
+                if (action) void action.run();
+              }}
+            >
+              {pendingConfirm?.confirmLabel}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-      <main className="mx-auto max-w-4xl px-6 py-12">
+      <main id="main-content" className="mx-auto max-w-4xl px-6 py-12">
         {/* Header */}
         <div className="mb-8">
           <div>
@@ -444,7 +477,7 @@ export default function VirtualAirlineAdminPage() {
                 {selectedVirtualAirline?.callsignPrefix}
               </span>
               {!selectedVirtualAirline?.isActive && (
-                <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-slate-400 uppercase">
+                <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-slate-400 uppercase">
                   Disabled
                 </span>
               )}
@@ -474,7 +507,7 @@ export default function VirtualAirlineAdminPage() {
                 </span>
                 {va.name}
                 {!va.isActive && (
-                  <span className="ml-1.5 text-[10px] text-slate-500">
+                  <span className="ml-1.5 text-[11px] text-slate-400">
                     (disabled)
                   </span>
                 )}
@@ -486,7 +519,7 @@ export default function VirtualAirlineAdminPage() {
         {/* Stats row */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-            <div className="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+            <div className="font-mono text-[11px] tracking-widest text-slate-400 uppercase">
               Pilots
             </div>
             <div className="mt-1 text-xl font-semibold text-white">
@@ -494,15 +527,15 @@ export default function VirtualAirlineAdminPage() {
             </div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-            <div className="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
-              Fleet Images
+            <div className="font-mono text-[11px] tracking-widest text-slate-400 uppercase">
+              Fleet images
             </div>
             <div className="mt-1 text-xl font-semibold text-white">
               {images.length}
             </div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-            <div className="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+            <div className="font-mono text-[11px] tracking-widest text-slate-400 uppercase">
               Prefix
             </div>
             <div className="mt-1 font-mono text-xl font-semibold text-cyan-300">
@@ -510,7 +543,7 @@ export default function VirtualAirlineAdminPage() {
             </div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-            <div className="font-mono text-[10px] tracking-widest text-slate-500 uppercase">
+            <div className="font-mono text-[11px] tracking-widest text-slate-400 uppercase">
               Status
             </div>
             <div className="mt-1">
@@ -544,7 +577,7 @@ export default function VirtualAirlineAdminPage() {
               {tab.label}
               {tab.count !== undefined && (
                 <span
-                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
+                  className={`rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${
                     activeTab === tab.key
                       ? "bg-cyan-500/20 text-cyan-300"
                       : "bg-white/10 text-slate-400"
@@ -574,10 +607,14 @@ export default function VirtualAirlineAdminPage() {
 
               <div className="mt-5 space-y-4">
                 <div>
-                  <label className="mb-2 block font-mono text-xs text-slate-400">
-                    VA NAME
+                  <label
+                    className="mb-2 block font-mono text-xs text-slate-400"
+                    htmlFor="va-admin-field-1"
+                  >
+                    VA name
                   </label>
                   <input
+                    id="va-admin-field-1"
                     type="text"
                     value={settingsForm.name}
                     onChange={(event) =>
@@ -588,15 +625,19 @@ export default function VirtualAirlineAdminPage() {
                     }
                     placeholder="Example Virtual"
                     disabled={isSavingSettings}
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block font-mono text-xs text-slate-400">
-                    CALLSIGN PREFIX
+                  <label
+                    className="mb-2 block font-mono text-xs text-slate-400"
+                    htmlFor="va-admin-field-2"
+                  >
+                    Callsign prefix
                   </label>
                   <input
+                    id="va-admin-field-2"
                     type="text"
                     value={settingsForm.callsignPrefix}
                     onChange={(event) =>
@@ -610,18 +651,22 @@ export default function VirtualAirlineAdminPage() {
                     placeholder="RVA"
                     maxLength={8}
                     disabled={isSavingSettings}
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 font-mono text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 font-mono text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
                   />
-                  <p className="mt-1.5 text-xs text-slate-500">
+                  <p className="mt-1.5 text-xs text-slate-400">
                     Flights starting with this prefix get VA status.
                   </p>
                 </div>
 
                 <div>
-                  <label className="mb-2 block font-mono text-xs text-slate-400">
-                    WEBSITE / DISCORD
+                  <label
+                    className="mb-2 block font-mono text-xs text-slate-400"
+                    htmlFor="va-admin-field-3"
+                  >
+                    Website or Discord
                   </label>
                   <input
+                    id="va-admin-field-3"
                     type="url"
                     value={settingsForm.website}
                     onChange={(event) =>
@@ -632,9 +677,9 @@ export default function VirtualAirlineAdminPage() {
                     }
                     placeholder="https://example.com or discord.gg/your-va"
                     disabled={isSavingSettings}
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
                   />
-                  <p className="mt-1.5 text-xs text-slate-500">
+                  <p className="mt-1.5 text-xs text-slate-400">
                     Used for the VA link in the radar sidebar.
                   </p>
                 </div>
@@ -652,17 +697,17 @@ export default function VirtualAirlineAdminPage() {
                 <button
                   type="submit"
                   disabled={isSavingSettings}
-                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 transition-opacity hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSavingSettings ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      Saving...
+                      Saving…
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="h-5 w-5" />
-                      Save Settings
+                      Save settings
                     </>
                   )}
                 </button>
@@ -679,7 +724,7 @@ export default function VirtualAirlineAdminPage() {
               className="rounded-2xl border border-white/10 bg-white/5 p-6"
             >
               <h2 className="text-lg font-semibold text-white">
-                Upload Fleet Image
+                Upload fleet image
               </h2>
               <p className="mt-1 text-sm text-slate-400">
                 Upload a livery image for an aircraft type. Uploading the same
@@ -717,10 +762,14 @@ export default function VirtualAirlineAdminPage() {
 
               <div className="mt-5 space-y-4">
                 <div>
-                  <label className="mb-2 block font-mono text-xs text-slate-400">
-                    AIRCRAFT TYPE
+                  <label
+                    className="mb-2 block font-mono text-xs text-slate-400"
+                    htmlFor="va-admin-field-4"
+                  >
+                    Aircraft type
                   </label>
                   <input
+                    id="va-admin-field-4"
                     type="text"
                     value={aircraftType}
                     onChange={(event) =>
@@ -729,13 +778,16 @@ export default function VirtualAirlineAdminPage() {
                     placeholder="B737"
                     maxLength={12}
                     disabled={isProcessing}
-                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 font-mono text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-4 py-3 font-mono text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block font-mono text-xs text-slate-400">
-                    SELECT IMAGE
+                  <label
+                    className="mb-2 block font-mono text-xs text-slate-400"
+                    htmlFor="va-admin-field-5"
+                  >
+                    Select image
                   </label>
                   <ImageUploader
                     ref={uploaderRef}
@@ -767,17 +819,17 @@ export default function VirtualAirlineAdminPage() {
                     !hasSelectedFile ||
                     !selectedVirtualAirline?.isActive
                   }
-                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 transition-opacity hover:bg-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitStage === "uploading" ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      Uploading...
+                      Uploading…
                     </>
                   ) : submitStage === "submitting" ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      Saving...
+                      Saving…
                     </>
                   ) : submitStage === "success" ? (
                     <>
@@ -802,7 +854,7 @@ export default function VirtualAirlineAdminPage() {
             {/* Roster */}
             <div>
               <h3 className="mb-3 text-sm font-medium text-slate-300">
-                Current Roster
+                Current roster
               </h3>
               <div className="space-y-2">
                 {members.map((member) => (
@@ -815,14 +867,22 @@ export default function VirtualAirlineAdminPage() {
                         {member.discordUsername ??
                           truncateConvexId(member.userId)}
                       </div>
-                      <div className="mt-0.5 truncate text-xs text-slate-500">
+                      <div className="mt-0.5 truncate text-xs text-slate-400">
                         {member.userId}
                       </div>
                     </div>
                     <button
                       type="button"
                       disabled={memberActionId === member.id}
-                      onClick={() => handleRemoveMember(member)}
+                      aria-label={`Remove ${member.discordUsername ?? truncateConvexId(member.userId)} from this VA`}
+                      onClick={() =>
+                        setPendingConfirm({
+                          title: "Remove this pilot?",
+                          description: `${member.discordUsername ?? truncateConvexId(member.userId)} will no longer fly for ${selectedVirtualAirline?.name ?? "this VA"}. You can add them again later.`,
+                          confirmLabel: "Remove pilot",
+                          run: () => handleRemoveMember(member),
+                        })
+                      }
                       className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {memberActionId === member.id ? (
@@ -836,7 +896,7 @@ export default function VirtualAirlineAdminPage() {
                 ))}
 
                 {members.length === 0 && (
-                  <div className="rounded-xl border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
+                  <div className="rounded-xl border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-400">
                     No pilots assigned yet.
                   </div>
                 )}
@@ -846,16 +906,17 @@ export default function VirtualAirlineAdminPage() {
             {/* Add pilot */}
             <div>
               <h3 className="mb-3 text-sm font-medium text-slate-300">
-                Add Pilot
+                Add pilot
               </h3>
               <div className="relative">
-                <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
+                  id="va-admin-field-5"
                   type="text"
                   value={memberSearch}
                   onChange={(event) => setMemberSearch(event.target.value)}
                   placeholder="Search by Discord or Convex ID"
-                  className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50"
+                  className="w-full rounded-lg border border-white/10 bg-black/40 py-3 pr-4 pl-10 text-sm text-white placeholder-slate-500 transition-colors outline-none focus:border-cyan-500/50 focus-visible:ring-2 focus-visible:ring-cyan-400/40"
                 />
               </div>
               <div className="mt-2 space-y-1">
@@ -871,11 +932,11 @@ export default function VirtualAirlineAdminPage() {
                       <div className="truncate text-sm text-white">
                         {getDisplayHandle(candidate)}
                       </div>
-                      <div className="mt-0.5 truncate text-xs text-slate-500">
+                      <div className="mt-0.5 truncate text-xs text-slate-400">
                         {getUserIdentifier(candidate)}
                       </div>
                     </div>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/15 px-2.5 py-1 text-[10px] font-semibold text-cyan-300 uppercase">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/15 px-2.5 py-1 text-[11px] font-semibold text-cyan-300 uppercase">
                       <UserPlus className="h-3 w-3" />
                       Add
                     </span>
@@ -883,7 +944,7 @@ export default function VirtualAirlineAdminPage() {
                 ))}
 
                 {assignableUsers.length === 0 && (
-                  <div className="rounded-lg border border-dashed border-white/10 px-4 py-6 text-center text-sm text-slate-500">
+                  <div className="rounded-lg border border-dashed border-white/10 px-4 py-6 text-center text-sm text-slate-400">
                     No eligible pilots matched. Pilots need a linked Google ID
                     before you can add them to the VA.
                   </div>
@@ -917,14 +978,23 @@ export default function VirtualAirlineAdminPage() {
                         <span className="rounded-md bg-cyan-500/15 px-2 py-0.5 font-mono text-xs text-cyan-300">
                           {image.aircraftType}
                         </span>
-                        <div className="mt-1.5 text-[11px] text-slate-500">
+                        <div className="mt-1.5 text-[11px] text-slate-400">
                           {new Date(image.updatedAt).toLocaleDateString()}
                         </div>
                       </div>
                       <button
                         type="button"
                         disabled={deletingId === image.id}
-                        onClick={() => handleDelete(image)}
+                        aria-label={`Delete the ${image.aircraftType} image`}
+                        onClick={() =>
+                          setPendingConfirm({
+                            title: `Delete the ${image.aircraftType} image?`,
+                            description:
+                              "The image is removed from your VA gallery and the radar. This can't be undone.",
+                            confirmLabel: "Delete image",
+                            run: () => handleDelete(image),
+                          })
+                        }
                         className="cursor-pointer rounded-lg border border-red-500/20 bg-red-500/10 p-2 text-red-300 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {deletingId === image.id ? (
@@ -938,7 +1008,7 @@ export default function VirtualAirlineAdminPage() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-white/10 px-4 py-12 text-center text-sm text-slate-500">
+              <div className="rounded-xl border border-dashed border-white/10 px-4 py-12 text-center text-sm text-slate-400">
                 No fleet images uploaded yet. Use the Upload tab to add
                 liveries.
               </div>
@@ -946,6 +1016,7 @@ export default function VirtualAirlineAdminPage() {
           </div>
         )}
       </main>
+      <SiteFooter />
     </div>
   );
 }

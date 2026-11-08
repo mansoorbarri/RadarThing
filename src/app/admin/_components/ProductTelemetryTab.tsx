@@ -189,7 +189,7 @@ export function ProductTelemetryTab({
           onChange={setRangeDays}
         />
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-xs text-slate-500">
+          <span className="font-mono text-xs text-slate-400">
             Reconciled {formatRelative(snapshot?.lastReconciledAt ?? null)}
           </span>
           <button
@@ -236,16 +236,16 @@ export function ProductTelemetryTab({
         />
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3">
-            <div className="flex items-center gap-2 text-xs tracking-wider text-slate-500 uppercase">
+            <div className="flex items-center gap-2 text-xs tracking-wider text-slate-400 uppercase">
               <Radio
-                className={`h-3.5 w-3.5 ${liveIsStale ? "text-slate-500" : "text-emerald-400"}`}
+                className={`h-3.5 w-3.5 ${liveIsStale ? "text-slate-400" : "text-emerald-400"}`}
               />
               Live now
             </div>
             <div className="mt-2 text-3xl font-semibold text-white">
               {numberFormat.format(live.current)}
             </div>
-            <div className="mt-1 font-mono text-xs text-slate-500">
+            <div className="mt-1 font-mono text-xs text-slate-400">
               {live.currentAt
                 ? `Updated ${formatRelative(live.currentAt)}${liveIsStale ? " (radar server may be offline)" : ""}`
                 : "No samples yet"}
@@ -336,7 +336,7 @@ export function ProductTelemetryTab({
             previous={previous.acarsMessages}
           />
         </div>
-        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 font-mono text-xs text-slate-500">
+        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 font-mono text-xs text-slate-400">
           <span>Avg flight {Math.round(avgFlightMinutes)} min</span>
           <span>{compactFormat.format(current.distanceNm)} nm flown</span>
           <span>
@@ -399,7 +399,7 @@ export function ProductTelemetryTab({
             height={200}
           />
           {granularity === "day" && (
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-slate-400">
               Showing the selected {rangeLabel} range. Weekly and monthly views
               show longer history; the current period is still in progress.
             </p>
@@ -434,7 +434,7 @@ export function ProductTelemetryTab({
             />
           </div>
           <div className="mt-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3">
-            <div className="text-xs tracking-wider text-slate-500 uppercase">
+            <div className="text-xs tracking-wider text-slate-400 uppercase">
               Pilots in last {rangeLabel}
             </div>
             <SplitBar
@@ -536,7 +536,7 @@ function SectionTitle({ title, hint }: { title: string; hint?: string }) {
       <h2 className="text-sm font-semibold tracking-wider text-slate-300 uppercase">
         {title}
       </h2>
-      {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
+      {hint && <p className="mt-0.5 text-xs text-slate-400">{hint}</p>}
     </div>
   );
 }
@@ -581,12 +581,12 @@ function StatTile({
 }) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3">
-      <div className="text-xs tracking-wider text-slate-500 uppercase">
+      <div className="text-xs tracking-wider text-slate-400 uppercase">
         {label}
       </div>
       <div className="mt-2 text-2xl font-semibold text-white">{value}</div>
       {note && (
-        <div className="mt-1 font-mono text-xs text-slate-500">{note}</div>
+        <div className="mt-1 font-mono text-xs text-slate-400">{note}</div>
       )}
     </div>
   );
@@ -609,7 +609,7 @@ function KpiTile({
 
   return (
     <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3">
-      <div className="text-xs tracking-wider text-slate-500 uppercase">
+      <div className="text-xs tracking-wider text-slate-400 uppercase">
         {label}
       </div>
       <div className="mt-2 text-2xl font-semibold text-white">
@@ -617,7 +617,7 @@ function KpiTile({
       </div>
       <div className="mt-1 flex items-center gap-1 font-mono text-xs">
         {change === null ? (
-          <span className="text-slate-500">
+          <span className="text-slate-400">
             {current > 0 ? "none in prior period" : "no activity"}
           </span>
         ) : (
@@ -636,7 +636,7 @@ function KpiTile({
               {change > 0 ? "+" : ""}
               {Math.round(change * 100)}%
             </span>
-            <span className="text-slate-500">
+            <span className="text-slate-400">
               vs {formatValue(previous, metric)}
             </span>
           </>
@@ -671,7 +671,7 @@ function BarChart({
   if (points.length === 0) {
     return (
       <div
-        className="flex items-center justify-center text-xs text-slate-500"
+        className="flex items-center justify-center text-xs text-slate-400"
         style={{ height }}
       >
         No data yet
@@ -684,13 +684,13 @@ function BarChart({
       <div className="mb-2 h-5 font-mono text-xs text-slate-300">
         {hoveredPoint ? (
           <>
-            <span className="text-slate-500">
+            <span className="text-slate-400">
               {formatLabel(hoveredPoint.start)}:
             </span>{" "}
             {formatValueLabel(hoveredPoint.value)}
           </>
         ) : (
-          <span className="text-slate-500">
+          <span className="text-slate-400">
             Max {formatValueLabel(max)}. Hover a bar for details.
           </span>
         )}
@@ -722,7 +722,7 @@ function BarChart({
           ))}
         </div>
       </div>
-      <div className="relative mt-1.5 h-4 font-mono text-[10px] text-slate-500">
+      <div className="relative mt-1.5 h-4 font-mono text-[11px] text-slate-400">
         {points.map((point, index) =>
           tickIndexes.has(index) ? (
             <span
@@ -798,7 +798,7 @@ function RetentionTable({
     <div className="overflow-x-auto rounded-lg border border-white/10">
       <table className="w-full min-w-[480px] border-collapse font-mono text-xs">
         <thead>
-          <tr className="text-slate-500">
+          <tr className="text-slate-400">
             <th className="px-3 py-2 text-left font-normal">First week</th>
             <th className="px-2 py-2 text-right font-normal">Pilots</th>
             {Array.from({ length: weeks }, (_, index) => (
@@ -847,7 +847,7 @@ function RankedList({ items }: { items: { name: string; count: number }[] }) {
 
   if (items.length === 0) {
     return (
-      <div className="rounded-lg border border-white/10 py-8 text-center text-xs text-slate-500">
+      <div className="rounded-lg border border-white/10 py-8 text-center text-xs text-slate-400">
         No flights in this range.
       </div>
     );

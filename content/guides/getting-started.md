@@ -8,7 +8,9 @@ RadarThing is a live flight radar for the GeoFS flight simulator. Anyone can [op
 
 1. **A GeoFS account.** You must be signed in to GeoFS. Signed-out GeoFS sessions are not shown on RadarThing.
 2. **The RadarThing userscript**, running in the browser tab where you fly GeoFS.
-3. **A desktop browser that supports the Tampermonkey extension**, such as Chrome, Edge, Firefox, or Opera.
+3. **A browser that supports a userscript manager** such as Tampermonkey: Chrome, Edge, Firefox or Opera on a computer work best.
+
+On a phone or tablet, use a browser that supports userscripts (for example Firefox for Android with Tampermonkey, or Safari with the Userscripts app on iOS). The RadarThing panel works the same way there: tap **×** to hide it and the arrow tab on the right to bring it back.
 
 A RadarThing account is optional for tracking, but signing in with the same Google account you use in GeoFS unlocks extra features: your flight history on your dashboard, ACARS updates, and controlling your own aircraft from the radar.
 
@@ -16,7 +18,15 @@ A RadarThing account is optional for tracking, but signing in with the same Goog
 
 [Tampermonkey](https://www.tampermonkey.net/) is a browser extension that runs small scripts, called userscripts, on the websites you choose. RadarThing uses it to run inside GeoFS.
 
-Install it from your browser's extension store and make sure it is enabled. Some browsers, including recent versions of Chrome, also require you to allow userscripts in the extension's settings; Tampermonkey will show instructions if this is needed.
+Install it from your browser's extension store and make sure it is enabled.
+
+In Chrome, Edge and other Chromium browsers you also need to let extensions run userscripts:
+
+1. Open the extensions page (`chrome://extensions` or `edge://extensions`).
+2. Choose **Details** under Tampermonkey.
+3. Turn on **Allow User Scripts**. On older browser versions this switch doesn't exist; turn on **Developer mode** at the top right of the extensions page instead.
+
+Firefox doesn't need this step.
 
 ## Step 2: Install the RadarThing userscript
 
@@ -28,26 +38,30 @@ The installed script loads the latest RadarThing runtime each time you open GeoF
 
 Open [GeoFS](https://www.geo-fs.com/geofs.php) and sign in to your GeoFS account. If GeoFS was already open when you installed the script, reload the page.
 
-To confirm the script is running, open the Tampermonkey menu while on the GeoFS tab. The RadarThing script should be listed and enabled.
+To confirm the script is running, open the Tampermonkey menu while on the GeoFS tab. The RadarThing script should be listed and enabled, with its own shortcuts underneath: **Show or hide the RadarThing panel**, **Open airport charts**, **Reset panel position** and **Open the RadarThing radar**. If you can see those, it's running.
 
-## Step 4: Fill in the RadarThing panel and transmit
+## Step 4: Fill in the RadarThing panel and start tracking
 
 This is the step most new pilots miss. The tracker does not send your position until you tell it about your flight.
 
-1. In GeoFS, press **W** to open the RadarThing flight panel.
+1. In GeoFS, the RadarThing panel appears on the right of the simulator. The first time, it shows a short welcome card. If the panel is hidden, press **W** to show it.
 2. Enter your **Departure** and **Arrival** airports as four-letter ICAO codes, for example **EGLL** and **KJFK**.
 3. Enter your **Callsign**, such as **BAW117**. [Callsigns explained](/guides/callsigns-explained) covers the format.
 4. Optionally enter a **Squawk** code. [Squawk codes explained](/guides/squawk-codes) explains what they mean.
 5. If you are flying a military aircraft, tick **Military** and enter the air force name.
-6. Press **Transmit**.
+6. Press **Start tracking**.
 
-The status line in the panel changes to show that your flight is transmitting. If the callsign is already in use by another pilot, the panel will tell you; add or change a digit and try again.
+The status at the top of the panel changes to **Connecting…** and then **Live on radar** once RadarThing receives your position. If the callsign is already in use by another pilot, the panel will tell you; add or change a digit and try again. If the status shows **Connection issue · retrying**, RadarThing keeps trying in the background.
 
-When you finish the flight, use **Save/Clear** to end it. RadarThing records the flight in your history and adds it to your statistics.
+While you are tracking, the panel folds into a one-line summary so it covers less of the simulator. To change your route, callsign or squawk mid-flight, press **Edit flight**, change the fields and press **Update flight**.
+
+When you finish the flight, press **End flight**, then press it again to confirm (the button changes to **Click again to end**, or **Tap again to end** on a touch screen). RadarThing saves the flight. If you are signed in to RadarThing with the same Google account you use in GeoFS, it appears in your flight history on your dashboard. Most flights also count towards your statistics; [Pilot stats and leaderboards](/guides/pilot-stats-and-leaderboards) explains which ones are left out.
+
+Press **W** to show or hide the panel and **Q** to open airport charts. You can change both keys under **Settings & shortcuts**.
 
 ## Step 5: Find your flight on the radar
 
-Open [the radar](/radar) in another tab, window, or device. Allow a few seconds for your first position update to arrive.
+Once the panel says **Live on radar**, open [the radar](/radar) in another tab, window, or device.
 
 Search for your callsign. Choose the flight result to move the map to your aircraft and open its flight panel. You will see your altitude, speed, heading, route, and, if you have built a flight plan in GeoFS, your next waypoint. Press **F** or choose **Follow** to keep the map with your aircraft.
 
@@ -61,7 +75,7 @@ The console method only lasts for that page session. After a full GeoFS reload, 
 
 ## If your flight does not appear
 
-Work through [Aircraft not appearing on the radar](/guides/aircraft-not-appearing). The most common causes are not pressing **Transmit**, being signed out of GeoFS, and the script being disabled in Tampermonkey.
+Work through [Aircraft not appearing on the radar](/guides/aircraft-not-appearing). The most common causes are not pressing **Start tracking**, being signed out of GeoFS, and the script being disabled in Tampermonkey.
 
 ## Where to go next
 

@@ -1,5 +1,8 @@
 "use client";
 
+import { toUserMessage } from "~/lib/user-message";
+import { copyText } from "~/lib/clipboard";
+import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
@@ -33,6 +36,8 @@ import { useCurrentUserProfile } from "~/hooks/useCurrentUserProfile";
 import { isFlightModeratorGoogleId } from "~/lib/flight-moderation";
 import { ConfirmModal } from "~/app/admin/_components/ConfirmModal";
 import { SystemThemeLogo } from "~/components/ui/SystemThemeLogo";
+import { SiteFooter } from "~/components/site/SiteFooter";
+import { SiteHeader } from "~/components/site/SiteHeader";
 import { useAircraftStream } from "~/hooks/useAircraftStream";
 
 function formatFlightTime(ms: number): string {
@@ -106,9 +111,7 @@ export default function PilotClient({
       });
       setFlightPendingDelete(null);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to delete flight",
-      );
+      toast.error(toUserMessage(error, "Couldn't delete flight. Try again."));
     } finally {
       setDeletingFlightId(null);
     }
@@ -116,10 +119,15 @@ export default function PilotClient({
 
   const copyProfileLink = () => {
     const url = window.location.href;
-    navigator.clipboard.writeText(url);
-    setLinkCopied(true);
-    toast.success("Profile link copied to clipboard");
-    setTimeout(() => setLinkCopied(false), 2000);
+    copyText(url)
+      .then(() => {
+        setLinkCopied(true);
+        toast.success("Profile link copied to clipboard");
+        setTimeout(() => setLinkCopied(false), 2000);
+      })
+      .catch(() =>
+        toast.error("Couldn't copy the link. Copy it from the address bar."),
+      );
   };
 
   if (profileUser === undefined) {
@@ -128,13 +136,16 @@ export default function PilotClient({
 
   if (profileUser === null || stats === null) {
     return (
-      <div className="pilot-theme-surface min-h-screen bg-black text-white">
-        <Header router={router} />
-        <main className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6 sm:py-20">
+      <div className="pilot-theme-surface bg-site min-h-screen text-white">
+        <Header />
+        <main
+          id="main-content"
+          className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6 sm:py-20"
+        >
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2">
             <Plane className="h-4 w-4 text-red-400" />
             <span className="font-mono text-sm text-red-400">
-              PILOT NOT FOUND
+              Pilot not found
             </span>
           </div>
           <h1 className="mb-4 text-3xl font-bold text-white">
@@ -144,13 +155,14 @@ export default function PilotClient({
             The pilot you&apos;re looking for may have been deleted or never
             existed.
           </p>
-          <button
-            onClick={() => router.push("/radar")}
-            className="cursor-pointer rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/40"
+          <NextLink
+            href="/radar"
+            className="inline-flex rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300 hover:shadow-cyan-500/40 focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:outline-none"
           >
-            Back to Map
-          </button>
+            Back to the radar
+          </NextLink>
         </main>
+        <SiteFooter />
       </div>
     );
   }
@@ -166,23 +178,41 @@ export default function PilotClient({
   const liveFlightCallsign = liveFlight?.flightNo || liveFlight?.callsign;
 
   return (
-    <div className="pilot-theme-surface min-h-screen bg-black text-white">
-      <Header router={router} />
+    <div className="pilot-theme-surface bg-site min-h-screen text-white">
+      <Header />
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      <main
+        id="main-content"
+        className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12"
+      >
         {/* Profile Header */}
         <div className="mb-8 sm:mb-10">
           <div className="mb-2 flex items-start gap-3 sm:items-center sm:gap-4">
             <button
+              type="button"
               onClick={copyProfileLink}
-              className="group/icon flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-cyan-500/50 bg-cyan-500/10 transition-all hover:border-cyan-400 hover:bg-cyan-500/20 sm:h-14 sm:w-14"
+              aria-label={
+                linkCopied ? "Profile link copied" : "Copy profile link"
+              }
+              className="group/icon flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-cyan-500/50 bg-cyan-500/10 transition-all hover:border-cyan-400 hover:bg-cyan-500/20 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:outline-none sm:h-14 sm:w-14"
               title="Copy profile link"
             >
-              <Plane className="h-5 w-5 text-cyan-400 transition-all group-hover/icon:hidden sm:h-6 sm:w-6" />
               {linkCopied ? (
-                <Check className="hidden h-5 w-5 text-emerald-400 group-hover/icon:block sm:h-6 sm:w-6" />
+                <Check
+                  className="h-5 w-5 text-emerald-400 sm:h-6 sm:w-6"
+                  aria-hidden="true"
+                />
               ) : (
-                <Link className="hidden h-5 w-5 text-cyan-300 group-hover/icon:block sm:h-6 sm:w-6" />
+                <>
+                  <Plane
+                    className="h-5 w-5 text-cyan-400 transition-all group-hover/icon:hidden group-focus-visible/icon:hidden sm:h-6 sm:w-6"
+                    aria-hidden="true"
+                  />
+                  <Link
+                    className="hidden h-5 w-5 text-cyan-300 group-hover/icon:block group-focus-visible/icon:block sm:h-6 sm:w-6"
+                    aria-hidden="true"
+                  />
+                </>
               )}
             </button>
             <div className="min-w-0">
@@ -211,15 +241,15 @@ export default function PilotClient({
               </div>
               {stats.discordUsername &&
                 (callsignFromUrl || stats.pilotCallsign) && (
-                  <p className="mt-1 font-mono text-[11px] break-all text-slate-500 sm:text-xs">
+                  <p className="mt-1 font-mono text-[11px] break-all text-slate-400 sm:text-xs">
                     {callsignFromUrl ?? stats.pilotCallsign}
                   </p>
                 )}
               <p className="mt-1 font-mono text-sm text-slate-400">
                 {stats.userRole === "PRO" || stats.userRole === "ADMIN" ? (
-                  <span className="text-emerald-400">PRO Member</span>
+                  <span className="text-emerald-400">Pro member</span>
                 ) : (
-                  <span className="text-slate-500">Free Tier</span>
+                  <span className="text-slate-400">Free</span>
                 )}
               </p>
             </div>
@@ -281,14 +311,14 @@ export default function PilotClient({
               <div className="rounded-2xl border border-white/10 bg-black/40 p-4 backdrop-blur-xl sm:p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
-                    TOP AIRCRAFT
+                    Top aircraft
                   </h3>
-                  {!isPro && <Lock className="h-4 w-4 text-slate-600" />}
+                  {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
                 </div>
                 {isPro ? (
                   <div className="space-y-3">
                     {stats.topAircraft.length === 0 ? (
-                      <p className="text-sm text-slate-500">No data yet</p>
+                      <p className="text-sm text-slate-400">No data yet</p>
                     ) : (
                       stats.topAircraft.map((aircraft, i) => (
                         <div
@@ -321,14 +351,14 @@ export default function PilotClient({
               <div className="rounded-2xl border border-white/10 bg-black/40 p-4 backdrop-blur-xl sm:p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
-                    TOP ROUTES
+                    Top routes
                   </h3>
-                  {!isPro && <Lock className="h-4 w-4 text-slate-600" />}
+                  {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
                 </div>
                 {isPro ? (
                   <div className="space-y-3">
                     {stats.topRoutes.length === 0 ? (
-                      <p className="text-sm text-slate-500">No data yet</p>
+                      <p className="text-sm text-slate-400">No data yet</p>
                     ) : (
                       stats.topRoutes.map((route, i) => (
                         <div
@@ -359,14 +389,14 @@ export default function PilotClient({
               <div className="rounded-2xl border border-white/10 bg-black/40 p-4 backdrop-blur-xl sm:p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="font-mono text-sm font-bold tracking-wider text-slate-400">
-                    TOP AIRPORTS
+                    Top airports
                   </h3>
-                  {!isPro && <Lock className="h-4 w-4 text-slate-600" />}
+                  {!isPro && <Lock className="h-4 w-4 text-slate-400" />}
                 </div>
                 {isPro ? (
                   <div className="space-y-3">
                     {stats.topAirports.length === 0 ? (
-                      <p className="text-sm text-slate-500">No data yet</p>
+                      <p className="text-sm text-slate-400">No data yet</p>
                     ) : (
                       stats.topAirports.map((airport, i) => (
                         <div
@@ -402,16 +432,18 @@ export default function PilotClient({
               deletingFlightId={deletingFlightId}
               onShareFlight={(flight) => {
                 const url = `${window.location.origin}/radar?replay=${flight.id}`;
-                navigator.clipboard.writeText(url).then(() => {
-                  toast.success("Flight replay link copied to clipboard");
-                  Analytics.flightReplayShared({
-                    callsign: flight.callsign,
-                    aircraftType: flight.aircraftType,
-                    depICAO: flight.depICAO,
-                    arrICAO: flight.arrICAO,
-                    flightId: flight.id as string,
-                  });
-                });
+                copyText(url)
+                  .then(() => {
+                    toast.success("Flight replay link copied to clipboard");
+                    Analytics.flightReplayShared({
+                      callsign: flight.callsign,
+                      aircraftType: flight.aircraftType,
+                      depICAO: flight.depICAO,
+                      arrICAO: flight.arrICAO,
+                      flightId: flight.id as string,
+                    });
+                  })
+                  .catch(() => toast.error("Couldn't copy the replay link."));
               }}
               onGenerateFlightCard={(flight: FlightHistoryPanelFlight) => {
                 if (!isPro) {
@@ -457,6 +489,7 @@ export default function PilotClient({
           </>
         )}
       </main>
+      <SiteFooter />
 
       {cardFlight && (
         <FlightCardDialog
@@ -483,26 +516,8 @@ export default function PilotClient({
   );
 }
 
-function Header({ router }: { router: ReturnType<typeof useRouter> }) {
-  return (
-    <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
-        <button
-          onClick={() => router.push("/radar")}
-          className="cursor-pointer"
-        >
-          <SystemThemeLogo alt="RadarThing" width={100} height={30} />
-        </button>
-        <button
-          onClick={() => router.push("/radar")}
-          className="flex shrink-0 cursor-pointer items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span className="hidden sm:inline">Back to Map</span>
-        </button>
-      </div>
-    </header>
-  );
+function Header() {
+  return <SiteHeader tone="themed" />;
 }
 
 function StatCard({
@@ -535,19 +550,19 @@ function StatCard({
       >
         {icon}
       </div>
-      <div className="mb-1 font-mono text-xs tracking-wider text-slate-500 uppercase">
+      <div className="mb-1 font-mono text-xs tracking-wider text-slate-400 uppercase">
         {label}
       </div>
       {locked ? (
         <div className="flex items-center gap-2">
-          <Lock className="h-4 w-4 text-slate-600" />
-          <span className="font-mono text-sm text-slate-600">PRO</span>
+          <Lock className="h-4 w-4 text-slate-400" />
+          <span className="font-mono text-sm text-slate-400">Pro</span>
         </div>
       ) : (
         <>
           <div className="text-2xl font-bold text-white">{value}</div>
           {subtitle && (
-            <div className="mt-0.5 font-mono text-xs text-slate-600">
+            <div className="mt-0.5 font-mono text-xs text-slate-400">
               {subtitle}
             </div>
           )}
@@ -561,9 +576,9 @@ function ProLockedContent() {
   const router = useRouter();
   return (
     <div className="flex flex-col items-center justify-center py-6 text-center">
-      <Lock className="mb-2 h-8 w-8 text-slate-600" />
-      <p className="mb-3 text-sm text-slate-500">
-        Unlock full pilot stats with PRO
+      <Lock className="mb-2 h-8 w-8 text-slate-400" />
+      <p className="mb-3 text-sm text-slate-400">
+        Unlock full pilot stats with Pro
       </p>
       <button
         onClick={() => {
@@ -584,10 +599,17 @@ function ProLockedContent() {
 function EmptyState() {
   return (
     <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center backdrop-blur-xl">
-      <Plane className="mx-auto mb-4 h-12 w-12 text-slate-600" />
-      <h3 className="mb-2 text-xl font-semibold text-white">No Flights Yet</h3>
-      <p className="text-slate-400">
-        This pilot hasn&apos;t recorded any flights yet.
+      <Plane className="mx-auto mb-4 h-12 w-12 text-slate-400" />
+      <h3 className="mb-2 text-xl font-semibold text-white">No flights yet</h3>
+      <p className="text-slate-300">
+        This pilot hasn&apos;t recorded any flights yet. Want yours here?{" "}
+        <NextLink
+          href="/guides/getting-started"
+          className="text-cyan-300 underline-offset-4 hover:underline"
+        >
+          Get started
+        </NextLink>
+        .
       </p>
     </div>
   );
@@ -595,19 +617,10 @@ function EmptyState() {
 
 function PilotPageSkeleton({ callsign }: { callsign: string | null }) {
   return (
-    <div className="pilot-theme-surface min-h-screen bg-black text-white">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <div className="h-[30px] w-[100px] animate-pulse rounded bg-white/10" />
-          <div className="flex items-center gap-2">
-            <div className="h-4 w-4 animate-pulse rounded bg-white/10" />
-            <div className="h-4 w-20 animate-pulse rounded bg-white/10" />
-          </div>
-        </div>
-      </header>
+    <div className="pilot-theme-surface bg-site min-h-screen text-white">
+      <SiteHeader tone="themed" />
 
-      <main className="mx-auto max-w-6xl px-6 py-12">
+      <main id="main-content" className="mx-auto max-w-6xl px-6 py-12">
         {/* Profile Header */}
         <div className="mb-10">
           <div className="mb-2 flex items-center gap-4">
@@ -682,6 +695,7 @@ function PilotPageSkeleton({ callsign }: { callsign: string | null }) {
           </div>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

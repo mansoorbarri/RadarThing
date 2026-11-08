@@ -28,7 +28,7 @@ export function ChallengeDescription({
           className="ml-1 cursor-pointer text-cyan-300 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
           aria-expanded={isExpanded}
         >
-          {isExpanded ? "show less" : "read more..."}
+          {isExpanded ? "show less" : "read more…"}
         </button>
       )}
     </p>

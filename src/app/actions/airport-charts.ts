@@ -231,7 +231,10 @@ export async function validateChartUploadEligibility(data: {
     return { canUpload: true };
   } catch (error) {
     console.error("Error validating upload eligibility:", error);
-    return { canUpload: false, error: "Failed to validate upload eligibility" };
+    return {
+      canUpload: false,
+      error: "Couldn't check whether you can upload. Try again.",
+    };
   }
 }
 
@@ -322,7 +325,7 @@ export async function createAirportChart(data: {
     };
   } catch (error) {
     console.error("Error creating airport chart:", error);
-    return { success: false, error: "Failed to upload chart" };
+    return { success: false, error: "Couldn't upload chart. Try again." };
   }
 }
 
@@ -368,7 +371,7 @@ export async function approveAirportChart(
     return { success: true };
   } catch (error) {
     console.error("Error approving airport chart:", error);
-    return { success: false, error: "Failed to approve chart" };
+    return { success: false, error: "Couldn't approve chart. Try again." };
   }
 }
 
@@ -434,7 +437,7 @@ export async function rejectAirportChart(
     return { success: true };
   } catch (error) {
     console.error("Error rejecting airport chart:", error);
-    return { success: false, error: "Failed to reject chart" };
+    return { success: false, error: "Couldn't reject chart. Try again." };
   }
 }
 
@@ -481,7 +484,7 @@ export async function deleteAirportChart(
     return { success: true };
   } catch (error) {
     console.error("Error deleting airport chart:", error);
-    return { success: false, error: "Failed to delete chart" };
+    return { success: false, error: "Couldn't delete chart. Try again." };
   }
 }
 
@@ -561,7 +564,7 @@ export async function updateAirportChart(
     return { success: true };
   } catch (error) {
     console.error("Error updating airport chart:", error);
-    return { success: false, error: "Failed to update chart" };
+    return { success: false, error: "Couldn't update chart. Try again." };
   }
 }
 

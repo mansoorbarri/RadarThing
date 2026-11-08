@@ -20,7 +20,7 @@ If you want inspiration, open **Airports** in the radar's control dock to see wh
 
 ## 2. Pick a callsign
 
-Use a callsign in the real format: a three-letter ICAO airline code followed by a flight number, such as `BAW117` or `DAL404`. If you fly for a [virtual airline](/guides/virtual-airlines), use its code. Avoid callsigns that are already in use on the radar; the RadarThing userscript will tell you if yours is taken when you press Transmit.
+Use a callsign in the real format: a three-letter ICAO airline code followed by a flight number, such as `BAW117` or `DAL404`. If you fly for a [virtual airline](/guides/virtual-airlines), use its code. Avoid callsigns that are already in use on the radar; the RadarThing userscript will tell you if yours is taken when you press **Start tracking**.
 
 [Callsigns explained](/guides/callsigns-explained) covers the format in more detail.
 
@@ -62,7 +62,7 @@ If you prepare routes outside GeoFS, RadarThing can also preview a flight plan f
 
 ## 7. Start tracking
 
-In GeoFS, open the RadarThing panel and enter your departure and arrival ICAO codes, your callsign, and a squawk if you have one. Press **Transmit**. Your flight will appear on the radar within a few seconds, and RadarThing will start recording your route for your history and statistics.
+In GeoFS, open the RadarThing panel and enter your departure and arrival ICAO codes, your callsign, and a squawk if you have one. Press **Start tracking**. When the panel status says **Live on radar**, your flight is on the radar, and RadarThing will start recording your route for your history and statistics.
 
 ## 8. Fly the departure
 
@@ -117,7 +117,7 @@ After landing and parking, end the flight from the RadarThing panel. Then open y
 5. SID, STAR, and approach selected
 6. Cruise altitude chosen
 7. Flight plan entered in GeoFS
-8. RadarThing panel filled in and transmitting
+8. RadarThing panel filled in and showing **Live on radar**
 9. Top of descent calculated
 10. Flight reviewed in replay
 

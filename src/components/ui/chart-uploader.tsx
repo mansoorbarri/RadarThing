@@ -74,28 +74,25 @@ function getHumanReadableError(error: Error | string): string {
     lowerMessage.includes("filetype") ||
     lowerMessage.includes("invalid type")
   ) {
-    return "Invalid file type. Please upload a PNG image.";
+    return "That file type isn't supported. Upload a PNG image.";
   }
 
   if (
     lowerMessage.includes("unauthorized") ||
     lowerMessage.includes("not authenticated")
   ) {
-    return "You must be signed in to upload charts.";
+    return "Sign in to upload charts.";
   }
 
   if (lowerMessage.includes("network") || lowerMessage.includes("fetch")) {
-    return "Network error. Please check your connection and try again.";
+    return "Couldn't reach the server. Check your connection and try again.";
   }
 
   if (lowerMessage.includes("timeout")) {
-    return "Upload timed out. Please try again with a smaller file.";
+    return "The upload timed out. Try again with a smaller file.";
   }
 
-  return (
-    message.replace(/([A-Z])/g, " $1").trim() ||
-    "Upload failed. Please try again."
-  );
+  return "Couldn't upload that file. Try again.";
 }
 
 function deriveChartName(fileName: string): string {
@@ -191,7 +188,7 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
       if (files.length === 0) return [];
 
       if (!icao) {
-        const errorMsg = "Please fill in the ICAO code before uploading.";
+        const errorMsg = "Enter the ICAO code before uploading.";
         setLocalError(errorMsg);
         onError(errorMsg);
         return [];
@@ -219,7 +216,7 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
         const uploadResults = await startUpload(renamedFiles);
 
         if (!uploadResults || uploadResults.length === 0) {
-          const errorMsg = "Upload failed. Please try again.";
+          const errorMsg = "Couldn't upload that file. Try again.";
           setLocalError(errorMsg);
           onError(errorMsg);
           setIsUploading(false);
@@ -297,7 +294,7 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
                 {entry.chartName}
               </span>
               {!isUploading && (
-                <Pencil className="h-3 w-3 flex-shrink-0 text-slate-500" />
+                <Pencil className="h-3 w-3 flex-shrink-0 text-slate-400" />
               )}
             </button>
           )}
@@ -411,7 +408,7 @@ export const ChartUploader = forwardRef<ChartUploaderRef, ChartUploaderProps>(
                 </p>
               </div>
 
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-400">
                 PNG only (max 3MB each, up to 20 files)
               </p>
             </div>

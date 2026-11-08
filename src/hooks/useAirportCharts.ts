@@ -130,7 +130,7 @@ export function useAirportCharts(icao?: string) {
         if (!res.ok) {
           const data = await res.json();
           throw new ChartsFetchError(
-            data.error ?? "Failed to fetch charts",
+            data.error ?? "Couldn't load charts. Try again.",
             data.code,
           );
         }
@@ -196,7 +196,7 @@ export function useAirportCharts(icao?: string) {
         if (!res.ok) {
           const data = await res.json();
           throw new ChartsFetchError(
-            data.error ?? "Failed to fetch charts",
+            data.error ?? "Couldn't load charts. Try again.",
             data.code,
           );
         }

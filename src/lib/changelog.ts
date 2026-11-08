@@ -154,7 +154,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-03-31",
     title: "US Airport Charts Are Now Free",
     description:
-      "Airport charts for US airports are now available to every user on the radar without a PRO subscription.",
+      "Airport charts for US airports are now available to every user on the radar without a Pro subscription.",
     type: "improvement",
   },
   {

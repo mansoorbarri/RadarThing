@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useFocusTrap } from "~/hooks/useFocusTrap";
 import { X, Download, Copy, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { FlightCard, type FlightCardData } from "./FlightCard";
@@ -30,6 +31,11 @@ export function FlightCardDialog({ data, onClose }: FlightCardDialogProps) {
     setIsClosing(true);
     setTimeout(() => onClose(), 200);
   };
+
+  // Focus stays inside the dialog, Escape closes it, and focus returns to
+  // the opener afterwards.
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, handleClose);
 
   // Calculate scale to fit viewport
   useEffect(() => {
@@ -70,26 +76,44 @@ export function FlightCardDialog({ data, onClose }: FlightCardDialogProps) {
     const filename = [data.callsign, data.depICAO, data.arrICAO]
       .filter(Boolean)
       .join("-");
-    await downloadPng(filename || "flight-card");
+    try {
+      await downloadPng(filename || "flight-card");
+    } catch {
+      toast.error("Couldn't create the flight card image. Try again.");
+      return;
+    }
     Analytics.flightCardDownloaded(analyticsProps);
     toast.success("Flight card downloaded");
   };
 
   const handleCopy = async () => {
-    const didCopy = await copyToClipboard();
+    let didCopy: boolean | undefined;
+    try {
+      didCopy = await copyToClipboard();
+    } catch {
+      toast.error("Couldn't create the flight card image. Try again.");
+      return;
+    }
     Analytics.flightCardCopied(analyticsProps);
     if (didCopy) {
       setCopied(true);
       toast.success("Flight card copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
     } else {
-      toast.success("Flight card downloaded (clipboard not supported)");
+      toast.success(
+        "Your browser can't copy images, so the card was downloaded instead",
+      );
     }
   };
 
   return (
     <div
-      className={`fixed inset-0 z-[10050] flex items-center justify-center backdrop-blur-sm transition-all duration-200 ease-out ${
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Flight card for ${data.callsign || "this flight"}`}
+      tabIndex={-1}
+      className={`fixed inset-0 z-[10050] flex items-center justify-center backdrop-blur-sm transition-all duration-200 ease-out focus:outline-none ${
         isVisible && !isClosing ? "bg-black/80" : "bg-black/0"
       }`}
     >
@@ -105,7 +129,9 @@ export function FlightCardDialog({ data, onClose }: FlightCardDialogProps) {
       >
         {isCompactViewport && (
           <button
+            type="button"
             onClick={handleClose}
+            aria-label="Close flight card"
             className="absolute top-0 right-3 flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-black/70 text-white/60 backdrop-blur-md transition-all hover:bg-white/10 hover:text-white"
           >
             <X className="h-5 w-5" />

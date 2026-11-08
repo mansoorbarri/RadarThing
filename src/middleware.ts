@@ -10,7 +10,7 @@ export default clerkMiddleware(async (auth, request) => {
   const path = request.nextUrl.pathname;
   // Keep account management, legal information, and authentication available.
   if (
-    ["/banned", "/terms", "/privacy", "/sso-callback"].some(
+    ["/banned", "/terms", "/privacy", "/contact", "/sso-callback"].some(
       (route) => path === route || path.startsWith(`${route}/`),
     )
   )

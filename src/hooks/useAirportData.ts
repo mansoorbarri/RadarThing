@@ -304,7 +304,7 @@ export const useAirportData = () => {
       hasFetchedRef.current = true;
     } catch (e) {
       console.error("Could not load airport data:", e);
-      setAirportFetchError("Failed to load airport data from API.");
+      setAirportFetchError("Couldn't load airport data. Try again.");
       setAirports([]);
       setRunways([]);
     } finally {
