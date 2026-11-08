@@ -2926,11 +2926,8 @@
         <span data-status-dot aria-hidden="true" style="flex:none;width:8px;height:8px;border-radius:50%;background:#94a3b8;"></span>
         <span data-status-text style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0.02em;">Not tracking</span>
         <span data-status-age aria-hidden="true" style="flex:none;white-space:nowrap;font-weight:500;letter-spacing:0.02em;color:#94a3b8;"></span>
-        ${
-          isMobile
-            ? ""
-            : `<span id="${HOTKEY_HINT_ID}" style="margin-left:auto;font-size:11px;font-weight:500;letter-spacing:0.02em;color:#94a3b8;text-align:right;">${escapeHtml(hotkeyHintText())}</span>`
-        }
+        <!-- Shortcuts live in the Settings row and the Hide button's tooltip;
+             a hint here squeezed the status text ("Not trac…"). -->
       </div>
 
       <div id="atc-status-actions" hidden style="

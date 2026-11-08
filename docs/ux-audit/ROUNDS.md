@@ -62,3 +62,48 @@ after every round.
 | 10 | `06521de` (round 9 fixes) | 9.2 | 9.4 | 9.4 |
 | 11 | `5187168` (round 10 fixes) | 9.3 | 9.4 | 9.4 |
 | 12 | `a03b89c` (round 11 fixes) | 9.3 | 9.5 | 9.5 |
+
+Round 12's own fixes (`2051dec`, plus the userscript status-pill fix in the
+screenshot commit) address every remaining round-12 finding but have not been
+re-scored.
+
+### Per-category scores: original vs round 12
+
+Round 0 used the original, looser scale; round 12 used the stricter one.
+
+| Category | Radar 0 | Radar 12 | Website 0 | Website 12 | Userscript 0 | Userscript 12 |
+|---|---|---|---|---|---|---|
+| Visual design & consistency | 6 | 9 | 6 | 9.5 | 6 | 9.5 |
+| Information hierarchy & layout | 6 | 9.5 | 6 | 9.5 | 6 | 9.5 |
+| Navigation & discoverability | 5 | 9.5 | 4 | 9.5 | 4 | 9.5 |
+| Feedback & system status | 6 | 9.5 | 6 | 9.5 | 3 | 9.5 |
+| Onboarding & learnability | 7 | 9.5 | 6 | 9.5 | 5 | 9.5 |
+| Accessibility | 3 | 9 | 4 | 9.5 | 3 | 9.5 |
+| Responsiveness & mobile | 5 | 9.5 | 6 | 9.5 | 6 | 9.5 |
+| Perceived performance | 5 | 9.5 | 5 | 9.5 | 5 | 9.5 |
+| Forms & input handling | 4 | 9.5 | 6 | 9.5 | 5 | 9.5 |
+| Copy & microcopy | 6 | 9 | 6 | 9 | 5 | 9.5 |
+| Error prevention & recovery | 6 | 9 | 5 | 9.5 | 4 | 9.5 |
+| Platform conventions | 5 | 9.5 | 5 | 9.5 | 5 | 9.5 |
+| **Overall** | **5.3** | **9.3** | **5.4** | **9.5** | **4.7** | **9.5** |
+
+## How the reviews were run
+
+- **Models:** every reviewer and the agent applying the fixes ran on Claude
+  Opus 5.5 (`claude-opus-5-5`) in Claude Code. No reviewer used a smaller or
+  different model.
+- **Reasoning:** adaptive extended thinking, with the session's default
+  reasoning effort (medium). No reviewer had an effort or model override.
+- **Reviewers:** three built-in `general-purpose` subagents per round (radar,
+  website, userscript). Each round started fresh agents with no memory of
+  earlier rounds beyond what the prompt said, so a reviewer couldn't "remember"
+  being generous.
+- **Read-only:** reviewers could read code, run git and look at screenshots,
+  but could not edit files or run builds. Each prompt gave the scope, the
+  previous scores, the list of fixes to verify, and a calibration rule
+  (8 = good with clear gaps, 9 = excellent with minor polish, 10 =
+  best-in-class; don't inflate, don't withhold 9.5 when nothing meaningful is
+  left). Reviewers had to cite `file:line` evidence and flag regressions.
+- **Fixes:** applied by the main agent, one commit per round, each checked
+  with `tsc`, ESLint, the unit tests, a headless userscript harness on a mock
+  GeoFS page and Playwright checks of the radar sheets (Back, X, search).
