@@ -326,8 +326,8 @@ export default function AircraftImagesClient({
     });
 
     if (!validation.canUpload) {
-      setError(validation.error || "Validation failed");
-      toast.error(validation.error || "Validation failed");
+      setError(validation.error || "Couldn't check this upload. Try again.");
+      toast.error(validation.error || "Couldn't check this upload. Try again.");
       setSubmitStage("idle");
       return;
     }
@@ -371,7 +371,7 @@ export default function AircraftImagesClient({
 
       // Close modal after animation
       setTimeout(() => {
-        toast.success("Image submitted for review!");
+        toast.success("Image submitted for review");
         setShowUploadModal(false);
         setSubmitStage("idle");
         setHasSelectedFile(false);

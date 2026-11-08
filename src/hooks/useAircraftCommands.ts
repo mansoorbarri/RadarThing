@@ -45,8 +45,12 @@ export function useAircraftCommands() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to send command");
+        const data = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(
+          data?.error || "Couldn't send that command. Try again.",
+        );
       }
 
       return await res.json();
@@ -175,7 +179,9 @@ export function useAircraftCommands() {
 
         if (!endRes.ok) {
           const data = await endRes.json().catch(() => null);
-          throw new Error(data?.error || "Failed to disconnect flight");
+          throw new Error(
+            data?.error || "Couldn't end that flight. Try again.",
+          );
         }
 
         const commandRes = await fetch(COMMAND_API_URL, {
@@ -189,7 +195,9 @@ export function useAircraftCommands() {
 
         if (!commandRes.ok) {
           const data = await commandRes.json().catch(() => null);
-          throw new Error(data?.error || "Failed to stop flight transmitter");
+          throw new Error(
+            data?.error || "Couldn't stop the flight transmitter. Try again.",
+          );
         }
 
         return await endRes.json();

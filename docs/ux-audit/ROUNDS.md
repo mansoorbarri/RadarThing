@@ -61,3 +61,4 @@ after every round.
 | 9 | `5b054f7` (round 8 fixes) | 9.1 | 9.1 | 9.4 |
 | 10 | `06521de` (round 9 fixes) | 9.2 | 9.4 | 9.4 |
 | 11 | `5187168` (round 10 fixes) | 9.3 | 9.4 | 9.4 |
+| 12 | `a03b89c` (round 11 fixes) | 9.3 | 9.5 | 9.5 |

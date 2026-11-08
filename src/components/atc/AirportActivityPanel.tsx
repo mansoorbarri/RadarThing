@@ -449,7 +449,7 @@ export function AirportActivityPanel({
         )}
 
         <SectionHeader
-          title="Activity Board"
+          title="Activity board"
           subtitle="Sorted live airport rankings with traffic and staffing pressure."
           badge={`${filteredActivityAirports.length} match${filteredActivityAirports.length === 1 ? "" : "es"}`}
         />
@@ -477,7 +477,7 @@ export function AirportActivityPanel({
         )}
 
         <SectionHeader
-          title="Staffed Airports"
+          title="Staffed airports"
           subtitle="Controllers online right now, ordered by staffing depth."
           badge={`${filteredStaffedAirports.length} staffed`}
         />
@@ -503,7 +503,7 @@ export function AirportActivityPanel({
         )}
 
         <SectionHeader
-          title="Route Board"
+          title="Route board"
           subtitle="City-pairs attracting the most live flights right now."
           badge={`${filteredRoutes.length} route${filteredRoutes.length === 1 ? "" : "s"}`}
         />

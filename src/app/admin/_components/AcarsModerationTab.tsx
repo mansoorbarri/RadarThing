@@ -78,7 +78,7 @@ export function AcarsModerationTab() {
                 toast.error(
                   moderationErrorMessage(
                     error,
-                    "Could not release the device claim. Check the RT ID and try again.",
+                    "Couldn't release the device claim. Check the RT ID and try again.",
                   ),
                 );
               } finally {
@@ -134,7 +134,7 @@ export function AcarsModerationTab() {
                               toast.error(
                                 moderationErrorMessage(
                                   error,
-                                  "Could not remove the ACARS entry. Please try again.",
+                                  "Couldn't remove the ACARS entry. Try again.",
                                 ),
                               );
                             }
@@ -154,7 +154,7 @@ export function AcarsModerationTab() {
                             toast.error(
                               moderationErrorMessage(
                                 error,
-                                "Could not mark the report reviewed. Please try again.",
+                                "Couldn't mark the report reviewed. Try again.",
                               ),
                             );
                           }

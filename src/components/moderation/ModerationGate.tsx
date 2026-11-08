@@ -1,5 +1,6 @@
 "use client";
 
+import { toUserMessage } from "~/lib/user-message";
 import Link from "next/link";
 import { useState, useEffect, type ReactNode } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
@@ -131,9 +132,7 @@ function AccountNotices({ children }: { children: ReactNode }) {
                   window.location.assign(await createPortalSession());
                 } catch (error) {
                   toast.error(
-                    error instanceof Error
-                      ? error.message
-                      : "Could not open billing",
+                    toUserMessage(error, "Couldn't open billing. Try again."),
                   );
                 } finally {
                   setBusy(false);
@@ -150,7 +149,7 @@ function AccountNotices({ children }: { children: ReactNode }) {
                 try {
                   downloadAccountDataExport(await getCurrentUserDataExport());
                 } catch {
-                  toast.error("Could not export account data");
+                  toast.error("Couldn't export your account data. Try again.");
                 } finally {
                   setBusy(false);
                 }
@@ -202,9 +201,7 @@ function AccountNotices({ children }: { children: ReactNode }) {
                 try {
                   await acknowledge({ id: warning.id });
                 } catch {
-                  toast.error(
-                    "Could not acknowledge warning. Please try again.",
-                  );
+                  toast.error("Couldn't acknowledge the warning. Try again.");
                 } finally {
                   setBusy(false);
                 }

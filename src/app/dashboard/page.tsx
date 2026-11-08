@@ -1027,11 +1027,11 @@ export default function DashboardPage() {
                           if (url) window.location.href = url;
                           else
                             toast.error(
-                              "Couldn't open subscription management. Please try again.",
+                              "Couldn't open subscription management. Try again.",
                             );
                         } catch {
                           toast.error(
-                            "Couldn't open subscription management. Please try again.",
+                            "Couldn't open subscription management. Try again.",
                           );
                         }
                       }}
@@ -1078,7 +1078,7 @@ export default function DashboardPage() {
                   } catch {
                     setIsDeleting(false);
                     toast.error(
-                      "Couldn't delete your account. Please try again or contact support.",
+                      "Couldn't delete your account. Try again, or contact support.",
                     );
                   }
                 }}

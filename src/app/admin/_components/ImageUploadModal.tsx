@@ -52,8 +52,8 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
     e.preventDefault();
 
     if (!hasSelectedFile) {
-      toast.error("Please select an image first");
-      setError("Please select an image first");
+      toast.error("Choose an image first.");
+      setError("Choose an image first.");
       return;
     }
     if (isMilitary) {
@@ -89,8 +89,8 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
     });
 
     if (!validation.canUpload) {
-      setError(validation.error || "Validation failed");
-      toast.error(validation.error || "Validation failed");
+      setError(validation.error || "Couldn't check this upload. Try again.");
+      toast.error(validation.error || "Couldn't check this upload. Try again.");
       setSubmitStage("idle");
       return;
     }
@@ -120,7 +120,7 @@ export function ImageUploadModal({ onClose }: { onClose: () => void }) {
     if (result.success) {
       setSubmitStage("success");
       setTimeout(() => {
-        toast.success("Image uploaded!");
+        toast.success("Image uploaded");
         onClose();
       }, 1000);
     } else {

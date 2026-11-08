@@ -1,5 +1,6 @@
 "use client";
 
+import { toUserMessage } from "~/lib/user-message";
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useAircraftCommands } from "~/hooks/useAircraftCommands";
 import { type PositionUpdate } from "~/lib/aircraft-store";
@@ -262,10 +263,10 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
         resetForm();
       }
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "We couldn't send those changes. Try again.";
+      const message = toUserMessage(
+        error,
+        "We couldn't send those changes. Try again.",
+      );
       toast.error(message);
     }
   }, [
@@ -306,10 +307,10 @@ export function AircraftControlPanel({ aircraft }: AircraftControlPanelProps) {
       toast.success("Flight disconnected from RadarThing");
       setDisconnectConfirmOpen(false);
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "We couldn't end that flight. Try again.";
+      const message = toUserMessage(
+        error,
+        "We couldn't end that flight. Try again.",
+      );
       toast.error(message);
     }
   }, [

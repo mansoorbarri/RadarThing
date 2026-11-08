@@ -165,6 +165,12 @@ export const RadarSettings = ({
   useEffect(() => {
     setDeleteArmed(false);
   }, [selectedPresetId]);
+  // An armed delete disarms itself so it can't be confirmed by accident later.
+  useEffect(() => {
+    if (!deleteArmed) return;
+    const timer = window.setTimeout(() => setDeleteArmed(false), 4000);
+    return () => window.clearTimeout(timer);
+  }, [deleteArmed]);
 
   const targetPreset = activePreset ?? selectedPreset;
   const currentTrailIntervalLabel = radarTrailPreferences
@@ -308,7 +314,7 @@ export const RadarSettings = ({
               </span>
             }
           >
-            <p className="text-[11px] leading-5 text-white/60">
+            <p className="text-xs leading-5 text-white/70 sm:text-[11px]">
               Saves your current base layer, OpenAIP overlays, weather layers,
               and conflict monitor state.
             </p>
@@ -401,12 +407,13 @@ export const RadarSettings = ({
                           : "border-white/10 bg-white/[0.03] text-white/65 hover:border-white/20 hover:text-white"
                       }`}
                     >
-                      <span aria-live="polite">
-                        {deleteArmed
-                          ? "Press again to delete"
-                          : "Delete preset"}
-                      </span>
+                      {deleteArmed ? "Press again to delete" : "Delete preset"}
                     </button>
+                    <span className="sr-only" aria-live="polite">
+                      {deleteArmed
+                        ? `Press Delete preset again to delete ${targetPreset.name}.`
+                        : ""}
+                    </span>
                   </div>
                 </div>
               )}
@@ -521,14 +528,15 @@ export const RadarSettings = ({
             <div
               className={`space-y-3 ${!radarTrailPreferences.enabled ? "opacity-50" : ""}`}
             >
-              <p className="text-[11px] leading-5 text-white/60">
-                Choose whether each radar trail dot represents elapsed minutes
+              <p className="text-xs leading-5 text-white/70 sm:text-[11px]">
+                Choose whether each radar trail dot represents elapsed seconds
                 or distance flown. Dots step out at that interval: 1x, 2x, 3x,
                 and 4x.
               </p>
 
               <TrailModeSelector
                 ariaLabel="Trail interval unit"
+                timeLabel="Seconds"
                 value={radarTrailPreferences.mode}
                 onChange={(mode) => updateRadarTrailPreferences({ mode })}
                 disabled={!radarTrailPreferences.enabled}
@@ -536,7 +544,7 @@ export const RadarSettings = ({
 
               <div className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-3">
                 <div>
-                  <div className="text-[11px] font-semibold tracking-[0.18em] text-white uppercase">
+                  <div className="text-xs font-semibold tracking-[0.18em] text-white uppercase sm:text-[11px]">
                     Interval
                   </div>
                   <p className="mt-1 text-[11px] text-white/60">
@@ -583,7 +591,7 @@ export const RadarSettings = ({
                   aria-label="Radar trail interval"
                 />
 
-                <div className="grid grid-cols-3 items-center text-[11px] tracking-[0.18em] text-white/65 uppercase">
+                <div className="grid grid-cols-3 items-center text-xs tracking-[0.18em] text-white/70 uppercase sm:text-[11px]">
                   <span>
                     {radarTrailPreferences.mode === "minutes" ? "2" : "1"}
                   </span>
@@ -610,13 +618,14 @@ export const RadarSettings = ({
               <div
                 className={`space-y-3 ${!radarModeLinePreferences.enabled ? "opacity-50" : ""}`}
               >
-                <p className="text-[11px] leading-5 text-white/60">
+                <p className="text-xs leading-5 text-white/70 sm:text-[11px]">
                   Choose whether the line projects by elapsed minutes or
                   nautical miles. The line uses the aircraft heading.
                 </p>
 
                 <TrailModeSelector
                   ariaLabel="Track line length unit"
+                  timeLabel="Minutes"
                   value={radarModeLinePreferences.mode}
                   onChange={(mode) => updateRadarModeLinePreferences({ mode })}
                   disabled={!radarModeLinePreferences.enabled}
@@ -624,7 +633,7 @@ export const RadarSettings = ({
 
                 <div className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-3">
                   <div>
-                    <div className="text-[11px] font-semibold tracking-[0.18em] text-white uppercase">
+                    <div className="text-xs font-semibold tracking-[0.18em] text-white uppercase sm:text-[11px]">
                       Length
                     </div>
                     <p className="mt-1 text-[11px] text-white/60">
@@ -672,7 +681,7 @@ export const RadarSettings = ({
                     aria-label="Radar track line length"
                   />
 
-                  <div className="grid grid-cols-3 items-center text-[11px] tracking-[0.18em] text-white/65 uppercase">
+                  <div className="grid grid-cols-3 items-center text-xs tracking-[0.18em] text-white/70 uppercase sm:text-[11px]">
                     <span>
                       {radarModeLinePreferences.mode === "minutes" ? "1" : "1"}
                     </span>
@@ -693,7 +702,7 @@ export const RadarSettings = ({
               >
                 <div className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-3">
                   <div>
-                    <div className="text-[11px] font-semibold tracking-[0.18em] text-white uppercase">
+                    <div className="text-xs font-semibold tracking-[0.18em] text-white uppercase sm:text-[11px]">
                       Extension
                     </div>
                     <p className="mt-1 text-[11px] text-white/60">
@@ -725,7 +734,7 @@ export const RadarSettings = ({
                     aria-label="Runway centerline extension length"
                   />
 
-                  <div className="grid grid-cols-3 items-center text-[11px] tracking-[0.18em] text-white/65 uppercase">
+                  <div className="grid grid-cols-3 items-center text-xs tracking-[0.18em] text-white/70 uppercase sm:text-[11px]">
                     <span>3</span>
                     <span className="text-center text-[11px] font-semibold tracking-[0.14em] text-cyan-200">
                       {currentRunwayCenterlineLengthLabel}
@@ -779,7 +788,7 @@ export const RadarSettings = ({
               />
             </SettingsSection>
             <SettingsSection title="Keybinds">
-              <p className="text-[11px] leading-5 text-white/60">
+              <p className="text-xs leading-5 text-white/70 sm:text-[11px]">
                 Click a binding, then press a letter, number, or function key.
               </p>
               {(
@@ -946,11 +955,14 @@ function UnitSelector<T extends string>({
 
 function TrailModeSelector({
   ariaLabel,
+  timeLabel,
   value,
   onChange,
   disabled = false,
 }: {
   ariaLabel: string;
+  /** Trails step in seconds, the track line in minutes. */
+  timeLabel: "Seconds" | "Minutes";
   value: RadarTrailMode;
   onChange: (value: RadarTrailMode) => void;
   disabled?: boolean;
@@ -972,7 +984,7 @@ function TrailModeSelector({
             : "text-white/60 hover:bg-white/10 hover:text-white"
         }`}
       >
-        Minutes
+        {timeLabel}
       </button>
       <button
         type="button"

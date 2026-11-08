@@ -72,13 +72,13 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
     e.preventDefault();
 
     if (!hasSelectedFiles) {
-      toast.error("Please select at least one chart file");
-      setError("Please select at least one chart file");
+      toast.error("Choose at least one chart file.");
+      setError("Choose at least one chart file.");
       return;
     }
     if (!formData.icao || formData.icao.length < 3) {
-      toast.error("Valid ICAO code required (3-4 characters)");
-      setError("Valid ICAO code required (3-4 characters)");
+      toast.error("Enter a 3- or 4-character ICAO code.");
+      setError("Enter a 3- or 4-character ICAO code.");
       return;
     }
 
@@ -114,11 +114,12 @@ export function ChartUploadModal({ onClose }: { onClose: () => void }) {
     setSubmitProgress(null);
 
     setTimeout(() => {
-      toast.success(
-        failCount > 0
-          ? `${successCount} chart${successCount !== 1 ? "s" : ""} uploaded! (${failCount} failed)`
-          : `${successCount} chart${successCount !== 1 ? "s" : ""} uploaded!`,
-      );
+      const charts = `${successCount} chart${successCount !== 1 ? "s" : ""}`;
+      if (failCount > 0)
+        toast.warning(
+          `Uploaded ${charts}; ${failCount} failed. Try those again.`,
+        );
+      else toast.success(`Uploaded ${charts}`);
       onClose();
     }, 1000);
   }

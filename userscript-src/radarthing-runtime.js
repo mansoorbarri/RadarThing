@@ -1201,16 +1201,18 @@
     });
     // Hovering or focusing a toast pauses it.
     let paused = false;
+    const touchOnly = window.matchMedia?.("(hover: none)").matches ?? false;
     const pause = () => {
       if (paused) return;
       paused = true;
       clearTimeout(timer);
       remaining = Math.max(0, remaining - (Date.now() - startedAt));
     };
-    const resume = () => {
-      // Stay paused while the pointer is over it or focus is still inside.
-      if (toast.matches(":hover") || toast.contains(document.activeElement))
-        return;
+    const resume = (checkHover = true) => {
+      // Stay paused while a mouse is over it or focus is still inside.
+      // (Touch screens keep :hover after a tap, so they skip that check.)
+      if (checkHover && toast.matches(":hover")) return;
+      if (toast.contains(document.activeElement)) return;
       if (!paused || toast.dataset.leaving) return;
       paused = false;
       startedAt = Date.now();
@@ -1219,10 +1221,14 @@
       timer = setTimeout(() => dismiss(false), remaining);
     };
     toast.addEventListener("pointerenter", pause);
-    toast.addEventListener("pointerleave", resume);
+    toast.addEventListener("pointerleave", (event) =>
+      resume(event.pointerType === "mouse"),
+    );
     toast.addEventListener("focusin", pause);
     // focusout fires before focus lands elsewhere, so check on the next tick.
-    toast.addEventListener("focusout", () => setTimeout(resume, 0));
+    toast.addEventListener("focusout", () =>
+      setTimeout(() => resume(!touchOnly), 0),
+    );
   }
 
   // Changes made from the RadarThing website show up in the sim, so say so.

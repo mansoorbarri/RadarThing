@@ -67,7 +67,9 @@ async function compressImage(file: File): Promise<File> {
       );
     };
     img.onerror = () =>
-      reject(new Error("Couldn't read this image. Try a JPG, PNG or WebP."));
+      reject(
+        new Error("Couldn't read this image. Try a JPG, PNG, GIF or WebP."),
+      );
     img.src = URL.createObjectURL(file);
   });
 }
@@ -100,7 +102,7 @@ function getHumanReadableError(error: Error | string): string {
     lowerMessage.includes("too large") ||
     lowerMessage.includes("size limit")
   ) {
-    return "File is too large. Maximum size is 512KB. Please choose a smaller image.";
+    return "That file is too large. The limit is 512 KB, so choose a smaller image.";
   }
 
   if (
@@ -108,29 +110,26 @@ function getHumanReadableError(error: Error | string): string {
     lowerMessage.includes("filetype") ||
     lowerMessage.includes("invalid type")
   ) {
-    return "Invalid file type. Please upload a JPG, PNG, GIF, or WebP image.";
+    return "That file type isn't supported. Upload a JPG, PNG, GIF or WebP image.";
   }
 
   if (
     lowerMessage.includes("unauthorized") ||
     lowerMessage.includes("not authenticated")
   ) {
-    return "You must be signed in to upload images.";
+    return "Sign in to upload images.";
   }
 
   if (lowerMessage.includes("network") || lowerMessage.includes("fetch")) {
-    return "Network error. Please check your connection and try again.";
+    return "Couldn't reach the server. Check your connection and try again.";
   }
 
   if (lowerMessage.includes("timeout")) {
-    return "Upload timed out. Please try again with a smaller file.";
+    return "The upload timed out. Try again with a smaller file.";
   }
 
   // Return original message if no match, but clean it up
-  return (
-    message.replace(/([A-Z])/g, " $1").trim() ||
-    "Upload failed. Please try again."
-  );
+  return "Couldn't upload that file. Try again.";
 }
 
 async function getImageDimensions(file: File): Promise<PreviewDimensions> {
@@ -222,7 +221,7 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
           // Check if compressed file is still too large
           if (compressedFile.size > MAX_FILE_SIZE) {
             const errorMsg =
-              "Image is still too large after compression. Please choose a smaller image.";
+              "This image is still too large after compressing it. Choose a smaller image.";
             setLocalError(errorMsg);
             onError(errorMsg);
             setIsCompressing(false);
@@ -240,7 +239,10 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
           };
           reader.readAsDataURL(compressedFile);
         } catch (err) {
-          const errorMsg = "Couldn't process that image. Try another file.";
+          const errorMsg =
+            err instanceof Error && err.message.startsWith("Couldn't")
+              ? err.message
+              : "Couldn't process that image. Try another file.";
           setLocalError(errorMsg);
           onError(errorMsg);
         } finally {
@@ -268,7 +270,7 @@ export const ImageUploader = forwardRef<ImageUploaderRef, ImageUploaderProps>(
         (!airlineIata || !airlineIcao || !aircraftType)
       ) {
         const errorMsg =
-          "Please fill in both Airline codes (IATA and ICAO) and Aircraft Type before uploading.";
+          "Enter the airline codes (IATA and ICAO) and aircraft type before uploading.";
         setLocalError(errorMsg);
         onError(errorMsg);
         return false;

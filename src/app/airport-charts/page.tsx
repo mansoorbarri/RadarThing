@@ -230,12 +230,12 @@ export default function AirportChartsPage() {
 
     setTimeout(() => {
       if (failCount > 0) {
-        toast.success(
-          `${successCount} chart${successCount !== 1 ? "s" : ""} submitted for review! (${failCount} failed)`,
+        toast.warning(
+          `Submitted ${successCount} chart${successCount !== 1 ? "s" : ""} for review; ${failCount} failed. Try those again.`,
         );
       } else {
         toast.success(
-          `${successCount} chart${successCount !== 1 ? "s" : ""} submitted for review!`,
+          `${successCount} chart${successCount !== 1 ? "s" : ""} submitted for review`,
         );
       }
       setShowUploadModal(false);

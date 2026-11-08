@@ -1,5 +1,6 @@
 "use server";
 
+import { toUserMessage } from "~/lib/user-message";
 import { revalidatePath } from "next/cache";
 import { clerkClient } from "@clerk/nextjs/server";
 import { UTApi } from "uploadthing/server";
@@ -438,10 +439,12 @@ export async function registerVirtualAirline(data: {
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Couldn't submit VA registration. Try again.",
+      // ConvexError carries readable reasons (e.g. a taken prefix); anything
+      // else is an internal error the user can't act on.
+      error: toUserMessage(
+        error,
+        "Couldn't submit VA registration. Try again.",
+      ),
     };
   }
 }

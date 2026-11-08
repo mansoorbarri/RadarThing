@@ -68,7 +68,7 @@ export default function PricingPage() {
         if (url) window.location.href = url;
       } catch (err) {
         console.error(err);
-        toast.error("Couldn't open checkout. Please try again in a moment.");
+        toast.error("Couldn't open checkout. Try again in a moment.");
       } finally {
         setPendingAction(null);
       }
@@ -88,7 +88,7 @@ export default function PricingPage() {
         router.push("/radar");
       } catch (err) {
         console.error(err);
-        toast.error("Couldn't start your free trial. Please try again.");
+        toast.error("Couldn't start your free trial. Try again.");
       } finally {
         setPendingAction(null);
       }
@@ -129,7 +129,7 @@ export default function PricingPage() {
       if (url) window.location.href = url;
     } catch (err) {
       console.error(err);
-      toast.error("Couldn't open subscription management. Please try again.");
+      toast.error("Couldn't open subscription management. Try again.");
     } finally {
       setPendingAction(null);
     }

@@ -1,5 +1,6 @@
 "use client";
 
+import { toUserMessage } from "~/lib/user-message";
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
@@ -140,8 +141,10 @@ export function ActiveChallengesPanel({
       toast.success("Challenge submitted for review");
       setNoteByChallengeId((current) => ({ ...current, [challengeId]: "" }));
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not submit challenge";
+      const message = toUserMessage(
+        error,
+        "Couldn't submit the challenge. Try again.",
+      );
       toast.error(message);
     } finally {
       setSubmittingChallengeId(null);
@@ -157,10 +160,10 @@ export function ActiveChallengesPanel({
       });
       toast.success("Submission withdrawn");
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Could not withdraw submission";
+      const message = toUserMessage(
+        error,
+        "Couldn't withdraw the submission. Try again.",
+      );
       toast.error(message);
     } finally {
       setSubmittingChallengeId(null);

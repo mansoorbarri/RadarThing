@@ -272,12 +272,29 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
               onClick: () => {
                 // Save straight away: the sheet may have closed (and this
                 // panel unmounted) before Undo is pressed.
+                // Keep anything looked up since the Clear, then the old list.
+                let since: string[] = [];
                 try {
-                  localStorage.setItem(RECENT_KEY, JSON.stringify(cleared));
+                  const stored: unknown = JSON.parse(
+                    localStorage.getItem(RECENT_KEY) ?? "[]",
+                  );
+                  if (Array.isArray(stored))
+                    since = stored.filter(
+                      (v): v is string => typeof v === "string",
+                    );
                 } catch {
                   // Ignore storage errors.
                 }
-                setRecentIcaos(cleared);
+                const restored = [...new Set([...since, ...cleared])].slice(
+                  0,
+                  5,
+                );
+                try {
+                  localStorage.setItem(RECENT_KEY, JSON.stringify(restored));
+                } catch {
+                  // Ignore storage errors.
+                }
+                setRecentIcaos(restored);
               },
             },
           });
@@ -380,7 +397,7 @@ export const MetarPanel: React.FC<MetarPanelProps> = ({
           {inputBlock}
           {!icaoInput && recentIcaos.length === 0 && (
             <p className="font-sans text-xs text-slate-400">
-              Enter a 4-letter ICAO airport code, e.g. EGLL.
+              Enter a 4-letter ICAO airport code.
             </p>
           )}
           {chipsBlock}

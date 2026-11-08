@@ -106,7 +106,7 @@ function ModerationDialog({
       toast.error(
         moderationErrorMessage(
           error,
-          "Could not apply the moderation action. Please try again.",
+          "Couldn't apply the moderation action. Try again.",
         ),
       );
     } finally {

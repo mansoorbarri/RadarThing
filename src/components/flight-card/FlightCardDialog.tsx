@@ -76,20 +76,33 @@ export function FlightCardDialog({ data, onClose }: FlightCardDialogProps) {
     const filename = [data.callsign, data.depICAO, data.arrICAO]
       .filter(Boolean)
       .join("-");
-    await downloadPng(filename || "flight-card");
+    try {
+      await downloadPng(filename || "flight-card");
+    } catch {
+      toast.error("Couldn't create the flight card image. Try again.");
+      return;
+    }
     Analytics.flightCardDownloaded(analyticsProps);
     toast.success("Flight card downloaded");
   };
 
   const handleCopy = async () => {
-    const didCopy = await copyToClipboard();
+    let didCopy: boolean | undefined;
+    try {
+      didCopy = await copyToClipboard();
+    } catch {
+      toast.error("Couldn't create the flight card image. Try again.");
+      return;
+    }
     Analytics.flightCardCopied(analyticsProps);
     if (didCopy) {
       setCopied(true);
       toast.success("Flight card copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
     } else {
-      toast.success("Flight card downloaded (clipboard not supported)");
+      toast.success(
+        "Your browser can't copy images, so the card was downloaded instead",
+      );
     }
   };
 
