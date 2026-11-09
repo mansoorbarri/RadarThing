@@ -724,11 +724,11 @@ export const useMapLayersAndMarkers = ({
 
       displayPaths.forEach((displayPath) => {
         L.polyline(displayPath, {
-          color: "#f8fafc",
+          color: isOSMMode ? "#cbd5e1" : "#f8fafc",
           // Street tiles are busier than the radar scope, so lift contrast.
-          opacity: isOSMMode ? 0.8 : 0.45,
+          opacity: isOSMMode ? 0.7 : 0.45,
           weight: isOSMMode ? 1.5 : 1.2,
-          dashArray: "7, 9",
+          dashArray: isOSMMode ? "5, 7" : "7, 9",
           interactive: false,
           renderer,
         }).addTo(centerlineLayer);
