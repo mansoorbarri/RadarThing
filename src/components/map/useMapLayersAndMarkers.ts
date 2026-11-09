@@ -699,7 +699,8 @@ export const useMapLayersAndMarkers = ({
     if (!map || !centerlineLayer || !renderer || !mapReady) return;
 
     centerlineLayer.clearLayers();
-    if (!isRadarMode || !runwayCenterlinePreferences.enabled) return;
+    if (!(isRadarMode || isOSMMode) || !runwayCenterlinePreferences.enabled)
+      return;
     if (map.getZoom() < RUNWAY_CENTERLINE_MIN_ZOOM) {
       return;
     }
@@ -724,8 +725,9 @@ export const useMapLayersAndMarkers = ({
       displayPaths.forEach((displayPath) => {
         L.polyline(displayPath, {
           color: "#f8fafc",
-          opacity: 0.45,
-          weight: 1.2,
+          // Street tiles are busier than the radar scope, so lift contrast.
+          opacity: isOSMMode ? 0.8 : 0.45,
+          weight: isOSMMode ? 1.5 : 1.2,
           dashArray: "7, 9",
           interactive: false,
           renderer,
@@ -733,6 +735,7 @@ export const useMapLayersAndMarkers = ({
       });
     });
   }, [
+    isOSMMode,
     isRadarMode,
     mapInstance,
     mapReady,
