@@ -2730,7 +2730,7 @@
       position:fixed;
       top:72px;
       right:16px;
-      width:min(260px, calc(100vw - 24px));
+      width:min(300px, calc(100vw - 24px));
       box-sizing:border-box;
       max-height:calc(100dvh - 88px);
       overflow-y:auto;
@@ -3181,7 +3181,7 @@
       mobileFlightUIOpenButton.textContent = "‹";
       mobileFlightUIOpenButton.style.cssText = `
         position:fixed;
-        top:max(72px, calc(env(safe-area-inset-top) + 16px));
+        top:max(112px, calc(env(safe-area-inset-top) + 16px));
         right:max(12px, env(safe-area-inset-right));
         width:44px;
         height:44px;
