@@ -38,6 +38,7 @@ export async function getFlightHistory(googleId: string) {
 
   const flights = await convex.query(api.flights.getHistoryByGoogleId, {
     googleId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
   });
 
   return {

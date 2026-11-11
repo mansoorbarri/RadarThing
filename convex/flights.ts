@@ -74,10 +74,17 @@ function getStatsMaxSpeedKts(aircraftType?: string) {
     : DEFAULT_STATS_MAX_SPEED_KTS;
 }
 
-// Get flight history for a user by their Google ID
+// Get flight history for a user by their Google ID.
+// Full flight history (including routeData used for replay) is a PRO feature,
+// so return it only to PRO/admin viewers or trusted server callers; anyone
+// else gets an empty list. Mirrors the client-side PRO gate in the ATC sidebar.
 export const getHistoryByGoogleId = query({
-  args: { googleId: v.string() },
+  args: { googleId: v.string(), systemSecret: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    if (!isSystemSecretValid(args.systemSecret)) {
+      const viewer = await getCurrentViewer(ctx);
+      if (!canViewerAccessFullFlightHistory(viewer)) return [];
+    }
     // First find the user
     const user = await ctx.db
       .query("users")
@@ -590,10 +597,18 @@ export const create = mutation({
   },
 });
 
-// Get all flights for a user
+// Get all flights for a user (raw rows incl. routeData). Owner or trusted
+// server callers only — otherwise the full history/replay paywall is bypassed.
 export const getByUserId = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.id("users"), systemSecret: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    if (!isSystemSecretValid(args.systemSecret)) {
+      const identity = await ctx.auth.getUserIdentity();
+      const target = await ctx.db.get(args.userId);
+      const isOwner =
+        Boolean(identity?.subject) && target?.clerkId === identity!.subject;
+      if (!isOwner) throw new Error("Unauthorized");
+    }
     return await ctx.db
       .query("flights")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
@@ -602,12 +617,19 @@ export const getByUserId = query({
   },
 });
 
-// Get a single flight by ID
+// Get a single flight by ID (incl. routeData for replay). The flight owner or
+// a PRO/admin viewer only; others get null so arbitrary routes can't be scraped.
 export const getById = query({
   args: { id: v.id("flights") },
   handler: async (ctx, args) => {
     const flight = await ctx.db.get(args.id);
     if (!flight) return null;
+
+    const viewer = await getCurrentViewer(ctx);
+    const isOwner = Boolean(viewer) && flight.userId === viewer!._id;
+    if (!isOwner && !canViewerAccessFullFlightHistory(viewer)) {
+      return null;
+    }
 
     return {
       id: flight._id,
