@@ -601,18 +601,14 @@ export const create = mutation({
   },
 });
 
-// Get all flights for a user (raw rows incl. routeData). Owner or trusted
-// server callers only — otherwise the full history/replay paywall is bypassed.
+// Get all of a user's flights in bulk (raw rows incl. routeData). Trusted
+// server callers only (the account data export): a FREE owner must not be able
+// to pull their full routeData here and sidestep the PRO replay paywall that
+// getFlightHistoryPage / getById / getHistoryByGoogleId enforce.
 export const getByUserId = query({
   args: { userId: v.id("users"), systemSecret: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    if (!isSystemSecretValid(args.systemSecret)) {
-      const identity = await ctx.auth.getUserIdentity();
-      const target = await ctx.db.get(args.userId);
-      const isOwner =
-        Boolean(identity?.subject) && target?.clerkId === identity!.subject;
-      if (!isOwner) throw new Error("Unauthorized");
-    }
+    requireSystem(ctx, args.systemSecret);
     return await ctx.db
       .query("flights")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
@@ -621,8 +617,10 @@ export const getByUserId = query({
   },
 });
 
-// Get a single flight by ID (incl. routeData for replay). The flight owner or
-// a PRO/admin viewer only; others get null so arbitrary routes can't be scraped.
+// Get a single flight by ID (incl. routeData for replay). Replay is a PRO
+// feature even for your own flights (getFlightHistoryPage withholds routeData
+// from FREE owners), so gate on the same entitlement; others get null so
+// arbitrary routes can't be scraped.
 export const getById = query({
   args: { id: v.id("flights") },
   handler: async (ctx, args) => {
@@ -630,8 +628,7 @@ export const getById = query({
     if (!flight) return null;
 
     const viewer = await getCurrentViewer(ctx);
-    const isOwner = Boolean(viewer) && flight.userId === viewer!._id;
-    if (!isOwner && !canViewerAccessFullFlightHistory(viewer)) {
+    if (!canViewerAccessFullFlightHistory(viewer)) {
       return null;
     }
 

@@ -48,24 +48,35 @@ async function requireTrackerAccess(
 function getRankedTrackerCounts(
   trackers: { callsign: string; clerkId: string }[],
 ): { callsign: string; count: number }[] {
-  const authedCounts = new Map<string, number>();
-  const anonCounts = new Map<string, number>();
+  // Count distinct viewers (by clerkId) per normalized callsign, so duplicate
+  // or case-variant rows from one viewer (e.g. ABC / Abc / abc) can't inflate
+  // a callsign's tally above that viewer's single real vote.
+  const authedViewers = new Map<string, Set<string>>();
+  const anonViewers = new Map<string, Set<string>>();
   for (const tracker of trackers) {
     const callsign = tracker.callsign.trim().toUpperCase();
     if (!callsign) continue;
-    const counts = isAnonymousTracker(tracker.clerkId)
-      ? anonCounts
-      : authedCounts;
-    counts.set(callsign, (counts.get(callsign) ?? 0) + 1);
+    const viewers = isAnonymousTracker(tracker.clerkId)
+      ? anonViewers
+      : authedViewers;
+    let set = viewers.get(callsign);
+    if (!set) {
+      set = new Set<string>();
+      viewers.set(callsign, set);
+    }
+    set.add(tracker.clerkId);
   }
 
-  const callsigns = new Set([...authedCounts.keys(), ...anonCounts.keys()]);
+  const callsigns = new Set([...authedViewers.keys(), ...anonViewers.keys()]);
   return Array.from(callsigns)
     .map((callsign) => ({
       callsign,
       count:
-        (authedCounts.get(callsign) ?? 0) +
-        Math.min(anonCounts.get(callsign) ?? 0, MAX_ANON_COUNT_PER_CALLSIGN),
+        (authedViewers.get(callsign)?.size ?? 0) +
+        Math.min(
+          anonViewers.get(callsign)?.size ?? 0,
+          MAX_ANON_COUNT_PER_CALLSIGN,
+        ),
     }))
     .sort((a, b) => b.count - a.count || a.callsign.localeCompare(b.callsign));
 }
@@ -80,7 +91,7 @@ export const startTracking = mutation({
     const callsigns = Array.from(
       new Set(
         args.callsigns
-          .map((callsign) => callsign.trim())
+          .map((callsign) => callsign.trim().toUpperCase())
           .filter(
             (callsign) => callsign && callsign.length <= MAX_CALLSIGN_LENGTH,
           ),
