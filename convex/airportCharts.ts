@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { logAdminTelemetry } from "./adminTelemetry";
 import { requireAdmin, requireAuthenticatedClerkId } from "./lib/auth";
+import { assertUploadThingUrl } from "./lib/uploadUrl";
 
 const chartTypeValidator = v.union(
   v.literal("TAXI"),
@@ -163,6 +164,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const uploadedBy = await requireAuthenticatedClerkId(ctx, args.uploadedBy);
+    assertUploadThingUrl(args.chartUrl);
 
     const id = await ctx.db.insert("airportCharts", {
       icao: args.icao.toUpperCase(),

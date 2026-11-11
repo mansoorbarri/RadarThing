@@ -16,6 +16,31 @@ function normalizeCallsign(callsign: string): string {
   return callsign.trim().toUpperCase().replace(/\s+/g, "");
 }
 
+// Validate/normalize a VA website at the trust boundary. The server action does
+// this too, but the mutation is callable directly by any authenticated VA
+// manager, so the check must live here: reject anything that isn't an http(s)
+// URL (e.g. javascript:/data: URIs that would become an XSS sink in the
+// rendered <a href>).
+function normalizeWebsite(website: string | undefined): string | undefined {
+  const trimmed = website?.trim();
+  if (!trimmed) return undefined;
+
+  const withProtocol = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+
+  let url: URL;
+  try {
+    url = new URL(withProtocol);
+  } catch {
+    throw new Error("Website must be a valid http(s) URL");
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error("Website must be a valid http(s) URL");
+  }
+  return url.toString();
+}
+
 function validateRegistrationInput(args: {
   name: string;
   callsignPrefix: string;
@@ -377,7 +402,7 @@ export const create = mutation({
       name: args.name.trim(),
       callsignPrefix: normalizeCallsignPrefix(args.callsignPrefix),
       adminClerkId: args.adminClerkId,
-      website: args.website,
+      website: normalizeWebsite(args.website),
       isActive: true,
       approvalStatus: "approved",
       createdBy: actor.clerkId,
@@ -441,7 +466,7 @@ export const register = mutation({
       name,
       callsignPrefix,
       adminClerkId: clerkId,
-      website: args.website,
+      website: normalizeWebsite(args.website),
       isActive: false,
       approvalStatus: "pending",
       createdBy: clerkId,
@@ -507,7 +532,7 @@ export const update = mutation({
       name: args.name.trim(),
       callsignPrefix: normalizeCallsignPrefix(args.callsignPrefix),
       adminClerkId: args.adminClerkId,
-      website: args.website,
+      website: normalizeWebsite(args.website),
       isActive: args.isActive,
       updatedAt: Date.now(),
     });
