@@ -16,6 +16,17 @@ interface Bucket {
 
 const buckets = new Map<string, Bucket>();
 const MAX_TRACKED_KEYS = 50_000;
+// Expired entries are purged by a time-throttled sweep rather than on every new
+// key, so a flood of distinct keys cannot force an O(n) scan per request.
+const SWEEP_INTERVAL_MS = 60_000;
+let lastSweepAt = 0;
+
+function sweepExpired(now: number): void {
+  for (const [key, bucket] of buckets) {
+    if (now >= bucket.resetAt) buckets.delete(key);
+  }
+  lastSweepAt = now;
+}
 
 export function getClientIp(request: Request): string {
   const header =
@@ -33,20 +44,34 @@ export function rateLimit(key: string, limit: number, windowMs: number): boolean
   const now = Date.now();
   const existing = buckets.get(key);
 
-  if (!existing || now >= existing.resetAt) {
-    // Opportunistically drop expired entries so the map cannot grow without
-    // bound under a flood of distinct IPs.
-    if (buckets.size >= MAX_TRACKED_KEYS) {
-      for (const [k, bucket] of buckets) {
-        if (now >= bucket.resetAt) buckets.delete(k);
-      }
-    }
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
+  // Live window for this key: count against the limit in place (no insert).
+  if (existing && now < existing.resetAt) {
+    if (existing.count >= limit) return false;
+    existing.count += 1;
     return true;
   }
 
-  if (existing.count >= limit) return false;
-  existing.count += 1;
+  // New key, or this key's window has expired and is being reset.
+  const isNewKey = existing === undefined;
+  if (isNewKey) {
+    // Throttled routine purge so steady-state growth stays bounded without an
+    // O(n) scan on every new key.
+    if (now - lastSweepAt >= SWEEP_INTERVAL_MS) sweepExpired(now);
+    if (buckets.size >= MAX_TRACKED_KEYS) {
+      // At hard capacity, reclaim every expired bucket first (this scan runs
+      // only while the map is full), so an expired entry is always dropped
+      // before any live, still-rate-limited one.
+      sweepExpired(now);
+      if (buckets.size >= MAX_TRACKED_KEYS) {
+        // Every remaining bucket is live; evict the oldest-inserted so size
+        // never exceeds the cap. Only reachable under a flood of distinct
+        // live keys, where resetting one key's window is the bounded cost.
+        const oldest = buckets.keys().next().value;
+        if (oldest !== undefined) buckets.delete(oldest);
+      }
+    }
+  }
+  buckets.set(key, { count: 1, resetAt: now + windowMs });
   return true;
 }
 
