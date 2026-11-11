@@ -31,6 +31,16 @@ export default defineSchema({
     .index("by_adminProExpiresAt", ["adminProExpiresAt"])
     .index("by_trialEndsAt", ["trialEndsAt"]),
 
+  // Site-wide switches admins flip at runtime. One row per key.
+  siteSettings: defineTable({
+    key: v.literal("flightAccess"),
+    // While an event is live, FREE pilots may start flights. Otherwise only
+    // PRO (incl. trials, admin grants and admins) can start one.
+    eventLive: v.boolean(),
+    updatedAt: v.number(),
+    updatedBy: v.optional(v.id("users")),
+  }).index("by_key", ["key"]),
+
   // Daily metered allowances for FREE users (e.g. distinct chart airports).
   freeUsage: defineTable({
     userId: v.id("users"),

@@ -49,6 +49,8 @@
   const TRACKING_STATUS_API =
     "https://radarthing.com/api/userscript/tracking-status";
   const TRACKING_STATUS_POLL_INTERVAL_MS = 15000;
+  const FLIGHT_ACCESS_API =
+    "https://radarthing.com/api/userscript/flight-access";
   const ACARS_API = "https://radarthing.com/api/userscript/acars";
   const ACARS_DEVICE_API = `${ACARS_API}/device`;
   const ACARS_FLIGHT_API = `${ACARS_API}/flight`;
@@ -956,6 +958,37 @@
   function validateSquawk(squawk) {
     const rgx = /^[0-7]{4}$/;
     return squawk.length === 0 || rgx.test(squawk);
+  }
+
+  // Free pilots can only start a flight while an admin has an event live.
+  // Fails open: if RadarThing can't be reached, the flight still starts.
+  async function checkFlightStartAccess() {
+    const googleId = geofs?.userRecord?.googleid;
+    const query = googleId ? `?googleId=${encodeURIComponent(googleId)}` : "";
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    try {
+      const response = await fetch(`${FLIGHT_ACCESS_API}${query}`, {
+        cache: "no-store",
+        signal: controller.signal,
+        headers: { "X-Requested-With": "GeoFS-RadarThing" },
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const access = await response.json();
+      if (access && access.allowed === false) {
+        return {
+          allowed: false,
+          message:
+            access.message ||
+            "No event is live right now, and starting a flight outside an event needs RadarThing Pro.",
+        };
+      }
+    } catch (_) {
+      // Network or server trouble, or no answer in time: don't block the pilot.
+    } finally {
+      clearTimeout(timeoutId);
+    }
+    return { allowed: true, message: "" };
   }
 
   function checkFlightNoAvailable(flightNo, myId) {
@@ -3433,6 +3466,14 @@
             FLT_INPUT_ID,
           );
           return;
+        }
+        // Only starting a new flight is gated; updating or ending one isn't.
+        if (!wasTracking) {
+          const access = await checkFlightStartAccess();
+          if (!access.allowed) {
+            setFormError(access.message);
+            return;
+          }
         }
         if (!wasTracking && resumeDeferredGoogleId) {
           saveBtn.textContent = "Starting…";
