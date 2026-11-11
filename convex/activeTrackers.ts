@@ -14,6 +14,18 @@ const STALE_TRACKER_MS = 5 * 60 * 1000;
 // Matches the userscript tracking-status route; keeps the summary document
 // small no matter what clients send.
 const MAX_CALLSIGN_LENGTH = 32;
+// A single tracker (one viewer) only follows a handful of callsigns; cap it so
+// one row can't spam the ranking across many callsigns.
+const MAX_TRACKED_CALLSIGNS = 25;
+// Anonymous tracker IDs are unauthenticated and freely forgeable (any number of
+// anon:<uuid> values). Cap how many anonymous trackers count toward a single
+// callsign so a flood of forged anon IDs can't push a callsign to "most
+// tracked"; reaching the threshold requires real authenticated viewers.
+const MAX_ANON_COUNT_PER_CALLSIGN = MIN_TRACKERS_FOR_MOST_TRACKED - 1;
+
+function isAnonymousTracker(clerkId: string): boolean {
+  return clerkId.startsWith("anon:");
+}
 const ANONYMOUS_TRACKER_ID =
   /^anon:(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[a-z0-9]+:[a-z0-9]+)$/i;
 
@@ -34,17 +46,27 @@ async function requireTrackerAccess(
 }
 
 function getRankedTrackerCounts(
-  trackers: { callsign: string }[],
+  trackers: { callsign: string; clerkId: string }[],
 ): { callsign: string; count: number }[] {
-  const counts = new Map<string, number>();
+  const authedCounts = new Map<string, number>();
+  const anonCounts = new Map<string, number>();
   for (const tracker of trackers) {
     const callsign = tracker.callsign.trim().toUpperCase();
     if (!callsign) continue;
+    const counts = isAnonymousTracker(tracker.clerkId)
+      ? anonCounts
+      : authedCounts;
     counts.set(callsign, (counts.get(callsign) ?? 0) + 1);
   }
 
-  return Array.from(counts.entries())
-    .map(([callsign, count]) => ({ callsign, count }))
+  const callsigns = new Set([...authedCounts.keys(), ...anonCounts.keys()]);
+  return Array.from(callsigns)
+    .map((callsign) => ({
+      callsign,
+      count:
+        (authedCounts.get(callsign) ?? 0) +
+        Math.min(anonCounts.get(callsign) ?? 0, MAX_ANON_COUNT_PER_CALLSIGN),
+    }))
     .sort((a, b) => b.count - a.count || a.callsign.localeCompare(b.callsign));
 }
 
@@ -63,7 +85,7 @@ export const startTracking = mutation({
             (callsign) => callsign && callsign.length <= MAX_CALLSIGN_LENGTH,
           ),
       ),
-    );
+    ).slice(0, MAX_TRACKED_CALLSIGNS);
 
     // Replace any existing tracking entries for this user with the current selection.
     const existing = await ctx.db
