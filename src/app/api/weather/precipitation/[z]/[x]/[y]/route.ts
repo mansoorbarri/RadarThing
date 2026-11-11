@@ -30,8 +30,10 @@ export async function GET(
   }
 
   const { z, x, y } = await context.params;
-  // Only plain integers; the values are interpolated into the upstream URL.
-  if (![z, x, y].every((value) => /^\d{1,3}$/.test(value))) {
+  // Only plain non-negative integers; the values are interpolated into the
+  // upstream URL, so this blocks path/query injection. No digit-count cap:
+  // tile x/y already exceed three digits at zoom 11+ (coords run 0..2^z-1).
+  if (![z, x, y].every((value) => /^\d{1,7}$/.test(value))) {
     return new NextResponse(null, { status: 400 });
   }
   const upstreamUrl = `https://tile.openweathermap.org/map/precipitation_new/${z}/${x}/${y}.png?appid=${env.OPENWEATHERMAP_API_KEY}`;
