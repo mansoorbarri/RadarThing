@@ -9,7 +9,6 @@ import { LogOut, User } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { GoogleSignInButton } from "~/components/auth/GoogleSignInButton";
 import { QuietErrorBoundary } from "~/components/QuietErrorBoundary";
-import { useProStatus } from "~/hooks/useProStatus";
 
 const MENU_LINK_CLASS =
   "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-cyan-400/10 hover:text-cyan-400";
@@ -22,21 +21,23 @@ const MENU_LINK_CLASS =
 const RoleMenuLinks = ({ onNavigate }: { onNavigate: () => void }) => {
   const { user } = useUser();
   const { isAuthenticated } = useConvexAuth();
-  const { isAdminUser } = useProStatus();
-  const managedVirtualAirlines = useQuery(
-    api.virtualAirlines.getManagedByAdmin,
-    user?.id && isAuthenticated ? { adminClerkId: user.id } : "skip",
+  // One query for both links so the Admin and VA Admin links resolve in the
+  // same round-trip and appear together, instead of VA Admin popping in after
+  // a separate query settles.
+  const roleStatus = useQuery(
+    api.users.menuRoleStatus,
+    user?.id && isAuthenticated ? {} : "skip",
   );
 
   return (
     <>
-      {isAdminUser && (
+      {roleStatus?.isAdmin && (
         <Link href="/admin" onClick={onNavigate} className={MENU_LINK_CLASS}>
           <User className="h-4 w-4" />
           Admin
         </Link>
       )}
-      {(managedVirtualAirlines?.length ?? 0) > 0 && (
+      {roleStatus?.managesVirtualAirline && (
         <Link href="/va-admin" onClick={onNavigate} className={MENU_LINK_CLASS}>
           <User className="h-4 w-4" />
           VA Admin

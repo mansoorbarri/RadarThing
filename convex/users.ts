@@ -71,6 +71,41 @@ export const isSuperAdmin = query({
   },
 });
 
+// Role flags for the account menu's conditional links (Admin, VA Admin),
+// resolved in a single round-trip so both links appear together instead of the
+// VA Admin link popping in after a separate query settles.
+export const menuRoleStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user || user.isDeleted || user.activeBanId) {
+      return {
+        isAdmin: false,
+        isSuperAdmin: false,
+        managesVirtualAirline: false,
+      };
+    }
+
+    const isSuperAdmin = user.googleId === SUPER_ADMIN_GOOGLE_ID;
+    const managedVirtualAirlines = await ctx.db
+      .query("virtualAirlines")
+      .withIndex("by_adminClerkId", (q) =>
+        q.eq("adminClerkId", user.clerkId),
+      )
+      .collect();
+    const managesVirtualAirline = managedVirtualAirlines.some(
+      (virtualAirline) =>
+        (virtualAirline.approvalStatus ?? "approved") === "approved",
+    );
+
+    return {
+      isAdmin: isSuperAdmin || user.role === "ADMIN",
+      isSuperAdmin,
+      managesVirtualAirline,
+    };
+  },
+});
+
 function getProAccessLabel(user: { email: string; discordUsername?: string }) {
   return user.discordUsername
     ? `${user.discordUsername} (${user.email})`
