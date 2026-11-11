@@ -29,6 +29,7 @@ import {
 import { ModerationTab } from "./_components/ModerationTab";
 import { AcarsModerationTab } from "./_components/AcarsModerationTab";
 import { AdminHeader } from "./_components/AdminHeader";
+import { EventLiveToggle } from "./_components/EventLiveToggle";
 import { AdminAccessDenied } from "./_components/AdminAccessDenied";
 import { AdminSkeleton, AdminTabSkeleton } from "./_components/skeletons";
 import {
@@ -257,6 +258,8 @@ export default function AdminPage() {
             Admin dashboard
           </h1>
         </div>
+
+        <EventLiveToggle />
 
         {/* Main Tabs */}
         <div className="mb-4 sm:hidden">

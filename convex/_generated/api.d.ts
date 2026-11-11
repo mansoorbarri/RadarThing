@@ -29,6 +29,7 @@ import type * as lib_telemetry from "../lib/telemetry.js";
 import type * as lib_uploadUrl from "../lib/uploadUrl.js";
 import type * as moderation from "../moderation.js";
 import type * as moderationEmail from "../moderationEmail.js";
+import type * as siteSettings from "../siteSettings.js";
 import type * as telemetry from "../telemetry.js";
 import type * as users from "../users.js";
 import type * as virtualAirlineAircraftImages from "../virtualAirlineAircraftImages.js";
@@ -64,6 +65,7 @@ declare const fullApi: ApiFromModules<{
   "lib/uploadUrl": typeof lib_uploadUrl;
   moderation: typeof moderation;
   moderationEmail: typeof moderationEmail;
+  siteSettings: typeof siteSettings;
   telemetry: typeof telemetry;
   users: typeof users;
   virtualAirlineAircraftImages: typeof virtualAirlineAircraftImages;
