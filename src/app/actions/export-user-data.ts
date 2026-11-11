@@ -16,6 +16,7 @@ export async function getCurrentUserDataExport(): Promise<RadarThingAccountDataE
 
   const user = await convex.query(api.users.getByClerkId, {
     clerkId: userId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
   });
 
   if (!user || user.isDeleted) {

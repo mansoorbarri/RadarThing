@@ -12,7 +12,10 @@ async function getUserByEmail(
   const email = clerkUser?.primaryEmailAddress?.emailAddress;
   if (!email) return null;
 
-  const user = await convex.query(api.users.getByEmail, { email });
+  const user = await convex.query(api.users.getByEmail, {
+    email,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
+  });
   return user?.activeBanId || user?.isDeleted ? null : user;
 }
 

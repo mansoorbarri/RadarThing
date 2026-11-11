@@ -14,6 +14,7 @@ import {
 } from "../src/lib/proAccess";
 import { logAdminTelemetry } from "./adminTelemetry";
 import {
+  isSystemSecretValid,
   requireAdmin,
   requireAnyVirtualAirlineManager,
   requireAuthenticatedClerkId,
@@ -77,10 +78,40 @@ function getProAccessLabel(user: { email: string; discordUsername?: string }) {
     : user.email;
 }
 
-// Get user by Clerk ID
+// Projection safe to return for arbitrary (non-owner) users. Deliberately
+// omits email and stripeCustomerId. googleId/discordUsername are already
+// broadcast publicly via the live radar feed, so they stay available for
+// profile ↔ live-aircraft matching.
+function toPublicProfile(
+  user: {
+    _id: Id<"users">;
+    discordUsername?: string;
+    googleId?: string;
+    role: "FREE" | "PRO" | "ADMIN";
+    isDeleted: boolean;
+  } | null,
+) {
+  if (!user) return null;
+  return {
+    _id: user._id,
+    discordUsername: user.discordUsername ?? null,
+    googleId: user.googleId ?? null,
+    role: user.role,
+    isDeleted: user.isDeleted,
+  };
+}
+
+// Get user by Clerk ID. Returns the full record (email, Stripe customer ID,
+// etc.) only to the account owner or trusted server callers; anonymous or
+// cross-account callers are rejected so the user table cannot be harvested.
 export const getByClerkId = query({
-  args: { clerkId: v.string() },
+  args: { clerkId: v.string(), systemSecret: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const isOwner = Boolean(identity?.subject) && identity!.subject === args.clerkId;
+    if (!isOwner && !isSystemSecretValid(args.systemSecret)) {
+      throw new Error("Unauthorized");
+    }
     return await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
@@ -135,10 +166,11 @@ export const getDiscordUsernamesByGoogleIds = query({
   },
 });
 
-// Get user by Stripe Customer ID
+// Get user by Stripe Customer ID. Trusted server callers only.
 export const getByStripeCustomerId = query({
-  args: { stripeCustomerId: v.string() },
+  args: { stripeCustomerId: v.string(), systemSecret: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    requireSystem(ctx, args.systemSecret);
     return await ctx.db
       .query("users")
       .withIndex("by_stripeCustomerId", (q) =>
@@ -148,10 +180,16 @@ export const getByStripeCustomerId = query({
   },
 });
 
-// Get user by email
+// Get user by email. Returns the full record, so it is restricted to the
+// owner (matched on the session email) or trusted server callers.
 export const getByEmail = query({
-  args: { email: v.string() },
+  args: { email: v.string(), systemSecret: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const isOwner = Boolean(identity?.email) && identity!.email === args.email;
+    if (!isOwner && !isSystemSecretValid(args.systemSecret)) {
+      throw new Error("Unauthorized");
+    }
     return await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
@@ -159,10 +197,12 @@ export const getByEmail = query({
   },
 });
 
-// Get user by Discord username
+// Get user by Discord username. Returns the full record, so it is limited to
+// trusted server callers (the Discord bot).
 export const getByDiscordUsername = query({
-  args: { discordUsername: v.string() },
+  args: { discordUsername: v.string(), systemSecret: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    requireSystem(ctx, args.systemSecret);
     const normalized = normalizeDiscordUsername(args.discordUsername);
 
     const indexedUser = await ctx.db
@@ -202,18 +242,18 @@ export const getByProfileIdentifier = query({
       )
       .first();
 
-    if (userByDiscordUsername) return userByDiscordUsername;
+    if (userByDiscordUsername) return toPublicProfile(userByDiscordUsername);
 
     // The fallback supports legacy Discord records and treats malformed IDs as
     // a normal missing profile instead of surfacing a validation error.
     const users = await ctx.db.query("users").collect();
-    return (
+    return toPublicProfile(
       users.find(
         (user) =>
           user._id === identifier ||
           (user.discordUsername &&
             normalizeDiscordUsername(user.discordUsername) === normalized),
-      ) ?? null
+      ) ?? null,
     );
   },
 });
@@ -879,10 +919,17 @@ export const setTemporaryProGrant = mutation({
   },
 });
 
-// Get upload counts for all active users (aircraft images + airport charts)
+// Get upload counts for all active users (aircraft images + airport charts).
+// Admin-only: returns clerkIds and Discord names across the whole user base.
 export const getFreeUserUploadCounts = query({
   args: {},
   handler: async (ctx) => {
+    try {
+      await requireAdmin(ctx);
+    } catch {
+      return [];
+    }
+
     const users = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("isDeleted"), false))

@@ -7,6 +7,9 @@ export async function getUserGoogleId(): Promise<string | null> {
   const { userId } = await auth();
   if (!userId) return null;
 
-  const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
+  const user = await convex.query(api.users.getByClerkId, {
+    clerkId: userId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
+  });
   return user?.googleId ?? null;
 }

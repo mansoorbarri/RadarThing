@@ -1002,8 +1002,16 @@ export const backfillUserStatsPage = mutation({
 });
 
 export const listActiveUserIdsForStatsBackfill = query({
-  args: { paginationOpts: paginationOptsValidator },
+  args: {
+    paginationOpts: paginationOptsValidator,
+    actorClerkId: v.optional(v.string()),
+    systemSecret: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx, {
+      actorClerkId: args.actorClerkId,
+      systemSecret: args.systemSecret,
+    });
     const page = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("isDeleted"), false))
@@ -1253,7 +1261,6 @@ export const getLeaderboard = query({
 
       leaderboard.push({
         userId: user._id,
-        clerkId: user.clerkId,
         callsign:
           userStats.lastFlightCallsign ?? user.discordUsername ?? "Unknown",
         role: getEffectiveAccessRole(user),

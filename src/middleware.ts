@@ -15,7 +15,10 @@ export default clerkMiddleware(async (auth, request) => {
     )
   )
     return;
-  const user = await fetchQuery(api.users.getByClerkId, { clerkId: userId });
+  const user = await fetchQuery(api.users.getByClerkId, {
+    clerkId: userId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
+  });
   if (!user?.activeBanId) return;
   if (path.startsWith("/api/") || request.method !== "GET")
     return NextResponse.json({ error: "Account banned" }, { status: 403 });

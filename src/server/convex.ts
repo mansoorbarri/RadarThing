@@ -12,6 +12,7 @@ export async function getAuthenticatedConvex() {
   if (userId) {
     const user = await convex.query(api.users.getByClerkId, {
       clerkId: userId,
+      systemSecret: process.env.CONVEX_SYSTEM_SECRET,
     });
     if (user?.activeBanId || user?.isDeleted)
       throw new Error("Account access restricted");

@@ -10,7 +10,10 @@ export async function createPortalSession() {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
+  const user = await convex.query(api.users.getByClerkId, {
+    clerkId: userId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
+  });
 
   if (!user?.stripeCustomerId) {
     throw new Error("No Stripe customer found");
