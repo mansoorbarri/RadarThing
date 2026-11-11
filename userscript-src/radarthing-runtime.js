@@ -965,9 +965,12 @@
   async function checkFlightStartAccess() {
     const googleId = geofs?.userRecord?.googleid;
     const query = googleId ? `?googleId=${encodeURIComponent(googleId)}` : "";
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
     try {
       const response = await fetch(`${FLIGHT_ACCESS_API}${query}`, {
         cache: "no-store",
+        signal: controller.signal,
         headers: { "X-Requested-With": "GeoFS-RadarThing" },
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -981,7 +984,9 @@
         };
       }
     } catch (_) {
-      // Network or server trouble: don't block the pilot.
+      // Network or server trouble, or no answer in time: don't block the pilot.
+    } finally {
+      clearTimeout(timeoutId);
     }
     return { allowed: true, message: "" };
   }
