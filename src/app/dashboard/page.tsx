@@ -495,11 +495,11 @@ export default function DashboardPage() {
                 </button>
               </div>
               {supportId && (
-                <div className="mt-1">
+                <div className="mt-1.5">
                   <button
                     type="button"
                     onClick={copySupportId}
-                    className="flex min-h-10 cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-400 transition-colors hover:text-white"
+                    className="-my-1 flex min-h-6 cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-400 transition-colors hover:text-white"
                     title="Copy your support ID to share with support when reporting a problem"
                     aria-label={
                       copied
@@ -516,7 +516,7 @@ export default function DashboardPage() {
                   </button>
                 </div>
               )}
-              <div className="mt-1.5 flex items-center gap-3">
+              <div className="mt-2 flex items-center gap-3">
                 {discordConnected ? (
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 font-mono text-xs text-indigo-400">
@@ -530,7 +530,7 @@ export default function DashboardPage() {
                         setConfirmDiscordDisconnect(true);
                       }}
                       disabled={discordLoading}
-                      className="inline-flex min-h-10 cursor-pointer items-center font-mono text-xs text-slate-400 transition-colors hover:text-red-400 disabled:opacity-50"
+                      className="-my-1 inline-flex min-h-6 cursor-pointer items-center font-mono text-xs text-slate-400 transition-colors hover:text-red-400 disabled:opacity-50"
                     >
                       Disconnect
                     </button>
@@ -540,7 +540,7 @@ export default function DashboardPage() {
                     type="button"
                     onClick={connectDiscord}
                     disabled={discordLoading}
-                    className="flex min-h-10 cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-400 transition-colors hover:text-indigo-400 disabled:opacity-50"
+                    className="-my-1 flex min-h-6 cursor-pointer items-center gap-1.5 font-mono text-xs text-slate-400 transition-colors hover:text-indigo-400 disabled:opacity-50"
                   >
                     <DiscordIcon className="h-3.5 w-3.5" />
                     <span>
