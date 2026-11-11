@@ -16,6 +16,7 @@ export async function getCurrentUserDataExport(): Promise<RadarThingAccountDataE
 
   const user = await convex.query(api.users.getByClerkId, {
     clerkId: userId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
   });
 
   if (!user || user.isDeleted) {
@@ -38,7 +39,10 @@ export async function getCurrentUserDataExport(): Promise<RadarThingAccountDataE
     reports,
   ] = await Promise.all([
     convex.query(api.flights.getStatsByClerkId, { clerkId: userId }),
-    convex.query(api.flights.getByUserId, { userId: user._id }),
+    convex.query(api.flights.getByUserId, {
+      userId: user._id,
+      systemSecret: process.env.CONVEX_SYSTEM_SECRET,
+    }),
     loadAll((cursor) =>
       exportConvex.query(api.acars.exportMessages, {
         source: "user",

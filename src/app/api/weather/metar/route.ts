@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "~/env";
+import { getClientIp, rateLimit, rateLimitHeaders } from "~/server/rateLimit";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const CACHE_CONTROL = "public, max-age=300, s-maxage=300, stale-while-revalidate=86400";
 const metarCache = new Map<string, { data: unknown; timestamp: number }>();
+// AVWX is a paid upstream, so cap per-IP request volume. A pilot only views a
+// handful of airports per minute; this bounds unauthenticated scraping.
+const RATE_LIMIT = 100;
+const RATE_WINDOW_MS = 60 * 1000;
 
 export async function GET(request: NextRequest) {
+  if (!rateLimit(`metar:${getClientIp(request)}`, RATE_LIMIT, RATE_WINDOW_MS)) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: rateLimitHeaders(RATE_WINDOW_MS) },
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const icao = searchParams.get("icao")?.trim().toUpperCase();
 

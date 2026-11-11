@@ -1,7 +1,10 @@
 import { convex, api } from "./convex";
 
 export async function assertCurrentAccountActive(clerkId: string) {
-  const user = await convex.query(api.users.getByClerkId, { clerkId });
+  const user = await convex.query(api.users.getByClerkId, {
+    clerkId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
+  });
   if (user?.activeBanId || user?.isDeleted)
     throw new Error("Account access restricted");
 }

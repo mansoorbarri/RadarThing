@@ -16,7 +16,10 @@ export async function getCurrentAccessContext() {
     };
   }
 
-  const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
+  const user = await convex.query(api.users.getByClerkId, {
+    clerkId: userId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
+  });
   const isSuperAdmin = Boolean(
     user &&
     !user.isDeleted &&

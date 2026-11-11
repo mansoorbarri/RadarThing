@@ -101,6 +101,7 @@ export async function POST(req: Request) {
     if (userId) {
       const userByClerk = await convex.query(api.users.getByClerkId, {
         clerkId: userId,
+        systemSecret: process.env.CONVEX_SYSTEM_SECRET,
       });
       if (userByClerk && !userByClerk.isDeleted) {
         await convex.mutation(api.users.updateByClerkId, {
@@ -115,7 +116,10 @@ export async function POST(req: Request) {
 
     // Try by email
     if (email) {
-      const userByEmail = await convex.query(api.users.getByEmail, { email });
+      const userByEmail = await convex.query(api.users.getByEmail, {
+        email,
+        systemSecret: process.env.CONVEX_SYSTEM_SECRET,
+      });
       if (userByEmail && !userByEmail.isDeleted) {
         await convex.mutation(api.users.update, {
           id: userByEmail._id,

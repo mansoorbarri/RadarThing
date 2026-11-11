@@ -24,6 +24,7 @@ import {
   isSystemSecretValid,
   requireAdmin,
   requireAuthenticatedClerkId,
+  requireSystem,
 } from "./lib/auth";
 import { recordFlightTelemetry } from "./lib/telemetry";
 
@@ -74,10 +75,17 @@ function getStatsMaxSpeedKts(aircraftType?: string) {
     : DEFAULT_STATS_MAX_SPEED_KTS;
 }
 
-// Get flight history for a user by their Google ID
+// Get flight history for a user by their Google ID.
+// Full flight history (including routeData used for replay) is a PRO feature,
+// so return it only to PRO/admin viewers or trusted server callers; anyone
+// else gets an empty list. Mirrors the client-side PRO gate in the ATC sidebar.
 export const getHistoryByGoogleId = query({
-  args: { googleId: v.string() },
+  args: { googleId: v.string(), systemSecret: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    if (!isSystemSecretValid(args.systemSecret)) {
+      const viewer = await getCurrentViewer(ctx);
+      if (!canViewerAccessFullFlightHistory(viewer)) return [];
+    }
     // First find the user
     const user = await ctx.db
       .query("users")
@@ -441,15 +449,18 @@ export const create = mutation({
     systemSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Flights are written only by the trusted ingest pipeline (the SSE/server
+    // tracker) using the system secret. A previous client-writable path let any
+    // signed-in user POST fabricated flights for their own account (arbitrary
+    // duration/distance/altitude/streak timing), forging leaderboard and
+    // profile stats, so it has been removed.
+    requireSystem(ctx, args.systemSecret);
+
     const targetUser = await ctx.db.get(args.userId);
-    if (targetUser?.activeBanId) throw new Error("Account access restricted");
-    if (!isSystemSecretValid(args.systemSecret)) {
-      const user = await ctx.db.get(args.userId);
-      if (!user || user.isDeleted) {
-        throw new Error("User not found");
-      }
-      await requireAuthenticatedClerkId(ctx, user.clerkId);
+    if (!targetUser || targetUser.isDeleted) {
+      throw new Error("User not found");
     }
+    if (targetUser.activeBanId) throw new Error("Account access restricted");
 
     if (args.dedupeKey) {
       const existingFlight = await ctx.db
@@ -590,10 +601,14 @@ export const create = mutation({
   },
 });
 
-// Get all flights for a user
+// Get all of a user's flights in bulk (raw rows incl. routeData). Trusted
+// server callers only (the account data export): a FREE owner must not be able
+// to pull their full routeData here and sidestep the PRO replay paywall that
+// getFlightHistoryPage / getById / getHistoryByGoogleId enforce.
 export const getByUserId = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.id("users"), systemSecret: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    requireSystem(ctx, args.systemSecret);
     return await ctx.db
       .query("flights")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
@@ -602,12 +617,20 @@ export const getByUserId = query({
   },
 });
 
-// Get a single flight by ID
+// Get a single flight by ID (incl. routeData for replay). Replay is a PRO
+// feature even for your own flights (getFlightHistoryPage withholds routeData
+// from FREE owners), so gate on the same entitlement; others get null so
+// arbitrary routes can't be scraped.
 export const getById = query({
   args: { id: v.id("flights") },
   handler: async (ctx, args) => {
     const flight = await ctx.db.get(args.id);
     if (!flight) return null;
+
+    const viewer = await getCurrentViewer(ctx);
+    if (!canViewerAccessFullFlightHistory(viewer)) {
+      return null;
+    }
 
     return {
       id: flight._id,
@@ -1002,8 +1025,16 @@ export const backfillUserStatsPage = mutation({
 });
 
 export const listActiveUserIdsForStatsBackfill = query({
-  args: { paginationOpts: paginationOptsValidator },
+  args: {
+    paginationOpts: paginationOptsValidator,
+    actorClerkId: v.optional(v.string()),
+    systemSecret: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx, {
+      actorClerkId: args.actorClerkId,
+      systemSecret: args.systemSecret,
+    });
     const page = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("isDeleted"), false))
@@ -1253,7 +1284,6 @@ export const getLeaderboard = query({
 
       leaderboard.push({
         userId: user._id,
-        clerkId: user.clerkId,
         callsign:
           userStats.lastFlightCallsign ?? user.discordUsername ?? "Unknown",
         role: getEffectiveAccessRole(user),

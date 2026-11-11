@@ -266,6 +266,7 @@ async function validateVirtualAirlineInput(data: {
 
   const adminUser = await convex.query(api.users.getByClerkId, {
     clerkId: data.adminClerkId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
   });
 
   if (!adminUser || adminUser.isDeleted || adminUser.activeBanId) {
@@ -320,6 +321,7 @@ async function ensureVirtualAirlineAdminMembership(data: {
 }) {
   const adminUser = await convex.query(api.users.getByClerkId, {
     clerkId: data.adminClerkId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
   });
 
   if (!adminUser?.googleId) {
@@ -724,6 +726,7 @@ export async function addVirtualAirlineMember(data: {
 
   const currentUser = await convex.query(api.users.getByClerkId, {
     clerkId: access.clerkId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
   });
 
   if (!currentUser || currentUser.isDeleted || currentUser.activeBanId) {

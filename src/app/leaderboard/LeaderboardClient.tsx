@@ -158,12 +158,12 @@ export default function LeaderboardClient({
     : null;
 
   const currentUserRank =
-    isLoaded && sorted
-      ? sorted.findIndex((entry) => entry.clerkId === user?.id) + 1
+    isLoaded && sorted && dbUser?._id
+      ? sorted.findIndex((entry) => entry.userId === dbUser._id) + 1
       : 0;
   const currentUserEntry =
-    isLoaded && sorted
-      ? (sorted.find((entry) => entry.clerkId === user?.id) ?? null)
+    isLoaded && sorted && dbUser?._id
+      ? (sorted.find((entry) => entry.userId === dbUser._id) ?? null)
       : null;
   const visibleSorted = sorted?.slice(0, 10) ?? null;
 
@@ -648,7 +648,8 @@ export default function LeaderboardClient({
                   {visibleSorted.map((entry, i) => {
                     const rank = i + 1;
                     const isTop3 = rank <= 3;
-                    const isCurrentUser = user?.id === entry.clerkId;
+                    const isCurrentUser =
+                      !!dbUser?._id && dbUser._id === entry.userId;
                     const medalColor =
                       rank === 1
                         ? "text-amber-400 border-amber-500/40 bg-amber-500/10"

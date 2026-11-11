@@ -118,7 +118,10 @@ async function isAdminUser(): Promise<boolean> {
   const { userId } = await auth();
   if (!userId) return false;
 
-  const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
+  const user = await convex.query(api.users.getByClerkId, {
+    clerkId: userId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
+  });
   if (!user || user.activeBanId || user.isDeleted) return false;
 
   if (user.role === "ADMIN") return true;

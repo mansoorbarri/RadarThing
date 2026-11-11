@@ -54,7 +54,10 @@ export async function syncAfterCheckout() {
   const { userId } = await auth();
   if (!userId) return { success: false, error: "Not authenticated" };
 
-  const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
+  const user = await convex.query(api.users.getByClerkId, {
+    clerkId: userId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
+  });
   let stripeCustomerId = user?.stripeCustomerId;
 
   // If no customer ID stored, try to find it from Stripe using clerkId metadata

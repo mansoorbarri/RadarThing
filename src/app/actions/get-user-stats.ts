@@ -26,7 +26,10 @@ export async function getUserStats(): Promise<{
   const [stats, isPro, user] = await Promise.all([
     convex.query(api.flights.getStatsByClerkId, { clerkId: userId }),
     convex.query(api.users.isPro, { clerkId: userId }),
-    convex.query(api.users.getByClerkId, { clerkId: userId }),
+    convex.query(api.users.getByClerkId, {
+      clerkId: userId,
+      systemSecret: process.env.CONVEX_SYSTEM_SECRET,
+    }),
   ]);
 
   // Support ID: prefer googleId (used in SSE server logs), fallback to convex ID

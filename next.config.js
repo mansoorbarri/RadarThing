@@ -82,8 +82,16 @@ const config = {
             value: "nosniff",
           },
           {
+            // A full script-src/default-src allowlist is intentionally not set
+            // here: the app loads maps, ads, Clerk, Stripe, Convex, UploadThing
+            // and PostHog, so a nonce-based policy needs its own report-only
+            // rollout to avoid breaking production. These host-agnostic
+            // directives harden against injection with no breakage risk:
+            // object-src 'none' blocks <object>/<embed> vectors and base-uri
+            // 'self' blocks <base>-tag hijacking of relative URLs.
             key: "Content-Security-Policy",
-            value: "frame-ancestors 'self' https://klmgeofsvirtual.github.io",
+            value:
+              "frame-ancestors 'self' https://klmgeofsvirtual.github.io; base-uri 'self'; object-src 'none'",
           },
           {
             key: "Referrer-Policy",

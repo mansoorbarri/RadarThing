@@ -51,6 +51,7 @@ export async function POST(request: Request) {
 
       const user = await convex.query(api.users.getByDiscordUsername, {
         discordUsername,
+        systemSecret: env.CONVEX_SYSTEM_SECRET,
       });
 
       if (!user) {

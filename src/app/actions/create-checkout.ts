@@ -45,6 +45,7 @@ export async function createCheckoutSession() {
   // Get existing user from Convex
   const dbUser = await convex.query(api.users.getByClerkId, {
     clerkId: userId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
   });
   if (dbUser?.activeBanId || dbUser?.isDeleted)
     throw new Error("Account access restricted");

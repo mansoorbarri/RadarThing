@@ -12,6 +12,7 @@ import {
   requireAuthenticatedClerkId,
   requireSystem,
 } from "./lib/auth";
+import { assertUploadThingUrl } from "./lib/uploadUrl";
 
 async function incrementApprovedAircraftImages(ctx: any, uploadedBy: string) {
   const user = await ctx.db
@@ -352,6 +353,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const uploadedBy = await requireAuthenticatedClerkId(ctx, args.uploadedBy);
+    assertUploadThingUrl(args.imageUrl);
 
     const id = await ctx.db.insert("aircraftImages", {
       airlineIata: args.airlineIata.toUpperCase(),

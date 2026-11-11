@@ -26,6 +26,7 @@ import type * as lib_flightSummaries from "../lib/flightSummaries.js";
 import type * as lib_icaoRegions from "../lib/icaoRegions.js";
 import type * as lib_moderationRules from "../lib/moderationRules.js";
 import type * as lib_telemetry from "../lib/telemetry.js";
+import type * as lib_uploadUrl from "../lib/uploadUrl.js";
 import type * as moderation from "../moderation.js";
 import type * as moderationEmail from "../moderationEmail.js";
 import type * as telemetry from "../telemetry.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   "lib/icaoRegions": typeof lib_icaoRegions;
   "lib/moderationRules": typeof lib_moderationRules;
   "lib/telemetry": typeof lib_telemetry;
+  "lib/uploadUrl": typeof lib_uploadUrl;
   moderation: typeof moderation;
   moderationEmail: typeof moderationEmail;
   telemetry: typeof telemetry;

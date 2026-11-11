@@ -11,7 +11,10 @@ async function canViewFlightHistory(): Promise<boolean> {
   const { userId } = await auth();
   if (!userId) return false;
 
-  const user = await convex.query(api.users.getByClerkId, { clerkId: userId });
+  const user = await convex.query(api.users.getByClerkId, {
+    clerkId: userId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
+  });
   if (!user) return false;
 
   // Admin role or PRO role
@@ -35,6 +38,7 @@ export async function getFlightHistory(googleId: string) {
 
   const flights = await convex.query(api.flights.getHistoryByGoogleId, {
     googleId,
+    systemSecret: process.env.CONVEX_SYSTEM_SECRET,
   });
 
   return {
