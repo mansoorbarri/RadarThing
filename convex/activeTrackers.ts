@@ -24,7 +24,11 @@ const MAX_TRACKED_CALLSIGNS = 25;
 const MAX_ANON_COUNT_PER_CALLSIGN = MIN_TRACKERS_FOR_MOST_TRACKED - 1;
 
 function isAnonymousTracker(clerkId: string): boolean {
-  return clerkId.startsWith("anon:");
+  // Case-insensitive to match ANONYMOUS_TRACKER_ID (which carries the `i`
+  // flag). Otherwise requireTrackerAccess would admit an `ANON:` id without
+  // auth while this classified it as an authenticated viewer, letting it skip
+  // the anonymous-contribution cap.
+  return /^anon:/i.test(clerkId);
 }
 const ANONYMOUS_TRACKER_ID =
   /^anon:(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[a-z0-9]+:[a-z0-9]+)$/i;
