@@ -24,6 +24,7 @@ import {
   isSystemSecretValid,
   requireAdmin,
   requireAuthenticatedClerkId,
+  requireSystem,
 } from "./lib/auth";
 import { recordFlightTelemetry } from "./lib/telemetry";
 
@@ -448,15 +449,18 @@ export const create = mutation({
     systemSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Flights are written only by the trusted ingest pipeline (the SSE/server
+    // tracker) using the system secret. A previous client-writable path let any
+    // signed-in user POST fabricated flights for their own account (arbitrary
+    // duration/distance/altitude/streak timing), forging leaderboard and
+    // profile stats, so it has been removed.
+    requireSystem(ctx, args.systemSecret);
+
     const targetUser = await ctx.db.get(args.userId);
-    if (targetUser?.activeBanId) throw new Error("Account access restricted");
-    if (!isSystemSecretValid(args.systemSecret)) {
-      const user = await ctx.db.get(args.userId);
-      if (!user || user.isDeleted) {
-        throw new Error("User not found");
-      }
-      await requireAuthenticatedClerkId(ctx, user.clerkId);
+    if (!targetUser || targetUser.isDeleted) {
+      throw new Error("User not found");
     }
+    if (targetUser.activeBanId) throw new Error("Account access restricted");
 
     if (args.dedupeKey) {
       const existingFlight = await ctx.db
