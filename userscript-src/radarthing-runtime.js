@@ -3200,19 +3200,20 @@
           : "";
       });
 
-    // A small tab that brings the panel back. It exists on every device so a
-    // hidden panel is never lost to people who don't know the hotkey.
+    // On mobile there's no hotkey, so a small tab brings the panel back.
+    // On desktop, hiding removes the UI entirely; the hotkey shows it again.
     {
-      mobileFlightUIOpenButton = document.createElement("button");
-      mobileFlightUIOpenButton.id = MOBILE_UI_OPEN_ID;
-      mobileFlightUIOpenButton.type = "button";
-      mobileFlightUIOpenButton.setAttribute(
-        "aria-label",
-        "Show RadarThing panel",
-      );
-      mobileFlightUIOpenButton.title = `Show RadarThing panel (${toggleKey.toUpperCase()})`;
-      mobileFlightUIOpenButton.textContent = "‹";
-      mobileFlightUIOpenButton.style.cssText = `
+      if (isMobile) {
+        mobileFlightUIOpenButton = document.createElement("button");
+        mobileFlightUIOpenButton.id = MOBILE_UI_OPEN_ID;
+        mobileFlightUIOpenButton.type = "button";
+        mobileFlightUIOpenButton.setAttribute(
+          "aria-label",
+          "Show RadarThing panel",
+        );
+        mobileFlightUIOpenButton.title = `Show RadarThing panel (${toggleKey.toUpperCase()})`;
+        mobileFlightUIOpenButton.textContent = "‹";
+        mobileFlightUIOpenButton.style.cssText = `
         position:fixed;
         top:max(112px, calc(env(safe-area-inset-top) + 16px));
         right:max(12px, env(safe-area-inset-right));
@@ -3233,24 +3234,25 @@
         cursor:pointer;
         z-index:${Z.reopenTab};
       `;
-      mobileFlightUIOpenButton.onclick = () => {
-        setFlightUIVisible(true);
-        // On touch screens, focusing an input would pop up the keyboard;
-        // while tracking, the inputs are folded away behind "Edit flight".
-        const coarse = window.matchMedia?.("(pointer: coarse)").matches;
-        const candidates = coarse
-          ? [
-              document.getElementById(MOBILE_UI_CLOSE_ID),
-              document.getElementById(FLIGHT_UI_HIDE_BTN_ID),
-            ]
-          : [
-              document.getElementById(DEP_INPUT_ID),
-              document.getElementById("atc-edit-flight-btn"),
-              document.getElementById(SAVE_BTN_ID),
-            ];
-        candidates.find(isFocusable)?.focus();
-      };
-      document.body.appendChild(mobileFlightUIOpenButton);
+        mobileFlightUIOpenButton.onclick = () => {
+          setFlightUIVisible(true);
+          // On touch screens, focusing an input would pop up the keyboard;
+          // while tracking, the inputs are folded away behind "Edit flight".
+          const coarse = window.matchMedia?.("(pointer: coarse)").matches;
+          const candidates = coarse
+            ? [
+                document.getElementById(MOBILE_UI_CLOSE_ID),
+                document.getElementById(FLIGHT_UI_HIDE_BTN_ID),
+              ]
+            : [
+                document.getElementById(DEP_INPUT_ID),
+                document.getElementById("atc-edit-flight-btn"),
+                document.getElementById(SAVE_BTN_ID),
+              ];
+          candidates.find(isFocusable)?.focus();
+        };
+        document.body.appendChild(mobileFlightUIOpenButton);
+      }
 
       const closeBtn =
         document.getElementById(MOBILE_UI_CLOSE_ID) ||
@@ -3260,7 +3262,8 @@
           setFlightUIVisible(false);
           // Keyboard users land on the reopen tab; a mouse or touch close
           // hands the keyboard back to GeoFS.
-          if (event.detail === 0) mobileFlightUIOpenButton.focus();
+          if (event.detail === 0 && mobileFlightUIOpenButton)
+            mobileFlightUIOpenButton.focus();
           else document.activeElement?.blur?.();
         };
     }
