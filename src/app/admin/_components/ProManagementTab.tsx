@@ -21,6 +21,7 @@ import {
   getEffectiveAccessRole,
   getTempProExpirationFromValue,
   hasActiveAdminProGrant,
+  hasActiveTrial,
   type TempProDurationValue,
 } from "~/lib/proAccess";
 
@@ -41,6 +42,7 @@ export function ProManagementTab({
   const [grantModal, setGrantModal] = useState<GrantModalState | null>(null);
   const [grantOption, setGrantOption] = useState<GrantOption>("1w");
   const [tempProsOpen, setTempProsOpen] = useState(false);
+  const [trialsOpen, setTrialsOpen] = useState(false);
 
   const allUsers = useQuery(
     api.users.getAllForProManagement,
@@ -48,6 +50,7 @@ export function ProManagementTab({
   );
   const setPermanentProRole = useMutation(api.users.setPermanentProRole);
   const setTemporaryProGrant = useMutation(api.users.setTemporaryProGrant);
+  const endTrial = useMutation(api.users.endTrial);
 
   const filteredUsers = useMemo(() => {
     if (!allUsers) return [];
@@ -78,14 +81,23 @@ export function ProManagementTab({
         user.role !== "PRO" &&
         hasActiveAdminProGrant(user),
     );
+    const trialUsers = filteredUsers.filter(
+      (user) =>
+        user.role !== "ADMIN" &&
+        user.role !== "PRO" &&
+        !hasActiveAdminProGrant(user) &&
+        hasActiveTrial(user),
+    );
     const purchasedPros = filteredUsers.filter((user) => user.role === "PRO");
     const otherUsers = filteredUsers.filter(
       (user) =>
         user.role === "ADMIN" ||
-        (user.role !== "PRO" && !hasActiveAdminProGrant(user)),
+        (user.role !== "PRO" &&
+          !hasActiveAdminProGrant(user) &&
+          !hasActiveTrial(user)),
     );
 
-    return { temporaryPros, purchasedPros, otherUsers };
+    return { temporaryPros, trialUsers, purchasedPros, otherUsers };
   }, [filteredUsers]);
 
   if (!canRunSuperAdminQueries || allUsers === null) {
@@ -110,6 +122,7 @@ export function ProManagementTab({
     isEnabled: boolean,
     isPermanentPro: boolean,
     hasTempGrant: boolean,
+    isTrial: boolean,
   ) {
     if (!isEnabled) {
       setGrantOption("1w");
@@ -130,9 +143,13 @@ export function ProManagementTab({
           id: userId,
           clear: true,
         });
+      } else if (isTrial) {
+        await endTrial({ id: userId });
+      } else {
+        return;
       }
 
-      toast.success("Pro access revoked");
+      toast.success(isTrial ? "Trial ended" : "Pro access revoked");
     } catch (error) {
       toast.error(
         toUserMessage(error, "Couldn't update Pro access. Try again."),
@@ -183,6 +200,7 @@ export function ProManagementTab({
     const effectiveRole = getEffectiveAccessRole(user);
     const isPermanentPro = user.role === "PRO";
     const hasTempGrant = hasActiveAdminProGrant(user);
+    const isTrial = !isPermanentPro && !hasTempGrant && hasActiveTrial(user);
     const isBusy = pendingUserId === user._id;
 
     return (
@@ -200,7 +218,7 @@ export function ProManagementTab({
                 user.role === "ADMIN"
                   ? "bg-purple-500/20 text-purple-400"
                   : effectiveRole === "PRO"
-                    ? hasTempGrant && !isPermanentPro
+                    ? (hasTempGrant && !isPermanentPro) || isTrial
                       ? "bg-amber-500/20 text-amber-300"
                       : "bg-yellow-500/20 text-yellow-400"
                     : "bg-white/10 text-slate-400"
@@ -210,7 +228,9 @@ export function ProManagementTab({
                 ? "ADMIN"
                 : hasTempGrant && !isPermanentPro
                   ? "Pro (temp)"
-                  : effectiveRole}
+                  : isTrial
+                    ? "Pro (trial)"
+                    : effectiveRole}
             </span>
           </div>
           <p className="mt-0.5 truncate font-mono text-xs text-slate-400">
@@ -226,7 +246,9 @@ export function ProManagementTab({
               ? "Purchased Pro"
               : hasTempGrant
                 ? `Temporary Pro until ${new Date(user.adminProExpiresAt!).toLocaleString()}`
-                : "Free tier"}
+                : isTrial
+                  ? `Free trial until ${new Date(user.trialEndsAt!).toLocaleString()}`
+                  : "Free tier"}
           </p>
         </div>
 
@@ -239,7 +261,9 @@ export function ProManagementTab({
                   ? "Purchased"
                   : hasTempGrant
                     ? "Temporary"
-                    : "Off"}
+                    : isTrial
+                      ? "Trial"
+                      : "Off"}
               </p>
             </div>
             <Switch
@@ -252,6 +276,7 @@ export function ProManagementTab({
                   effectiveRole === "PRO",
                   isPermanentPro,
                   hasTempGrant,
+                  isTrial,
                 )
               }
               className="h-5 w-10 shrink-0 data-[state=checked]:bg-yellow-500 data-[state=unchecked]:bg-white/20"
@@ -317,6 +342,39 @@ export function ProManagementTab({
               <CollapsibleContent>
                 <div className="space-y-2 border-t border-amber-500/10 p-3">
                   {groupedUsers.temporaryPros.map(renderUserRow)}
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+        )}
+
+        {groupedUsers.trialUsers.length > 0 && (
+          <Collapsible open={trialsOpen} onOpenChange={setTrialsOpen}>
+            <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06]">
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left"
+                >
+                  <div>
+                    <h3 className="text-sm font-semibold text-amber-100">
+                      Free trial
+                    </h3>
+                    <p className="mt-0.5 text-xs text-amber-100/60">
+                      {groupedUsers.trialUsers.length} active trial
+                      {groupedUsers.trialUsers.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 text-amber-100/70 transition-transform ${
+                      trialsOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="space-y-2 border-t border-amber-500/10 p-3">
+                  {groupedUsers.trialUsers.map(renderUserRow)}
                 </div>
               </CollapsibleContent>
             </div>

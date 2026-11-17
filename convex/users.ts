@@ -10,6 +10,7 @@ import {
   FREE_TRIAL_DURATION_MS,
   canStartFreeTrial,
   hasEffectiveProAccess,
+  hasActiveTrial,
   hasUsedTrial,
 } from "../src/lib/proAccess";
 import { logAdminTelemetry } from "./adminTelemetry";
@@ -949,6 +950,44 @@ export const setTemporaryProGrant = mutation({
       metadata: {
         grantType: "temporary",
         expiresAt: args.expiresAt,
+      },
+    });
+  },
+});
+
+// Ends a user's free trial now. trialStartedAt is kept so the trial can't be
+// started again from the pricing page.
+export const endTrial = mutation({
+  args: { id: v.id("users") },
+  handler: async (ctx, args) => {
+    const actor = await requireAdminForProManagement(ctx);
+
+    const user = await ctx.db.get(args.id);
+    if (!user || user.isDeleted) {
+      throw new Error("User not found");
+    }
+
+    if (user.role === "ADMIN") {
+      throw new Error("Admin users cannot be modified here");
+    }
+
+    const now = Date.now();
+    if (!hasActiveTrial(user, now)) {
+      throw new Error("This user has no active trial");
+    }
+
+    await ctx.db.patch(args.id, { trialEndsAt: now });
+
+    await logAdminTelemetry(ctx, {
+      actorClerkId: actor.clerkId,
+      action: "revoke_pro",
+      resourceType: "pro_access",
+      resourceId: user._id,
+      resourceLabel: getProAccessLabel(user),
+      targetClerkId: user.clerkId,
+      metadata: {
+        grantType: "trial",
+        previousExpiresAt: user.trialEndsAt ?? null,
       },
     });
   },
